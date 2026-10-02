@@ -1,0 +1,40 @@
+Chapter 2. Use cases & Requirements
+2.1. Authorization options
+C01 - EV Driver Authorization using RFID
+No. Type Description
+1 Name EV Driver Authorization using RFID
+2 ID C01
+3 Objective(s) To enable the Charging Station to request the CSMS to authorize an EV Driver to start or stop
+charging.
+4 Description When a Charging Station needs to charge an EV, it needs to authorize the EV Driver first before
+the charging can be started or stopped.
+Actors Charging Station, CSMS, EV Driver
+Scenario description 1. The EV Driver wants to start or stop charging the EV and presents an RFID card.
+2. The Charging Station sends AuthorizeRequest to the CSMS to request authorization.
+3. Upon receipt of AuthorizeRequest, the CSMS responds with AuthorizeResponse. This response
+message indicates whether or not the IdToken is accepted by the CSMS.
+Alternative scenario(s) C02 - Authorization using a start button
+C03 - Authorization using credit/debit card
+C04 - Authorization using PIN-code
+C05 - Authorization for CSMS initiated transactions
+C06 - Authorization using local id type
+C07 - Authorization using Contract Certificates
+C08 - Authorization at EVSE using ISO 15118 External Identification Means (EIM)
+C15 - Unknown Offline Authorization
+5 Prerequisite(s) n/a
+6 Postcondition(s) Successful postcondition:
+The EV Driver is authorized and can start or stop charging.
+Failure postcondition:
+If the authorize message is Invalid, Blocked, Expired or Unknown, the EV Driver can not start or
+stop charging, except in the case where the EV Driver presents the same token used to start the
+transaction.
+7 Error handling When the Authorization is not 'Accepted', the AuthorizeResponse contains an authorization status
+value indicating the reason for rejection.
+8 Remark(s) Assuming idToken is valid for charging and the Charging Station has 3 EVSEs, what is the content
+of idTokenInfo, when idToken is allowed to charge:
+. at all EVES: idTokenInfo.status = Accepted.
+. at EVSE 1: idTokenInfo.status = Accepted, idTokenInfo.evseId = [ 1 ].
+. at EVSE 1 + 2: idTokenInfo.status = Accepted, idTokenInfo.evseId = [ 1, 2 ].
+. at none of the EVSEs: _idTokenInfo.status=NotAtThisLocation.
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 79/491 Part 2 - Specification

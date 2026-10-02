@@ -1,0 +1,44 @@
+TC_C_40_CS: Authorization by GroupId - Success with Local Authorization List
+Test case name Authorization by GroupId - Success with Local Authorization List
+Test case Id TC_C_40_CS
+Use case Id(s) C09
+Requirement(s) C09_FR_02, C09_FR_03, C09_FR_07
+System under test Charging Station
+Description This test case covers how a Charging Station can authorize an action for an EV Driver based on GroupId
+information. This could for example be used if 2 people regularly use the same EV: they can use their own
+IdToken (e.g. RFID card), and can deauthorize transactions that were started with the other idToken (with
+the same GroupId).
+Purpose To verify if the Charging Station is able to correctly handle the Authorization of idTokens with the same
+GroupId when stored in the Local Authorization List according to the mechanism as described in the OCPP
+specification.
+Prerequisite(s) - LocalAuthListCtrlr.LocalAuthListAvailable is implemented with value true
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+LocalAuthListEnabled is true (If implemented)
+LocalPreAuthorize is true (If implemented)
+Memory State:
+Two known valid idTokens are configured in the Local Authorization List with the same GroupId
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present valid idToken with <Configured GroupId> which is configured in the Local Authorization List
+1. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed when TxStartPoint contains
+Authorized OR the transaction already started. So in the case
+TxStartPoint contains ParkingBayOccupancy
+2. The Test System responds with a TransactionEventResponse
+with
+- idTokenInfo.status Accepted
+- idTokenInfo.groupIdToken.idToken <Configured
+groupIdToken>
+3. Execute Reusable State EnergyTransferStarted
+Manual Action: Present valid idToken2 with <Configured GroupId> which is configured in the Authorization Cache
+4. Execute Reusable State StopAuthorized
+5. Execute Reusable State EVConnectedPostSession
+6. Execute Reusable State EVDisconnected
+7. Execute Reusable State ParkingBayUnoccupied
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 127/914 Part 6 - Test Cases

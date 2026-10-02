@@ -1,0 +1,550 @@
+--- before/backend/communication/technologies/lorawan.py
++++ after/backend/communication/technologies/lorawan.py
+@@ -0,0 +1,547 @@
++"""Revision-, region- and direction-qualified LoRaWAN parameter declarations."""
++L2='https://lora-alliance.org/wp-content/uploads/2021/11/LoRaWAN-Link-Layer-Specification-v1.0.4.pdf'
++RP='https://resources.lora-alliance.org/technical-specifications/rp002-1-0-5-lorawan-regional-parameters'
++ERRATA='https://resources.lora-alliance.org/technical-specifications/errata-l2-1-0-4-d2d'
++SOURCES={L2:'TS001 LoRaWANL2 1.0.4 copyright2020; named MAC/ADR/RX/activation/ClassB/ClassC sections',
++ RP:'RP002-1.0.5 Final October2025; common defaults, each active regional DR/payload/RX/channel section and PHY sections5.1-5.3',
++ ERRATA:'Published2023-02-03 revision1 request2022-10-17; removed mistaken D2D/downlink prohibition, not multicast credential/address permission'}
++OLD='TS001_1_0_4_2020'
++REGIONAL='RP002_1_0_5_2025'
++# Indicative PHY rates are source table values, not effective application
++# throughput or evidence that any installed radio supports the selected mode.
++COMMON={i:('LORA',12-i,125,[250,440,980,1760,3125,5470][i],'4/5')for i in range(6)}
++COMMON.update({6:('LORA',7,250,11000,'4/5'),7:('FSK',None,None,50000,None),
++               12:('LORA',6,125,9375,'4/5'),13:('LORA',5,125,15625,'4/5')})
++DOWN={0:('LORA',5,500,62500,'4/5'),**{i:('LORA',20-i,500,[980,1760,3900,7000,12500,21900,37500][i-8],'4/5')for i in range(8,15)}}
++EU={**COMMON,8:('LR_FHSS',None,137,162,'1/3'),9:('LR_FHSS',None,137,325,'2/3'),
++    10:('LR_FHSS',None,336,162,'1/3'),11:('LR_FHSS',None,336,325,'2/3')}
++US={0:COMMON[2],1:COMMON[3],2:COMMON[4],3:COMMON[5],4:DOWN[12],
++    5:('LR_FHSS',None,1523,162,'1/3'),6:('LR_FHSS',None,1523,325,'2/3'),7:COMMON[12],8:COMMON[13]}
++AU={**{i:COMMON[i]for i in range(6)},6:DOWN[12],7:US[5],9:COMMON[12],10:COMMON[13]}
++CN={**{i:COMMON[i]for i in range(1,6)},6:DOWN[13],7:COMMON[7]}
++REGIONS=['EU868','US915','EU433','AU915','CN470','AS923_1','AS923_2','AS923_3','AS923_4','KR920','IN865','RU864']
++RATES={region:{'UPLINK':dict(COMMON),'DOWNLINK':dict(COMMON)}for region in REGIONS}
++RATES['EU868']={'UPLINK':EU,'DOWNLINK':dict(COMMON)} # LR-FHSS uplink only.
++for region in ('US915','AU915','CN470'):
++    RATES[region]={'UPLINK':{'US915':US,'AU915':AU,'CN470':CN}[region],
++                   'DOWNLINK':CN if region=='CN470'else DOWN}
++for region,removed in [('KR920',[6,7]),('IN865',[6])]:
++    for direction in RATES[region]:
++        for key in removed:RATES[region][direction].pop(key)
++# region: default RX2 frequency Hz, RX2 DR, beacon DR, beacon/ping Hz,
++# optional explicit AS923 default offset Hz. Hopping CN/US/AU are separate.
++RX_DEFAULTS={
++ 'EU868':(869525000,0,3,869525000,869525000,None),
++ 'EU433':(434665000,0,3,434665000,434665000,None),
++ 'US915':(923300000,8,8,None,None,None),'AU915':(923300000,8,8,None,None,None),
++ 'KR920':(921900000,0,3,923100000,923100000,None),
++ 'IN865':(866550000,2,4,866550000,866550000,None),
++ 'RU864':(869100000,0,3,869100000,868900000,None)}
++for region,offset in [('AS923_1',0),('AS923_2',-1800000),('AS923_3',-6600000),('AS923_4',-5900000)]:
++    RX_DEFAULTS[region]=(923200000+offset,2,3,923400000+offset,923400000+offset,offset)
++JOIN_CHANNELS={'EU868':[868100000,868300000,868500000],'EU433':[433175000,433375000,433575000],
++ 'KR920':[922100000,922300000,922500000],'IN865':[865062500,865402500,865985000],'RU864':[868900000,869100000]}
++for region,row in RX_DEFAULTS.items():
++    if region.startswith('AS923'):JOIN_CHANNELS[region]=[row[0],row[0]+200000]
++CN_PLANS={'20_A':(64,486900000),'20_B':(64,498300000),'26_A':(48,492500000),'26_B':(48,502500000)}
++# Literal source rows preserve optional DR12/13 and exceptional offset cells.
++RX1_ROWS={region:{dr:[max(0,dr-offset)for offset in range(6)]for dr in range(8)}
++          for region in ('EU868','EU433','KR920','RU864')}
++for region in RX1_ROWS:
++    RX1_ROWS[region].update({12:[12,5,4,3,2,1],13:[13,12,5,4,3,2]})
++    RX1_ROWS[region]={dr:row for dr,row in RX1_ROWS[region].items()if dr in RATES[region]['UPLINK']}
++RX1_ROWS['EU868'].update({8:[1,0,0,0,0,0],9:[2,1,0,0,0,0],10:[1,0,0,0,0,0],11:[2,1,0,0,0,0]})
++RX1_ROWS['US915']={0:[10,9,8,8],1:[11,10,9,8],2:[12,11,10,9],3:[13,12,11,10],
++  4:[13,13,12,11],5:[10,9,8,8],6:[11,10,9,8],7:[14,13,12,11],8:[0,14,13,12]}
++RX1_ROWS['AU915']={0:[8,8,8,8,8,8],1:[9,8,8,8,8,8],2:[10,9,8,8,8,8],
++  3:[11,10,9,8,8,8],4:[12,11,10,9,8,8],5:[13,12,11,10,9,8],6:[13,13,12,11,10,9],
++  7:[9,8,8,8,8,8],9:[14,13,12,11,10,9],10:[0,14,13,12,11,10]}
++RX1_ROWS['CN470']={dr:[max(1,dr-offset)for offset in range(6)]for dr in range(1,8)}
++AS_RX1={0:[0,0,0,0,0,0,1,2],1:[1,0,0,0,0,0,2,3],2:[2,1,0,0,0,0,3,4],
++ 3:[3,2,1,0,0,0,4,5],4:[4,3,2,1,0,0,5,6],5:[5,4,3,2,1,0,6,7],6:[6,5,4,3,2,1,7,7],
++ 7:[7,6,5,4,3,2,7,7],12:[12,5,4,3,2,1,13,13],13:[13,12,5,4,3,2,13,13]}
++RX1_ROWS['IN865']={**AS_RX1,4:[4,3,2,1,0,0,5,5],5:[5,4,3,2,1,0,5,7],7:[7,5,5,4,3,2,7,7]}
++RX1_ROWS['IN865'].pop(6)
++
++
++def mac_limits(region,direction,dwell,repeater):
++    """Selected source tables M, never a universal242-byte application limit."""
++    cap=230 if repeater else 250
++    basic={0:59,1:59,2:59,3:123,4:cap,5:cap,6:cap,7:cap,12:cap,13:cap}
++    if region=='EU868':basic.update({8:58,9:123,10:58,11:123})
++    if region=='KR920':basic={k:v for k,v in basic.items()if k not in (6,7)}
++    if region=='IN865':basic.pop(6)
++    if region in ('US915','AU915')and direction=='DOWNLINK':return {0:cap,8:61,9:137,**{i:cap for i in range(10,15)}}
++    if region=='US915':return {0:19,1:61,2:133,3:cap,4:cap,5:58,6:133,7:cap,8:cap}
++    if region=='AU915':
++        return {**({2:19,3:61,4:133}if dwell else{0:59,1:59,2:59,3:123,4:cap}),5:cap,6:cap,7:58,9:cap,10:cap}
++    if region.startswith('AS923'):
++        return {**({2:19,3:61,4:133}if dwell else{0:59,1:59,2:123,3:123,4:cap}),5:cap,6:cap,7:cap,12:cap,13:cap}
++    if region=='CN470':return {1:31,2:94,3:192,4:cap,5:cap,6:cap,7:cap}
++    return basic
++
++
++DECLARATIONS=[]
++def d(key,kind,meaning,lo=None,hi=None,unit=None,options=None,integer=False,source=RP,**kw):
++    DECLARATIONS.append(dict(key='lr_'+key,type=kind,description=meaning,min=lo,max=hi,unit=unit,
++        options=options,integer=integer,source=source,source_revision=SOURCES[source],**kw))
++
++for key,meaning,options,source in [
++ ('protocol','Actual1.0.4 including published D2D errata versus independently registered1.1/other protocol.',[OLD,'REGISTERED_PROTOCOL'],L2),
++ ('regional_profile','ActualRP002revision; new2025DR mappings never applied to older firmware implicitly.',[REGIONAL,'REGISTERED_REGIONAL'],RP),
++ ('region','Actual regional channel plan,independent from industry; deprecatedCN779 requires its own legacy proof.',[*REGIONS,'CN779_DEPRECATED','REGISTERED_REGION'],RP),
++ ('role','Actual endpoint/network role; published errata permits D2D downlink,so role alone is not a direction prohibition.',['END_DEVICE','GATEWAY','NETWORK_SERVER','APPLICATION_SERVER','D2D_ENDPOINT'],ERRATA),
++ ('direction','Actual uplink versus downlink versus ClassBbeacon; equal DR numbers may encode different modulations.',['UPLINK','DOWNLINK','BEACON'],RP),
++ ('frame_kind','Actualdata/join/beacon/proprietary codec; a join request does not use data-frame FHDR.',['DATA','JOIN_REQUEST','JOIN_ACCEPT','BEACON','REGISTERED_FRAME'],L2),
++ ('phase','Actual boot/default context versus negotiated network settings; initialization proposals cannot overwrite confirmed settings.',['BOOT','NETWORK_CONTROLLED'],RP),
++ ('activation','ActualOTAA versus ABP key/counter initialization and persistence.',['OTAA','ABP'],L2),
++ ('device_class','ActualClassA/B/C operation; all include ClassAreceive behavior,optionalB/Cneeddeviceproof.',['A','B','C'],L2),
++ ('receive_window','Actual receive window; Class-C device RX1/RX2 still allow their own MAC traffic.',['RX1','RX2','CLASS_B_PING','CLASS_C_RXC','REGISTERED_WINDOW'],L2),
++ ('modulation','ActualLoRa versus optionalFSK versus uplink-onlyLRFHSS,not one scalarbusclock.',['LORA','FSK','LR_FHSS'],RP),
++ ('coding_rate','Actual selected PHY code rate; different LR-FHSS ratios are not LoRa4/5.',['4/5','1/3','2/3'],RP),
++ ('lora_header','Actualdataexplicitheader versus beaconimplicitheader; optionalPHDR differs.',['EXPLICIT','IMPLICIT'],RP),
++ ('payload_limit_use','Actualsending constraint versus AS923end-device downlink receive acceptance using no-dwell table.',['TRANSMIT','END_DEVICE_RECEIVE'],RP),
++ ('access_profile','Actual regulated access procedure, with qualified device and jurisdiction proof.',['DUTY_CYCLE','DWELL_HOPPING','LBT_AFA','REGISTERED_ACCESS'],RP),
++ ('port_kind','ActualMAC-only versus application1..223 versus assigned/testport; reserved allocation needs source.',['MAC_COMMANDS','APPLICATION','ALLIANCE_ASSIGNED'],L2),
++ ('cn_plan','Actual2025CN47020/26MHzantennaA/Bplan; legacy96channelplan remains separate.',['20_A','20_B','26_A','26_B','REGISTERED_CN_PLAN'],RP),
++ ('rx_delay_encoding','Actual4bitMACconfiguredintegerseconds versus independently commissioned out-of-band delay.',['MAC_COMMAND','OUT_OF_BAND'],L2),
++ ('fs_whitening','ActualFSKwhitening DC-free encoding.',['WHITENING'],RP)]:d(key,'select',meaning,options=options,source=source)
++for key,meaning,source in [
++ ('revision','Actual complete protocol,RP,device/radio/firmware anderrata revisions.',L2),
++ ('registered_source','Actual independent profile/schema for non-reviewed versions,deprecated regions orproprietary traffic.',RP),
++ ('device_source','Actualradio/firmware supportedDRs/classes/channelstorage/capabilities.',RP),
++ ('binding_source','Actualcanonicalradiochannel/endpoint/network/gateway/backhaul bindings; separateotherbusprofiles.',L2),
++ ('regional_source','Actualselectedregion,country,channelplan/revision andcapabilities,not automaticallyEU868.',RP),
++ ('regulatory_source','Actualcurrentjurisdiction,subband/duty/dwell/LBT/power constraints; oldRPtableisnotapproval.',RP),
++ ('channel_source','Actualcompleteenabledchannelset/hopping/masks/RX1/RX2/CNplanandnetworkcontrol.',RP),
++ ('physical_source','Actualradio/antenna/linkbudget/clock/range/interference/power supply realization.',RP),
++ ('encoding_source','ActualPHY/MHDR/MIC/FHDR/FOpts/FPort/counter/codec,payload bytes not genericCAN8.',L2),
++ ('security_source','Actualkeyprovisioning/session/MIC/AES/nonce/counter persistence/rotation; no invented keys.',L2),
++ ('schedule_source','Actualalltraffic/dutycycles/dwell/LBT/RXwindows/ACKs/repetitions andgateway/backend workload.',L2),
++ ('capacity_source','Actualsharedairtime,allgateway/backhaul/serverqueues,fullcapacityprovenance.',RP),
++ ('acceptance_source','ActualfunctionalE2E/freshness/actuation/safety; LoRaACK/MIC does not prove completion.',L2),
++ ('airtime_source','Actualqualifiedradio-time calculation ormeasurement forfullPHYframe,notpayload/rate division.',RP),
++ ('commissioning_source','Actualout-of-band versusMACagreedchanges andnetwork/device capability negotiation.',L2),
++ ('lbt_source','Actual jurisdiction-qualified carrier sensing, adaptive frequency agility, threshold, sensing interval and backoff realization; no guessed universal threshold.',RP),
++ ('multicast_source','Actual assigned multicast group, DevAddr, membership, group keys and server authorization.',ERRATA),
++ ('allocation_source','Actualreserved/testFPort allocation andcorresponding application package.',L2),
++ ('dev_eui','ActualassignedEUI64hex,notfactoryguesseddefault.',L2),('join_eui','ActualOTAAJoinServerEUI64hex.',L2),
++ ('dev_addr','Actualsession/unicast/multicast32bithexaddress,notEUI64.',L2),('net_id','Actualassigned24bitnetworkhexidentity.',L2),
++ ('app_key_ref','Actual128bitrootkeyreference forOTAA,notplaintext ordefaultsecret.',L2),
++ ('nwk_skey_ref','Actual1.0.4network-sessionkeyreference;1.1keys require independentprofile.',L2),
++ ('app_skey_ref','Actualapplication-sessionkeyreference; not proof of functionalintegrity.',L2)]:d(key,'text',meaning,source=source)
++for key,meaning,lo,hi,unit,integer,source in [
++ ('dr','ActualselectedregionalDRindex;15MACkeep-currentcommandisnotactualradioDR.',0,14,None,True,RP),
++ ('indicative_phy_bps','Source-tableindicativePHYrate forselectedDR,notusableapplicationcapacity.',1,None,'bit/s',True,RP),
++ ('sf','ActualLoRaspreadingfactor5..12; transceiversupportandRPversionrequired.',5,12,None,True,RP),
++ ('bandwidth_khz','ActualselectedLoRa orLRFHSSchannelbandwidth; not50000bit/suniversal.',0,None,'kHz',False,RP),
++ ('frequency_hz','Actualchannelcenterfrequency,notminimumfrequencychosenforwholeproject.',100000000,1677721500,'Hz',True,RP),
++ ('channel_index','Actualregion/channel-planindex;80flexiblydefinedchannelsarenotallmandatorydefaults.',0,None,None,True,RP),
++ ('channel_capacity','Actualdevicechannel-tablecapacity,notactualenabledpopulation.',1,None,None,True,RP),
++ ('rx1_dr_offset','Actualregion-qualifiedRX1mappingindex; notEthernet/CANpriority.',0,7,None,True,RP),
++ ('rx1_dr','ActualRX1DRmappedfromtheprecedinguplinkDRandoffset,notalwayssameDR.',0,14,None,True,RP),
++ ('uplink_dr','Actual preceding uplink DR for the region-specific RX1 mapping; separate from current downlink DR.',0,14,None,True,RP),
++ ('rx2_dr','ActualselectedRX2DR; defaultvariesbyregion/CNjoinplan.',0,14,None,True,RP),
++ ('rx2_frequency_hz','ActualRX2centerfrequency; maydifferfromuplinkchannel.',100000000,1677721500,'Hz',True,RP),
++ ('beacon_dr','Actualregion-specificClassBbeaconDR,notdatauplinkDR.',0,14,None,True,RP),
++ ('ping_dr','Actual region-specific Class-B ping-slot DR; initial beacon DR only in boot context.',0,14,None,True,RP),
++ ('beacon_frequency_hz','Actualfixedorhoppingbeaconfrequency,notonefixedUS/AUdefault.',100000000,1677721500,'Hz',True,RP),
++ ('ping_frequency_hz','Actualunicastpingchannel; CN/US/AUhoppingandRUdifferentbeacon/pingqualified.',100000000,1677721500,'Hz',True,RP),
++ ('as923_offset_hz','Default-onlyAS923groupoffset; NEVERapplytoMACorCFListdeliveredfrequency.',-214748364800,214748364700,'Hz',True,RP),
++ ('cn_join_index','ActualcommonCN470joinchannelindex0..19selecting20/26A/Bplan.',0,19,None,True,RP),
++ ('max_eirp_dbm','CommissionednetworkmaxEIRPupperbound,notmeasuredradiooutputpower.',None,None,'dBm',False,RP),
++ ('max_conducted_power_dbm','Commissioned US maximum conducted power, distinct from EIRP; hardware and regulatory mode remain independent.',None,None,'dBm',False,RP),
++ ('tx_eirp_dbm','Actualradiatedoutputpower; mustalsorespectactualregulation/hardware.',None,None,'dBm',False,RP),
++ ('conducted_power_dbm','ActualUSconductedpowerdistinctfromEIRP/antenna gain/PSD/mode.',None,None,'dBm',False,RP),
++ ('tx_power_index','ActualregionalTXPowerindex;15keep-currentisnotselectedpower.',0,14,None,True,RP),
++ ('duty_cycle_percent','Actualapplicabletransmissiondutycycleboundbyrole/country/subband; no capacityguarantee.',0,100,'%',False,RP),
++ ('airtime_bound_ms','ActualcompletePHYtransmissiontimebound; includesmodulation/header/MIC/CRC,notjustapplicationbits.',.000001,None,'ms',False,RP),
++ ('receive_delay1_s','ActualRX1delayafteruplink,sourceproposal1second.',0,None,'s',False,RP),
++ ('receive_delay2_s','ActualRX2delaySHALLRX1plus1second.',0,None,'s',False,RP),
++ ('join_accept_delay1_s','ActualfirstOTAAjoinreceivewindowdelay,proposal5s.',0,None,'s',False,RP),
++ ('join_accept_delay2_s','ActualsecondOTAAjoinreceivewindowdelay,proposal6s.',0,None,'s',False,RP),
++ ('rx_delay_code','ActualMACdelay4bitencoding0/1bothmean1second.',0,15,None,True,L2),
++ ('adr_ack_limit','ActualADRuplinkframecountlimit,proposal64notmillisecondtimeout.',1,None,None,True,RP),
++ ('adr_ack_delay','ActualADRbackoffframecountdelay,proposal32.',1,None,None,True,RP),
++ ('retransmit_min_s','ConfiguredrandomizedACKretransmittimeoutlowerbound,proposal1second.',0,None,'s',False,RP),
++ ('retransmit_max_s','ConfiguredrandomizedACKretransmittimeoutupperbound,proposal3seconds.',0,None,'s',False,RP),
++ ('nb_trans','ActualnumberofULtransmissions1..15;0encodedcommandmaps1,not0transmissions.',1,15,None,True,L2),
++ ('class_response_timeout_s','ActualClassB/Cresponsebound;mustexceedmaxretransmittimeoutplusactualmaxULairtime.',0,None,'s',False,RP),
++ ('ack_response_bound_s','Actual Class-C confirmed-downlink response bound; ADR repetition/window arithmetic is distinct from functional actuation acceptance.',0,None,'s',False,L2),
++ ('ul_airtime_bound_ms','Actualworst-caseuplinkPHYairtimeforClassB/Ctimeoutchecking.',.000001,None,'ms',False,RP),
++ ('lora_preamble_symbols','ActualLoRadata8versusbeacon10unmodulatedsymbols;sync4.25separate.',0,None,'symbols',True,RP),
++ ('lora_sync_word','ActualLoRaSF7..12sync0x34versusSF5..6sync0x12.',0,255,None,True,RP),
++ ('fs_preamble_octets','ActualFSK5bytepreamble,not8LoRasymbols.',0,None,'Byte',True,RP),
++ ('fs_sync_word','ActualFSK3byteSyncWord0xC194C1.',0,16777215,None,True,RP),
++ ('fs_bitrate_bps','ActualFSKPHY50kbpsonly; notLoRaDR0capacity.',1,None,'bit/s',True,RP),
++ ('fs_deviation_khz','ActualFSKsingle-sideTXfrequencydeviation25kHz.',0,None,'kHz',False,RP),
++ ('fs_rx_bandwidth_khz','ActualFSKsingle-sideRXbandwidth50kHz.',0,None,'kHz',False,RP),
++ ('fs_afc_bandwidth_khz','ActualFSKsingle-sideAFCbandwidth80kHz.',0,None,'kHz',False,RP),
++ ('fs_gaussian_bt','ActualFSKGaussianfilterBT1.',0,None,None,False,RP),
++ ('fhss_headers','Actualnumberofredundantphysicalheaders1..4,notguessedcapacity.',1,4,None,True,RP),
++ ('fhss_hop_hz','ActualinstantaneousLRFHSS488Hzbandwidth,notwhole137/336/1523kHzchannel.',1,None,'Hz',True,RP),
++ ('fhss_grid_khz','Actual3.9kHzETSIversus25.4kHzFCCgrid.',0,None,'kHz',False,RP),
++ ('fhss_channels','Actual35/86/60physicalhoppingchannelspertransmission,notwholeavailablepool.',1,None,None,True,RP),
++ ('fhss_payload_hop_ms','ActualLRFHSSpayloadfrequencychange102.4ms.',0,None,'ms',False,RP),
++ ('fhss_header_hop_ms','ActualLRFHSSheaderfrequencychange233.472ms.',0,None,'ms',False,RP),
++ ('fopts_octets','ActualpiggybackMACcommandlength0..15.',0,15,'Byte',True,L2),
++ ('fhdr_octets','Actualdataheader7+FOpts,notCANidentifier.',7,22,'Byte',True,L2),
++ ('frm_payload_octets','ActualencodedFRMPayloadsize,region/DR/dwell/repeater/FOptsdependent.',0,255,'Byte',True,L2),
++ ('fport','ActualMAC0versusapplication1..223versusallocated224..255; noautomaticport1.',0,255,None,True,L2),
++ ('mac_payload_octets','ActualMACpayloadFHDR+optionalFPort+FRMPayload; Mvariesbyregionaltable.',0,250,'Byte',True,L2),
++ ('phy_payload_octets','ActualMHDR+MACpayload+MIC; radioPHDR/CRC/preamblesseparate.',0,255,'Byte',True,L2),
++ ('mhdr_octets','ActualMACheaderoneoctet; notwholeLoRaPHYheader.',1,1,'Byte',True,L2),
++ ('mic_octets','ActualAES-CMACMICfourbytes,notCRCcapacity/safetyevidence.',4,4,'Byte',True,L2),
++ ('ftype','Actual1.0.4MHDRtype:0joinrequest1joinaccept2/4UL3/5DL7proprietary;6reserved.',0,7,None,True,L2),
++ ('major','ActualMHDRMajor0forLoRaWANR1;notminorprotocolversionnumber.',0,3,None,True,L2),
++ ('fcnt','Actual32bitsessionframecounter;noautomaticzero/resetwithoutsessionproof.',0,4294967295,None,True,L2),
++ ('fcnt_wire','Actualleastsignificant16bitsofthe32bitcounter.',0,65535,None,True,L2),
++ ('dev_nonce','ActualpersistentOTAA16bitmonotonicJoinRequestcounter;notrandom0default.',0,65535,None,True,L2),
++ ('join_nonce','Actual3byteJoinServernonrepeatingnonce.',0,16777215,None,True,L2),
++ ('cflist_octets','ActualoptionalJoinAcceptCFList0or16bytes.',0,16,'Byte',True,RP),
++ ('cflist_type','Actualregion-qualifiedchannelmask1versusfrequencylist0;notindustryselection.',0,1,None,True,RP),
++ ('channel_mask','Actual16bitMACchannelmaskinterpretedbyregion/ChMaskCntl.',0,65535,None,True,L2),
++ ('chmask_ctrl','Actualregional3bitChMaskCntl;2025bit8RFUcontradictioncorrected.',0,7,None,True,RP),
++ ('ping_periodicity','ActualClassB3bitperiodicity0..7,proposal7means128seconds.',0,7,None,True,L2),
++ ('ping_count','Actual2^(7-periodicity)slotsperbeaconperiod.',1,128,None,True,L2),
++ ('ping_period_slots','Actual2^(5+periodicity)unit-slotinterval.',32,4096,None,True,L2),
++ ('ping_offset','ActualAESderivedoffset0..ping_period_slots-1;notrandomgeneratedidentity.',0,4095,None,True,L2),
++ ('ping_slot_ms','Actualunitping-slotlength30ms,notapplicationcycletime.',30,30,'ms',False,L2),
++ ('beacon_period_s','ActualClassBbeaconperiod128s.',128,128,'s',False,L2),
++ ('beacon_reserved_s','Actualbeaconreservedinterval2.120s,notactualtransmissionairtime.',2.120,2.120,'s',False,L2),
++ ('beacon_guard_s','ActualClassBguard3s.',3,3,'s',False,L2),
++ ('beacon_window_s','Actual122.880spingwindow;notfull128susablecapacity.',122.880,122.880,'s',False,L2),
++ ('beacon_precision','ActualParamPrec0..3,default0;precision10^(-6+Prec)seconds.',0,3,None,True,L2),
++ ('functional_bound_ms','ActualapplicationfunctionalE2Edeadline,separatefromradioACK/windows.',0,None,'ms',False,L2)]:d(key,'number',meaning,lo,hi,unit,integer=integer,source=source)
++for key,meaning,source in [
++ ('uplink_dwell','Actualuplink400msdwellselection;country/devicebootmodequalified.',RP),
++ ('downlink_dwell','Actualdownlink400msdwellselection;AUalwaysFalse;ASreceiveacceptancehasseparaterule.',RP),
++ ('repeater','Actualrepeater-compatiblepayloadcontext;neveruniversal242bytes.',RP),
++ ('lora_crc','ActualradioCRCpresence:ULTrue,DL/beaconFalse;notMIC.',RP),
++ ('lora_iq_inverted','ActualnormaldownlinkIQTrue,UL/beaconFalse.',RP),
++ ('lora_ldro','ActualLoRalowdatarateoptimizer,definedbySFandbandwidth.',RP),
++ ('fs_crc','ActualFSKCRC16CCITTpresentinbothdirections.',RP),
++ ('fport_present','ActualFPortpresence;requiredwhendatapayloadnonempty.',L2),
++ ('confirmed_frame','Actualconfirmed/unconfirmedDATAframe,notcapacityoracceptedactuation.',L2),
++ ('adr','Actualadaptive-ratebit;mobility/device/servercapabilitiesrequired.',L2),
++ ('class_b_enabled','Actualbeacon-synchronizedClassBstate;neverdefaultTruefromclassselection.',L2),
++ ('class_c_enabled','ActualClassCstate;cannotenableBandCtogether.',L2),
++ ('counter_persistent','ActualABP/OTAAcounterpersistencemechanism,notautoTrue.',L2),
++ ('multicast','Actualmulticastgroupbinding;separateallocatedaddressandsharedcredentials.',ERRATA),
++ ('capacity_confirmed','Actualcompletecapacityapproval;neverTruefromselectedDRalone.',RP)]:d(key,'boolean',meaning,source=source)
++REQUIRED=['protocol','regional_profile','region','role','direction','frame_kind','revision','device_source','binding_source',
++ 'regional_source','regulatory_source','channel_source','physical_source','encoding_source','security_source','schedule_source','capacity_source','acceptance_source']
++REMOVED={key:'Removed foreign '+key+': actualLoRaWANregionalDR/PHY,MACrepetitions/RXwindows andsharedairtime replacegenericCAN/Ethernetdefaults.'for key in
++ ('bitrate','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','sync_method','rate_limit_bit_s',
++  'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms','gateway_maximum_throughput',
++  'gateway_input_buffer','gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
++
++
++def semantics():
++    rules=[dict(parameter='local_timing_evidence',allowed=[],source=L2,source_revision='LoRaWAN is not an I2C addressed wire transaction')]
++    def r(key,when=None,source=RP,**kw):
++        base={'lr_protocol':OLD}if source in (L2,ERRATA)else{'lr_regional_profile':REGIONAL}
++        rules.append(dict(parameter='lr_'+key,when={**base,**{'lr_'+k:v for k,v in (when or{}).items()}},source=source,source_revision=SOURCES[source],**kw))
++    for key,value in [('protocol','REGISTERED_PROTOCOL'),('regional_profile','REGISTERED_REGIONAL'),('region','REGISTERED_REGION'),
++                      ('region','CN779_DEPRECATED'),('frame_kind','REGISTERED_FRAME'),('cn_plan','REGISTERED_CN_PLAN'),('receive_window','REGISTERED_WINDOW'),('access_profile','REGISTERED_ACCESS')]:
++        rules.append(dict(parameter='lr_registered_source',when={'lr_'+key:value},required=True,source=RP,source_revision=SOURCES[RP]))
++    for region in REGIONS:
++        for direction,modes in RATES[region].items():
++            context={'region':region,'direction':direction}
++            r('dr',context,allowed=list(modes))
++            for dr,(mode,sf,bw,rate,cr)in modes.items():
++                w={**context,'dr':dr};r('modulation',w,allowed=[mode]);r('indicative_phy_bps',w,allowed=[rate])
++                if sf is not None:r('sf',w,allowed=[sf])
++                if bw is not None:r('bandwidth_khz',w,allowed=[bw])
++                if cr is not None:r('coding_rate',w,allowed=[cr])
++        offset=3 if region=='US915'else 7 if region.startswith('AS923')or region=='IN865'else 5
++        r('rx1_dr_offset',{'region':region},maximum=offset)
++        r('uplink_dr',{'region':region},allowed=list(RATES[region]['UPLINK']))
++        r('rx1_dr',{'region':region},allowed=list(RATES[region]['DOWNLINK']))
++        r('rx2_dr',{'region':region},allowed=list(RATES[region]['DOWNLINK']))
++        rows=AS_RX1 if region.startswith('AS923')else RX1_ROWS[region]
++        for uplink_dr,row in rows.items():
++            for rx_offset,downlink_dr in enumerate(row):
++                w={'region':region,'uplink_dr':uplink_dr,'rx1_dr_offset':rx_offset}
++                if region.startswith('AS923'):
++                    r('rx1_dr',{**w,'downlink_dwell':False},allowed=[downlink_dr])
++                    r('rx1_dr',{**w,'downlink_dwell':True},allowed=[max(2,downlink_dr)])
++                else:r('rx1_dr',w,allowed=[downlink_dr])
++        for key in ('uplink_dr','rx1_dr_offset'):
++            r(key,{'region':region},when_present=['lr_rx1_dr'],required=True)
++        if region.startswith('AS923'):
++            r('downlink_dwell',{'region':region},when_present=['lr_rx1_dr'],required=True)
++        if region in ('US915','AU915'):r('channel_capacity',{'region':region},minimum=72,maximum=80)
++        elif region!='CN470':r('channel_capacity',{'region':region},minimum=24,maximum=80)
++        if region not in ('AU915',)and not region.startswith('AS923'):
++            r('uplink_dwell',{'region':region},allowed=[False]if region!='US915'else[False,True])
++            r('downlink_dwell',{'region':region},allowed=[False])
++        if region=='AU915':
++            r('downlink_dwell',{'region':region},allowed=[False]);r('uplink_dwell',{'region':region,'phase':'BOOT'},allowed=[True])
++        for direction in ('UPLINK','DOWNLINK'):
++            for dwell in (False,True):
++                for repeater in (False,True):
++                    limits=mac_limits(region,direction,dwell,repeater)
++                    w={'region':region,'direction':direction,'frame_kind':'DATA','repeater':repeater}
++                    # AS923 receive acceptance ignores DownlinkDwellTime;
++                    # the sender still follows its actual regulatory bound.
++                    dwell_key='uplink_dwell'if direction=='UPLINK'else'downlink_dwell'
++                    if region.startswith('AS923')and direction=='DOWNLINK':
++                        w['payload_limit_use']='TRANSMIT'
++                    w[dwell_key]=dwell
++                    r('dr',w,allowed=list(limits))
++                    for dr,bound in limits.items():r('mac_payload_octets',{**w,'dr':dr},maximum=bound)
++            if region.startswith('AS923')and direction=='DOWNLINK':
++                for repeater in (False,True):
++                    for dr,bound in mac_limits(region,direction,False,repeater).items():
++                        r('mac_payload_octets',{'region':region,'direction':direction,'frame_kind':'DATA',
++                          'repeater':repeater,'payload_limit_use':'END_DEVICE_RECEIVE','dr':dr},maximum=bound)
++    for region,channels in JOIN_CHANNELS.items():
++        r('frequency_hz',{'region':region,'frame_kind':'JOIN_REQUEST'},allowed=channels)
++        r('dr',{'region':region,'frame_kind':'JOIN_REQUEST'},allowed=list(range(2,6))if region.startswith('AS923')else list(range(6)))
++        r('modulation',{'region':region,'frame_kind':'JOIN_REQUEST'},allowed=['LORA'])
++        r('bandwidth_khz',{'region':region,'frame_kind':'JOIN_REQUEST'},allowed=[125])
++    for region,starts in [('US915',(902300000,903000000)),('AU915',(915200000,915900000))]:
++        for direction in ('UPLINK','DOWNLINK'):
++            r('channel_index',{'region':region,'direction':direction},maximum=79)
++        for lo,hi,start,step,bw,join_dr in [(0,63,starts[0],200000,125,0 if region=='US915'else 2),
++                                          (64,71,starts[1],1600000,500,4 if region=='US915'else 6)]:
++            w={'region':region,'direction':'UPLINK'}
++            r('frequency_hz',w,when_ranges={'lr_channel_index':[lo,hi]},equal_expression={'sum':[start,{'product':[step,{'subtract':['lr_channel_index',lo]}]}]})
++            r('bandwidth_khz',{**w,'modulation':'LORA'},when_ranges={'lr_channel_index':[lo,hi]},allowed=[bw])
++            r('dr',{'region':region,'frame_kind':'JOIN_REQUEST'},when_ranges={'lr_channel_index':[lo,hi]},allowed=[join_dr])
++        r('frequency_hz',{'region':region,'direction':'DOWNLINK'},when_ranges={'lr_channel_index':[0,7]},
++          equal_expression={'sum':[923300000,{'product':[600000,'lr_channel_index']}]})
++    for key in ('uplink_dwell','downlink_dwell'):
++        direction='UPLINK'if key=='uplink_dwell'else'DOWNLINK'
++        r('airtime_bound_ms',{'direction':direction,key:True,'payload_limit_use':'TRANSMIT'},maximum=400)
++    # US mandatory125k channels retain their400ms bound even though there is
++    # no TxParamSetupReq-controlled dwell flag for this regional profile.
++    r('airtime_bound_ms',{'region':'US915','direction':'UPLINK','bandwidth_khz':125},maximum=400)
++    r('airtime_bound_ms',{'region':'CN470'},maximum=1000)
++    r('airtime_bound_ms',{'region':'KR920'},exclusive_maximum=4000)
++    r('tx_eirp_dbm',maximum_parameter='lr_max_eirp_dbm')
++    r('conducted_power_dbm',{'region':'US915'},maximum_parameter='lr_max_conducted_power_dbm')
++    for region in REGIONS:
++        if region=='US915':
++            r('conducted_power_dbm',{'region':region},maximum_expression={'subtract':[30,{'product':[2,'lr_tx_power_index']}]})
++        else:
++            r('tx_eirp_dbm',{'region':region},maximum_expression={'subtract':['lr_max_eirp_dbm',{'product':[2,'lr_tx_power_index']}]})
++    bands={'EU868':(863000000,870000000),'US915':(902000000,928000000),'EU433':(433175000,434665000),
++      'AU915':(915000000,928000000),'CN470':(470000000,510000000),'KR920':(920900000,923300000),
++      'IN865':(865000000,868000000),'RU864':(864000000,870000000)}
++    # AS923 may use other commissioned bands up to1.67GHz. Group offsets
++    # qualify initialization only, not frequencies supplied in MAC/CFList.
++    for region,(lo,hi)in bands.items():
++        for key in ('frequency_hz','rx2_frequency_hz','beacon_frequency_hz','ping_frequency_hz'):
++            r(key,{'region':region},minimum=lo,maximum=hi)
++    r('tx_eirp_dbm',{'region':'EU433'},exclusive_maximum=12)
++    r('access_profile',{'region':'KR920'},allowed=['LBT_AFA'],required=True)
++    r('lbt_source',{'access_profile':'LBT_AFA'},required=True)
++    for role,lo,hi,limit in [('END_DEVICE',920900000,921900000,10),('END_DEVICE',922100000,923300000,14),('GATEWAY',920900000,923300000,23)]:
++        r('tx_eirp_dbm',{'region':'KR920','role':role},when_ranges={'lr_frequency_hz':[lo,hi]},maximum=limit)
++    r('frequency_hz',{'region':'KR920'},allowed=list(range(920900000,923300001,200000)))
++    r('duty_cycle_percent',{'region':'EU433'},exclusive_maximum=10)
++    for role,limit in [('END_DEVICE',2.5),('GATEWAY',10)]:r('duty_cycle_percent',{'region':'IN865','role':role},maximum=limit)
++    for region,max_index in [('EU433',5),('AU915',14),('IN865',14),('US915',14),('CN470',7),
++                             ('EU868',7),('RU864',7),('KR920',7),*[(v,7)for v in REGIONS if v.startswith('AS923')]]:
++        r('tx_power_index',{'region':region},maximum=max_index)
++    r('receive_delay2_s',equal_parameter='lr_receive_delay1_s',equal_parameter_offset=1)
++    r('retransmit_max_s',minimum_parameter='lr_retransmit_min_s')
++    for value in range(16):r('receive_delay1_s',{'rx_delay_encoding':'MAC_COMMAND','rx_delay_code':value},allowed=[max(1,value)],source=L2)
++    r('commissioning_source',{'rx_delay_encoding':'OUT_OF_BAND'},required=True,source=L2)
++    for direction in ('UPLINK','DOWNLINK','BEACON'):
++        w={'modulation':'LORA','direction':direction}
++        r('coding_rate',w,allowed=['4/5']);r('lora_header',w,allowed=['IMPLICIT'if direction=='BEACON'else'EXPLICIT'])
++        r('lora_crc',w,allowed=[direction=='UPLINK']);r('lora_iq_inverted',w,allowed=[direction=='DOWNLINK'])
++        r('lora_preamble_symbols',w,allowed=[10 if direction=='BEACON'else 8])
++    for sf in range(5,13):
++        r('lora_sync_word',{'modulation':'LORA','sf':sf},allowed=[0x12 if sf<7 else 0x34])
++        for bw in (125,250,500):r('lora_ldro',{'modulation':'LORA','sf':sf,'bandwidth_khz':bw},allowed=[bw==125 and sf>=11 or bw==250 and sf==12])
++    for key,value in [('fs_preamble_octets',5),('fs_sync_word',0xC194C1),('fs_bitrate_bps',50000),
++                      ('fs_deviation_khz',25),('fs_rx_bandwidth_khz',50),('fs_afc_bandwidth_khz',80),
++                      ('fs_gaussian_bt',1),('fs_whitening','WHITENING'),('fs_crc',True)]:r(key,{'modulation':'FSK'},allowed=[value])
++    r('direction',{'modulation':'LR_FHSS'},allowed=['UPLINK'])
++    for key,value in [('fhss_hop_hz',488),('fhss_payload_hop_ms',102.4),('fhss_header_hop_ms',233.472)]:r(key,{'modulation':'LR_FHSS'},allowed=[value])
++    for bw,grid,count in [(137,3.9,35),(336,3.9,86),(1523,25.4,60)]:
++        r('fhss_grid_khz',{'modulation':'LR_FHSS','bandwidth_khz':bw},allowed=[grid]);r('fhss_channels',{'modulation':'LR_FHSS','bandwidth_khz':bw},allowed=[count])
++    for class_name in ('B','C'):
++        r('class_response_timeout_s',{'device_class':class_name},exclusive_minimum_expression={'sum':['lr_retransmit_max_s',{'product':[.001,'lr_ul_airtime_bound_ms']}]})
++    r('class_c_enabled',{'class_b_enabled':True},allowed=[False],source=L2)
++    r('class_b_enabled',{'class_c_enabled':True},allowed=[False],source=L2)
++    r('counter_persistent',{'activation':'ABP'},allowed=[True],source=L2)
++    for key in ('multicast_source','dev_addr','nwk_skey_ref','app_skey_ref'):
++        r(key,{'multicast':True},required=True,source=ERRATA)
++    r('fcnt_wire',equal_expression={'integer_remainder':['lr_fcnt',65536]},source=L2)
++    for key,size in [('dev_eui',16),('join_eui',16),('dev_addr',8),('net_id',6)]:r(key,pattern='[0-9a-fA-F]{'+str(size)+'}',source=L2)
++    for key in ('join_eui','app_key_ref'):r(key,{'activation':'OTAA'},required=True,source=L2)
++    r('major',allowed=[0],source=L2);r('ftype',forbidden=[6],source=L2)
++    for confirmed,ul,dl in [(False,2,3),(True,4,5)]:
++        for direction,value in [('UPLINK',ul),('DOWNLINK',dl)]:r('ftype',{'frame_kind':'DATA','direction':direction,'confirmed_frame':confirmed},allowed=[value],source=L2)
++    data={'frame_kind':'DATA'}
++    r('fhdr_octets',data,equal_expression={'sum':[7,'lr_fopts_octets']},source=L2)
++    r('fport_present',data,when_positive=['lr_frm_payload_octets'],allowed=[True],required=True,source=L2)
++    r('fport',{**data,'fport_present':True},required=True,source=L2)
++    r('fport',data,when_positive=['lr_fopts_octets'],forbidden=[0],source=L2)
++    for port_kind,lo,hi in [('MAC_COMMANDS',0,0),('APPLICATION',1,223),('ALLIANCE_ASSIGNED',224,255)]:
++        r('fport',{**data,'port_kind':port_kind},minimum=lo,maximum=hi,source=L2)
++    r('allocation_source',{'port_kind':'ALLIANCE_ASSIGNED'},required=True,source=L2)
++    for present in (False,True):r('mac_payload_octets',{**data,'fport_present':present},equal_expression={'sum':[7,'lr_fopts_octets',int(present),'lr_frm_payload_octets']},source=L2)
++    r('phy_payload_octets',data,equal_expression={'sum':[5,'lr_mac_payload_octets']},source=L2)
++    for key in ('dr','modulation','repeater','payload_limit_use'):
++        r(key,data,required=True)
++    for direction in ('UPLINK','DOWNLINK'):
++        r('uplink_dwell'if direction=='UPLINK'else'downlink_dwell',{**data,'direction':direction},required=True)
++    for key in ('airtime_bound_ms','airtime_source'):
++        r(key,data,required=True)
++    for mode,keys in [('LORA',('sf','bandwidth_khz','coding_rate','lora_header','lora_preamble_symbols','lora_sync_word','lora_crc','lora_iq_inverted','lora_ldro')),
++                      ('FSK',('fs_bitrate_bps','fs_preamble_octets','fs_sync_word','fs_deviation_khz','fs_rx_bandwidth_khz','fs_afc_bandwidth_khz','fs_gaussian_bt','fs_whitening','fs_crc')),
++                      ('LR_FHSS',('coding_rate','bandwidth_khz','fhss_headers','fhss_hop_hz','fhss_grid_khz','fhss_channels','fhss_payload_hop_ms','fhss_header_hop_ms'))]:
++        for key in keys:r(key,{**data,'modulation':mode},required=True)
++    for key in ('fopts_octets','fhdr_octets','frm_payload_octets','fport_present','mac_payload_octets','phy_payload_octets','confirmed_frame','ftype','major','mhdr_octets','mic_octets'):
++        r(key,data,required=True,source=L2)
++    for kind,direction,ftype,sizes in [('JOIN_REQUEST','UPLINK',0,[23]),('JOIN_ACCEPT','DOWNLINK',1,[17,33])]:
++        w={'frame_kind':kind};r('direction',w,allowed=[direction],source=L2);r('activation',w,allowed=['OTAA'],required=True,source=L2)
++        r('ftype',w,allowed=[ftype],source=L2);r('phy_payload_octets',w,allowed=sizes,source=L2)
++    r('phy_payload_octets',{'frame_kind':'JOIN_ACCEPT'},when_present=['lr_cflist_octets'],equal_expression={'sum':[17,'lr_cflist_octets']},source=L2)
++    r('cflist_octets',allowed=[0,16])
++    for region in REGIONS:
++        allowed=[1]if region in ('US915','AU915','CN470')else[0]if region=='EU433'else[0,1]
++        r('cflist_type',{'region':region},allowed=allowed)
++        if region!='CN470':r('chmask_ctrl',{'region':region},allowed=list(range(8))if region in ('US915','AU915')else list(range(7)))
++    for plan in ('20_A','20_B','26_A','26_B'):
++        r('chmask_ctrl',{'region':'CN470','cn_plan':plan},allowed=[0,1,2,3,6,7]if plan.startswith('20')else[0,1,2,3,4])
++        r('channel_capacity',{'region':'CN470','cn_plan':plan},minimum=64 if plan.startswith('20')else 48)
++        for direction in ('UPLINK','DOWNLINK'):
++            w={'region':'CN470','cn_plan':plan,'direction':direction,'frame_kind':'DATA'}
++            count=64 if plan.startswith('20')else 48 if direction=='UPLINK'else 24
++            r('channel_index',w,maximum=count-1)
++            ranges=(
++              [(0,31,470300000),(32,63,503500000)]if plan=='20_A'and direction=='UPLINK'else
++              [(0,63,483900000)]if plan=='20_A'else
++              [(0,31,476900000),(32,63,496900000)]if plan=='20_B'else
++              [(0,count-1,470300000 if direction=='UPLINK'else 490100000)]if plan=='26_A'else
++              [(0,count-1,480300000 if direction=='UPLINK'else 500100000)])
++            for lo,hi,start in ranges:
++                r('frequency_hz',w,when_ranges={'lr_channel_index':[lo,hi]},
++                  equal_expression={'sum':[start,{'product':[200000,{'subtract':['lr_channel_index',lo]}]}]})
++    r('ping_count',{'device_class':'B'},equal_expression={'power':[2,{'subtract':[7,'lr_ping_periodicity']}]},source=L2)
++    r('ping_period_slots',{'device_class':'B'},equal_expression={'power':[2,{'sum':[5,'lr_ping_periodicity']}]},source=L2)
++    r('ping_offset',{'device_class':'B'},maximum_expression={'subtract':['lr_ping_period_slots',1]},source=L2)
++    # RXC constraints apply to this receive window, not all Class-C traffic.
++    r('fopts_octets',{'receive_window':'CLASS_C_RXC','direction':'DOWNLINK'},allowed=[0],source=L2)
++    r('fport',{'receive_window':'CLASS_C_RXC','direction':'DOWNLINK'},forbidden=[0],source=L2)
++    for window,cls in [('CLASS_B_PING','B'),('CLASS_C_RXC','C')]:
++        r('device_class',{'receive_window':window},allowed=[cls],required=True,source=L2)
++    w={'receive_window':'CLASS_C_RXC','direction':'DOWNLINK','confirmed_frame':True}
++    for adr in (False,True):
++        expected='lr_class_response_timeout_s'if not adr else{'sum':[
++          {'product':['lr_class_response_timeout_s','lr_nb_trans']},
++          {'product':['lr_receive_delay2_s',{'subtract':['lr_nb_trans',1]}]}]}
++        r('ack_response_bound_s',{**w,'adr':adr},equal_expression=expected,source=L2)
++    # MAC mask control5 has explicit RFU bits; a mask is never a channel count.
++    for region in REGIONS:
++        if region=='CN470':continue
++        r('channel_mask',{'region':region,'chmask_ctrl':5},forbidden_bit_mask=0xFD00 if region in('US915','AU915')else 0xFC00)
++    return dict(rate_model={'type':'REGIONAL_PHY_AND_AIRTIME_DEPENDENT','fields':[]},
++        required_parameters=['lr_'+v for v in REQUIRED],native_parameter_prefixes=['lr_'],parameter_constraints=rules,
++        medium_access_model='REGION_QUALIFIED_AIRTIME_DUTY_DWELL_LBT',
++        arbitration_model_id='REGION_QUALIFIED_AIRTIME_DUTY_DWELL_LBT',physical_layer_profile_id='lorawan_actual_regional_radio',
++        mechanisms={'addressing':['ASSIGNED_EUI64_AND_SESSION_DEVADDR'],
++          'medium_access':['REGIONAL_CHANNEL_HOPPING_DUTY_DWELL_LBT'],
++          'integrity':['PHY_CRC_DISTINCT_FROM_MAC_AES_CMAC_MIC'],
++          'services':['CLASS_A','OPTIONAL_CLASS_B_C','CONFIRMED_UNCONFIRMED_DATA'],
++          'security':['VERSION_QUALIFIED_KEY_REFERENCES_AND_COUNTER_PERSISTENCE'],
++          'supervision':['ACK_MIC_NOT_FUNCTIONAL_COMPLETION']})
++
++
++def fields():
++    result=[];required=set(semantics()['required_parameters'])
++    for spec in DECLARATIONS:
++        item={k:v for k,v in spec.items()if v is not None};key=item['key'].removeprefix('lr_')
++        item.update(label=key.replace('_',' '),category='communication',scope='network',required=item['key']in required,
++          editable=True,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
++        # Selectors and proof references can describe independently registered
++        # revisions. Scalar bounds for the reviewed versions remain qualified.
++        if item['type']in('number','boolean'):
++            item['schema_when']={'lr_protocol':OLD}if spec['source']in(L2,ERRATA)else{'lr_regional_profile':REGIONAL}
++        proposals=[]
++        def p(value,source=RP,**when):
++            context={'protocol':OLD}if source in(L2,ERRATA)else{'regional_profile':REGIONAL}
++            proposals.append(dict(when={'lr_'+k:v for k,v in {**context,**when}.items()},value=value,
++              source=source,source_revision=SOURCES[source]))
++        defaults={'receive_delay1_s':1,'receive_delay2_s':2,'join_accept_delay1_s':5,'join_accept_delay2_s':6,
++          'rx1_dr_offset':0,'adr_ack_limit':64,'adr_ack_delay':32,'retransmit_min_s':1,'retransmit_max_s':3}
++        if key in defaults:p(defaults[key],phase='BOOT')
++        if key=='nb_trans':p(1,source=L2,phase='BOOT')
++        if key=='downlink_dwell':p(False,phase='BOOT')
++        if key=='uplink_dwell':p(True,region='AU915',phase='BOOT')
++        if key=='max_conducted_power_dbm':p(30,region='US915',phase='BOOT')
++        if key=='max_eirp_dbm':
++            for region,value in [('EU868',16),('EU433',12),('AU915',30),('CN470',19),('IN865',29.2),('RU864',16),
++                                 *[(v,16)for v in REGIONS if v.startswith('AS923')]]:
++                p(value,region=region,phase='BOOT')
++            # KR power depends on actual role and center frequency, not a
++            # blanket14dBm setting for every device/channel.
++            for role,frequencies,value in [('END_DEVICE',range(920900000,922000000,200000),10),
++                                          ('END_DEVICE',range(922100000,923300001,200000),14),
++                                          ('GATEWAY',range(920900000,923300001,200000),23)]:
++                for freq in frequencies:p(value,region='KR920',phase='BOOT',role=role,frequency_hz=freq)
++        if key in ('class_response_timeout_s','ping_periodicity'):
++            for cls in (['B','C']if key=='class_response_timeout_s'else['B']):
++                p(8 if key=='class_response_timeout_s'else 7,phase='BOOT',device_class=cls)
++        fixed={'mhdr_octets':1,'mic_octets':4,'major':0,'ping_slot_ms':30,'beacon_period_s':128,
++          'beacon_reserved_s':2.120,'beacon_guard_s':3,'beacon_window_s':122.880,'beacon_precision':0}
++        if key in fixed:p(fixed[key],source=L2,**({'device_class':'B'}if key.startswith(('ping_','beacon_'))else{}))
++        for region,row in RX_DEFAULTS.items():
++            rx_freq,rx_dr,beacon_dr,beacon_freq,ping_freq,offset=row
++            selected={'rx2_frequency_hz':rx_freq,'rx2_dr':rx_dr,'beacon_dr':beacon_dr,'ping_dr':beacon_dr,
++              'beacon_frequency_hz':beacon_freq,'ping_frequency_hz':ping_freq,'as923_offset_hz':offset}
++            if key in selected and selected[key]is not None:
++                p(selected[key],region=region,phase='BOOT',**({'device_class':'B'}if key.startswith(('beacon_','ping_'))else{}))
++        if key=='rx2_dr':p(1,region='CN470',phase='BOOT')
++        for plan,(_,rx_freq)in CN_PLANS.items():
++            if key=='rx2_frequency_hz':
++                p(rx_freq,region='CN470',cn_plan=plan,phase='BOOT',**({'activation':'ABP'}if plan.startswith('20')else{}))
++        if key=='rx2_frequency_hz':
++            for index in range(10):
++                p(485300000+1600000*index if index<8 else 478300000 if index==8 else 498300000,
++                  region='CN470',cn_plan='20_A'if index<8 else'20_B',activation='OTAA',cn_join_index=index,phase='BOOT')
++        if key in ('beacon_dr','ping_dr'):p(2,region='CN470',phase='BOOT',device_class='B')
++        if key in ('beacon_frequency_hz','ping_frequency_hz'):
++            for plan,freq in [('26_A',494900000),('26_B',504900000)]:p(freq,region='CN470',cn_plan=plan,phase='BOOT',device_class='B')
++        for region,directions in RATES.items():
++            for direction,modes in directions.items():
++                for dr,(mode,sf,bw,rate,cr)in modes.items():
++                    values={'modulation':mode,'sf':sf,'bandwidth_khz':bw,'indicative_phy_bps':rate,'coding_rate':cr}
++                    if key in values and values[key]is not None:p(values[key],region=region,direction=direction,dr=dr)
++        # Join minimum modes are qualified by region/channel bandwidth. They
++        # are proposals for this initialization transaction, not actual data DR.
++        if key=='dr':
++            for region in JOIN_CHANNELS:
++                p(2 if region.startswith('AS923')else 0,region=region,direction='UPLINK',frame_kind='JOIN_REQUEST',phase='BOOT')
++            p(1,region='CN470',direction='UPLINK',frame_kind='JOIN_REQUEST',phase='BOOT')
++            for region in ('US915','AU915'):
++                for bw,dr in [(125,0 if region=='US915'else 2),(500,4 if region=='US915'else 6)]:
++                    p(dr,region=region,bandwidth_khz=bw,direction='UPLINK',frame_kind='JOIN_REQUEST',phase='BOOT')
++        for direction in ('UPLINK','DOWNLINK','BEACON'):
++            values={'coding_rate':'4/5','lora_header':'IMPLICIT'if direction=='BEACON'else'EXPLICIT',
++              'lora_crc':direction=='UPLINK','lora_iq_inverted':direction=='DOWNLINK',
++              'lora_preamble_symbols':10 if direction=='BEACON'else 8}
++            if key in values:p(values[key],modulation='LORA',direction=direction)
++        if key=='lora_sync_word':
++            for sf in range(5,13):p(0x12 if sf<7 else 0x34,modulation='LORA',sf=sf)
++        if key=='lora_ldro':
++            for sf in range(5,13):
++                for bw in (125,250,500):p(bw==125 and sf>=11 or bw==250 and sf==12,modulation='LORA',sf=sf,bandwidth_khz=bw)
++        fsk={'fs_preamble_octets':5,'fs_sync_word':0xC194C1,'fs_bitrate_bps':50000,'fs_deviation_khz':25,
++          'fs_rx_bandwidth_khz':50,'fs_afc_bandwidth_khz':80,'fs_gaussian_bt':1,'fs_whitening':'WHITENING','fs_crc':True}
++        if key in fsk:p(fsk[key],modulation='FSK')
++        fhss={'fhss_hop_hz':488,'fhss_payload_hop_ms':102.4,'fhss_header_hop_ms':233.472}
++        if key in fhss:p(fhss[key],modulation='LR_FHSS',direction='UPLINK')
++        for bw,grid,count in [(137,3.9,35),(336,3.9,86),(1523,25.4,60)]:
++            values={'fhss_grid_khz':grid,'fhss_channels':count}
++            if key in values:p(values[key],modulation='LR_FHSS',direction='UPLINK',bandwidth_khz=bw)
++        if proposals:item.update(conditional_defaults=proposals,default_status='PROPOSED_CONDITIONAL')
++        result.append(item)
++    return result

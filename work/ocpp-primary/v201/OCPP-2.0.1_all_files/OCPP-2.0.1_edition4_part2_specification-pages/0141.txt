@@ -1,0 +1,60 @@
+ID Precondition Requirement definition
+E01.FR.17 When configured to send meter data in the
+TransactionEventRequest (eventType =
+Started), See: Meter Values - Configuration
+AND
+EVSE is not known at start of transaction
+The Charging Station SHALL add the measurands for eventType = Started
+to the optional meterValue field with context = Transaction.Begin in the
+TransactionEventRequest(eventType = Updated) that occurs when charging
+starts.
+E01.FR.18 If the charging state changes The Charging Station SHALL send a TransactionEventRequest including the
+chargingState element.
+E01.FR.19 When EV temporarily suspends the energy
+transfer
+The Charging Station SHOULD send a TransactionEventRequest with
+chargingState = SuspendedEV
+E01.FR.20 E01.FR.19 AND
+The Charging Station is not able to handle
+temporary suspension of energy transfer
+The Charging Station SHOULD send a TransactionEventRequest with
+chargingState = EVConnected.
+E02 - Start Transaction - Cable Plugin First
+No. Type Description
+1 Name Start Transaction - Cable Plugin First
+2 ID E02
+3 Objective(s) To inform the CSMS that a transaction at the Charging Station has started.
+4 Description The EV Driver begins the interaction with the Charging Station by plugging in the charging cable
+first. The CSMS is notified about this. Then, when the communication between EV and EVSE is
+established, the transaction is started and the CSMS is notified of this. The EV starts charging.
+Actors Charging Station, CSMS, EV Driver
+Scenario description 1. The EV Driver plugs in the cable at the Charging Station.
+2. The Charging Station sends a StatusNotificationRequest to the CSMS to inform it about a
+Connector that became Occupied.
+3. The Charging Station sends a TransactionEventRequest (eventType = Started) notifying the
+CSMS about a transaction that has started (even when the driver is not yet known.)
+4. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+5. The EV Driver is authorized by the Charging Station and/or CSMS.
+6. The energy offer starts.
+7. The Charging Station sends a TransactionEventRequest (eventType = Updated) with the
+authorized idToken information to the CSMS to inform about the charging status and which
+idToken belongs to the transaction.
+8. The CSMS responds with a TransactionEventResponse to the Charging Station with the
+IdTokenInfo.status Accepted.
+9. During the charging process, the Charging Stations continues to send
+TransactionEventRequest (Updated) messages for transaction-related notifications.
+Alternative scenario(s) E03 - Start Transaction - IdToken First
+E04 - Offline Start Transaction
+E05 - Start Transaction - Id not Accepted
+5 Prerequisite(s) The Charging Cable is plugged in first.
+6 Postcondition(s) Successful postcondition:
+The transaction is ongoing and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is not ongoing. or
+The CSMS is not informed. or
+Start Transaction - Id not accepted.
+7 Error handling Failing to respond with TransactionEventResponse will only cause the Charging Station to try the
+same message again as specified in E12 - Transaction-related message not accepted by CSMS.
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 131/491 Part 2 - Specification

@@ -1,0 +1,51 @@
+TC_N_52_CS: Set Variable Monitoring - Removing a VariableMonitor
+Test case name Set Variable Monitoring - Removing a VariableMonitor
+Test case Id TC_N_52_CS
+Use case Id(s) N07
+Requirement(s) N07.FR.12
+System under test Charging Station
+Description NotifyEventRequest reports every Component/Variable for which a VariableMonitoring setting was
+triggered. Only the VariableMonitoring settings that are responsible for triggering an event are included.
+Purpose To verify if the Charging station is able to correctly communicate when a threshold has been exceeded and
+the applicable monitor is removed as described at the OCPP specification.
+Prerequisite(s) Charging Station supports Monitoring.
+If Power or Current is used as the monitored variable, then power must flow when a transaction reaches
+EnergyTransfer, or else the monitor (power or current > 0) is not triggered.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+Variable monitor is already set with:
+setMonitoringData.component <Configured threshold monitor component variable>
+setMonitoringData.variable <Configured threshold monitor component variable>
+setMonitoringData.value <Configured threshold monitor component variable UpperThreshold trigger value>
+setMonitoringData.type UpperThreshold
+setMonitoringData.severity = 5
+Set MonitoringLevel to 8
+Notes: If componentVariable is set to "Power" or "Current", the value is set to 0.0
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State EnergyTransferStarted or manually trigger the monitor.
+Notes: If componentVariable is set to "Power" or "Current" EnergyTransferStarted will trigger the monitor. If another
+componentVariable is chosen a manual action is needed to trigger the monitor.
+3. The Charging Station responds with a
+ClearVariableMonitoringResponse
+2. The Test System sends a ClearVariableMonitoringRequest
+with
+id <monitoringId of monitor set in Memory State>
+5. The Charging Station responds with a
+GetMonitoringReportResponse
+4. The Test System sends a GetMonitoringReportRequest with
+componentVariable.component <Configured threshold monitor
+component variable>
+componentVariable.variable <Configured threshold monitor
+component variable>
+monitoringCriteria ThresholdMonitoring
+6. Execute Reusable State StopAuthorized or manually trigger the monitor.
+Notes: If componentVariable is set to "Power" or "Current" EnergyTransferStarted will trigger the monitor. If another
+componentvariable is chosen a manual action is needed to trigger the monitor.
+Note: The Charging Station should not send a request for the cleared monitor
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 524/914 Part 6 - Test Cases

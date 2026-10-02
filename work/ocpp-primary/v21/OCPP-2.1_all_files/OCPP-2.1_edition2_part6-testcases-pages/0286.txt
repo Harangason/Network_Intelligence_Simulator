@@ -1,0 +1,52 @@
+TC_E_42_CS: Retry sending transaction message when failed - Success before
+reaching the max retry count
+Test case name Retry sending transaction message when failed - Success before reaching the max retry count
+Test case Id TC_E_42_CS
+Use case Id(s) E13
+Requirement(s) E13.FR.01,E13.FR.02,E13.FR.03
+System under test Charging Station
+Description There are situations/issues why a CSMS might not accept a transaction related message, or does not reply
+within the MessageTimeout. Most are error scenarios. When something like this happens, the Charging
+Station SHALL retry the messages a couple of times.
+Purpose To verify if the Charging Station is able to resend TransactionEvent messages when the CSMS does not
+reply and stops resending after getting a response before the max retry count is reached.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+MessageAttemptsTransactionEvent is <Configured message_attempts_transaction_event> (Must be > 2)
+MessageAttemptIntervalTransactionEvent is <Configured message_attempts_transaction_event_interval>
+Memory State:
+N/a
+Reusable State(s):
+State is Authorized
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+Note(s): Step 1, 2, 3, & 4 are optional
+1. The Charging Stations sends a TransactionEventRequest
+with:
+- triggerReason SignedDataReceived
+2. The Test System responds with a TransactionEventResponse
+3. The Charging Stations sends a TransactionEventRequest
+with:
+- triggerReason ChargingStateChanged
+- chargingState SuspendedEVSE
+4. The Test System responds with a TransactionEventResponse
+Note(s): The tool will ignore the first request and only respond to the second request
+5. The Charging Stations sends a TransactionEventRequest
+6. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+- triggerReason SignedDataReceived
+* Step 3:
+- triggerReason ChargingStateChanged
+- chargingState SuspendedEVSE
+* Step 5:
+- Needs to be sent 2 times with an interval of (<Configured message_attempts_transaction_event_interval> * the number of
+preceding transmissions of this same message) + OCPPCommCtrlr.MessageTimeout.Default.
+- The Test System waits an additional MessageAttemptsTransactionEvent iteration where the interval is multiplied again, to
+validate if the Charging Station stops resending the TransactionRequest message(s).
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 284/1383 Part 6 - Test Cases

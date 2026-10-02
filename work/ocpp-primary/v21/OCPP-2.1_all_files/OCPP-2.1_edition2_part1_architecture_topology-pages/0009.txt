@@ -1,0 +1,50 @@
+• Variable attributes (read-write):
+◦ Actual value
+◦ Target value
+◦ Configured lower limit
+◦ Configured upper limit
+◦ Mutability (whether the value can be altered or not, e.g. ReadOnly or ReadWrite)
+◦ Persistence (whether the value is preserved in case of a reboot or power loss)
+The relationship of a Variable with one or more VariableAttributes is illustrated in the figure below.
+ComponentType
+Name
+Instance [0..1]
+VariableType
+Name
+Instance [0..1]
+EVSEType
+Id
+ConnectorId [0..1]
+VariableAttributeType
+Type [0..1]
+Value
+Mutability [0..1]
+Persistent
+Constant
+VariableCharacteristicsType
+Unit [0..1]
+DataType
+MinLimit [0..1]
+MaxLimit [0..1]
+ValuesList [0..1]
+SupportsMonitoring
+1
+0..1
+1
+*
+1
+1..*
+1
+0..1
+Figure 3. Variable attributes and characteristics
+There is a difference between how to implement (physical) devices and (virtual) controller components, using the DeviceModel. A
+(virtual) controller component has to be implemented as described in part 2 chapter the "Referenced Components and Variables".
+These kind of components/variables are only using the variableAttribute type 'Actual'. Depending on if this variableAttribute is
+writable, the CSMS can use this to set a new value.
+(Physical) devices are a bit more complex to implement. For example, there is a fan with a fan speed, that has a (physical) limit with
+a range of 0 - 1000. But it should not be allowed to set the value below 200, because the fan can stop functioning. And it should not
+be set above 500, because that would be bad for the fan on the long run. When implementing this device using the DeviceModel, it
+can be defined as follows:
+Component name Fan
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 7/22 Part 1 - Architecture & Topology

@@ -1,0 +1,35 @@
+• TopicId: in case of “accepted” the value that will be used as topic id by the gateway when sending PUBLISH
+messages to the client (not relevant in case of subscriptions to a short topic name or to a topic name which
+contains wildcard characters)
+• MsgId: same value as the one contained in the corresponding SUBSCRIBE message.
+• ReturnCode: “accepted”, or rejection reason.
+5.4.17 UNSUBSCRIBE
+An UNSUBSCRIBE message is sent by the client to the GW to unsubscribe from named topics. Its format is
+illustrated in Table 19:
+• Length and MsgType: see Section 5.2.
+• Flags:
+– DUP: not used.
+– QoS: not used.
+– Retain: not used.
+– Will: not used
+– CleanSession: not used
+– TopicIdType: indicates the type of information included at the end of the message, namely “0b00”
+topic name, “0b01” pre-deﬁned topic id, “0b10” short topic name, and “0b11” reserved.
+• MsgId: should be coded such that it can be used to identify the corresponding SUBACK message.
+• TopicName or TopicId: contains topic name, pre-deﬁned topic id, or short topic name as indicated in the
+TopicIdTypeﬁeld.
+5.4.18 UNSUBACK
+Length MsgType MsgId
+(octet 0) (1) (2-3)
+Table 21: UNSUBACK Message
+An UNSUBACK message is sent by a GW to acknowledge the receipt and processing of an UNSUBSCRIBE
+message. Its format is illustrated in Table 21:
+• Length and MsgType: see Section 5.2.
+• MsgId: same value as the one contained in the corresponding UNSUBSCRIBE message.
+5.4.19 PINGREQ
+Length MsgType ClientId (optional)
+(octet 0) (1) (2:n)
+Table 22: PINGREQ Message
+As with MQTT, the PINGREQ message is an ”are you alive” message that is sent from or received by a
+connected client. Its format is illustrated in Table 22:
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 16

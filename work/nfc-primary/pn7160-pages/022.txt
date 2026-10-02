@@ -1,0 +1,29 @@
+NXP Semiconductors PN7160_PN7161
+Near Field Communication (NFC) controller
+To further decrease the power consumption when running the polling loop, PN7160 features a low-power RF
+polling. When PN7160 is in Polling phase instead of sending regularly RF command PN7160 senses with
+a short RF field duration if there is any NFC Target or card/tag present. If yes, then it goes back to standard
+polling loop. With 500 ms (configurable duration, see ref.[6]) listening phase duration, the average power
+consumption is around 100 μA depending on RF matching conditions.
+aaa-016743
+Listening phase
+Emulation
+Pause
+Polling phase
+Figure 10. Polling loop: low-power RF polling
+Detailed description of polling loop configuration options is given in ref.[6].
+11.2  Host interfaces
+PN7160 provides the support of the following host interfaces:
+• I2C-bus Target Interface, up to 3.4 MBaud
+• SPI-bus Target Interface, up to 7 MBaud
+Only one host interface can be active at a time, as the pins are shared for all interfaces.
+The selection between interfaces is fused during IC manufacturing so that different ordering numbers for the
+I2C-bus and SPI-bus version are in place.
+The host interfaces are woken-up in the following way:
+• wake-up with WKUP_REQ input pin
+• I2C-bus: wake-up on I2C-bus address
+• SPI-bus: transition of NSS serial
+• data received on RX line
+PN7160_PN7161 All information provided in this document is subject to legal disclaimers. © 2026 NXP B.V. All rights reserved.
+Product data sheet Rev. 4.2 — 22 July 2026 Document feedback
+22 / 70

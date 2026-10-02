@@ -1,0 +1,75 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  15 
+MIPI CSI/DSI IP (Receiver)
+Controller
+PHY 
+Adapter
+De-
+Packetizer
+Lane 
+Aligner
+ref_clk_i
+D-PHY
+Receiver
+MIPI
+PHY
+clk_p/n_io
+fr_clk_i
+Byte-to-Pixel
+axis_vid_clk_i
+byte_clk_o
+FIFO
+Lane 
+Merger
+CSRs_axi_aclk_i
+UVSI Clock Domain (axis_vid_clk_i) AXI4-Lite Clock Domain (s_axi_aclk_i)
+Free Running Clock Domain (fr_clk_i)Byte Clock Domain (byte_clk_o)Reference Clock Domain (ref_clk_i)
+ 
+Figure 2.5. MIPI CSI/DSI IP Receiver Clock Domain Block Diagram (UVSI) 
+MIPI CSI/DSI IP (Receiver)
+Controller
+PHY 
+Adapter
+De-
+Packetizer
+Lane 
+Aligner
+ref_clk_i
+D-PHY
+Receiver
+MIPI
+PHY
+clk_p/n_io
+fr_clk_i
+byte_clk_o
+Lane 
+Merger
+Byte 
+Streaming 
+Source 
+FIFO
+CSRs_axi_aclk_i
+Free Running Clock Domain (fr_clk_i)
+Byte Clock Domain (byte_clk_o)
+AXI4-Lite Clock Domain (s_axi_aclk_i)
+Reference Clock Domain (ref_clk_i)
+ 
+Figure 2.6. MIPI CSI/DSI IP Receiver Clock Domain Block Diagram (MBSI) 
+2.2.1. MIPI CSI/DSI Transmitter Clocking Overview 
+Clocks shown in Figure 2.3 and Figure 2.4 are typically generated using an external PLL. For more details of each clock, 
+refer to the Signal Description section. 
+Table 2.1. MIPI CSI/DSI Transmitter Operating Frequency Details and Requirements 
+Clock Operating Frequency Details and Requirements 
+ref_clk_i The operating frequency of this clock can be set using the Reference Clock Frequency (MHz) 
+attribute. Supported values are 60 MHz and up to 200 MHz, depending on the device 
+configuration. 
+pll_clkop_i This is the 0-degree phase output of an external PLL. This clock depends on the Line Rate Per 
+Lane (Mbps). 
+Example: 
+pll_clkop_i = (Line Rate Per Lane (Mbps)/2) 
+For a configured line rate of 1000 Mbps per lane 

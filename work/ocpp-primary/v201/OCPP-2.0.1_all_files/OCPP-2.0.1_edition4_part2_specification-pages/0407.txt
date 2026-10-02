@@ -1,0 +1,52 @@
+Field Name Field Type Card. Description
+recurrencyKind RecurrencyKindEnumType 0..1 Optional. Indicates the start point of a recurrence.
+validFrom dateTime 0..1 Optional. Point in time at which the profile starts to be
+valid. If absent, the profile is valid as soon as it is
+received by the Charging Station.
+validTo dateTime 0..1 Optional. Point in time at which the profile stops to be
+valid. If absent, the profile is valid until it is replaced by
+another profile.
+transactionId identifierString[0..36] 0..1 Optional. SHALL only be included when
+ChargingProfilePurpose is set to TxProfile in a
+SetChargingProfileRequest. The transactionId is used to
+match the profile to a specific transaction.
+chargingSchedule ChargingScheduleType 1..3 Required. Schedule that contains limits for the available
+power or current over time. In order to support ISO 15118
+schedule negotiation, it supports at most three schedules
+with associated tariff to choose from. Having multiple
+chargingSchedules is only allowed for charging profiles of
+purpose TxProfile in the context of an ISO 15118
+charging session.
+2.11. ChargingSchedulePeriodType
+Class
+Charging schedule period structure defines a time period in a charging schedule.
+ChargingSchedulePeriodType is used by: Common:ChargingScheduleType , Common:CompositeScheduleType
+Field Name Field Type Card. Description
+startPeriod integer 1..1 Required. Start of the period, in seconds from the start of
+schedule. The value of StartPeriod also defines the stop
+time of the previous period.
+limit decimal 1..1 Required. Charging rate limit during the schedule period,
+in the applicable chargingRateUnit, for example in
+Amperes (A) or Watts (W). Accepts at most one digit
+fraction (e.g. 8.1).
+numberPhases integer 0..1 Optional. The number of phases that can be used for
+charging.
+For a DC EVSE this field should be omitted.
+For an AC EVSE a default value of numberPhases = 3 will
+be assumed if the field is absent.
+phaseToUse integer 0..1 Optional. Values: 1..3, Used if numberPhases=1 and if the
+EVSE is capable of switching the phase connected to the
+EV, i.e. ACPhaseSwitchingSupported is defined and true.
+It’s not allowed unless both conditions above are true. If
+both conditions are true, and phaseToUse is omitted, the
+Charging Station / EVSE will make the selection on its
+own.
+2.12. ChargingScheduleType
+Class
+Charging schedule structure defines a list of charging periods, as used in: GetCompositeSchedule.conf and ChargingProfile.
+ChargingScheduleType is used by: Common:ChargingProfileType , NotifyChargingLimitRequest ,
+NotifyEVChargingScheduleRequest
+Field Name Field Type Card. Description
+id integer 1..1 Required. Identifies the ChargingSchedule.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 397/491 Part 2 - Specification

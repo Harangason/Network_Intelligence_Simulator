@@ -1,0 +1,71 @@
+EV Driver
+Charging Station CSMS
+User authorization successful.
+TransactionEventRequest(eventType = Started, transactionId = AB1234, triggerReason = Authorized,
+seqNo = N, timestamp, idToken.id = 1234, ...)
+TransactionEventResponse(idTokenInfo.status = Accepted,...)
+alt [if within ConnectionTimeOut]
+plugin cable
+StatusNotificationRequest(Occupied)
+StatusNotificationResponse()
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 1,
+timestamp, chargingState = EVConnected, triggerReason = CablePluggedIn, ...)
+TransactionEventResponse(...)
+alt [if cable not permanently attached]
+lock connector
+start energy offer
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 1,
+timestamp, chargingState = Charging, triggerReason = ChargingStateChanged, ...)
+TransactionEventResponse(...)
+[if not within Connection Timeout]
+TransactionEventRequest(eventType = Ended, triggerReason = EVConnectTimeout, transactionId = AB1234, seqNo = N + 1,
+timestamp, meterValues, stoppedReason = Timeout)
+TransactionEventResponse()
+opt
+notification
+Figure 45. Sequence Diagram: Start Transaction - IdToken First
+E03 - Start Transaction - IdToken First - Requirements
+Table 63. E03 - Requirements
+ID Precondition Requirement definition Note
+E03.FR.01 When the IdToken information is
+known.
+The next TransactionEventRequest SHALL contain
+IdTokenType information.
+(Same as E01.FR.10)
+E03.FR.02 E03.FR.01 The CSMS SHALL send a
+TransactionEventResponse that includes an
+authorization status.
+E03.FR.03 This transaction ends a reservation for
+the specific IdToken.
+The next TransactionEventRequest SHALL contain
+the reservationId.
+See H. Reservation.
+E03.FR.05 When the EV Driver does not plug-in
+the charging cable before the timeout
+set by the Configuration Variable:
+EVConnectionTimeOut AND
+TxStopPoint does not contain
+ParkingBayOccupancy
+The Charging Station SHOULD end the transaction
+and send a TransactionEventRequest (eventType =
+Ended, stoppedReason = Timeout, triggerReason =
+EVConnectionTimeout) to the CSMS.
+This requirement is an
+additional safety
+measure to make sure
+the transaction is ended
+when the
+EVConnectionTimeOu
+t is triggered. However it
+is up to the CSMS to
+make sure that sensible
+TxStartPoint /
+TxStopPoint
+combinations are
+configured. E.g. if
+Authorized is used as
+TxStartPoint, it should
+also be used as
+TxStopPoint.
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 137/491 Part 2 - Specification

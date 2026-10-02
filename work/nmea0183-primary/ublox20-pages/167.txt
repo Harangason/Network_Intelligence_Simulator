@@ -1,0 +1,43 @@
+u-blox 20 HPG 2.00 - Interface description
+Each conﬁguration item is of a certain type, which deﬁnes the interpretation of the raw binary data
+(see also UBX data types):
+• U1, U2, U4, U8: unsigned little-endian integers of 8-, 16-, 32- and 64-bit widths
+• I1, I2, I4, I8: signed little-endian, two's complement integers of 8-, 16-, 32- and 64-bit widths
+• R4, R8: IEEE 754 single (32-bit) and double (64-bit) precision ﬂoats
+• E1, E2, E4: unsigned little-endian enumeration of 8-, 16-, and 32-bit widths
+• X1, X2, X4, X8: unsigned little-endian integers of 8-, 16-, 32- and 64-bit widths for bitﬁelds and
+other binary data, such as strings
+• L: single-bit boolean (true = 1, false = 0), stored as U1
+6.3 Conﬁguration layers
+The receiver has several configuration layers . They are separate sources of conﬁguration items.
+Some of the layers are read-only and others are modiﬁable. Layers are organized in terms of priority.
+Values in a high-priority layer replace values stored in a low-priority layer. At startup, the receiver
+reads all conﬁguration layers and stacks up the items to create the current configuration, which is
+used by the receiver at run-time.
+The following conﬁguration layers are available (in order of priority, highest priority ﬁrst):
+• RAM: This layer contains items stored in volatile RAM. This is the current conﬁguration. The
+conﬁguration items in this layer can be set at run-time and are eﬀective immediately.
+• BBR: This layer contains items stored in the battery-backed RAM. The contents in this layer are
+preserved as long as a battery backup supply is provided during oﬀ periods. The conﬁguration
+items in this layer can be set at run-time and they become eﬀective when the receiver is
+restarted.
+• Flash: This layer contains conﬁguration items stored permanently in the external ﬂash memory
+and it is available only if external ﬂash memory is used. The conﬁguration items in this layer can
+be set at run-time and they become eﬀective when the receiver is restarted.
+• Default: This layer contains all items known to the running receiver software and the hard-
+coded default values. Data in this layer cannot be modiﬁed during run-time. The default layer
+includes limited one-time programmable (OTP) memory for setting customized default values
+during device production.
+The stacking of the conﬁguration items from the diﬀerent layers (sources) in order to construct the
+current conﬁguration in the RAM layer is depicted in the following ﬁgure. For each deﬁned item, i.e.
+for each item in the default layer, the receiver software goes through the layers above and stacks
+all the found items on top. Some items may not be present in every layer. The result is the RAM
+layer ﬁlled with all conﬁguration items given conﬁguration values coming from the highest priority
+layer the corresponding item was present. In the example ﬁgure, bold text indicates the source of
+the value in the current conﬁguration (the RAM layer). Empty boxes mean that the layer can hold the
+item but that it is not currently stored there. Boxes with text mean that an item is currently stored
+in the layer.
+UBXDOC-304424225-19888 - R01
+ 
+6 Conﬁguration interface Page 167 of 224
+C1-Public

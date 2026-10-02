@@ -1,0 +1,49 @@
+Field Name Field Type Card. Description
+appliesToMinimumMaximu
+mCost
+boolean 1..1 Required. Indicates whether this tax applies to
+Minimum/Maximum Cost.
+taxRate RationalNumberType 1..1 Required. Percentage of the total amount of applying fee
+(energy, parking, overstay, MinimumCost and/or
+MaximumCost).
+2.107. TotalCostType
+Class
+This contains the cost calculated during a transaction. It is used both for running cost and final cost of the transaction.
+TotalCostType is used by: Common:CostDetailsType
+Field Name Field Type Card. Description
+currency string[0..3] 1..1 Required. Currency of the costs in ISO 4217 Code.
+typeOfCost TariffCostEnumType 1..1 Required. Type of cost: normal or the minimum or
+maximum cost.
+fixed PriceType 0..1 Optional. Total sum of all flat fees in the specified
+currency, except for TariffFixedPriceTypes with
+conditions.isReservation = true (counted in reservation).
+energy PriceType 0..1 Optional. Total sum of all the cost of all the energy used,
+in the specified currency.
+chargingTime PriceType 0..1 Optional. Total sum of all the cost related to duration of
+charging during this transaction, in the specified
+currency.
+idleTime PriceType 0..1 Optional. Total sum of all the cost related to idle time of
+this transaction, including fixed price components, in the
+specified currency.
+reservationTime PriceType 0..1 Optional. Sum of all time-based cost related to
+reservation, i.e. TariffType.reservationTime, in the
+specified currency.
+total TotalPriceType 1..1 Required. Total of associated cost elements for fixed,
+energy, chargingTime, idleTime and reservation.
+reservationFixed PriceType 0..1 Optional. Sum of fixed cost related to reservation, i.e.
+TariffType.reservationFixed, in the specified currency.
+2.108. TotalPriceType
+Class
+Total cost with and without tax. Contains the total of energy, charging time, idle time, fixed and reservation costs including and/or
+excluding tax.
+TotalPriceType is used by: Common:TotalCostType
+Field Name Field Type Card. Description
+exclTax decimal 0..1 Optional. Price/cost excluding tax. Can be absent if
+inclTax is present.
+inclTax decimal 0..1 Optional. Price/cost including tax. Can be absent if
+exclTax is present.
+2.109. TotalUsageType
+Class
+This contains the calculated usage of energy, charging time and idle time during a transaction.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 672/803 Part 2 - Specification

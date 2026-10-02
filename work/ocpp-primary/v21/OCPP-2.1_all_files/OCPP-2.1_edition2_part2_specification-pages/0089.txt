@@ -1,0 +1,63 @@
+ID Precondition Requirement definition Note
+B10.FR.09 B10.FR.03 AND
+All
+NetworkProfileConnectio
+nAttempts for every entry of
+NetworkConfigurationPri
+ority failed.
+The Charging Station SHOULD NOT
+stop trying to reconnect to the CSMS.
+The Charging Station SHOULD
+implement the reconnecting
+mechanism described at requirement
+B10.FR.07 or B10.FR.08.
+This is to prevent the Charging Station
+from becoming a stranded asset.
+B10.FR.10 B10.FR.03 AND
+Charging Station successfully
+connected after having
+switched to a different
+NetworkConnectionProfile
+Charging Station SHALL send a
+BootNotificationRequest to CSMS to
+reestablish its registration status, even
+if it has not rebooted since last being
+accepted by any CSMS.
+Charging Station does not need to
+check whether the CSMS it connected
+to, is actually one that it has not
+connected to before.
+2.3. Resetting a Charging Station
+B11 - Reset - Without Ongoing Transaction
+No. Type Description
+1 Name Reset - Without Ongoing Transaction
+2 ID B11
+3 Objective(s) To enable the CSMS to request a Charging Station to reset itself or an EVSE, while there is no
+ongoing transaction.
+4 Description This use case covers how the CSMS can request the Charging Station to reset itself or an EVSE by
+sending ResetRequest. (If ResetRequest contains an optional paramater evseId, then only a reset
+of the specific EVSE is requested.) This could for example be necessary if the Charging Station is
+not functioning correctly.
+Actors Charging Station, CSMS, CSO
+Scenario description 1. The CSO requests the CSMS to reset the Charging Station or EVSE.
+2. The CSMS sends ResetRequest requesting the Charging Station to reset itself or EVSE.
+3. The CSMS requests for an OnIdle or Immediate reset.
+4. The Charging Station responds with ResetResponse, indicating whether the Charging Station is
+able to reset itself or EVSE.
+5. The CSMS sends an optional notification to the CSO.
+6. Only if no evseId was supplied, then after the reset, the Charging Station will proceed as in use
+case B01.
+Alternative scenario(s) B12 - Reset With Ongoing Transaction
+5 Prerequisite(s) No transaction is ongoing.
+6 Postcondition(s) Successful postcondition:
+The Charging Station was able to reset itself or EVSE.
+Failure postcondition:
+The Charging Station not was able to reset itself or EVSE.
+7 Error handling n.a
+8 Remark(s) OnIdle refers to the "idle state" of a charging station. This is when the Charging Station is not
+performing any use case related tasks that might interfere with a reset process. The most
+obvious case is being involved in an active transaction, but there are other conditions when the
+Charging Station is not idle, for example, when a firmware update process is ongoing, a log file is
+uploaded to CSMS, a reservation is pending or a cable is still locked in the Charging Station.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 76/803 Part 2 - Specification

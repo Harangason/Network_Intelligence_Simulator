@@ -1,0 +1,76 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  26 
+When MIPI Byte Streaming Interface is enabled, a byte buffer (dual clock FIFO) is used to hold packets when 
+downstream is not ready (axis_byte_tready_o is low). FIFO depth is configurable through the Byte Buffer Depth 
+attribute. For multiple back-to-back packet, a full buffer leads to backpressure as shown in Figure 2.22. Byte buffer 
+depth must be configured to store a full long packet. The byte buffer FIFO stores the complete MIPI packet, including 
+the packet header, payload, and CRC bytes. Therefore, the maximum supported payload size is equal to the configured 
+packet size minus 8 bytes. 
+axis_vid_clk_i
+axis_byte_tready_o
+axis_byte_tvalid_i
+HS Packet
+(Long Packet)
+HS Packet
+(Short Packet)
+axis_byte_tdata_i[31:0] B B B B BB B
+axis_byte_tlast_i
+axis_byte_tuser_i[5:2] Packet Virtual    Channel (VCX+VC) VCX
++VC
+axis_byte_tuser_i[0:0]
+Backpress ure
+ 
+Figure 2.22. MBSI TX Timing Diagram for 32-bit Passthrough Mode with Backpressure 
+2.4.2.4. MIPI CSI/DSI Receiver MBSI 
+On the receiver side, when MIPI Byte Streaming Interface is enabled, the IP converts all MIPI short and long packets 
+into AXI4‑Stream in the byte domain and handles backpressure. This conversion includes every packet type such as 
+NULL and BLANKING packets whenever the packets are present.  
+The IP maps the internal MIPI packet information (header, payload bytes, footer) to the corresponding AXI4 ‑Stream 
+signals: TVALID, TREADY, TDATA, TUSER, and TLAST. Data movement strictly follows AXI4-Stream handshaking rules, 
+where TVALID must be asserted by the source only when valid data is present, and TREADY must be asserted by the 
+sink when the sink is ready to accept data. Transfer occurs only when both signals are high.  
+You must implement any handling specific to packet type, such as identifying long or short packets or determining the 
+footer byte position on a 32 or 64-bit TDATA bus. 
+With MBSI in passthrough mode, converter IPs such as the Byte-to-Pixel IP are bypassed. 
+Figure 2.23 and Figure 2.24 show the timing diagram for MIPI packets reception over MBSI where axis_byte_tready_i 
+stays asserted during an RX transaction for 32-bit passthrough mode and 64-bit passthrough mode respectively. 
+fr_clk_i
+axis_byte_tready_i
+axis_byte_tvalid_o
+HS Packet
+(Long Packet)
+HS Packet
+(Short Packet)
+axis_byte_tdata_o[31:0] B B B B B BBB B
+axis_byte_tlast_o
+Hdr[7:0] : DID
+axis_byte_tuser_o[5:2] Packet Virtual Channel   (VCX+VC) VCX
++VC
+Hdr[15:8] : WC[7:0] Packet: Byte1
+Hdr[23:16]: WC[15:8]
+Hdr[31:24]: VCX+ECC
+Packet: Byte2
+Packet: Byte3
+Packet: Byte5
+Packet: Byte6
+Packet: Byte7
+Packet: Byte0 Packet: Byte4
+Footer: CRC[15:8]
+Footer: CRC[7:0] Hdr[7:0] : DID
+Hdr[15:8] : DF[7:0]
+Hdr[23:16]: DF[15:8]
+Hdr[31:24]: VCX+ECC
+...
+TDATA[7:0]
+TDATA[15:8]
+TDATA[23:16]
+TDATA[31:24]
+axis_byte_tuser_o[0:0]
+MIPI Packets of a Frame
+ 
+Figure 2.23. MBSI RX Timing Diagram for 32-bit Passthrough Mode 

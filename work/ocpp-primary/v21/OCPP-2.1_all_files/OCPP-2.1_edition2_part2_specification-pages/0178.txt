@@ -1,0 +1,36 @@
+Chapter 2. Use cases & Requirements
+2.1. OCPP transaction mechanism
+E01 - Start Transaction options
+No. Type Description
+1 Name Start Transaction options
+2 ID E01
+3 Objective(s) To inform the CSMS that a transaction at the Charging Station has started.
+4 Description This use case describes the different moments a Charging Station can start a transaction (send
+TransactionEventRequest with eventType = Started), depending on the configuration of the
+Charging Station.
+5 Actors Charging Station, CSMS, EV Driver
+S1 Scenario objective To start a transaction when a parking bay occupancy detector detects an "EV".
+Scenario description 1. The EV Driver parks his "EV" at a Charging Station with a parking bay occupancy detector,
+which triggers the detector.
+2. The Charging Station sends a TransactionEventRequest (eventType = Started) notifying the
+CSMS about a transaction that has started (even when the driver is not yet known.
+3. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+Prerequisite(s) No transaction is ongoing on the EVSE.
+Configuration Variable: TxStartPoint contains: ParkingBayOccupancy
+Postcondition(s) Successful postcondition:
+The transaction is ongoing and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is not ongoing, or
+The CSMS is not informed.
+EV Driver
+Charging Station CSMS
+EV parked.
+Parking bay
+detector triggers
+TransactionEventRequest(eventType = Started,
+triggerReason = EVDetected)
+TransactionEventResponse()
+Figure 49. Sequence Diagram: Start Transaction options - ParkingBayOccupancy
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 165/803 Part 2 - Specification

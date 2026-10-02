@@ -1,0 +1,89 @@
+68 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+easily accomplished by sending a space or @
+character, if the baud rate is 57.6 kbps or less. If using
+higher baud rates, you may wish to consider
+temporarily shifting to a lower baud rate and sending a
+character, or possibly see if your software can
+generate a ‘break’ signal for you. The break signal is
+not always the same length, but is typically several
+msec long (ie much longer than 128 µsec), and can
+often be sent by USB through USB to RS232
+conversion devices. You will have to experiment if
+using other methods (Bluetooth or WiFi, for example).
+The second method to have the ELM327 circuit go
+back to full power is by having activity appear on the
+OBD input pins. At the first sign of an active level, the
+circuit will start its wakeup, and within seconds, will be
+at full capability. Note that the logic is configured so
+that it must see all quiet on the OBD inputs before it
+will allow an automatic wakeup. This does not normally
+present a problem, and is implemented so that you
+can manually put the circuit to low power (AT LP),
+even if there is activity on one of the OBD inputs.
+Otherwise, the circuit would wake up immediately after
+the AT LP.
+When connected to protocols 3, 4 or 5 (ISO 9141-
+2 or ISO 14230-4), there may be no OBD activity when
+the vehicle is first turned on. In this case, you could not
+rely on the activity monitor to wake the circuit and you
+would have to look for other means.
+The final method that is provided to wake up the
+circuit is by way of the ignition monitor input and logic.
+A low then high level at the IgnMon input will cause the
+ELM327 to return to full power operation. Note that
+PP 0E bit 2 does not have to be set for the IgnMon to
+wake the circuit - the ELM327 always monitors this
+pin, and will wake the circuit after the delay that is set
+by PP 0E bit 1.
+We are often asked if a switched ‘ignition’ voltage
+is available at the vehicle’s diagnostic connector for
+this purpose. It is not, so you must connect a separate
+wire yourself. Often there are convenient places that
+you can use for this - possibly the radio power, or the
+connection to a convenience outlet.
+Note that we present the pin 15 input as if it is an
+ignition monitoring circuit, but in fact, it will monitor for
+any change in voltage level (as long as the change is
+stable for the debounce period). You might consider
+connecting to other inputs (such as the 5V from a USB
+cable, for example) - just be sure to protect the
+ELM327 input circuitry from transients. This usually
+just requires a series resistor of 1K to 10K in value.
+One alternative is to provide a pullup resistor to
+allow waking of the ELM327 with a momentary
+pushbutton switch:
+14
+1516
+2.2KΩ
+47KΩ
++5V
+If the circuit is in low power mode, a momentary
+push of the button will wake it up. This is just one of
+the many ways in which you can use this input.
+One final note has to do with the changes to the
+startup process, beginning with firmware version 2.0.
+Initially (with v1.4 and v1.4b), the ELM327 simply used
+a warm start command (AT WS) to exit from the low
+power mode. The positive feedback that we received
+from our ELM329 changes has led us to also change
+the wakeup process for the ELM327.
+Now, on switching back to full power operation,
+the ELM327 performs a warm start, but retains the
+following settings:
+E0/1 H0/1 L0/1 M0/1
+R0/1 D0/1 S0/1 AT0/1/2
+CAF0/1 CFC0/1 CSM0/1 CEA
+CER* CTM1/5 JTM1/5 AL/NL
+IIA *only if CEA was active
+In addition, the ISO/KWP baud rate is retained and
+the current protocol is not changed (but it is closed, so
+will require initialization).
+This has discussed how to have the ELM327 go to
+low power operation, and wake from it. While in the
+low power mode, the question of ‘just how low is the
+power consumption’ arises. We discuss that in the
+‘Modifications for Low Power Standby Operation’
+section, which is on page 85.
+Power Control (continued)

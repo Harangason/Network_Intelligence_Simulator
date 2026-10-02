@@ -1,0 +1,45 @@
+O06 - Replace DisplayMessage
+No. Type Description
+1 Name Replace DisplayMessage
+2 ID O06
+3 Objective(s) Enable a CSO to replace DisplayMessages, already configured on a Charging Station.
+4 Description This use case describes how a CSO can replace a DisplayMessage that is previously configured in
+a Charging Station. Replace the message content, but also all the given parameters with the new
+one.
+Actors CSO, CSMS, Charging Station
+Scenario description 1. The CSO asks the CSMS to replace an existing DisplayMessage.
+2. The CSMS sends a SetDisplayMessageRequest message to the Charging Station with the a
+DisplayMessage with the same ID as already configured in the Charging Station.
+3. The Charging Station accepts the request by sending a SetDisplayMessageResponse message
+to the CSMS.
+4. The Charging Station shows the updated/replaced message on the display at the configured
+moment.
+Alternative scenario(s) O01 - Set DisplayMessage and
+O02 - Set DisplayMessage for Transaction
+5 Prerequisites There is a message with the same id configured in the Charging Station
+6 Postcondition(s) The DisplayMessage is replaced by the one provided with the same ID.
+7 Error Handling n/a
+8 Remarks n/a
+CSO
+CSMS Charging Station
+A message with
+id=15 is configured
+Replace Messages(id = 15)
+SetDisplayMessagesRequest(id = 15,...)
+SetDisplayMessagesResponse(Accepted)
+opt
+notification
+Figure 144. Replace DisplayMessage sequence diagram
+O06 - Replace DisplayMessage - Requirements
+Table 137. O06 - Requirements
+ID Precondition Requirement definition
+O06.FR.01 When a Charging Station receives a
+SetDisplayMessageRequest AND there is a
+message configured in the Charging Station
+with the same id
+The Charging Station SHALL replace the existing message with
+the new message (including all the new parameters) AND
+respond with a SetDisplayMessageResponse message with
+status: Accepted for this message.
+Edition 4, 2025-12-03 O. Display Message
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 353/491 Part 2 - Specification

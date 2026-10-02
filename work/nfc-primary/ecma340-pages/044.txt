@@ -1,0 +1,35 @@
+ 
+38  © Ecma International 2024 
+ 
+12.7.1.3.3 Target rules 
+The Target is allowed to send a Supervisory pdu indicating Response timeout extension (Timeout extension 
+Request) instead of an Information pdu. 
+When an Information or Protected pdu not containing chaining is received it shall be acknowledged by an 
+Information or Protected pdu. 
+When a NACK pdu is received, if the PNI is equal to the PNI of the previous sent pdu, the previous block shall 
+be re-transmitted. 
+When an erroneous pdu is received the Target shall not answer but stay in the same State.  
+When an Attention Request is received, the Target shall respond by sending a Supervisory pdu indicating 
+Attention (Attention Response). 
+12.7.2 Response timeout extension 
+The response timeout extension shall only be used by the Target. When a Target needs more time to process 
+the received block from the Initiator than defined in tRW, it shall use a Timeout extension. A Timeout extension 
+Request contains a 1-byte data field (Response timeout extension byte). The definition of the byte is shown in 
+Figure 35. 
+ 
+Figure 35 — Response timeout extension byte 
+— bit 8 and bit 7: Shall be set to ZERO. 
+— bit 6 to bit 1: RTOX value. 
+For RTOX the values 0 and 60 to 63 are RFU. For all other values, the intermediate tRW,INT shall be calculated 
+by the following formula: 
+tRW,INT = tRW × RTOX 
+The tRW,INT starts after the Initiator has sent its Supervisory pdu indicating Timeout extension (Timeout extension 
+Response) to the Target. In case tRW,INT exceeds tRW,MAX, tRW,MAX shall be used. The tRW,INT is valid until the next 
+frame has been received by the Initiator. 
+12.7.3 Attention — Target present 
+The Initiator shall send the Attention Request to the Target to ensure the Target is still in field for passive 
+communication mode or to be able to detect a Target loss during multi -activation. This command shall not 
+change the current State of the Target. 
+The Target shall respond to a valid Attention Request by sending an Attention Response containing the identical 
+data field to the Initiator. 
+If the Target receives an incorrect pdu it shall not respond and shall stay in the same State.  

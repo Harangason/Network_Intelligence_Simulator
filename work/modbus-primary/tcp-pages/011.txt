@@ -1,0 +1,65 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+Idle
+October 24, 2006 http://www.Modbus.org 11/46
+Connection_established
+Request_treatment
+Wait
+Oldest_unused_
+connection_closed
+Connection_establishment
+Connection_accepted
+Oldest_unused_
+no_prioritary_
+connection_closedActive_Connection
+network_transmission
+Wait
+Request_treatment
+Connect
+ion_established
+Connection_accepted
+Connection_refused
+Active_Connection
+network_transmission
+[connection established]
+[Connection OK]
+[<n connections]
+[Connection NOK]
+[< n connections]
+[access ctl]
+[connection request]
+[IP forbidden]
+[data]
+[no access ctl]
+[______Event on a socket[Request to a remote
+____
+[IP authorized]
+[n connections]
+[n connections]
+[else]
+Server Client 
+Figure 7: TCP connection management activity diagram 
+1. Explicit TCP connection management
+The user application module is in charge of managing all the TCP connections: active 
+and passive establishment, connection ending, etc. This management is done for 
+all 
+MODBUS communication between a client and a server. The BSD Socket interface is 
+used in the user application module to manage the TCP connection. This solution offers 
+a total flexibility but it implies that t he application programmer has sufficient TCP 
+knowledge. 
+A limit of number of client and server conne ctions has to be configured taking into 
+account the device capabilities and requirement.  
+2. Automatic TCP connection management
+The TCP connection management is totally tran sparent for the user application module. 
+The connection management module may accept a sufficient number 
+of client and 
+server connections. 
+Nevertheless a mechanism must be implemented in case of exceeding the number of 
+authorized connection. In such a case we recommend 
+to close the oldest unused 
+connection. 
+A connection with a remote partner is estab lished at the first packet received from a 
+remote client or from the local user application. This connection will be closed if a 
+termination arrived from the network or decid ed locally on the device. On reception of a 
+connection request, the access control option can be used to forbid device accessibility 
+to unauthorized clients. 
+Modbus Organization  

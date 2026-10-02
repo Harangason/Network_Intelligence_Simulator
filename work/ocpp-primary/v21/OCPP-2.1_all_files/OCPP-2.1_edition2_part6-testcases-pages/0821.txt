@@ -1,0 +1,27 @@
+Tool validations
+* Step 1:
+Message: NotifyEVChargingNeedsRequest
+- evseId must be <Configured evseId>
+For AC charging station:
+- chargingNeeds.requestedEnergyTransfer AC_BPT
+- chargingNeeds.availableEnergyTransfer [AC_single_phase, AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]
+For DC charging station:
+- chargingNeeds.requestedEnergyTransfer DC_BPT
+- chargingNeeds.availableEnergyTransfer [DC, DC_BPT, DC_ACDP, DC_ACDP_BPT]
+- chargingNeeds.controlMode must be ScheduledControl
+- chargingNeeds.v2xChargingParameters.maxChargePower must be 10000 (W)
+- chargingNeeds.v2xChargingParameters.maxDischargePower must be 5000 (W)
+* Step 4:
+Message: SetChargingProfileResponse
+- status must be Accepted
+* Step 5:
+Message: NotifyEVChargingScheduleRequest
+- evseId must be <Configured evseId>
+- chargingSchedule.chargingSchedulePeriod[0].startPeriod 0
+- chargingSchedule.chargingSchedulePeriod[0].limit <= 1000
+- chargingSchedule.chargingSchedulePeriod[1].startPeriod 300
+- chargingSchedule.chargingSchedulePeriod[1].limit <= 2000
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 819/1383 Part 6 - Test Cases

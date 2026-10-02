@@ -1,0 +1,25 @@
+u-blox 20 HPG 2.00 - Interface description
+3 UBX protocol
+3.1 UBX protocol key features
+u-blox receivers support a u-blox-proprietary protocol to communicate with a host computer. This
+protocol has the following key features:
+• Compact – uses 8-bit binary data
+• Checksum protected – uses a low-overhead checksum algorithm
+• Modular – uses a two-stage message identiﬁer (Class and Message ID)
+3.2 UBX frame structure
+The structure of a basic UBX frame is shown in the following diagram.
+• Every frame starts with a 2-byte preamble consisting of two synchronization characters: 0xb5
+and 0x62.
+• A 1-byte message class ﬁeld follows. A class is a group of messages that are related to each
+other.
+• A 1-byte message ID ﬁeld deﬁnes the message that is to follow.
+• A 2-byte length ﬁeld follows. The length is deﬁned as being that of the payload only. It does not
+include the preamble, message class, message ID, length, or UBX checksum ﬁelds. The number
+format of the length ﬁeld is an unsigned little-endian 16-bit integer (a "U2" in UBX data types).
+• The payload ﬁeld contains a variable number (= length) of bytes.
+• The two 1-byte CK_A and CK_B ﬁelds hold a 16-bit checksum whose calculation is deﬁned in
+UBX checksum section. This concludes the frame.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 44 of 224
+C1-Public

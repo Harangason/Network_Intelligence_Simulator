@@ -1,0 +1,56 @@
+ID Precondition Requirement definition
+B12.FR.05 If an Immediate Reset without evseId is received
+and the TransactionEventResponse is not
+received within timeout.
+The Charging Station SHALL queue the
+TransactionEventRequest, reboot and resend the
+TransactionEventRequest after the reboot.
+B12.FR.06 If the status was set to Inoperative by the CSMS. After a reboot of the Charging Station or resetting of EVSE, the
+EVSE(s) SHALL return to the state Unavailable as prior to the
+reboot of Charging Station or reset of EVSE. (Same as
+B11.FR.02)
+B12.FR.07 If an evseId is supplied
+AND
+If a transaction is in progress on the EVSE and
+an OnIdle reset is received.
+The transaction on the EVSE SHALL be terminated normally,
+before the reset, e.g. as in E06 - Stop Transaction.
+B12.FR.08 If an evseId is supplied
+AND
+If a transaction is in progress on the EVSE and
+an Immediate Reset is received.
+The Charging Station SHALL attempt to terminate the
+transaction in progress on the EVSE and send a
+TransactionEventRequest (eventType = Ended) message with
+triggerReason = ResetCommand and
+transactionInfo.stoppedReason = ImmediateReset before
+resetting the EVSE.
+B12.FR.09 B12.FR.01
+AND an evseId parameter is supplied
+AND
+Charging Station does not support resetting an
+individual EVSE
+The Charging Station SHALL return a ResetResponse with status
+= Rejected (Same as B11.FR.09)
+B12.FR.10 B12.FR.02 AND
+Charging Station is at this moment not able to
+perform an Immediate reset for a reason other
+than the fact that a transaction is in progress
+The Charging Station SHALL return a ResetResponse with status
+= Rejected
+B13 - Reset - With Ongoing Transaction - Resuming Transaction
+New in OCPP 2.1
+No. Type Description
+1 Name Reset - With Ongoing Transaction - Resuming Transaction
+2 ID B13
+3 Objective(s) To enable the CSMS to request a Charging Station to reset itself or EVSE, while a transaction is
+ongoing, that is to be resumed after reset.
+4 Description This use case covers how the CSMS can request the Charging Station to reset itself or an EVSE by
+sending ResetRequest with type = ImmediateAndResume. (If ResetRequest contains an optional
+paramater evseId, then only a reset of the specific EVSE is requested.) This could for example be
+necessary if the Charging Station is not functioning correctly.
+The configuration variable TxAllowEnergyTransferResumption determines whether energy
+transfer is still allowed on the resumed transaction or not.
+Actors Charging Station, CSMS, CSO
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 82/803 Part 2 - Specification

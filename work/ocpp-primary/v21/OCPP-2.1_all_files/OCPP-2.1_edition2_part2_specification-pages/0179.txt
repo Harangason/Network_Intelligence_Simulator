@@ -1,0 +1,38 @@
+S2 Scenario objective To start a transaction when communication is set up between the Charging Station and an EV
+(for example: cable plugged in correctly on both sides)
+Scenario description 1. The Charging Station sets up a connection with the EV.
+2. The Charging Station sends a TransactionEventRequest (eventType = Started) notifying the
+CSMS about a transaction that has started (even when the driver is not yet known).
+3. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+Prerequisite(s) No transaction is ongoing on the EVSE.
+Configuration Variable: TxStartPoint: EVConnected
+Postcondition(s) Successful postcondition:
+The transaction is ongoing and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is not ongoing, or
+The CSMS is not informed.
+EV Driver
+Charging Station CSMS
+charging cable plugged in
+TransactionEventRequest(eventType = Started, chargingState = EVConnected,
+triggerReason = CablePluggedIn)
+TransactionEventResponse()
+Figure 50. Sequence Diagram: Start Transaction options - EVConnected
+S3 Scenario objective To start a transaction when the EV Driver is authorised to charge.
+Scenario description 1. The EV Driver provides his identification
+2. The Charging Station validates the provided identification (for example via the Authorization
+Cache or an AuthorizeRequest).
+3. The Charging Station sends a TransactionEventRequest (eventType = Started) notifying the
+CSMS about a transaction that has started.
+4. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+Prerequisite(s) No transaction is ongoing on the EVSE.
+Configuration Variable: TxStartPoint: Authorized.
+Postcondition(s) Successful postcondition:
+The transaction is ongoing and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is not ongoing, or
+The CSMS is not informed.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 166/803 Part 2 - Specification

@@ -1,0 +1,36 @@
+Appendix A: New in OCPP 1.6
+The following changes are made in OCPP 1.6 compared to OCPP 1.5 [OCPP1.5]:
+• Smart Charging is added
+• A binding to JSON over WebSocket as a transport protocol is added, reducing data usage and enabling
+OCPP communication through NAT routers, see: OCPP JSON Specification
+• Extra statuses are added to the ChargePointStatus enumeration, giving the CPO and ultimately end-users
+more information about the current status of a Charge Point
+• Structure of MeterValues.req is changed to eliminate use of XML Attributes, this is needed for support of
+JSON (no attribute support in JSON).
+• Extra values are added to the Measurand enumeration, giving Charge Point manufacturers the possibility
+to send new information to a Central System, such as the State of Charge of an EV
+• The TriggerMessage message is added, giving the Central System the possibility to request information
+from the Charge Point
+• A new Pending member is added to the RegistrationStatus enumeration used in BootNotification.conf
+• More and clearer configuration keys are added, making it clearer to the CPO how to configure the
+different business cases in a Charge Point
+• The messages and configuration keys are split into profiles, making it easier to implement OCPP gradually
+or only in part
+• Known ambiguities are removed (e.g. when to use UnlockConnector.req, how to respond to RemoteStart
+/Stop, Connector numbering)
+A.1. Updated/New Messages:
+• BootNotification.req
+• Change IccId and Imsi to CiString[] to enforce maximum lengths.
+• BootNotification.conf
+• heartbeatInterval to interval, interval now also used for other purposes than heartbeat, need to fix
+in spec
+• Added status Pending
+• ChargePointErrorCode
+• Added enumvalues: InternalError, LocalListConfict and UnderVoltage
+• Renamed enum value Mode3Error to EVCommunicationError
+• ChargePointStatus
+• Replaced enum value Occupied with the more detailed values: Preparing, Charging,
+SuspendedEVSE, SuspendedEV and Finishing
+• ChargingRateUnitType
+• New
+109

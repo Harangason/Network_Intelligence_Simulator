@@ -1,0 +1,32 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+5.4.7  [PN7160-NCI] extensions to [NCI] proprietary parameters space
+[NCI] defines a parameter space with a size of 255 parameters, in which around 96 tags are allocated for
+proprietary parameters:
+Parameters space sub-sections Tag
+Assigned and reserved for NCI 2.0 0x00-0x9F
+Reserved for Proprietary Use 0xA0-0xFE
+RFU (Reserved for Extension) 0xFF
+Table 21. Parameter space
+Regarding the PN7160 needs, this reserved area is not sufficient. To extend this space, the solution chosen is
+to define a space of Tags coded on 16 bits, instead of 8 bits. These extended Tags will always start by the value
+0xA0, which is the first value available in the Proprietary range. This allows adding 256 new parameters.
+Remark: If this is not sufficient in the future, we might use 16-bit tag values starting by 0xA1, 0xA2 …
+Payload Field Length Description
+Tag = 0xA0XX 2 bytes Extended tag identifier
+Len 1 byte The length of Val (m)m+3 bytes
+Val m bytes Value of the configuration parameter
+Table 22. Extended TLV for proprietary parameters
+This is illustrated by the following picture:
+Figure 29. Regular and Extended TLVs comparison
+5.4.8  [PN7160-NCI] extensions to [NCI] Status Codes
+[NCI] defines a set of standard Status Codes in table 128 of NCI 1.0.
+NXP has extended this set of status codes with the following values:
+Status code Description Used in
+0xA3 STATUS_LPCD_FAKE_DETECTION CORE_GENERIC_ERROR_NTF
+0xE1 STATUS_BOOT_TRIM_CORRUPTED CORE_GENERIC_ERROR_NTF
+0xE4 STATUS_EMVCO_PCD_COLLISION CORE_GENERIC_ERROR_NTF
+Table 23. Proprietary Status Codes
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+39 / 147

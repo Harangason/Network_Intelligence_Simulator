@@ -1,0 +1,61 @@
+TC_I_100_CS: Set Default Tariff - validFrom
+Test case name Set Default Tariff - validFrom
+Test case Id TC_I_100_CS
+Use case Id(s) I07, I09, I10
+Requirement(s) I07.FR.10, I07.FR.20, I07.FR.21, I07.FR.22, I07.FR.23, I09.FR.02, I09.FR.07, I10.FR.01
+System under test Charging Station
+Description To set the default tariff on the charging station, for example for ad hoc charging, or when there is no driver-
+specific tariff.
+Purpose To verify if the Charging Station correctly replaces tariffs based on the tariff’s validFrom fields.
+Prerequisite(s) - The Charging Station supports local cost calculation using the Tariff mechanism
+(TariffCostCtrlr.Enabled[Tariff] exists ReadWrite or is true and ReadOnly).
+Before (Preparations)
+Configuration State:
+- TariffCostCtrlr.Enabled[Tariff] is true
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1A
+tariff.currency EUR
+tariff.energy.prices[0].priceKwh 1.00
+4. The Charging Station responds with
+SetDefaultTariffResponse
+3. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1B
+tariff.validFrom <Current DateTime - 1:00 hour>
+tariff.currency EUR
+tariff.energy.prices[0].priceKwh 2.00
+6. The Charging Station responds with GetTariffsResponse
+5. The Test System sends a GetTariffsRequest with
+evseId 0
+8. The Charging Station responds with ClearTariffsResponse
+7. The Test System sends a ClearTariffsRequest
+10. The Charging Station responds with
+SetDefaultTariffResponse
+9. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1A
+tariff.validFrom <Current DateTime - 2:00 hour>
+tariff.currency EUR
+tariff.energy.prices[0].priceKwh 1.00
+12. The Charging Station responds with
+SetDefaultTariffResponse
+11. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1B
+tariff.validFrom <Current DateTime - 1:00 hour>
+tariff.currency EUR
+tariff.energy.prices[0].priceKwh 2.00
+14. The Charging Station responds with GetTariffsResponse
+13. The Test System sends a GetTariffsRequest with
+evseId 0
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 403/1383 Part 6 - Test Cases

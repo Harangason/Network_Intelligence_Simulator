@@ -1,0 +1,60 @@
+7.4.11 GPIO Support
+The DS90UB960-Q1 supports 8 pins which are programmable for use in multiple options through the 
+GPIOx_PIN_CTL registers.
+7.4.11.1 GPIO Input Control and Status
+Upon initialization GPIO0 through GPIO7 are enabled as inputs by default. Each GPIO pin has an input disable 
+and a pulldown disable control bit with exception of the open-drain GPIO3 pin. By default, the GPIO pin input 
+paths are enabled and the internal pulldown circuit for the GPIO is enabled. The GPIO_INPUT_CTL and 
+GPIO_PD_CTL registers allow control of the input enable and the pulldown, respectively. For example to disable 
+GPIO1 and GPIO2 as inputs you would program in register 0x0F[2:1] = 11. For most applications, there is no 
+need to modify the default register settings for the pull down resistors. The status HIGH or LOW of each GPIO 
+pin 0 through 7 may be read through the GPIO_PIN_STS register 0x0E. This register read operation provides 
+the status of the GPIO pin independent of whether the GPIO pin is configured as an input or output.
+7.4.11.2 GPIO Output Pin Control
+Individual GPIO output pin control is programmable through the GPIOx_PIN_CTL registers 0x10 to 0x17. To 
+enable any of the GPIO as output, set bit 0 = 1 in the respective register 0x10 to 0x17 after clearing the 
+corresponding input enable bit in register 0x0F.
+7.4.11.3 Forward Channel GPIO
+The DS90UB960-Q1 8 GPIO pins can output data received from the forward channel when paired with 
+the DS90UB953-Q1 serializer. The remote Serializer GPIO are mapped to GPIO. Each GPIO pin can be 
+programmed for output mode and mapped. Up to four GPIOs are supported in the forward direction on each 
+FPD-Link III Receive port. Each forward channel GPIO (from any port) can be mapped to any GPIO output pin. 
+The DS90UB933-Q1 and DS90UB913A-Q1 GPIO’s cannot be configured as inputs for remote communication 
+over the forward channel to the DS90UB960-Q1.
+The timing for the forward channel GPIO is dependant on the number of GPIOs assigned at the serializer. When 
+a single GPIO input from the DS90UB953-Q1 serializer is linked to a DS90UB960-Q1 deserializer GPIO output 
+the value is sampled every forward channel transmit frame. Two linked GPIO are sampled every two forward 
+channel frames and 3-linked or 4-linked GPIOs are sampled every 5 frames. The minimum latency for the 
+GPIO remains consistent (approximately 225 ns), but as the information spreads over multiple frames, the jitter 
+typically increases on the order of the sampling period (number of forward channel frames). TI recommends 
+maintaining a 4x oversampling ratio for linked GPIO throughput. For example, when operating in 4-Gbps 
+synchronous mode with REFCLK = 25 MHz, the maximum recommended GPIO input frequency based on 
+the number of GPIO linked over the forward channel is shown in Table 7-11.
+Table 7-11. Forward Channel GPIO Typical Timing
+NUMBER OF LINKED 
+FORWARD CHANNEL GPIOs
+(FC_GPIO_EN)
+SAMPLING FREQUENCY (MHz)
+AT FPD-Link III LINE RATE = 4 
+Gbps
+MAXIMUM RECOMMENDED 
+FORWARD CHANNEL GPIO 
+FREQUENCY (MHz)
+TYPICAL JITTER (ns)
+1 100 25 12
+2 50 12.5 24
+4 20 5 60
+In addition to mapping remote serializer GPI, an internally generated FrameSync (see Section 7.4.24) or other 
+control signals may be output from any of the deserializer GPIOs for synchronization with a local processor or 
+another deserializer.
+7.4.11.4 Back Channel GPIO
+Each DS90UB960-Q1 GPIO pin defaults to input mode at start-up. The deserializer can link GPIO pin input data 
+on up to four available slots to send on the back channel per each remote serializer connection. Any of the 8 
+GPIO pin data can be mapped to send over the available back channel slots for each FPD-Link III Rx port. The 
+same GPIO on the deserializer pin can be mapped to multiple back channel GPIO signals. For 50-Mbps back 
+channel operation, the frame period is 600 ns (30 bits × 20 ns/bit). For 2.5-Mbps back channel operation, the 
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 37
+Product Folder Links: DS90UB960-Q1

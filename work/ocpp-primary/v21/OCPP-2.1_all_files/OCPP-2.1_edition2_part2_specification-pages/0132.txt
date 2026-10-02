@@ -1,0 +1,70 @@
+EV Driver
+Charging Station CSMS
+Present IdToken
+check local authorization list()
+[cached tariff: 0.23/kWh]
+alt [IdToken not known or IdToken status not Accepted]
+AuthorizeRequest(IdToken)
+AuthorizeResponse(Accepted)
+opt
+notification
+[tariff: 0.23/kWh]
+lock connector
+start energy offer
+Figure 35. Sequence Diagram: Online Authorization through Local Authorization List
+C14 - Online Authorization through Local Authorization List - Requirements
+Table 56. C14 - Requirements
+ID Precondition Requirement definition Note
+C14.FR.01 Where both Authorization Cache and Local
+Authorization List are supported, a Charging Station
+SHALL treat Local Authorization List entries as
+having priority over Authorization Cache entries for
+the same identifiers.
+Same as C13.FR.01
+C14.FR.02 Identifier presented is in the Local
+Authorization List with a status
+Accepted AND
+LocalAuthListSupportsExpiryD
+ateTime does not exist or is false
+The Charging Station SHALL start charging without
+sending an AuthorizeRequest.
+This means that
+Charging Station does
+not check for
+cacheExpiryDateTime.
+C14.FR.03 Identifiers presented is in the Local
+Authorization List with a status
+OTHER than Accepted
+The Charging Station SHALL send an
+AuthorizeRequest to try to authorize this IdToken.
+C14.FR.04 Identifier presented is in the Local
+Authorization List with a status
+Accepted AND
+LocalAuthListSupportsExpiryD
+ateTime = true AND
+the cacheExpiryDateTime has not
+passed
+The Charging Station SHALL start charging without
+sending an AuthorizeRequest.
+When
+cacheExpiryDateTime is
+absent, the idToken will
+not expire in Local
+Authorization List.
+C14.FR.05 Identifier presented is in the Local
+Authorization List with a status
+Accepted AND
+LocalAuthListSupportsExpiryD
+ateTime = true AND
+the cacheExpiryDateTime has passed
+The Charging Station SHALL send an
+AuthorizeRequest to try to authorize this IdToken.
+IdToken will be
+disregarded, as if not
+present in Local
+Authorization List, when
+cacheExpiryDateTime
+has passed.
+2.6. Offline Authorization
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 119/803 Part 2 - Specification

@@ -1,0 +1,46 @@
+u-blox 20 HPG 2.00 - Interface description
+Name Type Size
+(Bytes)
+Range Resolution
+R4 IEEE 754 single (32-bit) precision 4 -2127…2127 ~ value·2-24
+R8 IEEE 754 double (64-bit) precision 8 -21023…21023 ~ value·2-53
+CH ASCII / ISO 8859-1 char (8-bit) 1 n/a n/a
+U:n unsigned bitﬁeld value of n bits width var. variable variable
+I:n signed (two's complement) bitﬁeld value of n bits width var. variable variable
+S:n signed bitﬁeld value of n bits width, in sign (most
+signiﬁcant bit) and magnitude (remaining bits) notation
+var. variable variable
+3.3.6 UBX ﬁelds scale and unit
+Fields in UBX messages can have a unit deﬁned. Whenever possible, SI units and symbols are used
+(e.g. "m" for meters, "s" for seconds). For civil (UTC) time representation units of years (y), months
+(month), days (d), hours (h), minutes (min) and seconds (s) are used.
+Fields in UBX messages can have a scale factor deﬁned. Unity (factor 1) is assumed if no scale is
+speciﬁed. For integer type ﬁelds this is often combined with a unit. When a scale is combined with
+a unit, the scale represents the smallest storage unit. For example, if meters (m) are expressed
+(stored) in centimeters the scale would be 0.01 (or 1e-2). This is equivalent of specifying a unit of
+centimeters (cm) and no scale.
+The description of some integer values (e.g. U2, I4 or I8) indicates a ﬁxed-point format (e.g. [UU.FF],
+[IIIII.FFF] or [IIIIIII.FFFFFFFF]). The ﬁxed-point value can be retrieved from the integer value by ﬁrst
+casting it to appropriate type (e.g. as a ﬂoating-point number) and then scaling it with the indicated
+scaling factor.
+3.3.7 UBX repeated ﬁelds
+There are two types of repetitions in UBX messages. The ﬁrst type speciﬁes that a single ﬁeld is
+repeated a constant number of times. This repetition is deﬁned in the type of the ﬁeld. For example,
+the UBX message example can specify a ﬁeld data of type U1[5]. In this case the data ﬁeld should
+be interpreted as an array of ﬁve U1 values.
+The second type of repetition in messages is referred to as repeated groups, which groups one or
+more ﬁelds into a block of payload data. There are several types of repetition:
+• The number of repetitions of variable-by-field group is indicated by another, earlier ﬁeld in the
+same message. The number of repetitions can be zero or more, depending on the value of the
+referenced ﬁeld.
+• A constant group has a constant number of repetitions.
+• An optional group is repeated zero or one times, depending on the available payload data. That
+is, the ﬁelds are present in the message only if the payload of the message is large enough to
+cover the whole group of ﬁelds.
+• The number of repetitions of a variable-by-size group is given by the available payload size. The
+group will repeat until there is not enough payload data left to cover the whole group of ﬁelds
+another time.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 46 of 224
+C1-Public

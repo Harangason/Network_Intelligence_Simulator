@@ -1,0 +1,50 @@
+Main (Test scenario)
+13. 12.  The Charging Station responds with GetTariffsResponse
+12. 11.  The Charging Station responds with GetTariffsResponse
+The Test System sends a GetTariffsRequest with
+evseId <Configured evseId>
+Tool validations
+* Step 2:
+Message TransactionEventRequest
+- transactionInfo.tariffId must be Test System1
+* Step 5 4 :
+Message GetTariffsResponse
+- status must be Accepted
+- tariffAssignments[0].tariffId must be Test System1
+- tariffAssignments[0].tariffKind must be DriverTariff
+- tariffAssignments[0].idTokens[0] must be <Configured valid_idtoken_idtoken>
+* Step 8 7 :
+Message GetTariffsResponse
+- status must be NoTariff
+* Step 10 9 :
+Message: TransactionEventRequest
+- triggerReason must be EVConnectTimeout
+- transactionInfo.stoppedReason must be Timeout
+* Step 13 12 :
+Message GetTariffsResponse
+- status must be NoTariff
+6.2.35. Page 436 - (2026-02) - TC_I_115_CSMS - Added main steps
+TransactionEvent TariffChanged
+Test case name Local Cost Calculation - Change transaction tariff - TariffConditionsSupported is true
+Test case Id TC_I_115_CSMS
+…
+Main (Test scenario)
+Charging Station CSMS
+…
+4.  The Test System sends a       TransactionEventRequest  with 
+ eventType   Updated
+ triggerReason   TariffChanged
+ transactionInfo.tariffId   <tariff.tariffId from step 2>   
+5.  The CSMS responds with a       TransactionEventResponse
+6.2.36. Page 455 - (2026-02) - TC_I_121_CS - Incorrect minCost / maxCost
+validations
+Test case name Local Cost Calculation - Cost Details of Transaction - minCost/maxCost
+Test case Id TC_I_121_CS
+Use case Id(s) I12
+Requirement(s) I12.FR.17, I12.FR.38, I12.FR.39, I12.FR.39, I12.FR.40
+System under test Charging Station
+Description Charging Station calculates cost of the transaction locally and returns a break-down of the cost at end of
+the transaction for every charging period for which a different tariff element was active. CSMS can use this
+to generate invoices or Charge Detail Records for EMSPs.
+Purpose To verify if the Charging Station correctly reports the cost and usage details of a transaction.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 58/116 Errata 2026-06

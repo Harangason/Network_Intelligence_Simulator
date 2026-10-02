@@ -1,0 +1,40 @@
+ISO15118-20 transaction just started
+State ISO15118-20 transaction just started
+System under test CSMS
+Description Starts ISO15118-20 transaction
+Exposes <allowedEnergyTransferModes>
+<transactionId>
+Prerequisite(s) Test System reported support for V2XChargingCtrlr.V2XEnabled for configured EVSEs with value true
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System sends an AuthorizeRequest with
+idToken.type eMAID
+idToken.type <Configured ISO15118 idToken>
+iso15118CertificateHashData <hashData’s from MO certificate
+chain>
+2. The CSMS responds with an AuthorizeResponse
+- allowedEnergyTransfer [<csms_allowedEnergyTransferModes>]
+3. The Test System sends a TransactionEventRequest with
+eventType Started
+transactionInfo.transactionId <transactionId>
+idToken.additionalInfo.additionalIdToken <Configured EVCCID>
+idToken.additionalInfo.additionalInfo.type EVCCID
+4. The CSMS responds with a TransactionEventResponse
+Tool validations
+* Step 2:
+Message: AuthorizeResponse
+- idTokenInfo.status must be Accepted
+* Step 4:
+Message: TransactionEventResponse
+- idTokenInfo.status must be Accepted
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1383/1383 Part 6 - Test Cases

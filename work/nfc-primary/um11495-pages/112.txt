@@ -1,0 +1,36 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Figure 60. HDLL frame
+The HDLL header contains:
+• A chunk bit, which indicates if this is the only or last chunk of a message (chunk = 0) or if at least one other
+chunk will follow (chunk = 1)
+• the length of the Payload coded on 10 bits. So the HDLL Frame Payload can go up to 1023 Bytes.
+The byte order has been defined as Big Endian, meaning MSByte first.
+The CRC16 is compliant to X.25 (CRC-CCITT, ISO/IEC13239) standard with polynome x^16 + x^12 + x^5 +1
+and preload value 0xFFFF.
+It is calculated over the whole HDLL frame, i.e Header + Frame.
+Sample C-Code implementation:
+static uint16_t phHal_Host_CalcCrc16(uint8_t* p, uint32_t dwLength)
+{
+   uint32_t i;
+   uint16_t crc_new;
+   uint16_t crc = 0xffffU;
+   for (i = 0; i < dwLength; i++)
+   {
+      crc_new = (uint8_t)(crc >> 8) | (crc << 8);
+      crc_new ^= p[i];
+      crc_new ^= (uint8_t)(crc_new & 0xff) >> 4;
+      crc_new ^= crc_new << 12;
+      crc_new ^= (crc_new & 0xff) << 5;
+      crc = crc_new;
+   }
+   return crc;
+}
+13.2.3  Transport mapping over I²C
+13.2.3.1  Write Sequence from the DH
+Figure 61. I2C Write sequence
+PN7160 may send an I2C NACK (negative acknowledge) when none of the 3 buffers used in the PN7160 is
+free, which may happen in case the DH does not wait for a response before issuing a new Write command. If
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+112 / 147

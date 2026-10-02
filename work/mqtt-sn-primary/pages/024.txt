@@ -1,0 +1,45 @@
+A “pre-deﬁned” topic id is a topic id whose mapping to a topic name is known in advance by both the client’s
+application and the gateway. This is indicated in theFlags ﬁeld of the message. When using pre-deﬁned topic ids,
+both sides can start immediately with the sending of PUBLISH messages; there is no need for the REGISTER
+procedure as in the case of ”normal” topic ids. When receiving a PUBLISH message with a pre-deﬁned topic id,
+of which the mapping to a topic name is unknown, the receiver should return a PUBACK with the ReturnCode=
+“Rejection: invalid topic Id” . Note that this error situation cannot be resolved by means of re-registering as in the
+case of normal topic id.
+A client is still required to subscribe to a pre-deﬁned topic id, if it wants to receive PUBLISH messages
+relating to that topic id. To avoid confusion between a pre-deﬁned topic id and a two-byte short topic name, the
+SUBSCRIBE message contains a ﬂag indicating whether it is subscribing for a short topic name or a pre-deﬁned
+topic id.
+A “short” topic name is a topic name that has a ﬁxed length of two octets. It could be carried together with the
+data within a PUBLISH message, thus no REGISTER procedure is needed for a short topic name. Otherwise, all
+rules that apply to normal topic names also apply to short topic names. Note however that it does not make sense
+to do wildcarding in subscriptions to short topic names, because it is not possible to deﬁne a meaningful name
+hierarchy with only two characters.
+6.8 PUBLISH with QoS Level -1
+This feature is deﬁned for very simple client implementations which do not support any other features except
+this one. There is no connection setup nor tear down, no registration nor subscription. The client just sends its
+PUBLISH messages to a GW (whose address is known a-priori by the client) and forgets them. It does not care
+whether the GW address is correct, whether the GW is alive, or whether the messages arrive at the GW.
+Only the following parameter values are allowed for a PUBLISH message with QoS level -1:
+• QoS ﬂag: set to “0b11”;
+• TopicIdType ﬂag: either “0b01” for pre-deﬁned topic id or “0b10” for short topic name;
+• TopicId ﬁeld: value of the pre-deﬁned topic id or of the short topic name;
+• Data ﬁeld: the data to be published.
+6.9 Client’s Topic Subscribe/Un-subscribe Procedure
+To subscribe to a topic name, a client sends a SUBSCRIBE message to the gateway with the topic name included
+in that message. If the gateway is able accept the subscription, it assigns a topic id to the received topic name
+and returns it within a SUBACK message to the client. If the subscription can not be accepted, then a SUBACK
+message is also returned to the client with the rejection cause encoded in the ReturnCode ﬁeld. If the rejection
+cause is “rejected: congestion” , the client should wait for the time TW AIT before resending the SUBSCRIBE
+message to the gateway.
+If the client subscribes to a topic name which contains a wildcard character, the returning SUBACK message
+will contain the topic id value 0x0000. The GW will the use the registration procedure to inform the client about
+the to-be-used topic id value when it has the ﬁrst PUBLISH message with a matching topic name to be sent to the
+client, see also Section 6.10.
+Similar to the client’s PUBLISH procedure, topic ids may also be pre-deﬁned for certain topic names. Short
+topic names may be used as well. In those two cases the client still needs to subscribe to those pre-deﬁned topic
+ids or short topic names.
+To unsubscribe, a client sends an UNSUBSCRIBE message to the gateway, which will then be answered by
+means of an UNSUBACK message.
+As for the REGISTER procedure, a client may have only one SUBSCRIBE or one UNSUBCRIBE transaction
+open at a time.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 23

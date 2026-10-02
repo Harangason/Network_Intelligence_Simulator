@@ -1,0 +1,72 @@
+Charging Station CSMS
+GetLogRequest(logType)
+GetLogResponse(fileName)
+Uploading log file...
+LogStatusNotificationRequest(status = Uploading, requestId = 123)
+LogStatusNotificationResponse()
+Uploaded log file...
+LogStatusNotificationRequest(status = Uploaded, requestId = 123)
+LogStatusNotificationResponse()
+Figure 129. Sequence Diagram: Get Diagnostics
+N01 - Retrieve Log Information - Requirements
+Table 122. N01 - Requirements
+ID Precondition Requirement definition Note
+N01.FR.01 Upon receipt of a GetLogRequest AND
+if the requested log information is
+available
+The Charging Station SHALL respond with a
+GetLogResponse stating the name of the file and
+status Accepted.
+N01.FR.02 N01.FR.01 The Charging Station SHALL start uploading a
+single log file to the specified location
+N01.FR.03 N01.FR.02
+AND
+The GetLogRequest contained
+logType SecurityLog
+The Charging Station SHALL upload its security log
+N01.FR.04 N01.FR.02
+AND
+The GetLogRequest contained
+logType DiagnosticsLog
+The Charging Station SHALL upload its diagnostics.
+N01.FR.05 Upon receipt of a GetLogRequest AND
+if the requested log information is
+NOT available
+The Charging Station SHALL respond with a
+GetLogResponse WITH status Rejected.
+N01.FR.07 Every LogStatusNotificationRequest sent for a log
+upload SHALL contain the same requestId as the
+GetLogRequest that started this log upload.
+N01.FR.08 When uploading a log document is
+started
+The Charging Station SHALL send a
+LogStatusNotificationRequest with status
+Uploading.
+N01.FR.09 When a log document is uploaded
+successfully
+The Charging Station SHALL send a
+LogStatusNotificationRequest with status
+Uploaded.
+N01.FR.10 When uploading a log document failed The Charging Station SHALL send a
+LogStatusNotificationRequest with status
+UploadFailure, BadMessage,
+PermissionDenied OR
+NotSupportedOperation.
+It is RECOMMENDED to
+send the status only after
+all retry attempts have
+failed.
+A Charging Station MAY
+send a new Uploading
+status upon each retry
+attempt.
+N01.FR.12 When a Charging Station is
+assembling or uploading the log file
+AND
+the Charging Station receives a new
+GetLogRequest
+The Charging Station SHOULD cancel the ongoing
+log file upload AND respond with GetLogResponse
+with status AcceptedCanceled.
+Edition 4, 2025-12-03 N. Diagnostics
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 324/491 Part 2 - Specification

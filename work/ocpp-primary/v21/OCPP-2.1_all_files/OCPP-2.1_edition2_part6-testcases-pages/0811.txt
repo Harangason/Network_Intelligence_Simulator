@@ -1,0 +1,44 @@
+Q Bidirectional Power Transfer
+TC_Q_100_CS: V2X Authorisation - ISO15118-20 - V2X Tx Measurands defined
+Test case name V2X Authorisation - V2X Tx Measurands defined
+Test case Id TC_Q_100_CS
+Use case Id(s) Q01
+Requirement(s) Q01.FR.33, Q01.FR.34, Q01.FR.35
+System under test Charging Station
+Description Authorization of an EV by the CSMS to start a V2X power transfer loop.
+Purpose To verify if the Charging Station is able to send the configured V2X measurands.
+Prerequisite(s) - EV supports V2X power transfer loop
+- EV and charging station support ISO15118-20 or CHAdeMO
+- V2XChargingCtrlr.SupportedOperationModes contains CentralSetpoint
+Before (Preparations)
+Configuration State:
+ISO15118Ctrlr.Enabled is true or absent
+V2XChargingCtrlr.Enabled = true
+V2XChargingCtrlr
+- Enabled is true
+- TxStartedMeasurands[CentralSetpoint] is <Configured V2XTxStartedMeasurands>
+- TxEndedMeasurands[CentralSetpoint] is <Configured V2XTxUpdatedMeasurands>
+- TxUpdatedMeasurands[CentralSetpoint] is <Configured V2XTxEndedMeasurands>
+- TxUpdatedInterval is 5
+- TxEndedInterval is 0
+SampledDataCtrlr
+- TxStartedMeasurands is [Energy.Active.Import.Register]
+- TxUpdatedMeasurands is [Energy.Active.Import.Register]
+- TxEndedMeasurands is [Energy.Active.Import.Register]
+- TxUpdatedInterval is 5
+- TxEndedInterval is 0
+Memory State:
+N/a
+Reusable State(s):
+IF <Configured EVProtocol> is CHAdeMO THEN
+State is Authorized
+State is EVConnectedPreSession
+ELSE IF <Configured EVProtocol> is ISO15118 THEN
+State is Iso1511820V2xControlBpt
+State is EVConnectedPreSession
+State is Authorized15118 (for 15118-20)
+END IF
+Main (Test scenario)
+Charging Station CSMS
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 809/1383 Part 6 - Test Cases

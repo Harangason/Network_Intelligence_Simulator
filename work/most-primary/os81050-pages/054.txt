@@ -1,0 +1,67 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 54
+OS81050
+11.5.2   Reset and Power Management
+TJ = -40 to 125 °C; VDDCn,VDDAn = 2.5 V ±5 %; VDDPn = 3.3 V ±5 %; GNDCn,GNDAn,GNDPn = 0.0 V; 
+Load Capacitance = 30 pF; PLL locked at 48 kHz; unless otherwise noted.   
+ 
+Parameter Symbol Min Typ Max Unit Comment
+PS[1:0] transition time tpstrans 0.75 ms
+(Notes 1, 2, 3)PS[1:0] hold time tpshold 2.2 ms
+RST rising to PS[1:0] recognition tstp 51 0 0 m s
+RST Input Hysteresis ΔVhys-rst 200 mV
+RST pulse width trspw 150 ns
+(Notes 4, 5, 6)
+Configuration pin setup to RST rising:
+INT
+ERR/BOOT
+tcpsrs 0
+0
+ns
+ns
+Configuration pin hold from RST rising:
+INT
+ERR/BOOT
+tcphrs 25
+2.5
+ms
+ms
+RST rising to TX output active tbypass 10 30 ms (Note 7)
+1. Maximum time allowed by hardware for PS[1:0] to settle. Longer transition times may cause hardware to recognize 
+an erroneous power management state.
+2. Minimum time required for an external power management state (PS[1:0]) to be recognized by hardware. The INIC 
+Software Stack may define a longer hold time for responding to an external power event.
+3. Immediately following power-up (or reset), the PS[1:0] state is recognized after tstp. This requires tpshold be at least 
+tstp(max) after power-up (or reset).
+4. After both the 3.3 V and 2.5 V power supplies have stabilized, INIC must be reset for normal operation. A proper 
+reset is when both supplies are ≥90 % VDD; however, electrical specifications are applicable only at ±5 % VDD.
+5. Power-up configuration pins include: ERR/BOOT and INT; however, INT is only used as a configuration pin when 
+PortConfiguration.DefPort()  is set to INT_Select. When used as a configuration pin, an external 
+component (e.g. pull-up resistor) must hold INT in a valid state (high or low) for at least tcphrs or until INT is driven 
+low by INIC, whichever occurs first.
+6. The RST pulse width indicates the minimum time required to reset the part; however, the configuration pins can 
+take longer to settle to their default state, based on the trace capacitance and size of the on-board pull-up or pull-
+down resistor. Therefore, the RST pulse width must be long enough to allow the external configuration pins to 
+achieve their default state.
+7. During reset and immediately following, the INIC transceiver is inactive and RX is routed directly to TX (also known 
+as electrical bypass). After tbypass, the INIC transceiver becomes active and TX is actively driven.
+valid
+90 %
+Configuration
+Pins
+RST
+tcpsrs
+valid
+tcphrs
+trspw
+VDDPn
+(3.3 V supply)
+validPS[1:0]
+tstp
+tpstrans
+tpshold
+VDDCn/VDDAn
+(2.5 V supply)
+PS[1:0] recognition
+90 %
+Figure 11-1: Initial Power-Up and Reset Timing

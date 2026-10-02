@@ -1,0 +1,107 @@
+K28.FR.06 When Charging Station receives
+a
+UpdateDynamicScheduleReque
+st for a charging profile that has
+chargingProfileKind = Dynamic
+Charging Station SHALL respond with status =
+Accepted and immediately apply the values from
+UpdateDynamicScheduleRequest to the charging
+profile.
+K28.FR.07 When CSMS receives a
+PullDynamicScheduleUpdateRe
+quest for a charging profile that
+has chargingProfileKind =
+Dynamic
+CSMS SHALL respond with
+PullDynamicScheduleUpdateResponse with status
+= Accepted and the limits/setpoints to use in the
+charging profile.
+K28.FR.08 When Charging Station receives
+a
+PullDynamicScheduleUpdateRe
+sponse for a charging profile
+that has chargingProfileKind =
+Dynamic
+Charging Station SHALL immediately apply the
+values from PullDynamicScheduleUpdateResponse
+to the charging profile.
+K28.FR.09 K28.FR.06 OR K28.FR.08 Charging Station SHALL set dynUpdateTime to
+current time.
+K28.FR.10 When chargingProfileKind =
+Dynamic and
+dynUpdateInterval > 0 in
+chargingProfile AND
+dynUpdateTime +
+dynUpdateInterval >= <current
+time>
+Charging Station SHALL send a
+PullDynamicScheduleUpdateRequest with
+chargingProfileId = chargingProfile.id to request an
+update of the chargingSchedulePeriod.
+K28.FR.11 When Charging Station receives
+a
+UpdateDynamicScheduleReque
+st for a charging profile that
+does not have
+chargingProfileKind = Dynamic
+Charging Station SHALL respond with a status =
+Rejected and optionally a statusInfo.reasonCode
+= InvalidProfile
+K28.FR.12 When CSMS receives a
+PullDynamicScheduleUpdateRe
+quest for a charging profile that
+does not exist or does not have
+chargingProfileKind = Dynamic
+CSMS SHALL respond with a status = Rejected
+and optionally a statusInfo.reasonCode =
+InvalidProfile
+K28.FR.13 When a ChargingProfileType
+has chargingProfileKind =
+Dynamic AND
+chargingSchedule.duration is
+set AND
+current time >
+(chargingSchedule.duration +
+dynUpdateTime)
+Charging Station SHALL consider the charging
+profile invalid and switch to using the next valid
+charging profile.
+This is a fallback when CSMS is
+no longer responding within
+time set by duration.
+K28.FR.14 K28.FR.13 AND
+Charging Station receives an
+update for limit or setpoint from
+CSMS via
+UpdateDynamicScheduleReque
+st or
+PullDynamicScheduleUpdateRe
+sponse
+Charging Station SHALL consider the charging
+profile eligible again as a valid profile.
+This means the charging profile
+is valid again when a new
+update is received, assuming
+there is no other charging
+profile of higher stack level.
+K28.FR.15 When a ChargingScheduleType
+of a ChargingProfileType with
+chargingProfileKind = Dynamic
+contains the field duration AND
+current time >
+(chargingSchedule.duration +
+dynUpdateTime)
+Charging Station SHALL consider the charging
+profile invalid and switch to using the next valid
+charging profile.
+Field duration defines how long
+the charging schedule remains
+valid after receipt of a
+UpdateDynamicScheduleReque
+st or
+PullDynamicScheduleUpdateRe
+sponse.
+K29 - Dynamic charging profiles from external system
+New in OCPP 2.1
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 405/803 Part 2 - Specification

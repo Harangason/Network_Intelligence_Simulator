@@ -1,0 +1,81 @@
+ID Precondition Requirement definition Note
+C07.FR.11 C07.FR.09 AND
+eMAID found in Authorization Cache
+The Charging Station SHALL behave according to
+use case C12 - Start Transaction - Cached Id.
+C07.FR.12 C07.FR.09 AND
+eMAID is not found AND
+OfflineTxForUnknownIdEnabled
+= true
+The Charging Station SHALL allow charging
+according to use case C15 - Offline Authorization of
+unknown Id.
+C07.FR.13 C07.FR.04 AND
+the certificate chain (provided in
+certificate or
+iso15118CertificateHashData) is valid
+AND
+authorization status of idToken is one
+of Blocked, Expired, Invalid,
+Unknown
+CSMS SHALL return an AuthorizationResponse
+containing a certificateStatus =
+ContractCancelled and the authorization status
+in idTokenInfo.status.
+Certificate is valid, but
+EMAID is not accepted.
+C07.FR.14 C07.FR.04 AND
+the certificate chain (provided in
+certificate or
+iso15118CertificateHashData) is valid
+AND
+authorization status of idToken is NOT
+one of Blocked, Expired, Invalid,
+Unknown
+CSMS SHALL return an AuthorizationResponse
+containing a certificateStatus = Accepted and the
+authorization status in idTokenInfo.status.
+Charging can still not be
+allowed if
+idTokenInfo.status is
+other than Accepted
+(e.g. ConcurrentTx or
+NotAtThisLocation).
+C07.FR.15 C07.FR.04 AND
+the certificate chain (provided in
+certificate or
+iso15118CertificateHashData) has
+expired
+CSMS SHALL return an AuthorizationResponse
+containing a certificateStatus =
+CertificateExpired and an idTokenInfo.status
+= Expired
+If certificate is expired,
+then status of idToken is
+also reported expired.
+C07.FR.16 C07.FR.04 AND
+the certificate chain (provided in
+certificate or
+iso15118CertificateHashData) has
+been revoked
+CSMS SHALL return an AuthorizationResponse
+containing a certificateStatus =
+CertificateRevoked and an idTokenInfo.status
+= Invalid
+If certificate is revoked,
+then status of idToken is
+reported as invalid.
+C07.FR.17 C07.FR.04 AND
+the certificate chain (provided in
+certificate or
+iso15118CertificateHashData) cannot
+be verified or is invalid
+CSMS SHALL return an AuthorizationResponse
+containing a certificateStatus = CertChainError
+and an idTokenInfo.status = Invalid
+If certificate cannot be
+verified, then status of
+idToken is reported as
+invalid.
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 95/491 Part 2 - Specification

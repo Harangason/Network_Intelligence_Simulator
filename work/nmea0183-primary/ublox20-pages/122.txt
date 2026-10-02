@@ -1,0 +1,54 @@
+u-blox 20 HPG 2.00 - Interface description
+bit 1   U:1 backup - - The receiver goes into backup mode for a time period
+deﬁned by duration, provided that it is not connected
+to USB
+bit 2   U:1 force - - Force receiver backup while USB is connected. USB
+interface will be disabled.
+12 X4 wakeupSources - - Conﬁgure pins to wake up the receiver. The receiver
+wakes up if there is either a falling or a rising edge on
+one of the conﬁgured pins.
+bit 3   U:1 uartrx - - Wake up the receiver if there is an edge on the UART
+RX pin
+bit 5   U:1 extint0 - - Wake up the receiver if there is an edge on the
+EXTINT0 pin
+bit 6   U:1 extint1 - - Wake up the receiver if there is an edge on the
+EXTINT1 pin
+bit 7   U:1 spics - - Wake up the receiver if there is an edge on the SPI CS
+pin
+3.16.4 UBX-RXM-RAWX (0x02 0x15)
+3.16.4.1 Multi-GNSS raw measurements
+Message UBX-RXM-RAWX
+Multi-GNSS raw measurements
+Type Periodic/polled
+Comment This message contains the information needed to be able to generate a RINEX 3 multi-GNSS observation ﬁle
+(see ftp://ftp.igs.org/pub/data/format/).
+This message contains pseudorange, Doppler, carrier phase, phase lock and signal quality information for
+GNSS satellites once signals have been synchronized. This message supports all active GNSS.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x02 0x15 16 + numMeas·32 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 R8 rcvTow - s Measurement time of week in receiver local time
+approximately aligned to the GPS time system.
+The receiver local time of week, week number and leap
+second information can be used to translate the time
+to other time systems. More information about the
+diﬀerence in time systems can be found in the RINEX
+3 format documentation. For a receiver operating in
+GLONASS only mode, UTC time can be determined by
+subtracting the leapS ﬁeld from GPS time regardless
+of whether the GPS leap seconds are valid.
+8 U2 week - weeks GPS week number in receiver local time.
+10 I1 leapS - s GPS leap seconds (GPS-UTC). This ﬁeld represents the
+receiver's best knowledge of the leap seconds oﬀset.
+A ﬂag is given in the recStat bitﬁeld to indicate if the
+leap seconds are known.
+11 U1 numMeas - - Number of measurements to follow
+12 X1 recStat - - Receiver tracking status bitﬁeld
+bit 0   U:1 leapSec - - Leap seconds have been determined
+bit 1   U:1 clkReset - - Clock reset applied. Typically the receiver clock is
+changed in increments of integer milliseconds.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 122 of 224
+C1-Public

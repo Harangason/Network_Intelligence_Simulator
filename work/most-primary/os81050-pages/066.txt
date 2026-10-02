@@ -1,0 +1,28 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 66
+OS81050
+13.2  Physical Layer
+The distance between the Fiber Optic Receiver (FOR) unit and the OS81050 should be as short as possi-
+ble to minimize capacitance on the receiving data line ( RX). Minimizing capacitance shortens transition
+times out of the FOR, thereby minimizing pulse width distortion and jitter.
+Series resistors in the TX and RX paths should be used for series-termination and should be as close as
+possible to the transmitting end. Resistor values of 33-150 Ω are typical; however, the actual series resistor
+value should be selected based on the board layout and should match the line impedance, which will help
+minimize reflections and lower EMI. The
+Figure 13-2 illustrates a typical optical power control circuit for the Fiber Optic Transmitter (FOX), con-
+nected to the TXGAIN pin. The INIC TXGAIN line should be isolated from other signals that may control
+FOT power (e.g. do not wire-or with other open-drain lines).
+13.3  Reset
+After both the 3.3 V and 2.5 V power supplies have stabilized, the OS81050 must be reset ( RST low) for
+normal operation. A proper reset is when both power supplies are ≥90 % VDD; however, electrical specifi-
+cations are applicable only within ±5 % VDD. Once initialized, INIC is typically reset by the EHC only when
+a fatal communication error occurs, or when performing an update of the INIC Configuration String (see the
+OS8105x/6x INIC API User’s Manual [2]).
+If the external POR circuit does not drive the RST line high (e.g. open-drain output), an external pull-up
+resistor to 3.3 V should be used. If the external POR circuit drives the RST line high and low (e.g. push-pull
+output), a series resistor should be used between the POR circuit and the OS81050 RST pin in lieu of the
+pull-up. This series resistor allows INIC to be reset by something other than the POR circuit, such as the
+EHC or SMSC’s INIC Explorer [4] tool. The pull-up or series resistor should be at least 10 k Ω.
+The RST pulse width should be long enough to allo w the external configuration pins ( ERR/BOOT and INT)
+to achieve their default state (see Section 11.5.2). The transition time of RST is not relevant, provided the
+noise level does not exceed the ΔVhys-rst parameter given in Section 11.5.2.

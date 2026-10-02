@@ -1,0 +1,46 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 59
+11.9  Streaming Port
+TJ = -40 to 125 °C; VDDCn,VDDAn = 2.5 V ±5 %; VDDPn = 3.3 V ±5 %; GNDCn,GNDAn,GNDPn = 0.0 V; 
+Load Capacitance = 30 pF; PLL locked at 48 kHz; unless otherwise noted.   
+Parameter Symbol Min Typ Max Unit Comment
+FSY frequency (Note 1) ffsy 44.0 48 48.1 kHz
+SCK frequency (Note 1) fsck
+2.816
+12.3136
+MHz
+MHz
+64×Fs at 44.0 kHz
+256×Fs at 48.1 kHz
+SCK low time tsckl 25 ns
+SCK high time tsckh 25 ns
+SR[1:0] valid to SCK rising tsrs 25 ns (Notes 2, 4)
+SR[1:0] hold from SCK rising tsrh 25 ns (Notes 2, 4)
+SX[1:0] valid from SCK falling tsxv 30 ns (Notes 2, 4)
+SCK and FSY Outputs:
+SCK falling to FSY valid tfsyv -25 25 ns (Notes 2, 3)
+SCK and FSY Inputs:
+FSY valid to SCK rising tfsys 25 ns (Notes 2, 3)
+FSY hold from SCK rising tfsyh 25 ns (Notes 2, 3)
+1. If SCK and FSY are inputs, they must be frequency locked to the master clock (RMCK output clock). In addition, 
+the frequency can be slightly higher when network lock is lost (see Fs in Section 11.5).
+2. Data is stable at the rising edge of SCK, as shown in Figure 11-6.
+3. FSY polarity is determined by the data format selected when the SCM OpenPort() function is called.
+4. The MSB of SR[1:0] and SX[1:0] is the first or the second bit after FSY changes, based on the format selected.
+FSY
+(external)
+FSY
+(internal)
+SCK
+SR[1:0]
+SX[1:0]
+tsrs
+valid
+valid
+tsrh
+tsxv
+tsckl tsckh
+tfsyv
+tfsyhtfsys
+Figure 11-6: Streaming Port Timing

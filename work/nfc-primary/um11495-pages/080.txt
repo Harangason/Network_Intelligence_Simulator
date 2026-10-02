@@ -1,0 +1,36 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+10   RF Discovery (Polling Loop) Management
+10.1  RF Discovery functionalities
+This contains the overall RF Discovery concepts applied in PN7160. [NCI] defines the general RF state machine
+allowing the NFC controller to discover either cards or readers or peers. This RF state machine contains a state
+called RFST_DISCOVERY where the RF Discovery profile is applied.
+In order to ensure standard compliance, the PN7160 supports 2 different RF discovery profiles:
+• NFC Forum profile: implementation of the NFC Forum polling activity,
+• either limited to the current technologies defined in this standardization body (NFC-A, NFC-B, NFC-F, P2P
+passive).
+• Or extended with the additional technologies supported by PN7160, i.e. P2P Active and 15693. PN7160 also
+offers the possibility to extend this profile by polling for both NFC-F 424 and NFC-F 212.
+• EMVCo profile: mode allowing the PN7160 to be compliant to the EMVCo polling activity.
+In addition to these RF profiles, the PN7160 offers a way to limit the power consumption by applying a tag
+detector concept. The tag detector can be seen as a precondition to enable a dedicated profile. It means that if
+the tag detector is triggered, the default profile is automatically started.
+Note that [NCI] defines the TOTAL_DURATION of the discovery period independently of the reader phases
+applied. To simplify the implementation, for the PN7160 it has been decided to apply a timer only during the
+Listen/pause phase. So depending on the polling phase configuration (1 technology or more), the total duration
+will vary a bit. This is considered as acceptable and agreed by the NCI task Force in the NFC Forum.
+10.1.1  RF Discovery State Machine
+The following drawing shows the PN7160-NCI RF state machine, which differs from [NCI] only by the additions
+in red. Here are these additions:
+• A loop-back transition on state RFST_POLL_ACTIVE, corresponding to the RF_PRES_CHECK_CMD which
+can be sent by the DH to know if the Card/PICC is still in the field. See the command description in [PN7160-
+NCI] ISO-DEP R(NAK) Presence Check.
+• A new status code used on the CORE_GENERIC_ERROR_NTF loop-back transition on state
+RFST_DISCOVERY: this new status code is used when PN7160 is configured to behave as an EMVCo PCD,
+and it detects collision. See Section 10.5.1 for more details.
+• A new transition from RFST_POLL_ACTIVE to RFST_DISCOVERY: this transition is triggered by PN7160,
+when it is configured to behave as an EMVCo PCD and it detects that the RF communication with the PICC is
+broken.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+80 / 147

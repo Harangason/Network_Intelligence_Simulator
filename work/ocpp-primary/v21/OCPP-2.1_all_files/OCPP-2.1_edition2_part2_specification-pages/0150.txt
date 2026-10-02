@@ -1,0 +1,34 @@
+No. Type Description
+Alternative scenario URL to receipt is provided by payment terminal: PaymentCtrlr.ReceiptByCSMS = false,
+SettlementByCSMS = false
+1. When transaction ends, Charging Station sends a TransactionEventRequest with
+eventType = Ended and costDetails to CSMS.
+2. Charging Station shows the cost breakdown in costDetails to EV Driver.
+3. Charging Station instructs payment terminal to settle the payment for the amount in
+costDetails.totalCost.
+4. When payment is settled, payment terminal sends the URL that points to the receipt.
+5. Charging Station sends a NotifySettlementRequest with transactionId of the transaction,
+pspRef with value of idToken, status = Settled, settlementAmount and settlementTime`
+and the receipt information from payment service provder: receiptID, receiptUrl.
+a. CSMS responds with a NotifySettlementResponse.
+b. Charging Station displays receiptUrl from payment terminal to EV Driver.
+Alternative scenario Settlement by CSMS: SettlementByCSMS = true
+1. When transaction ends, Charging Station sends a TransactionEventRequest with
+eventType = Ended and costDetails to CSMS.
+2. Charging Station shows the cost breakdown in costDetails to EV Driver.
+3. Configuration variable PaymentCtrlr.SettlementByCSMS = true, therefore settlement is
+performed directly with PSP, bypassing the payment terminal.
+a. CSMS instructs payment service provider to settle the payment for the amount in
+costDetails.totalCost.
+NOTE In this scenario there is no feedback to EV Driver to provide a receipt. The CSO
+will need to offer the ability to retrieve a receipt via a website or app.
+5 Prerequisites Transaction was started using ad hoc payment. Charging Station supports local cost calculation.
+6 Postcondition(s) CSMS knows of the settled status and the EV Driver has been shown the cost and means to
+retrieve a receipt.
+7 Error handling
+8 Remark(s) A receipt URL, e.g. as a QR code, might be shown on the payment terminal display.
+Showing the receipt URL after settlement is problematic if the TxStopPoint =
+ParkingBayOccupancy, because the EV Driver has left already at that moment.
+See chapter I. Tariff and Cost for details about the cost breakdown.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 137/803 Part 2 - Specification

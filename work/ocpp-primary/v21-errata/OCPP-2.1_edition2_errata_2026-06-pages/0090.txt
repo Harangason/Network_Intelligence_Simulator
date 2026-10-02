@@ -1,0 +1,49 @@
+Tool validations
+* Step 2 Step 4 :
+Message: SetChargingProfileResponse
+- status must be Accepted
+* Step 3 Step 8 :
+Message: TransactionEventRequest
+- eventType must be Updated
+- transactionInfo.transactionId must be <transactionId>
+- evseSleep must be false | <omitted>
+- meterValue[0].sampledValue[0].measurand must be Energy.Active.Import.Register
+* Step 5 Step 10 :
+Message: TransactionEventRequest
+- eventType must be Updated
+- transactionInfo.transactionId must be <transactionId>
+- evseSleep must be false | <omitted>
+* Step 8 Step 13 :
+Message: SetChargingProfileResponse
+- status must be Accepted
+* Step 9 Step 14 :
+Message: TransactionEventRequest
+- eventType must be Updated
+- eventData.transactionData.transactionId must be <transactionId>
+- evseSleep must be true
+- meterValue[0].sampledValue[0].measurand must be Energy.Active.Import.Register
+* Step 11 Step 16 :
+Message: TransactionEventRequest
+- eventType must be Updated
+- eventData.transactionData.transactionId must be <transactionId>
+- evseSleep must be true
+- meterValue[0].sampledValue[0].measurand must be Energy.Active.Import.Register
+- meterValue[0].sampledValue[0].value must be identical to value in Step 9
+Post scenario validations:
+N/a
+6.2.57. Page 809-878 - (2026-02) - TC_Q_1XX_CS - NotifyEVChargingNeeds also
+needs to be used for V2X with CHAdeMO
+Added reusable state for BPT with CHAdeMO:
+State CHAdeMOV2xControlBpt
+System under test Charging Station
+Description Configures the EV to use AC_BPT or DC_BPT energy transfer mode.
+Exposes <transactionId>
+Before (Preparations)
+Configuration State:
+- CHAdeMOCtrlr.Enabled is true 
+- V2XChargingCtrlr.V2XEnabled is true
+Memory State:
+N/a
+Reusable State(s):
+N/a
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 86/116 Errata 2026-06

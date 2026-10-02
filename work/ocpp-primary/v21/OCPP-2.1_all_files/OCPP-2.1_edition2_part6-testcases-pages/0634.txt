@@ -1,0 +1,50 @@
+Main (Test scenario)
+11. The Charging Station notifies the CSMS that its Available
+connector(s) have been set to Unavailable.
+Note(s):
+- This step needs to be executed for all connectors with
+AvailabilityState Available.
+12. The Test System responds accordingly.
+12a. If Charging Station reported Installing in step 9 then wait a while (30-60 s) before continuing with next steps to stop
+transaction to allow time to install firmware.
+13. Execute Reusable State ParkingBayUnoccupied for <Configured connectorId>
+Note(s):
+- The Charging Station will proceed to this end state. This will cause the transaction to stop.
+- The Charging Station will start the firmware update process (if it had not started installing in step 9) the moment the transaction
+ends or when all interactions with the EV Driver are done (so after the cable has been unplugged, assuming there is no parking bay
+sensor).
+14. The Charging Station notifies the CSMS about the current
+state of all connectors.
+Note(s):
+- This step is optional. The Charging Station may want to set its
+last connector to Unavailable, before proceeding installing the
+new firmware.
+15. The Test System responds accordingly.
+16. Execute Reusable State RebootBeforeFirmwareInstallation
+Note: This step only needs to be executed if the Charging Station needs to reboot before firmware installation.
+17. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Installing
+Note(s):
+- This step only needs to be executed if the Charging Station did
+not report Installing at step 9 and did not reboot before firmware
+installation, at step 16 (because that step already reports
+Installing).
+18. The Test System responds with a
+FirmwareStatusNotificationResponse
+19. Execute Reusable State RebootBeforeFirmwareActivation
+Note: This step only needs to be executed if the Charging Station needs to reboot before firmware activation.
+20. The Test System waits for the Charging Station to reconnect.
+Note: This step only needs to be executed if the Charging Station did not reboot/reconnect up until this point. The Charging Station
+should at least reconnect to reestablish the protocol version handshake.
+Note: Step 21 through 26 can be sent in a different order.
+21. The Charging Station notifies the CSMS about the current
+state of all connectors.
+Note(s):
+- This step only needs to be executed if the connectors were
+previously set to Unavailable (at step 14) and the Charging Station
+did not report setting them back to Available (after a reboot
+sequence at step 16 or 19) yet.
+22. The Test System responds accordingly.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 632/1383 Part 6 - Test Cases

@@ -1,0 +1,29 @@
+Main
+(Test scenario)
+3. 4.  The Charging Station sends a TransactionEventRequest
+4. 5.  The Test System responds with a
+TransactionEventResponse
+Note(s) :
+ The Test System will respond to the TransactionEventRequest       
+containing the idToken, with:     
+- idTokenInfo.status Accepted
+- idTokenInfo.cacheExpiryDateTime <current date/time>
+- transactionLimit.maxCost = 123.32
+Tool validations
+* Step 1:
+Message AuthorizeRequest
+idToken.idToken <prepaid card id>
+idToken.type = "ISO14443" or "ISO15693"
+* Step 3: Step 4: 
+Message TransactionEventRequest
+- eventType Updated (for TxStartPoint ParkingBayOccupancy) or Started (for all other TxStartPoints)
+- idToken.idToken <prepaid card id>
+- idToken.type = <idTokenType from step 1>
+Post scenario validations:
+- transactionInfo.chargingState must transition to Charging
+6.2.17. Page 209 - (2026-02) - TC_C_121_CS - Added tool validations for
+triggerReason LimitSet
+Test case name Incremental authorization - increasing enabled
+Test case Id TC_C_121_CS
+…
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 41/116 Errata 2026-06

@@ -1,0 +1,100 @@
+ID Precondition Requirement definition Note
+N01.FR.08 When uploading a log document is
+started
+The Charging Station SHALL send a
+LogStatusNotificationRequest with status
+Uploading.
+N01.FR.09 When a log document is uploaded
+successfully
+The Charging Station SHALL send a
+LogStatusNotificationRequest with status
+Uploaded.
+N01.FR.10 When uploading a log document failed The Charging Station SHALL send a
+LogStatusNotificationRequest with status
+UploadFailure, BadMessage,
+PermissionDenied OR
+NotSupportedOperation.
+It is RECOMMENDED to
+send the status only after
+all retry attempts have
+failed.
+A Charging Station MAY
+send a new Uploading
+status upon each retry
+attempt.
+N01.FR.12 When a Charging Station is
+assembling or uploading the log file
+AND
+the Charging Station receives a new
+GetLogRequest
+The Charging Station SHOULD cancel the ongoing
+log file upload AND respond with GetLogResponse
+with status AcceptedCanceled.
+N01.FR.13 The field requestId in LogStatusNotificationRequest
+is mandatory, unless the message was triggered by
+a TriggerMessageRequest AND there is no log
+upload ongoing.
+N01.FR.14 It is RECOMMENDED that Charging Station and
+CSMS support at least HTTP(s) as transport
+mechanism for the log file upload
+HTTP transport is most
+likely to be supported,
+since it is also used for
+OCPP messaging.
+N01.FR.15 Charging Station SHALL at least support the CSMS
+trust chain for secure transports
+N01.FR.16 It is RECOMMENDED that Charging Station
+supports the usual CAs provided by the operating
+system
+The log file storage of
+CSMS may be a cloud
+service operated
+separately from the
+CSMS itself and not part
+of the CSMS trustchain.
+N01.FR.17 When CSMS requires basic
+authorization for the upload
+CSMS is RECOMMENDED to require a different
+basic authorization password for the upload, then
+the one used for OCPP connectivity.
+This is to avoid leaking
+the OCPP password to
+3rd parties if the log file
+storage is a different
+system.
+Basic authorization can
+be added to the URL as
+follows:
+http://username:passwor
+d@csms.org/logs
+N01.FR.18 Is is RECOMMENDED that CSMS accepts both PUT
+and POST requests for uploads from Charging
+Station.
+N01.FR.19 When Charging Station uses a
+HTTP(s) POST request to upload the
+log file
+Charging Station SHALL provide at least the
+following attributes: Content-Type: (e.g.
+application/octet-stream) and Content-
+Disposition: with a specification of the
+filename.
+For example:
+Content-Type:
+application/octet-stream
+Content-Disposition:
+form-data;
+name="uploadedfile";
+filename="logfile_202104
+20.zip"
+N01.FR.20 N01.FR.12 AND
+Charging Station cancels the log file
+upload
+The Charging Station SHALL send a
+LogStatusNotificationRequest with status =
+AcceptedCanceled.
+N01.FR.12 is a "SHOULD"
+requirement. Only send
+status notification when
+requirement is executed.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 453/803 Part 2 - Specification

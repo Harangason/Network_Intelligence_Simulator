@@ -1,0 +1,52 @@
+Local Controller CSMS
+PublishFirmwareRequest()
+PublishFirmwareResponse()
+PublishFirmwareStatusNotificationRequest(status = Downloading)
+PublishFirmwareStatusNotificationResponse()
+Download firmware
+Downloading firmware
+PublishFirmwareStatusNotificationRequest(status = Downloaded)
+PublishFirmwareStatusNotificationResponse()
+Verify checksum
+Verify MD5 checksum
+PublishFirmwareStatusNotificationRequest(status = ChecksumVerified)
+PublishFirmwareStatusNotificationResponse()
+Publish FW on publish URL
+FirmwareStatusNotificationRequest(status = Published, location)
+FirmwareStatusNotificationResponse()
+Figure 118. Sequence Diagram: showing publishing of firmware (happy flow)
+L03 - Publish Firmware file on Local Controller - Requirements
+Table 112. L03 - Requirements
+ID Precondition Requirement definition
+L03.FR.01 Whenever the Local Controller enters a new status in the publishing
+process, it SHALL send a PublishFirmwareStatusNotificationRequest
+message to the CSMS.
+L03.FR.02 The MD5 checksum SHALL be calculated over the entire firmware file.
+L03.FR.03 The Local Controller SHALL publish the firmware file using all its
+supported protocols (e.g. HTTP, HTTPS, and FTP)
+L03.FR.04 The Local Controller SHALL set URI’s for all supported protocols (e.g.
+HTTP, HTTPS, and FTP) in the location field of the
+PublishFirmwareStatusNotificationRequest message with status
+Published.
+L03.FR.05 Upon receipt of a
+PublishFirmwareRequest message.
+The Local Controller SHALL respond with a PublishFirmwareResponse
+message, indicating whether it has accepted the request.
+L03.FR.06 If the Local Controller cannot
+download the firmware file.
+The Local Controller SHALL send a
+PublishFirmwareStatusNotificationRequest with status DownloadFailed.
+L03.FR.07 If the Local Controller cannot verify
+the MD5 checksum.
+The Local Controller SHALL send a
+PublishFirmwareStatusNotificationRequest with status InvalidChecksum.
+L03.FR.08 If the Local Controller cannot
+publish the firmware file.
+The Local Controller SHALL send a
+PublishFirmwareStatusNotificationRequest with status PublishFailed.
+L03.FR.09 After successfully publishing the
+firmware file.
+The Local Controller SHALL send a
+PublishFirmwareStatusNotificationRequest with status Published.
+Edition 4, 2025-12-03 L. Firmware Management
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 301/491 Part 2 - Specification

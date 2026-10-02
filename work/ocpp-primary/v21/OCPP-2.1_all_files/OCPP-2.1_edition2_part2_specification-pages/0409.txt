@@ -1,0 +1,59 @@
+ID Precondition Requirements Note
+K19.FR.14 K19.FR.01 AND
+Charging Station is offline
+Charging Station SHOULD add timestamp to the
+NotifyEVChargingNeedsRequest with the time
+when charging needs were received from EV
+This will tell CSMS how old this
+data is, if it was not
+immediately sent because of an
+offline period.
+K19.FR.15 K19.FR.02 AND
+CSMS does not accept the
+requestedEnergyTransfer in
+NotifyEVChargingNeedsReques
+t
+CSMS SHALL respond with
+NotifyEVChargingNeedsResponse with status =
+Rejected.
+Charging station will then stop
+the transaction.
+K19.FR.16 K19.FR.15 Charging Station SHALL terminate the transaction
+and send a TransactionEventRequest with
+eventType = Ended, triggerReason =
+AbnormalCondition, stoppedReason =
+ReqEnergyTransferRejected.
+K20 - ISO 15118-20 Adjusting charging schedule when energy needs
+change
+New in OCPP 2.1
+No. Type Description
+1 Name ISO 15118-20 Adjusting charging schedule when energy needs change
+2 ID K20
+3 Objective(s) To adjust the charging schedule when EV reports a change in departure time or energy need.
+4 Description The user has changed the departure time or requested energy amount, either via EV or charging
+station. This means that the charging profile may have to be updated for these needs. The
+charging station notifies CSMS of this situation.
+Actors EV, Charging Station, CSMS
+Scenario description #1 Via EV when using ISO 15118-20 Scheduled Control mode
+1. EV sends a ScheduleExchangeReq message with new DepartureTime and/or
+EVTargetEnergyRequest.
+2. CS sends a NotifyEVChargingNeedsRequest with given departureTime and
+evTargetEnergyRequest to CSMS.
+3. CSMS calculates a new charging profile and sends a SetChargingProfileRequest to the
+Charging Station.
+4. CS returns the new charging schedule to EV in the ScheduleExchangeRes response
+message.
+5. EV sends its projected charging schedule (EVPowerProfile) in a PowerDeliveryReq to the
+Charging Station.
+6. CS sends this EV charging schedule to CSMS as a NotifyEVChargingScheduleRequest.
+Scenario description #2 Via EV when using ISO 15118-20 Dynamic Control mode
+1. EV sends an AC/DC_ChargeLoopReq message with new DepartureTime and/or
+EVTargetEnergyRequest.
+2. CS sends a NotifyEVChargingNeedsRequest with given departureTime and
+evTargetEnergyRequest to CSMS.
+3. CSMS calculates a new charging profile and sends a SetChargingProfileRequest to the
+Charging Station.
+4. CS controls charging of EV via the AC/DC_ChargeLoopRes message to match the
+provided charging profile.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 396/803 Part 2 - Specification

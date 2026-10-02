@@ -1,0 +1,29 @@
+– QoS: same as MQTT, contains the QoS level for this PUBLISH message.
+– Retain: same as MQTT, contains the Retain ﬂag.
+– Will: not used
+– CleanSession: not used
+– TopicIdType: indicates the type of the topic id contained in the TopicId ﬁeld.
+• TopicId: contains the topic id value or the short topic name for which the data is published.
+• MsgId: same meaning as the MQTT “Message ID”; only relevant in case of QoS levels 1 and 2, otherwise
+coded 0x0000.
+• Data: the published data.
+5.4.13 PUBACK
+Length MsgType TopicId MsgId ReturnCode
+(octet 0) (1) (2,3) (4,5) (6)
+Table 17: PUBACK message
+The PUBACK message is sent by a gateway or a client as an acknowledgment to the receipt and processing
+of a PUBLISH message in case of QoS levels 1 or 2. It can also be sent as response to a PUBLISH message in
+case of an error; the error reason is then indicated in the ReturnCode ﬁeld. Its format is illustrated in Table 17:
+• Length and MsgType: see Section 5.2.
+• TopicId: same value the one contained in the corresponding PUBLISH message.
+• MsgId: same value as the one contained in the corresponding PUBLISH message.
+• ReturnCode: “accepted”, or rejection reason.
+5.4.14 PUBREC, PUBREL, and PUBCOMP
+Length MsgType MsgId
+(octet 0) (1) (2-3)
+Table 18: PUBREC, PUBREL, and PUBCOMP Messages
+As with MQTT, the PUBREC, PUBREL, and PUBCOMP messages are used in conjunction with a PUBLISH
+message with QoS level 2. Their format is illustrated in Table 18:
+• Length and MsgType: see Section 5.2.
+• MsgId: same value as the one contained in the corresponding PUBLISH message.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 14

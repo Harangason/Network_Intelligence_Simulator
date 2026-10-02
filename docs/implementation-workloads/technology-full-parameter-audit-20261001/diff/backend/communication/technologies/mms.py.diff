@@ -1,0 +1,273 @@
+--- before/backend/communication/technologies/mms.py
++++ after/backend/communication/technologies/mms.py
+@@ -0,0 +1,270 @@
++"""Generic MMS association parameters; implementation defaults are qualified.
++
++ISO public metadata is not the complete normative text. The pinned library
++provides inspectable wire/implementation limits, without implying a NIS codec.
++"""
++COMMIT='6d231326bff8e9b6500aa1e345c076d3a329f211'
++BASE='https://raw.githubusercontent.com/mz-automation/libiec61850/'+COMMIT+'/'
++CONFIG=BASE+'config/stack_config.h'
++CLIENT=BASE+'src/mms/iso_mms/client/mms_client_connection.c'
++INIT=BASE+'src/mms/iso_mms/client/mms_client_initiate.c'
++SERVER=BASE+'src/mms/iso_mms/server/mms_association_service.c'
++COTP=BASE+'src/mms/iso_cotp/cotp.c'
++OSI=BASE+'src/mms/inc/iso_connection_parameters.h'
++IDENTITY=BASE+'src/mms/iso_common/iso_connection_parameters.c'
++SESSION=BASE+'src/mms/iso_session/iso_session.c'
++PRESENTATION=BASE+'src/mms/iso_presentation/iso_presentation.c'
++ACSE=BASE+'src/mms/iso_acse/acse.c'
++ASN=BASE+'src/mms/iso_mms/asn1c/InitiateRequestPdu.c'
++NEST=BASE+'src/mms/inc_private/mms_common_internal.h'
++RFC='https://www.rfc-editor.org/rfc/rfc1006.html'
++ISO='https://www.iso.org/standard/37079.html'
++SOURCES={url:'libiec61850 v1.6 commit '+COMMIT+'; '+scope for url,scope in [
++ (CONFIG,'compile configuration; factory defaults require actual unchanged build evidence, TLS depends WITH_MBEDTLS'),
++ (CLIENT,'constructor, configurable timeout/windows and plain102/TLS3782 binding; example identities not installed device defaults'),
++ (INIT,'request CBB11bits/services85bits/version1/nesting10 and response parser compile caps'),
++ (SERVER,'association parser PDU minimum128, local compile caps, runtime service flags and CBB intersection'),
++ (COTP,'normal DT header3, selected TPDU exponent7..13, power-of-two negotiation and fragmentation'),
++ (OSI,'independent local/remote T0..4/S0..16/P0..16 selectors, AP-title and ACSE authentication API'),
++ (IDENTITY,'actual local/remote AP-title BER output buffer10bytes, independent titles and optional omitted identity'),
++ (SESSION,'normal DATA SPDU4bytes distinct variable association SPDU'),
++ (PRESENTATION,'actual BER contexts and variable encoding; constructor ACSE1/MMS3 are implementation proposals'),
++ (ACSE,'actual authenticator callback and password/TLS certificate path; enum alone does not implement ACSE certificate encoding'),
++ (ASN,'generated Integer32/16/8 and Unsigned32 constraints; positive usable limits distinct internal -1 sentinels'),
++ (NEST,'DEFAULT_DATA_STRUCTURE_NESTING_LEVEL10; configured file resources') ]}
++SOURCES.update({RFC:'RFC1006 May1987 sections5/6, TCP102, class0, TPKT3/header4/7..65535; RFC TSDU65524 distinct library fragmentation',
++ ISO:'ISO9506-1:2003 edition2 August2003 public metadata checked2026-10-02; generic application independent of energy/IEC61850 mapping; full norm not obtained'})
++DECLARATIONS=[]
++def d(key,kind,meaning,lo=None,hi=None,unit=None,options=None,source=CONFIG,**kw):
++    DECLARATIONS.append(dict(key='mm_'+key,type=kind,description=meaning,min=lo,max=hi,unit=unit,
++      options=options,source=source,source_revision=SOURCES[source],**kw))
++
++for key,meaning,options,source in [
++ ('profile','Actual MMS implementation; generic ISO application does not imply IEC61850 ACSI/SCL.', ['LIBIEC61850_1_6','REGISTERED'],ISO),
++ ('role','Actual association endpoint role, separate outstanding calling/called directions.', ['CLIENT','SERVER','REGISTERED'],CLIENT),
++ ('binding','Actual lower-layer binding; TCP and TLS need separate canonical IP/physical evidence.', ['RFC1006_TCP','RFC1006_TLS','REGISTERED'],RFC),
++ ('phase','Actual association/data/conclude phase; session data4bytes not universal association overhead.', ['ASSOCIATION','DATA','CONCLUDE','REGISTERED'],SESSION),
++ ('encoding','Actual complete MMS encoding, not assumed service object size.', ['ASN1_BER','REGISTERED'],INIT),
++ ('build','Actual unchanged pinned factory configuration or independently sourced modified build.', ['FACTORY','CUSTOM','REGISTERED'],CONFIG),
++ ('service','Actual selected service and endpoint supported bits; compilation is not runtime permission.', ['READ','WRITE','GET_NAME_LIST','GET_VARIABLE_ATTRIBUTES','DATASET','JOURNAL','STATUS','IDENTIFY','FILE','OBTAIN_FILE','DELETE_FILE','RENAME_FILE','REGISTERED'],CONFIG),
++ ('name_scope','Actual VMD/domain/association namespace, not copied IEC61850 logical node.', ['VMD','DOMAIN','ASSOCIATION','REGISTERED'],ISO),
++ ('auth','Actual implemented authentication; enumerated ACSE certificate requires registered encoder.', ['NONE','PASSWORD','TLS_CERTIFICATE','ACSE_CERTIFICATE_REGISTERED'],ACSE),
++ ]:d(key,'select',meaning,options=options,source=source)
++for key,meaning,source in [
++ ('revision','Actual ISO edition, implementation revision and negotiated feature agreement.',ISO),
++ ('network_id','Actual separately bound canonical TCP/IP/lower-network identity.',RFC),
++ ('binding_source','Actual transport connection, interfaces and endpoint binding.',RFC),
++ ('endpoint_source','Actual endpoints and configured AP/AE/selectors, not constructor sample identities.',OSI),
++ ('codec_source','Actual BER schema, object types, lengths and complete MMS PDU encoding.',INIT),
++ ('schedule_source','Actual request/response, concurrency, timeout, TCP retransmission and reconnect bounds.',CLIENT),
++ ('capacity_source','Actual all-layer encoded load, fragmentation, buffers and actual offered traffic.',COTP),
++ ('acceptance_source','Actual application E2E/freshness/safety/security acceptance, distinct TCP reliability.',ISO),
++ ('build_source','Actual pinned commit, compile flags, overrides, platform/socket/TLS implementation.',CONFIG),
++ ('negotiation_source','Actual association request/response and negotiated limits, not factory proposal.',SERVER),
++ ('registered_source','Actual registered binding/role/service/codec/implementation.',ISO),
++ ('service_source','Actual compiled and runtime permitted service bits at both endpoints.',SERVER),
++ ('namespace_source','Actual object names, scope, ownership and value types.',ISO),
++ ('invoke_source','Actual invocation-ID matching and outstanding unique calls on this association.',CLIENT),
++ ('fragment_source','Actual COTP negotiation, TSDU and ordered fragment/reassembly trace.',COTP),
++ ('identity_source','Actual installed selectors/AP titles/qualifiers, not example1.1.1.999 identity.',OSI),
++ ('credential_ref','Actual external credential/certificate reference; never store passwords as defaults.',ACSE),
++ ('security_source','Actual TLS build, trust validation, authenticator and security acceptance.',ACSE),
++ ('resource_source','Actual server/file/dataset resources and runtime limits.',CONFIG),
++ ('application_name','Actual MMS named object; no universal generated identifier.',ISO),
++ ('local_ap_title','Actual local AP-title OID; constructor identity not installed hardware evidence.',OSI),
++ ('remote_ap_title','Actual remote AP-title OID, independent local title.',OSI),
++ ]:d(key,'text',meaning,source=source)
++for spec in DECLARATIONS:
++    if spec['key'] in ('mm_local_ap_title','mm_remote_ap_title'):
++        spec['pattern']=r'(?:[01]\.(?:[0-9]|[12][0-9]|3[0-9])|2\.(?:0|[1-9][0-9]*))(?:\.(?:0|[1-9][0-9]*))*'
++for side in ('local','remote'):
++    d(side+'_ap_encoded_bytes','number','Actual BER-encoded '+side+' AP-title octets; library buffer10, not OID text character count.',1,None,'byte',source=IDENTITY,integer=True)
++for level,size in [('t',4),('s',16),('p',16)]:
++    for side in ('local','remote'):
++        d(side+'_'+level+'selector','text','Actual '+side+' '+level.upper()+' selector octets represented by paired hexadecimal digits; zero length means absent.',source=OSI,
++          pattern=r'(?:[0-9A-Fa-f]{2}){0,'+str(size)+'}',max_length=size*2)
++for key,meaning,lo,hi,unit,source in [
++ ('peer_port','Actual peer TCP port1..65535;102 plain RFC1006 or library3782 TLS proposals, custom possible.',1,65535,None,CLIENT),
++ ('local_port','Actual local bound TCP port;0 requests OS ephemeral port.',0,65535,None,OSI),
++ ('version','Actual negotiated MMS version; library emits1, positive ASN16 alone not feature conformance.',1,32767,None,INIT),
++ ('pdu_offer_bytes','Actual offered localDetail positive signed Integer32; minimum128 qualified library server.',1,2147483647,'byte',ASN),
++ ('peer_pdu_limit_bytes','Actual peer maximum MMS PDU positive signed Integer32.',1,2147483647,'byte',ASN),
++ ('negotiated_pdu_bytes','Actual usable negotiated MMS cap, not Ethernet MTU/TPKT length or application payload.',1,2147483647,'byte',SERVER),
++ ('compiled_pdu_bytes','Actual compiled MMS buffer limit;65000 source-qualified factory proposal.',1,2147483647,'byte',CONFIG),
++ ('minimum_pdu_bytes','Actual configured library association acceptance floor;128 factory proposal.',1,2147483647,'byte',CONFIG),
++ ('pdu_bytes','Actual complete encoded MMS PDU length including BER overhead.',1,2147483647,'byte',INIT),
++ ('mms_overhead_bytes','Actual service/tag/length/invoke/structure overhead, not fixed per-service guess.',0,None,'byte',INIT),
++ ('calling_offer','Actual offered maximum outstanding calling calls positive signed Integer16.',1,32767,None,ASN),
++ ('called_offer','Actual offered maximum outstanding called calls, independent calling.',1,32767,None,ASN),
++ ('calling_negotiated','Actual negotiated calling concurrency, not both-direction shared queue.',1,32767,None,SERVER),
++ ('called_negotiated','Actual negotiated called concurrency.',1,32767,None,SERVER),
++ ('compiled_calling','Actual configured calling cap5 factory; source implementation differs calling vs called arrays.',1,32767,None,CONFIG),
++ ('compiled_called','Actual configured called cap5 factory.',1,32767,None,CONFIG),
++ ('nesting_offer','Actual offered data-structure nesting positive Integer8; library constructor emits10.',1,127,None,ASN),
++ ('nesting_negotiated','Actual agreed nesting positive Integer8, not automatically capped10 by parser.',1,127,None,ASN),
++ ('invoke_id','Actual Unsigned32 invocation identifier; unique outstanding/correlated response needs trace.',0,4294967295,None,ASN),
++ ('request_timeout_ms','Actual configured library request timeout uint32, not application functional deadline.',0,4294967295,'ms',CLIENT),
++ ('connect_timeout_ms','Actual independent connect timeout uint32.',0,4294967295,'ms',CLIENT),
++ ('obtain_file_timeout_ms','Actual library server obtain-file task timeout, not global MMS retry.',0,4294967295,'ms',CONFIG),
++ ('compiled_tpdu_bytes','Actual configured COTP cap1024..8192 library configuration, distinct negotiated128..8192.',1,65531,'byte',CONFIG),
++ ('tpdu_exponent','Actual selected library negotiated exponent7..13, not log2 Ethernet MTU.',7,13,None,COTP),
++ ('tpdu_bytes','Actual negotiated normal TPDU2^exponent, includes DT header3.',1,65531,'byte',COTP),
++ ('dt_header_bytes','Actual library normal DATA TPDU header3, excludes TPKT4.',0,None,'byte',COTP),
++ ('tpkt_header_bytes','RFC1006 TPKT four-byte header; no4-octet alignment requirement.',0,None,'byte',RFC),
++ ('tpkt_version','Actual RFC1006 packet version3, distinct MMSversion1.',0,255,None,RFC),
++ ('fragment_payload_bytes','Selected library normal DT usable fragment payload=TPDU minus3.',1,None,'byte',COTP),
++ ('tsdu_bytes','Actual MMS/ACSE/presentation/session TSDU bytes before COTP; not arbitrary raw signal bytes.',1,None,'byte',COTP),
++ ('fragments','Actual normal DATA fragment count max1/ceil(TSDU/(TPDU-3)); TCP segment count differs.',1,None,None,COTP),
++ ('tpkt_stream_bytes','Actual sum of normal DATA TPKT bytes=TSDU+7 per fragment, excludes TCP/IP/TLS/PHY.',7,None,'byte',COTP),
++ ('session_bytes','Actual normal DATA SPDU4; association framing is variable.',0,None,'byte',SESSION),
++ ('presentation_bytes','Actual BER presentation bytes, length dependent, not fixed implicit8.',0,None,'byte',PRESENTATION),
++ ('acse_bytes','Actual phase-dependent ACSE overhead, zero for normal MMS DATA path.',0,None,'byte',ACSE),
++ ('acse_context_id','Actual separate negotiated presentation context ID for ACSE; constructor1 proposal.',1,255,None,PRESENTATION),
++ ('mms_context_id','Actual negotiated MMS presentation context ID; constructor3 proposal.',1,255,None,PRESENTATION),
++ ('local_ae_qualifier','Actual local implementation encoded UInt32 AE qualifier; example12 not actual device identity.',0,4294967295,None,OSI),
++ ('remote_ae_qualifier','Actual remote encoded UInt32 AE qualifier.',0,4294967295,None,OSI),
++ ('cbb_offer','Actual two-octet 11bit offered parameter bitmap, five low padding bits zero.',0,65535,None,INIT),
++ ('cbb_negotiated','Actual agreed CBB; verified peer/local intersection record required, not assumed F100.',0,65535,None,SERVER),
++ ('max_clients','Actual configured server concurrency; -1 means unlimited,0 means no accepted clients.',-1,None,None,CONFIG),
++ ('open_files','Actual configured open files per association, factory5.',1,None,None,CONFIG),
++ ('file_tasks','Actual configured concurrent server obtain-file tasks, factory5.',1,None,None,CONFIG),
++ ('lists_vmd','Actual configured VMD named-variable-list limit, factory10.',1,None,None,CONFIG),
++ ('lists_domain','Actual configured domain named-variable-list limit, factory10.',1,None,None,CONFIG),
++ ('lists_association','Actual configured association list limit, factory10.',1,None,None,CONFIG),
++ ('list_members','Actual configured dataset list member limit, factory100.',1,None,None,CONFIG),
++ ('keepalive_idle_s','Actual OS-supported TCP idle setting, factory5s, not functional request deadline.',1,None,'s',CONFIG),
++ ('keepalive_interval_s','Actual TCP keepalive interval, factory2s.',1,None,'s',CONFIG),
++ ('keepalive_count','Actual TCP failed probe count, factory2, independent MMS retry count.',1,None,None,CONFIG),
++ ]:d(key,'number',meaning,lo,hi,unit,source=source,integer=True)
++d('services_bitmap','text','Actual85bit services bitmap in11octets; final3 padding bits zero. Client hardcoded bitmap not server runtime capability.',source=INIT,
++  pattern=r'[0-9A-Fa-f]{21}[08]',max_length=22)
++for key,meaning,source in [
++ ('tls_compiled','Actual WITH_MBEDTLS-enabled build, not unconditionally defined by header.',CONFIG),
++ ('tls_authenticated','Actual verified TLS certificate/trust/session result; port3782 does not confirm authentication.',ACSE),
++ ('authenticator','Actual installed ACSE authentication callback; absent callback accepts connection.',ACSE),
++ ('keepalive','Actual compiled/OS enabled TCP keepalive, not safety supervision.',CONFIG),
++ ('single_threaded','Actual configured library server threading; factoryFalse.',CONFIG),
++ ('threadless','Actual compiled threadless stack; incompatible ordinary single/multithread modes.',CONFIG),
++ ('service_supported','Actual endpoint compiled/runtime selected-service permission.',SERVER),
++ ('expedited','Actual experimental expedited path requires separately registered codec; normal DT formula excluded.',RFC),
++ ]:d(key,'boolean',meaning,source=source)
++
++REQUIRED=['profile','role','binding','phase','encoding','revision','network_id','binding_source','endpoint_source',
++ 'codec_source','schedule_source','capacity_source','acceptance_source']
++REMOVED={k:'Generic MMS has no universal '+k+'; use actual association, TCP/IP/lower-layer, fragmentation and object evidence.'for k in
++ ('bitrate','queue_size','queue_policy','qos_priority','traffic_class','reserved_bandwidth_percent','sync_method','rate_limit_bit_s',
++ 'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms','gateway_maximum_throughput',
++ 'gateway_input_buffer','gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
++FACTORY={'compiled_pdu_bytes':65000,'minimum_pdu_bytes':128,'compiled_calling':5,'compiled_called':5,
++ 'compiled_tpdu_bytes':8192,'max_clients':100,'open_files':5,'file_tasks':5,'lists_vmd':10,'lists_domain':10,
++ 'lists_association':10,'list_members':100,'keepalive':True,'keepalive_idle_s':5,'keepalive_interval_s':2,
++ 'keepalive_count':2,'single_threaded':False,'threadless':False}
++
++def semantics():
++    rules=[dict(parameter='local_timing_evidence',allowed=[],source=ISO,source_revision=SOURCES[ISO])]
++    def r(key,when=None,source=CONFIG,**kw):
++        rules.append(dict(parameter=key if key=='payload_bytes'else'mm_'+key,
++          when={'mm_'+k:v for k,v in(when or{}).items()},source=source,source_revision=SOURCES[source],**kw))
++    lib={'profile':'LIBIEC61850_1_6'}
++    for key in ('profile','role','binding','phase','encoding','build','service','name_scope'):
++        r('registered_source',{key:'REGISTERED'},required=True,source=ISO)
++    r('encoding',lib,allowed=['ASN1_BER'],source=INIT)
++    for key in ('build','build_source'):r(key,lib,required=True)
++    for key,val in FACTORY.items():r(key,{**lib,'build':'FACTORY'},allowed=[val])
++    for key in ('cbb_offer','cbb_negotiated'):r(key,forbidden_bit_mask=31,source=INIT)
++    for key in ('peer_pdu_limit_bytes','pdu_offer_bytes','negotiated_pdu_bytes','compiled_pdu_bytes'):
++        r(key,lib,minimum=128,source=SERVER)
++    r('negotiated_pdu_bytes',maximum_parameter='mm_pdu_offer_bytes',source=SERVER)
++    r('negotiated_pdu_bytes',maximum_parameter='mm_peer_pdu_limit_bytes',source=SERVER)
++    r('negotiated_pdu_bytes',lib,maximum_parameter='mm_compiled_pdu_bytes',source=INIT)
++    r('pdu_bytes',maximum_parameter='mm_negotiated_pdu_bytes',source=SERVER)
++    r('pdu_bytes',equal_expression={'sum':['payload_bytes','mm_mms_overhead_bytes']},source=INIT,exact_decimal_equality=True)
++    r('payload_bytes',maximum_parameter='mm_pdu_bytes',source=INIT)
++    for direction in ('calling','called'):
++        r(direction+'_negotiated',maximum_parameter='mm_'+direction+'_offer',source=SERVER)
++        r(direction+'_negotiated',lib,maximum_parameter='mm_compiled_'+direction,source=INIT)
++    for key in ('pdu_offer_bytes','peer_pdu_limit_bytes','negotiated_pdu_bytes','calling_offer','called_offer',
++      'calling_negotiated','called_negotiated','nesting_negotiated','version','negotiation_source'):
++        r(key,{'phase':'DATA'},required=True,source=SERVER)
++    for key in ('compiled_pdu_bytes','compiled_calling','compiled_called'):
++        r(key,{**lib,'phase':'DATA'},required=True,source=CONFIG)
++    r('version',lib,allowed=[1],source=INIT)
++    r('invoke_source',when_present=['mm_invoke_id'],required=True,source=CLIENT)
++    for key in ('service_source','service_supported'):r(key,when_present=['mm_service'],required=True,source=SERVER)
++    r('service_supported',allowed=[True],source=SERVER)
++    r('registered_source',{**lib,'service':'RENAME_FILE'},required=True,source=CONFIG)
++    r('service_supported',{**lib,'build':'FACTORY','service':'RENAME_FILE'},allowed=[False],source=CONFIG)
++    for key in ('namespace_source','application_name'):r(key,when_present=['mm_name_scope'],required=True,source=ISO)
++    for key in ('local_ap_title','remote_ap_title','local_ae_qualifier','remote_ae_qualifier',
++      *(side+'_'+level+'selector'for side in ('local','remote')for level in ('t','s','p'))):
++        r('identity_source',when_present=['mm_'+key],required=True,source=OSI)
++    for side in ('local','remote'):
++        r(side+'_ap_encoded_bytes',lib,maximum=10,source=IDENTITY)
++        r(side+'_ap_encoded_bytes',lib,when_present=['mm_'+side+'_ap_title'],required=True,source=IDENTITY)
++        r('identity_source',when_present=['mm_'+side+'_ap_encoded_bytes'],required=True,source=IDENTITY)
++    for binding in ('RFC1006_TCP','RFC1006_TLS'):
++        w={'binding':binding};r('tpkt_header_bytes',w,allowed=[4],source=RFC);r('tpkt_version',w,allowed=[3],source=RFC)
++        r('tpdu_bytes',w,maximum=65531,source=RFC)
++    for key in ('security_source','credential_ref','tls_compiled','tls_authenticated'):
++        r(key,{'binding':'RFC1006_TLS'},required=True,source=ACSE)
++    r('tls_compiled',{'binding':'RFC1006_TLS'},allowed=[True],source=CONFIG)
++    r('tls_authenticated',{'binding':'RFC1006_TLS'},allowed=[True],source=ACSE)
++    for auth in ('PASSWORD','TLS_CERTIFICATE','ACSE_CERTIFICATE_REGISTERED'):
++        for key in ('credential_ref','security_source','authenticator'):r(key,{'auth':auth},required=True,source=ACSE)
++        r('authenticator',{'auth':auth},allowed=[True],source=ACSE)
++    r('binding',{'auth':'TLS_CERTIFICATE'},allowed=['RFC1006_TLS'],source=ACSE)
++    r('registered_source',{'auth':'ACSE_CERTIFICATE_REGISTERED'},required=True,source=ACSE)
++    r('profile',{'auth':'ACSE_CERTIFICATE_REGISTERED'},allowed=['REGISTERED'],source=ACSE)
++    r('expedited',lib,allowed=[False],source=COTP)
++    r('registered_source',{'expedited':True},required=True,source=RFC)
++    r('compiled_tpdu_bytes',lib,minimum=1024,maximum=8192,source=CONFIG)
++    r('tpdu_bytes',lib,equal_expression={'power':[2,'mm_tpdu_exponent']},source=COTP,exact_decimal_equality=True)
++    r('tpdu_bytes',lib,maximum_parameter='mm_compiled_tpdu_bytes',source=COTP)
++    r('tpdu_exponent',lib,when_present=['mm_tpdu_bytes'],required=True,source=COTP)
++    data={**lib,'phase':'DATA'}
++    for key,val,source in [('dt_header_bytes',3,COTP),('session_bytes',4,SESSION),('acse_bytes',0,ACSE)]:r(key,data,allowed=[val],source=source)
++    r('fragment_payload_bytes',data,equal_expression={'subtract':['mm_tpdu_bytes',3]},source=COTP,exact_decimal_equality=True)
++    r('fragments',data,equal_expression={'maximum':[1,{'ceiling':[{'product':['mm_tsdu_bytes',{'power':['mm_fragment_payload_bytes',-1]}]}]}]},source=COTP,exact_decimal_equality=True)
++    r('tpkt_stream_bytes',data,equal_expression={'sum':['mm_tsdu_bytes',{'product':[7,'mm_fragments']}]},source=COTP,exact_decimal_equality=True)
++    r('tsdu_bytes',data,equal_expression={'sum':['mm_pdu_bytes','mm_session_bytes','mm_presentation_bytes']},source=SESSION,exact_decimal_equality=True)
++    for key in ('tsdu_bytes','fragment_payload_bytes','tpdu_bytes','fragment_source'):
++        r(key,data,when_present=['mm_fragments'],required=True,source=COTP)
++    r('fragments',data,when_present=['mm_tpkt_stream_bytes'],required=True,source=COTP)
++    r('mms_context_id',not_equal_parameter='mm_acse_context_id',source=PRESENTATION)
++    for key in ('open_files','file_tasks','max_clients','lists_vmd','lists_domain','lists_association','list_members'):
++        r('resource_source',when_present=['mm_'+key],required=True)
++    r('single_threaded',{**lib,'threadless':True},allowed=[False])
++    return dict(rate_model={'type':'MMS_ASSOCIATION_WITH_SEPARATE_CANONICAL_TRANSPORT','fields':[]},
++      required_parameters=['mm_'+k for k in REQUIRED],native_parameter_prefixes=['mm_'],parameter_evidence_scope='EXPLICIT_LAYER',
++      parameter_constraints=rules,physical_layer_profile_id='mms_separate_bound_actual_transport',
++      medium_access_model='ASSOCIATION_SERVICE_CALLS_WITH_DIRECTIONAL_WINDOWS',arbitration_model_id='ACTUAL_MMS_AND_TCP_QUEUE_SCHEDULE',
++      mechanisms={'encoding':['ACTUAL_MMS_BER_ASSOCIATION_AND_SERVICE_CODEC'],
++      'timing':['NEGOTIATED_PDU_AND_CALLING_CALLED_WINDOWS','COTP_FRAGMENTATION_DISTINCT_TCP_SEGMENTATION'],
++      'binding':['GENERIC_MMS_INDUSTRY_NEUTRAL','IEC61850_ACSI_MAPPING_SEPARATE_PROFILE'],
++      'security':['ACTUAL_TLS_BUILD_AND_AUTHENTICATOR_NOT_PORT_NUMBER']})
++
++def fields():
++    result=[]
++    client={'profile':'LIBIEC61850_1_6','build':'FACTORY','role':'CLIENT'}
++    proposals={**FACTORY,'request_timeout_ms':5000,'connect_timeout_ms':10000,'obtain_file_timeout_ms':2000}
++    client_proposals={'pdu_offer_bytes':65000,'calling_offer':5,'called_offer':5,'nesting_offer':10,
++      'version':1,'cbb_offer':61696,'services_bitmap':'EE1C00000408000079EF18',
++      'local_tselector':'0001','remote_tselector':'0001','local_sselector':'0001','remote_sselector':'0001',
++      'local_pselector':'00000001','remote_pselector':'00000001','acse_context_id':1,'mms_context_id':3}
++    for spec in DECLARATIONS:
++        item={k:v for k,v in spec.items()if v is not None};key=spec['key'].removeprefix('mm_')
++        item.update(label=key.replace('_',' '),category='transport',scope='network',editable=True,required=key in REQUIRED,
++          parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
++        conditional=[]
++        if key in proposals:conditional=[dict(when={'mm_profile':'LIBIEC61850_1_6','mm_build':'FACTORY'},value=proposals[key])]
++        if key in client_proposals:conditional=[dict(when={'mm_'+k:v for k,v in client.items()},value=client_proposals[key])]
++        if key=='peer_port':conditional=[dict(when={'mm_binding':'RFC1006_TCP'},value=102),
++          dict(when={'mm_profile':'LIBIEC61850_1_6','mm_binding':'RFC1006_TLS'},value=3782)]
++        if key in ('tpkt_header_bytes','tpkt_version'):conditional=[dict(when={'mm_binding':binding},value=4 if key=='tpkt_header_bytes'else 3)for binding in ('RFC1006_TCP','RFC1006_TLS')]
++        if key in ('dt_header_bytes','session_bytes','acse_bytes'):conditional=[dict(when={'mm_profile':'LIBIEC61850_1_6','mm_phase':'DATA'},
++          value={'dt_header_bytes':3,'session_bytes':4,'acse_bytes':0}[key])]
++        if conditional:
++            for value in conditional:value.update(source=spec['source'],source_revision=spec['source_revision'])
++            item.update(default_status='PROPOSED_CONDITIONAL',conditional_defaults=conditional)
++        result.append(item)
++    return result

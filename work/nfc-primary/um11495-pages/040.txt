@@ -1,0 +1,40 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+5.4.9  [PN7160-NCI] extensions to [NCI] Reason Code in CORE_RESET_NTF
+[NCI] defines a set of standard Reason Codes in the CORE_RESET_NTF. Refer to table 5 in [NCI].
+NXP has extended this set of reason codes with the following value:
+Reason code Description
+0xA0 An assert has triggered PN7160 reset/reboot
+0xA1 An over temperature has triggered the reset of PN7160
+0xA3 Arm subsystem reset / Watchdog reset has occurred
+Table 24. Proprietary Reason Codes in CORE_RESET_NTF
+Note:  When the proprietary reason code is used, the CORE_RESET_NTF is out of [NCI] compliance.
+Indeed, PN7160 appends one parameter at the end of the CORE_RESET_NTF, to provide some information for
+debug purposes. The CORE_RESET_NTF format is then:
+5.4.9.1  [PN7160-NCI] extensions CORE_RESET_NTF with Reason Code 0xA0
+Payload Field(s) Length Description Default
+Reason Code 1 byte 0xA0: NXP proprietary 0xA0
+Configuration Status 1 byte See [NCI] 0x00
+Program Counter 4 bytes Program counter for assertion (field present only when reason code
+is 0xA0)
+Table 25. CORE_RESET_NTF when reason code = 0xA0 is used
+5.4.9.2  [PN7160-NCI] extensions CORE_RESET_NTF with Reason Code 0xA1
+The sequence followed by PN7160 when an over temperature is detected is the following:
+• PN7160 forces pins CLK_REQ to logical '0'
+• PN7160 waits then until the chip temperature comes down to an internal threshold (the power consumption in
+this mode is around 100 µA, since the temperature monitoring circuit is still alive)
+• When the internal temperature is low enough, PN7160 reboots, disabling the RF discovery if it was previously
+enabled
+PN7160 sends then a CORE_RESET_NTF (0xA1) to inform the DH that an over temperature event occurred.
+5.4.9.3  [PN7160-NCI] extensions CORE_RESET_NTF with Reason Code 0xA3
+This notification is not expected in normal operating mode but may occur in rare cases if a connection is broken
+on the platform or a bad configuration has been entered. In such case, local NXP support may be needed and
+some specific NCI CORE_GET_CONFIG_CMD with proprietary parameters ‘A01B’ and ‘A027’ may be sent by
+DH in order to get some additional information for further debugging by R&D.
+5.4.10  [PN7160-NCI] extensions to [NCI] RF Technology & Mode
+PN7160 supports more RF Technology & Mode parameters than handled today by [NCI].
+It is required to extend the table 130 defined in [NCI] such that these RF Technology & Mode parameters can be
+used in RF_DISCOVER_CMD:
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+40 / 147

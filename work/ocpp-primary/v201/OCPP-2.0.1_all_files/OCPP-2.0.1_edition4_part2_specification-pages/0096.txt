@@ -1,0 +1,44 @@
+EV Driver
+Charging Station
+CS-001 CSMS Payment System
+Plugin cable
+StatusNotificationRequest(Occupied)
+StatusNotificationResponse()
+TransactionEventRequest(eventType = Started, triggerReason = CablePluggedIn,
+seqNo = 0, transactionId = AB1234, evse.id = 1, evse.connectorId = 1,
+meterValues, ...)
+TransactionEventResponse(...)
+use card
+financial
+transaction
+authorized(TransactionReference = 1234,
+CS = CS-001, EVSE = 1)
+generate unique id()
+result = 4444
+RequestStartTransactionRequest(evseId = 1
+idToken(id = 4444, type = Central), remoteStartId = 123)
+RequestStartTransactionResponse(Accepted)
+opt [if cable not permanently attached]
+lock connector
+Start energy offer
+TransactionEventRequest(eventType = Updated, transactionId = AB1234,
+seqNo = 1, chargingState = Charging,
+triggerReason = RemoteStart, remoteStartId = 123, idToken(id = 4444, type = Central))
+TransactionEventResponse(idTokenInfo.status = Accepted)
+Figure 22. Sequence Diagram: Authorization using credit/debit card
+C03 - Authorization using credit/debit card - Requirements
+Table 44. C03 - Requirements
+ID. Precondition Requirement definition
+C03.FR.01 If the Charging Station receives a
+RequestStartTransactionRequest with an
+IdTokenType of type = Central
+The Charging Station SHALL NOT send an AuthorizeRequest for
+the received IdTokenType.
+C03.FR.02 If the Charging Station has implemented an
+Authorization Cache AND the Charging Station
+receives IdTokenInfo for an IdTokenType of type
+Central in any message
+The Charging Station SHALL NOT store the information in its
+Authorization Cache.
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 86/491 Part 2 - Specification

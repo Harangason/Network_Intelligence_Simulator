@@ -8,8 +8,70 @@ IMPLEMENTED/PARTIAL/EXPERIMENTAL/LEGACY by ``technology_definitions``.
 from __future__ import annotations
 
 from typing import Any
+from copy import deepcopy
 
 from .core.physical import physical_profile
+from . import i2c as i2c_rules
+from . import i3c as i3c_rules
+from . import iec101 as iec101_rules
+from . import iec104 as iec104_rules
+from . import iec61162 as iec61162_rules
+from . import iec61850 as iec61850_rules
+from . import interbus as interbus_rules
+from . import io_link as io_link_rules
+from . import io_link_wireless as io_link_wireless_rules
+from . import ip as ip_rules
+from . import isobus as isobus_rules
+from . import j1939 as j1939_rules
+from . import knx_ip as knx_ip_rules
+from . import knx_rf as knx_rf_rules
+from . import knx_tp as knx_tp_rules
+from . import lin as lin_rules
+from . import lonworks as lonworks_rules
+from . import lorawan as lorawan_rules
+from . import lte_m as lte_m_rules
+from . import lvds as lvds_rules
+from . import m_bus as m_bus_rules
+from . import matter as matter_rules
+from . import mil_std_1553 as mil1553_rules
+from . import mipi_csi2 as csi2_rules
+from . import mipi_dsi as dsi_rules
+from . import mms as mms_rules
+from . import modbus_ascii as ascii_rules
+from . import modbus_rtu as rtu_rules
+from . import modbus_tcp as mtcp_rules
+from . import most as most_rules
+from . import mqtt as mqtt_rules
+from . import mqtt_sn as mqtt_sn_rules
+from . import mvb as mvb_rules
+from . import nb_iot as nb_iot_rules
+from . import nfc as nfc_rules
+from . import nmea0183 as nmea0183_rules
+from . import nmea2000 as nmea2000_rules
+from . import obd2 as obd2_rules
+from . import ocpp as ocpp_rules
+from . import one_wire as one_wire_rules
+from . import opc_ua as opc_ua_rules
+from . import opc_ua_pubsub as opc_ua_pubsub_rules
+from . import opensafety as opensafety_rules
+from . import pcie as pcie_rules
+from . import powerlink as powerlink_rules
+from . import profibus_dp as profibus_dp_rules
+from . import profibus_pa as profibus_pa_rules
+from . import profinet as profinet_rules
+from . import profisafe as profisafe_rules
+from . import pwm as pwm_rules
+from . import rfid as rfid_rules
+from . import ros2 as ros2_rules
+from . import rs232 as rs232_rules
+from . import rs422 as rs422_rules
+from . import rs485 as rs485_rules
+from . import sampled_values as sampled_values_rules
+from . import sercos_iii as sercos_iii_rules
+from . import someip as someip_rules
+from . import someip_sd as someip_sd_rules
+from . import spacewire as spacewire_rules
+from . import sparkplug_b as sparkplug_b_rules
 
 COAP_TRANSMIT_SPAN={'product':['coap_ack_timeout_s',{'subtract':[{'power':[2,'coap_max_retransmit']},1]},'coap_ack_random_factor']}
 COAP_TRANSMIT_WAIT={'product':['coap_ack_timeout_s',{'subtract':[{'power':[2,{'sum':['coap_max_retransmit',1]}]},1]},'coap_ack_random_factor']}
@@ -652,10 +714,21 @@ TECHNOLOGY_SEMANTICS: dict[str, dict[str, Any]] = {
                        "supervision": ["NR_RADIO_LINK_MONITORING"], "reliability": ["NR_HARQ", "NR_RLC_MODE_DEPENDENT_ARQ"],
                        "addressing": ["NR_RNTI"]},
     },
-    "lin": {
-        "rate_model": {"type": "SINGLE_BITRATE", "fields": ["bitrate_bps"], "minimum_bps": 1, "maximum_bps": 20_000, "typical_bps": [9_600, 19_200]},
-        "mechanisms": {"integrity": ["PID_PARITY", "LIN_CHECKSUM"], "addressing": ["FRAME_IDENTIFIER"], "diagnostics": ["LIN_DIAGNOSTIC_TRANSPORT"], "supervision": ["RESPONSE_TIMEOUT", "SCHEDULE_MONITORING"]},
-    },
+    "lin": {**lin_rules.semantics()},
+    "lonworks": {**lonworks_rules.semantics()},
+    "lorawan": {**lorawan_rules.semantics()},
+    "lte_m": {**lte_m_rules.semantics()},
+    "nb_iot": {**nb_iot_rules.semantics()},
+    "nfc": {**nfc_rules.semantics()},
+    "nmea0183": {**nmea0183_rules.semantics()},
+    "lvds": {**lvds_rules.semantics()},
+    "m_bus": {**m_bus_rules.semantics()},
+    "matter": {**matter_rules.semantics()},
+    "mil_std_1553": {**mil1553_rules.semantics()},
+    "mipi_csi2": {**csi2_rules.semantics()},
+    "mipi_dsi": {**dsi_rules.semantics()},
+    "mms": {**mms_rules.semantics()},
+    "modbus_ascii": {**ascii_rules.semantics()},
     "can": {
         "rate_model": {"type": "SINGLE_BITRATE", "fields": ["bitrate_bps"], "minimum_bps": 1, "maximum_bps": 1_000_000},
         "mechanisms": {"integrity": ["CAN_CRC"], "addressing": ["CAN_IDENTIFIER"], "supervision": ["ERROR_COUNTER", "BUS_OFF"]},
@@ -715,6 +788,7 @@ TECHNOLOGY_SEMANTICS: dict[str, dict[str, Any]] = {
         ],
     },
     "ethernet": {
+        'native_parameter_prefixes':['eth_'],
         "rate_model": {"type": "ETHERNET_LINK_RATE", "fields": ["bitrate_bps"],
                        "allowed_bps": [10_000_000, 100_000_000, 1_000_000_000, 2_500_000_000, 5_000_000_000, 10_000_000_000]},
         "mechanisms": {"integrity": ["ETHERNET_FCS"], "addressing": ["MAC_ADDRESS"],
@@ -851,30 +925,48 @@ TECHNOLOGY_SEMANTICS: dict[str, dict[str, Any]] = {
               for mode in ('AUTO_INCREMENT','CONFIGURED','BROADCAST')],
         ],
     },
-    "profinet": {
-        "rate_model": {"type": "ETHERNET_LINK_RATE", "fields": ["bitrate_bps"], "allowed_bps": [100_000_000, 1_000_000_000]},
-        "mechanisms": {"integrity": ["ETHERNET_FCS"], "addressing": ["MAC_ADDRESS", "STATION_NAME", "IP_ADDRESS"], "discovery": ["PROFINET_DCP"], "diagnostics": ["PROFINET_DIAGNOSTICS"]},
-    },
-    "modbus_rtu": {
-        "rate_model": {"type": "SINGLE_BITRATE", "fields": ["bitrate_bps"], "minimum_bps": 1_200, "maximum_bps": 115_200},
-        "mechanisms": {"integrity": ["MODBUS_CRC16"], "addressing": ["SLAVE_ADDRESS"], "diagnostics": ["MODBUS_DIAGNOSTICS", "EXCEPTION_CODES"]},
-    },
-    "modbus_tcp": {
-        "rate_model": {"type": "ETHERNET_LINK_RATE", "fields": ["bitrate_bps"], "allowed_bps": [10_000_000, 100_000_000, 1_000_000_000, 10_000_000_000]},
-        "mechanisms": {"integrity": ["ETHERNET_FCS", "TCP_CHECKSUM"], "addressing": ["IP_ADDRESS", "TCP_PORT_502", "UNIT_IDENTIFIER"]},
-    },
+    "profinet": {**profinet_rules.semantics()},
+    "profisafe": {**profisafe_rules.semantics()},
+    "pwm": {**pwm_rules.semantics()},
+    "rfid": {**rfid_rules.semantics()},
+    "ros2": {**ros2_rules.semantics()},
+    "rs232": {**rs232_rules.semantics()},
+    "rs422": {**rs422_rules.semantics()},
+    "rs485": {**rs485_rules.semantics()},
+    "sampled_values": {**sampled_values_rules.semantics()},
+    "sercos_iii": {**sercos_iii_rules.semantics()},
+    "someip": {**someip_rules.semantics()},
+    "someip_sd": {**someip_sd_rules.semantics()},
+    "spacewire": {**spacewire_rules.semantics()},
+    "sparkplug_b": {**sparkplug_b_rules.semantics()},
+    "modbus_rtu": {**rtu_rules.semantics()},
+    "modbus_tcp": {**mtcp_rules.semantics()},
+    "most": {**most_rules.semantics()},
+    "mqtt": {**mqtt_rules.semantics()},
+    "mqtt_sn": {**mqtt_sn_rules.semantics()},
+    "mvb": {**mvb_rules.semantics()},
     "i2c": {
-        "rate_model": {"type": "I2C_CONFIRMED_CLOCK", "fields": ["bitrate_bps"],
-                       "minimum_bps": 1, "maximum_bps": 3_400_000},
-        "mechanisms": {"addressing": ["SEVEN_OR_TEN_BIT_ADDRESS"],
-                       "integrity": ["ACK_NACK"], "arbitration": ["MULTI_MASTER_IF_CONFIRMED"]},
+        **i2c_rules.semantics(),
     },
+    'i3c': {**i3c_rules.semantics()},
+    'iec60870_5_101': {**iec101_rules.semantics()},
+    'iec60870_5_104': {**iec104_rules.semantics()},
+    'iec61162': {**iec61162_rules.semantics()},
+    'iec61850': {**iec61850_rules.semantics()},
+    'interbus': {**interbus_rules.semantics()},
+    'io_link': {**io_link_rules.semantics()},
+    'io_link_wireless': {**io_link_wireless_rules.semantics()},
+    'ip': {**ip_rules.semantics()},
+    'isobus': {**isobus_rules.semantics()},
     "spi": {
         "rate_model": {"type": "DEVICE_DEPENDENT_CLOCK", "fields": ["bitrate_bps"],
                        "minimum_bps": 1},
         "mechanisms": {"addressing": ["CHIP_SELECT"], "clocking": ["CPOL", "CPHA"]},
     },
-    "j1939": {"mechanisms": {"addressing": ["SOURCE_ADDRESS", "NAME", "PGN"], "address_resolution": ["J1939_ADDRESS_CLAIM"], "diagnostics": ["J1939_DM"]}},
+    'j1939': {**j1939_rules.semantics()},
+    'knx_ip': {**knx_ip_rules.semantics()},
+    'knx_rf': {**knx_rf_rules.semantics()},
+    'knx_tp': {**knx_tp_rules.semantics()},
     'canopen': {
         'rate_model':{'type':'SINGLE_BITRATE','fields':['bitrate_bps'],
                       'allowed_bps':[10000,20000,50000,125000,250000,500000,800000,1000000],'inherited_from':'can'},
@@ -943,8 +1035,17 @@ TECHNOLOGY_SEMANTICS: dict[str, dict[str, Any]] = {
                        'reliability': ['BACNET_CONFIRMED_SERVICE_RETRY', 'BACNET_APDU_SEGMENTATION'],
                        'broadcast': ['BVLC_LOCAL_BROADCAST', 'BBMD_FORWARDING', 'FOREIGN_DEVICE_REGISTRATION']},
     },
-    "nmea2000": {"rate_model": {"type": "FIXED_LINK_RATE", "fields": ["bitrate_bps"], "fixed_bps": 250_000},
-                 "mechanisms": {"addressing": ["SOURCE_ADDRESS", "NAME", "PGN"], "address_resolution": ["NMEA2000_ADDRESS_CLAIM"]}},
+    "nmea2000": {**nmea2000_rules.semantics()},
+    "obd2": {**obd2_rules.semantics()},
+    "ocpp": {**ocpp_rules.semantics()},
+    "one_wire": {**one_wire_rules.semantics()},
+    "opc_ua": {**opc_ua_rules.semantics()},
+    "opc_ua_pubsub": {**opc_ua_pubsub_rules.semantics()},
+    "opensafety": {**opensafety_rules.semantics()},
+    "pcie": {**pcie_rules.semantics()},
+    "powerlink": {**powerlink_rules.semantics()},
+    "profibus_dp": {**profibus_dp_rules.semantics()},
+    "profibus_pa": {**profibus_pa_rules.semantics()},
 }
 
 for _coap_constraint in TECHNOLOGY_SEMANTICS['coap']['parameter_constraints']:
@@ -1210,6 +1311,1265 @@ TECHNOLOGY_SEMANTICS['doip'] = {
         *[{'when': {'doip_optional_field_present': False,'doip_payload_type': kind}, 'parameter': 'doip_oem_data', 'allowed': []} for kind in (5,6)],
     ],
 }
+
+# Generic Ethernet is the explicit IEEE 802.3 catalog entry. It shares the
+# reviewed MAC/PHY declarations with Ethernet, rather than a separate guessed
+# gigabit rate or protocol-independent payload/queue defaults.
+TECHNOLOGY_SEMANTICS['generic_ethernet'] = deepcopy(TECHNOLOGY_SEMANTICS['ethernet'])
+
+TECHNOLOGY_SEMANTICS['http'] = {'rate_model': {'type': 'APPLICATION_TRANSPORT_DEPENDENT', 'fields': []},
+ 'required_parameters': ['http_version',
+                         'http_transport',
+                         'http_binding_source',
+                         'http_implementation_source',
+                         'http_schedule_source'],
+ 'native_parameter_prefixes': ['http_', 'http2_', 'http3_'],
+ 'mechanisms': {'access': ['ACTUAL_HTTP1_ORDERING_HTTP2_STREAMS_OR_HTTP3_QUIC'],
+                'integrity': ['ACTUAL_TRANSPORT_TLS_QUIC_AND_APPLICATION_ACCEPTANCE'],
+                'scope': ['VERSION_SPECIFIC_APPLICATION_NOT_UNIVERSAL_ETHERNET_TCP_STACK']},
+ 'parameter_constraints': [{'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_frame_type',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_stream_id',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_frame_header_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_frame_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_settings_phase',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_max_frame_size',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_header_table_size',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_initial_window_size',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_current_stream_window',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_current_connection_window',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_enable_push',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_max_concurrent_streams',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_max_header_list_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_pad_length_present',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_padding_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http2_data_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http3_frame_type',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http3_frame_length',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http3_stream_kind',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http3_qpack_max_table',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http3_qpack_blocked_streams',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http3_max_field_section_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http3_settings_phase',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_1_1'},
+                            'parameter': 'http3_quic_source',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http3_frame_type',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http3_frame_length',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http3_stream_kind',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http3_qpack_max_table',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http3_qpack_blocked_streams',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http3_max_field_section_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http3_settings_phase',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http3_quic_source',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_frame_type',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_stream_id',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_frame_header_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_frame_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_settings_phase',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_max_frame_size',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_header_table_size',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_initial_window_size',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_current_stream_window',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_current_connection_window',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_enable_push',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_max_concurrent_streams',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_max_header_list_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_pad_length_present',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_padding_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http2_data_bytes',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http_transport',
+                            'allowed': ['TCP']},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http_transport',
+                            'allowed': ['QUIC_V1']},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http_tls_version',
+                            'allowed': ['TLS_1_3']},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http_security_source',
+                            'required': True},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http3_quic_source',
+                            'required': True},
+                           {'when': {'http_scheme': 'https'},
+                            'parameter': 'http_security_source',
+                            'required': True},
+                           {'when': {'http_scheme': 'https'},
+                            'parameter': 'http_tls_version',
+                            'required': True},
+                           {'when': {'http_message_kind': 'REQUEST'},
+                            'parameter': 'http_method',
+                            'required': True},
+                           {'when': {'http_message_kind': 'RESPONSE'},
+                            'parameter': 'http_status',
+                            'required': True},
+                           {'when': {'http_message_kind': 'REQUEST'},
+                            'parameter': 'http_status',
+                            'allowed': []},
+                           {'when': {'http_message_kind': 'REQUEST'},
+                            'parameter': 'http_framing',
+                            'allowed': ['NONE', 'CONTENT_LENGTH', 'CHUNKED', 'MULTIPLEXED']},
+                           {'when': {'http_target_form': 'AUTHORITY'},
+                            'parameter': 'http_method',
+                            'allowed': ['CONNECT']},
+                           {'when': {'http_target_form': 'ASTERISK'},
+                            'parameter': 'http_method',
+                            'allowed': ['OPTIONS']},
+                           {'when': {'http_version': 'HTTP_1_1',
+                                     'http_method': 'CONNECT',
+                                     'http_message_kind': 'REQUEST'},
+                            'parameter': 'http_target_form',
+                            'allowed': ['AUTHORITY']},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http_target_form',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http_transfer_encoding',
+                            'allowed': ['NONE']},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http_framing',
+                            'allowed': ['NONE', 'MULTIPLEXED', 'TUNNEL']},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http_target_form',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http_transfer_encoding',
+                            'allowed': ['NONE']},
+                           {'when': {'http_version': 'HTTP_3'},
+                            'parameter': 'http_framing',
+                            'allowed': ['NONE', 'MULTIPLEXED', 'TUNNEL']},
+                           {'when': {},
+                            'parameter': 'http_content_length_present',
+                            'when_present': ['http_content_length'],
+                            'allowed': [True]},
+                           {'when': {'http_content_length_present': False},
+                            'parameter': 'http_content_length',
+                            'allowed': []},
+                           {'when': {'http_content_length_present': True},
+                            'parameter': 'http_content_length',
+                            'required': True},
+                           {'when': {'http_content_length_present': True},
+                            'parameter': 'http_length_semantics',
+                            'required': True},
+                           {'when': {'http_length_semantics': 'MESSAGE_BODY'},
+                            'parameter': 'http_content_length',
+                            'equal_decimal_parameter': 'http_body_bytes'},
+                           {'when': {'http_transfer_encoding': 'CHUNKED'},
+                            'parameter': 'http_content_length_present',
+                            'allowed': [False]},
+                           {'when': {'http_transfer_encoding': 'CHUNKED'},
+                            'parameter': 'http_content_length',
+                            'allowed': []},
+                           {'when': {'http_transfer_encoding': 'CHUNKED'},
+                            'parameter': 'http_transfer_source',
+                            'required': True},
+                           {'when': {'http_transfer_encoding': 'OTHER'},
+                            'parameter': 'http_content_length_present',
+                            'allowed': [False]},
+                           {'when': {'http_transfer_encoding': 'OTHER'},
+                            'parameter': 'http_content_length',
+                            'allowed': []},
+                           {'when': {'http_transfer_encoding': 'OTHER'},
+                            'parameter': 'http_transfer_source',
+                            'required': True},
+                           {'when': {'http_framing': 'CHUNKED'},
+                            'parameter': 'http_framing',
+                            'when_present': ['http_transfer_encoding'],
+                            'allowed': ['CHUNKED']},
+                           {'when': {'http_version': 'HTTP_1_1', 'http_framing': 'CHUNKED'},
+                            'parameter': 'http_transfer_encoding',
+                            'allowed': ['CHUNKED']},
+                           {'when': {'http_version': 'HTTP_1_1', 'http_framing': 'CHUNKED'},
+                            'parameter': 'http_transfer_encoding',
+                            'required': True},
+                           {'when': {'http_version': 'HTTP_1_1', 'http_framing': 'CONTENT_LENGTH'},
+                            'parameter': 'http_content_length_present',
+                            'allowed': [True]},
+                           {'when': {'http_version': 'HTTP_1_1', 'http_framing': 'CONTENT_LENGTH'},
+                            'parameter': 'http_content_length_present',
+                            'required': True},
+                           {'when': {'http_message_kind': 'RESPONSE', 'http_method': 'HEAD'},
+                            'parameter': 'http_body_bytes',
+                            'pattern': '0+'},
+                           {'when': {'http_message_kind': 'RESPONSE', 'http_status': 204},
+                            'parameter': 'http_body_bytes',
+                            'pattern': '0+'},
+                           {'when': {'http_message_kind': 'RESPONSE', 'http_status': 205},
+                            'parameter': 'http_body_bytes',
+                            'pattern': '0+'},
+                           {'when': {'http_message_kind': 'RESPONSE', 'http_status': 304},
+                            'parameter': 'http_body_bytes',
+                            'pattern': '0+'},
+                           {'when': {'http_message_kind': 'RESPONSE'},
+                            'parameter': 'http_body_bytes',
+                            'when_ranges': {'http_status': [100, 199]},
+                            'pattern': '0+'},
+                           {'when': {'http_message_kind': 'RESPONSE', 'http_status': 204},
+                            'parameter': 'http_content_length',
+                            'allowed': []},
+                           {'when': {'http_message_kind': 'RESPONSE'},
+                            'parameter': 'http_content_length',
+                            'when_ranges': {'http_status': [100, 199]},
+                            'allowed': []},
+                           {'when': {'http_message_kind': 'RESPONSE', 'http_status': 204},
+                            'parameter': 'http_transfer_encoding',
+                            'allowed': ['NONE']},
+                           {'when': {'http_message_kind': 'RESPONSE'},
+                            'parameter': 'http_transfer_encoding',
+                            'when_ranges': {'http_status': [100, 199]},
+                            'allowed': ['NONE']},
+                           {'when': {'http_message_kind': 'REQUEST'},
+                            'parameter': 'http_length_semantics',
+                            'allowed': ['MESSAGE_BODY']},
+                           {'when': {'http_message_kind': 'RESPONSE', 'http_method': 'CONNECT'},
+                            'parameter': 'http_content_length',
+                            'when_ranges': {'http_status': [200, 299]},
+                            'allowed': []},
+                           {'when': {'http_message_kind': 'RESPONSE', 'http_method': 'CONNECT'},
+                            'parameter': 'http_transfer_encoding',
+                            'when_ranges': {'http_status': [200, 299]},
+                            'allowed': ['NONE']},
+                           {'when': {'http_transition_optimistic': True},
+                            'parameter': 'http_transition_source',
+                            'required': True},
+                           {'when': {},
+                            'parameter': 'http_retry_source',
+                            'when_positive': ['http_retry_limit'],
+                            'required': True},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http2_frame_bytes',
+                            'equal_sum': [{'parameter': 'http2_frame_header_bytes'},
+                                          {'parameter': 'http2_frame_payload_bytes'}]},
+                           {'when': {'http_version': 'HTTP_2'},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'maximum_parameter': 'http2_max_frame_size'},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'DATA'},
+                            'parameter': 'http2_stream_id',
+                            'exclusive_minimum': 0},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'HEADERS'},
+                            'parameter': 'http2_stream_id',
+                            'exclusive_minimum': 0},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'PRIORITY'},
+                            'parameter': 'http2_stream_id',
+                            'exclusive_minimum': 0},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'RST_STREAM'},
+                            'parameter': 'http2_stream_id',
+                            'exclusive_minimum': 0},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'PUSH_PROMISE'},
+                            'parameter': 'http2_stream_id',
+                            'exclusive_minimum': 0},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'CONTINUATION'},
+                            'parameter': 'http2_stream_id',
+                            'exclusive_minimum': 0},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'SETTINGS'},
+                            'parameter': 'http2_stream_id',
+                            'allowed': [0]},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'PING'},
+                            'parameter': 'http2_stream_id',
+                            'allowed': [0]},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'GOAWAY'},
+                            'parameter': 'http2_stream_id',
+                            'allowed': [0]},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'PING'},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'allowed': [8]},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'PRIORITY'},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'allowed': [5]},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'RST_STREAM'},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'allowed': [4]},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'WINDOW_UPDATE'},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'allowed': [4]},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'GOAWAY'},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'minimum': 8},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'SETTINGS'},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'multiple_of': 6},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'DATA'},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'when_positive': ['http2_frame_payload_bytes'],
+                            'maximum_parameter': 'http2_current_stream_window'},
+                           {'when': {'http_version': 'HTTP_2', 'http2_frame_type': 'DATA'},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'when_positive': ['http2_frame_payload_bytes'],
+                            'maximum_parameter': 'http2_current_connection_window'},
+                           {'when': {'http_version': 'HTTP_2',
+                                     'http2_frame_type': 'DATA',
+                                     'http2_pad_length_present': False},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'equal_sum': [{'parameter': 'http2_data_bytes'},
+                                          {'parameter': 'http2_padding_bytes'}],
+                            'equal_sum_offset': 0},
+                           {'when': {'http_version': 'HTTP_2',
+                                     'http2_frame_type': 'DATA',
+                                     'http2_pad_length_present': True},
+                            'parameter': 'http2_frame_payload_bytes',
+                            'equal_sum': [{'parameter': 'http2_data_bytes'},
+                                          {'parameter': 'http2_padding_bytes'}],
+                            'equal_sum_offset': 1},
+                           {'when': {'http_version': 'HTTP_2', 'http2_pad_length_present': False},
+                            'parameter': 'http2_padding_bytes',
+                            'allowed': [0]},
+                           {'when': {'http_version': 'HTTP_2', 'http_role': 'SERVER'},
+                            'parameter': 'http2_enable_push',
+                            'allowed': [0]},
+                           {'when': {'http_version': 'HTTP_3', 'http3_stream_kind': 'CONTROL'},
+                            'parameter': 'http3_frame_type',
+                            'forbidden': ['0', '1', '5']},
+                           {'when': {'http_version': 'HTTP_3', 'http3_stream_kind': 'QPACK_ENCODER'},
+                            'parameter': 'http3_frame_type',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3', 'http3_stream_kind': 'QPACK_DECODER'},
+                            'parameter': 'http3_frame_type',
+                            'allowed': []},
+                           {'when': {'http_version': 'HTTP_3', 'http3_stream_kind': 'REQUEST'},
+                            'parameter': 'http3_frame_type',
+                            'forbidden': ['3', '4', '7', '13']},
+                           {'when': {'http_version': 'HTTP_3', 'http3_stream_kind': 'PUSH'},
+                            'parameter': 'http3_frame_type',
+                            'forbidden': ['3', '4', '7', '13']},
+                           {'when': {'http_message_kind': 'RESPONSE'},
+                            'when_not': {'http_method': 'HEAD', 'http_status': 304},
+                            'parameter': 'http_length_semantics',
+                            'allowed': ['MESSAGE_BODY']},
+                           {'when': {'http_transition_optimistic': True},
+                            'parameter': 'http_transition_token',
+                            'required': True},
+                           {'when': {'http_transition_token': 'WEBSOCKET'},
+                            'parameter': 'http_transition_optimistic',
+                            'allowed': [False]},
+                           {'when': {'http_version': 'HTTP_1_1', 'http_transition_token': 'CONNECT_UDP'},
+                            'parameter': 'http_transition_optimistic',
+                            'allowed': [False]},
+                           {'when': {'http_version': 'HTTP_1_1', 'http_transition_token': 'CONNECT_IP'},
+                            'parameter': 'http_transition_optimistic',
+                            'allowed': [False]},
+                           {'when': {'http_version': 'HTTP_1_1',
+                                     'http_transition_token': 'CONNECT_TCP',
+                                     'http_connect_untrusted': True},
+                            'when_not': {'http_connection_close': True},
+                            'parameter': 'http_wait_success',
+                            'required': True,
+                            'allowed': [True]},
+                           {'when': {'http_version': 'HTTP_1_1',
+                                     'http_transition_token': 'CONNECT_TCP',
+                                     'http_transition_rejected': True,
+                                     'http_role': 'PROXY'},
+                            'parameter': 'http_connection_close',
+                            'required': True,
+                            'allowed': [True]},
+                           {'when': {'http_version': 'HTTP_3', 'http_role': 'CLIENT'},
+                            'parameter': 'http3_frame_type',
+                            'forbidden': ['5']},
+                           {'when': {'http_version': 'HTTP_3', 'http_role': 'SERVER'},
+                            'parameter': 'http3_frame_type',
+                            'forbidden': ['13']}]}
+
+TECHNOLOGY_SEMANTICS['hart'] = {'rate_model': {'type': 'SINGLE_BITRATE', 'fields': ['bitrate_bps'], 'allowed_bps': [1200, 9600]},
+ 'required_parameters': ['bitrate_bps',
+                         'hart_profile',
+                         'hart_phy',
+                         'hart_revision',
+                         'hart_role',
+                         'hart_binding_source',
+                         'hart_device_source',
+                         'hart_physical_source',
+                         'hart_schedule_source'],
+ 'native_parameter_prefixes': ['hart_'],
+ 'mechanisms': {'access': ['ACTUAL_HALF_DUPLEX_DUAL_HOST_AND_BURST_ARBITRATION'],
+                'integrity': ['QUALIFIED_FSK_ODD_PARITY_AND_XOR_CHECKSUM_NOT_AUTHENTICATION'],
+                'scope': ['WIRED_FSK_OR_EXPLICIT_C8PSK_NOT_WIRELESSHART_HARTIP']},
+ 'parameter_constraints': [{'when': {'hart_phy': 'FSK'}, 'parameter': 'bitrate_bps', 'allowed': [1200]},
+                           {'when': {'hart_phy': 'C8PSK'}, 'parameter': 'bitrate_bps', 'allowed': [9600]},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023'},
+                            'parameter': 'hart_phy',
+                            'allowed': ['FSK']},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023', 'hart_address_format': 'SHORT'},
+                            'parameter': 'hart_address_bytes',
+                            'allowed': [1]},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023', 'hart_address_format': 'LONG'},
+                            'parameter': 'hart_address_bytes',
+                            'allowed': [5]},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023'},
+                            'parameter': 'hart_address_bytes',
+                            'allowed': [1, 5]},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023'},
+                            'parameter': 'hart_preamble_bytes',
+                            'minimum_parameter': 'hart_peer_preamble_bytes'},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023'},
+                            'parameter': 'hart_byte_count',
+                            'equal_sum': [{'parameter': 'hart_data_bytes'},
+                                          {'parameter': 'hart_status_bytes'}]},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023'},
+                            'parameter': 'hart_wire_octets',
+                            'equal_sum': [{'parameter': 'hart_preamble_bytes'},
+                                          {'parameter': 'hart_address_bytes'},
+                                          {'parameter': 'hart_expansion_bytes'},
+                                          {'parameter': 'hart_byte_count'},
+                                          {'parameter': 'hart_checksum_bytes'}],
+                            'equal_sum_offset': 3},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023'},
+                            'parameter': 'hart_wire_bits',
+                            'equal_expression': {'product': ['hart_wire_octets', 'hart_char_bits']}},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023'},
+                            'parameter': 'hart_serialization_ms',
+                            'equal_ratio': {'numerator_parameter': 'hart_wire_bits',
+                                            'denominator_sum': ['bitrate_bps'],
+                                            'factor': 1000}},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023', 'hart_frame_kind': 'REQUEST'},
+                            'parameter': 'hart_status_bytes',
+                            'allowed': [0]},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023',
+                                     'hart_frame_kind': 'REQUEST',
+                                     'hart_address_format': 'SHORT'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [2, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023',
+                                     'hart_frame_kind': 'REQUEST',
+                                     'hart_address_format': 'LONG'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [130, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023', 'hart_frame_kind': 'RESPONSE'},
+                            'parameter': 'hart_status_bytes',
+                            'allowed': [2]},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023',
+                                     'hart_frame_kind': 'RESPONSE',
+                                     'hart_address_format': 'SHORT'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [6, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023',
+                                     'hart_frame_kind': 'RESPONSE',
+                                     'hart_address_format': 'LONG'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [134, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023', 'hart_frame_kind': 'BURST'},
+                            'parameter': 'hart_status_bytes',
+                            'allowed': [2]},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023',
+                                     'hart_frame_kind': 'BURST',
+                                     'hart_address_format': 'SHORT'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [1, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023',
+                                     'hart_frame_kind': 'BURST',
+                                     'hart_address_format': 'LONG'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [129, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023', 'hart_revision': 'REV5_OR_EARLIER'},
+                            'parameter': 'hart_poll_address',
+                            'maximum': 15},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023', 'hart_revision': 'REV6'},
+                            'parameter': 'hart_poll_address',
+                            'maximum': 63},
+                           {'when': {'hart_profile': 'PUBLIC_FSK_2023', 'hart_revision': 'REV7'},
+                            'parameter': 'hart_poll_address',
+                            'maximum': 63},
+                           {'when': {'hart_profile': 'FCG_FSK_2016'},
+                            'parameter': 'hart_phy',
+                            'allowed': ['FSK']},
+                           {'when': {'hart_profile': 'FCG_FSK_2016', 'hart_address_format': 'SHORT'},
+                            'parameter': 'hart_address_bytes',
+                            'allowed': [1]},
+                           {'when': {'hart_profile': 'FCG_FSK_2016', 'hart_address_format': 'LONG'},
+                            'parameter': 'hart_address_bytes',
+                            'allowed': [5]},
+                           {'when': {'hart_profile': 'FCG_FSK_2016'},
+                            'parameter': 'hart_address_bytes',
+                            'allowed': [1, 5]},
+                           {'when': {'hart_profile': 'FCG_FSK_2016'},
+                            'parameter': 'hart_preamble_bytes',
+                            'minimum_parameter': 'hart_peer_preamble_bytes'},
+                           {'when': {'hart_profile': 'FCG_FSK_2016'},
+                            'parameter': 'hart_byte_count',
+                            'equal_sum': [{'parameter': 'hart_data_bytes'},
+                                          {'parameter': 'hart_status_bytes'}]},
+                           {'when': {'hart_profile': 'FCG_FSK_2016'},
+                            'parameter': 'hart_wire_octets',
+                            'equal_sum': [{'parameter': 'hart_preamble_bytes'},
+                                          {'parameter': 'hart_address_bytes'},
+                                          {'parameter': 'hart_expansion_bytes'},
+                                          {'parameter': 'hart_byte_count'},
+                                          {'parameter': 'hart_checksum_bytes'}],
+                            'equal_sum_offset': 3},
+                           {'when': {'hart_profile': 'FCG_FSK_2016'},
+                            'parameter': 'hart_wire_bits',
+                            'equal_expression': {'product': ['hart_wire_octets', 'hart_char_bits']}},
+                           {'when': {'hart_profile': 'FCG_FSK_2016'},
+                            'parameter': 'hart_serialization_ms',
+                            'equal_ratio': {'numerator_parameter': 'hart_wire_bits',
+                                            'denominator_sum': ['bitrate_bps'],
+                                            'factor': 1000}},
+                           {'when': {'hart_profile': 'FCG_FSK_2016', 'hart_frame_kind': 'REQUEST'},
+                            'parameter': 'hart_status_bytes',
+                            'allowed': [0]},
+                           {'when': {'hart_profile': 'FCG_FSK_2016',
+                                     'hart_frame_kind': 'REQUEST',
+                                     'hart_address_format': 'SHORT'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [2, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'FCG_FSK_2016',
+                                     'hart_frame_kind': 'REQUEST',
+                                     'hart_address_format': 'LONG'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [130, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'FCG_FSK_2016', 'hart_frame_kind': 'RESPONSE'},
+                            'parameter': 'hart_status_bytes',
+                            'allowed': [2]},
+                           {'when': {'hart_profile': 'FCG_FSK_2016',
+                                     'hart_frame_kind': 'RESPONSE',
+                                     'hart_address_format': 'SHORT'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [6, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'FCG_FSK_2016',
+                                     'hart_frame_kind': 'RESPONSE',
+                                     'hart_address_format': 'LONG'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [134, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'FCG_FSK_2016', 'hart_frame_kind': 'BURST'},
+                            'parameter': 'hart_status_bytes',
+                            'allowed': [2]},
+                           {'when': {'hart_profile': 'FCG_FSK_2016',
+                                     'hart_frame_kind': 'BURST',
+                                     'hart_address_format': 'SHORT'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [1, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'FCG_FSK_2016',
+                                     'hart_frame_kind': 'BURST',
+                                     'hart_address_format': 'LONG'},
+                            'parameter': 'hart_delimiter',
+                            'equal_expression': {'sum': [129, {'product': [32, 'hart_expansion_bytes']}]}},
+                           {'when': {'hart_profile': 'FCG_FSK_2016', 'hart_revision': 'REV5_OR_EARLIER'},
+                            'parameter': 'hart_poll_address',
+                            'maximum': 15},
+                           {'when': {'hart_profile': 'FCG_FSK_2016', 'hart_revision': 'REV6'},
+                            'parameter': 'hart_poll_address',
+                            'maximum': 63},
+                           {'when': {'hart_profile': 'FCG_FSK_2016', 'hart_revision': 'REV7'},
+                            'parameter': 'hart_poll_address',
+                            'maximum': 63},
+                           {'when': {'hart_role': 'HOST'},
+                            'parameter': 'hart_frame_kind',
+                            'allowed': ['REQUEST']},
+                           {'when': {'hart_role': 'FIELD_DEVICE'},
+                            'parameter': 'hart_frame_kind',
+                            'allowed': ['RESPONSE', 'BURST']},
+                           {'when': {'hart_mode': 'REQUEST_RESPONSE'},
+                            'parameter': 'hart_frame_kind',
+                            'allowed': ['REQUEST', 'RESPONSE']},
+                           {'when': {'hart_mode': 'BURST'},
+                            'parameter': 'hart_burst_supported',
+                            'allowed': [True]},
+                           {'when': {'hart_mode': 'BURST'},
+                            'parameter': 'hart_burst_supported',
+                            'required': True},
+                           {'when': {}, 'parameter': 'hart_burst_period_ms', 'exclusive_minimum': 0},
+                           {'when': {},
+                            'parameter': 'hart_extended_command',
+                            'when_present': ['hart_extended_command'],
+                            'required': True},
+                           {'when': {},
+                            'parameter': 'hart_command',
+                            'when_present': ['hart_extended_command'],
+                            'allowed': [31]},
+                           {'when': {},
+                            'parameter': 'hart_data_bytes',
+                            'when_present': ['hart_extended_command'],
+                            'minimum': 2},
+                           {'when': {}, 'parameter': 'payload_bytes', 'equal_parameter': 'hart_data_bytes'},
+                           {'when': {'hart_profile': 'FCG_FSK_2016',
+                                     'hart_phy': 'FSK',
+                                     'hart_host_role': 'PRIMARY'},
+                            'parameter': 'hart_quiet_chars',
+                            'allowed': [33]},
+                           {'when': {'hart_profile': 'FCG_FSK_2016',
+                                     'hart_phy': 'FSK',
+                                     'hart_host_role': 'SECONDARY'},
+                            'parameter': 'hart_quiet_chars',
+                            'allowed': [41]},
+                           {'when': {'hart_profile': 'FCG_FSK_2016', 'hart_phy': 'FSK', 'hart_role': 'HOST'},
+                            'parameter': 'hart_host_role',
+                            'required': True},
+                           {'when': {'hart_profile': 'FCG_FSK_2016', 'hart_phy': 'FSK'},
+                            'parameter': 'hart_gap_us',
+                            'maximum_ratio': {'numerator_parameter': 'hart_char_bits',
+                                              'denominator_sum': ['bitrate_bps'],
+                                              'factor': 1000000},
+                            'exclusive_maximum_ratio': True},
+                           {'when': {'hart_profile': 'FCG_FSK_2016', 'hart_phy': 'FSK'},
+                            'parameter': 'hart_response_start_ms',
+                            'maximum_expression': {'product': ['hart_slave_timeout_chars',
+                                                               11,
+                                                               0.8333333333333334]}},
+                           {'when': {}, 'parameter': 'hart_loop_supply_v', 'exclusive_minimum': 0},
+                           {'when': {}, 'parameter': 'hart_signal_pp_ma', 'exclusive_minimum': 0},
+                           {'when': {'hart_is_required': True},
+                            'parameter': 'hart_is_source',
+                            'required': True}]}
+
+TECHNOLOGY_SEMANTICS['gpio'] = {'rate_model': {'type': 'DIRECT_IO_NO_PACKET_RATE', 'fields': []},
+ 'required_parameters': ['gpio_profile',
+                         'gpio_pin',
+                         'gpio_device_source',
+                         'gpio_wiring_source',
+                         'gpio_direction'],
+ 'native_parameter_prefixes': ['gpio_'],
+ 'mechanisms': {'access': ['ACTUAL_PIN_MODE_AND_REGISTER_TASK_INTERRUPT_SCHEDULE'],
+                'integrity': ['ACTUAL_VOLTAGE_THRESHOLD_CURRENT_LOAD_AND_NOISE_EVIDENCE'],
+                'scope': ['LOCAL_DIGITAL_IO_NOT_FRAMED_BUS']},
+ 'parameter_constraints': [{'when': {'gpio_profile': 'STM8TL5_RM0312_3',
+                                     'gpio_phase': 'RESET',
+                                     'gpio_reset_exception': False},
+                            'parameter': 'gpio_direction',
+                            'allowed': ['DIGITAL_INPUT']},
+                           {'when': {'gpio_profile': 'STM8TL5_RM0312_3',
+                                     'gpio_phase': 'RESET',
+                                     'gpio_reset_exception': False},
+                            'parameter': 'gpio_pull',
+                            'allowed': ['NONE']},
+                           {'when': {'gpio_profile': 'STM8TL5_RM0312_3'},
+                            'parameter': 'gpio_pull',
+                            'allowed': ['NONE', 'UP']},
+                           {'when': {'gpio_direction': 'DIGITAL_INPUT'},
+                            'parameter': 'gpio_drive',
+                            'allowed': []},
+                           {'when': {'gpio_direction': 'DIGITAL_OUTPUT'},
+                            'parameter': 'gpio_input_mode',
+                            'allowed': []},
+                           {'when': {'gpio_direction': 'DIGITAL_OUTPUT'},
+                            'parameter': 'gpio_event',
+                            'allowed': []},
+                           {'when': {'gpio_profile': 'STM8TL5_RM0312_3', 'gpio_direction': 'DIGITAL_OUTPUT'},
+                            'parameter': 'gpio_pull',
+                            'allowed': ['NONE']},
+                           {'when': {'gpio_direction': 'DIGITAL_INPUT'},
+                            'parameter': 'gpio_source_load_ma',
+                            'allowed': []},
+                           {'when': {'gpio_direction': 'DIGITAL_INPUT'},
+                            'parameter': 'gpio_sink_load_ma',
+                            'allowed': []},
+                           {'when': {'gpio_direction': 'DIGITAL_OUTPUT', 'gpio_drive': 'PSEUDO_OPEN_DRAIN'},
+                            'parameter': 'gpio_pull_source',
+                            'required': True},
+                           {'when': {'gpio_direction': 'DIGITAL_OUTPUT', 'gpio_drive': 'TRUE_OPEN_DRAIN'},
+                            'parameter': 'gpio_pull_source',
+                            'required': True},
+                           {'when': {'gpio_input_mode': 'POLLED'}, 'parameter': 'gpio_event', 'allowed': []},
+                           {'when': {}, 'parameter': 'gpio_vdd_v', 'exclusive_minimum': 0},
+                           {'when': {}, 'parameter': 'gpio_pull_ohms', 'exclusive_minimum': 0},
+                           {'when': {}, 'parameter': 'gpio_vil_max_v', 'maximum_parameter': 'gpio_vih_min_v'},
+                           {'when': {}, 'parameter': 'gpio_vol_max_v', 'maximum_parameter': 'gpio_vil_max_v'},
+                           {'when': {}, 'parameter': 'gpio_voh_min_v', 'minimum_parameter': 'gpio_vih_min_v'},
+                           {'when': {},
+                            'parameter': 'gpio_sink_load_ma',
+                            'maximum_parameter': 'gpio_sink_bound_ma'},
+                           {'when': {},
+                            'parameter': 'gpio_source_load_ma',
+                            'maximum_parameter': 'gpio_source_bound_ma'}]}
+
+TECHNOLOGY_SEMANTICS['goose'] = {
+    'rate_source_profile_id': 'ethernet',
+    'rate_model': deepcopy(TECHNOLOGY_SEMANTICS['ethernet']['rate_model']),
+    'required_parameters': ['bitrate_bps', 'goose_profile', 'goose_edition', 'goose_role', 'goose_binding_source', 'goose_scl_source', 'goose_device_source', 'goose_schedule_source'], 'native_parameter_prefixes':['eth_','goose_'],
+    'mechanisms': {'access':['EXPLICIT_IEEE8023_L2_MULTICAST_GOCB'],
+                   'integrity':['BER_DATASET_REVISION_STATE_SEQUENCE_AND_ACTUAL_SECURITY_SEPARATE'],
+                   'scope':['LAN_GOOSE_NOT_UDP_IP_MMS_OR_ROUTED_GOOSE']},
+    'parameter_constraints': deepcopy(TECHNOLOGY_SEMANTICS['ethernet']['parameter_constraints']) + [{'when': {'goose_profile': 'LIBIEC61850_1_6_L2'}, 'parameter': 'goose_encoding', 'allowed': ['ASN1_BER']},
+ {'when': {}, 'parameter': 'goose_ethertype', 'allowed': [35000]},
+ {'when': {}, 'parameter': 'eth_type_length', 'allowed': [35000]},
+ {'when': {}, 'parameter': 'eth_frame_format', 'allowed': ['ETHERTYPE']},
+ {'when': {}, 'parameter': 'eth_payload_layer', 'allowed': ['MAC_CLIENT']},
+ {'when': {'goose_vlan_tag': True}, 'parameter': 'eth_vlan_tags', 'allowed': [1]},
+ {'when': {'goose_vlan_tag': False}, 'parameter': 'eth_vlan_tags', 'allowed': [0]},
+ {'when': {'goose_vlan_tag': False}, 'parameter': 'eth_tag_mode', 'allowed': ['UNTAGGED']},
+ {'when': {'goose_profile': 'LIBIEC61850_1_6_L2'}, 'parameter': 'goose_timestamp_bytes', 'allowed': [8]},
+ {'when': {}, 'parameter': 'goose_header_bytes', 'allowed': [8]},
+ {'when': {'goose_profile': 'LIBIEC61850_1_6_L2'}, 'parameter': 'goose_reserved1', 'allowed': [0]},
+ {'when': {'goose_profile': 'LIBIEC61850_1_6_L2'}, 'parameter': 'goose_reserved2', 'allowed': [0]},
+ {'when': {},
+  'parameter': 'goose_length_bytes',
+  'equal_sum': [{'parameter': 'goose_header_bytes'}, {'parameter': 'goose_apdu_bytes'}]},
+ {'when': {}, 'parameter': 'goose_length_bytes', 'maximum_parameter': 'mtu_bytes'},
+ {'when': {}, 'parameter': 'payload_bytes', 'equal_parameter': 'goose_length_bytes'},
+ {'when': {}, 'parameter': 'eth_client_bytes', 'equal_parameter': 'goose_length_bytes'},
+ {'when': {}, 'parameter': 'goose_all_data_bytes', 'maximum_parameter': 'goose_apdu_bytes'},
+ {'when': {}, 'parameter': 'goose_num_entries', 'equal_parameter': 'goose_actual_entries'},
+ {'when': {}, 'parameter': 'goose_max_ms', 'minimum_parameter': 'goose_min_ms'},
+ {'when': {}, 'parameter': 'goose_next_ms', 'maximum_parameter': 'goose_tal_ms'},
+ {'when': {'goose_profile': 'LIBIEC61850_1_6_L2'},
+  'parameter': 'goose_tal_ms',
+  'equal_sum': [{'parameter': 'goose_tal_basis_ms', 'factor': 3}]},
+ {'when': {'goose_profile': 'LIBIEC61850_1_6_L2', 'goose_phase': 'STATE_CHANGE'},
+  'parameter': 'goose_sq_num',
+  'allowed': [0]},
+ {'when': {'goose_profile': 'LIBIEC61850_1_6_L2', 'goose_phase': 'STABLE'},
+  'parameter': 'goose_next_ms',
+  'equal_parameter': 'goose_max_ms'},
+ {'when': {'goose_profile': 'LIBIEC61850_1_6_L2', 'goose_phase': 'STABLE'},
+  'parameter': 'goose_tal_basis_ms',
+  'equal_parameter': 'goose_max_ms'},
+ {'when': {'goose_accept_operational': True},
+  'parameter': 'goose_operating_mode',
+  'allowed': ['OPERATIONAL']},
+ {'when': {'goose_accept_operational': True},
+  'parameter': 'goose_test',
+  'required': True,
+  'allowed': [False]},
+ {'when': {'goose_accept_operational': True},
+  'parameter': 'goose_nds_com',
+  'required': True,
+  'allowed': [False]},
+ {'when': {'goose_accept_operational': True},
+  'parameter': 'goose_conf_rev',
+  'required': True,
+  'equal_parameter': 'goose_expected_conf_rev'},
+ {'when': {'goose_accept_operational': True}, 'parameter': 'goose_expected_conf_rev', 'required': True},
+ {'when': {'goose_accept_operational': True}, 'parameter': 'goose_acceptance_source', 'required': True}]
+}
+
+TECHNOLOGY_SEMANTICS['generic_serial'] = {'rate_model': {'type': 'APPLICATION_TRANSPORT_DEPENDENT', 'fields': []},
+ 'required_parameters': ['gs_mode', 'gs_transport_binding', 'gs_implementation_source', 'gs_framing_source'],
+ 'native_parameter_prefixes': ['gs_'],
+ 'mechanisms': {'access': ['EXPLICIT_SERIAL_PORT_IMPLEMENTATION_AND_FRAMING'],
+                'integrity': ['ACTUAL_UART_PARITY_AND_APPLICATION_FRAME_INTEGRITY_SEPARATE'],
+                'scope': ['GENERIC_STREAM_NOT_UNIVERSAL_UART_USB_OR_SYNCHRONOUS_BUS']},
+ 'parameter_constraints': [{'when': {'gs_mode': 'SYNC_SERIAL'},
+                            'parameter': 'gs_uart_profile',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'}, 'parameter': 'gs_baud_rate', 'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'},
+                            'parameter': 'gs_peer_baud_rate',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'}, 'parameter': 'gs_data_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'}, 'parameter': 'gs_parity', 'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'}, 'parameter': 'gs_start_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'}, 'parameter': 'gs_stop_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'}, 'parameter': 'gs_char_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'},
+                            'parameter': 'gs_encoded_characters',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'}, 'parameter': 'gs_wire_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'},
+                            'parameter': 'gs_serialization_us',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'},
+                            'parameter': 'gs_gap_bound_us',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'},
+                            'parameter': 'gs_flow_control',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'},
+                            'parameter': 'gs_flow_bound_us',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'},
+                            'parameter': 'gs_wire_bound_us',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_uart_profile', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_baud_rate', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_peer_baud_rate', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_data_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_parity', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_start_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_stop_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_char_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'},
+                            'parameter': 'gs_encoded_characters',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_wire_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'},
+                            'parameter': 'gs_serialization_us',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_gap_bound_us', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_flow_control', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_flow_bound_us', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_wire_bound_us', 'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'},
+                            'parameter': 'gs_uart_profile',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'}, 'parameter': 'gs_baud_rate', 'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'},
+                            'parameter': 'gs_peer_baud_rate',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'}, 'parameter': 'gs_data_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'}, 'parameter': 'gs_parity', 'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'},
+                            'parameter': 'gs_start_bits',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'}, 'parameter': 'gs_stop_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'}, 'parameter': 'gs_char_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'},
+                            'parameter': 'gs_encoded_characters',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'}, 'parameter': 'gs_wire_bits', 'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'},
+                            'parameter': 'gs_serialization_us',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'},
+                            'parameter': 'gs_gap_bound_us',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'},
+                            'parameter': 'gs_flow_control',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'},
+                            'parameter': 'gs_flow_bound_us',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'},
+                            'parameter': 'gs_wire_bound_us',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'ASYNC_UART'}, 'parameter': 'gs_clock_hz', 'allowed': []},
+                           {'when': {'gs_mode': 'USB_CDC'}, 'parameter': 'gs_clock_hz', 'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'}, 'parameter': 'gs_clock_hz', 'allowed': []},
+                           {'when': {'gs_mode': 'ASYNC_UART'},
+                            'parameter': 'gs_cdc_line_coding_role',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'},
+                            'parameter': 'gs_cdc_line_coding_role',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'CUSTOM_STREAM'},
+                            'parameter': 'gs_cdc_line_coding_role',
+                            'allowed': []},
+                           {'when': {'gs_mode': 'ASYNC_UART'},
+                            'parameter': 'gs_uart_profile',
+                            'required': True},
+                           {'when': {'gs_mode': 'ASYNC_UART'}, 'parameter': 'gs_baud_rate', 'required': True},
+                           {'when': {'gs_mode': 'SYNC_SERIAL'}, 'parameter': 'gs_clock_hz', 'required': True},
+                           {'when': {'gs_mode': 'USB_CDC'},
+                            'parameter': 'gs_cdc_line_coding_role',
+                            'required': True},
+                           {'when': {'gs_mode': 'ASYNC_UART'},
+                            'parameter': 'gs_peer_baud_rate',
+                            'equal_parameter': 'gs_baud_rate'},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_data_bits',
+                            'allowed': [5, 6, 7, 8, 9]},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_parity',
+                            'allowed': ['NONE', 'EVEN', 'ODD']},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_start_bits',
+                            'allowed': [1]},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_stop_bits',
+                            'allowed': [1, 2]},
+                           {'when': {'gs_mode': 'ASYNC_UART',
+                                     'gs_uart_profile': 'TB3216_8N1',
+                                     'gs_parity': 'NONE'},
+                            'parameter': 'gs_char_bits',
+                            'equal_sum': [{'parameter': 'gs_start_bits'},
+                                          {'parameter': 'gs_data_bits'},
+                                          {'parameter': 'gs_stop_bits'}],
+                            'equal_sum_offset': 0},
+                           {'when': {'gs_mode': 'ASYNC_UART',
+                                     'gs_uart_profile': 'TB3216_8N1',
+                                     'gs_parity': 'EVEN'},
+                            'parameter': 'gs_char_bits',
+                            'equal_sum': [{'parameter': 'gs_start_bits'},
+                                          {'parameter': 'gs_data_bits'},
+                                          {'parameter': 'gs_stop_bits'}],
+                            'equal_sum_offset': 1},
+                           {'when': {'gs_mode': 'ASYNC_UART',
+                                     'gs_uart_profile': 'TB3216_8N1',
+                                     'gs_parity': 'ODD'},
+                            'parameter': 'gs_char_bits',
+                            'equal_sum': [{'parameter': 'gs_start_bits'},
+                                          {'parameter': 'gs_data_bits'},
+                                          {'parameter': 'gs_stop_bits'}],
+                            'equal_sum_offset': 1},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_wire_bits',
+                            'equal_expression': {'product': ['gs_char_bits', 'gs_encoded_characters']}},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_serialization_us',
+                            'equal_ratio': {'numerator_parameter': 'gs_wire_bits',
+                                            'denominator_sum': ['gs_baud_rate'],
+                                            'factor': 1000000}},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_wire_bound_us',
+                            'minimum_expression': {'sum': ['gs_serialization_us',
+                                                           'gs_gap_bound_us',
+                                                           'gs_flow_bound_us']}},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'AVR_FRAME_FORMATS'},
+                            'parameter': 'gs_data_bits',
+                            'allowed': [5, 6, 7, 8, 9]},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'AVR_FRAME_FORMATS'},
+                            'parameter': 'gs_parity',
+                            'allowed': ['NONE', 'EVEN', 'ODD']},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'AVR_FRAME_FORMATS'},
+                            'parameter': 'gs_start_bits',
+                            'allowed': [1]},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'AVR_FRAME_FORMATS'},
+                            'parameter': 'gs_stop_bits',
+                            'allowed': [1, 2]},
+                           {'when': {'gs_mode': 'ASYNC_UART',
+                                     'gs_uart_profile': 'AVR_FRAME_FORMATS',
+                                     'gs_parity': 'NONE'},
+                            'parameter': 'gs_char_bits',
+                            'equal_sum': [{'parameter': 'gs_start_bits'},
+                                          {'parameter': 'gs_data_bits'},
+                                          {'parameter': 'gs_stop_bits'}],
+                            'equal_sum_offset': 0},
+                           {'when': {'gs_mode': 'ASYNC_UART',
+                                     'gs_uart_profile': 'AVR_FRAME_FORMATS',
+                                     'gs_parity': 'EVEN'},
+                            'parameter': 'gs_char_bits',
+                            'equal_sum': [{'parameter': 'gs_start_bits'},
+                                          {'parameter': 'gs_data_bits'},
+                                          {'parameter': 'gs_stop_bits'}],
+                            'equal_sum_offset': 1},
+                           {'when': {'gs_mode': 'ASYNC_UART',
+                                     'gs_uart_profile': 'AVR_FRAME_FORMATS',
+                                     'gs_parity': 'ODD'},
+                            'parameter': 'gs_char_bits',
+                            'equal_sum': [{'parameter': 'gs_start_bits'},
+                                          {'parameter': 'gs_data_bits'},
+                                          {'parameter': 'gs_stop_bits'}],
+                            'equal_sum_offset': 1},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'AVR_FRAME_FORMATS'},
+                            'parameter': 'gs_wire_bits',
+                            'equal_expression': {'product': ['gs_char_bits', 'gs_encoded_characters']}},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'AVR_FRAME_FORMATS'},
+                            'parameter': 'gs_serialization_us',
+                            'equal_ratio': {'numerator_parameter': 'gs_wire_bits',
+                                            'denominator_sum': ['gs_baud_rate'],
+                                            'factor': 1000000}},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'AVR_FRAME_FORMATS'},
+                            'parameter': 'gs_wire_bound_us',
+                            'minimum_expression': {'sum': ['gs_serialization_us',
+                                                           'gs_gap_bound_us',
+                                                           'gs_flow_bound_us']}},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_data_bits',
+                            'allowed': [8]},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_parity',
+                            'allowed': ['NONE']},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_start_bits',
+                            'allowed': [1]},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_stop_bits',
+                            'allowed': [1]},
+                           {'when': {'gs_mode': 'ASYNC_UART', 'gs_uart_profile': 'TB3216_8N1'},
+                            'parameter': 'gs_char_bits',
+                            'allowed': [10]},
+                           {'when': {},
+                            'parameter': 'gs_message_bytes',
+                            'maximum_parameter': 'gs_max_message_bytes'}]}
+
+TECHNOLOGY_SEMANTICS['generic_can'] = {'rate_model': {'type': 'APPLICATION_TRANSPORT_DEPENDENT', 'fields': []},
+ 'required_parameters': ['gcan_family',
+                         'gcan_transport_binding',
+                         'gcan_implementation_source',
+                         'gcan_schedule_source'],
+ 'mechanisms': {'access': ['EXPLICIT_CC_FD_XL_REGISTERED_LINK_IDENTIFIER_ARBITRATION'],
+                'integrity': ['SELECTED_FAMILY_CRC_AND_STUFFING_REQUIRED'],
+                'scope': ['GENERIC_WRAPPER_NOT_NEW_NORMATIVE_CAN_GENERATION']},
+ 'parameter_constraints': [{'when': {'gcan_family': 'CAN_CC'},
+                            'parameter': 'gcan_frame_format',
+                            'allowed': ['STANDARD', 'EXTENDED']},
+                           {'when': {'gcan_family': 'CAN_CC'},
+                            'parameter': 'payload_bytes',
+                            'minimum': 0,
+                            'maximum': 8},
+                           {'when': {'gcan_family': 'CAN_CC'},
+                            'parameter': 'gcan_priority_id',
+                            'allowed': []},
+                           {'when': {'gcan_family': 'CAN_CC'},
+                            'parameter': 'gcan_acceptance_field',
+                            'allowed': []},
+                           {'when': {'gcan_family': 'CAN_FD'},
+                            'parameter': 'gcan_frame_format',
+                            'allowed': ['STANDARD', 'EXTENDED']},
+                           {'when': {'gcan_family': 'CAN_FD'},
+                            'parameter': 'payload_bytes',
+                            'minimum': 0,
+                            'maximum': 64},
+                           {'when': {'gcan_family': 'CAN_FD'},
+                            'parameter': 'gcan_frame_kind',
+                            'allowed': ['DATA']},
+                           {'when': {'gcan_family': 'CAN_FD'},
+                            'parameter': 'gcan_requested_bytes',
+                            'allowed': []},
+                           {'when': {'gcan_family': 'CAN_FD'},
+                            'parameter': 'gcan_priority_id',
+                            'allowed': []},
+                           {'when': {'gcan_family': 'CAN_FD'},
+                            'parameter': 'gcan_acceptance_field',
+                            'allowed': []},
+                           {'when': {'gcan_family': 'CAN_XL'},
+                            'parameter': 'gcan_frame_format',
+                            'allowed': ['XL']},
+                           {'when': {'gcan_family': 'CAN_XL'},
+                            'parameter': 'payload_bytes',
+                            'minimum': 1,
+                            'maximum': 2048},
+                           {'when': {'gcan_family': 'CAN_XL'},
+                            'parameter': 'gcan_frame_kind',
+                            'allowed': ['DATA']},
+                           {'when': {'gcan_family': 'CAN_XL'},
+                            'parameter': 'gcan_requested_bytes',
+                            'allowed': []},
+                           {'when': {'gcan_frame_format': 'STANDARD'},
+                            'parameter': 'gcan_identifier',
+                            'maximum': 2047},
+                           {'when': {'gcan_family': 'CAN_XL'}, 'parameter': 'gcan_identifier', 'allowed': []},
+                           {'when': {'gcan_family': 'CAN_CC', 'gcan_frame_kind': 'REMOTE'},
+                            'parameter': 'payload_bytes',
+                            'allowed': [0]},
+                           {'when': {'gcan_frame_kind': 'DATA'},
+                            'parameter': 'gcan_requested_bytes',
+                            'allowed': []},
+                           {'when': {'gcan_family': 'CAN_FD'},
+                            'parameter': 'payload_bytes',
+                            'allowed': [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64]}]}
+
+TECHNOLOGY_SEMANTICS['fsoe'] = {'rate_model': {'type': 'APPLICATION_TRANSPORT_DEPENDENT', 'fields': []},
+ 'required_parameters': ['fsoe_profile',
+                         'fsoe_role',
+                         'fsoe_transport_binding',
+                         'fsoe_implementation_source',
+                         'fsoe_connection_source',
+                         'fsoe_timing_source'],
+ 'mechanisms': {'access': ['MASTER_SLAVE_HANDSHAKE_OVER_EXPLICIT_BLACK_CHANNEL'],
+                'integrity': ['CRC16_PER_TWO_SAFE_OCTETS',
+                              'INHERITED_CRC_VIRTUAL_SEQUENCE_SESSION_AND_CONN_ID'],
+                'supervision': ['BIDIRECTIONAL_WATCHDOG', 'SAFE_STATE_APPLICATION_DEFINED']},
+ 'parameter_constraints': [{'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'parameter': 'payload_bytes',
+                            'minimum': 1},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'when_greater_than': {'payload_bytes': 1},
+                            'parameter': 'payload_bytes',
+                            'multiple_of': 2},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'parameter': 'fsoe_master_safe_bytes',
+                            'minimum': 1},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'when_greater_than': {'fsoe_master_safe_bytes': 1},
+                            'parameter': 'fsoe_master_safe_bytes',
+                            'multiple_of': 2},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'parameter': 'fsoe_slave_safe_bytes',
+                            'minimum': 1},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'when_greater_than': {'fsoe_slave_safe_bytes': 1},
+                            'parameter': 'fsoe_slave_safe_bytes',
+                            'multiple_of': 2},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_direction': 'MASTER_TO_SLAVE'},
+                            'parameter': 'payload_bytes',
+                            'equal_parameter': 'fsoe_master_safe_bytes'},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_direction': 'SLAVE_TO_MASTER'},
+                            'parameter': 'payload_bytes',
+                            'equal_parameter': 'fsoe_slave_safe_bytes'},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'parameter': 'fsoe_crc_count',
+                            'equal_expression': {'ceiling': [{'product': [0.5, 'payload_bytes']}]}},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'parameter': 'fsoe_frame_bytes',
+                            'equal_expression': {'sum': ['fsoe_command_bytes',
+                                                         'payload_bytes',
+                                                         {'product': ['fsoe_crc_count',
+                                                                      'fsoe_crc_word_bytes']},
+                                                         'fsoe_connection_bytes']}},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'parameter': 'fsoe_frame_bytes',
+                            'maximum_parameter': 'fsoe_pdo_capacity_bytes'},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'parameter': 'fsoe_slave_address',
+                            'equal_parameter': 'fsoe_peer_address'},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'parameter': 'fsoe_master_watchdog_ms',
+                            'equal_parameter': 'fsoe_slave_watchdog_ms'},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'parameter': 'fsoe_master_watchdog_ms',
+                            'minimum_parameter': 'fsoe_exchange_bound_ms'},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'when_present': ['fsoe_exchange_bound_ms'],
+                            'parameter': 'fsoe_master_watchdog_ms',
+                            'not_equal_parameter': 'fsoe_exchange_bound_ms'},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'parameter': 'fsoe_slave_watchdog_ms',
+                            'minimum_parameter': 'fsoe_exchange_bound_ms'},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'when_present': ['fsoe_exchange_bound_ms'],
+                            'parameter': 'fsoe_slave_watchdog_ms',
+                            'not_equal_parameter': 'fsoe_exchange_bound_ms'},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2'},
+                            'parameter': 'fsoe_parameter_remaining_bytes',
+                            'maximum_parameter': 'fsoe_parameter_bytes'},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'RESET'},
+                            'parameter': 'fsoe_data_command',
+                            'allowed': []},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'RESET'},
+                            'parameter': 'fsoe_conn_id',
+                            'allowed': [0]},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'SESSION'},
+                            'parameter': 'fsoe_conn_id',
+                            'allowed': [0]},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'RESET'},
+                            'parameter': 'fsoe_crc0',
+                            'allowed': [0]},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'RESET'},
+                            'parameter': 'fsoe_command',
+                            'allowed': [42]},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_conn_id',
+                            'minimum': 1},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_sequence',
+                            'minimum': 1},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_parameters_accepted',
+                            'allowed': [True]},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2',
+                                     'fsoe_state': 'DATA',
+                                     'fsoe_data_command': 'PROCESS_DATA'},
+                            'parameter': 'fsoe_command',
+                            'allowed': [54]},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2',
+                                     'fsoe_state': 'DATA',
+                                     'fsoe_data_command': 'FAILSAFE_DATA'},
+                            'parameter': 'fsoe_command',
+                            'allowed': [8]},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_direction',
+                            'required': True},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_conn_id',
+                            'required': True},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_slave_address',
+                            'required': True},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_peer_address',
+                            'required': True},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_parameters_accepted',
+                            'required': True},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_master_watchdog_ms',
+                            'required': True},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_slave_watchdog_ms',
+                            'required': True},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_exchange_bound_ms',
+                            'required': True},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_mapping_source',
+                            'required': True},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_crc_source',
+                            'required': True},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_safe_output_source',
+                            'required': True},
+                           {'when': {'fsoe_profile': 'BASE_5100_1_2', 'fsoe_state': 'DATA'},
+                            'parameter': 'fsoe_assurance_source',
+                            'required': True}]}
 
 TECHNOLOGY_SEMANTICS['foundation_fieldbus_h1'] = {'rate_model': {'type': 'FIXED_LINK_RATE', 'fields': ['bitrate_bps'], 'fixed_bps': 31250},
  'required_parameters': ['bitrate_bps',
@@ -1632,6 +2992,7 @@ TECHNOLOGY_SEMANTICS['ethernet_ip'] = {
 CAPACITY_MODELS = {
     "can": ("CAN_CC_STUFFING_UPPER_BOUND", "CAN_SUFFICIENT_COMPLETION_BOUND_V1"),
     "can_fd": ("CAN_FD_PHASE_ESTIMATE", "CAN_SUFFICIENT_COMPLETION_BOUND_V1"),
+    # Nominal serialization and periodic-table estimates are not actual LDF proof.
     "lin": ("LIN_NOMINAL_WITH_CHECKSUM", "LIN_PERIODIC_MASTER_TABLE_V1"),
     "ethernet": ("ETHERNET_WIRE_ESTIMATE", "ETHERNET_FULL_DUPLEX_FIFO_RESPONSE_BOUND_V1"),
     "i2c": ("I2C_CONFIRMED_TRANSACTION_BOUND_V1", "SERIAL_MASTER_BUSY_WINDOW_V1"),
@@ -1645,6 +3006,80 @@ DIRECT_IO_TECHNOLOGIES = frozenset({"gpio", "pwm", "adc", "dac"})
 # Source-backed proposals are deliberately distinct from confirmed port/device
 # parameters and from executable capacity models. No proposal is a fallback rate.
 REVIEW_RATE_PROPOSALS: dict[str, dict[str, Any]] = {
+    'profinet': {'kind':'STANDARD_BASELINE','default_bps':100000000,'status':'REVIEW_REQUIRED',
+        'source':profinet_rules.PI,'source_revision':profinet_rules.SOURCES[profinet_rules.PI],
+        'reason':'Conventional PROFINET100Mbps proposal; actual PHY/IOCR/RTclass/device interval/domain plan remain explicit.'},
+    'profibus_pa': {'kind':'FIXED_STANDARD_BASELINE','default_bps':31250,'status':'REVIEW_REQUIRED',
+        'source':profibus_pa_rules.PNO,'source_revision':profibus_pa_rules.SOURCES[profibus_pa_rules.PNO],
+        'note':'Fixed MBP31.25kbit/s with synchronous Manchester octets and own CRC16; PA power/coupler/device profile/schedule separate from DP UART and FF LAS.'},
+    'profibus_dp': {'kind':'LOWEST_STANDARD_BASELINE','default_bps':9600,'status':'REVIEW_REQUIRED',
+        'source':profibus_dp_rules.ABB,'source_revision':profibus_dp_rules.SOURCES[profibus_dp_rules.ABB],
+        'note':'Lowest listed DP nominal rate proposal; actual all-station rate agreement, selected bearer and configurator timing remain explicit.'},
+    'powerlink': {'kind':'FIXED_STANDARD_BASELINE','default_bps':100000000,'status':'REVIEW_REQUIRED',
+        'source':powerlink_rules.P,'source_revision':powerlink_rules.SOURCES[powerlink_rules.P],
+        'note':'Classic DS301100BASE-X HALF duplex. Device/cycle/slot/grant evidence distinct nominal clock; no universal cycle default.'},
+    'pcie': {'kind':'NEGOTIATED_GENERATION_LANES_CODEC','status':'REVIEW_REQUIRED',
+        'source':pcie_rules.REG,'source_revision':pcie_rules.SOURCES[pcie_rules.REG],
+        'values':{},'minimum_standard_bitrate_bps':None,
+        'note':'Gen1/x1/128byte MPS and MRRS baseline proposals; actual generation/lane/mode/credits/PHY and traffic remain explicit. GT/s not application throughput.'},
+    'opensafety': {'kind':'BLACK_CHANNEL_DEVICE_AND_SAFETY_CASE_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':opensafety_rules.INTRO,'source_revision':opensafety_rules.SOURCES[opensafety_rules.INTRO],
+        'values':{},'minimum_standard_bitrate_bps':None},
+    'opc_ua_pubsub': {'kind':'APPLICATION_MAPPING_BEARER_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':opc_ua_pubsub_rules.P14,'source_revision':opc_ua_pubsub_rules.SOURCES[opc_ua_pubsub_rules.P14],
+        'values':{},'minimum_standard_bitrate_bps':None},
+    'opc_ua': {'kind':'APPLICATION_PEER_TRANSPORT_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':opc_ua_rules.P6,'source_revision':opc_ua_rules.SOURCES[opc_ua_rules.P6],
+        'values':{},'minimum_standard_bitrate_bps':None},
+    'one_wire': {'kind':'DEVICE_SLOT_TIMING_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':one_wire_rules.STYLE,'source_revision':one_wire_rules.SOURCES[one_wire_rules.STYLE],
+        'note':'Standard mode baseline, nominal16.3k label separate actual source-qualified slots/recovery/load. Deviceconversion and hostbridge clocks separate; no scalarCAN/I2C fallback or255byteframe.'},
+    'ocpp': {'kind':'APPLICATION_TRANSPORT_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':ocpp_rules.P21,'source_revision':ocpp_rules.SOURCES[ocpp_rules.P21],
+        'note':'Actual version/binding/peer limits and bearer required. OCPP has no own bus clock, Ethernet10M or generic65535 payload default. Source-qualified WebSocket subprotocol/SOAP1.2 proposals are separate from actual device timeout, heartbeat and capacity.'},
+    'obd2': {'kind':'VEHICLE_TRANSPORT_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':obd2_rules.ELM,'source_revision':obd2_rules.SOURCES[obd2_rules.ELM],
+        'note':'Selectedactualvehicleprotocol J1850PWM41600/VPW10400,Kline10400,CAN250k/500k. No universalCAN orEthernetbus. AdapterhostUART,init5baud,serviceedition andresponse timer areseparate.'},
+    'nmea2000': {'kind':'FIXED_STANDARD_BASELINE','default_bps':250000,'status':'REVIEW_REQUIRED',
+        'source':nmea2000_rules.WC,'source_revision':nmea2000_rules.SOURCES[nmea2000_rules.WC],
+        'note':'NMEA2000 fixed250k CAN-CC. Actual PGN transport/name/addressclaim/physical/power/device timing required. Fast223 differsSINGLE8 andqualifiedISO1785. No NMEA0183 or genericJ1939 parameter fallback.'},
+    'nmea0183': {'kind':'SERIAL_OR_REGISTERED_BINDING_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':nmea0183_rules.P,'source_revision':nmea0183_rules.SOURCES[nmea0183_rules.P],
+        'note':'Standard4800 andHS38400 proposals are serial-path-specific. DeviceUART and TCP/UDP/USB/I2C/SPI carriage need actualport/lowerlayer configuration; no NMEA2000CAN250k or Ethernet default. Untaggedsentence82 differs selecteddevice highprecision and fullstream traffic.'},
+    'nfc': {'kind':'RF_PROTOCOL_ROLE_AND_FIRMWARE_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':nfc_rules.ECMA,'source_revision':nfc_rules.SOURCES[nfc_rules.ECMA],
+        'note':'No universal424k NFC default. Selected NFCIP1/A/B106k, F212k and PN7160V26.48k proposals differ; exact carrier/divisor and named rounded rates, RF versus hostI2C/SPI, firmware and role qualify every path. NCI255byte packet limit does not bound application bytes.'},
+    'nb_iot': {'kind':'CATEGORY_GRANT_REPETITION_AND_NEGOTIATED_NAS_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':nb_iot_rules.CAP,'source_revision':nb_iot_rules.SOURCES[nb_iot_rules.CAP],
+        'note':'NB1/NB2 has no fixed250kbit/s baseline or universal1500byte application payload. Own channel200kHz versus180kHz resource grid, UL3.75/15kHz, category/optional-QAM and actualgrants/repetitions/PSM/eDRX/core path determine service; no LTE-M/CAN/Ethernet fallback.'},
+    'mvb': {'kind':'FIXED_STANDARD_BASELINE','default_bps':1500000,'status':'REVIEW_REQUIRED',
+        'source':mvb_rules.IMC,'source_revision':mvb_rules.SOURCES[mvb_rules.IMC],
+        'note':'MVB gross1.5Mbit/s proposal, Manchester/frame/check/turnaround and actualadministrator scanlist separate. WiredEMD/ESD+ logging4.15 differs historicABBcontroller qualification. No nominalrate capacity or CAN/Ethernet fallback.'},
+    'mqtt_sn': {'kind':'APPLICATION_TRANSPORT_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':mqtt_sn_rules.P,'source_revision':mqtt_sn_rules.SOURCES[mqtt_sn_rules.P],
+        'note':'MQTT-SN1.2 has no own wireless speed or universally usable65535byte payload. Explicit lower datagram/gateway/codec required; no protocol fragmentation. Qualified timer recommendations and message codes are proposals; actual client/address/topic maps and capacity remain evidence.'},
+    'mqtt': {'kind':'APPLICATION_TRANSPORT_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':mqtt_rules.P5,'source_revision':mqtt_rules.SOURCES[mqtt_rules.P5],
+        'note':'MQTT has no own rate or universalEthernet stack. Ordered lossless bidirectional TCP/TLS/WebSocket/registered stream required. MQTT3.1.1 and5 session, per-hopQoS and optional absence defaults are separately scoped; no standard keepalive60seconds or fixedretry timer.'},
+    'most': {'kind':'DEVICE_GENERATION_FRAME_CLOCK','status':'REVIEW_REQUIRED',
+        'source':most_rules.P25,'source_revision':most_rules.SOURCES[most_rules.P25],
+        'note':'Selected generation frame64/128/384 bytes times actual targetFs. Qualified MOST25 44.1kHz baseline yields22579200bit/s; 25/50/150 labels are rounded. Host MediaLB/I2C/USB clocks and message limits are separate; no unconditional installed rate.'},
+    'modbus_tcp': {'kind':'APPLICATION_TRANSPORT_DEPENDENT','status':'REVIEW_REQUIRED',
+        'source':mtcp_rules.TCP,'source_revision':mtcp_rules.SOURCES[mtcp_rules.TCP],
+        'note':'MBAP has no own physical bitrate. Explicit actual TCP/IP/PHY and optional Modbus Security binding; port502/802 and directUnitFF are conditional proposals. No Ethernet10M fallback, serial gap/CRC or universal response timeout.'},
+    'modbus_rtu': {'kind':'STANDARD_SERIAL_BASELINE','default_bps':19200,'status':'REVIEW_REQUIRED',
+        'source':rtu_rules.SERIAL,'source_revision':rtu_rules.SOURCES[rtu_rules.SERIAL],
+        'note':'V1.02 section3.2 and class table:19200 proposal if implemented, Basic fallback9600 if not. Actual supported/calibrated baud required; no universal1200..115200cap. RTU8data/11wirebits, CRC16 and own t1.5/t3.5 timers.'},
+    'modbus_ascii': {'kind':'STANDARD_SERIAL_BASELINE','default_bps':19200,'status':'REVIEW_REQUIRED',
+        'source':ascii_rules.SERIAL,'source_revision':ascii_rules.SOURCES[ascii_rules.SERIAL],
+        'note':'V1.02 section3.2 requires19200 default; optional ASCII Regular class uses7data/10wirebits and EVEN parity. Baud supported/calibrated at actual endpoints; no global115200cap or capacity from proposal.'},
+    'http': {'kind': 'APPLICATION_TRANSPORT_DEPENDENT', 'status': 'REVIEW_REQUIRED', 'source': 'https://www.rfc-editor.org/rfc/rfc9110.html', 'source_revision': 'RFC9110/9112/9113/9114 June2022; RFC9204 June2022; RFC9931 March2026 updates RFC9112 optimistic transition handling', 'note': 'No own physical rate or universal HTTP65535-byte message cap. Version-specific initialsettings proposals only until actual peer advertisements; actual explicit transport binding required.'},
+    'hart': {'kind': 'STANDARD_BASELINE', 'default_bps': 1200, 'default_basis': 'WIRED_FSK_BASELINE', 'status': 'REVIEW_REQUIRED', 'source': 'https://www.ti.com/lit/an/slaaeh0/slaaeh0.pdf', 'source_revision': 'TI SLAAEH0 November2023 sections1.1-1.5 pp2-9; FieldComm character-time support article modified2016-11-11; full licensed HART specifications not read', 'note': 'Wired FSK baseline1200bit/s proposal. C8PSK requires explicit actual mode9600 and own codec/PHY evidence. No automatic HART-IP/WirelessHART transport or device identity.'},
+    'gpio': {'kind': 'ACTUAL_DEVICE_NO_PACKET_RATE', 'status': 'REVIEW_REQUIRED', 'source': 'https://www.st.com.cn/resource/en/reference_manual/rm0312-stm8tl5xxx-microcontroller-family-stmicroelectronics.pdf', 'source_revision': 'ST RM0312 DocID022352 Rev3 October2013 chapter10 pp75-82; ST AN2710 Rev1 February2008 safe transition tables', 'note': 'GPIO has no standard packet speed/voltage/timing. Qualified STM8TL5 non-exception reset input/no-pull proposal is conditional; programmed outputs and real pin/peer evidence remain actual.'},
+    'goose': {'kind': 'PHYSICAL_RATE_FROM_DECLARED_STACK', 'status': 'REVIEW_REQUIRED', 'source': 'https://raw.githubusercontent.com/mz-automation/libiec61850/v1.6/src/goose/goose_publisher.c', 'source_revision': 'libIEC61850 v1.6 publisher/server/config source and API1.6.0 read2026-10-01; IEC61850-8-1 Ed2.1 2020-02-21 publisher metadata, full licensed normative text not read', 'note': 'GOOSE raw L2 uses explicit canonical IEEE802.3 PHY modes; no independent universal100Mbit/s or event4ms. Library-qualified default PCP4 and configured retransmission fallbacks are conditional proposals, not actual SCL/device evidence.'},
+    'generic_serial': {'kind': 'CONFIGURED_TRANSPORT_PROFILE', 'status': 'REVIEW_REQUIRED', 'source': 'https://ww1.microchip.com/downloads/en/Appnotes/TB3216-Getting-Started-with-USART-90003216B.pdf', 'source_revision': 'Microchip TB3216 DS90003216B 2019 sections2/3/6; Arduino official Serial.begin reference master read2026-10-01; AVR USART frame-format documentation7.1.1 section15.5', 'note': 'Generic Serial has no universal physical rate. Explicit async TB3216 tutorial profile has conditional9600/8N1 proposals; sync and USB CDC require their own actual bound implementation.'},
+    'generic_can': {'kind': 'CONFIGURED_TRANSPORT_PROFILE', 'status': 'REVIEW_REQUIRED', 'source': 'https://www.can-cia.org/can-knowledge/can-data-link-layer-generations', 'source_revision': 'CiA primary CAN generation, CAN FD and CAN XL descriptions read2026-10-01; ISO11898-1:2024 referenced, full licensed text not read', 'note': 'Generic CAN is an NIS abstraction. Actual CC/FD/XL transmitted family and lower link required; no own universal500kbit/s or8-byte proposal.'},
+    'fsoe': {'kind': 'APPLICATION_TRANSPORT_DEPENDENT', 'status': 'REVIEW_REQUIRED', 'source': 'https://www.beckhoff.com/media/downloads/information-media/pc-control/pcc_0107_e.pdf', 'source_revision': 'Beckhoff PC-Control01/2007 pages24-26; HMS public FSoE PDU/state tutorial July23/24 2026 interpreted for base ETG5100v1.2.0, not licensed full text', 'note': 'FSoE has no own bitrate, universal safe-data maximum or universal watchdog default. Base one-byte/even-block container requires configured directional data/mapping, CRC chain and endpoint watchdog. Black channel and optional enhancements need their own profiles; no automatic SIL/PL acceptance.'},
     'foundation_fieldbus_h1': {'kind': 'FIXED_NOMINAL_RATE', 'default_bps': 31250, 'status': 'REVIEW_REQUIRED', 'source': 'https://www.yokogawa.com/pdf/provide/E/GW/TI/0000001497/0/TI38K02A01-01E.pdf', 'source_revision': 'Yokogawa TI38K02A01-01E third edition April2012 sections2.1.2/2.2/2.3/2.4/2.5/3.5.2; manufacturer tutorial, not full normative specification', 'note': 'Fixed31.25kbit/s H1 baseline. Actual FMS data, DLSDU, complete physical telegram and LAS transaction are distinct; native device/CFF/physical/schedule evidence remains unknown. No100M HSE or CAN defaults.'},
     'flexray': {'kind':'DISCRETE_STANDARD_RATES','default_bps':2500000,'status':'REVIEW_REQUIRED',
         'source':'https://www.nxp.com/docs/en/data-sheet/MFR4310RM.pdf',
@@ -1791,7 +3226,8 @@ REVIEW_RATE_PROPOSALS: dict[str, dict[str, Any]] = {
         "options": [{"mode": "Standard", "maximum": 100_000},
                     {"mode": "Fast", "maximum": 400_000},
                     {"mode": "Fast Plus", "maximum": 1_000_000},
-                    {"mode": "High Speed", "maximum": 3_400_000}],
+                    {"mode": "High Speed", "maximum": 3_400_000},
+                    {"mode": "Ultra Fast", "maximum": 5_000_000}],
         "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
         "source_revision": "UM10204 Rev. 7.0 (2021-10-01)",
         "status": "REVIEW_REQUIRED",
@@ -1799,6 +3235,17 @@ REVIEW_RATE_PROPOSALS: dict[str, dict[str, Any]] = {
     },
 }
 
+
+REVIEW_RATE_PROPOSALS['generic_ethernet'] = deepcopy(REVIEW_RATE_PROPOSALS['ethernet'])
+REVIEW_RATE_PROPOSALS['generic_ethernet']['note'] = (
+    'Explicit IEEE802.3 Generic Ethernet entry uses the reviewed 10BASE-T/10M baseline '
+    'proposal. Actual PHY, duplex, MAC-client layout, peer, flow and path configuration '
+    'remain required; no independent 1G default or implicit TCP/IP header.')
+
+REVIEW_RATE_PROPOSALS['mil_std_1553'] = {
+    'kind':'VARIANT_DEPENDENT','status':'REVIEW_REQUIRED','source':mil1553_rules.CORE,
+    'source_revision':mil1553_rules.SOURCES[mil1553_rules.CORE],
+    'note':'MIL-STD-1553C nominal1Mbit/s is a conditional standard proposal; actual revision, observed clock, terminal options, message schedule and electrical qualification remain required.'}
 
 LOCAL_EVIDENCE_FIELDS = {
     "I2C": (("master_node_id", "Bestätigter I2C-Master"), ("slave_address", "Slave-Adresse des Geräts"),
@@ -1830,6 +3277,8 @@ LOCAL_EVIDENCE_FIELDS = {
 
 
 def _local_timing_schema(technology_id):
+    if technology_id == 'i2c':
+        return i2c_rules.local_fields()
     numeric = {'address_bits', 'start_stop_bound_us', 'clock_stretch_limit_us',
                'transfer_bits_bound', 'arbitration_bound_us', 'bitrate_bps', 'word_length_bits',
                'cpol', 'cpha', 'cs_setup_bound_us', 'inter_transfer_gap_us', 'pwm_frequency_hz',
@@ -1839,6 +3288,18 @@ def _local_timing_schema(technology_id):
              'boolean': key == 'multi_master', 'optional': key == 'arbitration_bound_us',
              **({'default': 'STANDARD'} if key == 'i2c_mode' else {})}
             for key, label in LOCAL_EVIDENCE_FIELDS.get(technology_id.upper(), ())]
+    if technology_id == 'gpio':
+        fields.append({'key':'update_bound_ms','label':'Output-update bound (ms)','numeric':True,'boolean':False,'optional':True})
+        conditions={'sample_bound_ms':{'gpio_direction':'DIGITAL_INPUT','gpio_input_mode':'POLLED'},
+                    'debounce_bound_ms':{'gpio_debounce_enabled':True},
+                    'edge_detection_bound_ms':{'gpio_direction':'DIGITAL_INPUT','gpio_input_mode':'INTERRUPT'},
+                    'update_bound_ms':{'gpio_direction':'DIGITAL_OUTPUT'}}
+        source=REVIEW_RATE_PROPOSALS['gpio']
+        for item in fields:
+            item.update(unit='ms',minimum=0,optional=True,required_when=conditions[item['key']],
+                        parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',scope='device',
+                        source=source['source'],source_revision=source['source_revision'],
+                        description='Actual matching pin/task/interrupt/debounce/update timing bound, not a bus rate or generic period. Confirm only with actual datasheet/measurement source.')
     if technology_id == 'adc':
         for item in fields:
             item.update(unit='ms', minimum=0, parameter_origin='DEVICE_CONFIGURATION',
@@ -1964,7 +3425,7 @@ def _spec(
         "payload_element_types": list(payload_types),
         "hardware_interface": hardware_interface,
         "default_stack": list(stack or (technology_id,)),
-        "stack_variants": ([list(stack), ["ethernet", "ip", "tcp", "someip"]]
+        "stack_variants": ([["ip", "udp", "someip"], ["ip", "tcp", "someip"]]
                            if technology_id == "someip" else [list(stack or (technology_id,))]),
         "default_bitrate": bitrate,
         "rate_model": rate_model,
@@ -2026,13 +3487,23 @@ def _spec(
                        {'source': REVIEW_RATE_PROPOSALS['dali']['source'],
                         'source_revision': REVIEW_RATE_PROPOSALS['dali']['source_revision']}
                        if technology_id == 'dali' else
+                       {'source':REVIEW_RATE_PROPOSALS['goose' if item['parameter'].startswith('goose_') else 'ethernet']['source'],
+                        'source_revision':REVIEW_RATE_PROPOSALS['goose' if item['parameter'].startswith('goose_') else 'ethernet']['source_revision']}
+                       if technology_id == 'goose' else
                        {'source': REVIEW_RATE_PROPOSALS[technology_id]['source'],
                         'source_revision': REVIEW_RATE_PROPOSALS[technology_id]['source_revision']}
-                       if technology_id in {'dnp3','devicenet','doip','etb','ethercat','ethernet_ip','flexray','foundation_fieldbus_h1'} else {})}
+                       if technology_id in {'dnp3','devicenet','doip','etb','ethercat','ethernet_ip','flexray','foundation_fieldbus_h1','fsoe','generic_can','generic_serial','gpio','hart','http'} else {}),
+             **({'source':'https://support.fieldcommgroup.org/support/solutions/articles/8000040648-how-is-character-time-calculated-',
+                 'source_revision':'FieldComm character-time support article2016-11-11'}
+                if technology_id=='hart' and item.get('when',{}).get('hart_profile')=='FCG_FSK_2016'
+                and item['parameter'] in {'hart_host_role','hart_quiet_chars','hart_gap_us','hart_response_start_ms'} else {})}
             for item in semantics.get('parameter_constraints', [])
         ],
         "physical_layer_profile_id": physical.id if physical else None,
         "medium_access_model": physical.access_model.value if physical else None,
+        "native_parameter_prefixes": list(semantics.get('native_parameter_prefixes',[])),
+        "parameter_evidence_scope": semantics.get('parameter_evidence_scope'),
+        "rate_source_profile_id": semantics.get('rate_source_profile_id'),
         "arbitration_model_id": physical.arbitration.id if physical and physical.arbitration else None,
         "max_payload_bytes": payload,
         "capabilities": _capabilities(*capabilities),
@@ -2073,135 +3544,135 @@ def _spec(
 ROWS: tuple[tuple[Any, ...], ...] = (
     # Generic layered foundations
     ("ethernet", "Ethernet", "generic_networking", "DATA_LINK", "FRAME", ("FIELD", "RAW_DATA"), "ethernet_port", (), 1_000_000_000, 1500, ("objects", "streams", "multicast", "redundancy", "time_sync", "qos"), False),
-    ("ip", "Internet Protocol", "generic_networking", "NETWORK", "PACKET", ("FIELD", "RAW_DATA"), "ethernet_port", ("ethernet", "ip"), None, 65535, ("objects", "streams", "multicast", "fragmentation", "qos"), False),
+    ("ip", "Internet Protocol", "generic_networking", "NETWORK", "PACKET", ("FIELD", "RAW_DATA"), "explicit_registered_link", (), None, None, ("objects", "streams", "multicast", "fragmentation", "qos"), False),
     ("udp", "UDP", "generic_networking", "TRANSPORT", "DATAGRAM", ("FIELD", "RAW_DATA"), "ethernet_port", ("ethernet", "ip", "udp"), None, 65507, ("objects", "streams", "multicast", "segmentation"), False),
     ("tcp", "TCP", "generic_networking", "TRANSPORT", "STREAM_CHUNK", ("FIELD", "RAW_DATA"), "ethernet_port", ("ethernet", "ip", "tcp"), None, 65535, ("objects", "streams", "request_response", "segmentation", "fragmentation", "qos"), False),
     # Automotive / vehicle
     ("can", "CAN 2.0A/B", "generic_networking", "DATA_LINK", "FRAME", ("SIGNAL", "STATUS"), "can_controller", (), None, 8, ("multicast",), False),
     ("can_fd", "CAN-FD", "generic_networking", "DATA_LINK", "FRAME", ("SIGNAL", "STATUS"), "can_fd_controller", (), None, 64, ("multicast",), False),
     ("can_xl", "CAN XL", "generic_networking", "DATA_LINK", "FRAME", ("SIGNAL", "FIELD", "RAW_DATA"), "can_xl_controller", (), None, 2048, ("objects", "multicast", "qos"), False),
-    ("lin", "LIN", "automotive", "DATA_LINK", "FRAME", ("SIGNAL", "STATUS"), "lin_channel", (), 19_200, 8, (), True),
+    ("lin", "LIN", "generic_networking", "DATA_LINK", "FRAME", ("SIGNAL", "STATUS"), "lin_qualified_channel", (), None, 8, (), False),
     ("flexray", "FlexRay", "generic_networking", "DATA_LINK", "FRAME", ("SIGNAL", "STATUS"), "flexray_controller", (), 2_500_000, 254, ("multicast", "redundancy", "time_sync"), True),
-    ("most", "MOST", "automotive", "DATA_LINK", "STREAM_CHUNK", ("AUDIO", "RAW_DATA"), "most_interface", (), 150_000_000, 1500, ("streams", "time_sync"), True),
+    ("most", "MOST", "generic_networking", "DATA_LINK", "STREAM_CHUNK", ("AUDIO", "RAW_DATA"), "explicit_most_generation_phy", (), None, None, ("streams", "time_sync"), True),
     ("canopen", "CANopen", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "SIGNAL"), "can_controller", ("can", "canopen"), 10_000, 8, ("objects", "pubsub", "request_response"), False),
-    ("j1939", "SAE J1939", "automotive", "APPLICATION", "MESSAGE", ("FIELD", "SIGNAL"), "can_controller", ("can", "j1939"), 250_000, 1785, ("multicast", "segmentation"), True),
-    ("isobus", "ISO 11783 / ISOBUS", "automotive", "INDUSTRY_PROFILE", "MESSAGE", ("FIELD", "SIGNAL"), "can_controller", ("can", "j1939", "isobus"), 250_000, 1785, ("objects", "multicast", "segmentation"), True),
+    ("j1939", "SAE J1939", "generic_networking", "APPLICATION", "MESSAGE", ("FIELD", "SIGNAL"), "j1939_qualified_classic_or_fd_port", (), None, None, ("multicast", "segmentation"), False),
+    ("isobus", "ISO 11783 / ISOBUS", "generic_networking", "INDUSTRY_PROFILE", "MESSAGE", ("FIELD", "SIGNAL"), "isobus_qualified_can_port", (), None, None, ("objects", "multicast", "segmentation"), False),
     ("uds", "UDS", "automotive", "APPLICATION", "SERVICE_REQUEST", ("COMMAND", "STATUS", "RAW_DATA"), "can_or_ethernet_interface", ("can", "uds"), None, 4095, ("request_response", "segmentation"), False),
     ("xcp", "XCP", "automotive", "APPLICATION", "SERVICE_REQUEST", ("COMMAND", "DATA_OBJECT"), "can_or_ethernet_interface", ("can", "xcp"), None, 65535, ("objects", "request_response", "segmentation"), False),
     ("ccp", "CCP", "generic_networking", "APPLICATION", "SERVICE_REQUEST", ("COMMAND", "DATA_OBJECT"), "can_controller", ("can", "ccp"), None, 8, ("objects", "request_response"), False),
-    ("someip", "SOME/IP", "automotive", "APPLICATION", "SERVICE_EVENT", ("FIELD", "DATA_OBJECT"), "ethernet_port", ("ethernet", "ip", "udp", "someip"), None, 65535, ("objects", "pubsub", "request_response", "segmentation", "qos"), False),
-    ("someip_sd", "SOME/IP-SD", "automotive", "APPLICATION", "SERVICE_EVENT", ("FIELD", "STATUS"), "ethernet_port", ("ethernet", "ip", "udp", "someip_sd"), None, 1400, ("objects", "multicast", "pubsub"), False),
+    ("someip", "SOME/IP", "generic_networking", "APPLICATION", "SERVICE_EVENT", ("FIELD", "DATA_OBJECT"), "actual_someip_transport_binding", ("someip",), None, None, ("objects", "pubsub", "request_response", "segmentation", "qos"), False),
+    ("someip_sd", "SOME/IP-SD", "generic_networking", "APPLICATION", "SERVICE_EVENT", ("FIELD", "STATUS"), "actual_someip_sd_udp_ip_binding", ("someip_sd",), None, None, ("objects", "multicast", "pubsub"), False),
     ("doip", "DoIP", "automotive", "APPLICATION", "PDU", ("COMMAND", "STATUS", "RAW_DATA"), "explicit_ip_transport_binding", (), None, 4_294_967_295, ("request_response", "stream_framing"), False),
-    ("obd2", "OBD-II", "automotive", "INDUSTRY_PROFILE", "SERVICE_REQUEST", ("COMMAND", "STATUS"), "can_or_ethernet_interface", ("can", "uds", "obd2"), None, 4095, ("request_response",), False),
+    ("obd2", "OBD-II", "generic_networking", "INDUSTRY_PROFILE", "SERVICE_REQUEST", ("COMMAND", "STATUS"), "obd_actual_vehicle_binding_and_adapter_host", (), None, None, ("request_response",), False),
     ("avb", "AVB", "generic_networking", "INDUSTRY_PROFILE", "STREAM_CHUNK", ("AUDIO", "RAW_DATA"), "ethernet_port", ("ethernet", "avb"), 100_000_000, 1500, ("streams", "multicast", "time_sync", "qos"), True),
     ("tsn", "Time-Sensitive Networking", "generic_networking", "INDUSTRY_PROFILE", "FRAME", ("FIELD", "RAW_DATA"), "ethernet_port", ("ethernet", "tsn"), 1_000_000_000, 1500, ("objects", "streams", "multicast", "redundancy", "time_sync", "safety", "qos"), True),
     # Industrial / PLC
-    ("profinet", "PROFINET RT/IRT", "industrial_automation", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "ethernet_port", ("ethernet", "profinet"), 100_000_000, 1440, ("objects", "pubsub", "cyclic", "time_sync", "safety", "qos"), True),
+    ("profinet", "PROFINET RT/IRT", "industrial_automation", "DATA_LINK", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "explicit_profinet_io", (), None, None, ("objects", "pubsub", "cyclic", "time_sync", "safety", "qos"), False),
     ("ethercat", "EtherCAT", "industrial_automation", "INDUSTRY_PROFILE", "DATAGRAM", ("FIELD", "REGISTER", "STATUS"), "ethercat_port", ("ethernet", "ethercat"), 100_000_000, 1486, ("objects", "pubsub", "time_sync", "safety", "qos"), True),
     ("ethernet_ip", "EtherNet/IP", "generic_networking", "APPLICATION", "PDU", ("FIELD", "DATA_OBJECT"), "explicit_ip_transport_binding", (), None, 65535, ("objects", "pubsub", "request_response"), False),
-    ("modbus_tcp", "Modbus TCP", "industrial_automation", "APPLICATION", "PDU", ("REGISTER", "COIL"), "ethernet_port", ("ethernet", "ip", "tcp", "modbus_tcp"), 100_000_000, 253, ("request_response", "segmentation"), False),
-    ("modbus_rtu", "Modbus RTU", "industrial_automation", "APPLICATION", "PDU", ("REGISTER", "COIL"), "rs485_port", ("modbus_rtu",), 115_200, 253, ("request_response",), True),
-    ("modbus_ascii", "Modbus ASCII", "industrial_automation", "APPLICATION", "PDU", ("REGISTER", "COIL"), "rs485_port", ("modbus_ascii",), 19_200, 252, ("request_response",), False),
-    ("profibus_dp", "PROFIBUS DP", "industrial_automation", "INDUSTRY_PROFILE", "TELEGRAM", ("FIELD", "STATUS"), "profibus_interface", (), 12_000_000, 244, ("pubsub", "request_response", "safety"), True),
-    ("profibus_pa", "PROFIBUS PA", "process_industry", "INDUSTRY_PROFILE", "TELEGRAM", ("FIELD", "STATUS", "QUALITY"), "profibus_interface", (), 31_250, 244, ("pubsub", "request_response", "safety"), True),
+    ("modbus_tcp", "Modbus TCP", "generic_networking", "APPLICATION", "PDU", ("REGISTER", "COIL"), "explicit_mbap_tcp_binding", (), None, 253, ("request_response", "segmentation"), False),
+    ("modbus_rtu", "Modbus RTU", "generic_networking", "APPLICATION", "PDU", ("REGISTER", "COIL"), "explicit_rtu_serial_binding", ("modbus_rtu",), 19200, 253, ("request_response",), True),
+    ("modbus_ascii", "Modbus ASCII", "generic_networking", "APPLICATION", "PDU", ("REGISTER", "COIL"), "explicit_ascii_serial_binding", ("modbus_ascii",), 19_200, 253, ("request_response",), False),
+    ("profibus_dp", "PROFIBUS DP", "industrial_automation", "DATA_LINK", "TELEGRAM", ("FIELD", "STATUS"), "explicit_profibus_dp_bearer", (), None, None, ("pubsub", "request_response", "safety"), False),
+    ("profibus_pa", "PROFIBUS PA", "process_industry", "DATA_LINK", "TELEGRAM", ("FIELD", "STATUS", "QUALITY"), "explicit_profibus_pa_mbp", (), None, None, ("pubsub", "request_response", "safety"), False),
     ("devicenet", "DeviceNet", "industrial_automation", "INDUSTRY_PROFILE", "MESSAGE", ("DATA_OBJECT", "SIGNAL"), "can_controller", ("can", "devicenet"), 125_000, 8, ("objects", "pubsub", "request_response", "fragmentation"), True),
-    ("interbus", "INTERBUS", "industrial_automation", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS"), "interbus_interface", (), 500_000, 246, ("pubsub",), True),
+    ("interbus", "INTERBUS", "generic_networking", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS"), "interbus_interface", (), None, None, ("pubsub", "ordered_ring", "pcp"), False),
     ("cc_link", "CC-Link", "generic_networking", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS"), "cc_link_interface", (), 156_000, None, ("pubsub",), False),
     ("cc_link_ie", "CC-Link IE", "generic_networking", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS"), "ethernet_or_optical_interface", (), None, None, ("objects", "pubsub", "time_sync", "qos"), False),
-    ("sercos_iii", "Sercos III", "industrial_automation", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS"), "ethernet_port", ("ethernet", "sercos_iii"), 100_000_000, 1500, ("pubsub", "time_sync", "safety"), True),
-    ("powerlink", "POWERLINK", "industrial_automation", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS"), "ethernet_port", ("ethernet", "powerlink"), 100_000_000, 1500, ("pubsub", "time_sync", "safety"), True),
-    ("io_link", "IO-Link", "industrial_automation", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "io_link_master_port", (), 230_400, 32, ("request_response",), True),
-    ("io_link_wireless", "IO-Link Wireless", "industrial_automation", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "wireless_interface", (), 1_000_000, 32, ("request_response", "time_sync"), True),
-    ("opc_ua", "OPC UA Client/Server", "industrial_automation", "APPLICATION", "SERVICE_RESPONSE", ("DATA_OBJECT", "STRUCT", "STATUS", "QUALITY"), "ethernet_port", ("ethernet", "ip", "tcp", "opc_ua"), None, 65535, ("objects", "request_response", "segmentation", "qos"), False),
-    ("opc_ua_pubsub", "OPC UA PubSub", "industrial_automation", "APPLICATION", "DATAGRAM", ("DATA_OBJECT", "STRUCT", "STATUS", "QUALITY"), "ethernet_port", ("ethernet", "ip", "udp", "opc_ua_pubsub"), None, 65507, ("objects", "multicast", "pubsub", "time_sync", "qos"), True),
-    ("mqtt", "MQTT", "iot_wireless", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "ethernet_or_wireless_interface", ("ethernet", "ip", "tcp", "mqtt"), None, 268435455, ("objects", "pubsub", "qos", "segmentation"), False),
-    ("sparkplug_b", "Sparkplug B", "industrial_automation", "INDUSTRY_PROFILE", "MESSAGE", ("DATA_OBJECT", "STATUS", "QUALITY"), "ethernet_port", ("ethernet", "ip", "tcp", "mqtt", "sparkplug_b"), None, 268435455, ("objects", "pubsub", "qos", "segmentation"), False),
+    ("sercos_iii", "Sercos III", "generic_networking", "DATA_LINK", "PROCESS_DATA", ("FIELD", "STATUS"), "actual_sercos_iii_full_duplex_link", ("sercos_iii",), None, None, ("pubsub", "time_sync"), False),
+    ("powerlink", "POWERLINK", "industrial_automation", "DATA_LINK", "PROCESS_DATA", ("FIELD", "STATUS"), "explicit_powerlink_100base_x_half_duplex", (), None, None, ("pubsub", "time_sync", "safety"), False),
+    ("io_link", "IO-Link", "generic_networking", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "io_link_master_port", (), None, None, ("request_response", "wired_point_to_point"), False),
+    ("io_link_wireless", "IO-Link Wireless", "generic_networking", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "wireless_interface", (), None, None, ("request_response", "time_sync"), False),
+    ("opc_ua", "OPC UA Client/Server", "generic", "APPLICATION", "SERVICE_RESPONSE", ("DATA_OBJECT", "STRUCT", "STATUS", "QUALITY"), "explicit_opc_ua_endpoint_transport_and_peer", (), None, None, ("objects", "request_response", "segmentation", "qos"), False),
+    ("opc_ua_pubsub", "OPC UA PubSub", "generic", "APPLICATION", "DATAGRAM", ("DATA_OBJECT", "STRUCT", "STATUS", "QUALITY"), "explicit_pubsub_transport_mapping_and_bearer", (), None, None, ("objects", "multicast", "pubsub", "time_sync", "qos"), True),
+    ("mqtt", "MQTT", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "explicit_ordered_stream_binding", (), None, None, ("objects", "pubsub", "qos", "segmentation"), False),
+    ("sparkplug_b", "Sparkplug B", "generic_networking", "INDUSTRY_PROFILE", "MESSAGE", ("DATA_OBJECT", "STATUS", "QUALITY"), "independently_bound_mqtt_transport", ("sparkplug_b",), None, None, ("objects", "pubsub", "qos", "segmentation"), False),
     # Robotics
     ("dds", "DDS", "generic_networking", "APPLICATION", "TOPIC_SAMPLE", ("DATA_OBJECT", "STRUCT", "ARRAY", "IMAGE", "POINT_CLOUD"), "explicit_dds_transport_interface", (), None, None, ("objects", "streams", "multicast", "pubsub", "redundancy", "fragmentation", "qos"), True),
-    ("ros2", "ROS 2", "robotics_ros", "INDUSTRY_PROFILE", "TOPIC_SAMPLE", ("DATA_OBJECT", "STRUCT", "ARRAY", "IMAGE", "POINT_CLOUD"), "ethernet_port", ("ethernet", "ip", "udp", "dds", "ros2"), None, 65507, ("objects", "streams", "multicast", "pubsub", "request_response", "fragmentation", "qos"), False),
+    ("ros2", "ROS 2", "generic_networking", "INDUSTRY_PROFILE", "TOPIC_SAMPLE", ("DATA_OBJECT", "STRUCT", "ARRAY", "IMAGE", "POINT_CLOUD"), "actual_ros_rmw_bearer", ("ros2",), None, None, ("objects", "streams", "multicast", "pubsub", "request_response", "fragmentation", "qos"), False),
     # Aerospace
     ("arinc429", "ARINC 429", "aerospace", "DATA_LINK", "WORD", ("FIELD", "STATUS"), "arinc429_interface", (), 12_500, 4, (), True),
     ("afdx", "ARINC 664 / AFDX", "aerospace", "INDUSTRY_PROFILE", "PACKET", ("FIELD", "RAW_DATA"), "afdx_ethernet_port", ("ethernet", "ip", "udp", "afdx"), 100_000_000, 1471, ("multicast", "redundancy", "qos"), True),
-    ("mil_std_1553", "MIL-STD-1553B", "aerospace", "DATA_LINK", "WORD", ("COMMAND", "FIELD", "STATUS"), "mil1553_interface", (), 1_000_000, 64, ("multicast", "redundancy"), True),
+    ("mil_std_1553", "MIL-STD-1553", "aerospace", "DATA_LINK", "WORD", ("COMMAND", "FIELD", "STATUS"), "mil1553_interface", (), 1_000_000, 64, ("multicast", "redundancy"), True),
     ("can_aerospace", "CAN Aerospace", "aerospace", "INDUSTRY_PROFILE", "MESSAGE", ("SIGNAL", "STATUS"), "can_controller", ("can", "can_aerospace"), None, 4, ("multicast", "objects", "request_response"), False, 4),
-    ("spacewire", "SpaceWire", "aerospace", "DATA_LINK", "PACKET", ("FIELD", "RAW_DATA"), "spacewire_interface", (), 200_000_000, 65535, ("objects", "streams", "time_sync", "fragmentation"), True),
+    ("spacewire", "SpaceWire", "generic_networking", "DATA_LINK", "PACKET", ("FIELD", "RAW_DATA"), "actual_spacewire_point_to_point_ds", ("spacewire",), None, None, ("objects", "streams", "time_sync", "fragmentation"), False),
     ("tte", "Time-Triggered Ethernet", "aerospace", "INDUSTRY_PROFILE", "FRAME", ("FIELD", "RAW_DATA"), "ethernet_port", ("ethernet", "tte"), 1_000_000_000, 1500, ("multicast", "redundancy", "time_sync", "safety", "qos"), True),
     # Rail / marine / heavy vehicle
-    ("mvb", "MVB", "rail", "DATA_LINK", "PROCESS_DATA", ("SIGNAL", "STATUS"), "mvb_interface", (), 1_500_000, 32, ("multicast", "time_sync"), True),
+    ("mvb", "MVB", "generic_networking", "DATA_LINK", "PROCESS_DATA", ("SIGNAL", "STATUS"), "mvb_interface", (), 1_500_000, 32, ("multicast", "time_sync"), True),
     ("wtb", "WTB", "rail", "DATA_LINK", "PROCESS_DATA", ("SIGNAL", "STATUS"), "wtb_interface", (), 1_000_000, 128, ("multicast", "redundancy", "time_sync"), True),
     ("etb", "Ethernet Train Backbone", "rail", "INDUSTRY_PROFILE", "FRAME", ("FIELD", "RAW_DATA"), "ethernet_port", ("ethernet", "etb"), 100_000_000, 1500, ("objects", "streams", "multicast", "redundancy", "qos"), True),
     ("trdp", "TRDP", "rail", "APPLICATION", "PROCESS_DATA", ("FIELD", "STATUS"), "ethernet_port", ("ethernet", "ip", "udp", "trdp"), 100_000_000, 65507, ("objects", "multicast", "pubsub", "request_response", "qos"), True),
-    ("nmea0183", "NMEA 0183", "marine", "APPLICATION", "TELEGRAM", ("FIELD", "STATUS"), "rs422_port", (), 4_800, 82, ("no_cyclic",), False),
-    ("nmea2000", "NMEA 2000", "marine", "INDUSTRY_PROFILE", "MESSAGE", ("FIELD", "SIGNAL"), "can_controller", ("can", "nmea2000"), 250_000, 223, ("multicast", "segmentation"), True),
-    ("iec61162", "IEC 61162", "marine", "INDUSTRY_PROFILE", "TELEGRAM", ("FIELD", "STATUS"), "serial_or_ethernet_interface", (), None, 65535, ("objects", "multicast"), False),
+    ("nmea0183", "NMEA 0183", "generic_networking", "APPLICATION", "TELEGRAM", ("FIELD", "STATUS"), "nmea0183_actual_serial_or_registered_host", (), None, None, ("ascii_sentences", "one_way_serial_or_registered_host"), False),
+    ("nmea2000", "NMEA 2000", "generic_networking", "INDUSTRY_PROFILE", "MESSAGE", ("FIELD", "SIGNAL"), "nmea2000_can_cc_250k_qualified_topology", (), 250_000, None, ("multicast", "segmentation"), True),
+    ("iec61162", "IEC 61162", "generic_networking", "APPLICATION", "MESSAGE", ("FIELD", "STATUS"), "explicit_iec61162_part_binding", (), None, None, ("objects", "part_specific_transport"), False),
     # Building automation
     ("bacnet_ip", "BACnet/IP", "building_automation", "APPLICATION", "PDU", ("DATA_OBJECT", "FIELD"), "ethernet_port", ("ethernet", "ip", "udp", "bacnet_ip"), None, 1476, ("objects", "multicast", "request_response", "segmentation"), False),
     ("bacnet_mstp", "BACnet MS/TP", "building_automation", "APPLICATION", "PDU", ("DATA_OBJECT", "FIELD"), "rs485_port", (), 9600, 1476, ("objects", "request_response", "segmentation"), True),
     ("bacnet_sc", "BACnet/SC", "building_automation", "APPLICATION", "PDU", ("DATA_OBJECT", "FIELD"), "ethernet_port", ("ethernet", "ip", "tcp", "bacnet_sc"), None, 61325, ("objects", "request_response", "qos"), False),
-    ("knx_tp", "KNX TP", "building_automation", "INDUSTRY_PROFILE", "TELEGRAM", ("DATA_OBJECT", "FIELD"), "knx_tp_interface", (), 9_600, 255, ("objects", "multicast", "pubsub"), True),
-    ("knx_ip", "KNX IP", "building_automation", "INDUSTRY_PROFILE", "TELEGRAM", ("DATA_OBJECT", "FIELD"), "ethernet_port", ("ethernet", "ip", "udp", "knx_ip"), 100_000_000, 1476, ("objects", "multicast", "pubsub"), False),
-    ("knx_rf", "KNX RF", "building_automation", "INDUSTRY_PROFILE", "TELEGRAM", ("DATA_OBJECT", "FIELD"), "wireless_interface", (), 16_384, 255, ("objects", "multicast", "pubsub"), False),
-    ("lonworks", "LonWorks", "building_automation", "INDUSTRY_PROFILE", "MESSAGE", ("DATA_OBJECT", "FIELD"), "lonworks_interface", (), 78_000, 228, ("objects", "pubsub"), True),
+    ("knx_tp", "KNX TP", "generic_networking", "INDUSTRY_PROFILE", "TELEGRAM", ("DATA_OBJECT", "FIELD"), "knx_tp_qualified_interface", (), None, None, ("objects", "multicast", "pubsub"), False),
+    ("knx_ip", "KNX IP", "generic_networking", "INDUSTRY_PROFILE", "TELEGRAM", ("DATA_OBJECT", "FIELD"), "knx_ip_qualified_endpoint", (), None, None, ("objects", "multicast", "pubsub"), False),
+    ("knx_rf", "KNX RF", "generic_networking", "INDUSTRY_PROFILE", "TELEGRAM", ("DATA_OBJECT", "FIELD"), "knx_rf_qualified_radio", (), None, None, ("objects", "multicast", "pubsub"), False),
+    ("lonworks", "LonWorks", "generic_networking", "INDUSTRY_PROFILE", "MESSAGE", ("DATA_OBJECT", "FIELD"), "lonworks_qualified_channel", (), None, None, ("objects", "pubsub", "multicast", "request_response"), False),
     ("dali", "DALI", "building_automation", "APPLICATION", "TELEGRAM", ("COMMAND", "STATUS", "EVENT"), "dali_interface", (), 1_200, 3, ("request_response",), True),
-    ("m_bus", "M-Bus", "building_automation", "APPLICATION", "TELEGRAM", ("FIELD", "STATUS"), "m_bus_interface", (), 9_600, 252, ("request_response",), False),
+    ("m_bus", "M-Bus", "generic_networking", "APPLICATION", "TELEGRAM", ("FIELD", "STATUS"), "wired_mbus_actual_voltage_current_segment", (), None, None, ("request_response", "half_duplex_poll"), False),
     ("wireless_m_bus", "Wireless M-Bus", "building_automation", "APPLICATION", "TELEGRAM", ("FIELD", "STATUS"), "wireless_interface", (), 100_000, 255, ("no_cyclic",), False),
     # Energy and process
-    ("iec61850", "IEC 61850", "energy", "INDUSTRY_PROFILE", "MESSAGE", ("DATA_OBJECT", "STRUCT", "STATUS", "QUALITY"), "ethernet_port", ("ethernet", "iec61850"), 100_000_000, 1500, ("objects", "multicast", "pubsub", "request_response", "redundancy", "time_sync", "safety", "qos"), True),
-    ("mms", "MMS", "energy", "APPLICATION", "SERVICE_RESPONSE", ("DATA_OBJECT", "STRUCT"), "ethernet_port", ("ethernet", "ip", "tcp", "mms"), None, 65535, ("objects", "request_response", "segmentation"), False),
-    ("goose", "GOOSE", "energy", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "STATUS", "QUALITY"), "ethernet_port", ("ethernet", "goose"), 100_000_000, 1500, ("objects", "multicast", "pubsub", "redundancy", "time_sync", "safety", "qos"), True),
-    ("sampled_values", "IEC 61850 Sampled Values", "energy", "APPLICATION", "TOPIC_SAMPLE", ("ARRAY", "QUALITY"), "ethernet_port", ("ethernet", "sampled_values"), 100_000_000, 1500, ("objects", "streams", "multicast", "pubsub", "time_sync", "safety", "qos"), True),
+    ("iec61850", "IEC 61850", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "STRUCT", "STATUS", "QUALITY"), "explicit_iec61850_service_binding", (), None, None, ("objects", "service_specific_transport"), False),
+    ("mms", "MMS", "generic_networking", "APPLICATION", "SERVICE_RESPONSE", ("DATA_OBJECT", "STRUCT"), "explicit_mms_transport_binding", (), None, None, ("objects", "request_response", "segmentation"), False),
+    ("goose", "GOOSE", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "STATUS", "QUALITY"), "ethernet_port", ("ethernet", "goose"), None, None, ("objects", "multicast", "pubsub", "redundancy", "qos"), False),
+    ("sampled_values", "IEC 61850 Sampled Values", "generic_networking", "APPLICATION", "TOPIC_SAMPLE", ("ARRAY", "QUALITY"), "actual_sv_lower_link", ("sampled_values",), None, None, ("objects", "streams", "multicast", "pubsub", "time_sync", "qos"), False),
     ("dnp3", "DNP3", "generic_networking", "APPLICATION", "PDU", ("DATA_OBJECT", "STATUS", "QUALITY"), "explicit_transport_binding", (), None, None, ("objects", "request_response", "segmentation"), False),
-    ("iec60870_5_101", "IEC 60870-5-101", "energy", "APPLICATION", "TELEGRAM", ("DATA_OBJECT", "STATUS", "QUALITY"), "serial_port", (), 115_200, 255, ("objects", "request_response"), False),
-    ("iec60870_5_104", "IEC 60870-5-104", "energy", "APPLICATION", "PDU", ("DATA_OBJECT", "STATUS", "QUALITY"), "ethernet_port", ("ethernet", "ip", "tcp", "iec60870_5_104"), None, 255, ("objects", "request_response", "segmentation"), False),
+    ("iec60870_5_101", "IEC 60870-5-101", "generic_networking", "APPLICATION", "TELEGRAM", ("DATA_OBJECT", "STATUS", "QUALITY"), "explicit_iec101_serial_binding", (), None, None, ("objects", "request_response"), False),
+    ("iec60870_5_104", "IEC 60870-5-104", "generic_networking", "APPLICATION", "PDU", ("DATA_OBJECT", "STATUS", "QUALITY"), "explicit_iec104_tcp_path", ("iec60870_5_104",), None, None, ("objects", "request_response", "stream_reassembly"), False),
     ("sunspec_modbus", "SunSpec Modbus", "energy", "INDUSTRY_PROFILE", "REGISTER_BLOCK", ("REGISTER", "STATUS"), "ethernet_or_rs485_interface", ("modbus_tcp", "sunspec_modbus"), None, 253, ("objects", "request_response"), False),
-    ("ocpp", "OCPP", "energy", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "COMMAND", "STATUS"), "ethernet_or_wireless_interface", ("ethernet", "ip", "tcp", "ocpp"), None, 65535, ("objects", "request_response", "qos"), False),
-    ("hart", "HART", "process_industry", "INDUSTRY_PROFILE", "TELEGRAM", ("FIELD", "STATUS", "QUALITY"), "hart_interface", (), 1_200, 255, ("request_response",), False),
+    ("ocpp", "OCPP", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "COMMAND", "STATUS"), "explicit_ocpp_application_transport_and_peer", (), None, None, ("objects", "request_response"), False),
+    ("hart", "HART (wired)", "generic_networking", "INDUSTRY_PROFILE", "TELEGRAM", ("FIELD", "STATUS", "QUALITY"), "explicit_hart_modem_loop", (), None, 255, ("request_response",), False),
     ("wirelesshart", "WirelessHART", "process_industry", "INDUSTRY_PROFILE", "MESSAGE", ("FIELD", "STATUS", "QUALITY"), "wireless_interface", (), 250_000, 127, ("multicast", "time_sync", "qos"), True),
     ("foundation_fieldbus_h1", "FOUNDATION Fieldbus H1", "generic_networking", "APPLICATION", "PDU", ("FIELD", "STATUS", "QUALITY"), "h1_fieldbus_interface", (), 31_250, 251, ("objects", "pubsub", "time_sync", "request_response"), True),
     # Embedded interfaces
-    ("i2c", "I2C", "embedded_systems", "DATA_LINK", "MESSAGE", ("REGISTER", "RAW_DATA"), "i2c_controller", (), 400_000, 255, ("request_response",), True),
-    ("i3c", "I3C", "embedded_systems", "DATA_LINK", "MESSAGE", ("REGISTER", "RAW_DATA"), "i3c_controller", (), 12_500_000, 65535, ("request_response", "event"), True),
+    ("i2c", "I2C", "generic_networking", "DATA_LINK", "MESSAGE", ("REGISTER", "RAW_DATA"), "explicit_i2c_port", (), None, None, ("request_response",), False),
+    ("i3c", "I3C", "generic_networking", "DATA_LINK", "MESSAGE", ("REGISTER", "RAW_DATA"), "explicit_i3c_port", (), None, None, ("request_response", "event"), False),
     ("spi", "SPI / QSPI", "embedded_systems", "DATA_LINK", "STREAM_CHUNK", ("REGISTER", "RAW_DATA"), "spi_controller", (), 50_000_000, 65535, ("streams",), True),
     ("uart", "UART / USART", "embedded_systems", "DATA_LINK", "STREAM_CHUNK", ("RAW_DATA",), "serial_port", (), 115_200, 65535, ("streams",), False),
-    ("rs232", "RS-232", "embedded_systems", "PHYSICAL", "STREAM_CHUNK", ("RAW_DATA",), "rs232_port", (), 115_200, 65535, ("streams",), False),
-    ("rs422", "RS-422", "embedded_systems", "PHYSICAL", "STREAM_CHUNK", ("RAW_DATA",), "rs422_port", (), 10_000_000, 65535, ("streams",), False),
-    ("rs485", "RS-485", "embedded_systems", "PHYSICAL", "STREAM_CHUNK", ("RAW_DATA",), "rs485_port", (), 10_000_000, 65535, ("streams",), False),
-    ("one_wire", "1-Wire", "embedded_systems", "DATA_LINK", "MESSAGE", ("REGISTER", "RAW_DATA"), "one_wire_interface", (), 16_300, 255, ("request_response",), True),
+    ("rs232", "RS-232", "generic_networking", "PHYSICAL", "STREAM_CHUNK", ("RAW_DATA",), "rs232_actual_single_ended_interchange", (), None, None, ("streams",), False),
+    ("rs422", "RS-422", "generic_networking", "PHYSICAL", "STREAM_CHUNK", ("RAW_DATA",), "rs422_actual_single_driver_pair", (), None, None, ("streams",), False),
+    ("rs485", "RS-485", "generic_networking", "PHYSICAL", "STREAM_CHUNK", ("RAW_DATA",), "rs485_actual_electrical_multipoint", (), None, None, ("streams",), False),
+    ("one_wire", "1-Wire", "embedded_systems", "DATA_LINK", "MESSAGE", ("REGISTER", "RAW_DATA"), "source_qualified_1wire_slot_and_load", (), None, None, ("request_response",), True),
     ("usb", "USB", "embedded_systems", "DATA_LINK", "PACKET", ("RAW_DATA", "STREAM_CHUNK"), "usb_controller", (), 480_000_000, 1024, ("objects", "streams", "segmentation", "qos"), True),
-    ("pcie", "PCIe", "embedded_systems", "DATA_LINK", "PACKET", ("RAW_DATA", "DATA_OBJECT"), "pcie_interface", (), 8_000_000_000, 4096, ("objects", "streams", "qos"), True),
-    ("mipi_csi2", "MIPI CSI-2", "embedded_systems", "DATA_LINK", "STREAM_CHUNK", ("IMAGE", "RAW_DATA"), "mipi_csi2_interface", (), 2_500_000_000, 65535, ("streams",), True),
-    ("mipi_dsi", "MIPI DSI", "embedded_systems", "DATA_LINK", "STREAM_CHUNK", ("IMAGE", "RAW_DATA"), "mipi_dsi_interface", (), 2_500_000_000, 65535, ("streams",), True),
-    ("lvds", "LVDS", "embedded_systems", "PHYSICAL", "STREAM_CHUNK", ("RAW_DATA",), "lvds_interface", (), 3_000_000_000, 65535, ("streams",), True),
-    ("gpio", "GPIO", "embedded_systems", "PHYSICAL", "PROCESS_DATA", ("SIGNAL", "STATUS"), "gpio_port", (), None, 1, (), True),
-    ("pwm", "PWM", "embedded_systems", "PHYSICAL", "PROCESS_DATA", ("SIGNAL",), "pwm_output", (), None, 1, (), True),
+    ("pcie", "PCIe", "generic_networking", "DATA_LINK", "PACKET", ("RAW_DATA", "DATA_OBJECT"), "explicit_pcie_trained_channel", (), None, None, ("objects", "streams", "qos"), False),
+    ("mipi_csi2", "MIPI CSI-2", "embedded_systems", "DATA_LINK", "STREAM_CHUNK", ("IMAGE", "RAW_DATA"), "mipi_csi2_interface", (), 0, 65535, ("streams",), True),
+    ("mipi_dsi", "MIPI DSI", "embedded_systems", "DATA_LINK", "STREAM_CHUNK", ("IMAGE", "RAW_DATA"), "mipi_dsi_interface", (), 0, 65535, ("streams",), True),
+    ("lvds", "LVDS", "generic_networking", "PHYSICAL", "STREAM_CHUNK", ("RAW_DATA",), "lvds_actual_qualified_balanced_pair", (), None, None, ("streams", "actual_clock_encoding"), False),
+    ("gpio", "GPIO", "generic_networking", "PHYSICAL", "PROCESS_DATA", ("SIGNAL", "STATUS"), "gpio_port", (), None, None, (), False),
+    ("pwm", "PWM", "embedded_systems", "PHYSICAL", "PROCESS_DATA", ("SIGNAL",), "explicit_pwm_driver_waveform", (), None, None, (), True),
     ("adc", "ADC", "embedded_systems", "PHYSICAL", "PROCESS_DATA", ("SIGNAL",), "analog_input", (), None, None, (), True),
     ("dac", "DAC", "embedded_systems", "PHYSICAL", "PROCESS_DATA", ("SIGNAL",), "analog_output", (), None, None, (), True),
     # IoT / wireless
-    ("mqtt_sn", "MQTT-SN", "iot_wireless", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "wireless_interface", (), None, 65535, ("objects", "pubsub", "qos"), False),
+    ("mqtt_sn", "MQTT-SN", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "explicit_datagram_gateway_binding", (), None, None, ("objects", "pubsub", "qos"), False),
     ("coap", "CoAP", "generic_networking", "APPLICATION", "PDU", ("DATA_OBJECT", "RAW_DATA"), "explicit_ip_link_interface", (), None, None, ("objects", "multicast", "request_response", "segmentation"), False),
-    ("http", "HTTP", "iot_wireless", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "ethernet_or_wireless_interface", ("ethernet", "ip", "tcp", "http"), None, 65535, ("objects", "streams", "request_response", "segmentation"), False),
+    ("http", "HTTP", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "explicit_http_transport_binding", (), None, None, ("objects", "streams", "request_response", "segmentation"), False),
     ("websocket", "WebSocket", "iot_wireless", "APPLICATION", "STREAM_CHUNK", ("DATA_OBJECT", "RAW_DATA"), "ethernet_or_wireless_interface", ("ethernet", "ip", "tcp", "websocket"), None, 65535, ("objects", "streams", "pubsub", "segmentation"), False),
     ("amqp", "AMQP", "iot_wireless", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "ethernet_or_wireless_interface", ("ethernet", "ip", "tcp", "amqp"), None, None, ("objects", "pubsub", "request_response", "qos"), False),
     ("wifi", "Wi-Fi", "iot_wireless", "DATA_LINK", "FRAME", ("FIELD", "RAW_DATA"), "wireless_interface", (), 1_000_000_000, 2304, ("objects", "streams", "multicast", "qos"), False),
     ("bluetooth_le", "Bluetooth LE", "iot_wireless", "DATA_LINK", "PDU", ("FIELD", "DATA_OBJECT"), "wireless_interface", (), 1_000_000, 251, ("objects", "pubsub", "request_response"), False),
     ("zigbee", "Zigbee", "iot_wireless", "INDUSTRY_PROFILE", "PACKET", ("DATA_OBJECT", "FIELD"), "wireless_interface", (), 250_000, 127, ("objects", "multicast", "pubsub"), False),
     ("thread", "Thread", "iot_wireless", "INDUSTRY_PROFILE", "PACKET", ("DATA_OBJECT", "FIELD"), "wireless_interface", (), 250_000, 127, ("objects", "multicast", "pubsub"), False),
-    ("matter", "Matter", "iot_wireless", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "COMMAND", "STATUS"), "ethernet_or_wireless_interface", (), None, 65535, ("objects", "multicast", "pubsub", "request_response"), False),
-    ("lorawan", "LoRaWAN", "iot_wireless", "INDUSTRY_PROFILE", "PACKET", ("FIELD", "DATA_OBJECT"), "wireless_interface", (), 50_000, 242, ("objects", "no_cyclic", "qos"), False),
-    ("lte_m", "LTE-M", "iot_wireless", "DATA_LINK", "PACKET", ("FIELD", "RAW_DATA"), "wireless_interface", (), 1_000_000, 1500, ("objects", "streams", "qos"), False),
-    ("nb_iot", "NB-IoT", "iot_wireless", "DATA_LINK", "PACKET", ("FIELD", "RAW_DATA"), "wireless_interface", (), 250_000, 1500, ("objects", "qos"), False),
+    ("matter", "Matter", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "COMMAND", "STATUS"), "matter_actual_ipv6_or_commissioning_path", (), None, None, ("objects", "multicast", "pubsub", "request_response"), False),
+    ("lorawan", "LoRaWAN", "generic_networking", "INDUSTRY_PROFILE", "PACKET", ("FIELD", "DATA_OBJECT"), "lorawan_actual_regional_radio", (), None, None, ("objects", "confirmed_unconfirmed", "class_a_b_c"), False),
+    ("lte_m", "LTE-M", "generic_networking", "DATA_LINK", "PACKET", ("FIELD", "RAW_DATA"), "lte_m_actual_eutra_radio", (), None, None, ("objects", "scheduled_radio", "category_ce_repetition"), False),
+    ("nb_iot", "NB-IoT", "generic_networking", "DATA_LINK", "PACKET", ("FIELD", "RAW_DATA"), "nb_iot_actual_radio_band_and_deployment", (), None, None, ("objects", "scheduled_radio", "category_repetition_and_negotiated_nas"), False),
     ("5g", "5G", "iot_wireless", "DATA_LINK", "PACKET", ("FIELD", "RAW_DATA"), "wireless_interface", (), None, None, ("objects", "streams", "multicast", "qos"), False),
     ("uwb", "UWB", "iot_wireless", "DATA_LINK", "FRAME", ("FIELD", "RAW_DATA"), "wireless_interface", (), 27_000_000, 1023, ("objects", "time_sync"), False),
-    ("nfc", "NFC", "iot_wireless", "DATA_LINK", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "wireless_interface", (), 424_000, 255, ("objects", "request_response"), False),
-    ("rfid", "RFID", "iot_wireless", "INDUSTRY_PROFILE", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "wireless_interface", (), None, 255, ("objects", "request_response"), False),
+    ("nfc", "NFC", "generic_networking", "DATA_LINK", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "nfc_actual_rf_protocol_and_controller", (), None, None, ("objects", "request_response", "mode_role_and_firmware_qualified"), False),
+    ("rfid", "RFID", "generic_networking", "INDUSTRY_PROFILE", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "explicit_rfid_lf_hf_uhf_air_and_host", (), None, None, ("objects", "request_response", "protocol_qualified_inventory"), False),
     # Safety profiles and custom
-    ("profisafe", "PROFIsafe", "industrial_automation", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "ethernet_or_profibus_interface", (), None, 1440, ("safety", "time_sync", "qos"), True),
+    ("profisafe", "PROFIsafe", "generic_networking", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "explicit_profisafe_black_channel_and_device", (), None, None, ("safety", "time_sync", "qos"), False),
     ("cip_safety", "CIP Safety", "generic_networking", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "explicit_safety_transport_interface", (), None, 250, ("safety", "pubsub", "multicast"), False),
-    ("fsoe", "FSoE", "industrial_automation", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "ethercat_port", ("ethernet", "ethercat", "fsoe"), 100_000_000, 1486, ("safety", "time_sync"), True),
-    ("opensafety", "openSAFETY", "industrial_automation", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "generic_network_interface", (), None, 1500, ("safety", "redundancy"), True),
-    ("generic_serial", "Generic Serial", "custom", "DATA_LINK", "STREAM_CHUNK", ("RAW_DATA",), "serial_port", (), None, 65535, ("streams",), False),
-    ("generic_can", "Generic CAN", "custom", "DATA_LINK", "FRAME", ("SIGNAL", "RAW_DATA"), "can_controller", (), 500_000, 8, ("multicast",), True),
-    ("generic_ethernet", "Generic Ethernet", "custom", "DATA_LINK", "FRAME", ("FIELD", "RAW_DATA"), "ethernet_port", (), 1_000_000_000, 1500, ("objects", "streams", "multicast", "qos"), False),
+    ("fsoe", "FSoE", "generic_networking", "APPLICATION", "PDU", ("FIELD", "STATUS", "QUALITY"), "explicit_black_channel_binding", (), None, None, ("safety", "request_response"), False),
+    ("opensafety", "openSAFETY", "generic_networking", "INDUSTRY_PROFILE", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "explicit_opensafety_black_channel_and_device", (), None, None, ("safety", "redundancy"), True),
+    ("generic_serial", "Generic Serial", "generic_networking", "DATA_LINK", "STREAM_CHUNK", ("RAW_DATA",), "explicit_serial_transport_binding", (), None, None, ("streams",), False),
+    ("generic_can", "Generic CAN", "generic_networking", "DATA_LINK", "FRAME", ("SIGNAL", "RAW_DATA"), "explicit_can_family_binding", (), None, 2048, ("multicast",), False),
+    ("generic_ethernet", "Generic Ethernet", "generic_networking", "DATA_LINK", "FRAME", ("FIELD", "RAW_DATA"), "ethernet_port", (), 10_000_000, 1500, ("multicast",), False),
     ("custom_udp", "Custom UDP", "generic_networking", "APPLICATION", "DATAGRAM", ("RAW_DATA", "DATA_OBJECT"), "explicit_udp_ip_link_interface", (), None, None, ("objects", "streams", "multicast"), False),
     ("custom_tcp", "Custom TCP", "generic_networking", "APPLICATION", "STREAM_CHUNK", ("RAW_DATA", "DATA_OBJECT"), "explicit_tcp_ip_link_interface", (), None, None, ("objects", "streams", "segmentation"), False),
     ("custom_binary", "Custom Binary", "generic_networking", "APPLICATION", "MESSAGE", ("RAW_DATA",), "explicit_transport_interface", (), None, None, ("streams", "segmentation"), False),
@@ -2225,7 +3696,12 @@ def technology_definitions() -> list[dict[str, Any]]:
         for item in by_id['can']['parameter_constraints'] if item['parameter'] != 'payload_bytes')
     for profile in definitions:
         rate_profile = profile
-        if not (profile.get('rate_model') or {}).get('fields'):
+        if profile.get('rate_source_profile_id'):
+            rate_id=profile['rate_source_profile_id']
+            if rate_id not in profile['default_stack'] or rate_id not in by_id:
+                raise ValueError(f"{profile['id']}: rate source must be an explicitly registered stack layer")
+            rate_profile=by_id[rate_id]
+        elif not (profile.get('rate_model') or {}).get('fields'):
             rate_profile = next((by_id[layer] for layer in profile['default_stack']
                                  if by_id[layer]['rate_model'].get('fields')), profile)
         review = _parameter_defaults_review(profile['id'], rate_profile)
@@ -2240,6 +3716,12 @@ def technology_definitions() -> list[dict[str, Any]]:
 
 def _parameter_form_schema(technology_id: str, technology: dict[str, Any], rate_source: dict[str, Any], review: dict[str, Any]) -> list[dict[str, Any]]:
     """Describe editable parameters so the UI does not hard-code technology forms."""
+    if technology_id == 'generic_ethernet':
+        # Explicit shared IEEE 802.3 schema; this branch is never selected for
+        # another transport. Fresh dictionaries retain independent identities.
+        return _parameter_form_schema('ethernet',
+            {**technology,'id':'ethernet','default_stack':['ethernet']},
+            {**rate_source,'id':'ethernet'},review)
     maximum_payload = int(technology.get("max_payload_bytes") or 65_535)
 
     def field(
@@ -2730,6 +4212,2816 @@ def _parameter_form_schema(technology_id: str, technology: dict[str, Any], rate_
                 native.update(conditional_defaults=[{'when':{'etb_implementation':'WEOS_5'},'value':492}],default_status='PROPOSED_CONDITIONAL')
             if key=='etb_backbone_id':
                 native.update(conditional_defaults=[{'when':{'etb_implementation':'WEOS_5'},'value':0}],default_status='PROPOSED_CONDITIONAL')
+            fields.append(native)
+    if technology_id == 'mvb':
+        fields=[item for item in fields if item['key']not in mvb_rules.REMOVED]
+        for item in fields:
+            if item['key']=='bitrate':
+                item.update(label='MVB nominal carrier rate',min=1500000,max=1500000,integer=True,default=1500000,
+                    parameter_origin='TRANSPORT_PROFILE',default_status='PROPOSED',source=mvb_rules.IMC,source_revision=mvb_rules.SOURCES[mvb_rules.IMC],
+                    description='Fixed nominal gross1.5Mbit/s, not measuredclock/usablethroughput or doubledManchesterbaud. ActualPHY/frame/scan/tolerance requireevidence.',simulation_relevant=False)
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.update(min=0,max=32,integer=True,required=False,default_status='UNKNOWN',simulation_relevant=False,
+                    parameter_origin='DEVICE_CONFIGURATION',source=mvb_rules.IMC,source_revision=mvb_rules.SOURCES[mvb_rules.IMC],
+                    description='Actual applicationencodedbytes within selected16/32/64/128/256bitdataset. Messageport256bits includes actualheader; no universal32byte applicationallocation.')
+        fields.extend(mvb_rules.fields())
+    if technology_id == 'mqtt_sn':
+        fields=[item for item in fields if item['key'] not in mqtt_sn_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.update(min=0,max=65526,integer=True,required=False,default_status='UNKNOWN',simulation_relevant=False,
+                    parameter_origin='DEVICE_CONFIGURATION',source=mqtt_sn_rules.P,source_revision=mqtt_sn_rules.SOURCES[mqtt_sn_rules.P],
+                    description='Actual PUBLISH Data bytes. Ordinary extended message<=65535 includes9byte header/fields, hence extended payload<=65526; shorter frame max255 includes7byte overhead. Actual lower datagram cap applies. No universal65535payload or ownradio clock.')
+        fields.extend(mqtt_sn_rules.fields())
+    if technology_id == 'mqtt':
+        fields=[item for item in fields if item['key'] not in mqtt_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.update(min=0,max=268435455,integer=True,required=False,default_status='UNKNOWN',simulation_relevant=False,
+                    parameter_origin='DEVICE_CONFIGURATION',source=mqtt_rules.P5,source_revision=mqtt_rules.SOURCES[mqtt_rules.P5],
+                    description='Actual PUBLISH application payload excluding TopicName/identifier/properties. RemainingLength max268435455 includes header andpayload, fullpacket max268435460; lower transport and receiver cap separate.')
+        fields.extend(mqtt_rules.fields())
+    if technology_id == 'most':
+        fields=[item for item in fields if item['key'] not in most_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',simulation_relevant=False,
+                    parameter_origin='DEVICE_CONFIGURATION',source=most_rules.P25,source_revision=most_rules.SOURCES[most_rules.P25],
+                    description='Actual channel application bytes; allocated carrier frame bytes differ from one message. Device/host-qualified MDP limits apply only to their actual binding; no generic1500Byte maximum.')
+        fields.append(dict(key='bitrate',label='MOST carrier clock (bit/s)',type='number',min=1,integer=True,
+            category='physical',scope='network',editable=True,required=True,parameter_origin='TRANSPORT_PROFILE',
+            default_status='PROPOSED_CONDITIONAL',simulation_relevant=False,validation_relevant=True,
+            source=most_rules.P25,source_revision=most_rules.SOURCES[most_rules.P25],
+            description='Exact carrier framebits times selected Fs, distinct host-port clock and usable channel allocation.',
+            conditional_defaults=[dict(when={'mo_generation':generation,'mo_target_fs_hz':fs},value=n*8*fs,
+                source=source,source_revision=most_rules.SOURCES[source])
+                for generation,n,fs,source in [('MOST25',64,44100,most_rules.P25),('MOST25',64,48000,most_rules.P25),
+                    ('MOST50',128,48000,most_rules.P50),('MOST150',384,48000,most_rules.P150)]]))
+        fields.extend(most_rules.fields())
+    if technology_id == 'modbus_tcp':
+        fields=[item for item in fields if item['key'] not in mtcp_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.update(min=0,max=252,integer=True,required=False,default_status='UNKNOWN',
+                    parameter_origin='DEVICE_CONFIGURATION',source=mtcp_rules.APP,source_revision=mtcp_rules.SOURCES[mtcp_rules.APP],
+                    simulation_relevant=False,description='Actual complete function-specific PDU data0..252, including metadata; function1 givesPDU<=253. MBAP7 yieldsADU<=260; actual TCP/IP/TLS/PHY overhead separate.')
+        fields.extend(mtcp_rules.fields())
+    if technology_id == 'modbus_rtu':
+        fields=[item for item in fields if item['key'] not in rtu_rules.REMOVED]
+        for item in fields:
+            if item['key']=='bitrate':
+                item.update(source=rtu_rules.SERIAL,source_revision=rtu_rules.SOURCES[rtu_rules.SERIAL],
+                    conditional_defaults=[dict(when={'mr_implementation_class':'BASIC','mr_supports_19200':False},value=9600,
+                        source=rtu_rules.SERIAL,source_revision=rtu_rules.SOURCES[rtu_rules.SERIAL])])
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.update(min=0,max=252,integer=True,required=False,default_status='UNKNOWN',
+                    parameter_origin='DEVICE_CONFIGURATION',source=rtu_rules.APP,source_revision=rtu_rules.SOURCES[rtu_rules.APP],
+                    simulation_relevant=False,description='Actual complete binary Modbus PDU data0..252; function1 forms PDU<=253. RTU address1 and CRC2 form ADU<=256, each binary octet uses11wirebits.')
+        fields.extend(rtu_rules.fields())
+    if technology_id == 'modbus_ascii':
+        fields=[item for item in fields if item['key'] not in ascii_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.update(min=0,max=252,integer=True,required=False,default_status='UNKNOWN',
+                    parameter_origin='DEVICE_CONFIGURATION',source=ascii_rules.APP,source_revision=ascii_rules.SOURCES[ascii_rules.APP],
+                    simulation_relevant=False,description='Actual complete binary Modbus PDU data field0..252 includes function-dependent metadata. Function1 forms PDU<=253. ASCII address/LRC hex encoding and delimiters form up to513characters with10wirebits each.')
+        fields.extend(ascii_rules.fields())
+    if technology_id == 'mms':
+        fields=[item for item in fields if item['key'] not in mms_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.update(min=0,max=2147483647,integer=True,required=False,default_status='UNKNOWN',
+                    parameter_origin='DEVICE_CONFIGURATION',source=mms_rules.INIT,source_revision=mms_rules.SOURCES[mms_rules.INIT],
+                    simulation_relevant=False,description='Actual MMS service application octets fit actual complete BER PDU and negotiated/compiled cap. COTP/TPKT/TCP/IP/TLS and lower PHY have separate overhead and evidence; no universal65535 payload.')
+        fields.extend(mms_rules.fields())
+    if technology_id == 'mipi_dsi':
+        fields=[item for item in fields if item['key'] not in dsi_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.update(min=0,max=65535,integer=True,required=False,default_status='UNKNOWN',
+                    parameter_origin='DEVICE_CONFIGURATION',source=dsi_rules.TI,source_revision=dsi_rules.SOURCES[dsi_rules.TI],
+                    simulation_relevant=False,description='Actual DSI long-packet application octets within word count; classic header4/CRC2 and PHY/blanking are separate. Short command bytes live inside header. Actual device buffers and pixel groups impose separate bounds.')
+        fields.extend(dsi_rules.fields())
+    if technology_id == 'mipi_csi2':
+        fields=[item for item in fields if item['key'] not in csi2_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.update(min=0,max=65535,integer=True,required=False,default_status='UNKNOWN',
+                    parameter_origin='DEVICE_CONFIGURATION',source=csi2_rules.TI,source_revision=csi2_rules.SOURCES[csi2_rules.TI],
+                    simulation_relevant=False,description='Actual CSI encoded long-packet payload octets within word count; classic header4/CRC2 and PHY transition are separate. Short packet has16bit information field and no application long payload. Device buffers can impose smaller bounds.')
+        fields.extend(csi2_rules.fields())
+    if technology_id == 'mil_std_1553':
+        fields=[item for item in fields if item['key'] not in mil1553_rules.REMOVED]
+        for item in fields:
+            if item['key'] in ('bitrate','payload_bytes'):
+                item.pop('default',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    simulation_relevant=False,source=mil1553_rules.CORE,source_revision=mil1553_rules.SOURCES[mil1553_rules.CORE])
+            if item['key']=='bitrate':
+                item.pop('default_review',None)
+                item.update(min=1000000,max=1000000,allowed_bps=[1000000],
+                    description='MIL-STD-1553C nominal information clock1Mbit/s. Measured999000..1001000clock and one-second stability are independent; Manchester transitions do not double useful or nominal bitrate.',
+                    schema_when={'ms_edition':mil1553_rules.EDITION},default_status='PROPOSED_CONDITIONAL',
+                    conditional_defaults=[dict(when={'ms_edition':mil1553_rules.EDITION},value=1000000,
+                        source=mil1553_rules.CORE,source_revision=mil1553_rules.SOURCES[mil1553_rules.CORE])])
+            if item['key']=='payload_bytes':
+                item.update(required=False,min=0,max=64,
+                    description='Actual encoded application bytes fit two octets per data word1..32; mode data belongs to bus management and busy transmitter sends no data. Command/status/sync/parity are separate.')
+        fields.extend(mil1553_rules.fields())
+    if technology_id == 'matter':
+        fields=[item for item in fields if item['key'] not in matter_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=matter_rules.CORE,source_revision=matter_rules.SOURCES[matter_rules.CORE],simulation_relevant=False,
+                    description='Actual complete encoded application bytes. UDP1280includesIPv6/UDP/Matterheaders/MIC; TCPpeer64000fallbackexcludes4byteframing. NoCAN8bytepayloadoruniversal65535limit.')
+        fields.extend(matter_rules.fields())
+    if technology_id == 'm_bus':
+        fields=[item for item in fields if item['key'] not in m_bus_rules.REMOVED]
+        if not any(item['key']=='bitrate'for item in fields):
+            fields.append(dict(key='bitrate',label='Wired M-Bus Baud',type='number',category='physical',scope='network',
+              unit='baud',required=False,editable=True,validation_relevant=True))
+        for item in fields:
+            if item['key']in('bitrate','payload_bytes'):
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=m_bus_rules.P,source_revision=m_bus_rules.SOURCES[m_bus_rules.P])
+            if item['key']=='bitrate':
+                item.update(min=1,schema_when={'mb_edition':m_bus_rules.EDITION},
+                    description='Actual wiredM-Bus transaction baud; master/slave capabilities and TX/RX agreement required. Lowest mandated baseline300baud is a source-qualified proposal;2400is the recommended standard/medium-distance rate, optionalhigher rates need device/line proof.',
+                    conditional_defaults=[dict(when={'mb_edition':m_bus_rules.EDITION,'mb_rate_set':'OMS_STANDARD_SET'},value=300,
+                        source=m_bus_rules.P,source_revision=m_bus_rules.SOURCES[m_bus_rules.P])],default_status='PROPOSED_CONDITIONAL')
+                item.pop('allowed_bps',None)
+            if item['key']=='payload_bytes':
+                item.update(required=False,description='Actual encoded application bytes, distinct from user area252octets, C/A/CIand Lfield255, wire261octets, transport/AFL/security and records. No8byteapplicationdefault or unconditional252byteapplicationmaximum.')
+        fields.extend(m_bus_rules.fields())
+    if technology_id == 'lvds':
+        fields=[item for item in fields if item['key'] not in lvds_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=lvds_rules.GUIDE,source_revision=lvds_rules.SOURCES[lvds_rules.GUIDE],simulation_relevant=False,
+                    description='Actual application byte count only where its separately registered codec uses bytes; physical LVDS defines no8byte frame,65535byte payload, address, CRC or packet queue. Non-byte words and actual encoded bit positions remain separate.')
+        fields.extend(lvds_rules.fields())
+    if technology_id == 'sercos_iii':
+        fields=[item for item in fields if item['key']not in sercos_iii_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=sercos_iii_rules.BROCHURE,source_revision=sercos_iii_rules.SOURCES[sercos_iii_rules.BROCHURE],
+                    description='Actual directional applicationconnection bytes withinapprovedRTD mapping, separateSVC/hotplug/aggregateMDT-ATlength andUCCEthernetMTU. No generic1500applicationcap.')
+        fields.extend(sercos_iii_rules.fields())
+    if technology_id == 'sampled_values':
+        fields=[item for item in fields if item['key']not in sampled_values_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=sampled_values_rules.UCA,source_revision=sampled_values_rules.SOURCES[sampled_values_rules.UCA],
+                    description='Actual serialized dataset sample bytes, separate BERASDU/APDU length and physical Ethernet MTU/linkoccupation. No universal1500byte applicationcap or8byte frame.')
+        fields.extend(sampled_values_rules.fields())
+    if technology_id == 'sparkplug_b':
+        fields=[item for item in fields if item['key']not in sparkplug_b_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=sparkplug_b_rules.SPEC,source_revision=sparkplug_b_rules.SOURCES[sparkplug_b_rules.SPEC],
+                    description='Actual ProtobufB or hostSTATEJSON payload; no generic8byte metric or MQTT remaininglength as payload maximum.')
+        fields.extend(sparkplug_b_rules.fields())
+    if technology_id == 'spacewire':
+        fields=[item for item in fields if item['key']not in spacewire_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=spacewire_rules.ECSS,source_revision=spacewire_rules.SOURCES[spacewire_rules.ECSS],
+                    description='Actual cargo bytes separate address/higher protocol/packet symbols and FCT stalls. No fixed65535-byte limit or8-byte default.')
+        fields.extend(spacewire_rules.fields())
+    if technology_id == 'someip_sd':
+        fields=[item for item in fields if item['key']not in someip_sd_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=someip_sd_rules.SD,source_revision=someip_sd_rules.SOURCES[someip_sd_rules.SD],
+                    description='Actual complete SD body bytes12+entries+options, separate16byte SOME/IP header and independently qualified UDP/IP/security budget. No fixed1400byte cap or8byte default.')
+        fields.extend(someip_sd_rules.fields())
+    if technology_id == 'someip':
+        fields=[item for item in fields if item['key']not in someip_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=someip_rules.PROTOCOL,source_revision=someip_rules.SOURCES[someip_rules.PROTOCOL],
+                    description='Actual serialized SOME/IP payload including selected independent E2E protection bytes, distinct16byte header/TP segment/UDP budget/TCP stream. 1400bytes is a recommendation; no universal65535byte maximum or8byte default.')
+        fields.extend(someip_rules.fields())
+    if technology_id == 'rs485':
+        fields=[item for item in fields if item['key']not in rs485_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=rs485_rules.TI,source_revision=rs485_rules.SOURCES[rs485_rules.TI],
+                    description='Actual application byte count from separately selected higher wire protocol. Electrical RS485 defines no universal packet size,UART8N1 or65535byte payload.')
+        fields.extend(rs485_rules.fields())
+    if technology_id == 'rs422':
+        fields=[item for item in fields if item['key']not in rs422_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=rs422_rules.TI,source_revision=rs422_rules.SOURCES[rs422_rules.TI],
+                    description='Actual application byte count from independently specified higher-layer codec. Balanced RS422 pair defines no universal frame or65535byte payload.')
+        fields.extend(rs422_rules.fields())
+    if technology_id == 'rs232':
+        fields=[item for item in fields if item['key']not in rs232_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=rs232_rules.TI,source_revision=rs232_rules.SOURCES[rs232_rules.TI],
+                    description='Actual application bytes only for separately specified codec. RS232 does not define65535byte payload or automatic8N1framing.')
+        fields.extend(rs232_rules.fields())
+    if technology_id == 'ros2':
+        fields=[item for item in fields if item['key']not in ros2_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=ros2_rules.API,source_revision=ros2_rules.SOURCES[ros2_rules.API],
+                    description='Actual serialized application bytes from selected ROS type support and sequence bounds. No UDP65507byte or Ethernet MTU application maximum.')
+        fields.extend(ros2_rules.fields())
+    if technology_id == 'rfid':
+        fields=[item for item in fields if item['key']not in rfid_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=rfid_rules.GS,source_revision=rfid_rules.SOURCES[rfid_rules.GS],
+                    description='Whole application bytes distinct Gen2EPC/TID/PC/XPC/CRC, HFframing/127byteFIFO and MRD2host/air codecs. No255byte universal application maximum.')
+        fields.extend(rfid_rules.fields())
+    if technology_id == 'pwm':
+        fields=[item for item in fields if item['key']not in pwm_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=pwm_rules.DOC,source_revision=pwm_rules.SOURCES[pwm_rules.DOC],
+                    description='Application byte metadata only for an independently registered codec; PWM defines no1byte frame, bitrate, CRC, packet queue or payload maximum.')
+        fields.extend(pwm_rules.fields())
+    if technology_id == 'profisafe':
+        fields=[item for item in fields if item['key']not in profisafe_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=profisafe_rules.PI,source_revision=profisafe_rules.SOURCES[profisafe_rules.PI],
+                    description='Whole application bytes distinct directional0..12/40/123 F-user data, control/status byte and mode-qualifiedCRC2/SPDU/native bearer. No ownphysicalrate orEthernet1440 limit.')
+        fields.extend(profisafe_rules.fields())
+    if technology_id == 'profinet':
+        fields=[item for item in fields if item['key']not in profinet_rules.REMOVED]
+        for item in fields:
+            if item['key']=='bitrate':
+                item.pop('default_review',None);item.pop('max',None);item.pop('allowed_bps',None)
+                item.update(min=1,integer=True,default=100000000,source=profinet_rules.PI,source_revision=profinet_rules.SOURCES[profinet_rules.PI],
+                    default_status='PROPOSED',parameter_origin='TRANSPORT_PROFILE',simulation_relevant=False,
+                    description='Conventional100Mbps PROFINET physical rate proposal; actual PHY, RTclass, IOCR and domain schedule required. Optional other PHY needs registered source.')
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=profinet_rules.PPM,source_revision=profinet_rules.SOURCES[profinet_rules.PPM],
+                    description='Whole application bytes distinct native1440 CSDU inclIOPS/IOCS/padding and24byte NIC-buffer/28byte MAC framing. No8byte/1500byte universal application limit.')
+        fields.extend(profinet_rules.fields())
+    if technology_id == 'profibus_pa':
+        fields=[item for item in fields if item['key']not in profibus_pa_rules.REMOVED]
+        for item in fields:
+            if item['key']=='bitrate':
+                item.pop('default_review',None)
+                item.update(min=31250,max=31250,integer=True,allowed_bps=[31250],default=31250,
+                    source=profibus_pa_rules.PNO,source_revision=profibus_pa_rules.SOURCES[profibus_pa_rules.PNO],default_status='PROPOSED',
+                    parameter_origin='TRANSPORT_PROFILE',simulation_relevant=False,
+                    description='Fixed PA MBP31.25k nominal bitrate, synchronous Manchester8-bit data octets and CRC16. Actual power/coupler/profile/polling evidence separate from DP UART.')
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=profibus_pa_rules.EH,source_revision=profibus_pa_rules.SOURCES[profibus_pa_rules.EH],
+                    description='Whole application bytes distinct PA module value/status/control and244-direction cyclic mapping, FDL/PHY telegrams and acyclic transfers. No8byte default.')
+        fields.extend(profibus_pa_rules.fields())
+    if technology_id == 'profibus_dp':
+        fields=[item for item in fields if item['key']not in profibus_dp_rules.REMOVED]
+        for item in fields:
+            if item['key']=='bitrate':
+                item.pop('default_review',None)
+                item.update(min=9600,max=12000000,integer=True,allowed_bps=profibus_dp_rules.RATES,default=9600,
+                    source=profibus_dp_rules.ABB,source_revision=profibus_dp_rules.SOURCES[profibus_dp_rules.ABB],default_status='PROPOSED',
+                    parameter_origin='TRANSPORT_PROFILE',simulation_relevant=False,
+                    description='Lowest listed DP nominal baud proposal; actual all-station supported rate, FDL UART/token/polling and selected device parameters remain explicit.')
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=profibus_dp_rules.PI,source_revision=profibus_dp_rules.SOURCES[profibus_dp_rules.PI],
+                    description='Whole application bytes distinct separately244 input/output cyclic bytes, FDL data unit246/255whole-frame and acyclic segmented services. No8byte default.')
+        fields.extend(profibus_dp_rules.fields())
+    if technology_id == 'powerlink':
+        fields=[item for item in fields if item['key']not in powerlink_rules.REMOVED]
+        for item in fields:
+            if item['key']=='bitrate':
+                item.pop('default_review',None)
+                item.update(min=100000000,max=100000000,integer=True,allowed_bps=[100000000],default=100000000,
+                    source=powerlink_rules.P,source_revision=powerlink_rules.SOURCES[powerlink_rules.P],default_status='PROPOSED',
+                    parameter_origin='TRANSPORT_PROFILE',simulation_relevant=False,
+                    description='Classic DS301100M nominal physical bitrate; HALF duplex and actual cycle/grants/propagation govern service, not generic switched Ethernet capacity.')
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=powerlink_rules.P,source_revision=powerlink_rules.SOURCES[powerlink_rules.P],
+                    description='Whole application bytes distinct mapped PDO Size1490, fixed padded slots, ASnd/IP headers and SDO segmentation. No8byte default or1500application maximum.')
+        fields.extend(powerlink_rules.fields())
+    if technology_id == 'pcie':
+        fields=[item for item in fields if item['key']not in pcie_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=pcie_rules.REG,source_revision=pcie_rules.SOURCES[pcie_rules.REG],
+                    description='Actual whole application bytes distinct TLP payload/MPS/read request/MRRS/completions or FLIT. No universal8byte or4096byte application maximum.')
+        fields.extend(pcie_rules.fields())
+    if technology_id == 'opensafety':
+        fields=[item for item in fields if item['key']not in opensafety_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=opensafety_rules.FRAME,source_revision=opensafety_rules.SOURCES[opensafety_rules.FRAME],
+                    description='Actual application bytes separate versioned safety LE/ordinary redundant copy/slim service framing and selected black-channel overhead. No universalCAN8byte orEthernet1500byte payload proposal.')
+        fields.extend(opensafety_rules.fields())
+    if technology_id == 'opc_ua_pubsub':
+        fields=[item for item in fields if item['key']not in opc_ua_pubsub_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=opc_ua_pubsub_rules.P14,source_revision=opc_ua_pubsub_rules.SOURCES[opc_ua_pubsub_rules.P14],
+                    description='Actual application bytes distinct encoded DataSet/NetworkMessage including metadata/security/padding and selected bearer overhead. No universal8byte payload or65507byte UDP ceiling on all mappings.')
+        fields.extend(opc_ua_pubsub_rules.fields())
+    if technology_id == 'opc_ua':
+        fields=[item for item in fields if item['key']not in opc_ua_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=opc_ua_rules.P6,source_revision=opc_ua_rules.SOURCES[opc_ua_rules.P6],
+                    description='Actual encoded application bytes separate UA unencrypted message body, directional chunk/security overhead and actual bearer. No universal8byte payload or65535byte ceiling.')
+        fields.extend(opc_ua_rules.fields())
+    if technology_id == 'one_wire':
+        fields=[item for item in fields if item['key']not in one_wire_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=one_wire_rules.STYLE,source_revision=one_wire_rules.SOURCES[one_wire_rules.STYLE],
+                    description='Actual selectedfunction application bytes, distinct ROMcommand/search/CRC/reset/conversion/host wrappers. No universal8byte proposal or255bytemaximum.')
+        fields.extend(one_wire_rules.fields())
+    if technology_id == 'ocpp':
+        fields=[item for item in fields if item['key']not in ocpp_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=ocpp_rules.P21,source_revision=ocpp_rules.SOURCES[ocpp_rules.P21],
+                    description='Actual application object bytes separate whole encoded UTF8 JSON/SOAP, wrappers, escaping, WebSocket/TLS records and selected bearer. Actual direction/action/device limits required, no8/65535 default.')
+        fields.extend(ocpp_rules.fields())
+    if technology_id == 'obd2':
+        fields=[item for item in fields if item['key']not in obd2_rules.REMOVED]
+        for item in fields:
+            if item['key']in('bitrate','payload_bytes'):
+                item.pop('default',None);item.pop('max',None)
+                item.update(default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=obd2_rules.ELM,source_revision=obd2_rules.SOURCES[obd2_rules.ELM])
+            if item['key']=='bitrate':
+                item.update(required=False,min=1,conditional_defaults=[dict(when={'o_transport':t},value=v,source=obd2_rules.ELM,source_revision=obd2_rules.SOURCES[obd2_rules.ELM])for t,v in obd2_rules.RATES.items()],default_status='PROPOSED_CONDITIONAL',
+                    description='Actual selectedvehiclebus rate, not adapter-PCUART or5baudinitialization. J1850PWM41600,VPW/Kline10400,CAN250k/500k bybinding. RegisteredDoIP hasno ownphysicalbus rate.')
+                item.pop('allowed_bps',None)
+            if item['key']=='payload_bytes':
+                item.update(integer=True,description='Actual applicationservice data length, distinct request/reassembledresponse/PCI/padding/adapterASCII. ClassicELMCAN12bitresponse<=4095, not universalUDS/DoIP payload maximum.')
+        fields.extend(obd2_rules.fields())
+    if technology_id == 'nmea2000':
+        fields=[item for item in fields if item['key']not in nmea2000_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=nmea2000_rules.SS,source_revision=nmea2000_rules.SOURCES[nmea2000_rules.SS],
+                    description='Actual complete PGN encodeddata: SINGLE<=8, FAST<=223, source-qualified ISOtransport<=1785 plusmanagementframes. No fixed8byte default or223globalmaximum.')
+        fields.extend(nmea2000_rules.fields())
+    if technology_id == 'nmea0183':
+        fields=[item for item in fields if item['key']not in nmea0183_rules.REMOVED]
+        for item in fields:
+            if item['key']in('bitrate','payload_bytes'):
+                item.pop('default',None);item.pop('max',None)
+                item.update(default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=nmea0183_rules.P,source_revision=nmea0183_rules.SOURCES[nmea0183_rules.P])
+            if item['key']=='bitrate':
+                item.update(required=False,min=1,description='Actual selected serial port baud; standard4800 versusHS38400. DeviceUART configured separately. NMEA sentences over registered TCP/UDP/host do not acquire a physical bitrate from this field.',
+                    conditional_defaults=[dict(when={'nt_binding':b},value=rate,source=nmea0183_rules.P,source_revision=nmea0183_rules.SOURCES[nmea0183_rules.P])
+                        for b,rate in [('STANDARD_SERIAL',4800),('HIGH_SPEED_SERIAL',38400)]],default_status='PROPOSED_CONDITIONAL')
+                item.pop('allowed_bps',None)
+            if item['key']=='payload_bytes':
+                item.update(integer=True,description='Actual encoded application data, separate from sentence/address/commas/XOR/CRLF/tag bytes. No universal8byte value or82byteapplicationlimit; per-sentence and aggregate port schedule required.')
+        fields.extend(nmea0183_rules.fields())
+    if technology_id == 'nfc':
+        fields=[item for item in fields if item['key'] not in nfc_rules.REMOVED]
+        for item in fields:
+            if item['key'] in ('bitrate','payload_bytes'):
+                item.pop('default',None);item.pop('max',None)
+                item.update(default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=nfc_rules.ECMA,source_revision=nfc_rules.SOURCES[nfc_rules.ECMA])
+            if item['key']=='bitrate':
+                item.update(min=1,description='Selected RF nominal label or exact carrier/divisor rate; host I2C/SPI clock is separate. NFCIP1/A/B baseline106k, F212k and selected PN7160V26.48k are conditional proposals, not confirmed device capability.',
+                    conditional_defaults=[dict(when={'nf_protocol':'NFCIP1_ECMA340_2024','nf_rate_basis':'NOMINAL_LABEL'},value=106000,source=nfc_rules.ECMA,source_revision=nfc_rules.SOURCES[nfc_rules.ECMA])]+[
+                        dict(when={'nf_protocol':p,'nf_implementation':impl,'nf_rate_basis':'NOMINAL_LABEL'},value=rate,source=nfc_rules.DATA,source_revision=nfc_rules.SOURCES[nfc_rules.DATA])
+                        for impl in('PN7160','PN7161')for p,rate in [('NFC_A',106000),('NFC_B',106000),('NFC_F',212000),('NFC_V',26480)]],default_status='PROPOSED_CONDITIONAL')
+                item.pop('allowed_bps',None)
+            if item['key']=='payload_bytes':
+                item.update(integer=True,description='Actual encoded application bytes may require multiple RF and NCI packets; NFCIP1 LEN255 and NCI payload255 describe different framed layers. No unconditional application255byte limit or8byte default.')
+        fields.extend(nfc_rules.fields())
+    if technology_id == 'nb_iot':
+        fields=[item for item in fields if item['key'] not in nb_iot_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=nb_iot_rules.CAP,source_revision=nb_iot_rules.SOURCES[nb_iot_rules.CAP],simulation_relevant=False,
+                    description='Actual encoded application bytes, distinct from upper-layer overhead, MAC/RLC segmentation, granted NPUSCH/NPDSCH TBS and coded/repeated radio airtime. No universal8/1500byte NB-IoT payload or peak-rate capacity.')
+        fields.extend(nb_iot_rules.fields())
+    if technology_id == 'lte_m':
+        fields=[item for item in fields if item['key'] not in lte_m_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=lte_m_rules.CAP,source_revision=lte_m_rules.SOURCES[lte_m_rules.CAP],simulation_relevant=False,
+                    description='Actual encoded application bytes, distinct from MAC/RLC/PDCP segmentation, granted transport blocks and coded/repeated PHY airtime. No universal8 or1500byte LTE-M payload or category-peak capacity.')
+        fields.extend(lte_m_rules.fields())
+    if technology_id == 'lorawan':
+        fields=[item for item in fields if item['key'] not in lorawan_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=lorawan_rules.L2,source_revision=lorawan_rules.SOURCES[lorawan_rules.L2],simulation_relevant=False,
+                    description='Actual encoded application bytes, distinct from FHDR/FOpts/FPort/MIC and complete PHY airtime; limits depend on selected region, DR, direction, dwell and repeater context. No universal8 or242bytepayload.')
+        fields.extend(lorawan_rules.fields())
+    if technology_id == 'lonworks':
+        fields=[item for item in fields if item['key'] not in lonworks_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=lonworks_rules.PROGRAM,source_revision=lonworks_rules.SOURCES[lonworks_rules.PROGRAM],simulation_relevant=False,
+                    description='Actual application bytes distinct from NVelement31,qualifiedNeuronapplicationdata228,NPDU/address/CRC andcompletephysicalframe; no universal8bytepayload.')
+        fields.extend(lonworks_rules.fields())
+    if technology_id == 'lin':
+        fields=[item for item in fields if item['key'] not in lin_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=lin_rules.SPEC,source_revision=lin_rules.SOURCES[lin_rules.SPEC],simulation_relevant=False,
+                    description='Actual application bytes distinct from agreed1..8byte LIN response and diagnostic SID-inclusive segmentedmessage; no automatic8byte data frame.')
+        fields.extend(lin_rules.fields())
+    if technology_id == 'knx_tp':
+        fields=[item for item in fields if item['key'] not in knx_tp_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=knx_tp_rules.TI,source_revision=knx_tp_rules.SOURCES[knx_tp_rules.TI],simulation_relevant=False,
+                    description='Actual DPT/application bytes, distinct from TPDU, wire telegram parity/check, TP ACK and separate PHY-host framing.')
+        fields.extend(knx_tp_rules.fields())
+    if technology_id == 'knx_rf':
+        fields=[item for item in fields if item['key'] not in knx_rf_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=knx_rf_rules.SPEC,source_revision=knx_rf_rules.SOURCES[knx_rf_rules.SPEC],simulation_relevant=False,
+                    description='Actual KNX DPT/LTE/application bytes, distinct from L-count, FT3 blocks/CRCs, RF preamble and Data Secure overhead.')
+        fields.extend(knx_rf_rules.fields())
+    if technology_id == 'knx_ip':
+        fields=[item for item in fields if item['key'] not in knx_ip_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=knx_ip_rules.EXT,source_revision=knx_ip_rules.SOURCES[knx_ip_rules.EXT],simulation_relevant=False,
+                    description='Actual KNX application data; selected DPT/TPCI/APCI/cEMI and IP/UDP/TCP/secure wrapper lengths are distinct, not Ethernet1476byte payload.')
+        fields.extend(knx_ip_rules.fields())
+    if technology_id == 'j1939':
+        fields=[item for item in fields if item['key'] not in j1939_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=j1939_rules.DOC,source_revision=j1939_rules.SOURCES[j1939_rules.DOC],simulation_relevant=False,
+                    description='Actual complete J1939 application message; classical single8/TP1785, explicitETP117440505 and separateFD MultiPG60/BAM15300/connection16777215 limits.')
+        fields.extend(j1939_rules.fields())
+    if technology_id == 'isobus':
+        fields=[item for item in fields if item['key'] not in isobus_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=isobus_rules.TP,source_revision=isobus_rules.SOURCES[isobus_rules.TP],simulation_relevant=False,
+                    description='Actual full ISOBUS application message; single frame8, TP1785, ETP117440505 and GNSS FastPacket223 apply to independently selected layouts.')
+        fields.extend(isobus_rules.fields())
+    if technology_id == 'ip':
+        fields=[item for item in fields if item['key'] not in ip_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=ip_rules.V6,source_revision=ip_rules.SOURCES[ip_rules.V6],simulation_relevant=False,
+                    description='Actual upper-layer/application data; IP headers, extension headers, fragment lengths and jumbo payload limits are separate.')
+        fields.extend(ip_rules.fields())
+    if technology_id == 'io_link_wireless':
+        fields=[item for item in fields if item['key'] not in io_link_wireless_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=io_link_wireless_rules.SPEC,source_revision=io_link_wireless_rules.SOURCES[io_link_wireless_rules.SPEC],simulation_relevant=False,
+                    description='Actual wireless process/application data; directional PD32, ISDU record232/full238 and SS/DS slot packet limits are separate.')
+        fields.extend(io_link_wireless_rules.fields())
+    if technology_id == 'io_link':
+        fields=[item for item in fields if item['key'] not in io_link_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=io_link_rules.SPEC,source_revision=io_link_rules.SOURCES[io_link_rules.SPEC],simulation_relevant=False,
+                    description='Actual selected wired IO-Link process/application data; directional PD32, record232 and full ISDU238 limits apply to separate layouts.')
+        fields.extend(io_link_rules.fields())
+    if technology_id == 'interbus':
+        fields=[item for item in fields if item['key'] not in interbus_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=interbus_rules.BC,source_revision=interbus_rules.SOURCES[interbus_rules.BC],simulation_relevant=False,
+                    description='Actual process-data or PCP application bytes; per-direction image, rounded registers and PCP service limits are independent.')
+        fields.extend(interbus_rules.fields())
+    if technology_id == 'iec61850':
+        fields=[item for item in fields if item['key'] not in iec61850_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=iec61850_rules.ACSI,source_revision=iec61850_rules.SOURCES[iec61850_rules.ACSI],simulation_relevant=False,
+                    description='Actual selected ACSI application encoding; MMS PDU, GOOSE/SV frame, routed security and XML layouts have independent bounds.')
+        fields.extend(iec61850_rules.fields())
+    if technology_id == 'iec61162':
+        fields=[item for item in fields if item['key'] not in iec61162_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=iec61162_rules.P1,source_revision=iec61162_rules.SOURCES[iec61162_rules.P1],simulation_relevant=False,
+                    description='Actual application payload for selected part/encoding; serial sentence, CAN PGN, IP datagram and binary block have independent layout/bounds.')
+        fields.extend(iec61162_rules.fields())
+    if technology_id == 'iec60870_5_104':
+        fields=[item for item in fields if item['key'] not in iec104_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=iec104_rules.ASDU,source_revision=iec104_rules.SOURCES[iec104_rules.ASDU],simulation_relevant=False,
+                    description='Actual encoded application data. ASDU encoding, APCI length-L, complete APDU and TCP/TLS framing remain distinct.')
+        fields.extend(iec104_rules.fields())
+    if technology_id == 'iec60870_5_101':
+        fields=[item for item in fields if item['key'] not in iec101_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=iec101_rules.ASDU,source_revision=iec101_rules.SOURCES[iec101_rules.ASDU],simulation_relevant=False,
+                    description='Actual encoded application data. ASDU addresses/header, FT1.2 L and wire bytes are separately bounded by configured peers.')
+        fields.extend(iec101_rules.fields())
+    if technology_id == 'i3c':
+        fields=[item for item in fields if item['key'] not in i3c_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=i3c_rules.MIPI,source_revision=i3c_rules.REVISIONS[i3c_rules.MIPI],simulation_relevant=False,
+                    description='Actual meaningful data; no universal65535B transfer. Negotiated limits, padding, CCC/IBI and phase layout are separate.')
+        fields.extend(i3c_rules.fields())
+    if technology_id == 'i2c':
+        fields=[item for item in fields if item['key'] not in i2c_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=i2c_rules.SOURCE,source_revision=i2c_rules.REVISION,simulation_relevant=False,
+                    description='Actual encoded data octets; I2C imposes no255-byte transfer maximum. Address/register/ninth-clock/layout overhead is separate.')
+        for key,kind,unit,options,minimum,maximum,meaning in i2c_rules.DECLARATIONS:
+            native=field(key,key.replace('i2c_','').replace('_',' '),'communication','route',field_type=kind,
+                unit=unit,options=options,minimum=minimum,maximum=maximum,description=meaning,simulation_relevant=False)
+            native.update(required=key in TECHNOLOGY_SEMANTICS['i2c']['required_parameters'],
+                integer=kind=='number' and unit not in {'ns','V','mA','pF','Ohm'},
+                parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',source=i2c_rules.SOURCE,source_revision=i2c_rules.REVISION)
+            if key=='i2c_mode': native.update(default='STANDARD',default_status='PROPOSED_STANDARD')
+            if key=='i2c_ack_policy':
+                native.update(conditional_defaults=[{'when':{'i2c_mode':mode},'value':'NINTH_HIGH_NO_ACK' if mode=='ULTRA_FAST' else 'ACK_NACK'} for mode in i2c_rules.MODES],default_status='PROPOSED_CONDITIONAL')
+            fields.append(native)
+    if technology_id == 'http':
+        source=REVIEW_RATE_PROPOSALS['http']
+        fields=[item for item in fields if item['key'] not in {'qos_priority', 'gateway_maximum_throughput', 'mtu_bytes', 'sync_method', 'gateway_input_buffer', 'duplex', 'retransmission_rate', 'gateway_maximum_messages_s', 'retransmission_enabled', 'vlan_id', 'retry_limit', 'reserved_bandwidth_percent', 'queue_size', 'bitrate', 'retransmission_delay_ms', 'gateway_output_buffer', 'gateway_maximum_routes', 'queue_policy'}]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.pop('max',None)
+                item.update(integer=True,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',
+                    source=source['source'],source_revision=source['source_revision'],simulation_relevant=False,
+                    description='Actual NIS application chunk octets; whole HTTP content/message/framing differ. No8-byte or65535-byte protocol default.')
+        for key,kind,unit,options,minimum,maximum,meaning in [('http_version',
+  'select',
+  None,
+  ['HTTP_1_1', 'HTTP_2', 'HTTP_3'],
+  None,
+  None,
+  'Actual protocol version, unknown. Different text/binary/QUIC framing and flow control; no latest-version '
+  'default.'),
+ ('http_transport',
+  'select',
+  None,
+  ['TCP', 'QUIC_V1', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual selected transport, unknown. HTTP2TCP and HTTP3QUIC differ; HTTP1 custom reliable transport needs '
+  'matched implementation source.'),
+ ('http_binding_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual registered TCP/TLS or QUIC/IP/physical path and peer endpoints, unknown; no automatic '
+  'Ethernet100M or TCP mapping for all versions.'),
+ ('http_implementation_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual client/server/proxy version, supported negotiated protocol and resource limits, unknown.'),
+ ('http_schedule_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual handshake/application/flow-control/transport recovery/concurrency schedule evidence, '
+  'unknown; HTTP defines no universal deadline.'),
+ ('http_role',
+  'select',
+  None,
+  ['CLIENT', 'SERVER', 'PROXY'],
+  None,
+  None,
+  'Actual endpoint role, unknown. Response, push and settings direction depend on role; proxy requires each '
+  'actual leg.'),
+ ('http_message_kind',
+  'select',
+  None,
+  ['REQUEST', 'RESPONSE'],
+  None,
+  None,
+  'Actual message direction; method/status/body semantics differ.'),
+ ('http_scheme',
+  'select',
+  None,
+  ['http', 'https'],
+  None,
+  None,
+  'Actual origin scheme, unknown. Default ports80/443 are proposals only when origin has no explicit port, '
+  'not all endpoints.'),
+ ('http_port_explicit',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Whether actual origin contains explicit port, unknown; false permits scheme-default proposal, never '
+  'overwrites explicit13500 etc.'),
+ ('http_port',
+  'number',
+  None,
+  None,
+  1,
+  65535,
+  'Actual endpoint port, unknown; scheme-default80/443 proposal only when port elided.'),
+ ('http_origin',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual http(s) origin/resource URI, unknown; nonempty host, no embedded credentials or fragment. '
+  'Request-target forms are separate.'),
+ ('http_method',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual case-sensitive method token, unknown; extension tokens allowed, no universal GET command.'),
+ ('http_status',
+  'number',
+  None,
+  None,
+  100,
+  599,
+  'Actual response status100..599; unknown/reserved3-digit statuses retain class semantics. Not mandatory '
+  'for requests.'),
+ ('http_target_form',
+  'select',
+  None,
+  ['ORIGIN', 'ABSOLUTE', 'AUTHORITY', 'ASTERISK'],
+  None,
+  None,
+  'Actual HTTP1 request-target form. CONNECT authority, OPTIONS asterisk and proxy absolute target differ '
+  'from HTTP2/3 pseudoheaders.'),
+ ('http_target_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual URI/Host/:authority/:scheme/:path and target normalization/route evidence, unknown; no automatic '
+  'URL constructed from device name.'),
+ ('http_tls_version',
+  'select',
+  None,
+  ['TLS_1_2', 'TLS_1_3', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual negotiated security version, unknown. HTTP3 QUICv1 TLS1.3; HTTP2TLS at least1.2; actual '
+  'certificate/ALPN acceptance separate.'),
+ ('http_security_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual negotiated TLS/QUIC certificate/origin authentication/ALPN/cipher/0RTT policy evidence, unknown.'),
+ ('http_framing',
+  'select',
+  None,
+  ['NONE', 'CONTENT_LENGTH', 'CHUNKED', 'CLOSE_DELIMITED', 'TUNNEL', 'MULTIPLEXED'],
+  None,
+  None,
+  'Actual selected message framing. HTTP1 chunk/close differ from HTTP2/3 stream framing; successful CONNECT '
+  'becomes tunnel.'),
+ ('http_transfer_encoding',
+  'select',
+  None,
+  ['NONE', 'CHUNKED', 'OTHER'],
+  None,
+  None,
+  'Actual HTTP1 Transfer-Encoding final coding; not content compression. HTTP2/3 forbid Transfer-Encoding, '
+  'though TE:trailers differs.'),
+ ('http_transfer_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual transfer coding chain/chunk extensions/final terminator/trailers source, unknown; raw byte parsing '
+  'not proven by counters.'),
+ ('http_content_length_present',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual presence of Content-Length, unknown. Sender must not combine with Transfer-Encoding; HEAD/304 may '
+  'report selected-representation length.'),
+ ('http_content_length',
+  'text',
+  'Byte',
+  None,
+  None,
+  None,
+  'Actual nonnegative decimal Content-Length with no protocol-wide upper bound; text preserves arbitrary '
+  'exact digits without JS precision loss.'),
+ ('http_length_semantics',
+  'select',
+  None,
+  ['MESSAGE_BODY', 'SELECTED_REPRESENTATION'],
+  None,
+  None,
+  'Actual Content-Length semantic target, unknown; HEAD/304 metadata can differ from transmitted empty '
+  'content.'),
+ ('http_body_bytes',
+  'text',
+  'Byte',
+  None,
+  None,
+  None,
+  'Actual transmitted content octets as exact decimal text. No65535 maximum or8-byte default; excludes chunk '
+  'framing and HTTP2 padding.'),
+ ('http_wire_message_bytes',
+  'text',
+  'Byte',
+  None,
+  None,
+  None,
+  'Actual whole encoded HTTP message/stream octets as exact decimal text, unknown. '
+  'Compression/headers/chunks/frame boundaries are not inferred from content.'),
+ ('http_encoding_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual encoded content/header/trailer/chunk/HPACK/QPACK representation and whole message evidence, '
+  'unknown.'),
+ ('http_acceptance_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual application acceptance/units/idempotence/retries/cache/proxy/response correlation evidence, '
+  'unknown; transport delivery is not functional acceptance.'),
+ ('http_request_timeout_ms',
+  'number',
+  'ms',
+  None,
+  0,
+  None,
+  'Actual implementation/application request deadline, unknown; no universal HTTP100/500ms standard.'),
+ ('http_retry_limit',
+  'number',
+  'attempts',
+  None,
+  0,
+  None,
+  'Actual application retry policy and idempotence/source evidence, unknown; HTTP retries differ from '
+  'TCP/QUIC retransmission.'),
+ ('http_retry_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual method idempotence/replay/partial-processing and retry acceptance evidence, unknown. A lost '
+  'response does not prove request was not applied.'),
+ ('http_transition_optimistic',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual optimistic HTTP1 Upgrade/CONNECT behavior, unknown; RFC9931 requires explicit safety relative to '
+  'possible HTTP misinterpretation.'),
+ ('http_transition_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual negotiated transition/confirmation and harmless-prefix/smuggling risk evidence per RFC9931, '
+  'unknown; tunnel is not auto-safe.'),
+ ('http2_frame_type',
+  'select',
+  None,
+  ['DATA',
+   'HEADERS',
+   'PRIORITY',
+   'RST_STREAM',
+   'SETTINGS',
+   'PUSH_PROMISE',
+   'PING',
+   'GOAWAY',
+   'WINDOW_UPDATE',
+   'CONTINUATION',
+   'EXTENSION'],
+  None,
+  None,
+  'Actual HTTP2 frame type, unknown; fixed-type payloads and stream scope differ.'),
+ ('http2_stream_id',
+  'number',
+  None,
+  None,
+  0,
+  2147483647,
+  'Actual31-bit HTTP2 stream ID; DATA/HEADERS on nonzero streams; connection frames stream0. No '
+  'defaultassigned stream1.'),
+ ('http2_frame_header_bytes',
+  'number',
+  'Byte',
+  None,
+  9,
+  9,
+  'HTTP2 fixed9-octet header proposal only for actual HTTP2. Excluded from SETTINGS_MAX_FRAME_SIZE.'),
+ ('http2_frame_payload_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  16777215,
+  'Actual24-bit HTTP2 frame payload, incl padding/pad length if used; at most actual receiver-advertised '
+  'max, distinct from content/message.'),
+ ('http2_frame_bytes',
+  'number',
+  'Byte',
+  None,
+  9,
+  16777224,
+  'Actual HTTP2 frame9+payload octets; not TCP segment or Ethernet frame length.'),
+ ('http2_settings_phase',
+  'select',
+  None,
+  ['INITIAL_DEFAULTS', 'PEER_ADVERTISED'],
+  None,
+  None,
+  'Actual settings state. Normative initial values can be proposed only before peer values are supplied; '
+  'never overwrite peer advertisements.'),
+ ('http2_max_frame_size',
+  'number',
+  'Byte',
+  None,
+  16384,
+  16777215,
+  'Actual peer SETTINGS_MAX_FRAME_SIZE range16384..16777215; initial16384 proposal. Not message-body '
+  'maximum.'),
+ ('http2_header_table_size',
+  'number',
+  'Byte',
+  None,
+  0,
+  4294967295,
+  'Actual HPACK SETTINGS_HEADER_TABLE_SIZE uint32, initial4096 proposal; negotiated decoder context differs '
+  'from uncompressed field size.'),
+ ('http2_initial_window_size',
+  'number',
+  'Byte',
+  None,
+  0,
+  2147483647,
+  'Actual SETTINGS_INITIAL_WINDOW_SIZE stream limit, initial65535 proposal; current stream/connection '
+  'windows change independently.'),
+ ('http2_current_stream_window',
+  'number',
+  'Byte',
+  None,
+  None,
+  2147483647,
+  'Actual remaining stream flow-control window. Can be negative after SETTINGS decrease; negative window '
+  'permits no DATA, no unsigned fallback.'),
+ ('http2_current_connection_window',
+  'number',
+  'Byte',
+  None,
+  0,
+  2147483647,
+  'Actual remaining connection DATA window; initial65535, WINDOW_UPDATE changes it. Not changed by stream '
+  'SETTINGS.'),
+ ('http2_enable_push',
+  'number',
+  None,
+  None,
+  0,
+  1,
+  'Actual SETTINGS_ENABLE_PUSH0/1; initialclient1, serverinitial value has no effect equivalent0. Actual '
+  'support/state required.'),
+ ('http2_max_concurrent_streams',
+  'number',
+  None,
+  None,
+  0,
+  4294967295,
+  'Actual advertised uint32 limit, initially unlimited if absent; no fabricated100/256-stream maximum.'),
+ ('http2_max_header_list_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  4294967295,
+  'Actual advisory uncompressed field-list limit incl32bytes per field; initially unlimited if absent, not a '
+  'zero-byte default.'),
+ ('http2_pad_length_present',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual PADDED flag and one-byte PadLength presence for DATA/HEADERS/PUSH_PROMISE, unknown.'),
+ ('http2_padding_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  255,
+  'Actual padding octets0..255 when PADDED, excluding1-byte PadLength; all are part of frame payload and '
+  'DATA flow-control cost.'),
+ ('http2_data_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  16777215,
+  'Actual content inside DATA frame excluding padding/PadLength; distinct from complete message content and '
+  'receiver window cost.'),
+ ('http3_frame_type',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual QUIC-varint HTTP3 frame type0..2^62-1 as exact decimal text. Separate registry from HTTP2.'),
+ ('http3_frame_length',
+  'text',
+  'Byte',
+  None,
+  None,
+  None,
+  'Actual QUIC-varint HTTP3 frame payload length0..2^62-1 as exact decimal text; no9-byte header or16384 '
+  'maximum inherited from HTTP2.'),
+ ('http3_stream_kind',
+  'select',
+  None,
+  ['REQUEST', 'CONTROL', 'PUSH', 'QPACK_ENCODER', 'QPACK_DECODER', 'EXTENSION'],
+  None,
+  None,
+  'Actual QUIC stream kind: DATA/HEADERS request or push; SETTINGS control. QPACK streams are independent '
+  'byte streams.'),
+ ('http3_qpack_max_table',
+  'text',
+  'Byte',
+  None,
+  None,
+  None,
+  'Actual SETTINGS_QPACK_MAX_TABLE_CAPACITY uint62 as exact decimal text, initial0; not HTTP2 HPACK4096 '
+  'default.'),
+ ('http3_qpack_blocked_streams',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual SETTINGS_QPACK_BLOCKED_STREAMS uint62 as exact decimal text, initial0; blocking/recovery remains '
+  'actual QUIC/QPACK schedule.'),
+ ('http3_max_field_section_bytes',
+  'text',
+  'Byte',
+  None,
+  None,
+  None,
+  'Actual advertised uint62 maximum field-section size as exact decimal text; absent means unlimited, not0 '
+  'or HTTP2 frame-size limit.'),
+ ('http3_settings_phase',
+  'select',
+  None,
+  ['INITIAL_1RTT', 'PEER_ADVERTISED', 'RESUMED_0RTT'],
+  None,
+  None,
+  'Actual HTTP3 settings state.1RTT initial defaults differ from remembered0RTT peer values; do not '
+  'overwrite remembered settings.'),
+ ('http3_quic_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual QUIC version, varint widths, stream limits, flow control, recovery and congestion/pacing source, '
+  'unknown; no assumed TCP schedule.')]:
+            native=field(key,key.replace('http_','').replace('_',' '),'communication','route',field_type=kind,
+                unit=unit,options=options,minimum=minimum,maximum=maximum,description=meaning,simulation_relevant=False)
+            field_source=('https://www.rfc-editor.org/rfc/rfc9113.html' if key.startswith('http2_') else
+                'https://www.rfc-editor.org/rfc/rfc9204.html' if key.startswith('http3_qpack') else
+                'https://www.rfc-editor.org/rfc/rfc9114.html' if key.startswith('http3_') else
+                'https://www.rfc-editor.org/rfc/rfc9931.html' if key.startswith('http_transition') else source['source'])
+            native.update(required=key in TECHNOLOGY_SEMANTICS['http']['required_parameters'],integer=kind=='number' and unit!='ms',
+                parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',source=field_source,source_revision=source['source_revision'])
+            if key.startswith('http2_'): native['schema_when']={'http_version':'HTTP_2'}
+            if key.startswith('http3_'): native['schema_when']={'http_version':'HTTP_3'}
+            if key in {'http_content_length','http_body_bytes','http_wire_message_bytes'}: native['pattern']=r'[0-9]+'
+            if key.startswith('http3_') and kind=='text' and key!='http3_quic_source':
+                native.update(pattern=r'0|[1-9][0-9]*',integer_text_maximum=4611686018427387903)
+            if key=='http_method': native['pattern']=r"[!#$%&'*+.^_`|~0-9A-Za-z-]+"
+            if key=='http_origin': native.update(format='ABSOLUTE_URI',allowed_schemes=['http','https'])
+            if key in {'http2_frame_header_bytes','http2_max_frame_size','http2_header_table_size','http2_initial_window_size'}:
+                value={'http2_frame_header_bytes':9,'http2_max_frame_size':16384,'http2_header_table_size':4096,'http2_initial_window_size':65535}[key]
+                when={'http_version':'HTTP_2'}
+                if key!='http2_frame_header_bytes': when['http2_settings_phase']='INITIAL_DEFAULTS'
+                native.update(conditional_defaults=[{'when':when,'value':value}],default_status='PROPOSED_CONDITIONAL')
+            if key=='http2_enable_push':
+                native.update(conditional_defaults=[{'when':{'http_version':'HTTP_2','http2_settings_phase':'INITIAL_DEFAULTS','http_role':role},'value':value} for role,value in [('CLIENT',1),('SERVER',0)]],default_status='PROPOSED_CONDITIONAL')
+            if key in {'http3_qpack_max_table','http3_qpack_blocked_streams'}:
+                native.update(conditional_defaults=[{'when':{'http_version':'HTTP_3','http3_settings_phase':'INITIAL_1RTT'},'value':'0'}],default_status='PROPOSED_CONDITIONAL')
+            if key=='http_port':
+                native.update(conditional_defaults=[{'when':{'http_scheme':scheme,'http_port_explicit':False},'value':port} for scheme,port in [('http',80),('https',443)]],default_status='PROPOSED_CONDITIONAL')
+            fields.append(native)
+        for key,kind,unit,options,minimum,maximum,meaning in [('http_transition_token',
+  'select',
+  None,
+  ['TLS', 'WEBSOCKET', 'CONNECT_UDP', 'CONNECT_IP', 'CONNECT_TCP', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual upgrade/CONNECT protocol, unknown. RFC9931 distinguishes TLS, WebSocket, UDP/IP tunneling and '
+  'untrusted TCP CONNECT; source alone does not override prohibited optimistic sending.'),
+ ('http_connect_untrusted',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual CONNECT forwarding on behalf of untrusted TCP client, unknown. Do not assume trusted false; '
+  'wait-success or Connection:close required for HTTP1.'),
+ ('http_wait_success',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual proxy waits for successful2xx before forwarding TCP payload, unknown. Distinct from application '
+  'deadline and declared source text.'),
+ ('http_connection_close',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual Connection:close request/rejection connection behavior. HTTP1 untrusted CONNECT requires close or '
+  'wait; rejecting proxy must close underlying connection under RFC9931.'),
+ ('http_transition_rejected',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual CONNECT transition rejection state, unknown. Underlying connection must be closed by HTTP1 '
+  'rejecting proxy without processing further requests.')]:
+            native=field(key,key.replace('http_','').replace('_',' '),'communication','route',field_type=kind,
+                unit=unit,options=options,minimum=minimum,maximum=maximum,description=meaning,simulation_relevant=False)
+            native.update(required=False,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',
+                source='https://www.rfc-editor.org/rfc/rfc9931.html',source_revision='RFC9931 March2026 sections6/8')
+            fields.append(native)
+    if technology_id == 'hart':
+        source=REVIEW_RATE_PROPOSALS['hart']
+        fields=[item for item in fields if item['key'] not in {'reserved_bandwidth_percent', 'retry_limit', 'gateway_maximum_throughput', 'gateway_input_buffer', 'gateway_maximum_routes', 'sync_method', 'qos_priority', 'queue_size', 'retransmission_enabled', 'retransmission_delay_ms', 'retransmission_rate', 'queue_policy', 'gateway_output_buffer', 'gateway_maximum_messages_s'}]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=source['source'],source_revision=source['source_revision'],simulation_relevant=False,
+                    description='Actual encoded HART data excl response status; count/whole frame differ, no8-byte default.')
+        for key,kind,unit,options,minimum,maximum,meaning in [('hart_profile',
+  'select',
+  None,
+  ['PUBLIC_FSK_2023', 'FCG_FSK_2016', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual selected implementation/revision scope. Public FSK rules do not certify C8PSK, WirelessHART or '
+  'HART-IP.'),
+ ('hart_phy',
+  'select',
+  None,
+  ['FSK', 'C8PSK'],
+  None,
+  None,
+  'Actual wired modulation. FSK standard baseline1200bit/s; C8PSK9600bit/s is a different mode requiring '
+  'actual matched modem. HART-IP/WirelessHART need separate transport paths.'),
+ ('hart_revision',
+  'select',
+  None,
+  ['REV5_OR_EARLIER', 'REV6', 'REV7', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual peer universal-command revision, unknown. Polling range and command capability must match it; not '
+  'automatically latest7.'),
+ ('hart_role',
+  'select',
+  None,
+  ['HOST', 'FIELD_DEVICE'],
+  None,
+  None,
+  'Actual sending endpoint role, unknown. Requests originate at host; response/burst at field device.'),
+ ('hart_host_role',
+  'select',
+  None,
+  ['PRIMARY', 'SECONDARY'],
+  None,
+  None,
+  'Actual interacting host identity, unknown. Primary/secondary arbitration and quiet times differ; not '
+  'universal primary master.'),
+ ('hart_binding_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual registered modem/port/current-loop binding and both endpoint capabilities, unknown.'),
+ ('hart_device_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual device description/revision/commands/preamble and response behavior, unknown.'),
+ ('hart_physical_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual impedance/cable/power/coupling/modem/IS/filtering evidence, unknown; nominal FSK rate '
+  'does not prove installation.'),
+ ('hart_schedule_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual host arbitration, command turnaround, retry/burst and complete transaction schedule '
+  'evidence, unknown.'),
+ ('hart_mode',
+  'select',
+  None,
+  ['REQUEST_RESPONSE', 'BURST'],
+  None,
+  None,
+  'Actual request/response or device-supported enabled burst mode, unknown. Generic multicast is not wired '
+  'HART burst.'),
+ ('hart_frame_kind',
+  'select',
+  None,
+  ['REQUEST', 'RESPONSE', 'BURST'],
+  None,
+  None,
+  'Actual frame direction/category; status and delimiter differ between request and field response/burst.'),
+ ('hart_address_format',
+  'select',
+  None,
+  ['SHORT', 'LONG'],
+  None,
+  None,
+  'Actual encoded short1-byte or long5-byte address; long unique identity is distinct from polling number.'),
+ ('hart_address_bytes',
+  'number',
+  'Byte',
+  None,
+  1,
+  5,
+  'Actual address field octets: short1, long5. No arbitrary2/3/4-byte encoding.'),
+ ('hart_poll_address',
+  'number',
+  None,
+  None,
+  0,
+  63,
+  'Actual device polling number, unknown: rev5-or-earlier0..15, rev6+0..63. Point-to-point0 is a proposal, '
+  'not a real device assignment.'),
+ ('hart_topology',
+  'select',
+  None,
+  ['POINT_TO_POINT', 'MULTIDROP'],
+  None,
+  None,
+  'Actual current-loop topology, unknown. Multidrop analog fixed-current behavior requires actual '
+  'revision/device configuration.'),
+ ('hart_expanded_device_type',
+  'number',
+  None,
+  None,
+  0,
+  16383,
+  'Actual14-bit expanded device type in qualified long-address layout, unknown; not an automatically '
+  'generated device identifier.'),
+ ('hart_device_id',
+  'number',
+  None,
+  None,
+  0,
+  16777215,
+  'Actual24-bit device ID in qualified long-address layout, unknown; host and burst flags are separate.'),
+ ('hart_preamble_bytes',
+  'number',
+  'Byte',
+  None,
+  5,
+  20,
+  'Actual transmitted0xFF preamble octets in public FSK profile. Peer-specific required length and detection '
+  'loss matter;5 is not a safe default for every unknown peer.'),
+ ('hart_peer_preamble_bytes',
+  'number',
+  'Byte',
+  None,
+  5,
+  20,
+  'Actual required preamble length learned from matching field device, unknown. Configured transmit preamble '
+  'must be at least this.'),
+ ('hart_delimiter',
+  'number',
+  None,
+  None,
+  0,
+  255,
+  'Actual delimiter octet; qualified FSK encodes address length, expansion count and frame category. C8PSK '
+  'delimiter rules not inferred from asynchronous FSK.'),
+ ('hart_expansion_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  3,
+  'Actual encoded expansion bytes matching delimiter. Normal0 proposal belongs to qualified public FSK '
+  'layout; future extensions need revision evidence.'),
+ ('hart_command',
+  'number',
+  None,
+  None,
+  0,
+  255,
+  'Actual wire command octet, unknown. Command31 carries extended16-bit command in data; command support and '
+  'response semantics remain device-specific.'),
+ ('hart_extended_command',
+  'number',
+  None,
+  None,
+  0,
+  65535,
+  'Actual16-bit extended command when wire command31, unknown; its two bytes must be included in transmitted '
+  'data length, not extra hidden overhead.'),
+ ('hart_command_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual supported command, request/response data layout, units and encoding source, unknown. Generic data '
+  'length does not prove functional command compatibility.'),
+ ('hart_status_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  2,
+  'Actual status length: request0, field response/burst2 in qualified FSK layout.'),
+ ('hart_data_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  255,
+  'Actual encoded data octets excluding response status, including extended-command bytes when present. '
+  'Request/response layouts differ; no8-byte default.'),
+ ('hart_byte_count',
+  'number',
+  'Byte',
+  None,
+  0,
+  255,
+  'Actual byte-count field = data plus status octets, excluding checksum. Response data at most253 when '
+  'status2; not a universal complete255-byte frame limit.'),
+ ('hart_checksum_bytes',
+  'number',
+  'Byte',
+  None,
+  1,
+  1,
+  'One transmitted XOR checksum octet in qualified public FSK layout; checksum covers delimiter through '
+  'data, excluding preamble. Numeric length is not executed integrity evidence.'),
+ ('hart_checksum_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual XOR calculation and observed parity/byte stream evidence, unknown; no auto-confirmed checksum or '
+  'authentication.'),
+ ('hart_wire_octets',
+  'number',
+  'Byte',
+  None,
+  0,
+  None,
+  'Actual whole frame incl preamble/delimiter/address/expansion/command/count/status/data/checksum. Separate '
+  'from data and byte count.'),
+ ('hart_char_bits',
+  'number',
+  'bit',
+  None,
+  11,
+  11,
+  'FSK asynchronous character:1start+8dataLSB-first+odd parity+1stop=11bits. These bounds apply only to '
+  'selected qualified FSK profile; not generic8N1.'),
+ ('hart_wire_bits',
+  'number',
+  'bit',
+  None,
+  0,
+  None,
+  'Actual serialization bits including all qualified FSK characters, not payload×8. C8PSK encoded stream '
+  'needs actual physical evidence.'),
+ ('hart_serialization_ms',
+  'number',
+  'ms',
+  None,
+  0,
+  None,
+  'Actual frame serialization time from complete encoded bits and selected physical rate, excluding '
+  'turnaround/gaps/arbitration; not whole transaction latency.'),
+ ('hart_gap_us',
+  'number',
+  'us',
+  None,
+  0,
+  None,
+  'Actual worst inter-character gap; qualified FCG FSK rule requires less than one11-bit character time. No '
+  'universal gap0 default.'),
+ ('hart_slave_timeout_chars',
+  'number',
+  'character',
+  None,
+  28,
+  28,
+  'Qualified FieldComm2016 FSK slave timeout28character times; timeout is not actual device processing '
+  'latency or application deadline.'),
+ ('hart_hold_chars',
+  'number',
+  'character',
+  None,
+  2,
+  2,
+  'Qualified FieldComm2016 FSK HOLD2character times, separate from frame serialization and actual modem '
+  'turnaround.'),
+ ('hart_link_grant_chars',
+  'number',
+  'character',
+  None,
+  8,
+  8,
+  'Qualified FieldComm2016 FSK link grant RT2=8character times.'),
+ ('hart_quiet_chars',
+  'number',
+  'character',
+  None,
+  0,
+  None,
+  'Qualified FieldComm2016 FSK RT1 primary33/secondary41character times. Master identity must be explicit.'),
+ ('hart_response_start_ms',
+  'number',
+  'ms',
+  None,
+  0,
+  None,
+  'Actual request-end to response-start upper bound incl device and modem, unknown; qualified FCG timeout '
+  'relation applies. Does not include response duration.'),
+ ('hart_retry_limit',
+  'number',
+  'attempts',
+  None,
+  0,
+  None,
+  'Actual host/device retry budget, unknown; no inherited CAN0 or Siemens client-specific universal value.'),
+ ('hart_retry_bound_ms',
+  'number',
+  'ms',
+  None,
+  0,
+  None,
+  'Actual total additional retry/arbitration recovery bound, unknown. Per-message or transport-independent '
+  'timeout cannot substitute.'),
+ ('hart_burst_supported',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual endpoint burst capability confirmed by device source, unknown; enabling mode must not fabricate '
+  'support.'),
+ ('hart_burst_period_ms',
+  'number',
+  'ms',
+  None,
+  0,
+  None,
+  'Actual device/revision configured burst schedule, unknown. Tutorial3-4updates/s is illustrative, not a '
+  'universal standard period.'),
+ ('hart_loop_load_ohms',
+  'number',
+  'Ohm',
+  None,
+  230,
+  600,
+  'Actual loop receiver resistor/communication load for qualified TI FSK example230..600Ohm, typically250. '
+  'Bounds are not universal total loop impedance; device-specific topology requires actual source.'),
+ ('hart_loop_supply_v',
+  'number',
+  'V',
+  None,
+  0,
+  None,
+  'Actual loop supply and device compliance budget, unknown; not a universal24V supply.'),
+ ('hart_loop_current_ma',
+  'number',
+  'mA',
+  None,
+  0,
+  None,
+  'Actual operating analog loop current, unknown;4..20mA measurement range and multidrop fixed current are '
+  'not arbitrary digital defaults.'),
+ ('hart_signal_pp_ma',
+  'number',
+  'mA',
+  None,
+  0,
+  None,
+  'Actual FSK signal amplitude at matched load, unknown.1mApp is nominal tutorial value, not measured '
+  'endpoint evidence.'),
+ ('hart_cable_cap_pf',
+  'number',
+  'pF',
+  None,
+  0,
+  None,
+  'Actual cable/receiver capacitance and length/loading bound, unknown; not I2C400pF or an inferred '
+  'universal cable length.'),
+ ('hart_is_required',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual hazardous-area/intrinsic-safety requirement, unknown; HART name does not imply certified safe '
+  'installation.'),
+ ('hart_is_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual matched barriers/entities/cable/loop intrinsically-safe certification evidence, unknown; separate '
+  'from message checksum.')]:
+            native=field(key,key.replace('hart_','').replace('_',' '),'communication','route',field_type=kind,
+                unit=unit,options=options,minimum=minimum,maximum=maximum,description=meaning,simulation_relevant=False)
+            native.update(required=key in TECHNOLOGY_SEMANTICS['hart']['required_parameters'],
+                integer=kind=='number' and unit not in {'ms','us','Ohm','V','mA','pF'},
+                parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',source=source['source'],source_revision=source['source_revision'])
+            if key in {'hart_peer_preamble_bytes', 'hart_expanded_device_type', 'hart_char_bits', 'hart_preamble_bytes', 'hart_loop_load_ohms', 'hart_checksum_bytes', 'hart_device_id'}: native['schema_when']={'hart_profile': ['PUBLIC_FSK_2023', 'FCG_FSK_2016'], 'hart_phy': ['FSK']}
+            if key in {'hart_slave_timeout_chars','hart_hold_chars','hart_link_grant_chars','hart_quiet_chars'}:
+                native.update(schema_when={'hart_profile':['FCG_FSK_2016'],'hart_phy':['FSK']},source='https://support.fieldcommgroup.org/support/solutions/articles/8000040648-how-is-character-time-calculated-',source_revision='FieldComm character-time support article2016-11-11')
+            if key=='hart_expanded_device_type': native['schema_when']['hart_revision']=['REV6','REV7']
+            if key in {'hart_phy','hart_char_bits','hart_expansion_bytes','hart_checksum_bytes'}:
+                value={'hart_phy':'FSK','hart_char_bits':11,'hart_expansion_bytes':0,'hart_checksum_bytes':1}[key]
+                native.update(conditional_defaults=[{'when':{'hart_profile':'PUBLIC_FSK_2023'},'value':value}],default_status='PROPOSED_CONDITIONAL')
+            if key in {'hart_slave_timeout_chars','hart_hold_chars','hart_link_grant_chars'}:
+                value={'hart_slave_timeout_chars':28,'hart_hold_chars':2,'hart_link_grant_chars':8}[key]
+                native.update(conditional_defaults=[{'when':{'hart_profile':'FCG_FSK_2016','hart_phy':'FSK'},'value':value}],default_status='PROPOSED_CONDITIONAL')
+            if key=='hart_quiet_chars':
+                native.update(conditional_defaults=[{'when':{'hart_profile':'FCG_FSK_2016','hart_phy':'FSK','hart_host_role':host},'value':n} for host,n in [('PRIMARY',33),('SECONDARY',41)]],default_status='PROPOSED_CONDITIONAL')
+            fields.append(native)
+    if technology_id == 'gpio':
+        source=REVIEW_RATE_PROPOSALS['gpio']
+        fields=[item for item in fields if item['key'] not in {'corruption_probability', 'gateway_maximum_messages_s', 'gateway_delay_ms', 'retransmission_delay_ms', 'reordering_probability', 'warning_threshold', 'gateway_maximum_throughput', 'retry_limit', 'retransmission_rate', 'critical_threshold', 'reserved_bandwidth_percent', 'payload_bytes', 'peak_factor', 'gateway_queue_delay_ms', 'protocol_conversion_delay_ms', 'target_bus_load_percent', 'queue_policy', 'sync_method', 'burst_window_ms', 'burst_factor', 'overload_threshold', 'frame_loss_probability', 'packet_loss_probability', 'bit_error_rate', 'gateway_input_buffer', 'gateway_maximum_routes', 'queue_size', 'retransmission_enabled', 'gateway_output_buffer', 'duplicate_probability', 'qos_priority'}]
+        for key,kind,unit,options,minimum,maximum,meaning in [('gpio_profile',
+  'select',
+  None,
+  ['STM8TL5_RM0312_3', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual GPIO device profile, unknown; digital pin is not a packet bus and has no universal baud or '
+  'voltage.'),
+ ('gpio_pin',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual port/pin/package identity and ownership, unknown; unavailable package pins and '
+  'alternate-function conflicts must be resolved.'),
+ ('gpio_device_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual datasheet/pinout/revision/clock/threshold/drive/interrupt capabilities, unknown.'),
+ ('gpio_wiring_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual peer wiring/voltage domains/load/pull resistors/isolation/contention and physical limits, '
+  'unknown.'),
+ ('gpio_phase',
+  'select',
+  None,
+  ['OPERATING', 'RESET'],
+  None,
+  None,
+  'Actual operating versus reset state. Reset defaults do not overwrite programmed application outputs.'),
+ ('gpio_direction',
+  'select',
+  None,
+  ['DIGITAL_INPUT', 'DIGITAL_OUTPUT', 'ALTERNATE', 'ANALOG_HIGH_Z'],
+  None,
+  None,
+  'Actual pin mode, unknown. Qualified non-exception STM8TL reset proposes input only; alternate functions '
+  'use a separate explicit technology.'),
+ ('gpio_reset_exception',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual pin/package exception to reset configuration from datasheet, unknown; e.g. PA_CR1 reset differs. '
+  'Never assume all reset pins float.'),
+ ('gpio_pull',
+  'select',
+  None,
+  ['NONE', 'UP', 'DOWN', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual controller internal pull, unknown; reviewed STM8TL digital input supports NONE/UP, not universal '
+  'pull-down.'),
+ ('gpio_drive',
+  'select',
+  None,
+  ['PUSH_PULL', 'PSEUDO_OPEN_DRAIN', 'TRUE_OPEN_DRAIN', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual output driver/pad kind. True open-drain is pin-specific, not inferred from register option.'),
+ ('gpio_active_low',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual application polarity, unknown; electrical HIGH/LOW and functional active state are separate.'),
+ ('gpio_level',
+  'select',
+  None,
+  ['LOW', 'HIGH', 'HIGH_Z'],
+  None,
+  None,
+  'Actual electrical drive/read state, unknown; floating input is not automatically logicLOW or safe '
+  'actuation.'),
+ ('gpio_input_mode',
+  'select',
+  None,
+  ['POLLED', 'INTERRUPT'],
+  None,
+  None,
+  'Actual input sampling/event mechanism, unknown. Output update does not require a slave address or input '
+  'polling bound.'),
+ ('gpio_event',
+  'select',
+  None,
+  ['RISING', 'FALLING', 'BOTH_EDGES', 'HIGH_LEVEL', 'LOW_LEVEL', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual selected interrupt sensitivity and controller support, unknown; no mandatory rising edge.'),
+ ('gpio_debounce_enabled',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual hardware/software debounce enabled, unknown; no universal debounce0ms or10ms.'),
+ ('gpio_vdd_v',
+  'number',
+  'V',
+  None,
+  0,
+  None,
+  'Actual operating GPIO supply/domain voltage, unknown; datasheet governs min/max and pin '
+  'tolerance.3.3/5/24V are not universal GPIO defaults.'),
+ ('gpio_vil_max_v',
+  'number',
+  'V',
+  None,
+  None,
+  None,
+  'Actual receiving maximum low-input voltage at matched supply/temperature/logic mode, unknown.'),
+ ('gpio_vih_min_v',
+  'number',
+  'V',
+  None,
+  None,
+  None,
+  'Actual receiving minimum high-input voltage at matched supply/temperature/logic mode, unknown.'),
+ ('gpio_vol_max_v',
+  'number',
+  'V',
+  None,
+  None,
+  None,
+  'Actual driving worst-case low voltage at the actual sink load, unknown; must meet receiving VIL.'),
+ ('gpio_voh_min_v',
+  'number',
+  'V',
+  None,
+  None,
+  None,
+  'Actual driving worst-case high voltage at the actual source load, unknown; must meet receiving VIH.'),
+ ('gpio_sink_bound_ma',
+  'number',
+  'mA',
+  None,
+  0,
+  None,
+  'Actual safe per-pin sink-current bound for specified voltage, unknown; absolute maximum is not an '
+  'operating default.'),
+ ('gpio_source_bound_ma',
+  'number',
+  'mA',
+  None,
+  0,
+  None,
+  'Actual safe per-pin source-current bound for specified voltage, unknown; not universal20mA.'),
+ ('gpio_sink_load_ma',
+  'number',
+  'mA',
+  None,
+  0,
+  None,
+  'Actual sink load, unknown; must fit per-pin limit and separately verified package/port aggregate.'),
+ ('gpio_source_load_ma',
+  'number',
+  'mA',
+  None,
+  0,
+  None,
+  'Actual source load, unknown; must fit pin and actual port/package aggregate.'),
+ ('gpio_pull_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual external pull-up/down resistance/load/rise/fall/rail and leakage evidence, unknown; open-drain '
+  'high state needs explicit pull network.'),
+ ('gpio_pull_ohms',
+  'number',
+  'Ohm',
+  None,
+  0,
+  None,
+  'Actual external resistor value, unknown; no universal4.7k resistor. An explicitly present resistor must '
+  'be positive.'),
+ ('gpio_load_pf',
+  'number',
+  'pF',
+  None,
+  0,
+  None,
+  'Actual pad+wiring+peer load capacitance, unknown; no universal I2C400pF limit or timing default for '
+  'GPIO.'),
+ ('gpio_rise_bound_ns',
+  'number',
+  'ns',
+  None,
+  0,
+  None,
+  'Actual pin transition upper bound at actual load/slew/drive conditions, unknown; nominal MCU clock does '
+  'not prove this.'),
+ ('gpio_fall_bound_ns',
+  'number',
+  'ns',
+  None,
+  0,
+  None,
+  'Actual falling transition upper bound, unknown, separate from source/target software processing.'),
+ ('gpio_transition_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual register-write/configuration sequence and intermediate-state/glitch/interrupt masking evidence, '
+  'unknown; required for deliberate mode transitions.')]:
+            native=field(key,key.replace('gpio_','').replace('_',' '),'physical','device',field_type=kind,
+                unit=unit,options=options,minimum=minimum,maximum=maximum,description=meaning,simulation_relevant=False)
+            native.update(required=key in TECHNOLOGY_SEMANTICS['gpio']['required_parameters'],
+                parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',source=source['source'],source_revision=source['source_revision'])
+            if key in {'gpio_direction','gpio_pull'}:
+                native.update(conditional_defaults=[{'when':{'gpio_profile':'STM8TL5_RM0312_3','gpio_phase':'RESET','gpio_reset_exception':False},
+                    'value':'DIGITAL_INPUT' if key=='gpio_direction' else 'NONE'}],default_status='PROPOSED_CONDITIONAL')
+            fields.append(native)
+    if technology_id == 'goose':
+        source=REVIEW_RATE_PROPOSALS['goose']
+        # Explicit composition of the reviewed raw IEEE802.3 transport and
+        # GOOSE application schema; never an implicit foreign transport fallback.
+        fields=_parameter_form_schema('ethernet',
+            {**technology,'id':'ethernet','default_stack':['ethernet']},
+            {**rate_source,'id':'ethernet'},review)
+        for item in fields:
+            if item['key'] in {'qos_priority','vlan_id'}:
+                item.update(conditional_defaults=[{'when':{'goose_profile':'LIBIEC61850_1_6_L2','goose_vlan_tag':True},
+                    'value':4 if item['key']=='qos_priority' else 0}],default_status='PROPOSED_CONDITIONAL')
+            if item['key']=='payload_bytes':
+                item['description']='Actual L2 GOOSE8-byte header plus full encoded APDU as MAC-client octets; allData/counts are separate. No8-byte default.'
+        for key,kind,unit,options,minimum,maximum,meaning in [('goose_profile',
+  'select',
+  None,
+  ['LIBIEC61850_1_6_L2', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual L2 GOOSE implementation/profile. Library-qualified proposals and bounds are not a universal IED '
+  'profile or R-GOOSE UDP configuration.'),
+ ('goose_edition',
+  'select',
+  None,
+  ['ED1', 'ED2', 'ED2_1', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual IEC edition and supported encoding/security extensions, unknown; edition alone does not select '
+  'library firmware.'),
+ ('goose_role',
+  'select',
+  None,
+  ['PUBLISHER', 'SUBSCRIBER'],
+  None,
+  None,
+  'Actual control-block role; publisher retransmission and subscriber loss/acceptance are distinct.'),
+ ('goose_binding_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual L2 MAC/PHY/port/VLAN/multicast path, not UDP/IP/MMS transport. Routed GOOSE needs an '
+  'independent explicit transport path.'),
+ ('goose_scl_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual SCL/GoCB/dataset/member order and engineering revision, unknown.'),
+ ('goose_device_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual firmware/implementation/PIXIT/PICS/security and supported encoding source, unknown.'),
+ ('goose_schedule_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual state-change burst/retransmission/steady rates and competing LAN schedule source; link '
+  'speed alone proves no event response time.'),
+ ('goose_encoding',
+  'select',
+  None,
+  ['ASN1_BER', 'FIXED_LENGTH', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual GOOSE dataset/APDU encoding, unknown; reviewed library publisher uses BER, not universal '
+  'fixed8-byte overhead for allData.'),
+ ('goose_ethertype',
+  'number',
+  None,
+  None,
+  0,
+  65535,
+  'Actual raw Ethernet GOOSE EtherType0x88B8=35000, distinct from Sampled Values, GSSE, IP or R-GOOSE.'),
+ ('goose_appid',
+  'number',
+  None,
+  None,
+  0,
+  65535,
+  'Actual uint16 header APPID in reviewed library API, unknown. Actual IEC edition allocation/publisher '
+  'uniqueness remains SCL evidence, no arbitrary0x1000 installation default.'),
+ ('goose_vlan_tag',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual L2 802.1Q tag presence, unknown; library createEx supports tag or no tag. PCP/VID apply only when '
+  'tagged.'),
+ ('goose_cb_ref',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual GoCB reference, unknown, matched to subscriber SCL; never universal65-char limit from an older IEC '
+  'edition.'),
+ ('goose_dataset_ref',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual dataset reference and stable member order, unknown.'),
+ ('goose_id',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual optional GoID/reference from device/SCL, unknown; no manufactured project identifier.'),
+ ('goose_conf_rev',
+  'number',
+  None,
+  None,
+  0,
+  4294967295,
+  'Actual uint32 configuration revision, unknown; subscriber expected revision must match before operational '
+  'acceptance.'),
+ ('goose_expected_conf_rev',
+  'number',
+  None,
+  None,
+  0,
+  4294967295,
+  'Actual commissioned subscriber expected configuration revision, unknown.'),
+ ('goose_st_num',
+  'number',
+  None,
+  None,
+  1,
+  4294967295,
+  'Actual state counter; reviewed library starts1, increments on state changes and skips0 on rollover. '
+  'Initial1 is not a default for every observed frame.'),
+ ('goose_sq_num',
+  'number',
+  None,
+  None,
+  0,
+  4294967295,
+  'Actual sequence counter; reviewed library resets0 on state change, increments per publication and rolls '
+  'over to1.'),
+ ('goose_test',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual APDU test flag, unknown; distinct from edition-specific reserved-header simulation semantics and '
+  'functional safety certification.'),
+ ('goose_nds_com',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual needs-commissioning flag, unknown; no automatic false confirmation.'),
+ ('goose_num_entries',
+  'number',
+  None,
+  None,
+  0,
+  4294967295,
+  'Actual uint32 numDatSetEntries, unknown; must equal actual ordered allData element count.'),
+ ('goose_actual_entries',
+  'number',
+  None,
+  None,
+  0,
+  4294967295,
+  'Actual encoded allData element count, unknown; data type/quality and BER sizes need actual member '
+  'evidence.'),
+ ('goose_timestamp_bytes',
+  'number',
+  'Byte',
+  None,
+  8,
+  8,
+  'Reviewed library UTC timestamp content8 octets, before ASN.1 tag/length; clock accuracy/status bits '
+  'remain actual device evidence.'),
+ ('goose_all_data_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  None,
+  'Actual encoded allData container bytes including BER tag/length, unknown. Cannot infer bytes from entry '
+  'count alone.'),
+ ('goose_apdu_bytes',
+  'number',
+  'Byte',
+  None,
+  1,
+  None,
+  'Actual full BER GOOSE APDU bytes, unknown, including references/counters/TAL/time/flags/allData and '
+  'variable length encodings.'),
+ ('goose_header_bytes',
+  'number',
+  'Byte',
+  None,
+  8,
+  8,
+  'Raw L2 APPID/Length/Reserved1/Reserved2 header8 octets, excluding APDU and Ethernet '
+  'header/tags/padding/FCS.'),
+ ('goose_length_bytes',
+  'number',
+  'Byte',
+  None,
+  8,
+  65535,
+  'Actual raw L2 Length =8+APDU octets, excluding Ethernet pad and FCS; must fit selected actual MAC-client '
+  'MTU.'),
+ ('goose_reserved1',
+  'number',
+  None,
+  None,
+  0,
+  65535,
+  'Actual reserved header word1; reviewed library writes0. Edition/security simulation extensions need their '
+  'own schema and source.'),
+ ('goose_reserved2',
+  'number',
+  None,
+  None,
+  0,
+  65535,
+  'Actual reserved header word2; reviewed library writes0. No blanket universal security-extension default.'),
+ ('goose_phase',
+  'select',
+  None,
+  ['STATE_CHANGE', 'EVENT_REPEAT', 'STABLE'],
+  None,
+  None,
+  'Actual publisher state-change/event-repeat/steady phase, unknown; event repeats are not generic '
+  'reliability retries.'),
+ ('goose_schedule_origin',
+  'select',
+  None,
+  ['SCL', 'STACK_FALLBACK', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual interval source. Qualified library fallback defaults apply only when actual SCL MinTime/MaxTime '
+  'are absent.'),
+ ('goose_min_ms',
+  'number',
+  'ms',
+  None,
+  1,
+  None,
+  'Actual fast-repeat interval from SCL/device; library config fallback500ms only in explicit fallback '
+  'profile, not universal4ms.'),
+ ('goose_max_ms',
+  'number',
+  'ms',
+  None,
+  1,
+  None,
+  'Actual steady interval from SCL/device; library fallback5000ms only explicitly selected, not generic '
+  'cycle100ms.'),
+ ('goose_event_repeats',
+  'number',
+  'frame',
+  None,
+  0,
+  None,
+  'Actual library/configured fast-repeat count after state change; qualified config fallback2, no universal '
+  'retry budget.'),
+ ('goose_next_ms',
+  'number',
+  'ms',
+  None,
+  1,
+  None,
+  'Actual announced/selected next publication interval; must fit advertised TAL. Event transitions and '
+  'actual source schedule remain explicit.'),
+ ('goose_tal_basis_ms',
+  'number',
+  'ms',
+  None,
+  1,
+  None,
+  'Actual library MinTime/MaxTime basis chosen for this TAL by publisher state machine; no '
+  'universal2-times-TAL convention.'),
+ ('goose_tal_ms',
+  'number',
+  'ms',
+  None,
+  1,
+  4294967295,
+  'Actual uint32 timeAllowedToLive in milliseconds. Library server sets3 times selected MinTime/MaxTime; '
+  'other IED PIXIT may differ.'),
+ ('goose_operating_mode',
+  'select',
+  None,
+  ['OPERATIONAL', 'TEST', 'MONITOR'],
+  None,
+  None,
+  'Actual subscriber application mode, unknown; monitoring a test frame does not make it valid operational '
+  'input.'),
+ ('goose_accept_operational',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  'Actual operational acceptance, unknown; requires commissioned non-test data, matching revision/count, '
+  'dataset/source evidence. No automatic acceptance from Ethernet rate.'),
+ ('goose_acceptance_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual subscriber filter/control-block/dataset/test/loss/out-of-order/rollover and application acceptance '
+  'evidence, unknown.'),
+ ('goose_security_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Actual IEC62351/authentication/access assumptions and device support, unknown; sequence counters/CRC are '
+  'not authentication or SIL certification.')]:
+            native=field(key,key.replace('goose_','').replace('_',' '),'communication','route',field_type=kind,
+                unit=unit,options=options,minimum=minimum,maximum=maximum,description=meaning,simulation_relevant=False)
+            native.update(required=key in TECHNOLOGY_SEMANTICS['goose']['required_parameters'],integer=kind=='number',
+                parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',source=source['source'],source_revision=source['source_revision'])
+            if key in {'goose_timestamp_bytes','goose_appid','goose_conf_rev','goose_expected_conf_rev','goose_st_num','goose_sq_num','goose_num_entries','goose_actual_entries','goose_reserved1','goose_reserved2'}:
+                native['schema_when']={'goose_profile':'LIBIEC61850_1_6_L2'}
+            proposals={'goose_encoding':'ASN1_BER','goose_ethertype':35000,'goose_timestamp_bytes':8,'goose_header_bytes':8,'goose_reserved1':0,'goose_reserved2':0}
+            fallback={'goose_min_ms':500,'goose_max_ms':5000,'goose_event_repeats':2}
+            if key in proposals or key in fallback:
+                when={'goose_profile':'LIBIEC61850_1_6_L2'}
+                if key in fallback: when['goose_schedule_origin']='STACK_FALLBACK'
+                native.update(conditional_defaults=[{'when':when,'value':proposals.get(key,fallback.get(key))}],default_status='PROPOSED_CONDITIONAL')
+            fields.append(native)
+    if technology_id == 'generic_serial':
+        source=REVIEW_RATE_PROPOSALS['generic_serial']
+        fields=[item for item in fields if item['key'] not in {'gateway_maximum_routes', 'qos_priority', 'retransmission_enabled', 'gateway_maximum_messages_s', 'retransmission_rate', 'reserved_bandwidth_percent', 'queue_size', 'retry_limit', 'gateway_output_buffer', 'queue_policy', 'gateway_input_buffer', 'sync_method', 'retransmission_delay_ms', 'gateway_maximum_throughput'}]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.pop('max',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=source['source'],source_revision=source['source_revision'],simulation_relevant=False,
+                    description='Actual qualified API stream-chunk or application octets, not UART character/wire count. No universal8-byte default or65535 maximum.')
+        for key,kind,unit,options,minimum,maximum,meaning in [('gs_mode',
+  'select',
+  None,
+  ['ASYNC_UART', 'SYNC_SERIAL', 'USB_CDC', 'CUSTOM_STREAM'],
+  None,
+  None,
+  'Actual serial mechanism, unknown. A stream/COM-port name alone selects neither UART nor synchronous '
+  'clocks nor native USB CDC.'),
+ ('gs_transport_binding',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual registered serial/USB/PHY port and direction topology reference; no silent '
+  'RS232/RS485/SPI binding.'),
+ ('gs_implementation_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required device/firmware/clock/driver capabilities and revision, unknown. Generic Serial is an NIS '
+  'abstraction, not a normative serial bus.'),
+ ('gs_framing_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual message encoding/framing/escaping/integrity and byte/character boundary source, unknown; '
+  'stream chunks are not necessarily complete messages.'),
+ ('gs_uart_profile',
+  'select',
+  None,
+  ['TB3216_8N1', 'AVR_FRAME_FORMATS', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Explicit source-qualified async UART framing profile, unknown. TB3216 tutorial supplies '
+  'conditional9600/8N1 proposals, not universal baud minimum.'),
+ ('gs_baud_rate',
+  'number',
+  'Bd',
+  None,
+  1,
+  None,
+  'Actual async binary UART symbol rate, unknown until matched clock/divisor/configuration;9600 is '
+  'conditional tutorial proposal, not generic minimum.'),
+ ('gs_peer_baud_rate',
+  'number',
+  'Bd',
+  None,
+  1,
+  None,
+  'Actual peer configured baud rate; must agree with selected UART configuration. Clock error/oversampling '
+  'tolerance needs actual device proof.'),
+ ('gs_data_bits',
+  'number',
+  'bit',
+  None,
+  1,
+  None,
+  'Actual data bits per UART character; reviewed AVR5..9, tutorial8. Not application octets or USB packet '
+  'size.'),
+ ('gs_parity',
+  'select',
+  None,
+  ['NONE', 'EVEN', 'ODD', 'MARK', 'SPACE', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual UART parity; reviewed AVR NONE/EVEN/ODD only, tutorial NONE. Other devices require their own '
+  'source.'),
+ ('gs_start_bits',
+  'number',
+  'bit',
+  None,
+  1,
+  None,
+  'Actual UART start bits; reviewed AVR/tutorial1. Unknown device-specific layouts are not verified using '
+  'AVR limits.'),
+ ('gs_stop_bits',
+  'number',
+  'bit',
+  None,
+  0.5,
+  None,
+  'Actual UART stop-bit periods; reviewed AVR1 or2, tutorial1. Fractional stop periods are '
+  'device-dependent.'),
+ ('gs_char_bits',
+  'number',
+  'bit',
+  None,
+  1,
+  None,
+  'Actual start+data+parity+stop bit-periods per character. Tutorial8N1=10, AVR parity adds1. Not8 useful '
+  'bits.'),
+ ('gs_encoded_characters',
+  'number',
+  'character',
+  None,
+  1,
+  None,
+  'Actual serialized character count including framing/encoding/escaping/flow characters as applicable, '
+  'unknown; not blindly equal to application payload octets.'),
+ ('gs_wire_bits',
+  'number',
+  'bit',
+  None,
+  1,
+  None,
+  'Actual UART occupied bit-period count = encoded characters times character bits; start/stop/parity '
+  'included.'),
+ ('gs_serialization_us',
+  'number',
+  'us',
+  None,
+  0,
+  None,
+  'Actual UART serialization time = wire bit periods / binary UART baud times1e6, excluding actual gaps/flow '
+  'stalls.'),
+ ('gs_gap_bound_us',
+  'number',
+  'us',
+  None,
+  0,
+  None,
+  'Actual aggregate character/message/turnaround idle bound, unknown; zero only when explicitly justified.'),
+ ('gs_flow_control',
+  'select',
+  None,
+  ['NONE', 'RTS_CTS', 'XON_XOFF', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual UART flow control and peer support, unknown. No automatic disabled flow-control assumption.'),
+ ('gs_flow_bound_us',
+  'number',
+  'us',
+  None,
+  0,
+  None,
+  'Actual bounded UART flow-control blocking from both endpoints, unknown. Unbounded peer stalls do not '
+  'prove capacity.'),
+ ('gs_wire_bound_us',
+  'number',
+  'us',
+  None,
+  0,
+  None,
+  'Actual complete UART transfer bound at least serialization+aggregate idle+flow stalls, unknown; '
+  'driver/application processing remains separate.'),
+ ('gs_clock_hz',
+  'number',
+  'Hz',
+  None,
+  1,
+  None,
+  'Actual synchronous serial clock, unknown. Encoding/bits per clock/edge/role/word lengths supplied by '
+  'actual bound port; never UART baud or USB speed.'),
+ ('gs_cdc_line_coding_role',
+  'select',
+  None,
+  ['NATIVE_ADVISORY', 'BRIDGE_UART', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual CDC implementation interpretation of line coding, unknown. Arduino native CDC ignores Serial.begin '
+  'baud for wire speed; USB-to-UART bridges require separate real UART binding.'),
+ ('gs_framing',
+  'select',
+  None,
+  ['NONE', 'FIXED_LENGTH', 'LENGTH_PREFIX', 'DELIMITER', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'Actual application message framing, unknown; optional line delimiters in TB3216 example are not mandatory '
+  'for all serial streams.'),
+ ('gs_message_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  None,
+  'Actual application-message octets, unknown. Not API read/write chunk, UART characters, USB packets or '
+  'encoded wire count.'),
+ ('gs_max_message_bytes',
+  'number',
+  'Byte',
+  None,
+  1,
+  None,
+  'Actual implementation/application-message limit, unknown.65535 is not a generic serial standard maximum.')]:
+            native=field(key,key.replace('gs_','').replace('_',' '),'communication','route',field_type=kind,
+                unit=unit,options=options,minimum=minimum,maximum=maximum,description=meaning,simulation_relevant=False)
+            native.update(required=key in TECHNOLOGY_SEMANTICS['generic_serial']['required_parameters'],
+                integer=kind=='number' and key not in {'gs_stop_bits','gs_char_bits','gs_serialization_us','gs_gap_bound_us','gs_flow_bound_us','gs_wire_bound_us'},
+                parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',source=source['source'],source_revision=source['source_revision'])
+            proposals={'gs_baud_rate':9600,'gs_data_bits':8,'gs_parity':'NONE','gs_start_bits':1,'gs_stop_bits':1,'gs_char_bits':10}
+            if key in proposals:
+                native.update(conditional_defaults=[{'when':{'gs_mode':'ASYNC_UART','gs_uart_profile':'TB3216_8N1'},'value':proposals[key]}],default_status='PROPOSED_CONDITIONAL')
+            fields.append(native)
+    if technology_id == 'generic_can':
+        source=REVIEW_RATE_PROPOSALS['generic_can']
+        fields=[item for item in fields if item['key'] not in {'gateway_maximum_throughput', 'gateway_output_buffer', 'sync_method', 'gateway_input_buffer', 'retransmission_delay_ms', 'queue_size', 'bitrate', 'qos_priority', 'retransmission_rate', 'queue_policy', 'gateway_maximum_messages_s', 'retransmission_enabled', 'gateway_maximum_routes', 'retry_limit', 'reserved_bandwidth_percent'}]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.update(integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    source=source['source'],source_revision=source['source_revision'],simulation_relevant=False,
+                    description='Actual selected CAN-family wire data field. CC, FD discrete encoded lengths and XL limits are separate; no implicit padding or payload8 default.')
+        for key,kind,unit,options,minimum,maximum,meaning in [('gcan_family',
+  'select',
+  None,
+  ['CAN_CC', 'CAN_FD', 'CAN_XL'],
+  None,
+  None,
+  'Actual transmitted frame family, unknown. A CAN FD/XL-capable controller may send CC frames, so '
+  'controller capability does not select this family.'),
+ ('gcan_transport_binding',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual registered can/can_fd/can_xl link/controller/PHY/bit-timing configuration reference, '
+  'unknown. Generic wrapper has no independent physical rate.'),
+ ('gcan_implementation_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual encoding/edition/controller/device capability reference, unknown. Generic CAN is an NIS '
+  'abstraction, not a fourth normative CAN generation.'),
+ ('gcan_schedule_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  'Required actual identifier ownership/traffic/interference/error/queue schedule reference, unknown. Family '
+  'shape does not prove arbitration response time.'),
+ ('gcan_frame_format',
+  'select',
+  None,
+  ['STANDARD', 'EXTENDED', 'XL'],
+  None,
+  None,
+  'Actual CC/FD11-bit or29-bit frame format, or XL separated priority/acceptance format. No inferred '
+  'standard format.'),
+ ('gcan_frame_kind',
+  'select',
+  None,
+  ['DATA', 'REMOTE'],
+  None,
+  None,
+  'Actual DATA/REMOTE frame. Only CC supports remote requests; remote wire data is empty even when requested '
+  'data length is nonzero.'),
+ ('gcan_identifier',
+  'number',
+  None,
+  None,
+  0,
+  536870911,
+  'Actual CC/FD arbitration identifier, unknown. Standard11-bit ceiling2047, extended29-bit '
+  'ceiling536870911. Not XL acceptance or priority field.'),
+ ('gcan_priority_id',
+  'number',
+  None,
+  None,
+  0,
+  2047,
+  'Actual XL11-bit priority ID, unknown. Not a CAN CC/FD application identifier or generic QoS priority3.'),
+ ('gcan_acceptance_field',
+  'number',
+  None,
+  None,
+  0,
+  4294967295,
+  'Actual XL32-bit acceptance field, unknown, separate from arbitration priority.'),
+ ('gcan_requested_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  8,
+  'Actual CC remote requested length0..8, unknown; not transmitted remote payload or FD/XL data length.')]:
+            native=field(key,key.replace('gcan_','').replace('_',' '),'communication','route',field_type=kind,
+                unit=unit,options=options,minimum=minimum,maximum=maximum,description=meaning,simulation_relevant=False)
+            native.update(required=key in TECHNOLOGY_SEMANTICS['generic_can']['required_parameters'],integer=kind=='number',
+                parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',source=source['source'],source_revision=source['source_revision'])
+            fields.append(native)
+    if technology_id == 'fsoe':
+        source=REVIEW_RATE_PROPOSALS['fsoe']
+        fields=[item for item in fields if item['key'] not in {'retry_limit', 'bitrate', 'queue_size', 'qos_priority', 'gateway_output_buffer', 'sync_method', 'reserved_bandwidth_percent', 'gateway_input_buffer', 'retransmission_enabled', 'retransmission_delay_ms', 'gateway_maximum_throughput', 'mtu_bytes', 'queue_policy', 'gateway_maximum_routes', 'retransmission_rate', 'gateway_maximum_messages_s', 'duplex', 'vlan_id', 'rate_limit_bit_s'}]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None)
+                item.pop('max',None)
+                item.update(min=1,integer=True,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',
+                    schema_when={'fsoe_profile':'BASE_5100_1_2'},
+                    source=source['source'],source_revision=source['source_revision'],simulation_relevant=False,
+                    description='Actual selected-direction safe data: one byte or even count for reviewed base format; mapped complete container capacity is separate.')
+        for key,kind,unit,options,minimum,maximum,default,meaning in [('fsoe_profile',
+  'select',
+  None,
+  ['BASE_5100_1_2', 'ENHANCEMENTS_5120', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  'BASE_5100_1_2',
+  'Source-qualified base declaration proposal; ETG5120 enhancements require independent matched '
+  'edition/implementation bounds.'),
+ ('fsoe_role',
+  'select',
+  None,
+  ['MASTER', 'SLAVE'],
+  None,
+  None,
+  None,
+  'Actual safety protocol instance role; EtherCAT main-device/subdevice roles are independent.'),
+ ('fsoe_transport_binding',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  None,
+  'Required actual black-channel link/process-data/buffer mapping reference; no implicit '
+  'EtherCAT100M/Ethernet inherited rate.'),
+ ('fsoe_implementation_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  None,
+  'Required matched actual safety device/firmware/protocol edition and supported data limits reference, '
+  'unknown.'),
+ ('fsoe_connection_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  None,
+  'Required actual unique connection ID/slave address/parameter/configuration reference, unknown.'),
+ ('fsoe_timing_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  None,
+  'Required actual direction-dependent watchdog/whole exchange/transport mapping bounds and endpoint timing '
+  'reference, unknown.'),
+ ('fsoe_direction',
+  'select',
+  None,
+  ['MASTER_TO_SLAVE', 'SLAVE_TO_MASTER'],
+  None,
+  None,
+  None,
+  'Actual safe-data direction. Configured input/output lengths may differ; never duplicate one length into '
+  'both.'),
+ ('fsoe_master_safe_bytes',
+  'number',
+  'Byte',
+  None,
+  1,
+  None,
+  None,
+  'Actual master-to-slave safe-data capacity, unknown. One byte or even count; bounded by actual '
+  'device/process-data mapping.'),
+ ('fsoe_slave_safe_bytes',
+  'number',
+  'Byte',
+  None,
+  1,
+  None,
+  None,
+  'Actual slave-to-master safe-data capacity, unknown, independent of master direction. No '
+  'universal1486-byte maximum.'),
+ ('fsoe_crc_count',
+  'number',
+  None,
+  None,
+  1,
+  None,
+  None,
+  'Actual CRC word count=ceil(selected safe bytes/2). One-byte exception uses virtual zero in CRC '
+  'calculation, not an extra wire payload byte.'),
+ ('fsoe_crc_word_bytes',
+  'number',
+  'Byte',
+  None,
+  2,
+  2,
+  2,
+  'Baseline two-octet CRC field per block; not a single checksum overhead for all safe data.'),
+ ('fsoe_command_bytes',
+  'number',
+  'Byte',
+  None,
+  1,
+  1,
+  1,
+  'Baseline one command octet; not an EtherCAT datagram header.'),
+ ('fsoe_connection_bytes',
+  'number',
+  'Byte',
+  None,
+  2,
+  2,
+  2,
+  'Baseline two ConnID octets at end of PDU; connection identifier differs from safety slave address.'),
+ ('fsoe_frame_bytes',
+  'number',
+  'Byte',
+  None,
+  6,
+  None,
+  None,
+  'Actual safety container CMD+safe data+2*CRCcount+ConnID. Six-byte minimum corresponds to one safe byte; '
+  'excludes black-channel framing.'),
+ ('fsoe_pdo_capacity_bytes',
+  'number',
+  'Byte',
+  None,
+  6,
+  None,
+  None,
+  'Actual mapped black-channel process-data container capacity; full FSoE frame must fit, not just safe '
+  'payload.'),
+ ('fsoe_state',
+  'select',
+  None,
+  ['RESET', 'SESSION', 'CONNECTION', 'PARAMETER', 'DATA'],
+  None,
+  None,
+  None,
+  'Actual protocol state, unknown. Saved state declaration does not execute handshake or release safe '
+  'outputs.'),
+ ('fsoe_data_command',
+  'select',
+  None,
+  ['PROCESS_DATA', 'FAILSAFE_DATA'],
+  None,
+  None,
+  None,
+  'Actual outgoing data-state command, unknown. Independent peer command is not inferred; no auto '
+  'ProcessData release.'),
+ ('fsoe_command',
+  'number',
+  None,
+  None,
+  0,
+  255,
+  None,
+  'Actual wire command octet. Public base Reset0x2A/Data Process0x36/FailSafe0x08 constraints; remaining '
+  'startup command encoding requires source.'),
+ ('fsoe_conn_id',
+  'number',
+  None,
+  None,
+  0,
+  65535,
+  None,
+  'Actual16-bit ConnID unknown. Zero before connection allocation/reset; Data requires nonzero. Uniqueness '
+  'requires actual network configuration.'),
+ ('fsoe_slave_address',
+  'number',
+  None,
+  None,
+  1,
+  65535,
+  None,
+  'Actual configured16-bit safety slave address, unknown; must match endpoint setting. Distinct from '
+  'EtherCAT address and ConnID.'),
+ ('fsoe_peer_address',
+  'number',
+  None,
+  None,
+  1,
+  65535,
+  None,
+  'Actual peer accepted/configured safety slave address, unknown, must equal selected endpoint address; '
+  'scalar equality is not commissioning evidence.'),
+ ('fsoe_session_id',
+  'number',
+  None,
+  None,
+  0,
+  65535,
+  None,
+  'Actual locally generated16-bit session ID, unknown. Not default0, not an on-wire field in every Data '
+  'PDU.'),
+ ('fsoe_peer_session_id',
+  'number',
+  None,
+  None,
+  0,
+  65535,
+  None,
+  'Actual independently generated peer session ID, unknown. Not forced equal to local session or copied from '
+  'it.'),
+ ('fsoe_sequence',
+  'number',
+  None,
+  None,
+  0,
+  65535,
+  None,
+  'Actual internal virtual sequence, unknown; base Data1..65535, absent as a standalone wire field. '
+  'Increment/rollover/CRC-change mechanism needs executor.'),
+ ('fsoe_crc0',
+  'number',
+  None,
+  None,
+  0,
+  65535,
+  None,
+  'Actual current16-bit CRC0, unknown. Scalar bounds do not recompute CRC chain/virtual '
+  'sequence/session/ConnID/block index.'),
+ ('fsoe_previous_crc0',
+  'number',
+  None,
+  None,
+  0,
+  65535,
+  None,
+  'Actual previous received CRC0 in inherited chain, unknown. Not default0 outside actual reset.'),
+ ('fsoe_crc_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  None,
+  'Actual encoded/container/chain/sequence/session/block-index integrity evidence, unknown. Safety CRC is '
+  'not cryptographic authentication.'),
+ ('fsoe_master_watchdog_ms',
+  'number',
+  'ms',
+  None,
+  1,
+  65535,
+  None,
+  'Actual base communication watchdog1..65535ms from matched configuration; no universal shortest1ms or '
+  'sampled1000ms default.'),
+ ('fsoe_slave_watchdog_ms',
+  'number',
+  'ms',
+  None,
+  1,
+  65535,
+  None,
+  'Actual peer accepted same connection communication watchdog, independently sourced; setting alone is not '
+  'a live watchdog or safety-response certificate.'),
+ ('fsoe_exchange_bound_ms',
+  'number',
+  'ms',
+  None,
+  0.001,
+  None,
+  None,
+  'Actual complete bidirectional exchange bound, unknown, must be below both configured watchdogs. Not a '
+  'single EtherCAT frame cycle.'),
+ ('fsoe_parameter_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  None,
+  None,
+  'Actual complete parameter-transfer stream bytes, unknown. Fragmented across frames if needed; not '
+  'restricted to one frame or copied safe-data length.'),
+ ('fsoe_parameter_remaining_bytes',
+  'number',
+  'Byte',
+  None,
+  0,
+  None,
+  None,
+  'Actual remaining parameter stream count0..actual total, unknown. Counter alone does not certify accepted '
+  'safety application parameters.'),
+ ('fsoe_parameters_accepted',
+  'boolean',
+  None,
+  None,
+  None,
+  None,
+  None,
+  'Actual peer parameter acceptance unknown; Data requires true declaration, but protocol/runtime acceptance '
+  'remains unexecuted.'),
+ ('fsoe_mapping_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  None,
+  'Actual ESI/PDO/black-channel buffering and direction/mapping version evidence, unknown; require '
+  'verification after parameter changes.'),
+ ('fsoe_safe_output_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  None,
+  'Actual defined failure/output response and safety application configuration, unknown. Do not infer '
+  'all-zero application safe state universally.'),
+ ('fsoe_safety_requirement',
+  'select',
+  None,
+  ['SIL1', 'SIL2', 'SIL3', 'PL_A', 'PL_B', 'PL_C', 'PL_D', 'PL_E', 'DEVICE_SPECIFIC'],
+  None,
+  None,
+  None,
+  'Actual project safety-integrity requirement, unknown. Protocol capability alone does not certify '
+  'device/system SIL or PL.'),
+ ('fsoe_assurance_source',
+  'text',
+  None,
+  None,
+  None,
+  None,
+  None,
+  'Actual matched safety-device/system validation/response/certificate reference, unknown. NIS declaration '
+  'checks are not a safety certification.')]:
+            native=field(key,key.replace('fsoe_','').replace('_',' '),'timing' if unit=='ms' else 'physical','route',
+                field_type=kind,unit=unit,options=options,minimum=minimum,maximum=maximum,
+                default=default if key=='fsoe_profile' else None,description=meaning,simulation_relevant=False)
+            native.update(required=key in TECHNOLOGY_SEMANTICS['fsoe']['required_parameters'],
+                integer=kind=='number' and key!='fsoe_exchange_bound_ms',
+                parameter_origin='TRANSPORT_PROFILE' if default is not None else 'DEVICE_CONFIGURATION',
+                default_status='PROPOSED' if default is not None else 'UNKNOWN',
+                source=source['source'],source_revision=source['source_revision'])
+            if default is not None and key!='fsoe_profile':
+                native.update(conditional_defaults=[{'when':{'fsoe_profile':'BASE_5100_1_2'},'value':default}],default_status='PROPOSED_CONDITIONAL')
+            if key not in TECHNOLOGY_SEMANTICS['fsoe']['required_parameters']:
+                native['schema_when']={'fsoe_profile':'BASE_5100_1_2'}
             fields.append(native)
     if technology_id == 'foundation_fieldbus_h1':
         source=REVIEW_RATE_PROPOSALS['foundation_fieldbus_h1']

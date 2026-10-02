@@ -1,0 +1,48 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 21
+OS81092
+6.4 FIFO Message Exchange
+All FIFO Data messages require a status message response from the receiving device. For example, an ICM FIFO Data
+message sent to INIC results in the following status message being sent to the EHC:
+ICM:Status(XmitSuccess)
+This status message indicates the OS81092 received t he message successfully. Likewise, when the OS81092 sends
+a FIFO Data message to the EHC (from the network or as a response to a previous request), the EHC is required to
+respond with a status message indicating message reception was successful.
+INIC provides an application watchdog to monitor the Port Message transfer during a predefined time frame. The watch-
+dog timer times out under either of the following two cases:
+• a status message response to a data message is not sent by the EHC within the timeout period, or
+• INIC does not receive an MCM or ICM data message from the EHC within the timeout period.
+The watchdog timer is configured through the WatchdogMode() INIC function. For more information on configuring the
+watchdog timer, refer to the OS81092 INIC API User’s Manual [2].
+6.4.1 MOST CONTROL MESSAGES (MCM)
+MOST Control Messages (MCMs) are transferred between INIC and the EHC on either the MediaLB Port or the Control
+Port. MCMs can target the EHC FBlocks, INIC’s FBlock NBMIN, or FBlocks that exist on the MOST Network. Segmented
+MCM messages are supported.
+The default structure of an MCM sent from INIC to the EHC:
+PML.06.04.TgtDevType.SrcDevID.FBlockID.InstID.FktID.OpType.TelID.Length.Data
+The default structure of an MCM sent from the EHC to INIC:
+PML.05.04.TgtDevID.FBlockID.InstID.FktID.OpType.TelID.Length.Data
+6.4.2 INIC CONTROL MESSAGES (ICM)
+INIC Control Messages (ICMs) are very similar to MCM messages, with the exception that ICM messages are always
+to/from the local FBlock INIC directly. Unlike MCM messages, ICM messages do not support segmentation.
+ICM and MCM messages use separate FIFOs; therefore,  ICM messages are never blocked by MCM messages that
+may need to be retried, or fail to get sent altogether. The ICM Rx FIFO and ICM Tx FIFO directly interface with the local
+FBlock INIC (which is always available) and provide faster response times for system-important functions, such as the
+watchdog timer.
+The default structure of an ICM sent from INIC to the EHC:
+PML.01.14.FktID.OpType.0.Length.Data
+The default structure of an ICM sent from the EHC to INIC:
+PML.01.14.FktID.OpType.0.Length.Data
+6.4.3 MOST DATA PACKETS (MDP)
+For MOST Data Packets (MDPs), INIC acts as a liaison between t he EHC and the MOST Network (no INIC internal
+FBlocks handle MDPs). All MDP messages from the EHC must target devices that reside on the MOST Network. Sim-
+ilarly, INIC passes all MDPs from the MOST Network to the EHC.
+The default structure of an MDP sent from INIC to the EHC:
+PML.05.0C.TgtDevType.SrcDevID.(FillerBytes).Length.Data
+The default structure of an MDP sent from the EHC to INIC:
+PML.05.0C.Prio.TgtDevID.(FillerBytes).Length.Data
+FIFO Status messages always indicate a successful transmission and are only returned for the MDP FIFO when using
+the Control Port to exchange asynchronous packets.
+Note: MDP messages from the EHC to INIC require the entire message header
+(includes: PML, PMHL, FPH, and FDH) be a four-byte multiple. If the mes-
+sage header byte length is not divisible by four, filler bytes (containing zeros)
+must be added after the FDH, and PML must be updated accordingly.

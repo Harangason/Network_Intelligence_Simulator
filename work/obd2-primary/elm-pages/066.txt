@@ -1,0 +1,99 @@
+66 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+to cause the ELM327 to shift to Low Power operation,
+if there is no OBD activity for some time. If you follow
+the logic path, you will see that b7 and b5 of PP 0F
+must both be ‘1’, as well as b7 of PP 0E in order to
+allow this switch to occur. The default time that it
+allows before switching is set by b4, unless you have
+set a value with the AT AMT command. Setting the
+Activity Monitor Timeout to 00 blocks all the Activity
+Monitor outputs.
+The final way to enter the low power mode is by a
+low level appearing at the ignition monitor input
+(pin 15), with both b2 and b7 of PP 0E set to ‘1’.
+The ignition monitor logic inserts a short internal
+delay (‘debounce’) to be sure that the low level seen is
+a legitimate ‘key off’ and not just some noise. After it is
+sure, the ELM327 will then send a low power alert
+message (‘LP ALERT’), and 2 seconds later it will
+switch to Low Power operation, just the same as was
+Figure 6. Enabling the Low Power Mode
+Power Control (continued)
+OBD
+inputs
+AT LP
+command
+b4
+b7
+b5
+1 min
+remaining
+print
+LP ALERT
+b7
+Go to
+Low Power
+65 msec
+debounce
+IgnMon
+(pin 15)
+voltage
+is low
+RS232 Rx
+(pin 18)
+input is
+quiet
+all are
+quiet
+sent a
+message
+not
+monitoring
+b0*
+flash OBD
+Tx LED
+activity
+monitor
+timer ≥
+setting?
+AMT ≠ 00
+b3*
+print
+ACT ALERT
+b7
+b5* 1 sec
+delay
+2 sec
+delay
+b3
+print
+ACT ALERT
+1 sec
+delay
+RS232
+detector
+not
+monitoring
+b7
+b2
+voltage
+monitor
+Notes
+PP 0F bits are shown with an asterisk (*).
+All other bits are for PP 0E.
+represents an AND gate
+represents an OR gate
+5 min or 20 min
+timer
+(read with
+AT AMC)
+timer
+Timeout setting
+AMT value, if set
+else
+150 sec if b4*= 1
+30 sec if b4*= 0
+yes
+b7*

@@ -1,0 +1,44 @@
+TC_I_02_CS: Show EV Driver Final Total Cost After Charging
+Test case name Show EV Driver Final Total Cost After Charging
+Test case Id TC_I_02_CS
+Use case Id(s) I03
+Requirement(s) I03.FR.01, I03.FR.03
+System under test Charging Station
+Description While a transaction is ongoing, the driver wants to know how much the running total cost is, updated at a
+relevant interval.
+Purpose To verify if the Charging Station is able to correctly display the total cost as described in the OCPP
+specification.
+Prerequisite(s) - The Charging Station supports Tariff Information
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present valid idToken
+1. Execute Reusable State StopAuthorized
+Note: IF Message TransactionEventRequest
+- eventType Ended THEN
+Message TransactionEventResponse
+- totalCost <Generated Cost>
+2. Execute Reusable State EVConnectedPostSession Note: IF Message TransactionEventRequest
+- eventType Ended THEN
+Message TransactionEventResponse
+- totalCost <Generated Cost>
+3. Execute Reusable State EVDisconnected Note: IF Message TransactionEventRequest
+- eventType Ended THEN
+Message TransactionEventResponse
+- totalCost <Generated Cost>
+4. Execute Reusable State ParkingBayUnoccupied Note: IF Message TransactionEventRequest
+- eventType Ended THEN
+Message TransactionEventResponse
+- totalCost <Generated Cost>
+Tool validations
+N/a
+Post scenario validations:
+- N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 311/914 Part 6 - Test Cases

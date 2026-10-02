@@ -1,0 +1,59 @@
+TC_I_110_CS: Clear Tariffs - DefaultTariff
+Test case name Clear Tariffs - DefaultTariff
+Test case Id TC_I_110_CS
+Use case Id(s) I10
+Requirement(s) I10.FR.02, I10.FR.03, I10.FR.06
+System under test Charging Station
+Description To clear previously set tariffs on the charging station.
+Purpose To verify if the Charging Station correctly clearing tariffs.
+Prerequisite(s) - The Charging Station supports local cost calculation using the Tariff mechanism
+(TariffCostCtrlr.Enabled[Tariff] exists and ReadWrite or is true and ReadOnly).
+Before (Preparations)
+Configuration State:
+- TariffCostCtrlr.Enabled[Tariff] is true
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1A
+tariff.currency EUR
+energy.prices[0].priceKwh 0.10
+4. The Charging Station responds with
+SetDefaultTariffResponse
+3. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1B
+tariff.validFrom <Current DateTime + 1:00 hour>
+tariff.currency EUR
+energy.prices[0].priceKwh 0.20
+6. The Charging Station responds with
+SetDefaultTariffResponse
+5. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1C
+tariff.validFrom <Current DateTime + 2:00 hour>
+tariff.currency EUR
+energy.prices[0].priceKwh 0.30
+8. The Charging Station responds with
+SetDefaultTariffResponse
+7. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1D
+tariff.validFrom <Current DateTime + 3:00 hour>
+tariff.currency EUR
+energy.prices[0].priceKwh 0.40
+10. The Charging Station responds with ClearTariffsResponse
+9. The Test System sends a ClearTariffsRequest with
+tariffIds[0] Test System1B
+tariffIds[1] Test System1A
+12. The Charging Station responds with ClearTariffsResponse
+11. The Test System sends a ClearTariffsRequest with
+tariffIds <omitted>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 426/1383 Part 6 - Test Cases

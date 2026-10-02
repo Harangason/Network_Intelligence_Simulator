@@ -1,0 +1,51 @@
+TC_C_123_CS: Ad hoc payment via stand-alone payment terminal - local cost
+calculation
+Test case name Ad hoc payment via stand-alone payment terminal - local cost calculation
+Test case Id TC_C_123_CS
+Use case Id(s) C24
+Requirement(s) C24.FR.03, C24.FR.04
+System under test Charging Station
+Description In order to test that Charging Station supports ad hoc payment via stand-alone payment terminal with local
+cost calculation.
+Purpose To verify if the Charging Station is able to handle ad hoc payment via stand-alone payment terminal with
+local cost calculation.
+Prerequisite(s) - Charging Stations does not have an integrated Payment Terminal. Payment kiosk is used instead.
+Before (Preparations)
+Configuration State:
+TariffCostCtrlr.Enabled[Tariff] true
+TariffCostCtrlr.Enabled[Cost] true
+TariffCostCtrlr.Currency is EUR
+PaymentCtrlr.Enabled is false
+AuthCtrlr.AuthorizeRemoteStart is true (If mutability is ReadWrite)
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.fixedFee.taxRates[0].type MyTax
+tariff.fixedFee.taxRates[0].tax 21
+tariff.fixedFee.prices.priceFixed[0] 12.45
+3. Execute Reusable State AuthorizedPaymentTerminal (Remote) with:
+(At TransactionEventResponse)
+- transactionLimit.maxCost 50.00
+4. Execute Reusable State EVConnectedPreSession
+5. Execute Reusable State EnergyTransferStarted
+Tool validations
+* Step 2:
+Message SetDefaultTariffResponse
+- status must be Accepted
+* Step 3 and 4 and 5 combined: (First transactionEventRequest with idToken)
+Message TransactionEventRequest with:
+- idToken must be <Not empty>
+- idToken.type must be DirectPayment
+- transactionInfo.transactionId must be <transactionId>
+- transactionInfo.transactionLimit.maxCost must be 50.00
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 212/1383 Part 6 - Test Cases

@@ -1,0 +1,47 @@
+1.5. Certificate Revocation
+This section is normative.
+In some cases a certificate may become invalid prior to the expiration of the validity period. Such cases include changes of the
+organization name, or the compromise or suspected compromise of the certificate’s private key. In such cases, the certificate
+needs to be revoked or indicate it is no longer valid. The revocation of the certificate does not mean that the connection needs to
+be closed as the connection can stay open longer than 24 hours.
+Different methods are recommended for certificate revocation, see below Table.
+Table 23. Recommended revocation methods for the different certificates.
+Certificate Revocation
+CSMS certificate Fast expiration
+Charging Station certificate Online verification
+Firmware Signing certificate Online verification
+Table 24. Certificate Revocation requirements
+ID Precondition Requirement definition
+A00.FR.701 Fast expiration SHOULD be used to revoke the CSMS certificate. (See
+Note 1)
+A00.FR.702 The CSMS SHOULD use online certificate verification to verify the validity
+of the Charging Station certificates.
+A00.FR.703 It is RECOMMENDED that a separate certificate authority server is used to
+manage the certificates.
+A00.FR.704 A00.FR.703 This server SHOULD also keep track of which certificates have been
+revoked.
+A00.FR.705 The CSMS SHALL verify the validity of the certificate with the certificate
+authority server. (See Note 2)
+A00.FR.707 Prior to providing the certificate for firmware validation to the Charging
+Station, the CSMS SHOULD validate both, the certificate and the signed
+firmware update.
+Note 1: With fast expiration, the certificate is only valid for a short period, less than 24 hours. After that the server needs to request
+a new certificate from the Certificate Authority, which may be the CSO itself (see section Certificate Hierarchy). This prevents the
+Charging Stations from needing to implement revocation lists or online certificate verification. This simplifies the implementation
+of certificate management at the Charging Station and reduces communication costs at the Charging Station side. By requiring fast
+expiration, if the certificate is compromised, the impact is reduced to only a short period.
+When the certificate chain should becomes compromised, attackers could used forged certificates to trick a Charging Station to
+connect to a "fake" CSMS. By using fast expiration, the time a Charging Station is vulnerable is greatly reduced.
+The Charging Station always communicates with the Certificate Authority through the CSMS, this way, if the Charging Station is
+compromised, the Charging Station cannot attack the CA directly.
+Note 2: This allows for immediate revocation of Charging Station certificates. Revocation of Charging Station certificates will
+happen for instance when a Charging Station is removed. This is more common than revoking the CSMS certificate, which is
+normally only done when it is compromised.
+1.6. Installation
+This section is normative.
+Unique credentials should be used to authenticate each Charging Station to the CSMS, whether they are the password used for
+HTTP Basic Authentication (see Charging Station Authentication) or the Charging Station certificate. These unique credentials have
+to be put on the Charging Station at some point during manufacturing or installation.
+Table 25. Certificate Installation requirements
+Edition 2, 2025-12-03 A. Security
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 31/803 Part 2 - Specification

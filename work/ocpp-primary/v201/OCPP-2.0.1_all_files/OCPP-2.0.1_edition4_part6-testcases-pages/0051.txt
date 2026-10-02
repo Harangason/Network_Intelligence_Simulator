@@ -1,0 +1,36 @@
+TC_B_15_CS: Get Base Report - Not Supported base report
+Test case name Get Base Report - Not Supported base report
+Test case Id TC_B_15_CS
+Use case Id(s) B07
+Requirement(s) B07.FR.02
+System under test Charging Station
+Description CSMS requests a base report that is not supported.
+Purpose To test that Charging Station returns NotSupported when a SummaryInventory base report is requested, but
+Charging Station does not support it.
+Prerequisite(s) Charging Station implementation does not support the optional SummaryInventory report.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with:
+GetBaseReportResponse
+1. Test System sends GetBaseReportRequest with:
+- requestId = <Generated requestId>
+- reportBase = SummaryInventory
+Note(s):
+- Test System waits to make sure CS does not send a NotifyReportRequest
+Tool validations
+* Step 2:
+Charging Station responds with:
+GetBaseReportResponse with:
+- status = NotSupported
+- statusInfo is absent or statusInfo.reasonCode = "UnsupportedParam"
+Post scenario validations:
+N/A
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 49/914 Part 6 - Test Cases

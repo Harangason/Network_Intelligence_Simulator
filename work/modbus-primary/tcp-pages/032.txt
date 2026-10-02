@@ -1,0 +1,30 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+• Length
+The server calculates the size of the MODBUS PDU plus the Unit Identifier byte.
+This value is set in the "Length" field.
+• Protocol Identifier
+The Protocol Identifier field is set to 0x 0000 (MODBUS protocol), as it was given
+within the received MODBUS request.
+• Transaction Identifier
+This field is set to the "Transaction Identif ier" value that was associated with the
+original request and memorized in the transaction context.
+Then the MODBUS response must be returned to the right MODBUS Client using the 
+TCP connection memorized in the transaction context. When the response is sent, the 
+transaction context must be free. 
+5 IMPLEMENTATION GUIDELINE 
+The objective of this section is to propose an example of a messaging service 
+implementation.  
+The model describes below can be used as a guideline during a client or a server 
+implementation of a MODBUS messaging service. 
+Informative Note:  The messaging service implementation is the responsibility of the 
+User. 
+5.1 OBJECT MODEL DIAGRAM 
+Communication application layer
+TCP management
+Configuration layer
+InterfaceUserApplication
+InterfaceIndicationMsg InterfaceResponseMsg
+User Application
+Figure 18: MODBUS Messaging Service Object Model Diagram  
+October 24, 2006 http://www.Modbus.org 32/46
+Modbus Organization  

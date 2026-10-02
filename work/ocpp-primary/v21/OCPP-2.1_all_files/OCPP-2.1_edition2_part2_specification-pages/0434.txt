@@ -1,0 +1,117 @@
+ID Precondition Requirement definition Note
+L02.FR.15 When a Charging Station is installing
+new Firmware OR
+is going to install new Firmware, but
+has received an UpdateFirmware
+command to install it at a later time
+AND
+the Charging Station receives a new
+UpdateFirmwareRequest
+The Charging Station SHOULD cancel
+the ongoing firmware update AND
+respond with status
+AcceptedCanceled.
+The Charging Station SHOULD NOT
+first check if the new firmware file
+exists, this way the CSMS will be able
+to cancel an ongoing firmware update
+without starting a new one. Same as
+L01.FR.24
+L02.FR.16 Charging Station receives a
+TriggerMessageRequest for
+FirmwareStatusNotification
+AND
+last sent
+FirmwareStatusNotificationRequest
+had status = Installed
+Charging Station SHALL return a
+FirmwareStatusNotificationRequest
+with status = Idle.
+Same as L01.FR.25
+L02.FR.17 Charging Station receives a
+TriggerMessageRequest for
+FirmwareStatusNotification
+AND
+last sent
+FirmwareStatusNotificationRequest
+had NOT status Installed
+Charging Station SHALL return a
+FirmwareStatusNotificationRequest
+with the last sent status.
+Same as L01.FR.26
+L02.FR.18 L02.FR.15
+AND
+the Charging Station is unable to
+cancel the firmware installation
+The Charging Station MAY respond
+with status = Rejected.
+Same as L01.FR.27
+L02.FR.19 When the Charging Station has failed
+all retry attempts to download the
+firmware.
+The Charging Station SHALL send a
+FirmwareStatusNotificationRequest
+with status DownloadFailed.
+A Charging Station MAY send a new
+Downloading status upon each retry
+attempt. Same as L01.FR.30
+L02.FR.20 When the Charging Station has
+successfully installed and activated
+the new firmware
+The Charging Station SHALL send a
+FirmwareStatusNotificationRequest
+with status Installed.
+Activation of the new firmware may
+involve a reboot.
+L02.FR.21 When the Charging Station has
+successfully installed the new
+firmware AND
+the Charging Station needs to reboot
+before activating the new firmware
+The Charging Station SHALL either:
+(a) send an optional
+FirmwareStatusNotificationRequest
+with status = InstallRebooting
+before rebooting and send a
+mandatory
+FirmwareStatusNotificationRequest
+with status = Installed by the newly
+activated firmware, or
+(b) only send a
+FirmwareStatusNotificationRequest
+with status set to Installed without
+reporting the reboot and activation of
+the new firmware.
+Option (a) is preferred, because it
+notifies CSMS of an upcoming reboot
+of the Charging Station, and the final
+status = Installed is sent by the
+new firmware image, so that CSMS
+can be sure that the new firmware is
+active. This is not guaranteed by
+option (b) when rebooting of the new
+firmware should fail.
+L02.FR.22 L02.FR.02
+AND
+The Charging Station has ongoing
+transactions
+AND
+a reboot is needed to activate the
+installed firmware
+The Charging Station SHALL wait until
+all transactions have ended, before
+activating the installed firmware.
+E.g. in case of A/B firmware updates.
+L02.FR.23 When the Charging Station has
+successfully downloaded the firmware
+AND
+installDateTime is not set AND
+Charging Station is waiting for a
+transaction to finish
+The Charging Station MAY send a
+FirmwareStatusNotificationRequest
+with status InstallScheduled.
+The case where installDateTime is set
+is covered by L02.FR.10.
+Edition 2, 2025-12-03 L. Firmware Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 421/803 Part 2 - Specification

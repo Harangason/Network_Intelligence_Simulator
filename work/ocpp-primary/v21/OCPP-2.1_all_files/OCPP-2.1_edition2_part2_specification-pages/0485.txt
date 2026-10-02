@@ -1,0 +1,50 @@
+2.5. Frequent Periodic Variable Monitoring
+The following use cases describe a more efficient method of reporting values of periodic monitors that need to be reported
+frequently. A Charging Station opens a so-called "event stream" for a specific monitor. This can be at the request of CSMS in a
+SetVariableMonitoringRequest, or by Charging Station when it is reporting periodic values for a preconfigured or hardwired monitor.
+Charging Station may send these periodic values in chunks to save overhead. For example, a periodic monitor of 1 second can be
+reported in one NotifyPeriodicEventStream message that is sent every minute with 60 values.
+The NotifyPeriodicEventStream message is of a special unconfirmed message type ("SEND") that requires no response. This allows
+for much faster sending of the data.
+N11 - Set Frequent Periodic Variable Monitoring
+New in OCPP 2.1
+No. Type Description
+1 Name Set Frequent Periodic Variable Monitoring
+2 ID N11
+3 Objective(s) To give the CSMS the ability to request efficient frequent periodic monitoring of variables.
+4 Description This use case describes how the CSMS requests the Charging Station to set monitoring triggers
+on Variables and use an event stream to report a set of measured values, for example, once every
+60 seconds to reduce the communications overhead of individual NotifyEventRequests.
+Actors Charging Station, CSMS, CSO
+Scenario description #1 Variable monitor set by CSMS
+1. The CSMS sends a SetVariableMonitoringRequest for two variables of a component to the
+Charging Station with monitorEnumType = Periodic or PeriodicClockAligned and
+with eventStream.interval/values describing how often the stream must be flushed.
+2. Charging Station responds with a SetVariableMonitoringResponse with
+setMonitoringResult element for each variable and an Accepted status and an id for each
+monitor.
+3. Charging Station creates an event stream for each monitored variable by sending an
+OpenPeriodicEventStreamRequest to CSMS with the constant data for each variable for
+which an event stream is created.
+4. CSMS responds to each OpenPeriodicEventStreamRequest with
+OpenPeriodicEventStreamResponse with status = Accepted.
+5. Every interval seconds or when values values are available Charging Station will send all
+periodic values of a monitor as one message via the NotifyPeriodicEventStream
+message. This message is not acknowledged by CSMS.
+Scenario description #2 Hardwired/PreconfiguredMonitor from Charging Station
+1. Charging Station creates an event stream for each periodic HardWiredMonitor or
+PreconfiguredMonitor by sending an OpenPeriodicEventStreamRequest to CSMS with the
+constant data for each variable for which an event stream is created and
+params.interval/values describing how often the stream will be flushed.
+2. CSMS responds to each OpenPeriodicEventStreamRequest with
+OpenPeriodicEventStreamResponse with status = Accepted.
+3. Every interval seconds or when values values are available Charging Station will send all
+periodic values of a monitor as one message via the NotifyPeriodicEventStream
+message. This message is not acknowledged by CSMS.
+5 Prerequisite(s) Charging Station supports Monitoring
+The specific Variable supports Monitoring
+6 Postcondition(s) The Charging Station activated the set of monitoring triggers on the Variables.
+7 Error handling If Charging Station fails to open an event stream, e.g. because CSMS rejects it, then Charging
+Station will use regular NotifyEventRequest messages.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 472/803 Part 2 - Specification

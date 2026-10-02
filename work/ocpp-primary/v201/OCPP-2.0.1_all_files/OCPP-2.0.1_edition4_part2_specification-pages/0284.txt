@@ -1,0 +1,70 @@
+K12 - Set / Update External Charging Limit Without Ongoing Transaction -
+Requirements
+Table 105. K12 - Requirements
+ID Precondition Requirements Note
+K12.FR.01 When an external charging
+limit/schedule is received
+while no transactions are
+ongoing
+The total load of all EVSEs SHALL NOT exceed this given
+limit.
+K12.FR.02 K12.FR.01
+AND
+Charging limit changed by
+more than:
+LimitChangeSignifica
+nce
+The Charging Station SHALL inform the CSMS of the new
+charging limit/schedule imposed by the external system
+by sending a NotifyChargingLimitRequest.
+Same as K11.FR.02
+K12.FR.03 K12.FR.02
+AND
+EnableNotifyCharging
+LimitWithSchedules is
+true
+The NotifyChargingLimitRequest SHALL contain the
+charging limit/schedule as set by the external system.
+Same as K11.FR.03
+K12.FR.04 K12.FR.02 The Charging Station SHALL NOT set the
+chargingLimitSource to CSO in the
+NotifyChargingLimitRequest.
+Same as K11.FR.05
+K12.FR.05 When an external charging
+limit/schedule is received
+The Charging Station SHALL use purpose
+ChargingStationExternalConstraints when reporting
+about this limit (i.e. in a ReportChargingProfilesRequest).
+It is RECOMMENDED to use
+negative values for the id of
+a
+ChargingStationExter
+nalConstraints profile,
+to minimize the risk of a
+clash with an id that CSMS
+might use for a (future)
+charging profile.
+Same as K11.FR.06.
+K13 - Reset / Release External Charging Limit
+No. Type Description
+1 Name Reset / Release External Charging Limit
+2 ID K13
+3 Objective(s) To release a charging limit that was previously imposed.
+4 Description An external control system sends a signal to release a previously imposed charging limit to a
+Charging Station. The Charging Station notifies the CSMS about this.
+Actors External control system, Charging Station, CSMS
+Scenario description 1. External control system releases/removes a charging limit/schedule on the Charging Station
+2. When a transaction is ongoing, the Charging Station calculates the new Charging Schedule and
+adjusts charging speed.
+3. The Charging Station sends a ClearedChargingLimitRequest to notify the CSMS.
+4. The CSMS acknowledges with a ClearedChargingLimitResponse to the Charging Station.
+5. When the change has impact on an ongoing charging transaction and is more than:
+LimitChangeSignificance, the Charging Station sends a TransactionEventRequest to notify
+the CSMS.
+6. The CSMS acknowledges with a TransactionEventResponse to the Charging Station.
+5 Prerequisites Previously, a charging limit was sent to the Charging Station under consideration.
+An external system that can set/clear a charging limit/schedule on the Charging Station.
+6 Postcondition(s) The previously received charging limit is not limiting charging anymore.
+7 Error Handling n/a
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 274/491 Part 2 - Specification

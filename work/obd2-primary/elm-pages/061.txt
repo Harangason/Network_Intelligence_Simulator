@@ -1,0 +1,95 @@
+Altering Flow Control Messages
+ISO 15765-4 (CAN) provides for only eight data
+bytes per frame of data. Of course, there are many
+cases where the data which needs to be sent is longer
+than 8 bytes, and CAN has made provision for this by
+allowing data to be separated into segments, then
+recombined at the receiver.
+To send one of these multi-line messages, the
+transmitter in a CAN system will send a ‘First Frame’
+message, and then wait for a reply from the receiver.
+This reply, called a ‘Flow Control’ message contains
+information concerning acceptable message timing,
+etc., and is required to be sent before the transmitter
+will send any more data. For ISO 15765-4, the type of
+response is well defined, and never changes. The
+ELM327 will automatically send this response for you
+as long as the CAN Flow Control option is enabled
+(CFC1), which it is by default.
+In order to provide complete control over the
+sending of Flow Control messages and their content,
+the ELM327 defines several AT FC commands.
+The way in which the ELM327 responds to a First
+Frame message is determined by the Flow Control
+‘mode’, as set by the AT FC SM command. There are
+currently three modes, as shown in the chart. The
+default Flow Control mode is number ‘0’, meaning that
+the ELM327 will do everything for you.
+Flow Control mode 1 is provided for those users
+that want complete control over their Flow Control
+messages. To use it, you must define both the CAN ID
+(header) and the data bytes that you require to be sent
+in the response to a First Frame message. Note that if
+you try to set the mode before defining these values,
+you will get an error:
+>AT FC SM 1
+?
+You must set the headers and data first:
+>AT FC SH 7E8
+OK
+>AT FC SD 00 11 22
+OK
+and then you can set the mode:
+>AT FC SM 1
+OK
+From this point on, every First Frame message
+received will be responded to with the custom
+message that you have defined (7E8 00 11 22 in this
+example). Note that we show 11 bits for the ID in this
+example, but you may also define 29 bit IDs.
+The third mode currently supported allows setting
+the data bytes which are to be sent, but not the ID bits.
+The ELM327 sets the ID bits in mode 2 from those
+which were received in the First Frame message – it
+does not change them at all. To use this mode, first
+define your data bytes, then activate the mode:
+>AT FC SD 00 11 22
+OK
+>AT FC SM 2
+OK
+At any time while you are experimenting, if you
+should wish to restore the automatic Flow Control
+responses, simply set the mode to 0:
+>AT FC SM 0
+OK
+This will immediately restore the responses to their
+(ISO 15765-4) default settings.
+For most people, there will be little need to
+manipulate these ‘Flow Control’ messages, as the
+defaults are designed to work with the CAN OBD
+standards. If you wish to experiment, these special AT
+commands offer that control for you.
+The following chart summarizes the currently
+supported flow control modes:
+ELM327
+Provides
+FC
+Mode
+0
+1
+2
+ID Bits &
+Data Bytes
+User
+Provides
+ID Bits Data Bytes
+no values
+no values
+ID Bits &
+Data Bytes
+Flow Control Modes
+Note that the ELM327 will only send Flow Control 
+messages if the protocol’s data format is ISO15765-4.
+61 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327

@@ -1,0 +1,93 @@
+Power Control
+Often, the ELM327 is connected to a vehicle for
+only a short time, so power consumption is not of great
+concern. Occasionally, the ELM327 may be connected
+for longer times, however, possibly without the engine
+running. For those applications, it is often desirable to
+be able to put the circuit into a low power ‘standby’
+state, and have it return to normal operation when
+needed. The power control features of the ELM327
+were introduced for this.
+There are four ways in which the ELM327 can be
+placed into the low power standby mode (these are
+shown pictorially in Figure 6). None of them will work
+without having the master enable (ie bit 7 of PP 0E)
+set to ‘1’, which it is by default.
+The first method is with an AT command. You may
+simply send:
+>AT LP
+and the IC will go to the low power mode after a one
+second delay (which allows the controlling circuit a
+little time to perform some housekeeping tasks).
+When in Low Power mode, the ELM327 sets all
+outputs to their recessive/off state, sets pin 3 (J1850
+voltage control) to a low level, and it reverses the state
+of the pin 16 control output. The ELM327 will then
+reduce its own power level, and begin monitoring for
+inputs that would cause a shift back to full power.
+The next method allows automatic switching to the
+low power mode when there has been no RS232 input
+for a period of time - ie the controlling computer has
+stopped for some reason. To enable this method, both
+b7 and b5 of PP 0E must be set to ‘1’. The time delay
+(either 5 or 20 minutes) is set by b4, and the printing of
+a warning is enabled with b3. The warning is handy in
+some cases – it is the activity alert message (‘ACT
+ALERT’) and is sent 1 minute before the timer is about
+to time out. When the timer does time out, you will see
+a low power alert warning (‘LP ALERT’), and then 2
+seconds later, all of the outputs will change as
+described above for the AT LP command.
+In a similar way, the Activity Monitor may be used
+65 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+The Activity Monitor
+The ELM327 contains some firmware that is used
+to monitor the OBD input pins (ie pins 11, 12, 13, and
+24). These routines continually ‘poll’ the inputs, looking
+for any active levels on them. Of course, we don’t want
+to look at a pin while we are sending, so there is also
+some logic to block those inputs during a send, to filter
+the levels, and also to provide timing. Collectively,
+these routines are known as the Activity Monitor.
+The Activity Monitor software ensures that each
+OBD input pin is checked at least once every 4 msec
+(and sometimes as often as every few µsec). This may
+not be perfect (since a single very short message on
+an otherwise quiet bus could be missed), but it does
+make sure that the ELM327 detects normal activity on
+active busses. The presence or absence of activity can
+then be used to cause the ELM327 to go to Low
+Power operation, or wake from it. See the next section
+for details on that.
+If you do not want the Activity Monitor to initiate
+Low Power operation, you may set PP 0F so that only
+‘ACT ALERT’ reports are provided. Of course, you
+may also disable that as well, and make your own
+decisions based on what the Activity Monitor is seeing.
+To help with this, the ELM327 offers an instruction
+that is able to report the current Activity Monitor
+Counts. The count is an internal value that represents
+the time since OBD activity was detected. The actual
+time is given by (AMC value + 1) x 0.65536 seconds.
+To use it, send the AMC Command and note the value
+returned:
+>AT AMC
+31
+In this case, the value returned is 31 hexadecimal
+(or 49 decimal), which means that the ELM327 has not
+detected any OBD activity in the past (49+1) x 0.655 =
+32.8 seconds. The Activity Monitor Count is limited to
+a single byte value (max is FF), and internal logic
+prevents it from ‘rolling over’. That is, it will count to FF
+and stop there.
+After a power on or reset, the Activity Monitor is
+initially disabled (to give you time to perform setup
+tasks), but it will be enabled as soon as you attempt to
+send the first OBD message. Also, the monitor is
+always disabled while the ELM327 is in a monitoring
+mode so that you can use the ELM327 as a reliable
+monitor of bus activity (you don’t want the IC to go to
+sleep when it should be monitoring, or to miss
+anything while waking from sleep).

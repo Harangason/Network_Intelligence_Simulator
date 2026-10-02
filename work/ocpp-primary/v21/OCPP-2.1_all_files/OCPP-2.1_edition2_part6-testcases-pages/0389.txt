@@ -1,0 +1,46 @@
+TC_H_17_CS: Cancel reservation of an EVSE - Success
+Test case name Cancel reservation of an EVSE - Success
+Test case Id TC_H_17_CS
+Use case Id(s) H02
+Requirement(s) H02.FR.02
+System under test Charging Station
+Description The CSMS is able to cancel a reservation by sending a CancelReservationRequest to the Charging Station.
+Purpose To verify if the Charging Station is able to cancel a reservation when receiving a CancelReservationRequest
+from the CSMS.
+Prerequisite(s) The configuration variable ReservationCtrlr.ReservationAvailable is implemented with value true
+Before (Preparations)
+Configuration State:
+ReservationCtrlr.ReservationEnabled is true (If implemented)
+Memory State:
+<Configured evseID> is Reserved
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+CancelReservationResponse
+1. The Test System sends a CancelReservationRequest
+with reservationId is <Generated reservationId>
+3. The Charging Station notifies the CSMS about the status
+change of the connector. 4. The Test System responds accordingly.
+Tool validations
+* Step 2:
+Message: CancelReservationResponse
+- status must be Accepted
+* Step 3:
+For each connector on the <Configured evseId> one of the following messages must be sent:
+Message: StatusNotificationRequest
+- connectorStatus must be Available
+- evseId must be <Configured evseId>
+- connectorId must be <Configured connectorId>
+Message: NotifyEventRequest
+- trigger must be Delta
+- actualValue must be "Available"
+- component.name must be "Connector"
+- evse.id must be <Configured evseId>
+- eves.connectorId must be <Configured connectorId>
+- variable.name must be "AvailabilityState"
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 387/1383 Part 6 - Test Cases

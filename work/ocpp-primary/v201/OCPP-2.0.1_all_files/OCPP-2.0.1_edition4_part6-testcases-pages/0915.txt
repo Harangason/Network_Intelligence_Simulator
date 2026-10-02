@@ -1,0 +1,32 @@
+Main (Test scenario)
+4. The Test System responds with a
+SetChargingProfileResponse with:
+status Accepted
+3. The CSMS sends a SetChargingProfileRequest
+Note(s):
+- If NotifyEVChargingNeedsResponseStatus was Processing, the
+Test System will wait 60 seconds for the request
+5. The Test System sends a NotifyEVChargingScheduleRequest
+with
+evseId <COnfigured evseId>
+chargingSchedule <ChargingSchedule provided at step 3>
+6. The CSMS responds with a
+NotifyEVChargingScheduleResponse.
+7. The Test System sends a TransactionEventRequest with
+triggerReason <ChargingStateChanged>
+transactionInfo.chargingState <Charging>
+8. The CSMS responds with a TransactionEventResponse.
+Tool validations
+* Step 2:
+Message: NotifyEVChargingNeedsResponse
+- Status must be Accepted or Processing
+* Step 3:
+Message: SetChargingProfileRequest
+- chargingProfilePurpose must be <TxProfile>
+- transactionId must be <Provided transactionId from before>
+* Step 4:
+Message: NotifyEVChargingScheduleResponse
+- status must be <Accepted>
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 913/914 Part 6 - Test Cases

@@ -1,0 +1,34 @@
+SHOULD be send to the Central System, with the 'errorCode' field set to: 'NoError'. The Charge Point SHOULD
+add additional information in the 'info' field, Notifying the Central System with the reason of suspension: 'EV side
+disconnected'. The current transaction is not stopped.
+When a Charge Point is configured with StopTransactionOnEVSideDisconnect set to true, a transaction is
+running and the EV becomes disconnected on EV side, then a StatusNotification.req with the state: 'Finishing'
+SHOULD be send to the Central System, with the 'errorCode' field set to: 'NoError'. The Charge Point SHOULD
+add additional information in the 'info' field, Notifying the Central System with the reason of stopping: 'EV side
+disconnected'. The current transaction is stopped.
+When a Charge Point connects to a Central System after having been offline, it updates the Central System about
+its status according to the following rules:
+1. The Charge Point SHOULD send a StatusNotification.req PDU with its current status if the status changed
+while the Charge Point was offline.
+2. The Charge Point MAY send a StatusNotification.req PDU to report an error that occurred while the
+Charge Point was offline.
+3. The Charge Point SHOULD NOT send StatusNotification.req PDUs for historical status change events that
+happened while the Charge Point was offline and that do not inform the Central System of Charge Point
+errors or the Charge Point’s current status.
+4. The StatusNotification.req messages MUST be sent in the order in which the events that they describe
+occurred.
+Upon receipt of a StatusNotification.req PDU, the Central System SHALL respond with a StatusNotification.conf
+PDU.
+4.10. Stop Transaction
+Charge Point Central System
+StopTransaction.req(meterStop, timestamp,
+transactionId, reason, [idTag], [transactionData])
+StopTransaction.conf([idTagInfo])
+Figure 21. Sequence Diagram: Stop Transaction
+When a transaction is stopped, the Charge Point SHALL send a StopTransaction.req PDU, notifying to the Central
+System that the transaction has stopped.
+A StopTransaction.req PDU MAY contain an optional TransactionData element to provide more details about
+transaction usage. The optional TransactionData element is a container for any number of MeterValues, using
+the same data structure as the meterValue elements of the MeterValues.req PDU (See section MeterValues)
+Upon receipt of a StopTransaction.req PDU, the Central System SHALL respond with a StopTransaction.conf PDU.
+43

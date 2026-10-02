@@ -1,0 +1,96 @@
+ID Precondition Requirements Note
+C18.FR.04 When PSP authorizes the
+payment card AND
+PaymentCtrlr.AuthorizeDirectPa
+yment is true
+Charging Station SHALL send an AuthorizeRequest
+with idToken = <PspRef>, type = DirectPayment,
+and additionalInfo containing a list of types
+configured in PaymentCtrlr.PaymentDetails and
+associated values in additionalIdToken.
+Charging Station requests
+explicit authorization from
+CSMS. This can be useful if
+CSMS needs to be able to reject
+ad hoc payments or provide a
+non-default tariff plan.
+C18.FR.05 C18.FR.04 AND
+CSMS gives authorization by
+responding with
+AuthorizeResponse with status
+= Accepted
+Charging Station SHALL authorize EV to charge. Authorization is still denied
+when status = Accepted, but
+EVSE is not on list of allowed
+EVSEs (see C01.FR.21)
+C18.FR.06 C18.FR.03 OR C18.FR.05 The next TransactionEventRequest from Charging
+Station SHALL contain idToken = <PspRef>, type =
+DirectPayment and additionalInfo with a list of
+types and values in additionalIdToken as configured
+in PaymentCtrlr.PaymentDetails, and
+transactionLimit.maxCost set the to payment card
+authorization amount, as configured in
+PaymentCtrlr.AuthorizationAmount.
+This is in accordance with
+E03.FR.01.
+Other fields then those
+mentioned here may also be
+relevant in the
+TransactionEventRequest
+message.
+C18.FR.07 C18.FR.04 AND
+CSMS denies authorization by
+responding with
+AuthorizeResponse with status
+<> Accepted
+Charging Station SHALL instruct payment terminal
+to release the authorization amount and cancel the
+payment.
+Authorization is also denied
+when status = Accepted, but
+EVSE is not on list of allowed
+EVSEs (see C01.FR.21)
+C18.FR.08 Charging Station MAY send a
+VatNumberValidationRequest to CSMS any time
+before settlement to validate a VAT number entered
+by EV Driver to be included on receipt.
+VAT number may be required in
+certain legislations to be
+entered at time of sales.
+C18.FR.09 C18.FR.08 CSMS validates given VAT number and responds
+with VatNumberValidationResponse with status =
+Accepted if validated and Rejected when invalid.
+Optionally the company
+address can be returned in
+company field.
+C18.FR.10 If VatNumberValidationRequest
+received by CSMS contains an
+evseId
+CSMS SHALL use the same evseId in
+VatNumberValidationResponse.
+This can make it simpler for
+Charging Station to associate
+the data with the correct
+transaction.
+C19 - Cancellation prior to transaction
+New in OCPP 2.1
+No. Type Description
+1 Name Cancellation prior to transaction
+2 ID C19
+3 Objective To inform the CSMS that payment has been canceled and the authorization amount has been
+released.
+4 Description The EV Driver cancels the payment prior to starting an actual OCPP transaction, or the
+EVConnectionTimeout occurs.
+Actors EV Driver, Payment Terminal, CSMS, Charging Station
+Scenario description PaymentCtrlr.AuthorizeDirectPayment = false
+1. Payment card of EV Driver has been authorized by the payment service provider and an
+authorization amount has been reserved for the card.
+2. Charging Station has authorized idToken for charging.
+3. EV Driver decides to cancel the session before the EV is plugged-in, or EV Driver does not
+plug in EV and a EVConnectionTimeout occurs.
+4. Charging Station notifies payment terminal about cancellation.
+5. Payment terminal requests payment service provider to release the authorization
+reservation on the card.
+6. Charging Station ends authorization of idToken.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 132/803 Part 2 - Specification

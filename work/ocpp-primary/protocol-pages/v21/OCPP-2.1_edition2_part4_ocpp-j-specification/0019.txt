@@ -1,0 +1,25 @@
+Chapter 5. Connection
+5.1. Data integrity
+For data integrity we rely on the underlying TCP/IP transport layer mechanisms.
+5.2. TLS fragment length
+TLS involves sending "Records" between peers. Records can be of type “Handshake”, “Alert”, “ChangeCipherSpec”, “Heartbeat” or
+“Application”. OCPP messages are sent in Application records. The payload contains a “fragment” of the application data. The
+record layer fragments information blocks into TLSPlaintext records carrying data in chunks of 2^14 bytes (16kB) or less.
+TLS peers need to maintain an input and an output buffer to store an entire fragment of 16 kB. For a low resource device it is a large
+cost to allocate 32 kB for the TLS connection.
+Figure 2. Peers allocating standard 16 kB TLS buffers
+A TLS extension is defined in TLS Extensions RFC6066 Section 4, that allows the client to ask for a different maximum fragment
+length than the default 16kB. A client can ask for a maximum fragment length of 0.5 kB, 1 kB, 2 kB or 4 kB. This TLS extension is,
+however, not widely supported and native managed cloud TLS termination services typically don’t support this.
+A resource-constrained Charging Station SHOULD try to negotiate a smaller TLS maximum fragment size, and if that is not
+accepted by the peer, then Charging Station MAY unilaterally decide to allocate less memory to its TLS output buffer. A TLS
+maximum fragment length of 2 kB is suggested based on data collection during certification tests, which shows that 99% of the
+messages fit in a 2 kB buffer.
+Figure 3. Charging Station allocating a 2 kB TLS output buffer
+5.3. WebSocket Ping in relation to OCPP Heartbeat
+The WebSocket specification defines Ping and Pong frames that are used to check if the remote endpoint is still responsive. In
+practice this mechanism is also used to prevent the network operator from quietly closing the underlying network connection after
+a certain period of inactivity. This websocket feature can be used as a substitute for most of the OCPP Heartbeat messages, but
+cannot replace all of its functionality. A Heartbeat message checks connectivity end-to-end, whereas a Websocket ping/pong only
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 17/28 Part 4 - JSON over WebSockets implementation guide

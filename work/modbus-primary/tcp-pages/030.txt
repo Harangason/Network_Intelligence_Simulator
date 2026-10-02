@@ -1,0 +1,49 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+4.4.2.3 MODBUS service processing 
+Analyse
+requested service
+Local Service
+processing
+Build Modbus
+ResponseBuild Modbus
+Exception Response
+Send an invocation to
+User Application
+through MB Backend
+interface
+Response
+processing
+[Need User App processing]
+[Completed]
+[Local processing ]
+Transaction_accepted
+[Processing OK]
+[Processing not completed]
+[Processing  not OK]
+Response_from_user_App
+[Processing OK]
+[Processing Not OK]
+Figure 17: MODBUS service processing activity diagram 
+The processing of the required MODBUS service can be done in different ways 
+depending on the device software and hardware architecture as described in the 
+hereafter examples :  
+• Within a compact device or a mono-th read architecture where the MODBUS
+server can access direct
+ly to the user ap plication data, the required service can
+be processed "locally" by the server itse lf without invoking the Back End service.
+The processing is done according to the MODBUS Application Protocol
+Specification [1]. In case of an error, a MODBUS exception response is built.
+• Within a modular multi-processor device or  a multi-thread architecture where the
+"communication layers" and the "user applic ation layer" are 2 separate entities,
+some trivial services can be processed co mpletely by the Communication entity
+while some others can require a cooperat ion with the User Application entity
+using the Back End service.
+To interact with the User Application, the MODBUS Backend service must implement all 
+appropriate mechanisms in order to handle User Application transactions and to 
+manage correctly the User Application invocations and associated responses. 
+4.4.2.4 User Application Interface (Backend Interface) 
+Several strategies can be implemented in the MODBUS Backend service to achieve its 
+job although they are not equivalent in te rms of user network throughput, interface 
+bandwidth usage, response time, or even design workload. 
+October 24, 2006 http://www.Modbus.org 30/46
+Modbus Organization  

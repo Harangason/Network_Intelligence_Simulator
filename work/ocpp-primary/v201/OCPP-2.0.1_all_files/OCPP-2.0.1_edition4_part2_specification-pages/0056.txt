@@ -1,0 +1,59 @@
+CSMS Charging Station
+Power up
+opt
+Self check
+BootNotificationRequest(reason, chargingStation)
+BootNotificationResponse(status = Accepted, currentTime, interval)
+opt
+loop [for all Connectors]
+StatusNotificationRequest(connectorStatus = Unavailable)
+StatusNotificationResponse()
+Self check
+loop [for all Connectors]
+alt [Connector was set to Unavailable/Reserved/Faulted prior to (re)boot]
+StatusNotificationRequest(connectorStatus = Unavailable/Reserved/Faulted)
+StatusNotificationResponse()
+[else]
+StatusNotificationRequest(Connectortatus = Available)
+StatusNotificationResponse()
+loop [while powered up and no other messages,
+with frequency based on Interval from BootNotificationResponse]
+HeartbeatRequest()
+HeartbeatResponse(currentTime)
+Figure 10. Sequence Diagram: Cold Boot Charging Station
+B01 - Cold Boot Charging Station - Requirements
+Table 30. B01 - Requirements
+ID Precondition Requirement definition Note
+B01.FR.01 After start-up. The Charging Station SHALL send
+BootNotificationRequest to the CSMS with
+information about its configuration.
+Information: e.g. version,
+vendor, etc.
+B01.FR.02 B01.FR.01
+The CSMS has received
+BootNotificationRequest from the
+Charging Station.
+The CSMS SHALL respond to indicate whether it
+will accept the Charging Station.
+B01.FR.03 After a reboot (for instance due to a
+remote reset command, power
+outage, firmware update, software
+error etc.)
+The Charging Station SHALL again connect to the
+CSMS and SHALL send a BootNotificationRequest
+each time it boots or reboots.
+B01.FR.04 When the CSMS responds with
+BootNotificationResponse with the
+status Accepted AND
+interval > 0
+The Charging Station SHALL adjust the heartbeat
+interval in accordance with the interval from the
+response message.
+B01.FR.05 When the CSMS responds with
+BootNotificationResponse with the
+status Accepted.
+The Charging Station SHALL send a
+StatusNotificationRequest for each Connector with
+its current state.
+Edition 4, 2025-12-03 B. Provisioning
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 46/491 Part 2 - Specification

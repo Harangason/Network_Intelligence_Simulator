@@ -1,0 +1,43 @@
+6.2.42. Page 587 - (2026-02) - TC_K_125_CS Updated dynUpdateTime tool
+validations
+Test case name Dynamic charging profiles by external system - Dynamic charging profile configured
+Test case Id TC_K_125_CS
+…
+Tool validations
+…
+* Step 7:
+Message ReportChargingProfilesRequest
+- requestId must be Same Id as in the GetChargingProfilesRequest in step 5
+- EVSEId must be 0
+There must be one ChargingProfile be reported with
+- chargingProfile[0].id must be <Configured chargingProfileId>
+- chargingProfile[0].stackLevel must be 0
+- chargingProfile[0].chargingProfilePurpose must be ChargingStationMaxProfile
+- chargingProfile[0].chargingProfileKind must be Dynamic
+- chargingProfile[0].dynUpdateTime must be <Datetime of moment of step 3 between sending manual action for limit 10 and       
+current dateTime >
+- chargingProfile[0].chargingSchedule size must be 1
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod size must be 1
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].startPeriod must be 0
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].operationMode ExternalSetpoint
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].limit must be <omitted>
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].setpoint must be 10 * <limit multiplier>
+There must be one ChargingProfile be reported with
+- chargingProfile[1].id must be <Configured chargingProfileId2>
+- chargingProfile[1].stackLevel must be 1
+- chargingProfile[1].chargingProfilePurpose must be ChargingStationMaxProfile
+- chargingProfile[1].chargingProfileKind must be Dynamic
+- chargingProfile[1].dynUpdateTime must be <Datetime of moment of step 3 between sending manual action for limit 8 and current        
+dateTime >
+…
+6.2.43. Page 588 - (2026-02) - TC_K_129_CS to TC_K_135_CS improvements
+The "Absolute" charging profiles that were used have been replaced by "Relative" charging profiles for easier testing.
+6.2.44. Page 596 - (2026-02) - TC_K_136_CS - Fixed incorrect timezone usage
+TC_K_136_CS was using the value "UTC+02:00" for variable TimeZone, but that is incorrect. For a time offset of 2 hours the variable
+TimeOffset must be used with a value of "+02:00".
+6.2.45. Page 590 - (2026-02) - TC_K_130_CS to TC_K_135_CS - Reusable state
+Booted removed
+Reusable state [booted] removed from preparations.
+6.2.46. Page 596 - (2026-02) - TC_K_136_CS - Remove timezone configuration
+Timezone configuration was removed from preparations configuration state.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 68/116 Errata 2026-06

@@ -1,0 +1,39 @@
+TC_B_07_CSMS: Get Variables - multiple values
+Test case name Get Variables - multiple values
+Test case Id TC_B_07_CSMS
+Use case Id(s) B06
+Requirement(s) B06.FR.01, B06.FR.02, B06.FR.03
+System under test CSMS
+Description Get the value of two of the required variables of OCPPCommCtrlr
+Purpose To test getting multiple values using GetVariablesRequest for one of the
+mandatory component/variable combinations that must exist in the DM implementation.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Test System responds with:
+GetVariablesResponse
+1. Manually request CSMS to get data for:
+- OCPPCommCtrlr.OfflineThreshold
+- AuthCtrlr.AuthorizeRemoteStart
+Tool validations
+* Step 1:
+Message: GetVariablesRequest with (in arbitrary order)
+getVariableData[0]:
+- attributeType is at least absent or attributeType = Actual, but Target, MinSet, and MaxSet are also allowed
+- variable.name = "OfflineThreshold"
+- component.name = "OCPPCommCtrlr"
+getVariableData[1]:
+- attributeType is at least absent or attributeType = Actual, but Target, MinSet, and MaxSet are also allowed
+- variable.name = "AuthorizeRemoteStart"
+- component.name = "AuthCtrlr"
+Post scenario validations:
+Manually validate that CSMS has correctly read the requested variables.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 636/914 Part 6 - Test Cases

@@ -1,0 +1,52 @@
+S02 - Battery Swap Remote Start
+No. Type Description
+1 Name Battery Swap Remote Start
+2 ID S02
+3 Objective(s) To show how a battery swap action is requested remotely by CSMS.
+4 Description EV Driver requests CSMS to initiate a battery swap via a smartphone app, e.g. by scanning a QR
+code or selecting the appropriate station in the app.
+Actors Charging Station, CSMS
+Scenario description 1. When CSMS authorizes the EV Driver’s request to charge via a smartphone app, CSMS
+sends a RequestBatterySwapRequest with idToken set to the authorization token for the
+EV Driver and a requestId to be used in the following BatterySwapRequest.
+2. When Charging Station has at least as many batteries available for swapping as needed
+for the swap:
+a. Charging Station responds with RequestBatterySwapResponse with status =
+Accepted.
+5 Prerequisite(s) idToken is authorized to swap.
+6 Postcondition(s) When successful, use case S03 - Battery Swap In/Out follows.
+7 Error handling If not enough batteries are available for swapping, the Charging Station responds with
+RequestBatterySwapResponse with status = Rejected and statusInfo.reasonCode =
+"NoBatteryAvailable".
+8 Remark(s)
+User Charging Station (BSS) CSMS
+start authorization via smartphone app
+RequestBatterySwapRequest(idToken=<idToken>, requestId)
+RequestBatterySwapResponse(Accepted)
+accept battery for swapping
+Figure 212. Sequence diagram for remote start
+S02 - Battery Remote Start - Requirements
+ID Precondition Requirement definition Note
+S02.FR.01 When CSMS sends a
+RequestBatterySwapRequest for
+idToken with a requestId AND
+idToken is authorized by CSMS AND
+Charging Station has enough batteries
+available for swapping
+Charging Station SHALL respond with
+RequestBatterySwapResponse with status =
+Accepted
+S02.FR.02 S02.FR.01 Charging Station SHALL use the same requestId in
+the BatterySwapRequest that results from this
+RequestBatterySwapRequest
+This allows CSMS to
+associate the
+BatterySwapRequest
+with the
+RequestBatterySwapReq
+uest.
+S02.FR.03 CSMS SHALL NOT send send a
+RequestBatterySwapRequest for an idToken that is
+not authorized
+Edition 2, 2025-12-03 S. Battery Swapping
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 571/803 Part 2 - Specification

@@ -1,0 +1,58 @@
+TC_O_22_CS: Set Display Message -  Multiple In front priority
+Test case name Set Display Message - Multiple In front priority
+Test case Id TC_O_22_CS
+Use case Id(s) O01
+Requirement(s) O01_FR_14
+System under test Charging Station
+Description This test case describes how the CSMS can be requested to sent an SetDisplayMessageRequest to the
+charging station. Depending on the given parameters the message shall be displayed a certain way and at a
+certain moment on the Charging Station. These messages are displayed additionally on a Charging Station
+and are not part of the firmware.
+Purpose To verify if the Charging Station is able to display multiple additional messages with a "InFront" priority
+according to the DisplayMessage mechanism as described in the OCPP specification.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDisplayMessageResponse
+1. The Test System sends a SetDisplayMessageRequest with
+message.id <Generated displayMessageId>
+message.priority InFront
+message.display <Configured display component variable>
+(Omitted when left empty)
+4. The Charging Station responds with a
+SetDisplayMessageResponse
+3. The Test System sends a SetDisplayMessageRequest with
+message.id <Generated displayMessage2Id>
+message.priority InFront
+message.display <Configured display component variable>
+(Omitted when left empty)
+6. The Charging Station responds with a
+GetDisplayMessagesResponse
+5. The Test System sends a GetDisplayMessagesRequest with
+id <Generated displayMessageId>
+requestId <Generated requestId>
+7. The Charging Station sends a NotifyDisplayMessagesRequest
+8. The Test System responds with a
+NotifyDisplayMessagesResponse .
+10. The Charging Station responds with a
+GetDisplayMessagesResponse
+9. The Test System sends a GetDisplayMessagesRequest with
+id <Generated displayMessage2Id>
+requestId <Generated requestId>
+11. The Charging Station sends a
+NotifyDisplayMessagesRequest 12. The Test System responds with a
+NotifyDisplayMessagesResponse .
+Note(s):
+- If tbc is True at Step 7 then step 7 and 8 will be repeated
+- If tbc is True at Step 11 then step 11 and 12 will be repeated
+- The display messages are displayed as configured according the priority
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 550/914 Part 6 - Test Cases

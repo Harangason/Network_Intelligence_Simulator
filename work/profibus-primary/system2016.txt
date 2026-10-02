@@ -1,0 +1,2593 @@
+PAGE 1
+PROFIBUS System Description
+Technology and Application
+
+PAGE 2
+
+PAGE 3
+PROFIBUS System Description I
+Introduction 
+Within the framework of ongoing dynamic 
+development of industrial communication, 
+automation engineering has also experienced 
+continuous change. Automation was initially limited 
+exclusively to production operations but has now 
+for some time been integrated in a network that 
+covers service and maintenance, warehousing, 
+resource optimization and the provision of data for 
+MES and ERP systems in addition to the actual task 
+of automation.
+Fieldbus technology was and still is a driving force 
+for this process; it enabled the migration from 
+centralized to decentralized automation systems 
+and allows the use of distributed intelligence. 
+Ethernet-based communication systems connect 
+automation technology to information technology, 
+thereby realizing consistent communication from 
+the field level to the corporate management level. At 
+the same time, they are increasingly also performing 
+tasks directly in the field.
+PROFIBUS and PROFINET are the standardized 
+solutions for this from PROFIBUS & PROFINET 
+International (PI) that combine full integration with 
+high application orientation. With its standardized 
+protocol, PROFIBUS encompasses all subprocesses 
+found in factory and process automation, 
+including safety-related communication and drive 
+applications, thereby providing the ideal basis for 
+horizontal integration in an automation system. With 
+its similarly standardized protocol, PROFINET enables 
+not only horizontal communication but also vertical 
+communication and thus the connection from 
+the field to the corporate management level. Both 
+communication systems are the basis for solutions 
+that are comprehensively networked, integrated, 
+and optimized for the respective automation tasks.
+Since its initial version in 1989, PROFIBUS rapidly 
+developed into the world's leading fieldbus system for 
+automation of machines and production equipment. 
+Compared to other fieldbus systems, it is characterized 
+above all by its extraordinary application breadth. 
+Application-specific requirements were converted 
+with the help of users into application profiles, and 
+a standardized and open communication system 
+combining all of these applications was produced. The 
+use of open standards instead of proprietary solutions 
+ensures long-term compatibility and expandability, 
+which forms the basis for comprehensive investment 
+protection for users and manufacturers alike. This is 
+a very important concern for PROFIBUS & PROFINET 
+International. Through worldwide support, a 
+long-term perspective is offered to all users and 
+members.
+With well over 50 million devices (in the end of 2015), 
+PROFIBUS is currently present in every branch of 
+industrial automation. More than 10 million of these 
+devices are used in process automation. PROFIBUS 
+makes an important contribution to the economic 
+and technological success of the companies involved.
+PAGE 4
+PROFIBUS System DescriptionII
+Contents 
+1 Introduction to PROFIBUS  . . . . . . . . 1
+1.1 Market position ......................... 1
+1.2 Modular design ......................... 2
+1.3 Application-specific solutions ........... 2
+1.4 Hybrid automation ...................... 3
+1.5 OSI layer model as a basis ............... 3
+1.6 Standardization ......................... 4
+2 Transmission technology  . . . . . . . . . 4
+2.1 Transmission as per RS485 and  
+RS485-IS ................................ 4
+2.2 Transmission as per MBP and MBP-IS .... 5
+2.3 Optical transmission .................... 5
+2.4 Wireless transmission .................... 6
+2.5 Transmission technology in hazardous  
+areas .................................... 6
+2.6 Topology ................................ 7
+2.7 Redundancy ............................ 8
+2.8 Installation information for RS485 ....... 8
+2.9 Installation information for MBP ......... 9
+2.10 Bus diagnostic ......................... 9
+3 Communication with PROFIBUS  . . 10
+3.1 PROFIBUS DP communication protocol .. 10
+3.2 Device classes ........................... 11
+3.3 Cyclical communication and PROFIBUS 
+diagnostics ............................. 11
+3.4 Acyclical communication and parameter 
+addressing .............................. 12
+3.5 Standardized function blocks (FB) ....... 12
+3.6 Comm FBs as a system-neutral interface 
+with PROFIBUS .......................... 13
+4 Application profiles  . . . . . . . . . . . . . . 13
+4.1 PROFIdrive .............................. 14
+4.2 PROFIBUS PA (PA devices, "PA profile") ... 15
+4.3 Improvements in PA profile V 3.02 ....... 15
+4.4 HART on PROFIBUS ...................... 16
+4.5 PROFIsafe ............................... 17
+4.6 Identification & Maintenance (I&M) ...... 17
+5 Device integration  . . . . . . . . . . . . . . . 17
+5.1 General Station Description (GSD) ....... 18
+5.2 Electronic Device Description (EDD) ..... 19
+5.3 Device Type Manager (DTM) and Field 
+Device Tool (FDT) interface .............. 19
+5.4 Field Device Integration (FDI) ............ 19
+6 Quality assurance and 
+certification  . . . . . . . . . . . . . . . . . . . . . 21
+7 Product implementation  . . . . . . . . . 22
+7.1 Standard components .................. 23
+7.2 Implementing transmission interfaces ... 24
+8 Outlook  . . . . . . . . . . . . . . . . . . . . . . . . . 24
+9 User benefits  . . . . . . . . . . . . . . . . . . . . 26
+9.1 Standardized and consistent ............ 26
+9.2 Economy ................................ 26
+9.3 Quality consciousness ................... 26
+9.4 Innovation and protection of  
+privileges  ............................... 26
+9.5 Global support .......................... 27
+9.6 Future cooperation ...................... 27
+10 PROFIBUS & PROFINET  
+International (PI)  . . . . . . . . . . . . . . . . 27
+10.1 Responsibilities of PI ................... 27
+10.2 Technology development .............. 27
+10.3 Technical support ...................... 27
+10.4 Certification ........................... 28
+10.5 Training ................................ 28
+10.6 Internet ................................ 28
+PAGE 5
+PROFIBUS System Description III
+List of figures 
+Fig. 1:  PROFIBUS system building blocks . 2
+Fig. 2:  PROFIBUS solutions for different 
+market segments ................. 3
+Fig. 3:  Consistent PROFIBUS solution in a 
+single production system ......... 3
+Fig. 4:  References between OSI model  
+and PROFIBUS .................... 3
+Fig. 5:  Utilization of different ignition 
+protection types .................. 7
+Fig. 6:  The connection of DP and PA 
+segments ......................... 7
+Fig. 7:  Various redundancy concepts ..... 8
+Fig. 8:  Ring redundancy with  
+PROFIBUS PA ..................... 8
+Fig. 9:  PROFIBUS DP protocol,  
+performance levels ............... 10
+Fig. 10:  Cyclical and acyclical  
+communication with DP-V1 ....... 11
+Fig. 11:  The use of function blocks (Proxy FB 
+and Comm FB) .................... 13
+Fig. 12:  Device replacement with transfer  
+of the predecessors' functions .... 15
+Fig. 13:  Device replacement with transfer of 
+the predecessors functions ....... 16
+Fig. 14: Diagnostic mapping as per NAMUR 
+recommendation 107 ............. 16
+Fig. 15: Operating HART devices on 
+PROFIBUS ......................... 17
+Fig. 16: The principle of I&M functions .... 17
+Fig. 17:  Technologies for device  
+integration ....................... 18
+Fig. 18:  Expense comparison for devices  
+with profile GSD (on right) and  
+4-20 mA interface (on left). ........ 18
+Fig. 19:  FDI Device Package and FDI host .. 20
+Fig. 20:  EDD-based part of an FDI Device 
+Package in the FDI reference host . 20
+ Fig. 21: User-programmed graphic  
+elements ......................... 20
+Fig. 22:  IDE development environment ... 21
+Fig. 23:  Device certification,  
+test procedure .................... 22
+Fig. 24:  Stepwise introduction of  
+PROFINET in the intrinsically  
+safe field .......................... 25
+Fig. 25:  PROFINET in the field with  
+PROFIBUS PA integrated via a  
+proxy ............................. 25
+Fig. 26:  Assignment of the PROFINET  
+device diagnostics to NE 107 ...... 26
+Fig. 27:  PROFIBUS & PROFINET  
+International (PI) .................. 27
+List of tables
+Tab. 1:  Overview of transmission values .. 4
+Tab. 2:  Transmission values of RS485  
+and MBP .......................... 5
+Tab. 3:  Characteristics of MBP and MBP-IS 5
+Tab. 4:  Supported fiberoptic cable types . 6
+Tab. 5:  PROFIBUS application profiles ..... 14
+PAGE 6
+PROFIBUS System DescriptionIV
+Information on contents
+This system description deals with all the main 
+aspects of PROFIBUS in 2016 without delving into 
+technical details. In this regard it must also be 
+noted that, despite the care taken in preparing this 
+brochure, the normative PI (PROFIBUS & PROFINET 
+International) documents alone are authoritative 
+and binding. 
+• Chapter 1 contains an introduction to PROFIBUS 
+and provides an overview of its market position 
+and technologies, modular design, and resulting 
+application-specific solutions.
+• Chapters 2 through 4  deal with the core 
+technologies of PROFIBUS (transmission 
+technology, communication, and application 
+profiles) with technical and application-oriented 
+information.
+• Chapter 5  deals with the topic of device 
+integration and explains the current 
+technologies used here, including FDI.
+• Chapter 6 deals with the topic of certification 
+and quality assurance of PROFIBUS. 
+• Chapter 7  contains information on product 
+implementation.
+• Chapter 8  provides an outlook on future 
+solutions with PROFINET.
+• Chapter 9  deals with the user benefits of 
+PROFIBUS.
+• Chapter 10 provides information on PROFIBUS 
+& PROFINET International as the world's largest 
+interest group for industrial automation with 
+information on the organization, service 
+offerings, and global positioning.
+PAGE 7
+PROFIBUS System Description 1
+1 Introduction to PROFIBUS
+Automation technology has been characterized by 
+rapidly changing technology for many years. The 
+driving force for this was and still is the pressure to 
+lower production costs, the demand for high and 
+consistent product quality, improved operating 
+reliability and the availability and fl  exibility of the 
+systems, especially the consistent fl  ow of data 
+within a company. A visible sign of this change is 
+the development of fi  eldbus technology with a 
+transition from analog to digital communication and 
+thus the possibility to exchange detailed information 
+on the status of a production system and its 
+environment very quickly. Digital communication 
+also enables functions of the centralized controller 
+to be relocated to decentralized fi  eld devices, which 
+simplifi  es cabling considerably. The world-wide 
+standardization of the interfaces opens up the 
+path to consistent automation, and leaves previous 
+solutions using a large number of proprietary 
+systems behind.
+PROFIBUS contributed considerably to the 
+development of fi  eldbus technology. It links 
+controllers and control systems with sensors and 
+actuators on the fi  eld level (fi  eld devices) and also 
+enables simultaneous consistent data exchange 
+with superordinate systems. PROFIBUS is the 
+fi  eldbus-based automation standard of PROFIBUS & 
+PROFINET International (PI). PI has also developed the 
+PROFINET Ethernet-based automation standard and 
+launched it successfully on the market. PROFIBUS 
+and PROFINET use identical device profi  les, thereby 
+creating investment security and investment 
+protection for the users and manufacturers of 
+these technologies. Both systems cover the fi  elds of 
+production and process automation and therefore 
+also enable mixed (hybrid) applications, which are 
+often seen in the pharmaceutical, food and beverage 
+industries.
+PROFIBUS consistency is based on the standardized 
+"PROFIBUS DP" communication protocol, which 
+supports a variety of applications in factory 
+automation and process automation as well as 
+motion control and safety-related tasks. This 
+integration makes planning, installation and service 
+easier. Training, documentation and maintenance 
+need only be carried out for one technological 
+aspect.
+1 .1 Market position
+The fi  rst fi  eldbus systems, which were proprietary, 
+were introduced to the market in the 1980s. With 
+the objective of far-reaching standardization, 21 
+companies and institutes came together in 1987 to 
+create a joint project with the task of developing and 
+testing an open fi  eldbus standard. This project was 
+the starting point for the development of PROFIBUS. 
+After the joint project was complete, the PROFIBUS 
+Nutzerorganisation e.V. (PNO) was founded in 1989 
+in Germany to continue the work. This organization 
+was comprised of 10 companies, four scientifi  c 
+institutes and ZVEI. Two years later, it grew to over 
+100 members, and today (2016) there are about 
+1,400 members who have jointed together under 
+the globally positioned PI fi  eldbus organization, 
+which was founded in 1995. Today, there are more 
+than 25 Regional PI Associations in countries on 
+every continent. The common goal is the continuous 
+development and global distribution of PROFIBUS 
+and PROFINET technologies. With well over 50 
+million devices installed in the fi  eld, PROFIBUS 
+is a global market leader in the fi  eld of industrial 
+communication systems.
+Blast furnaces are operated without interruption 
+and can only be modernized at long intervals. 
+This makes especially future-proof automation 
+technology all the more important. PROFIBUS 
+has proven itself through and through in large-
+scale projects like this.
+The success of PROFIBUS relies equally on its 
+advanced and robust technology and the successful 
+activity of the PI organization established by 
+manufacturers and users to represent their interests.
+In addition to the many measures employed for 
+technological development and its propagation, 
+additional global support services for members 
+(users and manufacturers) are available in the form 
+of consulting, information and measures for quality 
+assurance and standardization of the technology in 
+international standards.
+PAGE 8
+PROFIBUS System Description2
+PI forms the largest user group for industrial 
+communication in the world, which offers 
+opportunities for the future and at the same time 
+comes with certain obligations. The opportunities 
+are in the creation and propagation of market-
+leading technologies which are beneficial to the 
+user. The obligation is for those responsible for this 
+user group to fully maintain PROFIBUS's goals of 
+openness and investment protection in the future 
+as well. This obligation serves as a guideline for 
+everyone involved.
+1 .2 Modular design 
+PROFIBUS's module concept is what has allowed 
+it to reach its top position in the global market. 
+The communication protocol can be combined 
+with a variety of application-specific technology 
+modules which are compatible with one another 
+(transmission technologies, application profiles, 
+integration technologies). This ensures complete 
+consistency with a large breadth of applications. 
+With such a "system building block" (Figure 1), all 
+the applications of automation technology can 
+cover tasks in the production and process industries, 
+including safety-related ones.
+The core of the system building block is the PROFIBUS 
+DP (Decentralized Peripherals) communication 
+protocol, which is the same for all applications and 
+is used for communication between centralized 
+automation devices and decentralized field devices.
+A number of different data transmission alternatives 
+are available, depending on the usage case. RS485 
+transmission technology is intended for use in the 
+production industry and in the process industry 
+in applications without explosion protection. 
+RS485-IS (Intrinsically Safe) covers uses in explosion 
+protected areas. The MBP (Manchester coded Bus 
+Powered) and MBP-IS transmission technology is 
+specifically oriented toward the process industry 
+and also handles power supply to devices on the 
+bus, in addition to data transmission. Several optical 
+transmission technologies are also available.
+PROFIBUS application profiles  are specified for 
+standard data exchange between field devices on 
+the user level. The use of such profiles guarantees 
+interoperability in the data exchange between field 
+devices from different manufacturers. These profiles 
+specify application-typical device features, and 
+"profile devices" must comply with them. They might 
+be cross-device-class features (e.g. safety-relevant 
+behavior) or device-class-specific features (e.g. to be 
+exhibited by process devices or drives). Field devices 
+with different application profiles can be operated in 
+the same automation system. Simple devices with 
+universal functionality, e.g. decentralized binary I/O 
+devices, do not usually use application profiles.
+Additionally to the layers for transmission and 
+communication, the system building block also 
+provides the required engineering technologies 
+for device description and integration.
+1 .3 Application-specific solutions
+The system building block makes it possible to 
+cover very different applications using "solutions" 
+specifically arranged for them by combining the 
+appropriate components. Examples include solutions 
+for the production industry, process automation, 
+Fig. 1: PROFIBUS system building blocks
+
+PAGE 9
+PROFIBUS System Description 3
+drive engineering and safety-related systems. The 
+structure of these modular "solutions" can be seen 
+in Figure 2. Only the communication protocol is 
+the same with all solutions and ensures the high 
+consistency of PROFIBUS already mentioned.
+Fig. 2: PROFIBUS solutions for different market 
+segments
+1 .4 Hybrid automation
+In the past, factory automation and process 
+automation had to be viewed as two strictly 
+separate fields and automated using different 
+technologies. The reason for this were the different 
+marginal conditions of an automation system. 
+Factory automation is based on fast, discrete 
+processes and a relatively short service life of 
+equipment. Process automation, on the other 
+hand, is characterized by slow-running continuous 
+operations and long equipment service life. Today, 
+a user can avoid such insular solutions by using a 
+PROFIBUS solution that is consistent for all the 
+applications of the production chain. PROFIBUS is 
+the only fieldbus that fulfills the requirements of 
+such consistent (hybrid) automation of production-
+control (inbound and outbound logistics) and 
+process-control process steps (Figure 3).
+Fig. 3: Consistent PROFIBUS solution in a single 
+production system 
+Examples
+In the pharmaceutical industry, the manufacture 
+of medicines is a process-control procedure. The 
+packaging of tablets, for example, uses production-
+control tasks with complex packaging machines, 
+however.
+In the food industry, at a brewery for example, 
+the typical process-control procedures in the 
+brew-house and fermenting cellar are followed by 
+the production-control procedures of bottle cleaning 
+and filling and the stacking of crates by robots.
+In vehicle production, the paint shop, with its 
+process-control requirements (explosion protection), 
+is part of a production chain that otherwise involves 
+production-control tasks.
+1 .5 OSI layer model as a basis
+The design of the technology modules with 
+PROFIBUS is oriented toward the OSI layer model 
+(Open Systems Interconnection Reference Model). 
+Here, the communication process between two 
+nodes is distributed over seven "layers" , from layer 1 
+("physical layer" , trans-mission technology) to layer 
+7 (“application layer” , interface to the application). 
+PROFIBUS uses layers 1, 2 and 7 (Figure 4):
+User program
+7 Application Layer                          
+6 Presentation Layer
+5 Session Layer
+4 Transport Layer
+3 Network Layer
+2 Data link Layer 
+1 Physical Layer 
+PROFIBUS DP Protocol                                                         
+(DP-V0, DP-V1, DP-V2)
+OSI implementation at PROFIBUS
+Fieldbus Data Link (FDL):                             
+Master Slave principle                     
+Token principle 
+Transmission technology
+Application profiles 
+OSI Layer Model
+Not used
+Fig. 4: References between OSI model and 
+PROFIBUS
+• Layer 1 defines the physical transmission. With 
+PROFIBUS, there are copper-wire versions (RS485 
+and MBP) and optical and wireless transmission.
+• Layer 2 defines the description of the bus access 
+method, including data security. With PROFIBUS, 
+this is the master-slave method in conjunction 
+with the token method.
+• Layer 7 forms the interface to the application and 
+thus represents the link between the application 
+and communication. With PROFIBUS, the 
+communication protocol PROFIBUS DP is used 
+here.
+• The actual application process lies above layer 7 
+and is not part of the OSI model.
+Figure 4 shows the definition of the seven OSI layers 
+on the left and the implementation of PROFIBUS on 
+the right.
+PAGE 10
+PROFIBUS System Description4
+1 .6 Standardization
+The contents of the OSI layers are specified by 
+standards so that the openness of the system is 
+ensured when the standards are complied with.
+Together with other fieldbus systems, PROFIBUS 
+is part of IEC 61158 ("Digital data communication 
+for measurement and control – Fieldbus for use in 
+industrial control systems") and IEC 61784 ("Profile 
+sets for continuous and discrete manufacturing 
+relative to fieldbus use in industrial control systems").
+A clean water supply requires large investments 
+in existing and new wastewater treatment 
+plants. Maximum availability and optimal use 
+of process technology are a prerequisite for this. 
+For many planners and operators, PROFIBUS is 
+the preferred solution (for example, in Europe's 
+most modern wastewater treatment plant in 
+Vienna).
+IEC 61158
+IEC 61158 deals with the technologies used 
+and describes the method of functioning of the 
+fieldbus. It is divided according to the OSI model. 
+The individual fieldbuses are differentiated by 
+the definition of "fieldbus protocol types" in this 
+standard. Here, PROFIBUS is type 3 and PROFINET 
+type 10.
+IEC 61784
+IEC 61784 defines the subsets of the service and 
+protocol supersets specified in IEC 61158 (and other 
+standards) which are used by a certain fieldbus 
+system for its communication. They are collected 
+in "Communication Profile Families (CPF)"; for 
+PROFIBUS, it is "Family 3" with a subdivision into 3/1 
+(RS485 and fiberoptics) and 3/2 (MBP). Part 3/3 is 
+concerned with PROFINET.
+2 Transmission technology
+2 .1 Transmission as per RS485 and 
+RS485-IS
+The easy-to-use and cost-effective RS485 
+transmission technology is preferred for use with 
+tasks which require a high transmission speed, 
+but which do not require explosion protection 
+(intrinsic safety). It is widely used in the production 
+industry and is also found in parts of the process 
+Tab. 1: Overview of transmission values
+RS485 RS485-IS MBP MBP-IS Fiber Optic
+Data transmission
+Digital; differential 
+signals acc. to RS485, 
+NRZ (no return to zero)
+Digital; differential 
+signals acc. to RS485, 
+NRZ
+Digital, bit-synchronous, 
+Manchester coding
+Digital, bit-synchronous, 
+Manchester coding
+Optical, digital, NRZ
+Transmission rate 9.6 to 12,000 Kbit/s 9.6 to 15,000 Kbit/s 31.25 Kbit/s 31.25 Kbit/s 9.6 to 12,000 Kbit/s
+Data security
+HD=4; parity bit;         
+start/end delimiter
+HD=4; parity bit;   
+start/end delimiter
+Preamble; fail-safe 
+start/end delimiter
+Preamble; fail-safe 
+start/end delimiter
+HD=4; parity bit;             
+start/end delimiter
+Cable
+Twisted, shielded two-
+wire cable,              
+cable type A
+Twisted, shielded four-
+wire cable, 
+cable type A, acc. to 
+IEC 61158 part 3/1
+Twisted, shielded two-
+wire cable,                 
+cable type A
+Twisted, shielded two-
+wire cable,               
+cable type A, acc. to IEC 
+61158 part 3/2
+Multi- and single mode 
+glass fiber; PCF; plastic 
+fiber 
+Remote power 
+supply
+Possible using 
+additional cores
+Possible using additional 
+cores
+Optional using signal 
+cores 
+Optional using signal 
+cores 
+Possible using hybrid 
+cable
+Ignition 
+protection types
+Increased safety Ex e 
+Flameproof 
+encapsulation EX d
+Intrinsic safety                        
+Ex ib
+Increased safety Ex e 
+Flameproof 
+encapsulation EX d
+Intrinsic safety                       
+Ex ia/ib
+None
+Topology
+Line topology with 
+termination
+Line topology with 
+termination
+Line and tree topology 
+with termination; also 
+combined
+Line and tree topology 
+with termination; also 
+combined
+Star and ring topology 
+typical; line topology 
+possible
+Number of 
+nodes
+Up to 32 nodes per 
+segment. Max. total 
+126 per network
+Up to 32 nodes per 
+segment. Max. total 126 
+per network
+Up to 32 nodes per 
+segment. Max. total 126 
+per network
+Up to 32 nodes per 
+segment. Max. total 126 
+per network
+Up to 126 nodes per 
+network
+Number of 
+repeaters
+Max. 9 with signal 
+refreshing
+Max. 9 with signal 
+refreshing
+Max. 4 with signal 
+refreshing
+Max. 4 with signal 
+refreshing 
+Unlimited with signal 
+refreshing; note signal 
+propagation delay
+PAGE 11
+PROFIBUS System Description 5
+industry. A twisted, shielded copper cable with 
+a pair of wires is used. The bus structure enables 
+non-reactive coupling and decoupling of stations 
+and incremental commissioning of the system. 
+Subsequent system expansions do not affect 
+stations already in operation within certain 
+specified limits. Details can be found in Table 1 and 
+Table 2.
+Transmission rate 
+[Kbit/s]
+Transmission 
+range per 
+segment [m]
+Applies to
+9,6   19,2                 
+45,45   93,75 1,2 RS485
+187,5 1 RS485
+500 400 RS485
+1,5 200 RS485
+3,000  6,000 12,000 100 RS485
+PROFIBUS DP PROFIBUS PA
+Wave resistance 135 ... 165 Ω 80 ... 120 Ω
+Capacitance per unit ≤ 30 pf/m ≤ 2 pf/m
+Loop resistance ≤ 110 Ω/km ≤ 44 Ω/km
+Core diameter > 0.64 mm ≥ 1 mm
+Core cross-section > 0,34 mm2 ≥ 0,8 mm2
+The values above apply to cable type A with the following 
+properties
+Tab. 2: Transmission values of RS485 and MBP 
+In compliance with certain values, the use of the 
+RS485 interface with its high transmission rates is also 
+possible in intrinsically-safe areas (RS485-IS). When 
+the interface was specified, the levels for the current 
+and voltage, which must be complied with by each 
+individual node to ensure safe functioning when 
+connected together, were defined. Within a circuit, 
+certain maximum currents are permissible with a set 
+voltage. When connecting active sources together, 
+the total current of all the nodes may not exceed 
+the maximum permissible current. The difference 
+between this concept and the FISCO model (see 
+2.5) with only one intrinsically-safe source is that all 
+nodes represent active sources here.
+2 .2 Transmission as per MBP and MBP-IS
+MBP (Manchester Coded, Bus Powered) transmission 
+technology implements the simultaneous supply 
+of power to the connected field devices and 
+communication of the data over a single cable, 
+i.e. directly via the bus medium. This enables 
+wiring overhead to be significantly reduced, meets 
+requirements for much simpler and safer installation 
+and boasts all the benefits of digital transmission 
+down to the field device. MBP was specifically 
+developed to meet the demands of process 
+automation and is standardized in IEC 61158-2. 
+Details can be found in Table 1 and Table 3.
+Nodes in one segment Up to 32
+Data transmission rate 31.25 Kbit/s
+Min. working voltage per 
+field device                                          9 V DC
+Min. current consumption 10 mA
+Transmission of digital 
+communication signal
+Zero-mean Manchester II 
+coding (MBP) through 
+± 9 mA amplitude 
+Signal transmission and 
+remote power supply Use of twisted-pair cable
+Fieldbus cable Type A
+Connection of field devices Via stubs (spur) to a main 
+cable (trunk)
+Max. total length of a segment Up to 1,900 m
+  MBP transmission technology
+Tab. 3: Characteristics of MBP and MBP-IS
+In the MBP-IS version, this transmission technology 
+is especially suitable for use in hazardous areas 
+and is therefore widely used in applications of 
+the chemical, oil and gas industries. Explosion 
+protection is implemented via limiting power in 
+the incoming bus supply or more frequently in the 
+installation components in the field. Working on field 
+devices during active operation is made possible, 
+for example, by means of intrinsically safe ignition 
+protection. The easiest way to be verified for intrinsic 
+safety is to go through models such as FISCO or 
+Entity. If all the components used conform with the 
+standards, no further calculations are necessary.
+2 .3 Optical transmission
+There are fieldbus usage conditions under which 
+wired transmission technology reaches its limits, for 
+example in an environment with heavy interference 
+or when bridging long distances. In these cases, 
+optical transmission via fiberoptic cables is 
+available. The corresponding PROFIBUS guideline 
+specifies the technology available for this. When the 
+specifications were being made, it was ensured that 
+existing PROFIBUS devices could be integrated into 
+a fiberoptic cable network without adverse affects. 
+This ensures compatibility with existing PROFIBUS 
+installations.
+The supported fiberoptic cable fiber types are shown 
+in Table 4. Due to the transmission characteristics, 
+typical topology structures are the star and 
+the ring; linear structures are also possible. The 
+implementation of a fiberoptic cable network in 
+the simplest case involves the use of electro-optical 
+converters which are connected to the field device 
+with the RS485 interface and the fiberoptic cable on 
+the other side. This also makes it possible to switch 
+PAGE 12
+PROFIBUS System Description6
+between RS485 and fiberoptic cable transmission 
+within an automation system, depending on the 
+prevalent conditions.
+ Fiber type  Core diameter [µm]  Transmission range
+ Multi-mode glass fiber  62.5 / 125  2 - 3 km
+ Single-mode glass fiber  9 / 125  > 15 km
+ Plastic fiber  980 / 1,000  Up to 100 m
+ HCS® fiber  200 / 230  Approx. 500 m
+Tab. 4: Supported fiberoptic cable types
+2 .4 Wireless transmission
+PROFIBUS is also used in wireless communication. 
+Even if PI has not made any provisions in the form 
+of specifications or guidelines, interoperability with 
+wired systems is still ensured. This is supported by 
+the many applications in use.
+In PROFIBUS systems, solutions for the wireless 
+connection of sensors and actuators are also 
+possible. Corresponding guidelines which specify 
+the integration of WirelessHART (used in process 
+automation) and Wireless Sensor/Actuator Network 
+(WSAN, used in factory automation) are in process.
+2 .5 Transmission technology in 
+hazardous areas
+When operating fieldbuses in hazardous areas, 
+the interface PROFIBUS MBP is the typical choice. 
+Besides the IEC 61158-2 (fieldbus standard, Table 3), 
+the more stringent explosion protection standard 
+IEC 60079-11 (electrical equipment for hazardous 
+areas) must be observed. Here two concepts are 
+principally used: 
+• The FISCO model (IEC 60079-27) enables the 
+implementation of explosion protection, 
+including regulatory approval without individual 
+calculations. It is characterized, however, by a 
+considerable low input power into a segment 
+and thus by short cable length and low number 
+of field devices. 
+• The High-Power Trunk concept, whereby the 
+limitations in power of FISCO are removed by 
+using the ignition protection type increased 
+safety. Intrinsic safety is applied where working 
+on field devices is permitted also without “hot 
+work permit” .
+In certain cases, the RS485 interface in compliance 
+with Ex e ignition protection type can also be used in 
+the hazardous area. 
+The FISCO model (IEC 60079-27)
+The FISCO model (Fieldbus Intrinsically Safe 
+Concept) makes it easy to plan, install and expand 
+PROFIBUS networks in hazardous zones of type 1.  
+This model is based on the specification that a 
+communication network is intrinsically safe and does 
+not require calculations for validating intrinsic safety 
+if the relevant components, such as the field devices, 
+cables, segment couplers and bus termination values 
+conform to a set of limit values (for voltage, current, 
+output, inductivity and capacity). Intrinsic safety is 
+considered verified if all the components operated 
+in the segment in question are certified as per FISCO. 
+The following constraints have also be met: 
+• Each segment only has one power supply source
+• The total cable length is up to 1,000 m
+FISCO ensures that:
+• The field devices always act as passive sinks
+• The permissible input values of each field device 
+are greater than the possible and permissible 
+output values of the associated supply unit if a 
+fault were to occur.
+The ignition protection type intrinsic safety Ex i (IEC 
+60079) is the most often used protection type in 
+measurement and control technology. It is based 
+on the parameter of limiting current and voltage 
+in intrinsically safe circuits to levels where neither 
+thermal effects nor sparking could lead to the 
+ignition of explosive mixtures. This is associated with 
+a limitation of the supply current of a PA segment 
+to 100 mA with corresponding limitations in cable 
+length and the number of bus nodes.
+The High-Power Trunk Concept
+The "intrinsically safe" ignition protection type is 
+only really required in a process control system 
+where access is required for maintenance or device 
+replacement during operation. In other areas, e.g. 
+at the trunk cable, this requirement generally does 
+not apply, which is why ignition protection type Ex 
+e (increased safety) is applied there with the ability 
+to transport more power. This enables longer cable 
+length and increased number of field devices without 
+obstructing operation. It is therefore possible to use 
+a mixed concept comprised of protection types 
+increased safety (Ex e) for the trunk and intrinsic 
+safety (Ex i) at the spur, which can be implemented 
+with devices called fieldbus barriers. The outputs of 
+the field barriers are conventionally intrinsically safe 
+for the connection of field devices. An overview of 
+this can be found in Figure 5.
+PAGE 13
+PROFIBUS System Description 7
+Fig. 5: Utilization of different ignition protection 
+types
+Likewise, in automation systems with hazardardous 
+zone 2, the trunk is designed in the "non-sparking 
+(Ex nA)" protection type and thus enables the 
+introduction of high currents into zone 2. Due to the 
+less stringent explosion protection requirements 
+simple field distributors can be used here instead 
+of field barriers. Field devices of protection type 
+"energy limited" (Ex nL) can be connected to their 
+short circuit-proof outputs of 40 mA output current 
+each.
+2 .6 Topology
+If RS485 transmission technology is used, all field 
+devices are typically connected in a line structure 
+(see Figure 6) with up to 32 nodes (master and slaves) 
+in one segment. The beginning and end of each 
+segment are provided with active bus termination, 
+which must be supplied with power continuously. 
+The bus terminations are usually implemented as 
+optionally activatable in the devices or plugs. If 
+there are more than 32 nodes or the network span is 
+being extended, repeaters must be used to link the 
+networks.
+Drive technology is required for every 
+automation task: Whether it's moving, adjusting, 
+positioning, conveying or storing, it all demands 
+perfect communication between drives and the 
+automation system. No technology in the world 
+is used more than PROFIBUS here.
+Fig. 6: The connection of DP and PA segments
+If MBP transmission technology is used (in process 
+automation), basically any topology is permissible. 
+Linear and tree structures and combinations of 
+both are thus possible. In practice, the "trunk & 
+spur topology" (see Figure 6) has established itself 
+as the de-facto standard, as it is especially clear 
+and well-laid-out. Thanks to the technically-mature 
+installation technologies available on the market, it 
+also exhibits a high degree of robustness. The overall 
+length of a segment may not exceed 1,900 meters, 
+and the length of the stubs in intrinsically-safe 
+applications is max. 60 m and must be taken into 
+account when calculating the overall length.
+Coupling RS485 and MBP transmission 
+technology . The MBP transmission technology is 
+typically limited to certain subsegments of a system, 
+e.g. a group of field devices in a hazardous area. The 
+connection of such subsegments (designated as 
+MBP or PA segment or PA spur) to the RS485 segment 
+(also designated as DP segment or DP spur) is carried 
+out using segment couplers or links. They handle the 
+following tasks:
+• Implementation of the asynchronous signal 
+encoding with RS485 into synchronous signal 
+encoding with MBP
+• Provision of incoming supply voltage for the 
+PA segment and limiting of incoming current 
+supply
+• Decoupling of transmission speed
+• Isolation and power limiting for hazardous areas 
+(optional)
+Segment couplers are transparent from the 
+standpoint of the bus protocol, the devices of the 
+MBP segment are directly visible on the DP side 
+and the segment coupler itself does not require 
+configuration. 
+Links, on the other hand, are intelligent and map all 
+devices connected in the MBP segment as a single 
+slave in the RS485 segment. The link needs to be 
+configured and restricts the total amount of data 
+PAGE 14
+PROFIBUS System Description8
+which can be transferred to and from the connected 
+devices to 244 bytes. The cyclical data from the PA 
+devices is compressed into a single DP telegram on 
+the DP side and must be reselected by the DP master. 
+The faster DP segment enables a number of PA 
+segments to be integrated into a single DP network 
+via segment couplers or links.
+2 .7 Redundancy
+For applications which demand high system 
+availability, such as with continuous processes, 
+redundant systems are generally used, whereby the 
+redundancy can extend to all system components. A 
+differentiation is made between different concepts 
+which can be combined with one another as desired 
+and, in special cases, also contain complete spatial 
+separations:
+• Master redundancy:
+The control system or the controller is designed 
+redundantly (system redundancy, Figure 7, 
+right)
+• Media redundancy:
+The cable paths are designed redundantly
+• Coupler/link/gateway redundancy:
+The segment couplers are designed redundantly 
+(Figure 7) If a coupler fails, the other ones 
+seamlessly take over its function. The master 
+does not notice the switchover and no messages 
+are lost.
+Fig. 7: Various redundancy concepts
+• Ring redundancy:
+The combination of redundant couplers and field 
+devices with active field distributors implements 
+ring redundancy and creates expanded media 
+redundancy. Subsegments which have become 
+defective due to a short circuit or wire break are 
+automatically and seamlessly operated further 
+via a coupler each in a line structure (Figure 8).
+Fig. 8: Ring redundancy with PROFIBUS PA
+• Slave redundancy:
+The field devices or the PROFIBUS connection 
+in the field device are designed redundantly. 
+Concepts for slave redundancy are described 
+in the PROFIBUS specification titled “Slave 
+Redundancy” . Field devices designed with 
+redundancy need to be on an equal footing and 
+determine between themselves which is to act 
+as the primary node and which as the secondary 
+node. Manufacturer-specific solutions are 
+available for transmission media and master 
+redundancy.
+2 .8 Installation information for RS485
+A number of different cable types (type designation 
+A through D) for different use cases are available for 
+the connection of devices to one another and to 
+network elements (e.g. segment couplers, links and 
+repeaters). If the RS485 transmission technology 
+is used, cable type A (data in Table 2) is strongly 
+recommended.
+When connecting the nodes, ensure that the data 
+cables are not mixed up. To achieve high interference 
+resistance of the system against electromagnetic 
+radiation, a shielded data cable (type A is shielded) 
+should definitely be used. The shielding is to be 
+connected to the protective ground on both sides 
+ensuring good conductivity via large-area shield 
+clamps. Equipotential bonding of all connected field 
+devices is also recommended. Also ensure that the 
+data cable is laid as far away from all high-current 
+cables as possible. Stubs must absolutely be avoided 
+with transmission rates greater than or equal to 
+1.5 MBit/s. The number of nodes which can be 
+connected to a segment is limited to 32. 
+The plugs offered on the market enable incoming 
+and outgoing data cables to be connected directly 
+in the plug. This avoids stubs, and the bus plug can 
+be connected to and disconnected from the bus at 
+any time without interrupting the data traffic. The 
+plug connectors suitable for RS485 transmission 
+technology differ by protection type. In protection 
+PAGE 15
+PROFIBUS System Description 9
+type IP 20, a 9-pin D-Sub plug connector is preferable 
+for use. In protection type IP 65/67, different solutions 
+are recommended as per the guideline:
+• M12 round plug connector as per IEC 60947-5-2
+• Han-Brid plug as per DESINA recommendation
+• Hybrid plug connector
+• 7/8" plug
+The hybrid plug systems also include a variant for 
+transmitting data over fiber-optic cable fibers and 
+24 V operating voltage for the peripheral devices via 
+copper cables in a single hybrid cable.
+Experience shows that difficulties with the 
+transmission technology in PROFIBUS networks can 
+most often be traced back to improper cabling and 
+installation. Bus test devices, which can ferret out 
+many typical cabling errors before commissioning, 
+can remedy this situation.
+The reference addresses of the many different 
+plugs, cables, repeaters and bus test devices can 
+be obtained from the PROFIBUS product catalog  
+(www.profibus.com).
+2 .9 Installation information for MBP
+The intrinsically safe MBP transmission technology 
+is normally limited to certain subsegments (field 
+devices in the hazardous area) of a system which are 
+then linked to the RS485 segment (control system 
+and engineering devices in the measuring station) 
+via segment couplers or links.
+As already mentioned, segment couplers are signal 
+converters which adapt the RS485 signals to the 
+MBP signal level and vice versa. They are transparent 
+from the viewpoint of the bus protocol.
+Links, on the other hand, are intelligent. They map 
+all field devices connected in the MBP segment 
+upwardly as a single slave in the RS485 segment; 
+downwardly, it functions as a master. If links are 
+used, the transmission rate in the RS485 segment is 
+not influenced by the connected PA segments. This 
+also allows fast networks to be implemented using 
+field devices with an MBP connection for control 
+tasks, for example.
+A two-core shielded cable is used for the transmission 
+medium. The important thing here is that different 
+cables are involved for PROFIBUS DP (cable Type A 
+according to IEC 61158 Part 2 Interface RS485(-IS)) 
+and PROFIBUS PA (cable Type A according to IEC 
+61158 Part 2 Interface MBP(-IS)). (See Table 2). The 
+bus termination is already permanently integrated 
+at the segment coupler or link. A field device using 
+MBP technology which is connected with wrong 
+polarity in most cases does not negatively affect the 
+functionality of the bus, as these devices are normally 
+equipped with automatic polarity detection.
+A typically free of charge planning software 
+should be used for segment design  
+(www.segmentchecker.com ) Hereby the electrical 
+function of a segment can be checked before 
+installation work starts. Planning and checking 
+steps comprise cable length and number of 
+devices possible. This planning procedure 
+protects the user from possible costly subsequent 
+modifications of the installation.
+The operation of bus-supplied and externally-
+supplied devices together is permissible. Note that 
+externally-supplied devices draw a base current 
+via the bus connection, which must be taken into 
+account accordingly when calculating the maximum 
+available supply current.
+2 .10 Bus diagnostic
+Bus diagnostics enables the physical layer to 
+be measured on a segment and field device 
+specific basis and simplifies commissioning. Once 
+installation is complete, the loop check is carried 
+out at the push of a button using corresponding 
+tools available on the market. Extensive expert 
+knowledge about waveforms and possible causes 
+are no longer required for commissioning.
+Although simulated aging tests of installations 
+did not show any relevant risks, there are other, 
+substantive reasons for continuous monitoring of 
+the physical layer itself. The most common cause 
+of changes on a fieldbus installation are authorized 
+interventions during maintenance or assembly 
+operations, more so than unwanted changes due to 
+environmental conditions. All important parameters 
+affecting transmission quality are monitored using 
+diagnostics tools to ensure that they remain within 
+permissible limits.
+By integrating bus diagnostics into the power supply 
+technology, it becomes possible to monitor systems 
+permanently rather than just sporadically, thereby 
+facilitating the identification of errors which might 
+otherwise slip through unnoticed during operation. 
+This also makes it possible to detect changes on 
+the physical layer and rectify errors which might 
+cause the bus to fail. Bus diagnostics also make 
+troubleshooting much easier, as maintenance 
+personnel are provided with detailed information, 
+often with information in plain text, about possible 
+errors.
+Notice: Explanations of field device diagnostics are 
+found in Chapter 4 under "PA profile" .
+PAGE 16
+PROFIBUS System Description10
+Manufacturers of fine chemicals must respond 
+flexibly and quickly to customer orders and 
+frequently adapt their systems accordingly. 
+Thanks to its enormous flexibility, PROFIBUS 
+offers the best prerequisite for this.
+3 Communication with 
+PROFIBUS
+PROFIBUS devices communicate using the 
+PROFIBUS DP (Decentralized Periphery) 
+communication protocol, which is the same for all 
+applications and which allows cyclical and acyclical 
+communication and specifies rules for this. The core 
+of the communication process is the master-slave 
+method, where a master (active communication 
+nodes: PLC, PC or control system) cyclically prompt 
+the connected slaves (passive communication 
+nodes: field devices, I/Os, drives) to exchange data. 
+The polled slave answers the prompting master with 
+a response message. A request message contains 
+the output data, e.g. setpoint speed of a drive, and 
+the associated response message contains the input 
+data, e.g. the latest measured value from a sensor. A 
+bus cycle comes to an end once all connected slaves 
+have been polled in order.
+In addition to this cyclical communication for the 
+fast exchange of input and output data between the 
+master and slaves at regular intervals, need-based 
+data can also be transmitted using PROFIBUS, e.g. 
+device setting data. A master has the initiative, 
+accessing the data of a slave in read or write mode 
+acyclically. There can be more than one master 
+in a PROFIBUS system. In such a case, the access 
+authorization passes from the active master to the 
+next master (token-passing principle).
+3 .1 PROFIBUS DP communication 
+protocol
+For optimum fulfillment of the requirements of 
+different areas of use, the functions of the PROFIBUS 
+DP communication protocol are distributed over 
+three performance levels: DP-V0, DP-V1 and DP-V2 
+(Figure 9).
+Version DP-V0 provides the basic function of 
+the communication protocol. This includes, in 
+particular, cyclical communication and device-, 
+module- and channel-specific diagnostics for quick 
+fault localization. Examples of this include "excess 
+temperature" and "short circuit on output" .
+Fig. 9: PROFIBUS DP protocol, performance levels
+
+PAGE 17
+PROFIBUS System Description 11
+Version DP-V1 supplements DP-V0 with functions for 
+acyclical communication, i.e. for functions such as 
+parameterization, operation, monitoring and alarm 
+handling. DP-V1 enables online access to bus nodes 
+via engineering tools for this purpose (Figure 10).
+Version DP-V2 contains additional functions as 
+extensions of DP-V1, in particular functions which 
+are required for drive control. These include 
+functions for communication between slaves, cycle 
+synchronization and time stamping.
+Field devices for process automation are typically 
+slaves of performance level DP-V1 and can therefore 
+communicate acyclically to set device parameters.
+Fig. 10: Cyclical and acyclical communication 
+with DP-V1
+3 .2 Device classes
+PROFIBUS devices are divided into three classes 
+based on their functions:
+PROFIBUS DP master (class 1)
+A PROFIBUS DP master of class 1 (DPM1) is a master 
+which uses cyclical communication to exchange 
+process data with its associated slaves. Devices 
+of this type are often integrated in a memory-
+programmable controller or an automation station 
+of the process control system.
+PROFIBUS DP master (class 2)
+A PROFIBUS DP master of class (DPM2) was originally 
+defined as a master used as a tool in the context 
+of PROFIBUS system commissioning. In the course 
+of the DP-V1 and DP-V2 functional expansions, a 
+DPM2 has been more specifically defined as a master 
+which can be used to set device parameters via 
+acyclical communication. Devices of this type are 
+usually part of an engineering station used for device 
+configuration. A DPM2 need not be permanently 
+connected to the bus system.
+PROFIBUS slave
+A PROFIBUS slave is a passive communication node 
+which reacts to prompts from the master by sending 
+a response message. Devices in this class are usually 
+field devices (remote I/O, drive, valve, transducer, 
+analyzer) which acquire process variables or play 
+a part in the process by means of manipulated 
+variables. A differentiation is made between compact 
+and modular slave devices. A modular device 
+comprises a head station containing the fieldbus 
+interface and a number of slots into which various 
+modules can be inserted. By combining different 
+modules, modular slaves can be adapted flexibly 
+to respond to prevailing requirements with regard 
+to input and output data. Compact devices have a 
+fixed set of input and output data – comparable to 
+a modular device with precisely one permanently 
+installed module.
+The majority of slave devices in process automation 
+are modular devices on which, rather than being 
+physically present, the individual modules simply 
+exist in the device software (virtual modules). 
+These virtual modules (and, therefore, access to 
+the associated input and output data) are activated 
+or deactivated when cyclic communication is 
+established. The virtual modules, of which a slave 
+device in process automation is able to make use, are 
+specified in the device profile for PA devices.
+Frequently, PROFIBUS master devices support the 
+functions of both a DPM1 and a DPM2. Similarly, 
+there are also automation devices which are able to 
+operate as both masters and slaves. In practice, it is 
+rarely possible to unequivocally categorize physical 
+devices into the function classes outlined above.
+3 .3 . Cyclical communication and 
+PROFIBUS diagnostics
+Once the configuration has been loaded on the class 1 
+master with the help of the configuration tool, the 
+master establishes cyclical communication with 
+the associated slave devices (MS0 channel). During 
+this power-up phase, the slave adopts a two-stage 
+approach to checking the configuration data 
+received from the master.
+First, the parameters set in the configuration (e.g. 
+master address, watchdog time and ID number) 
+are transferred to the slave (parameterization) 
+and checked (configuration). The ID number is 
+unique for each device type and is assigned by PI. 
+Cyclical communication can only take place if the 
+ID number from the configuration tallies with the 
+ID number saved in the slave. Next, the information 
+about the configured modules – in other words, 
+PAGE 18
+PROFIBUS System Description12
+the configuration bytes – is transferred to the slave 
+and checked. Cyclical communication can only be 
+established if the modules which are physically 
+present tally with those set in the configuration or if 
+the device can adapt to the configuration received.
+Successful establishment of communication is then 
+verified via the requested diagnostics data. The slave 
+reports invalid parameter or configuration data to 
+the master through corresponding errors in the 
+PROFIBUS standard diagnostics. If the parameter and 
+configuration data is valid, the master will initiate 
+cyclical communication with the slave device.
+PROFIBUS diagnostics comprise both PROFIBUS-
+specific standard diagnostics and advanced 
+diagnostics. The latter contains device-specific 
+diagnostics data relating, for example, to measuring 
+or setting procedures. Any changes to device-specific 
+diagnostics data are reported by a slave in the 
+response message during cyclical communication; 
+the master will respond accordingly in the next bus 
+cycle by polling the diagnostics data, rather than the 
+process data, of the slave concerned. Each PROFIBUS 
+slave can only engage in cyclical data exchange with 
+one DPM1. This ensures that a slave can only receive 
+output data from one master, thereby avoiding data 
+inconsistency.
+Foods are bound by especially stringent 
+specifications for quality and traceability of 
+the manufacturing process, including the 
+communication technology. With PROFIBUS, 
+these features are of the highest priority, which 
+is evidenced by its wide distribution in the food 
+industry.
+3 .4 Acyclical communication and 
+parameter addressing
+A key part of the acyclical data exchange process is 
+the writing or reading of device parameters at the 
+behest of the master. These device parameters can 
+be used by a centralized operator tool to configure 
+a field device, thereby adapting it to the specific task 
+it has been charged with performing in the technical 
+process.
+There are two different channels for acyclical 
+communication, MS1 and MS2. In this context, a link 
+between a master and a slave (MS1 link) via the MS1 
+channel can only ever be established if cyclical data 
+exchange is taking place between the master and 
+slave concerned.
+As a slave is only able to exchange data cyclically with 
+one master at once, a slave can only have up to one 
+MS1 link. Subject to corresponding parameterization 
+data, the MS1 link is established implicitly when 
+cyclical communication is initiated and monitored 
+by the watchdog time.
+A slave can have a MS2 link with one or a number of 
+masters simultaneously as long as it is not engaged 
+in cyclic communication. The MS2 connection has 
+to be established explicitly by the master. It has a 
+separate time monitoring mechanism by means of 
+which a MS2 link will be closed if it is not used for a 
+set period of time. Unlike for cyclical communication, 
+a complex configuration based on the device master 
+file is not required for acyclical communication; 
+usually, knowledge of the address of the device 
+concerned is all that is needed to establish a MS2 link 
+on the master side.
+Device parameters are addressed in a slave device 
+by means of the specification of the slot and index. 
+The "slot" (values from 0 to 254) is a slot on a modular 
+device; on PA devices, a slot addresses a function 
+block (see Chapter 4). The "index" (0 to 254) is the 
+address of a parameter within the slot concerned.
+Devices with PA profile 3.0 and higher must have a 
+MS2 channel, although the MS1 channel is optional. 
+Since, in practice, very few PA profile devices 
+implement a MS1 channel, the MS2 channel is used 
+universally for acyclical data transmission in process 
+automation.
+3 .5 Standardized function blocks (FB)
+When developing and using cross-manufacturer 
+application profiles, the technology of the 
+standardized function blocks (FB) plays an important 
+role, because the growing functional scope of 
+PAGE 19
+PROFIBUS System Description 13
+modern field devices allows different controllers 
+to be integrated without specific communication 
+knowledge and without manufacturer-specific 
+adaptations to the application program. Function 
+blocks, which contain the sometimes complex 
+functions of field devices (e.g. calibration, motor 
+power-up, speed change etc.) in encapsulated 
+form, are used for this. They therefore function as 
+a "representative" (Proxy FB) of the corresponding 
+field devices placed in the control program. 
+The function blocks are generally created in the 
+standardized programming language of "Structured 
+Text" (ST) as per IEC 61131-3. A Proxy FB presents 
+access to its functions in encapsulated graphic form 
+and can therefore also be called by the "simpler" 
+programming languages of IEC 61131-3, such as 
+LD/COP (Ladder Diagram/Contact Plan), FBD/FUP 
+(Function Block Diagram/Function Plan) or IL/APL 
+(Instruction List/ Application List). 
+Proxy FBs are generally specified by device profile 
+working groups and provided to the user in different 
+ways, depending on the business model. The 
+advantage here is that they can be used in controllers 
+from different manufacturers. Individual device 
+manufacturers can also make use of this to give their 
+"slaves" competitive advantages by encapsulating 
+certain functions.
+For the practical use of FBs by application 
+programmers, an interface that is system-neutral from 
+the viewpoint of the many controller manufacturers 
+(Application Programmer's Interface or [API]) must 
+be defined in addition to the known PROFIBUS 
+communication interface (communication platform, 
+MS0, MS1, MS2, Figure 11) specified in IEC 61158. This 
+makes it easy to port user software and the proxy FBs 
+used from the programmable logic controller (PLC) 
+of manufacturer A to the PLC of manufacturer B 
+using standardized communication blocks ("Comm 
+FBs") if the controller manufacturer offers Comm FBs 
+in their programming library.
+Fig. 11: The use of function blocks (Proxy FB and 
+Comm FB)
+3 .6 Comm FBs as a system-neutral 
+interface with PROFIBUS
+PI has defined function blocks (shown in yellow 
+in Figure 11) for the system-neutral interfaces in 
+the "Communication and Proxy Function Blocks 
+according to IEC 61138-3" guideline. These function 
+blocks are supported by the languages of IEC 
+61131-3 and the communication services of IEC 
+61158 defined for PROFIBUS. The guideline defines 
+communication blocks for master classes 1 and 2 
+and slaves and several additional help functions as 
+well. The technological functions of a field device 
+can be addressed uniformly using these Comm 
+FBs. All FBs share a common concept for displaying 
+errors with coding as per IEC 61158-6.
+PLC manufacturers offer such standard 
+communication blocks in PLC-specific "IEC libraries" .
+In addition to the previously mentioned "neutralized" 
+access to acyclical communication functions via 
+MS1, the FDT interface (see page 19) completes the 
+Application Programmer's Interface (via MS2) for the 
+access of engineering and configuration tools.
+4 Application profiles
+To ensure smooth interaction between the bus 
+nodes of an automation solution, the basic functions 
+and services of the nodes must match. They have 
+to "speak the same language" and use the same 
+concepts and data formats. This applies both for 
+communication and for device functions and 
+industry sector solutions. This uniformity is achieved 
+through the use of "profiles" relating to device 
+families or special industry sector solutions. These 
+profiles specify features which "profile devices" must 
+exhibit as a mandatory requirement. 
+These can be cross-device-class features, such as 
+safety-relevant behavior (Common Application 
+Profiles) or device-class-specific features (Specific 
+Application Profiles). Here, a differentiation is made 
+between
+• Device profiles 
+for robots, drives, process devices, encoders, 
+pumps etc., for example
+• Industry profiles 
+for laboratory technology and rail vehicles, for 
+example
+• Integration profiles 
+for the integration of subsystems such as HART 
+or IO-Link systems
+PAGE 20
+PROFIBUS System Description14
+Figure 11 shows the classification of profiles in the 
+PROFIBUS system building blocks, and Table 5 
+provides an overview of currently available PROFIBUS 
+profiles. The following contains further information 
+on several of them.
+4 .1 PROFIdrive
+The PROFIdrive profile is used in factory automation. 
+It defines the device behavior, the access method and 
+the data formats for the drive data of electrical drives 
+on PROFIBUS, from simple frequency converters to 
+highly dynamic servo controllers. All the details on 
+this can be found in the relevant system description 
+(Order No. 4.322).
+Tab. 5: PROFIBUS application profiles
+ Profile Name  Profile Content PI Order No.
+Specific application profiles
+Dosing / Weighing Profile describes the use of dosing and weighing systems on PROFIBUS. 3.182a; 3.182b; 3.182c
+Encoder Profile describes the connection of rotary, angular, and linear encoders with 
+single-turn and multi-turn resolution. 3.162
+Fluid Power Profile describes the control of hydraulic drives via PROFIBUS (cooperation 
+with VDMA). 3.112
+HART on PROFIBUS Profile desribes the integration of HART devices in PROFIBUS systems. 3.102
+Ident Systems Profile describes the communication between identification devices 
+(barcode reader, transponder). 3.142
+LabDevices Profile describes the properties of laboratory automation devices on 
+PROFIBUS. 2.412
+Intelligent Pumps Profile desribes the use of liquid pumps on PROFIBUS (cooperation with 
+VDMA). 2.422
+Low Voltage Switchgear Profile descibes data exchange for low-voltage switchgear (switch 
+disconnector, motor starter, etc.) on PROFIBUS. 3.122
+PA Devices Profile desribes the properties of process automation devices on 
+PROFIBUS.  3.042
+PROFIdrive Profile describes the device behavior and access behavior to data for 
+variable speed electric drives on PROFIBUS. 3.172; 3.272
+Remote I/O for PA Profile desribes the interchangeability of remote I/O devices in process 
+automation. 3.132
+Remote I/O for FA Profile desribes the interchangeability of remote I/O devices in factory 
+automation. 3.242
+Robot / Numerical Controls Profile describes the system behavior of numerical controls, robot controls 
+and positioning controls from the view of the PROFIBUS communication. 3.052
+SEMI Profile describes properties of semiconductor manufacturing devices on 
+PROFIBUS (SEMI standard). 3.152
+ General application profiles
+Identification & Maintenance Profile desribes a concept for identification of PROFIBUS devices and 
+Internet access to device-specific information. 3.502
+iPar-Server Profile desribes the saving of additional i-parameters in the controller and 
+the read-back of i-parameters after a device replacement. 3.532
+PROFIsafe Profile desribes safe communication of safety-related devices (emergency 
+OFF switch, light array, etc.) with safety controllers via PROFIBUS. 3.192
+Redundancy Profile desribes the mechanism for field devices with redundant 
+communication behavior. 2.212
+Time Stamp Profile desribes the precisely timed assignment of certain events and 
+actions by time stamping. 3.522
+Data Types
+Document is part of ProfileGuideline Part 2 and is dealing with data type 
+definitions of profile variables and parameters, programming languages of 
+field devices and controllers as well as platform aspects for field devices.
+3.512
+Diagnosis Document is part of Profile-Guideline Part 3 and is dealing with the different 
+aspects of diagnosis to provide information about faults of field devices. 3.522
+Host Application Document describes, for each application profile, the functional 
+requirements for the host and the engineering system. 3.902
+PAGE 21
+PROFIBUS System Description 15
+Humidity measurement plays an important role 
+in the processes of almost all industries, but it's 
+integration into fieldbus technology remained 
+disregarded for a long time. PROFIBUS provided 
+the solution. One example is the humidity 
+measurement carried out when producing 
+pasta.
+4 .2 PROFIBUS PA (PA devices,  
+"PA profile")
+The PROFIBUS PA profile is the basis for using 
+PROFIBUS in process automation. Besides the use of 
+this profile, this application is often characterized by 
+intrinsically-safe operation, large cable lengths and 
+device infeed via the bus cable. The PA profile defines 
+the functions and parameters for process-control 
+devices, such as transmitters, actuators, valves and 
+analyzers. These functions and parameters are used 
+to adapt the devices to the respective application 
+and process conditions. The specifications are 
+based on function blocks, and the parameters are 
+classified as input, output and internal parameters. 
+The profile also specifies how the various services 
+of the PROFIBUS communication protocol are used. 
+Accordingly, for example, process data exchanged 
+cyclically is based on a standard format for all 
+devices. In addition to the measured value and/or 
+manipulated measurement value, this format also 
+features a status providing information about the 
+quality of the value and possible limit violations. It 
+thereby provides the foundation for harmonized 
+applications, simplified engineering, device 
+exchangeability and increased reliability by means 
+of standardized diagnostic information.
+PA profile version 3.02 has been expanded with a 
+host of application-oriented functions since the 
+previous version of 3.01. These functions take 
+into account the years of operating experience in 
+PROFIBUS PA systems and implements the resulting 
+user demands.
+4 .3 Improvements in PA profile 3 .02
+The improvements made to PA profile 3.02 
+concentrate on the optimization of lifecycle 
+management of the devices with the goal of linking 
+the simplicity of traditional 4-20 mA technology with 
+the performance potential of fieldbus technology.
+Version flexibility when replacing devices
+Up until now, it was necessary to fall back on devices 
+of the same generation as the installed devices when 
+devices had to be replaced, even though a more 
+state-of-the-art version with additional innovative 
+features was available on the market. Version 3.02 of 
+the profile does away with this limitation by enabling 
+(new) devices to automatically adjust themselves to 
+the version and functions of its predecessor device 
+(Automatic ID Number Adaption, Figure 12). Here, 
+the (new) device is notified of the version of the 
+predecessor device from the controller or control 
+system and automatically adapts itself to that 
+device's functions without interrupting the process. 
+This device feature is part of the certification testing 
+of devices with profile version 3.02. The next time 
+the system is planned to stop, the new device can 
+be integrated into the control system and the new 
+functions can be used.
+Fig. 12: Device replacement with transfer of the 
+predecessors' functions
+Simplified device integration
+In contrast to the trusted configuration of 4-20 
+mA devices in the field, the integration of fieldbus 
+devices puts greater demands on the operator due 
+to the larger function scope. Working with the device 
+descriptions required for this must be possible for 
+the user without special knowledge, however.
+The simplification implemented in PA profile 3.02 
+is based on cross-manufacturer rules for ensuring 
+unambiguous compatibility between the description 
+PAGE 22
+PROFIBUS System Description16
+files (GSD, EDD, DTM) and the field devices. Among 
+other things, the rules stipulate the storage of 
+standardized parameters in the device and device 
+description, which enables the integration tools to 
+automatically assign devices and description files 
+(Figure 13). This means considerable simplification 
+during the initial installation or device replacement. 
+In addition, simple and clean labeling on the device 
+housing makes unambiguous assignment of devices 
+to description files easier, e.g. when removing 
+devices from storage. These device features are part 
+of the certification testing.
+Fig. 13: Device replacement with transfer of the 
+predecessors' functions
+Accelerating data uploads and downloads
+Depending on the phase of the life cycle of a system, 
+considerable amounts of data must be transmitted 
+when adapting parameters, during commissioning 
+and during maintenance or device replacement. 
+Depending on the function scope of the devices, this 
+could be several hundred parameters, which makes 
+the time required for transmission more important. 
+PA profile 3.02 optimizes transmission through 
+optimum grouping of the parameters and simplified 
+access. Depending on the amount of data being 
+transmitted, the time required could be reduced by 
+a factor of 10.
+Continuously standardized device diagnostics
+Consistency in device replacement is also ensured 
+with regard to the output of diagnostic information. 
+Devices with profile 3.02 are required to output 
+diagnostic information as per the categories 
+of NAMUR recommendation 107 (Figure 14), 
+whereby the mapping is already carried out by 
+the manufacturer. When replacing devices, the 
+owner therefore need not spend time or effort on 
+any adaptations or changes. All devices provide 
+identically-structured diagnostic information by 
+default, thereby ensuring a quick and easy overview 
+of the system. Additional detailed information 
+enables device replacement and repair to be 
+planned, system downtimes to be avoided, which 
+saves money, and the service life of the system to be 
+increased.
+Fig. 14: Diagnostic mapping as per NAMUR 
+recommendation 107
+4 .4 HART on PROFIBUS 
+In view of the very large number of HART devices 
+installed in the field, their integration into existing 
+or new PROFIBUS systems is a pressing task for most 
+users. The “PROFIBUS Profile HART” document (Order 
+No. 3.102) offers an open solution for this. It defines 
+the use of the PROFIBUS communication mechanism 
+without changes to the protocol and services of 
+PROFIBUS. 
+The document defines a profile of PROFIBUS, which 
+is implemented in the master and slave above level 
+7 and therefore enables the mapping of the client-
+master server model of HART on PROFIBUS. Full 
+compatibility with HART specifications has been 
+assured by collaborating with the HART Foundation 
+(today FieldComm Group [FCG]) in drafting the 
+specification.
+The HART client application is integrated in a 
+PROFIBUS master and the HART master in a PROFIBUS 
+slave (Figure 15), whereby the latter serves as a 
+multiplexer and takes over communication with the 
+HART devices.
+A communication channel which works 
+independently of the MS1 and MS2 connections 
+has been defined for the transmission of HART 
+messages. One HMD (HART Master Device) can 
+support a number of clients. The number depends 
+on the implementation.
+Version 2.0 of the profile extends the existing 
+integration to include standardized PROFIBUS 
+PAGE 23
+PROFIBUS System Description 17
+modules for hard-wired HART devices as well as 
+for the new WirelessHART® device generation. As a 
+result, there is no need to implement a profile layer in 
+the DP master for cyclic data exchange with DP and 
+channel-specific diagnostics.
+Fig. 15: Operating HART devices on PROFIBUS
+HART devices can be connected to the HMD via 
+various components or to PROFIBUS via modules. 
+These originate from a GSD of the component or are 
+created with a device-specific module configurator. 
+This is typically implemented as a class 2 DP master 
+and as an HMD; furthermore, it can offer the detailed 
+configuration of complex HART devices using an 
+EDD or the FDT/DTM concept.
+4 .5 PROFIsafe
+The risk of human injury, damage to production 
+systems and environmental harm is inherent in 
+many industrial processes. This realization resulted in 
+"safety-related automation technology" becoming 
+of great importance, as its safety requirements are 
+far above and beyond those of standard automation 
+technology. This demand must also be satisfied 
+by the fieldbus technology, and the PROFIsafe 
+communication profile serves this purpose for 
+PROFIBUS.
+All the details on this can be found in the relevant 
+system description (Order No. 4.342).
+4 .6 Identification & Maintenance (I&M)
+The definitions collected in the Identification & 
+Maintenance (I&M) application profile are binding 
+specifications for the storage of specific data in each 
+PROFIBUS device. This gives the owner standard 
+access to all device data through all devices 
+during configuration and commissioning as well 
+during parameterization and update procedures. 
+The database for this are XML files stored on the  
+www.profibus.com server. These files are managed 
+online by the device manufacturers and are 
+therefore kept up-to-date over the entire device life 
+cycle (Figure 16). Using an engineering tool, this data 
+can be read out at any time, whereby the "device-
+local" data is compared to the centralized, daily-
+updated information from the manufacturer for the 
+device in question. This is very helpful for system 
+documentation, order processes and maintenance 
+processes, for example.
+Fig. 16: The principle of I&M functions
+5 Device integration
+A particular advantage of PROFIBUS is openness, 
+which in turn brings with it compatibility with a 
+large number of device and system manufacturers. 
+However, this does mean that the benefit of 
+numerous different device and systems suppliers 
+is countered by a correspondingly high number of 
+different possible HMIs. Standards for the centralized 
+and uniform integration of fieldbuses into 
+automation systems have been developed in order 
+to ensure that a disproportionate amount of time 
+and effort is not required with regard to installation, 
+version management and device operation. Devices 
+are usually integrated by means of mapping their 
+functionality to operator software. The process 
+is optimized by consistent data management 
+throughout the life cycle of the system, with identical 
+data structures for all devices. All standards cited 
+in the following can be used in conjunction with 
+PROFIBUS.
+A summarized representation of device integration 
+can be found in Figure 17.
+PAGE 24
+PROFIBUS System Description18
+Fig. 17: Technologies for device integration
+5 .1 General Station Description (GSD)
+The GSD (general station description) is provided 
+by the device manufacturer and is the electronic 
+data sheet for the communication properties of 
+each and every PROFIBUS device. It supplies all 
+information necessary for cyclic communication 
+with the PROFIBUS master and for configuration of 
+the PROFIBUS network in the form of a text-based 
+description. It contains the key data of the device, 
+information about its communication capabilities, 
+and further information about, for example, 
+diagnostic values. The GSD for device integration 
+alone is sufficient for the cyclic exchange of measured 
+values and manipulated variables between the field 
+device and automation system.
+Compared to the device-specific GSD, a profile GSD 
+only contains information about the parameters and 
+diagnostic descriptions specified in a device profile 
+(here: the PA profile, see chapter 4.2) that apply to 
+all manufacturers and are mandatory for "profile 
+devices" . The content of a profile GSD is thus the 
+same for all associated profile devices and is device-
+neutral. As a result, PA profile devices not only 
+have their extremely attractive functions as digital 
+fieldbus devices but also the exact property that 
+supporters of conventional 4-20 mA technology 
+regard as especially advantageous: namely, a 
+uniform and vendor-neutral communication 
+interface. Figure 18 shows on the right two such 
+profile devices with inputs and outputs (PROFIBUS 
+PA) with bidirectional communication with the 
+controller. The left side of figure 18 shows an 
+identical device arrangement with use of 4-20 mA 
+technology with its unidirectional communication 
+and separate interface for each measured or 
+manipulated variable value for a similar number of 
+process signals. This figure illustrates the enormous 
+difference in hardware and installation expenses 
+between the two technologies.
+Fig. 18: Expense comparison for devices with profile GSD (on right) and 4-20 mA interface  
+(on left)
+PAGE 25
+PROFIBUS System Description 19
+5 .2 Electronic Device Description (EDD)
+The GSD alone is not suffi   cient to describe the 
+application-specifi  c functions and parameters 
+of complex fi  eld devices. A powerful language 
+is required for the parameterization, service, 
+maintenance and diagnostics of devices from 
+the engineering system. The Electronic Device 
+Description Language (EDDL) standardized in 
+IEC 61804-2 is available for this purpose. Further 
+development is promoted jointly by PI, the 
+FieldComm Group (formerly HART Communication 
+Foundation and Fieldbus Foundation) and the OPC 
+Foundation.
+An EDD is a text-based device description which 
+is independent of the engineering system's OS. 
+It provides a description of the device functions 
+communicated acyclically, including graphics based 
+options, and also provides device information such 
+as order data, materials, maintenance instructions 
+etc.
+The EDD provides the basis for processing and 
+displaying device data on the EDD Interpreter. The 
+EDD Interpreter is the open interface between the 
+EDDs and the operator program. It provides the 
+operator program with data for visualization with 
+a standard look & feel, regardless of the device and 
+manufacturer.
+The use of PROFIBUS with the PROFIdrive 
+profi  le is widespread in the control of packaging 
+machines. All functions are executed on a 
+single bus, which considerably reduces the 
+expenditure for engineering, hardware and 
+training.
+5 .3 Device Type Manager (DTM) and Field 
+Device Tool (FDT) interface
+In comparison to the GSD and EDD technologies 
+based on descriptions, the FDT/DTM technology uses 
+a software-based method of device integration. The 
+DTM is a software component and communicates 
+with the engineering system via the FDT interface. 
+The FDT/DTM technology is being developed further 
+by the FDT Group.
+A DTM is a device operator program by means 
+of which device functionality (device DTM) or 
+communication capabilities (communication DTM) 
+are made operational; it features the standardized 
+FDT (Field Device Tool) interface with a frame 
+application in the engineering system. The DTM 
+is programmed on a device-specifi  c basis by the 
+manufacturer and contains a separate user interface 
+for each device. DTM technology is very fl  exible in 
+terms of how it is confi  gured.
+The FDT interface is a cross-manufacturer open 
+interface specifi  cation which supports the 
+integration of fi  eld devices into operator programs 
+using DTMs. It defi  nes how DTMs interact with an FDT 
+frame application in the operator tool or engineering 
+system. The interface itself is independent of the 
+communication protocol and is available at present 
+for more than 13 protocols including PROFIBUS, 
+PROFINET and IO-Link.
+5 .4 Field Device Integration (FDI)
+FDI is a new technology standardized in IEC 62769, 
+that was developed jointly by manufacturers and 
+trade associations of process and automation 
+technology, for easy and uniform integration of 
+fi  eld devices in various host systems. The goal of 
+this development eff  ort was to merge the two 
+integration technologies that previously co-existed 
+on the market – EDD and FDT – into an uniform, 
+new-generation technology. The best elements 
+of each technology were combined in FDI with 
+new technologies such as the OPC UA information 
+model and the life cycle model into a single, cross-
+vendor technology. FDI supports typical operations 
+such as confi  guration, commissioning, diagnostics, 
+and calibration over the life cycle of simple and 
+complex fi  eld devices. With FDI an alternative to 
+the very expensive parallel situation of EDD and 
+FDT called for by users and manufacturers alike has 
+been achieved. 
+The further development and maintenance of FDI 
+will be carried out jointly by PI and FieldComm 
+Group in cooperation with OPC Foundation and 
+FDT Group. This includes the work on developing 
+specifi  cations for FDI and EDDL and, in particular, the 
+supply of FDI tools and components to the market 
+and the global technical support for implementation 
+and conformity testing. The FOUNDATION Fieldbus 
+(FF), HART, PROFIBUS, and PROFINET protocols are 
+supported. The FDI specifi  cation is available for 
+download from the PI and FDT Group websites. 
+PAGE 26
+PROFIBUS System Description20
+Device Package
+The centerpiece of FDI is the scalable Device Package 
+containing all information needed by an FDI host 
+(control system, device management system, etc.) 
+for integration of an intelligent field device. Each 
+field device is described by one such Device Package 
+using a binary coded file according to IEC 29500 
+(Container format, Open Packaging Conventions). 
+This Device Package is then used without changes 
+in all integration tools and controllers from the 
+single-user PC to the complete automation system.
+ Fig. 19: FDI Device Package and FDI host
+The Device Package (Figure 19, top) of a field device 
+is a collection of obligatory and optional files that 
+are required for configuration, commissioning, 
+diagnostics, and calibration over the entire device 
+life cycle. Mandatory files are the device description 
+(Electronic Device Description, EDD) with device 
+parameters and device structure, the Business Logic 
+(BL) with consistency rules and device functions, 
+and the User Interface Description (UID). These 
+three descriptions are based on the meanwhile 
+harmonized EDDL according to IEC 61804-3. The 
+different EDDL "dialects" used up to now in the 
+various protocols are now a thing of the past. The 
+EDD-based part of a Device Package  is shown in 
+Figure 20.
+Fig. 20: EDD-based part of an FDI Device Package 
+in the FDI reference host
+An optional file is the User Interface Plugin (UIP), 
+which enables users to program customized user 
+interfaces (Figure 21). In addition, device-related 
+data and documents such as manuals, certificates, 
+and catalog information can be added optionally in 
+the form of attachments. 
+Fig. 21: User-programmed graphic elements
+PAGE 27
+PROFIBUS System Description 21
+Integrated Development Environment (IDE)
+For integration of FDI in field devices, the cross-
+protocol Integrated Development Environment 
+(IDE, Figure 22) provides device manufacturers with 
+a tool for easy development of FDI Device Packages 
+for their various PROFIBUS, PROFINET, FF and HART 
+device versions based on a uniform process. The 
+FDI IDE also provides an easy, reliable conversion 
+of existing EDD files into corresponding FDI Device 
+Packages. A runtime environment in the FDI IDE 
+and the Device Package Test Tool gives developers 
+a platform for extensive testing of newly developed 
+Device Packages, which ensures their quality and 
+conformity with the FDI standard already during the 
+development phase.
+Fig. 22: IDE development environment
+Integration in FDI hosts
+Device Packages can be integrated in original FDI 
+hosts (Figure 19, bottom). In order for Device Packages 
+to behave in the same way in different host systems, 
+a uniform "Host Component" was developed and 
+made available to host manufacturers: These include 
+the UI Engine for display of the components, UID and 
+UIP versions, and the EDD Engine for support of the 
+EDDL versions with backward compatibility (figures 
+19 and 22). 
+Integration in FDT Frames
+For use of FDI in FDT-based systems, an "FDI-to-FDT 
+adapter" in the form of a device DTM is used , 
+It includes a complete FDI host, complies with 
+the FDT standard and can be installed as usual. 
+Corresponding collaboration between the FDT 
+Group and the FieldComm Group is responsible for 
+this. 
+Investment protection
+Besides the FDI goals of standardization, 
+simplification, and cost minimization, an equally 
+important challenge of FDI is the preservation of 
+existing equipment. Due to the use of binary EDD, 
+integrated in the FDI Package, FDI is a logical next 
+step for existing EDD-based systems, which host 
+manufacturers are also evolving to. For FDT-based 
+systems, the mentioned "Adapter strategy" provides 
+the investment protection demanded in that device 
+suppliers can supply the adapter with integrated 
+Device Packages if it is not already available on the 
+system side.
+FDI as introduction to Industrie 4 .0
+Devices with a PROFIBUS or PROFINET interface are 
+currently being supplied with product descriptions 
+for configuration and device integration purposes, 
+such as the General Station Description (GSD) or 
+Electronic Device Description (EDD). This fits nicely 
+with the concept of components for Industrie 4.0 
+with its administration shells. Both solutions for the 
+product description include information that will 
+be part of the administration shell for engineering, 
+commissioning, and other purposes. When FDI is 
+used, the information from the extended concept of 
+the Device Package could also become part of the 
+administration shell to be undertaken for PROFIBUS 
+and PROFINET. The field devices thus become 
+Industrie 4.0 components and the device data can 
+be made available via the internet for any user at any 
+location.
+6 Quality assurance and 
+certification
+For PROFIBUS devices of different types and 
+manufacturers to be able to perform different tasks 
+in the automation process correctly, they must 
+exchange information over the bus without errors. 
+A prerequisite for this is a standard-compliant 
+implementation of the communication protocols 
+and application profiles by the device manufacturer. 
+To ensure that this demand is met, PI established a 
+quality-assurance procedure where certificates are 
+granted for test-passing devices using test reports as 
+a basis (Figure 23).
+The aim of certification is to provide users with 
+the assurance that PROFIBUS field devices from 
+different manufacturers are capable of error-free 
+operation when used together. For this purpose, 
+the field devices are tested in practical applications 
+in accredited independent test laboratories with 
+the required testing accuracy as per the quality 
+guidelines of PI. This makes it possible to identify 
+any misinterpretation of the standards at an early 
+stage so that manufacturers can take the necessary 
+remedial action before devices are implemented in 
+the field. The test also examines the field device’s 
+PAGE 28
+PROFIBUS System Description22
+compatibility with other certified field devices. Once 
+the tests have been passed successfully, a device 
+certificate is issued by PI's certification center upon 
+application by the manufacturer.
+The test procedures and certification process are 
+described in the respective guidelines. 
+Fig. 23: Device certification, test procedure
+The test procedure
+The prerequisites for testing are an issued ID number 
+and a GSD file. An EDD for the field device or the 
+field device itself may also be required.
+The test procedure, which is the same for all test 
+laboratories, is comprised of several steps:
+• A GSD/EDD check  ensures that the device 
+description files comply with the specifications.
+• During the hardware test , the electrical 
+properties of the PROFIBUS interface on the 
+test subject are tested for compliance with the 
+specifications. This includes, for example, the 
+terminating resistors, the suitability of driver 
+modules and other modules used and the 
+quality of the performance level. 
+• The function test  addresses the bus access 
+protocol, transmission protocol and the functions 
+of the test subject. The parameterization and 
+adaptation of the test system are carried out 
+using the GSD. When the test is being carried 
+out, the black-box method is used. Here, no 
+knowledge of the internal structure of the 
+implementation is required. The responses 
+generated by the test subject and their time 
+relations are recorded by the bus monitor. 
+• The conformity test is the focal point of testing. 
+It verifies that protocol implementation is in 
+line with the standard. The test primarily covers 
+the state machine, behavior in case of errors, 
+addressability, diagnostic data and mixed 
+operation.
+• During the interoperability test, the interplay 
+between the test device and the PROFIBUS 
+devices from other manufacturers is tested in a 
+multi-vendor system. It is determined whether 
+the functionality of the system is maintained 
+when the test device is added to it. Operation 
+with various different masters is also tested.
+• The profile test  is carried out to determine 
+whether the test devices work together 
+smoothly during operation. The profile test is 
+carried out for the PROFIdrive, PA device and 
+PROFIsafe profiles. The test determines whether 
+the profile functions were implemented in 
+accordance with the specifications.
+All the steps of the test are documented in detail. 
+The notes are available to the manufacturer and 
+the certification office. The test report provided to 
+the orderer is used as the basis for issuance of the 
+certificate by PI.
+Once a field device has passed all the tests, the 
+manufacturer can request a certificate from PI. Each 
+certified device includes a certification number as 
+a reference. The certificate has a validity of 3 years 
+and can be extended by a manufacturer declaration 
+or after new testing. The addresses of the test 
+laboratories can be obtained from the PROFIBUS 
+website on the Internet.
+7 Product implementation
+This chapter contains information on options 
+for implementing communication interfaces in 
+automation and field devices.
+A broad spectrum of base technology components 
+and development tools (PROFIBUS ASICs, PROFIBUS 
+stacks, bus monitors, test tools and commissioning 
+tools) and services are available for device 
+development and implementation of the PROFIBUS 
+protocol. They enable device manufacturers to 
+carry out development efficiently. An overview 
+of this is found in the product catalog from PI  
+(www.profibus.com/products/product-finder/ ). 
+For further information, see the technical 
+documentation, and for competent consulting, refer 
+to the PI Competence Center.
+PAGE 29
+PROFIBUS System Description 23
+When implementing a PROFIBUS interface, note that 
+the device behavior is determined by the PROFIBUS 
+protocol and the implemented application. For this 
+reason, the entire field device is tested during a 
+certification test. Base technologies are generally 
+only "pre-certified" , i.e. tested using a sample 
+application. This does not guarantee that each field 
+device based on this base technology behaves in 
+compliance with the standards. The application in 
+a field device has a major influence on the device's 
+behavior.
+7 .1 Standard components
+Interface modules
+For small to medium quantities, PROFIBUS interface 
+modules are suitable. They are available in a wide 
+variety of versions on the market. The various designs 
+of these modules implement the full bus protocol 
+and offer an easy-to-use user interface for each 
+application. This relieves the device manufacturer of 
+communication tasks. They can be attached to the 
+main PCB of the device as a supplementary module.
+Protocol chips
+For large quantities, individual implementations 
+of the PROFIBUS protocol based on common base 
+technology components are available. Here, a 
+differentiation is made between
+• Single chips, where all PROFIBUS protocol 
+functions are integrated on the chip and which 
+do not require a separate microcontroller (this is 
+a hardware-only solution with a fixed functional 
+scope).
+• Communication modules which implement 
+smaller or larger portions of the protocol on 
+the chip. An additional microcontroller and 
+firmware offered for the chip are required for full 
+implementation of the PROFIBUS protocol.
+• Protocol chips which already include a 
+microcontroller in the communication module. 
+In conjunction with firmware offered for the chip, the 
+application communicates via an easy-to-use user 
+interface. The decision for a suitable implementation 
+variant mainly depends on the complexity of the 
+field device, the required performance, the quantity 
+and the performance scope to be implemented. 
+Several examples are provided in the following.
+Implementing simple slaves
+Simple I/O devices can be implemented with 
+single chip ASICs. All protocol functions are already 
+integrated on the ASIC. No microprocessor or 
+additional communication software is required. Only 
+the components for bus connection, e.g. bus driver, 
+optical coupler, quartz etc., are required externally.
+Implementing intelligent slaves
+With this form of implementation, the essential 
+layer-2 portions of the PROFIBUS protocol are 
+implemented with a communication module. The 
+remaining protocol portions are implemented as 
+software on a microcontroller. In most available 
+ASICs, the cyclical protocol portions are realized 
+on the chip and are generally responsible for the 
+transmission of time-critical data.
+For highly time-critical applications, protocol 
+chips with an integrated microcontroller represent 
+an alternative which already handles the entire 
+PROFIBUS protocol autonomously. If necessary, an 
+externally-connected microcontroller can then be 
+used entirely for the application. Depending on the 
+performance required, the field device manufacturer 
+can also use the microcontroller which is already 
+integrated in the protocol chip for the application. 
+The available ASICs offer an easy-to-use interface 
+and work with commonly used microcontrollers. 
+Another option is presented by microprocessors 
+with an integrated PROFIBUS core.
+Implementing complex masters
+The time-critical parts of the PROFIBUS protocol are 
+also implemented using a communication module 
+and the remaining protocol portions as software on a 
+microcontroller here. As with slave implementations, 
+ASICs from different manufacturers are available 
+for implementing complex master devices. They 
+can be operated in conjunction with common 
+microprocessors.
+A corresponding overview of available protocol 
+chips is provided on the PROFIBUS website. For 
+further information on the products, we also suggest 
+you contact the respective providers.
+PROFIBUS stacks
+In many cases, chips and supplemental protocol 
+software (PROFIBUS stacks) come from different 
+providers. This increases the number of solutions 
+available on the market.
+PAGE 30
+PROFIBUS System Description24
+7 .2 Implementing transmission 
+interfaces
+RS485 transmission technology
+For field devices which do not draw the required 
+power from the bus, the standard RS485 interface 
+can be implemented. This provides greater flexibility 
+when using the field device, because it can then 
+be connected to PROFIBUS DP without a segment 
+coupler or link.
+RS485 technology is characterized by its low 
+interface costs and great robustness. Data rates from 
+9.6 KBit/s to 12 MBit/s can be supported without any 
+conversion. To supplement this, an intrinsically-safe 
+version, RS485-IS, was developed.
+The RS485 modules are available from various 
+manufacturers and are time-tested (millions are in 
+use).
+MBP transmission technology
+When implementing a bus-powered field device 
+with MBP transmission technology, minimal power 
+consumption is the main focus. For these devices, a 
+typical supply current of only 10 - 15 mA is available 
+on the bus cable. This has to supply the entire device, 
+including the bus connection and the measurement 
+electronics.
+Special modem chips are available for these 
+requirements. These modems draw the required 
+operating energy for the entire device from the 
+MBP bus connection and make it available as supply 
+voltage to the other electronic components of the 
+device. In addition, they convert the digital signals 
+of the connected protocol chip to the bus signal of 
+the MBP connection that is modulated to the energy 
+supply.
+8 Outlook
+Ethernet is established
+Industrial communication is a key technology of 
+automation engineering and also an "enabler" 
+for Industrie 4.0. Successful fieldbus and Ethernet 
+technologies monitor and control equipment and 
+machinery, optimize manufacturing and production 
+processes, and connect logistics, quality assurance, 
+and maintenance with production. Rising market 
+Using this as a basis, technically custom-tailored 
+and cost-optimized products which fulfill industry-
+specific requirements can be created, which is also 
+the focus of PI. The fact that the PROFIBUS chip 
+and the stack can come from different sources 
+is further evidence of the openness and multi-
+vendor capability of PROFIBUS, which is not only 
+limited to the specification, but extends to product 
+implementations as well.
+Pure software solutions can seldom be found on 
+the market. The reason behind this is that the price-
+performance ratio of the processors to be used is 
+considerably less favorable than with chip-oriented 
+implementations. Pure software solutions are 
+therefore more likely to be used in cases with specific 
+marginal conditions. An overview of the available 
+variants of the protocol software is found on the 
+PROFIBUS website. Further information on the 
+products is available from the respective providers.
+Implementing user profiles
+The PROFIBUS protocol ensures the secure data 
+transmission of bit sequences. The interpretation 
+of data in a field device is handled by the user. 
+User profiles represent the links between the 
+PROFIBUS protocol and the actual application 
+in a field device. The data formats, data access 
+methods, parameterization and cyclical and acyclical 
+communication diagnostics defined in the profile 
+descriptions are implemented in software, which 
+is often handled by the device manufacturers 
+themselves. A host of technology suppliers provide 
+support here.
+From raw material supply to the brewing process 
+to filling: "Beer brewing" is a good example 
+showing the interplay between the discreet and 
+continuous procedures in a process. PROFIBUS 
+handles precisely this task with its own bus 
+system and has no competition here.
+
+PAGE 31
+PROFIBUS System Description 25
+demands have quickly given added importance to 
+the high performance potential of Industrial Ethernet 
+compared to fieldbus technology. An example of this 
+is the brisk replacement of PROFIBUS by PROFINET 
+in factory automation. This technology advance is 
+now becoming feasible in the harsh environmental 
+conditions of the process industry with its stringent 
+requirements for durability, compatibility, and 
+availability. 
+Stepwise feasibility of PROFINET
+PI is coordinating with prominent manufacturers 
+and users on making PROFINET feasible for process 
+automation (see Figure 24). For this, the use of 
+current and future PROFINET technologies must be 
+reconciled with investment protection for existing 
+equipment with runtimes of 30 years or more. This 
+requirement will be met in the form of a solution 
+platform, which will use PROFINET aspects relevant 
+for process automation that are either already 
+established, newly specified or still undergoing 
+specification to make the performance capability of 
+PROFINET available for process automation as well 
+while fully preserving existing equipment. The timing 
+of this is also dependent on when the specifications 
+will be implemented by manufacturers in their 
+respective products. 
+Fig. 24: Stepwise introduction of PROFINET in the 
+intrinsically safe field
+PROFIBUS PA remains a key technology 
+PROFIBUS PA enables long cable distances and 
+explosion protection in process automation as well as 
+the native, digital integration of field instrumentation 
+in control systems and asset management systems. 
+Based on the current state of the art, the connection 
+is typically by means of a link or coupler via PROFIBUS 
+D P.  
+The user benefits of PROFIBUS PA result from, among 
+other things, the use of digital communication 
+instead of analog communication, the suitability for 
+easy proof of intrinsic safety type of protection, and 
+the properties of the PA device profile oriented to 
+the process industry. PROFIBUS PA is thus still the key 
+technology for digital communication in the field for 
+the process industry in the long run. 
+PROFIBUS PA on PROFINET
+PROFIBUS PA will achieve the demanded 
+investment protection in this way. The connection 
+to PROFINET systems is by means of a "proxy" , 
+which is a transition that acts as a master in the PA 
+system but as a bus node (device) in the PROFINET 
+system, which allows the PA segment to be easily 
+configured in PROFINET. As a result, the proxy is 
+integrated in the PROFINET infrastructure in the 
+same way as the directly connected remote I/O 
+stations, Motor Control Center (MCC), or PROFINET 
+field devices (see Figure 25). 
+Further steps
+The named solution platform is the basis for further 
+steps targeting the introduction of PROFINET 
+in process automation. These include the new 
+PROFINET functions "Configuration in Run" and 
+"System redundancy" which are indispensable for 
+process automation as well as a further developed 
+Fig. 25: PROFINET in the field with PROFIBUS PA integrated via a proxy
+PAGE 32
+PROFIBUS System Description26
+PA device profile. Conversely, the long-proven 
+PROFINET properties such as neighborhood 
+detection and device diagnostics will contribute 
+significantly to the implementation of urgent user 
+requirements specifically documented in multiple 
+NAMUR recommendations, e.g. NE 107 (see Figure 
+26). 
+Fig. 26: Assignment of the PROFINET device 
+diagnostics to NE 107
+9 User benefits
+Owners of machines and automation systems in 
+the production and processing industries place 
+high demands on reliability and economy. The 
+systems must fulfill their function for years, and the 
+interplay of components and systems from different 
+manufacturers must be ensured. PROFIBUS, the 
+world's leading modularly-constructed industrial 
+communication system fulfills these requirements. 
+The prominent feature of PROFIBUS is its ability to 
+optimally fulfill industry-specific requirements by 
+combining suitable modules, especially those of 
+application profiles. PROFIBUS DP for the production 
+industry, PROFIdrive for drive applications, PROFIBUS 
+PA for the process industry and PROFIsafe for safety-
+related applications are the main examples here. 
+Application profiles also ensure uniform behavior 
+of the devices used, regardless of the manufacturer, 
+and therefore their interoperability on the bus.
+9 .1 Standardized and consistent
+PROFIBUS is based on modularity and standards; 
+the benefits to the user are flexibility and ease 
+of use. Modern systems and machines are often 
+complex in structure and tightly integrated into 
+the communication landscape of the company. 
+The unimpeded flow of data is therefore a primary 
+user requirement of the owner. PROFIBUS provides 
+precisely this with its unique horizontal and vertical 
+consistency. All PROFIBUS solutions use the same 
+communication protocol. This enables discrete 
+procedures (such as filling and packaging), continuous 
+procedures (such as mixing and heating) and safety-
+related procedures in a system to be handled over 
+the same bus. Separate systems are unnecessary. 
+This "hybrid automation" with PROFIBUS overcomes 
+limitations, makes things simpler and reduces costs 
+over the entire operating timeframe, from planning 
+and engineering to installation and from training 
+and operation to maintenance and documentation.
+9 .2 Economy
+Economy in the operation of machines and 
+systems demands that they be highly available. The 
+integrated redundancy of PROFIBUS is unrivaled 
+when it comes to uninterrupted operation. Equally 
+important are the diagnostic messages continuously 
+available from the bus, devices and process. They 
+provide information regarding the current machine 
+and system status and enable timely, status-
+based intervention. The result is higher availability 
+with reduced maintenance expense. Economy is 
+also based on the option to use the respectively 
+most suitable device technology for certain tasks. 
+PROFIBUS provides this very option, thanks to its 
+comprehensive device catalog from a wide variety of 
+manufacturers and the compatibility of the devices 
+on the bus using the device profiles.
+9 .3 Quality consciousness
+Quality and quality assurance are of high importance 
+with PROFIBUS, because it enables components of 
+different types and manufacturers to properly fulfill 
+their tasks in the automation process. Globally-
+established, independent test laboratories test 
+devices in accordance with PROFIBUS specifications 
+for certification which are derived from international 
+standards and which guarantee high quality 
+standards. Specially established PI training centers 
+offer "Certified Engineer" and "Certified Installer" 
+courses for PROFIBUS. In addition, PI organizes 
+workshops for users on selected topics.
+9 .4 Innovation and protection of 
+privileges
+PROFIBUS is known for its high degree of innovation. 
+User requests are collected and implemented 
+rapidly. Examples include the fulfillment of urgent 
+demands from the process industry with the new 
+version 3.02 of the profile for process devices and 
+the development of direct coupling of PROFIBUS 
+to the Ethernet-based communication of PROFINET 
+and thus to the MES and ERP levels using proxy 
+PAGE 33
+PROFIBUS System Description 27
+technology. Here, the design and communication 
+of PROFIBUS are adapted to PROFINET, while the 
+PROFIBUS segments and their characteristics remain 
+completely unchanged. At the same time, existing 
+systems can be modernized and expanded at any 
+time with PROFIBUS. HART technology and IO-link 
+can easily be integrated into PROFIBUS, and safety-
+related tasks are handled by PROFIsafe and drive tasks 
+by PROFIdrive. All of this ensures comprehensive 
+investment protection, because installed equipment 
+can still be used. It's not replaced, but rather 
+modernized and expanded.
+9 .5 Global support
+With over 50 million PROFIBUS nodes installed, 
+PROFIBUS has proven its reliability. Users can 
+choose from over 2,500 devices from more 
+than 300 manufacturers here. PROFIBUS is used 
+globally, continuously undergoes development 
+and is intensively supported by the world's largest 
+fieldbus organization, PI. The regional organizations, 
+Competence Centers and multiple test laboratories 
+and training centers spread out across the globe 
+provide the user with a high level of quality and 
+support.
+9 .6 Future cooperation
+PI's target course for the coming years is "to provide 
+users with far-reaching solutions using PROFIBUS 
+and PROFINET as an umbrella for new technologies. " 
+Cooperation with other organizations, contact with 
+users and user groups and existing strengths are all 
+to be expanded accordingly. Key technologies are 
+to be promoted together while always complying 
+with international standardization and consistency. 
+PI is determined to provide direction and implement 
+solutions that benefit the user.
+10 PROFIBUS & PROFINET 
+International (PI)
+As far as maintenance, ongoing development, 
+and market penetration are concerned, open 
+technologies need a company-independent 
+institution that can serve as a working platform. As 
+regards the PROFIBUS and PROFINET technologies, 
+this was achieved by founding the PROFIBUS 
+Nutzerorganisation e.V. (PNO) in 1989 in Germany 
+as a non-profit interest group for manufacturers, 
+users, and institutions. The PNO is a member of PI 
+(PROFIBUS & PROFINET International), an umbrella 
+group which was founded in 1995. PI now has more 
+than 25 regional user organizations (RPA: Regional 
+PI Associations) and approximately 1,400 members, 
+meaning that it is represented on every continent 
+and is the world’s largest interest group for the 
+industrial communications field (Figure 27).
+Fig. 27: PROFIBUS & PROFINET International (PI)
+10 .1 Responsibilities of PI
+The key tasks performed by PI are:
+• Maintenance and further development of 
+PROFIBUS and PROFINET
+• Promotion of the worldwide establishment of 
+PROFIBUS and PROFINET
+• Protection of the investments of users 
+and manufacturers through influence on 
+international standardization
+• Representation of the interests of members to 
+standards bodies and unions
+• Worldwide technical support for companies 
+through PI Competence Centers (PICC)
+• Quality control through a system for product 
+certification at PI Test Laboratories (PITL) based 
+on standard conformity tests
+• Establishment of a worldwide training standard 
+through PI Training Centers (PITC)
+10 .2 Technology development
+PI has handed responsibility for technological 
+development over to PNO in Germany. The Advisory 
+Board of PNO Germany oversees the development 
+activities. Technological development takes place 
+in the context of more than 50 working groups with 
+input from more than 500 experts.
+10 .3 Technical support
+PI supports more than 50 accredited PICCs 
+worldwide. These facilities provide users and 
+manufacturers with all kinds of advice and support. 
+As institutions of PI, they are independent service 
+providers and adhere to mutually agreed upon 
+PAGE 34
+PROFIBUS System Description28
+regulations. The PICCs are regularly checked for 
+their suitability as part of an individually tailored 
+accreditation process. Current addresses can be 
+found on the PI website.
+10 .4 Certification
+PI supports 10 accredited PITLs worldwide, which 
+assist in the certification of products with a 
+PROFIBUS/PROFINET interface. As institutions of PI, 
+they are independent service providers and adhere 
+to mutually agreed upon regulations. The testing 
+services provided by the PITLs are regularly audited 
+in accordance with a strict accreditation process 
+to ensure that they meet the necessary quality 
+requirements. Current addresses can be found on 
+the PI website.
+10 .5 Training
+The PITCs have been set up with the specific aim 
+of establishing a global training standard for 
+engineers and installation technicians. The Training 
+Centers and their experts are officially accredited. 
+Their competence with respect to PROFIBUS and 
+PROFINET training and the associated engineering 
+and installation services had been checked. A three 
+days training "PROFIsafe Certified Designer" exists 
+for PROFIsafe. Current addresses can be found on 
+the PI website.
+10 .6 Internet
+Available on the PI website www.profibus.com is 
+actual information about the organization of PI 
+and the PROFIBUS and PROFINET technologies. 
+An online-product finder, a glossary, diverse 
+web-based trainings are to be found there, as 
+well as the download area with specifications, 
+application profiles, installation guidelines, and 
+other documents.
+PAGE 35
+PROFIBUS System Description 
+Technology and Application
+Version April 2016 
+Order Number 4.332
+Publisher:
+PROFIBUS Nutzerorganisation e. V. (PNO)
+PROFIBUS & PROFINET International (PI)
+Haid-und-Neu-Str. 7  ·  76131 Karlsruhe  ·  Germany
+Phone: +49 721 96 58 590  ·  Fax: +49 721 96 58 589 
+E-Mail:  info@profibus.com
+www.profibus.com  ·  www.profinet.com
+Exclusion of liability
+Although the PROFIBUS Nutzerorganisation e.V. (PNO) has taken the most care in compiling the 
+information contained in this brochure, it cannot guarantee that the content is completely error-free, 
+and the PROFIBUS Nutzerorganisation e.V. (PNO) can assume no liability, regardless of the legal basis 
+for any potential claims. The information in this brochure is reviewed on a regular basis. Any necessary 
+corrections will be made in subsequent editions. We would be grateful for any suggestions as to how 
+the content could be improved.
+ 
+Any designations that appear in this brochure could potentially constitute trademarks. Any use of such 
+trademarks by third parties for their own ends risks infringing the rights of the proprietors concerned.
+ 
+This brochure is not intended to serve as a substitute for the relevant IEC standards, such as IEC 61158 
+and IEC 61784, or the relevant specifications and guidelines of PROFIBUS & PROFINET International. In 
+case of doubt, these standards, specifications, and guidelines are authoritative.
+© Copyright by PROFIBUS Nutzerorganisation e.V. (PNO) 2016. All rights reserved.
+PAGE 36
+For additional information  
+and contact information, go to: 
+www.profibus.com/pi-organization/
+Worldwide support with PI!
+PROFIBUS Nutzerorganisation e. V. (PNO)
+PROFIBUS & PROFINET International (PI)
+Haid-und-Neu-Str. 7  ·  76131 Karlsruhe  ·  Germany
+Phone:  +49 721 96 58 590  ·  Fax:  +49 721 96 58 589
+E-Mail:  info@profibus.com
+www.profibus.com  ·  www.profinet.com
+© Copyright by PI 4/16 – all rights reserved – 4.332
+Regional PI 
+Association 
+(RPA)
+PI Compe-
+tence Center 
+(PICC)
+PI Training 
+Center  
+(PITC)
+PI Test Lab  
+(PITL)
+Regional PI Associations (RPAs) represent PI around the world and are your personal local  
+contacts. They are responsible for local marketing activities for purposes of spreading  
+PROFIBUS, PROFINET, and IO-Link, which include among others trade fair appearances,  
+seminars, workshops, and press conferences, as well as public relations activities.
+The PI Competence Centers (PICCs) collaborate closely with the RPAs and are your first 
+point of contact when you have technical questions. The PICCs are available to assist you 
+in the development of PROFIBUS or PROFINET devices and the commissioning of systems, 
+and they provide user support and training.
+PI Training Centers (PITCs) support users and developers in gaining experience with the  
+PROFIBUS and PROFINET technologies and their possible uses. Individuals who 
+success fully com plete the final exam of the Certified Installer or Engineer course  
+receive a certificate from PI.
+PI Test Labs (PITLs) are authorized by PI to conduct certification tests for PROFIBUS and  
+PROFINET. You receive a certificate from PI for your product once it passes the test. The 
+certification program plays a major role in the sustainable quality assurance of products 
+and thus assures that the systems in use exhibit a high level of trouble-free operation and  
+availability.

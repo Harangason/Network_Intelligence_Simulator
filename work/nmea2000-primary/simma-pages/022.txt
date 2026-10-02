@@ -1,0 +1,46 @@
+Chapter 4 ssNMEA2000 Application Program Interface 
+ssNMEA2000 User’s Manual   - 22 - 
+n2000_name_set 
+ 
+            Function Prototype: 
+               void n2000_name_set ( uint8_t *p, n2000_name_t *n ); 
+ 
+            Description: 
+This function uses the externally pointed to NAME field of n and updates the 
+internal memory of the protocol stack with a correctly formatted 64-bit ISO 
+11783-5 NAME.  Every NMEA 2000/CAN port needs to be assigned a NAME 
+during the initialization processs.  These NAMEs may or may not be different 
+depending on the controller application.  
+ 
+The NMEA 2000 name field is 64 bits long and is intended to uniquely describe 
+all ECUs on a NMEA 2000 network (i.e. no two ECUs on a NMEA 2000 
+network may have the same name field).  For more information, see ISO 11783-
+5. 
+ 
+ 
+          Parameters: 
+                p: Indicates which CAN port the NAME field is assigned. 
+     n: Points to external version of a NAME field. 
+ 
+          Return Value 
+ void 
+           
+          Example 
+ 
+  n2000_name_t name; 
+ 
+  /* table B1 of n2000 */ 
+  name.aac = 1;                       /* 1-bit Arbitrary Address Capable */ 
+  name.ind_grp = 1;                /* 3-bit Industry Group (1 = on-highway) */ 
+  name.veh_sys_inst = 0;        /* 4-bit Vehicle System Instance  */ 
+  name.veh_sys = 1;               /* 7-bit Vehicle System (1 = tractor) */  
+  name.func = 130;                 /* 8-bit Function (130 = data logger)*/ 
+  name.func_inst = 0;             /* 5-bit Function Instance */ 
+  name.ecu_inst = 0;               /* 3-bit ECU Instance */ 
+  name.mfg_code = 402;        /* 11-bit Manufacturer Code (402 = SIMMA) */ 
+  name.identy_num = 1009    /* 21-bit Identity Number (see below) */ 
+ 
+  /* example to set NAME for network 0 */ 
+  n2000_name_set( 0, &name ); 
+ 
+ 

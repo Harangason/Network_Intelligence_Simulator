@@ -1,0 +1,42 @@
+7. LocalLoadBalancing
+8. Idle
+ChargingOnly
+This operation mode allows charging only, therefore is not bidirectional at all. This is also the default operation mode when the field
+operationMode is missing. It is added especially for Charging Stations that intent to operate in V2X, but are unsure during energy
+service negotiation if the EV and EV user are allowed to operate in V2X at this time and location. The EV then starts in this operation
+mode, waiting for authorization of the V2X operation mode. When V2X is authorized, a service negotiation needs to be performed
+between EV and charging station to start using actual V2X operation modes.
+The field limit is used to specify the maximum allowed charging limit. The fields setpoint and dischargeLimit are not used.
+ExternalSetpoint
+This control mode tells the charging station that the setpoint parameter is to be determined by some external actor, such as an
+EMS. A setpoint is a charging rate that the EV must try to follow as closely as possible.
+Behavior is identical to the description of ExternalSetpoint in Introduction, with the exception that setpoint can become negative to
+specify a discharging setpoint. Optionally the parameters limit and dischargeLimit can be set by CSMS to limit the range of the
+external setpoint.
+ExternalLimits
+This control mode is similar to ExternalSetpoint with the difference that it is not the setpoint that is controlled, but it is the limit and
+dischargeLimit parameters that are determined by the external actor, such as an EMS.
+CentralSetpoint
+In this case CSMS provides a value for setpoint in the charging schedule period. A setpoint is a charging rate that the EV must try to
+follow as closely as possible. Positive values for setpoint represent charging, negative values represent discharging.
+If the chargingProfileKind = Dynamic, then the value of setpoint can be changed by CSMS during the charging schedule period via
+an UpdateDynamicScheduleRequest without having to submit a new charging profile.
+The parameters limit and dischargeLimit are not used.
+LocalFrequency
+LocalFrequency is the operation mode during which the EV takes part in frequency containment reserve (FCR) services or
+automatic Frequency Restoration Reserve (aFRR).
+FCR
+FCR is a type of balancing service that is used to maintain the stability and reliability of the electricity grid. Also known as primary
+control reserve, it is activated when the frequency of the grid deviates from its normal operating range. When frequency deviations
+occur, for example, as a consequence of a power plant outage, FCR intervenes automatically within seconds in the entire
+synchronous area to restore the balance between supply and demand.
+The power setpoint for frequency support is determined from a power/frequency (Freq-Watt) curve, based on the locally measured
+frequency. This operation mode requires, that the chargingRateUnit of the ChargingScheduleType is W, so that setpoint refers to
+power. The power/frequency curve might be different for various locations and is therefore provided as a field in
+ChargingSchedulePeriodType: v2xFreqWattCurve, which contains a list of at least two V2XFreqWattPointType coordinates.
+Values for power in between the given frequency levels are to be determined locally by linear interpolation.
+The power setpoint is depending on the frequency reading in the charging station:
+setpoint = get power from P/F table (Frequency)
+Example P/F table:
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 501/803 Part 2 - Specification

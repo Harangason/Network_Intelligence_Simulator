@@ -1,0 +1,58 @@
+TC_K_121_CS: Dynamic charging profiles from CSMS - Pull
+Test case name Dynamic charging profiles from CSMS - Pull
+Test case Id TC_K_121_CS
+Use case Id(s) K28
+Requirement(s) K28.FR.08, K28.FR.09, K28.FR.10
+System under test Charging Station
+Description To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the entire
+Charging Station over a period of time. The CSMS sends a SetChargingProfileRequest to the Charging
+Station to influence the power or current drawn by EVs. The CSMS calculates a ChargingSchedule to stay
+within certain limits, which MAY be imposed by any external system.
+Purpose To verify if the Charging Station is able to support pulling DynamicControl charging profiles from the CSMS.
+Prerequisite(s) SmartChargingCtrlr.SupportsFeature[DynamicProfiles] is true
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+chargingProfile.id 123
+chargingProfile.chargingProfilePurpose
+ChargingStationMaxProfile
+chargingProfile.chargingProfileKind Dynamic
+chargingProfile.dynUpdateTime <Current dateTime>
+chargingProfile.dynUpdateInterval 30
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 8 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Note(s): The Test System waits 30 seconds.
+3. The Charging Station sends a
+PullDynamicScheduleUpdateRequest 4. The Test System responds with a
+PullDynamicScheduleUpdateResponse with
+status Accepted
+scheduleUpdate.limit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+6. The Charging Station responds with a
+GetChargingProfilesResponse
+5. The Test System sends a GetChargingProfilesRequest with
+chargingProfile.chargingProfileId 123 requestId <Generated
+requestId>
+7. The Charging Station sends a ReportChargingProfilesRequest
+8. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If tbc is True at Step 7 then step 7 and 8 will be repeated
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 576/1383 Part 6 - Test Cases

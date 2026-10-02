@@ -1,0 +1,66 @@
+Charging Station CSMS
+EV Driver locally authorized
+by the Charging Station.
+TransactionEventRequest(eventType = Started, transactionId = AB1234, seqNo = N, timestamp,
+evse.id = 1, evse.connectorId = 1, meterValues,...)
+TransactionEventResponse(idTokenInfo.status = Blocked / Invalid / Expired / Unknown,...)
+stop energy offer
+alt [StopTxOnInvalidId = false]
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 1, timestamp,
+chargingState = SuspendedEVSE, triggerReason = ChargingStateChanged, meterValues,...)
+TransactionEventResponse(...)
+[StopTxOnInvalidId = true]
+alt [TxStopPoint = EVConnected]
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 1, timestamp,
+chargingState = EVConnected, triggerReason = Deauthorized, meterValues,...)
+TransactionEventResponse(...)
+[TxStartPoint = Authorized or PowerPathClosed]
+TransactionEventRequest(eventType = Ended, transactionId = AB1234, seqNo = N + 1, timestamp,
+chargingState = EVConnected, triggerReason = Deauthorized, stoppedReason = Deauthorzed,
+meterValues,...)
+TransactionEventResponse(...)
+Figure 47. Sequence Diagram: Start Transaction - Id not Accepted
+E05 - Start Transaction - Id not Accepted - Requirements
+Table 65. E05 - Requirements
+ID Precondition Requirement definition Note
+E05.FR.01 The CSMS MUST verify validity of the identifier in
+the TransactionEventRequest message.
+The identifier might have
+been authorized locally
+by the Charging Station
+using outdated
+information. The
+identifier, for instance,
+may have been blocked
+since it was added to the
+Charging Station’s
+Authorization Cache.
+E05.FR.02 E05.FR.01 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is set to false
+AND
+MaxEnergyOnInvalidId is not
+implemented or has been exceeded.
+TxStopPoint does NOT contain:
+EnergyTransfer
+The Charging Station SHALL stop the energy
+delivery to the EV immediately and send
+TransactionEventRequest (eventType = Updated)
+with triggerReason set to ChargingStateChanged
+and chargingState set to SuspendedEVSE
+The transaction is not
+deauthorized, but
+transfer of energy stops,
+since
+MaxEnergyOnInvalid
+Id has been exceeded or
+is not set. If TxStopPoint
+contains
+EnergyTransfer then
+this would have ended
+the transaction.
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 143/491 Part 2 - Specification

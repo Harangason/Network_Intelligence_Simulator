@@ -1,0 +1,78 @@
+ID Precondition Requirement definition Note
+K01.FR.45 When a
+SetChargingProfileRequest
+with a value for
+numberPhases is received
+AND
+the EVSE is of type AC AND
+the received numberPhases
+is NOT supported by the
+Charging Station and higher
+than the numberPhases that
+are supported by the
+Charging Station
+The Charging Station MAY respond with status =
+Accepted, instead of Rejected and impose the limits to a
+lower numberPhases
+Please refer to requirement
+K01.FR.50 and K01.FR.51,
+for correctly calculating the
+limits per phase.
+K01.FR.46 When a
+SetChargingProfileRequest
+with numberPhases = 1 and
+a value for phaseToUse is
+received AND
+the EVSE is of type AC AND
+the EVSE is capable of
+switching the phase
+connected to the EV, which
+is indicated by
+ACPhaseSwitchingSupporte
+d defined as true OR
+the EVSE is already going to
+use the received
+phaseToUse
+The Charging Station SHALL use the phase indicated by
+the received phaseToUse to connect to the EV.
+K01.FR.47 When a
+SetChargingProfileRequest
+with numberPhases = 1 and
+phaseToUse is omitted is
+received AND
+the EVSE is of type AC
+The Charging Station SHALL select the phase on its own.
+K01.FR.48 When a
+SetChargingProfileRequest
+with a value for phaseToUse
+is received AND
+the EVSE is NOT capable of
+switching the phase
+connected to the EV, which
+is indicated by
+ACPhaseSwitchingSupporte
+d not being implemented or
+defined as false AND
+the EVSE is NOT going to
+use the received
+phaseToUse
+The Charging Station SHALL respond with status =
+Rejected.
+It is recommended to
+include reasonCode =
+"InvalidSchedule".
+K01.FR.49 When a
+SetChargingProfileRequest
+without a value for
+numberPhases is received
+AND
+the EVSE is of type AC
+The Charging Station SHALL assume numberPhases = 3
+as a default value.
+Regions with a single phase
+network should always
+provide numberPhases = 1,
+otherwise 3 phases will be
+assumed.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 332/803 Part 2 - Specification

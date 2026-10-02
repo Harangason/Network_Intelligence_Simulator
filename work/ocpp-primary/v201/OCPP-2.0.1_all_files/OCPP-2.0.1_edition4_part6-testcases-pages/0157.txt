@@ -1,0 +1,46 @@
+TC_C_53_CS: Authorization using Contract Certificates 15118 - Online - Central
+contract validation fails
+Test case name Authorization using Contract Certificates 15118 - Online - Central contract validation fails
+Test case Id TC_C_53_CS
+Use case Id(s) C07
+Requirement(s) N/a
+System under test Charging Station
+Description The Charging Station is able to authorize with contract certificates when it supports ISO 15118.
+Purpose To verify if the Charging Station is able to handle an invalid contract certificate.
+Prerequisite(s) - The MO Root certificate that is needed to validate the EV Contract certificate must NOT be installed at the
+Charging Station.
+- The Charging Station supports central contract validation.
+Before (Preparations)
+Configuration State:
+TxCtrlr.TxStartPoint contains one or more of PowerPathClosed, Authorized, EVConnected, ParkingBayOccupancy
+AuthCtrlr.AuthEnabled is true (If implemented AND ReadWrite)
+AuthCtrlr.DisableRemoteAuthorization is false (If implemented)
+For the ISO15118Ctrlr of the EVSE involved in the PnC transaction:
+ISO15118Ctrlr.CentralContractValidationAllowed is true
+ISO15118Ctrlr.PnCEnabled is true
+Memory State:
+CertificateInstalled for certificateType V2GRootCertificate
+RenewV2GChargingStationCertificate
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends an AuthorizeRequest.
+Note(s):
+-The test case should be robust enough to also handle a
+GetCertificateStatusRequest
+2. The Test System responds with a AuthorizeResponse
+with idTokenInfo.status Invalid and certificateStatus =
+CertificateRevoked
+Tool validations
+* Step 1:
+Message: AuthorizeRequest
+- idToken.type must be eMAID
+- iso15118CertificateHashData may be provided
+- certificate is provided
+Post scenario validations:
+EV is not authorized and shall not charge:
+Charging Station does not send TransactionEventRequest with:
+- triggerReason = Authorized or chargingState = Charging
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 155/914 Part 6 - Test Cases

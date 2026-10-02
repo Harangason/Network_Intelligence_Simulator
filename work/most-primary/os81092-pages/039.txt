@@ -1,0 +1,48 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 39
+OS81092
+10.0 EXTERNAL POWER MANAGEMENT
+The OS81092 INIC supports external power management logic by providing two inputs (PS0 and PS1) and one output
+(PWROFF). The PS0 and PS1 inputs convey status of the external power management logic. The PWROFF output pin
+is driven low during normal operation and released when the OS81092 INIC is ready to be powered-off by the external
+power management logic. When using OS81092 Revision C1D (o r later) devices, the functional response when INIC
+recognizes the various external power management states can be further adjusted as described in the OS81092 INIC
+API User’s Manual [2].
+The PS0 and PS1 inputs should indicate power management stat us, and communicate when an external power man-
+agement event has occurred. Table 10-1 describes the power management st ates that are defined by the
+MOST Specification [1] and should be communicated via PS0 and PS1. More information on system-wide INIC power
+management architectures can be found in the MOST INIC Hardware Concepts Specification [8].
+Hardware recognizes an external power management state when PS0 and PS1 remain at a valid logic level for a mini-
+mum time, tpshold (see Section 15.4.2 “Reset and Power Management”); however, the INIC Software Stack may use lon-
+ger hold times for PS0 and PS1 states before responding to an external  power management event. In addition, the
+INIC Software Stack controls how INIC responds to external power management events (e.g. releasing PWROFFandlor
+forcing network shutdown). If external power management is not used, PS0 and PS1 should be pulled to ground or power
+management handling should be disabled.
+An STP event is recognized upon power-up (or reset) and on the transition to PS[1:0] = 01. If these pins continue to
+indicate an STP status (PS[1:0] = 01) after an STP event has already been recognized, the U Normal state is assumed.
+An STP event can cause INIC to enter Ring-Break Diagnosis mode, based on the RBDOptions() function parameter
+settings. See the OS81092 INIC API User’s Manual [2] for more information.
+The PMIConfig() property is used to configure the behavior of the PWROFF pin based on the various NetInterface
+states (NIState()), EHCI states (EHCIState()) and the external power m anagement states listed in Table 10-1.
+Parameters optionally limit INIC from releasing PWROFF in specific EHCI states. Additionally, when using Revision C1D
+and later devices, parameters optionally limit INIC from releasing PWROFF when the U Low state is recognized. The
+PMIConfig() property is set in the INIC Configuration String (see the OS81092 INIC API User’s Manual [2] for more
+information).
+In Revision C1C and earlier devices, the network output ( ETXP/ETXN) is automatically switched off (and the
+ERRlBOOT pin is driven high) whenever the ULow state is recognized. As long as the ULow state is indicated on PS[1:0],
+the ETXP/ETXN outputs remain disabled, regardless of activity on ERXP/ERXN. When using Revision C1D and later
+devices, parameters in the PMIConfig() property can be adjusted to keep the network output switched on when ULow
+is recognized. Refer to the OS81092 INIC API User’s Manual [2] for more information.
+INIC supports implementation of a low-power mode through the use of Device ShutDown, which utilizes the Shut-
+Down() function (in FBlock NBMIN), to place the node in a low-power state.  When the EHC receives this function it
+should minimize power consumption, if supported. The network can then re-start the node through the ShutDown()
+function, where INIC drives INT low to wake the EHC.
+Note: When the GPIO Port is enabled (only available on OS81092 Revision C1D or
+later devices), the PS0 and PS1 pins are unavailable for monitoring external
+power management status. Refer to Chapter 12.0 “General Purpose Input/Out-
+put (GPIO) Port” for more information.
+TABLE 10-1: EXTERNAL POWER MANAGEMENT STATES
+PS1 PS0 Status
+00 U Normal
+0 1 Switch-To-Power (STP)
+10 U Critical, USuper
+11 U Low

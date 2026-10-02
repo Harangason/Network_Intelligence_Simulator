@@ -1,0 +1,68 @@
+EV Driver Charging Station CSMS
+TxStartPoint = EVConnected
+(and plugging-in first)
+Plug-in cable
+TransactionEventRequest(eventType = Started, transactionInfo.transactionId = 123, evse = 1,
+triggerReason = CablePluggedIn, transactionInfo.chargingState = EVConnected, ... )
+TransactionEventResponse(idTokenInfo.status = Accepted)
+User has driver-specific tariff
+Present charge card AB1234
+AuthorizeRequest(idToken = AB1234)
+CSMS returns driver tariff
+AuthorizeResponse(idTokenInfo.status = Accepted,
+tariff = {"100", "0.55 ct/kWh", ""EUR", energy = {...}})
+TransactionEventRequest(eventType = Updated, transactionInfo.transactionId = 123,
+idToken = AB1234, triggerReason = Authorized,
+transctionInfo.chargingState = EVConnected, ... )
+TransactionEventResponse(idTokenInfo.status = Accepted)
+No charging until tariff accepted
+Display driver tariff
+description to user
+"Accept tariff
+to start charging."
+Accept tariff
+TransactionEventRequest(eventType = Updated, transactionInfo.transactionId = 123,
+transactionInfo.tariffId = 100, triggerReason = ChargingStateChanged,
+transctionInfo.chargingState = Charging, ... )
+TransactionEventResponse(idTokenInfo.status = Accepted)
+Figure 108. Sequence diagram TxStartPoint = EVConnected, plug-in first
+I08 - Receive Driver Tariff - Requirements
+ID. Precondition Requirements Notes
+I08.FR.01 When CSMS receives an AuthorizeRequest for
+an idToken that is accepted for charging and
+for which a driver-specific tariff exists
+CSMS SHALL respond with an
+AuthorizeResponse with a tariff field and any
+other relevant fields (like idTokenInfo).
+The details of the
+authorization process
+are described in
+chapter C.
+Authorization.
+I08.FR.04 When Charging Station receives an
+AuthorizeResponse in which
+idTokenInfo.status = Accepted and with a
+tariff field which it is able to process
+Charging Station SHALL use this driver-
+specific tariff only for the duration of the
+transaction that has started or will be started
+for idToken.
+Depending on
+TxStartPoint and order
+of events the
+transaction may have
+started already.
+I08.FR.05 I08.FR.04 AND
+AuthCacheEnabled = true
+Charging Station SHALL store the driver-
+specific tariff for idToken in the Authorization
+Cache.
+Be aware that as long
+as idToken is valid in
+Authorization Cache,
+no authorization and
+therefore no new tariff
+will be requested for
+the EV Driver.
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 290/803 Part 2 - Specification

@@ -1,0 +1,41 @@
+Main (Test scenario)
+Note: Wait 1 minute. Steps 12 and 13 will be repeated every 15 seconds
+14. The Charging Station sends a TransactionEventRequest
+15. The Test System responds with a
+TransactionEventResponse
+Tool validations
+* Step 2:
+Message SetDefaultTariffResponse
+- status must be Accepted
+* Step 4:
+Message: TransactionEventRequest
+- triggerReason is RunningCost
+- costDetails is <not omitted>
+* Step 6:
+Message: TransactionEventRequest
+- triggerReason is RunningCost
+- costDetails.totalCost.chargingTime.exclTax is between 0.10 and 0.20
+- and/or costDetails.totalCost.chargingTime.inclTax is between 0.10 and 0.20
+- costDetails.chargingPeriods must be <omitted>
+* Step 9:
+Message ChangeTransactionTariffResponse
+- status must be Accepted
+* Step 10:
+Message: TransactionEventRequest
+- triggerReason must be TariffChanged
+- transactionInfo.tariffId must be Test System99
+* Step 12:
+Message: TransactionEventRequest
+- triggerReason is RunningCost
+- costDetails is <not omitted>
+* Step 14:
+Message: TransactionEventRequest
+- triggerReason is RunningCost
+- costDetails.totalCost.currency must be EUR
+- costDetails.totalCost.chargingTime.exclTax must be between 1.00 and 2.00
+- costDetails.totalCost.chargingTime.inclTax must be between 1.00 and 2.00
+- costDetails.chargingPeriods must be <omitted>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 439/1383 Part 6 - Test Cases

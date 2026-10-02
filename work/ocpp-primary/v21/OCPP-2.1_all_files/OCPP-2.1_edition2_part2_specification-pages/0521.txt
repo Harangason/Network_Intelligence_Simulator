@@ -1,0 +1,45 @@
+Chapter 3. Use Cases & Requirements
+Q01 - V2X Authorization
+New in OCPP 2.1
+No. Type Description
+1 Name V2X Authorization
+2 ID Q01
+3 Objective(s) Authorization of an EV by the CSMS to start a V2X power transfer loop.
+4 Description Upon authorization the EV receives a list of allowed energy transfers from CSMS. The EV will
+select the desired energy transfer from that list and report it to CSMS.
+Actors EV, Charging Station, CSMS (possibly a secondary actor such as an aggregating party)
+Scenario description 1. The Charging Station sends a AuthorizeRequest with EVCCID of EV in additionalInfo of
+idToken.
+a. The CSMS returns an AuthorizeResponse with idTokenInfo.status = Accepted
+and the list allowedEnergyTransfer for this EV.
+2. The Charging Station sends a TransactionEventRequest, with eventType set to Started
+a. The CSMS will respond with the TransactionEventResponse.
+3. The EV and Charging station agree on an energy transfer method.
+4. The Charging Station sends NotifyEVChargingNeedsRequest with the chosen
+requestedEnergyTransfer (and optionally the availableEnergyTransfer list), together with
+v2xcChargingParameters, departureTime and a ControlModeEnumType.
+a. The CSMS will respond with the NotifyEVChargingNeedsResponse message, with
+status set to Accepted.
+5. The CSMS will send the SetChargingProfileRequest message to the Charging Station with
+a charging schedule containing a V2X operationMode other than ChargingOnly.
+a. The Charging Station will respond with the SetChargingProfileResponse message.
+6. The Charging Station will send its parameters on charging and discharging to the EV.
+7. The EV will request to start V2X power transfer.
+a. The Charging station will accept to start V2X power transfer.
+Scenario description #2 When CSMS decides to rely on a TxDefaultProfile with a charging schedule containing a V2X
+operationMode other than ChargingOnly:
+Steps 1 to 3 as above.
+4. The Charging Station sends NotifyEVChargingNeedsRequest with the chosen
+requestedEnergyTransfer (and optionally the availableEnergyTransfer list), together with
+v2xcChargingParameters, departureTime and a ControlModeEnumType.
+a. The CSMS will respond with the NotifyEVChargingNeedsResponse message, with
+status set to NoChargingProfile, to signal that no SetChargingProfileRequest
+is to be expected.
+5. The Charging Station uses the TxDefaultProfile.
+6. The Charging Station will send its parameters on charging and discharging to the EV.
+7. The EV will request to start V2X power transfer.
+a. The Charging station will accept to start V2X power transfer.
+5 Prerequisites ISO15118Ctrlr.Enabled = true and V2XChargingCtrlr.Enabled = true
+6 Post conditions
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 508/803 Part 2 - Specification

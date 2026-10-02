@@ -1,0 +1,62 @@
+Utility CSMS AC Charging Station EV
+Utility sends a high frequency trip curve
+and a discharge power limit.
+(Pseudo IEEE 2030.5 messages)
+DERCurve(#1, "HF Must Trip", ... )
+DefaultDERControl(opModHFRTMustTrip, curve #1,
+primacy=0)
+DERControl(opModMaxLimW, 50%)
+SetDERControlRequest(default=true,
+controlType=HFMustTrip, curve=<...>)
+SetDERControlResponse(Accepted)
+SetDERControlRequest(default=true,
+controlType=LimitMaxDischargePct,
+limitMaxDischargePct=50.0)
+SetDERControlResponse(Accepted)
+Charging Station has been configured
+with DER controls from utility:
+HFMustTrip curve and discharge power limit.
+EV starts charging
+ISO 15118-20 authorization
+AuthorizeRequest(...)
+AuthorizeResponse(Accepted)
+ServiceDiscoveryReq()
+ServiceDiscoveryRes(AC, AC_BPT, AC_BPT_DER)
+ServiceDetailsReq(AC_BPT_DER)
+ServiceDetailsReq(AC_BPT_DER,
+params(DERControlFunctions))
+ServiceSelectionRes(AC_BPT_DER)
+ServiceSelectionReq()
+AC_BPT_DER has been selected
+EV supports HF/LFMustTrip
+ChargeParameterDiscoveryReq
+(BPT_DC_CPDReqEnergyTransferMode(
+<EV capabilities>),
+DERControlFunctions= (HFMustTrip, LFMustTrip))
+CS installs HFMustTrip curve
+ChargeParameterDiscoveryRes
+(BPT_DC_CPDResEnergyTransferMode(
+<EVSE capabilities>, DERcontrol = (HFMustTrip)))
+ScheduleExchangeReq(energyRequest, departureTime)
+NotifyEVChargingNeedsRequest(controlMode = Dynamic,
+departureTime, v2xChargingParameters,
+derChargingParameters)
+NotifyEVChargingNeedsResponse(Accepted)
+calculate TxProfile
+SetChargingProfileRequest(TxProfile)
+SetChargingProfileResponse(Accepted)
+ScheduleExchangeRes()
+Charging starts
+PowerDeliveryReq()
+PowerDeliveryRes()
+loop [while charging]
+DC_ChargeLoopReq()
+DER control for HFMustTrip by EV
+DER control for LimitMaxDischargePct by CS
+DC_ChargeLoopRes()
+Figure 209. Sequence diagram of an ISO 15118-20 AC bidirectional session with DER control in EV
+R03 - Starting a V2X session with hybrid DER control in both EV and EVSE -
+Requirements
+Table 164. R03 - Requirements
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 556/803 Part 2 - Specification

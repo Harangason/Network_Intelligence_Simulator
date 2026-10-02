@@ -1,0 +1,30 @@
+Chapter 4 ssNMEA2000 Application Program Interface 
+ssNMEA2000 User’s Manual   - 21 - 
+ n2000app_sa_get 
+ 
+            Function Prototype: 
+               uint8_t n2000app_sa_get ( uint8_t p ); 
+ 
+            Description: 
+This function returns the next source address that the protocol stack should 
+attempt to claim.  It is called by the protocol stack and is the responsibility of the 
+application layer to maintain. 
+ 
+The protocol stack calls this function during the initialization process and also 
+when the protocol stack has failed to claim an address.  The protocol stack fails 
+to claim an address when it identifies a higher priority ECU that is using the 
+current attempted address. 
+  
+Since the protocol stack has no knowledge of what additional addresses it may 
+claim, it calls this routine to determine what address is should attempt.  When 
+the application layer has no more addresses to claim, this function should return 
+255. 
+ 
+The source address is a 8-bit field and identifies a unique NMEA 2000 device on 
+the network.  Possible values are listed in the NMEA 2000 parent document. 
+ 
+          Parameters: 
+     p: Indicates which CAN port the source address should be returned for. 
+ 
+          Return Value 
+Next source address.  255 indicates no more addresses are available. 

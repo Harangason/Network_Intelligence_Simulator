@@ -1,0 +1,38 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+10.5.2  EMVCo profile in Listen Mode
+10.5.2.1  Configuring PN7160 to behave as a single EMVCo card in Listen
+To be compliant to the EMVCo certification tests emulating an EMVCo PICC, PN7160 has to behave as a single
+PICC based on either technology NFC-A or NFC-B.
+This requirement might be in conflict with the configuration applied by an NFCEE over SWP. Indeed, the NFCEE
+may configure PN7160 to behave as a Card Emulator for both technologies NFC-A and NFC-B. In that case,
+the PCD will detect 2 PICCs sequentially (PN7160 will answer to the REQA and later on to the REQB). The
+EMVCo PCD will then abort the transaction.
+In order to solve this issue, PN7160 comes with a specific configuration parameter:
+LISTEN_PROFILE_SEL_CFG, detailed in Section 11.2.2.
+Thanks to this parameter, a specific EMVCo PICC profile can be activated such that PN7160 will “hide” the non-
+yet-selected technology to the EMVCo PCD. Once this parameter is activated, the PICC selection sequence is
+as follows (assuming NFC-A is selected first):
+• Once NFC-A has been selected by the PCD through the REQA command, PN7160 disables the NFC-B card
+emulation so that the REQB command sent later on by the EMVCo PCD gets no answer.
+• The payment transaction can then successfully go through based on technology NFC-A.
+• PN7160 waits then for an RF Field OFF/Field ON sequence before enabling the non-selected technology
+(NFC-B) again.
+Figure 59. EMVCo Listening with an NFC-A activated first by the PCD and then NFC-B activated first, after Field
+OFF/ON sequence
+10.6  [PN7160-NCI] extension: Power optimization
+PN7160 offers a standby mode, which can be activated together with the RF Discovery, such that the overall
+power consumption is significantly reduced.
+One dedicated proprietary function is added to enable/disable this standby mode:
+CORE_SET_POWER_MODE.
+10.6.1  CORE_SET_POWER_MODE Command/Response
+Note:  The Standby mode is enabled by default in [PN7160_Ref]. Given the very strong impact on the power
+consumption, disabling the Standby mode should be restricted to debug sessions.
+GID OID Numbers of
+parameter(s)
+Description
+1111b 0x00 1 Command to request the PN7160 to enable/disable the Standby mode
+Table 92. CORE_SET_POWER_MODE_CMD
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+90 / 147

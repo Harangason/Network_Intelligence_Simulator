@@ -1,0 +1,36 @@
+EnergyTransferSuspended
+State EnergyTransferSuspended
+System under test Charging Station
+Description This state will prepare the Charging Station, so that it is in a state where the energy transfer is suspended
+by the EV.
+Prerequisite N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+If State is NOT EnergyTransferStarted then execute Reusable State EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Notes(s): The tool will wait for <Configured Transaction Duration> seconds
+Manual Action: The EV suspends the energy transfer.
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+IF TxStopPoint contains EnergyTransfer THEN:
+- triggerReason must be ChargingStateChanged (If chargingState = SuspendedEV)
+- transactionInfo.chargingState must be EVConnected OR SuspendedEV
+- transactionInfo.stoppedReason must be StoppedByEV
+- eventType must be Ended
+ELSE:
+- triggerReason must be ChargingStateChanged
+- transactionInfo.chargingState must be SuspendedEV
+- eventType must be Updated
+END
+Post scenario validations:
+State is EnergyTransferSuspended
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 929/1383 Part 6 - Test Cases

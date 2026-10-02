@@ -1,0 +1,124 @@
+FSx FrameStart for Sensor X
+FEx FrameEnd for Sensor X
+SxLy Line Y for Sensor X video frame
+SxLN Last line for Sensor X video frame
+S0L1,S1L1,S2L1,S3L1 indicates concatenation of the first video line from each sensor into a single video line. 
+This packet has a modified header and footer that matches the concatenated line data.
+Packets would have the same VC-ID, based on the VC-ID for the lowest number sensor port being forwarded.
+Lines are concatenated on a byte basis without padding between video line data.
+7.4.25.5.1 Code Example for Line-Concatenated CSI-2 Forwarding
+# "*** RX0 VC=0 ***"
+WriteI2C(0x4c,0x01) # RX0
+WriteI2C(0x70,0x1f) # RAW10_datatype_yuv422b10_VC0
+# "*** RX1 VC=0 ***"
+WriteI2C(0x4c,0x12) # RX1
+WriteI2C(0x70,0x1f) # RAW10_datatype_yuv422b10_VC0
+# "*** RX2 VC=0 ***"
+WriteI2C(0x4c,0x24) # RX2
+WriteI2C(0x70,0x1f) # RAW10_datatype_yuv422b10_VC0
+# "*** RX3 VC=0 ***"
+WriteI2C(0x4c,0x38) # RX3
+WriteI2C(0x70,0x1f) # RAW10_datatype_yuv422b10_VC0
+#  "CSI_PORT_SEL"
+WriteI2C(0x32,0x01) # CSI0 select
+#  "CSI_EN"
+WriteI2C(0x33,0x01) # CSI_EN & CSI0 4L
+# "*** CSI0_SYNC_FWD synchronous forwarding with line concatenation ***"
+WriteI2C(0x21,0x3c) # synchronous forwarding with line concatenation
+#  "***FWD_PORT all RX to CSI0"
+WriteI2C(0x20,0x00) # forwarding of all RX to CSI0
+Packet Header, PH
+Packet Footer, PF
+FS0
+FE0
+Frame Blanking
+KEY:
+PH – Packet Header PF – Packet Footer + Filler (if applicable)
+FS – Frame Start FE – Frame End
+LS – Line Start LE – Line End
+Frame Blanking
+Frame 1
+Image Data
+{Sensor 0}
+S0L1
+S0L2
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+S0LN
+Frame 1
+Image Data
+{Sensor 1}
+Frame 1
+Image Data
+{Sensor 2}
+Frame 1
+Image Data
+{Sensor 3}
+S1L1
+S1L2
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+S1LN
+S2L1
+S2L2
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+S2LN
+S3L1
+S3L2
+.
+.
+.
+.
+.
+.
+.
+.
+.
+.
+S3LN
+Sensor 0
+VC-ID = 0
+Sensor 1
+VC-ID = 0
+Sensor 2
+VC-ID = 0
+Sensor 3
+VC-ID = 0
+Line Blanking
+*Blanking intervals do not provide accurate synchronization timing
+Figure 7-21. Line-Concatenated Format
+7.4.25.6 CSI-2 Replicate Mode
+In CSI-2 Replicate mode, both ports can be programmed to output the same data. The output from CSI-2 port 0 
+is also presented on CSI-2 port 1.
+To configure this mode of operation, set the CSI_REPLICATE bit in the FWD_CTL2 register. This bit should only 
+be set before forwarding is enabled. If this bit is set after forwarding is enabled, unexpected errors can occur.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 55
+Product Folder Links: DS90UB960-Q1

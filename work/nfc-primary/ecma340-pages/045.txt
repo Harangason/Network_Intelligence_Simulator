@@ -1,0 +1,43 @@
+ 
+© Ecma International 2024  39 
+ 
+12.7.4 Protocol operation 
+After the activation sequence the Target shall wait for a block as only the Initiator has the right to send. After 
+sending a block, the Initiator shall switch to receive mode and wait for a block before switching back to transmit 
+mode. The Target may trans mit blocks only in response to received blocks. After responding, the Target shall 
+return to the receive mode. 
+The Initiator shall not initiate a new pair of Request/Response until the current pair of Request/Response has 
+been completed or if the frame waiting time is exceeded without response.  
+12.7.5 Multi-Activation 
+The Multi-Activation feature allows the Initiator to hold several Targets active simultaneously. It allows switching 
+directly between several Targets without needing additional time for deactivation of a Target and activation of 
+another Target. 
+For an example of Multi -Activation see Table 10. The Initiator needs to handle a separate package number 
+information for each activated Target. 
+Table 10 — Multi-Activation 
+Initiator action Status Target 1 Status Target 2 Status Target 3 
+Choose active communication mode       
+Activate Target 1 with DID=1 Selected (1) Sense Sense 
+Any communication with DID=1 Selected (1) Sense Sense 
+…       
+Activate Target 2 with DID=2 Selected (1) Selected (2) Sense 
+Any communication with DID=1,2 Selected (1) Selected (2) Sense 
+…       
+Activate Target 3 with DID=3 Selected (1) Selected (2) Selected (3) 
+Any communication with DID=1,2,3 Selected (1) Selected (2) Selected (3) 
+…       
+Deactivation Sequence with DID=1 Sleep Selected (2) Selected (3) 
+Any communication with DID=2,3 Sleep Selected (2) Selected (3) 
+…       
+Deactivation Sequence with DID=2 Sleep Sleep Selected (3) 
+Any communication with DID=3 Sleep Sleep Selected (3) 
+…       
+Deactivation Sequence with DID=3 Sleep Sleep Sleep 
+…       
+ 
+12.7.6 More information (Chaining) 
+The chaining feature allows the Initiator or Target to transmit information that does not fit in a single block, by 
+dividing the information into several blocks. Each of those blocks shall have a length less than or equal to the 
+maximum frame size (LENMAX). 
+The chaining bit in the PFB of a protocol frame controls the chaining of frames. Each frame with the chaining 
+bit set shall be acknowledged by an ACK pdu. 

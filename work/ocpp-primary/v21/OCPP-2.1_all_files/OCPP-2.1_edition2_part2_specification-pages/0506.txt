@@ -1,0 +1,31 @@
+Chapter 1. Introduction
+This Functional Block describes the functionality that enables parties to extend existing commands with custom attributes or add
+new custom commands to OCPP
+OCPP offers two mechanisms to create vendor-specific custom extension.
+1. The DataTransferRequest message allows for the exchange of data or messages not standardized in OCPP. As such, it
+offers a framework within OCPP for experimental functionality that may find its way into future OCPP versions.
+Experimenting can be done without creating new (possibly incompatible) OCPP dialects. Secondly, it offers a possibility to
+implement additional functionality agreed upon between specific CSMS and Charging Station vendors.
+2. A CustomData element exists as an optional element in the JSON schemas of all types. CustomData is the only class in the
+JSON schema files that allows additional properties. It can thus be used to add additional custom attributes to any type.
+The CustomData has been deliberately left out of the specification document, because it would introduce a lot of clutter and
+it is not meant to be used in standard implementations. See also [OCPP2.1-PART4].
+The DataTransferRequest/Response contains a field without a length or type specification. It can be convenient to use this field as
+structured JSON content.
+Example of embedded JSON
+[2,
+"<unique msg id>",
+"DataTransfer",
+{
+  "vendorId": "com.mycompany.ice",
+  "messageId": "iceParkedAtCs"
+  "data": { "start_time": "2020-04-01T11:01:02" }
+}
+]
+IMPORTANT
+Please use with extreme caution and only for optional functionality, since it will impact your compatibility
+with other systems that do not make use of this option. We recommend mentioning the usage explicitly in
+your documentation and/or communication. Please consider consulting the Open Charge Alliance before
+turning to this option to add functionality.
+Edition 2, 2025-12-03 P. DataTransfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 493/803 Part 2 - Specification

@@ -1,0 +1,44 @@
+being sent.
+Main (Test scenario)
+Charging Station CSMS
+…
+Note: If the value of DeviceDataCtrlr.ItemsPerMessage[GetVariables] from step #1 is 9 or more 10 or more  , than the following can
+all be set in one SetVariablesRequest, otherwise the variables are set one-by-one.
+…
+6.2.6. Page 125 - (2026-02) - TC_C_14_CS - Clarifications and Additional tool
+validations
+Test case name Authorization through authorization cache - GroupID equal to MasterPassGroupId.
+Test case Id TC_C_14_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+…
+Note(s): Step 3, 4, and 5 are only executed if the transaction is still running as determined by the <Configured TxStopPoint> .      
+Tool validations
+* Step 2:
+Message TransactionEventRequest
+- triggerReason StopAuthorized
+- idToken.idToken <Configured masterPass idToken>
+- idToken.type <Configured masterPass idTokenType>
+If eventType Ended, then:
+- transactionInfo.stoppedReason MasterPass
+* Step 3, 4, 5:    
+Message  TransactionEventRequest
+If  eventType   Ended , then: 
+-  transactionInfo.stoppedReason   MasterPass   
+Post scenario validations:
+- N/a
+6.2.7. Page 103/104 - (2026-02) - TC_B_108_CS - Added
+SetNetworkProfileRequest main steps
+Test case name Set new NetworkConnectionProfile - Prevent overwriting configured Network Profile slot
+Test case Id TC_B_108_CS
+…
+Prerequisite(s) NetworkConfiguration component variables are writable.
+The Charging Station supports having at least two NetworkProfiles installed at the same time.             
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with GetVariablesResponse
+1. Test System sends GetVariablesRequest for
+- OCPPCommCtrlr.NetworkConfigurationPriority
+ Note : If step 2 attributeValue contains a list of at least two values, then skip to step 7                 
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 32/116 Errata 2026-06

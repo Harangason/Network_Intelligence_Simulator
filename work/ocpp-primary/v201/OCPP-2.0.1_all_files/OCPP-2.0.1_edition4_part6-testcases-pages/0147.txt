@@ -1,0 +1,46 @@
+TC_C_21_CS: Offline authorization through local authorization list - Accepted
+Test case name Offline authorization through local authorization list - Accepted
+Test case Id TC_C_21_CS
+Use case Id(s) C13
+Requirement(s) C13.FR.02
+System under test Charging Station
+Description This test case describes how to authorize an IdToken via the Local Authorization List while the Charging
+Station is online. When offline the Charging Station can then locally authorize the IdToken.
+Purpose To verify if the Charging Station is able to authorize an idToken which has status "Accepted" in its local
+authorization list according to the mechanism as described in the OCPP specification.
+Prerequisite(s) - LocalAuthListCtrlr.LocalAuthListAvailable is implemented with value true
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+LocalAuthListEnabled is true (If implemented)
+LocalPreAuthorize is true (If implemented)
+OfflineTxForUnknownIdEnabled is false (If implemented)
+LocalAuthorizeOffline is true
+Memory State:
+IdTokenLocalAuthList for <Configured valid idtoken fields>
+Reusable State(s):
+State is StartOfflineTransaction
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present idToken.
+Manual Action: Unplug cable.
+Manual Action: Drive out of parkingbay.
+1. The Charging Stations sends a TransactionEventRequest
+Note(s):
+- The Charging Station will empty its Transaction message queue.
+This will contain one or more TransactionEventRequest messages
+2. The Test System responds with a TransactionEventResponse
+Note(s):
+- The Test System will respond to the TransactionEventRequest
+containing the idToken, with idtokenInfo.status Accepted
+3. Execute Reusable State ParkingBayUnoccupied
+Tool validations
+* Step 1:
+Message(s) before the StopAuthorize: TransactionEventRequests 
+- offline must be true
+One of the Message(s): TransactionEventRequest
+- TriggerReason must be StopAuthorized
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 145/914 Part 6 - Test Cases

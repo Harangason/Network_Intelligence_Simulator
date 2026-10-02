@@ -1,0 +1,28 @@
+E04 - Transaction started while Charging Station is offline
+No. Type Description
+1 Name Transaction started while Charging Station is offline
+2 ID E04
+3 Objective(s) To enable the EV Driver to start a transaction while the Charging Station is Offline.
+4 Description This use case covers how the Charging Station, while Offline, is able to start a transaction using
+the Local Authorization List or the Authorization Cache.
+Actors Charging Station, CSMS, EV Driver
+Scenario description 1. The transaction starts.
+2. The TransactionEventRequest (eventType = Started) is stored/queued by the Charging Station.
+3. The connection between Charging Station and CSMS is restored.
+4. The Charging Station starts to send queued messages
+5. The stored TransactionEventRequest is sent, notifying the CSMS about the transaction that
+was started.
+Alternative scenario(s) E10 - Connection Loss During Transaction
+5 Prerequisite(s) The Charging Station is Offline.
+The EV Driver is offline/locally authorized by the Charging Station.
+6 Postcondition(s) Successful postcondition:
+The TransactionEventRequest has been responded to by the CSMS AND has been removed from
+the queue of the Charging Station. 
+Failure postcondition:
+The TransactionEventRequest was NOT responded to by the CSMS AND remains in the queue of
+the Charging Station.
+7 Error handling n/a
+8 Remark(s) The scenario description and sequence diagram above are not based on a specific
+TxStartPoint. For more details see the use cases: E01 - Start Transaction options.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 180/803 Part 2 - Specification

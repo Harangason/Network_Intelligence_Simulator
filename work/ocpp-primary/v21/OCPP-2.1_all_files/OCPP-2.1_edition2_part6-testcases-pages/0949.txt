@@ -1,0 +1,49 @@
+State AuthorizedBatterySwapping
+Description This state will prepare the Charging Station, so that the EV driver is authorized to perform a battery swap.
+This can be done in two ways (The default way is configurable at Test System. This will be used when the
+calling testcase does not define which one to use.):
+A. Using local authorization
+B. Using a RequestBatterySwapRequest
+Prerequisite All battery slots need to be empty.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main A (Test scenario)
+Charging Station CSMS
+Manual Action: Present idToken.
+1. The Charging Station sends an AuthorizeRequest
+Note(s):
+- This step needs to be executed, unless (AuthEnabled is
+implemented with mutability ReadOnly AND the value is set to
+false) OR
+a start button as described at Use case C02 is used (This must be
+configured at the Test System) OR
+the idToken is cached.
+In case the idToken is used for a reservation, sending the
+AuthorizeRequest message is optional.
+2. The Test System responds with an AuthorizeResponse
+with idTokenInfo.status Accepted
+Tool validations
+* Step 1:
+Message: AuthorizeRequest
+- idToken.idToken <Configured valid_idtoken_idtoken>
+- idToken.type <Configured valid_idtoken_type>
+Main B (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+RequestBatterySwapResponse
+1. The Test System sends a RequestBatterySwapRequest with
+requestId <Configured requestId>
+idToken.idToken <Configured valid_idtoken_idtoken>
+Tool validations
+* Step 2:
+Message: RequestBatterySwapResponse
+- status must be Accepted
+Post scenario validations:
+State is AuthorizedBatterySwapping
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 947/1383 Part 6 - Test Cases

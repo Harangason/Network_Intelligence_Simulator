@@ -1,0 +1,44 @@
+2.6. Definition of Transaction
+This section is informative.
+To support as many business cases as possible, and to prevent too many messages being sent when not needed for certain
+business cases, OCPP 2.0.1 supports flexible configuration of the start and stop of a transaction. This makes it possible to define
+the start and stop of a transaction depending on market demands.
+See: Flexible transaction start/stop for more information.
+2.6.1. Transaction in relation to Energy Transfer Period
+The Energy Transfer Period is a period of time during which energy is transferred between the EV and the EVSE. There MAY be
+multiple Energy Transfer Periods during a Transaction.
+Multiple Energy Transfer Periods can be separated by either:
+• an EVSE-initiated suspense of transfer during which the EVSE does not offer energy transfer, or;
+• an EV-initiated suspense of transfer during which the EV remains electrically connected to the EVSE, or;
+• an EV-initiated suspense of transfer during which the EV is not electrically connected to the EVSE.
+Transaction Energy Offer Energy Flow
+Transaction
+Transaction start is configured via configuration Variable:TxStartPoint
+EnergyOfferPeriod
+Energy Offer Period starts when EVSE is ready to supply energy.
+EnergyTransferPeriod
+Energy is transferred.
+During an EnergyOfferPeriod there may
+be periods the EV is not charging due to
+for instance, warm/full battery or EV
+internal smart charging.
+EnergyTransferPeriod
+Energy is transferred.
+EnergyOfferSuspendPeriod
+During a transaction, there may be periods
+the EnergyOffer to EV is suspended by the
+EVSE, for instance due to Smart Charging
+or local balancing.
+EnergyOfferPeriod
+EnergyTransferPeriod
+Energy is transferred.
+Transaction stop is configured via configuration Variable: TxStopPoint
+Figure 1. OCPP Charging Transaction definition
+2.7. ISO 15118 support
+Updated in OCPP 2.1
+This section is informative.
+OCPP supports ISO 15118 authorization (also called "Plug and Charge") and ISO 15118 based Smart Charging. (See [ISO15118-2]
+and [ISO15118-20]). Furthermore, it describes how to install and update ISO 15118 certificates. This functionality is not included as
+one functional block, but is included in multiple chapters throughout the specification. ISO 15118 authorization is included in the
+Edition 2, 2025-12-03 Generic
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 14/803 Part 2 - Specification

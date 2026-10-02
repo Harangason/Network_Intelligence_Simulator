@@ -1,0 +1,58 @@
+clock periods or synchronization and response time. Units are 40 ns for the nominal oscillator clock frequency, 
+giving Min_delay = 40 ns × (SCL_HIGH_TIME + 4).
+I2C Controller SCL Low Time is set in register 0xB[7:0]. This field configures the low pulse width of the SCL 
+output when the Serializer is the Controller on the local deserializer I2C bus. This value is also used as the SDA 
+setup time by the I2C Target for providing data prior to releasing SCL during accesses over the Bidirectional 
+Control Channel. The default value is set to provide a minimum 5-µs SCL high time with the reference clock at 
+25 MHz + 100ppm including four additional oscillator clock periods or synchronization and response time. Units 
+are 40 ns for the nominal oscillator clock frequency, giving Min_delay = 40 ns × (SCL_HIGH_TIME + 4). See 
+Table 7-19 example settings for Standard mode, Fast mode and Fast-mode Plus timing.
+Table 7-19. Typical I2C Timing Register Settings
+I2C MODE
+SCL HIGH TIME SCL LOW TIME
+0xA[7:0] NOMINAL DELAY AT
+REFCLK = 25 MHz 0xB[7:0] NOMINAL DELAY AT
+REFCLK = 25 MHz
+Standard 0x7A 5.04 µs 0x7A 5.04 µs
+Fast 0x13 0.920 µs 0x25 1.64 µs
+Fast - Plus 0x06 0.400 µs 0x0C 0.640 µs
+7.5.8.1 Code Example for Configuring Fast-Mode Plus I2C Operation
+#  "RX0 I2C Controller Fast Plus Configuration"
+WriteI2C(0x02,0x3E) # Enable Proxy
+WriteI2C(0x4c,0x01) # Select RX_PORT0
+# Set SCL High and Low Time delays
+WriteI2C(0x0a,0x06) # SCL High 
+WriteI2C(0x0b,0x0C) # SCL Low
+7.5.9 Interrupt Support
+Interrupts can be brought out on the INTB pin as controlled by the INTERRUPT_CTL 0x23 and 
+INTERRUPT_STS 0x24 registers. The main interrupt control registers provide control and status for interrupts 
+from the individual sources. Sources include each of the four FPD3 Receive ports as well as each of the two 
+CSI-2 Transmit ports. Clearing interrupt conditions requires reading the associated status register for the source. 
+The setting of the individual interrupt status bits is not dependent on the related interrupt enable controls. The 
+interrupt enable controls whether an interrupt is generated based on the condition, but does not prevent the 
+interrupt status assertion.
+For an interrupt to be generated based on one of the interrupt status assertions, both the individual interrupt 
+enable and the INT_EN control must be set in the INTERRUPT_CTL 0x23 register. For example, to generate an 
+interrupt if IS_RX0 is set, both the IE_RX0 and INT_EN bits must be set. If IE_RX0 is set but INT_EN is not, 
+the INT status is indicated in the INTERRUPT_STS register, and the INTB pin does not indicate the interrupt 
+condition.
+See the INTERRUPT_CTL and INTERRUPT_STS register for details.
+7.5.9.1 Code Example to Enable Interrupts
+#  "RX01/2/3/4 INTERRUPT_CTL enable"
+WriteI2C(0x23,0xBF) # RX all & INTB PIN EN
+# Individual RX01/2/3/4 INTERRUPT_CTL enable
+# "RX0 INTERRUPT_CTL enable"
+WriteI2C(0x4C,0x01) # RX0
+WriteI2C(0x23,0x81) # RX0 & INTB PIN EN
+# "RX1 INTERRUPT_CTL enable"
+WriteI2C(0x4C,0x12) # RX1
+WriteI2C(0x23,0x82) # RX1 & INTB PIN EN
+# "RX2 INTERRUPT_CTL enable"
+WriteI2C(0x4C,0x24) # RX2
+WriteI2C(0x23,0x84) # RX2 & INTB PIN EN
+# "RX3 INTERRUPT_CTL enable"
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 61
+Product Folder Links: DS90UB960-Q1

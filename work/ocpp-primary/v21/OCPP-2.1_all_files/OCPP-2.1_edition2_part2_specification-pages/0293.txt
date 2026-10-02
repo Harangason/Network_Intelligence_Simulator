@@ -1,0 +1,45 @@
+No. Type Description
+3 Objective(s) To show an EV Driver some information, generic tariff, a message etc., when the Charging Station
+cannot retrieve tariff information for this EV Driver.
+4 Description When an EV Driver wants to charge an EV, he wants an indication of how much charging will cost
+him at the Charging Station he is at, but the Charging Station cannot get a specific tariff for this
+EV Driver (for example: the Charging Station is Offline, or no EV Driver-specific tariff is available).
+For such scenarios, a fallback tariff information message can be configured in the Charging
+Station.
+Actors Charging Station, EV Driver
+Scenario description 1. The EV Driver wants to charge an EV, he presents his IdTokenType.
+2. The Charging Station authorizes the EV Driver against the Authorization Cache
+3. The Charging Station shows the TariffFallbackMessage to the EV Driver.
+Alternative scenario(s) I01 - Show EV Driver-specific Tariff Information
+5 Prerequisites The Charging Station supports Tariff Information
+the Configuration Variable: TariffFallbackMessage is configured.
+6 Postcondition(s) Successful postcondition:
+EV Driver has been shown the fallback tariff information message
+Failure postcondition:
+EV Driver has no information about the tariff at this Charging Station.
+7 Error Handling n/a
+8 Remarks n/a
+EV Driver
+Charging Station CSMS
+present IdToken
+alt [if Charging Station is offline]
+check authorization cache()
+TariffFallbackMessage
+[No specific tariff is available]
+AuthorizeRequest(idToken)
+AuthorizeResponse(...)
+TariffFallbackMessage
+Figure 102. Sequence Diagram: Show Fallback Tariff Information
+I04 - Show Fallback Tariff Information - Requirements
+ID. Precondition Requirements
+I04.FR.01 When the Charging Station cannot get a specific
+tariff for the EV Driver (for example: the
+Charging Station is Offline, or no EV Driver-
+specific tariff is available.)
+The Charging Station SHALL display a fallback tariff information
+message to the EV Driver, which is configured in the
+Configuration Variable: TariffFallbackMessage.
+I04.FR.02 The CSMS MAY configure the TariffFallbackMessage via the
+Configuration Variable: TariffFallbackMessage.
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 280/803 Part 2 - Specification

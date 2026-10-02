@@ -1,0 +1,52 @@
+K28 - Dynamic charging profiles from CSMS
+New in OCPP 2.1
+No. Type Description
+1 Name Dynamic charging profiles from CSMS
+2 ID K28
+3 Objective(s) To allow a dynamically changing limit in a charging profile.
+4 Description A dynamic ChargingProfileType consists of a single schedule period in which the limit or setpoint
+can be updated without having to replace the charging profile. The updated value is either sent by
+CSMS or pulled by Charging Station via messages.
+Actors Charging Station, CSMS, external system (EMS)
+Scenario description #1 Updates sent by CSMS
+1. CSMS sends a SetChargingProfileRequest with a ChargingProfileType with
+chargingProfileKind = Dynamic and a single chargingSchedule with one
+chargingSchedulePeriod with a limit and without a dynUpdateInterval.
+2. Charging Station responds with SetChargingProfileResponse with status = Accepted and
+applies limit to charging, and sets dynUpdateTime to current time.
+3. When CSMS wishes to update the limit it sends a UpdateDynamicScheduleRequest with
+the chargingProfileId of the charging profile and a ChargingScheduleUpdateType with a
+new value of limit.
+4. Charging stations responds with UpdateDynamicScheduleResponse with status =
+Accepted, sets dynUpdateTime in ChargingProfileType to current time, and applies the
+new limit.
+5. If chargingSchedule.duration is set and the setpoint/limit is not updated by a
+UpdateDynamicScheduleRequest after duration seconds, then the chargingSchedule ends
+and Charging Station will fall back to the next valid charging profile.
+a. If chargingSchedule.duration has not been set, then the chargingSchedule is valid
+indefinitely, until the charging profile is cleared or replaced by CSMS.
+Scenario description #2 Updates requested by Charging Station
+1. CSMS sends a SetChargingProfileRequest with a ChargingProfileType with
+chargingProfileKind = Dynamic and a single chargingSchedule with one
+chargingSchedulePeriod with a limit and with a dynUpdateInterval of 60 seconds, which
+tells Charging Station to pull for updates every 60 seconds.
+2. Charging Station responds with SetChargingProfileResponse with status = Accepted and
+applies limit to charging, and sets dynUpdateTime to current time.
+3. When the time is dynUpdateTime + dynUpdateInterval Charging Station requests an
+update by sending a PullDynamicScheduleUpdateRequest with the chargingProfileId of
+the charging profile.
+4. CSMS reponds with PullDynamicScheduleUpdateResponse with status = Accepted and a
+ChargingScheduleUpdateType with a new value for limit.
+5. Charging Station sets dynUpdateTime in ChargingProfileType to current time, and applies
+the new limit.
+6. If chargingSchedule.duration is set and the setpoint/limit is not updated by
+PullDynamicScheduleUpdateResponse after duration seconds, then the chargingSchedule
+ends and Charging Station will fall back to the next valid charging profile.
+a. If chargingSchedule.duration has not been set, then the chargingSchedule is valid
+indefinitely, until the charging profile is cleared or replaced by CSMS.
+5 Prerequisites Charging Station supports Dynamic charging profiles.
+6 Post conditions
+7 Error Handling
+8 Remarks
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 403/803 Part 2 - Specification

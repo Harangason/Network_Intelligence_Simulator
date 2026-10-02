@@ -1,0 +1,46 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+October 24, 2006 http://www.Modbus.org 9/46
+• TCP Management layer
+Informative Note: The TCP/IP discussion in th is Specification is based in part upon 
+reference 
+[2] RFC 1122 to assist the user in implementing the MODBUS Application 
+Protocol Specification [1] over TCP/IP. 
+One of the main functions of the messaging service is to manage communication 
+establishment and ending and to manage  the data flow on established 
+TCP 
+connections. 
+¾ Connection Management
+A communication between a client and server MODBUS Module requires the use of a 
+TCP connection management module. It is in charge to manage globally messaging 
+TCP connections.  
+Two possibilities are proposed for the connection management. Either the user 
+application itself manages TCP connections or the connection management is totally 
+done by this module and therefore it is transparent for the user application. The last 
+solution implies less flexibility.   
+The listening TCP port 502 is reserved for MODBUS communications. It is 
+mandatory to listen by default on that port. Ho wever, some markets or applications 
+might require that another port is dedicated to MODBUS over TCP.  For that reason, it 
+is highly recommended that the clients and the servers give the possibility to the user 
+to parameterize the MODBUS over TCP port number. It is important to note that 
+even if another TCP server port is configured for MODBUS service in certain 
+applications, TCP server port 502 must still be available in addition to any 
+application specific ports.   
+¾ Access Control Module
+In certain critical contexts, accessibility to in ternal data of devices must be forbidden for 
+undesirable hosts. That’s why a security mode  is needed and security process may be 
+implemented if required. 
+• TCP/IP Stack lay er
+The TCP/IP stack can be parameterized in order to adapt the data flow control, the 
+address management and the connection manageme nt to different constraints specific 
+to a product or to a system. Generally the BSD 
+socket interface is used to manage the 
+TCP connections. 
+ Resource management and Data flow control
+In order to equilibrate inbound and outbound messaging data flow between the
+MODBUS client and the server, data flow cont rol mechanism is provided in all layers
+of MODBUS messaging stack.
+The resource management and flow control module  is first based on TCP internal flow
+control added with some data flow control in the data link 
+layer and also in the user
+application level.
+Modbus Organization  

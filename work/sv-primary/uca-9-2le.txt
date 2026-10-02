@@ -1,0 +1,1503 @@
+PDF_PAGE1
+UCA International Users Group 
+10604 Candler Falls Court 
+Raleigh, NC 27614 
+Tel: +919-847-2241, Fax: +919-847-2939 
+http://www.ucainternational.org 
+ 
+ 
+IMPLEMENTATION GUIDELINE FOR DIGITAL 
+INTERFACE TO INSTRUMENT TRANSFORMERS USING 
+IEC 61850-9-2 
+1 S COPE 
+This docum ent gives add itional inf ormation on  h ow to implement a digital comm unication 
+interface to non conven tional instru ment tr ansformers acc ording to IEC 61850-9-2 an d IEC 
+60044-7/8. The purpose of the docu ment is to define a subset of I EC 61 850-9-2 that shall  
+support a fast market intr oduction of this standa rd. The subset facilitates first implementati ons, 
+especially in existing products. It further clarifies uncertainties with respect to the interpretation  
+of the standards and/or to precisely define what options to choose in case the standards permit a 
+choice of options. 
+ 
+The p aper d efines all the generally bi nding issues and is in tended to be u sed together  with  
+Protocol Implementation Documents ( PID’s) that are establ ished for all equipment supporting 
+this digital interface. The PID’s of the individ ual eq uipment then  define wh at function s a unit 
+supports and how it reacts to error conditions. 
+ 
+The purpose of the definitions stated below is to ensure that equipment designed accordingly is 
+interoperable within the limits defined in the PID documents of the connected units. 
+ 
+2 S UMMARY 
+The sub set of IEC 61850-9-2 defined in th is documen t only supp orts th e service  
+SendMSVMessage. As a consequence, the communication is unidirectional from the merging unit 
+to the bay level devices and does not need to support the MMS stack. Therefore, implementation 
+in existing bay level devices is straightforward. 
+ 
+The docum ent further defines a l ogical devic e merging unit and a dataset used for  the 
+transmission of the sampled values. 
+ 
+This Revision 2.1 incorporates an improvement of the text in cl ause 6.2.3 and the following two 
+corrections of mistakes that where identified during implementation and testing: 
+- ConfRev is of length 4 instead of length 1 (Figure 4) 
+- Component source of data attribute type quality is encoded in one bit instead of two bits 
+(Figure 5) 
+ 
+UCA® International Users Group, 10604 Candler Falls Court, Raleigh, NC 27614 
+UCA
+®
+  is a registered trademark of the Electric Power Research Institute. Used with permission 
+PDF_PAGE2
+Page 2 / 31 
+The following persons have prepared the document: 
+ 
+Christoph Brunner, ABB Switzerland Ltd, Zürich, Switzerland 
+Gerhard Lang, SIEMENS AG, Berlin, Ge many r
+. 
+,
+. 
+ 
+,
+, . 
+,
+,
+ 
+ 
+,
+. 
+, . 
+ . 
+r
+.
+Frederic Leconte, AREVA T&D, Paris, France 
+Fred Steinhauser, OMICRON electronics, Klaus, Austria 
+ 
+The f ollowing persons have contributed to the do cument b y e ither r eviewing i t a nd /  or b y 
+participation in the working group “Digital IT” of the UCA international users group: 
+ 
+Mark Adamiak, GE Power Management, King of Prussia PA, U.S
+Khalid Alem, AREVA T&D  Montpellier, France 
+Lars Andersson, ABB Switzerland Ltd, Zürich, Switzerland 
+Alex Apostolov, AREVA T&D, Los Angeles CA, U.S
+Jim Buckingham, Landis+Gyr, U.S. 
+Dac-Phuoc Bui, Hydro Quebec, Montreal, Canada
+Denis Chatrefou, AREVA T&D, Paris, France 
+Fernando Cobelo, ZIV  Bilbao, Spain 
+Bill Dickerson  Arbiter Systems Inc. Paso Robles CA, U.S
+Fred Engler, ABB Switzerland Ltd, Zürich, Switzerland 
+Pascal Erni, ABB Switzerland Ltd, Zürich, Switzerland 
+Hans-Joachim Herrmann  SIEMENS AG, Nürnberg, Germany 
+Clemens Hoga, SIEMENS AG, Nürnberg, Germany 
+Hachidai Ito, TMT&D, Tokyo, Japan 
+Alf Johansson  ABB Switzerland Ltd, Zürich, Switzerland 
+Andreas Jurisch, SIEMENS AG, Berlin, Germany 
+Thomas Kern, ABB Switzerland Ltd, Zürich, Switzerland 
+Andrew Klimek, NxtPhase Corp., Vancouver BC, Canada
+Pierre Martin, Hydro Quebec, Montreal, Canada
+Jean-François Mironneau, AREVA T&D  France 
+Bruce Muschlitz, AREVA T&D, Bethlehem PA, U.S
+Koichi Okuno, Toshiba International (Europe) Ltd  Durham, U.K
+Veselin Skendzic, Schweitzer Engineering Laboratories Inc., U.S
+Damien Tholomier, AREVA T&D, Leval, F ance 
+Timothy P  Tibbals, Schweitzer Engineering Laboratories Inc. Pullmann WA, U.S. 
+Jakob Widmer, Landis+Gyr AG, Zug, Switzerland 
+ 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE3
+Page 3 / 31 
+Table of Content 
+ 
+1 Scope ..................................................................................................................1 
+2 Summary ............................................................................................................1 
+3 Normative Reference..........................................................................................4 
+4 Abbreviations .....................................................................................................4 
+5 Use of IEC 60044-8 ............................................................................................5 
+6 Use of IEC 61850-9-2 .........................................................................................5 
+6.1 Protocol implementation conformance statement (PICS)...............................................5 
+6.1.1 Notation................................................................................................................... 5 
+6.1.2 Profile conformance .................................................................................................. 5 
+6.1.3 SV services............................................................................................................... 5 
+6.2 Additional specifications............................................................................................. 6 
+6.2.1 Physical Layer ([9-2] 5.3.3) ....................................................................................... 6 
+6.2.2 Link layer ([9-2] 5.3.3).............................................................................................. 6 
+6.2.3 Extension of data attribute type Quality ([7-3] 6.2)......................................................6 
+7 Specification of the logical device "Merging Unit".............................................7 
+7.1 Definition of the objects according to IEC 61850-7-2....................................................7 
+7.1.1 The logical device instance "MU" ([7-2] 8.1.1).............................................................7 
+7.1.2 The logical node instance "LLN0" ([7-2] 9.1.1) ............................................................7 
+7.1.3 The dataset "PhsMeas1" ([7-2] 11.2.1)....................................................................... 8 
+7.1.4 The multicast sampled value control block "MSVCB01" and "MSVCB02" ([7-2] 16.2.1) ....9 
+7.2 Further specifications ................................................................................................ 9 
+7.2.1 Operating modes ...................................................................................................... 9 
+7.2.2 Synchronization ...................................................................................................... 10 
+7.2.3 Reference arrow orientation system.......................................................................... 12 
+7.2.4 Calculations to be done in the Merging Unit............................................................... 12 
+7.3 Configuration of the Merging Unit............................................................................. 12 
+8 Physical devices................................................................................................13 
+9 Open points ......................................................................................................13 
+Appendix A: Content of an Ethernet frame ................................................................14 
+Appendix B: XML File..................................................................................................17 
+Appendix C: Tables with measurement accuracy requirements................................20 
+Appendix D: Nomograms for checking of dynamic ranges ........................................22 
+Appendix E: Reference arrow orientation system......................................................25 
+Change Information ...................................................................................................31 
+ 
+ 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE4
+Page 4 / 31 
+3 N ORMATIVE REFERENCE 
+[44-8] International Standard IEC 60044-8: 20 02(E), Instrument Transformers – P art 8; 
+Electronic current transformers, First edition 2002-07 
+ 
+[6] IEC 61850-6 : Communic ation networ ks and systems in  sub stations – P art 6:  
+Configuration description  language f or communic ation in electrical sub stations 
+related to IEDs; Draft FDIS 
+ 
+[7-2] IEC 61850-7-2: Communication networ ks and sy stems in substations – Par t 7-2 : 
+Basic c ommunication structure for substation and feeder equi pment – Abstract  
+communication service interface (ACSI); First edition 2003-05 
+ 
+[7-4] IEC 61850-7-4: Communication networ ks and sy stems in substations – Par t 7-4 : 
+Basic communication structure for substation and fe eder equipment – C ompatible 
+logical node classes and data classes; First edition 2003-05 
+ 
+[9-2] IEC 61850-9 -2 : Comm unication networks an sy stems in  substation s, P art 9-2: 
+Specific communication service mapping (SCSM) – Sampled values over ISO / IEC 
+8802-3; 57/690/FDIS 
+4 A BBREVIATIONS 
+1PPS One Pulse Per Second. Time synchronization signal 
+A-Profile Application profile 
+CB Circuit breaker 
+CT Current transducer 
+ID Identifier 
+IEC International electrotechnical commission 
+MU Merging unit 
+PICS Protocol implementation conformance statement 
+PID Protocol implementation document 
+SCL Substation configuration language 
+SV Sampled values 
+T-Profile Transport profile 
+VLAN Virtual local area network 
+VT Voltage transducer 
+ 
+ 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE5
+Page 5 / 31 
+5 U SE OF IEC 60044-8 
+The clauses of IEC 60044-8 related to the digital ou tput (clause 5.3 and 6.2) are not applicable. 
+The communication interface shall be designed acc ording to IEC 61850-9-2 and the additional  
+specifications made in  thi s doc ument instead. However, the c oncept of  the merging uni t as 
+explained in clause 1.3 shall apply in p rinciple. More details of th e merging unit are specified in 
+clause 7 of this document. 
+ 
+The maximum delay time as specified in clause 5.3.2, NOTE 2 sh all apply as maximum allowed 
+delay. 
+ 
+The specification of the clock input according to clause 6.2.5 of [44-8] shall apply as well. 
+6 U SE OF IEC 61850-9-2 
+6.1 Protocol implementation conformance statement (PICS) 
+The implementation of IEC 61850-9-2 shall be according to the following protocol implementation 
+conformance statement (see also clause 9 of IEC 61850-9-2). 
+6.1. 1 Notat ion 
+For the following clause, the following definitions apply: 
+• m: mandatory support. The item shall be implemented. 
+• c: conditional support. The item shall be implemented if the stated condition exists. 
+• o: optional support. The implementers may decide to implement the item. 
+• x: excluded: The implementers shall not implement this item. 
+• i: out-of-scope: The implementation of the item is not within the scope of this guideline 
+6.1. 2 Profile  conform ance 
+Table 1 and Table 2 define the basic conformance statement. 
+Table 1 – PICS for A-profil e supp ort 
+  Client Server Value /Comm ent 
+       
+A1 Client/Server A-Profile o  o  Refer to cla use 5 .2 of 618 50-9-2  
+A2 SV A -Profile m  m  Refer to cla use 5 .3 of 618 50-9-2  
+ 
+Table 2 – PICS for T-profil e supp ort 
+  Client Server Value /Comm ent 
+       
+T1 TCP/ IP T-Profi le c1  c1   
+T2 SV T-Profi le m  m   
+c1 – shall  be ‘m’ if supp ort fo r A1 is declared. Otherw ise,  shall be “i” 
+ 
+6.1.3 SV services 
+This clause describes the Protocol Implementation Conformance Statement for sampled values 
+services based on the IEC 61850-7-2 basic conformance statement. 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE6
+Page 6 / 31 
+Table 3 – SV co nfor mance stat ement 
+Services Client/ 
+subscriber 
+Server/ 
+publisher 
+Value /Comm ent 
+Multicast     
+SendM SVMessage m m  
+GetMSVCBValues o o  
+SetMSVCBValues o o  
+Unicast     
+Send USVMessag e o o  
+GetUSVCBValues o o  
+SetUSVCBValues o o  
+ 
+6.2 Additional specifications 
+6.2. 1 Physical  Layer ([9 -2] 5 .3.3) 
+Fiber optic transmission system 100Base-FX full duplex with ST connectors is recommended. The 
+only allowed alternate solutions are 100Base-FX with MT-RJ connectors or electrical transmission 
+using 100Base-TX full duplex with RJ-45 connectors. 
+6.2. 2 Link layer ([9 -2] 5.3 .3) 
+The default settings for priority tag and VLAN ID shall be used as specified in [9-2]. The APPID 
+shall always be 0x4000. 
+6.2. 3 Extens ion of data at tribute  type Quali ty ([7-3] 6.2) 
+The data attribute type Quality defined in IEC 618 50-7-3 is extended by adding the f ollowing 
+component at the end: 
+ 
+Quality Type Definition 
+Attribute Name Attribute Ty pe Value/Value Range M/O/C 
+    
+ …     
+ deri ved BOOLEAN DEFAULT FALSE M 
+ 
+derived 
+ 
+This identifier sh all be set to FALSE, if the v alue is based  on  a real sensor in the process 
+(optionally in cluding some additional c alculations b ehind, e.g . f or a RMS calculation). If  the 
+identifier is set to TRUE, it is meant that ther e i s no physic al sensor with in the system to  
+determine the value, but the value i s derived from a combination of values fr om other physical 
+sensors. 
+ 
+EXAMPLE 1 – There may be a CT used to measure the neutral current. In that case, the identifier derived shall be set to 
+FALSE. If the neutral current is calculated from the phase values, the identifier shall be set to TRUE. 
+ 
+EXAMPLE 2 – A disconnector and an earthing switch may be combined to one physical switch having multiple positions. In 
+that case, the position values for the disconnector and the earting switch – each modeled in a logical node XDIS – would 
+have the identifier derived set to TRUE. 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE7
+Page 7 / 31 
+7 S PECIFICATION OF THE LOGICAL DEVICE "MERGING UNIT" 
+IEC 61850 d oes not specify logical  devices. L ogical devices m ay be d escribed in SCL and 
+configured th rough sev eral services of  IEC 61850.  To reduce the first impl ementations to a  
+minimum of required services without loosing interoperability, this guideline p rovides a detailed 
+specification of the logical device merging unit as used within the scope of this guideline. 
+7.1 Definition of  the objects according to IEC 61850-7-2 
+7.1.1 The logical device inst ance " MU" ([7-2] 8 .1.1) 
+The attributes of the logical device MU shall have the following values: 
+Table 4 – Logic al device i nstance "MU " 
+Attribute 
+Name 
+Value M/0 Comment 
+LDName xxxxMUnn m xxxx  is config urab le accord ing to [6 ], clause 8 .4.2 an d 
+MUnn  is the  Attribute Inst of t he elem ent LDe vice in the  
+IED section of t he SCL  (nn  shall id entify the measuring 
+point w ithin th e bay)  
+LDRef xxxxMUnn m  
+LogicalNode LLN0 
+LPHD 
+InnATCTR1 
+InnB TCTR2 
+InnCTCTR3 
+InnNTCTR4 
+UnnATVTR1 
+UnnB TVTR2 
+UnnCTV TR3 
+UnnNTVTR4 
+m 
+m 
+m 
+m 
+m 
+m 
+m 
+m 
+m 
+m 
+1 .. 5 is  the attribute Inst of th e elem ent LN  in the IED 
+section 
+Unn / I nn is th e id entification of the Sensor; A, B, Cand N 
+are the phase identifica tion. Bo th values are part  of  the 
+substation section of the SCL  and  are used to build the 
+name accord ing to [6 ], clause 8 .4.2 
+ 
+ 
+7.1. 2 The lo gical n ode instan ce "LL N0" ([7-2] 9.1.1) 
+The attributes of the logical node LLN0 shall have the following values: 
+ 
+Table 5  – LLN0 
+Attribute Name Value M/O Comment 
+LNName LLN0 m  
+LNRef xxxxMUnn/LLN0 m  
+Dat a   As def ined  in 61850-7-4 
+DataSet PhsMeas1 m  
+MultiCastSam pledValueC
+ontrolBlock 
+MSVCB01 
+MSVCB02 
+c1 
+c1 
+ 
+c1 – At least  one of the tw o MulticastSam pledValueControl Block shall b e implemented  
+ 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE8
+Page 8 / 31 
+7.1.3 The dataset "PhsMeas1" ([7-2] 11.2.1) 
+The attributes of the dataset shall have the following values: 
+ 
+Table 6 –  Dataset "PhsMeas1" 
+Attribute Name Value Comment 
+DSName PhsMeas1  
+DSRef xxxxMUnn/LLN0$PhsMeas1  
+DSMem berRef InnATCTR1.Amp[MX] 
+InnB TCTR2.Am p[M X] 
+InnCTCTR3.Amp[MX] 
+InnNTCTR4.Amp[MX] 
+UnnATVTR1.Vol [MX] 
+UnnB TVTR2.Vol[MX] 
+UnnCTV TR3.V ol[MX] 
+UnnNTVTR4.Vo l[MX] 
+ 
+ 
+The common data class SAV used for the data above shall support the following MX attributes: 
+ 
+Table  7 – C ommon d ata class SAV 
+Attribute Name Attribute Type Comment 
+instMag .i INT32  
+q Quality This includ es valid ity information and test flag  and 
+an i ndication if the v alue is derived o r bas ed on a 
+real sensor 
+sVC.s caleFactor FLOAT3 2 0.001 for current; 0. 01 for vol tage 
+sVC.of fset FLOAT3 2 Always  0 
+ 
+This implementation guideline defines a fixed scaling. See Appendices C and D for more details. 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE9
+Page 9 / 31 
+7.1.4 The multicas t sampled value control bloc k "MSVCB 01" and "MSVCB 02" ([7-2] 16.2.1) 
+The sampled value control block shall be preconfigured as follows: 
+Table 8 – Multi cast s ampled val ue control bl ock "M SVCBxx " 
+Attribute 
+Name 
+Value MSVCB 01 Value MSVCB 02 Comment 
+MsvCBN am MSVCB01 MSVCB0 2  
+MsvCBRef xxxxMUnn/LLN0$MSVCB 01 xxxxMUnn/LLN0$MSVCB0 2  
+SvEna TRUE / FALSE TRUE / FALSE Value is def ined by  
+configuration ( see clause 
+7.3) 
+MsvID xxxxMUnn01 xxxxMUnn0 2 xxxxMUnn  is the LDNam e; 
+01/ 02 is the number  of the 
+MSVCB instance  
+DatSet xxxxMUnn/LLN0$PhsMeas 1 xxxxMUnn/LLN0$PhsMeas1  
+Conf Rev 1 1  
+Smp Rate 80 256  
+OptFlds    
+ refres h-time TRUE / FALSE TRUE / FALSE  
+ samp le-
+synchronized 
+TRUE TRUE  
+ samp le-rate FALSE FALSE   
+ 
+NOTE – since this implementation guideline defines both the datasets used for the transmission of the sampled values as 
+well as the values of the MSVCB, the attribute ConfRev always has the same value. 
+ 
+In addition, the mapping specific attributes shall be preconfigured as follows: 
+ 
+Table 9 – Mapping speci fic attr ibutes of "MSVC Bxx" 
+Attribute Name Value 
+MSVCB0 1 
+Value 
+MSVCB0 2
+Comment 
+NoASDU 1 8  
+MACDestinationA ddress   Need s to be config ured; the recom mendations of [9 -2], 
+Annexe C shall be followed  
+OptFlds    
+ security FALSE FALSE   
+ data-set FALSE FALSE   
+ 
+7.2 Fur ther specifications 
+7.2.1 Operating modes 
+The following operation modes are supported (see [7-4] clause 6) 
+ 
+ON 
+This is the n ormal operation mode. In this oper ation mode, the function of the merging u nit is 
+active, the merging unit transmits the frames. 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE10
+Page 10 / 31 
+ 
+TEST 
+While in test mode, the merging unit tran smits the frames, bu t the inf ormation i s flagged as 
+"test" with the respectiv e bit in the quality inform ation. Th e implementation of test m ode is  
+optional. The PID has to specify if it is implemented or not and what kind of test data are sent. 
+ 
+OFF 
+During startup of the devi ce, the m erging unit is in the mode OF F. No frame s are tran smitted 
+until the merging unit is fully operational. 
+7.2. 2 Syn chroniza tion 
+The MU shall have the capability to ac cept an external synchronizing signal, so that its sampling 
+can be synchronized both between MUs and to an external time reference. The synchronization 
+signal shall be a 1PPS input according the specification in IEC 60044-8, cl ause 6.2.5, subclause 
+"optical input" with the fiber as sp ecified in IEC 60044-8, clause 6.2.2.1, Table 10, column "glass 
+fiber". 
+ 
+The PPS pulse rise time may have an impact on the synchronization of the internal MU clock. This 
+impact can be ignored, if a maximum trigger time imperfection of  ±10% and the rise time of 200 
+ns will be assumed.  See Figure 1. 
+ 
+ 
+ 
+t 
+rise time 
+200 ns 
+light 
+100 % 
+50 % 
+0 % 
+Clock jitter ± 2 µs 
+trigger range ± 10% 
+ 
+Figure 1 – Definiti on of t he maximu m cl ock jitt er and ris e time at th e MU clock inpu t 
+Synchronization accuracy 
+ 
+The source for time synchronization shall have an accuracy of ± 1 µsec. The sampl es fr om a  
+merging unit shall be time stamped with an accuracy of class 4  according to IEC 61850-5 ( ± 
+4µsec). It i s assumed that the commun ication network may add 0..2µsec delay. Therefore, the 
+MU clock input may have a jitter of ± 2µsec (see Figure 2 for more details). If there is more than 
+2µsec propagation delay between 1 PPS signal output of the cl ock and merging unit input, each 
+merging unit shall be able to compensate the signal delays. 
+ 
+NOTE – I f more than o ne c lock is needed, G PS based clocks ar e nece ssary. The specified accuracy shall be a  global 
+accuracy between each clocks or merging units. 
+ 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE11
+Page 11 / 31 
+ 
+Output of time master 
+Input MU 1 (no delay) 
+Input MU 2 (max delay) 
+Allowed sampling inaccuracy 
+Max jitter range 
+Max propagation delay  
+Precise Synchronisation pulse 
+ 
+Figure 2 – Accur acy of s ynchr onization 
+Operating with synchronization 
+ 
+As long as the merging unit is synchronized, the attribute "SmpSynch" in the SV message shall be 
+set to TRUE. The attribute "SmpCnt" shall behave as specified in IEC 61850-7-2. 
+ 
+Loss of synchronization signal 
+ 
+If the synchronization signal is lost, the mergin g unit may go in a hold-over m ode. This means, 
+for a couple of seconds – depending on the drift of the internal clock, the merging unit is able to 
+send samples still fulfilling the synchronization requirements. During this time, " SmpSynch" shall 
+still be set to TRUE. As long as this is the case, "SmpCnt" shall wrap as if a synchronization pulse 
+would be present (i .e. at 3999 in th e case of 8 0 samples p er period and 50 Hz network 
+frequency). 
+ 
+Operating without synchronization 
+ 
+If the merging unit does n ot receive a synchronization signal and has left the hold-over mode as 
+described above, "SmpSynch" in the SV message shall be set to FALSE. "SmpCnt" shall wrap as if 
+a synchronization pulse would be present. 
+ 
+NOTE – If a physical device implements more than one logical device merging unit, it is assumed that the samples from 
+the merging units of the same physical device are synchronized to each other even when "SmpSynch" is set to FALSE. 
+ 
+Clock source 
+ 
+The time master generating the 1PPS signal is typically based on a GPS receiver. The 1PPS p ulse 
+shall have an accuracy of ± 1µsec compared to an absolute time (GPS standard time). In case of 
+a loss of GP S reception , the intern al clock of the time master will drift away from the GPS 
+standard time. There are two possibilities to handle that situation: 
+ 
+(a) The time master continues to generate the 1PPS signal. The merging unit will continue to 
+operate with synchronization. 
+(b) The time m aster stops to generate th e 1PPS sig nal. The merging unit will operate 
+without synchronization. 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE12
+Page 12 / 31 
+ 
+In case (a), functions receiving information from merging units using different time masters (e.g. 
+line differential protections) will not be awar e that the samples are not synchronized anymore 
+and will not operate correctly. However, functions receiving information from merging units using 
+the same ti me master (typically func tions dealing with information from the same sub station 
+only) will continue to operate. In case (b), all functions receiving information from more than one 
+merging unit will not operate anymore. It is an issue of th e system integrator, to decide which 
+option to use. 
+ 
+NOTE – T his s ituation is d ue to the  fa ct, that t he m erging un it can  on ly m ark the samples a s synchronized or  not 
+synchronized. A bet ter approach would be t o differentiate at least between global synchronized and local (e.g. station 
+wide) synchronized. This is an open issue that should be further considered in future revisions of IEC 61850. 
+7.2.3 Reference arrow orientation s ystem 
+See Appendix E for more details. 
+7.2.4 Calculations to be done in the  Merging Unit 
+If neutral current and / or  voltage ar e not me asured, the mergi ng unit has to calculate these 
+values as a sum of the phase v alues. However, since the receiver needs to know, if the valu es 
+are calculated or measured, the merging unit has to indicate that in the respective quality field. 
+7.3 Configuration of  the Merging Unit 
+This clause lists the config uration parameters of the merging unit according the specification in 
+this clause that need to be configurable. 
+ 
+Table 10  – Configur ation para meters of t he mergi ng unit 
+Param eter Value Ran ge Comment / SCL confi gurat ion 
+LDName xxxxMUnn xxxx  is, accordi ng to [6 ], claus e 8.4.2,  the  
+concatenation of sub station n ame, voltag e level an d 
+bay  
+MUnn is, accord ing to  [6 ] the attrib ute Inst  of the 
+element LDevi ce. MU is predefined  by this s tandard 
+while nn  nee ds to be confi gured and is use d to 
+differentiate several merging units w ithin the sam e 
+bay;  i.e. nn  identifies the mea suring point. 
+MACDestinationA ddress fo r 
+MSVCB01 
+01-0C-CD-0 4-xx-xx xx-xx  nee ds to  be confi gured if MSVCB01  is e nable d 
+MACDestinationA ddress fo r 
+MSVCB02 
+01-0C-CD-0 4-xx-xx xx-xx  nee ds to  be confi gured if MSVCB02  is e nable d 
+MSVCB0 1 Enabled TRUE/FALS E Transm ission o f 80  samples per nom inal line cycle 
+enable d 
+MSVCB0 2 Enabled TRUE/FALS E Transmission  of 25 6 samp les per nom inal lin e cycle 
+enable d 
+Nominal f requency ENUMERATION ( 50,  
+60, …) 
+Values like 16.7 or  25 may be us ed in the future 
+ 
+NOTE 1 - Furthe r not uniquely defined values like the sensor identification in the LN instance names (Inn / Unn) are not  
+relevant, since they are not visible in the SV message. 
+ 
+NOTE 2 – The first parameter mentioned above i s a rea l configuration parame ter. The other p arameters are d ata o f 
+control blocks or logical nodes instantiated in the merging unit. The parameter nominal frequency is a d ata of the LNs 
+TCTR and TVTR. In most cases, it is a read only configuration parameter that is preset by the merging unit. 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE13
+Page 13 / 31 
+8 P HYSICAL DEVICES 
+No specifications are made with regard  to physic al devices (I EDs). An IED may consi st of more 
+than one logical device merging unit sharing the same communication interface. 
+9 O PEN POINTS 
+In a future revision of this implementation guideline, the following topics will be considered: 
+• Use of IRIG-B time synchronization as alternate solution to 1PPS 
+• Improved flagging of synchronizati on status (e .g. local synch / station wide synch / global 
+synch) 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE14
+Page 14 / 31 
+APPENDIX A: CONTENT OF AN ETHERNET FRAME 
+Octets   8 7 6 5 4 3 2 1
+1  msb 
+2   
+3   
+4   
+5   
+6   
+7  
+ 
+ 
+Preamble 
+lsb
+8   Start of frame  
+9   0x01 
+10   0x0C 
+11   0xCD 
+12   0x04 
+13    
+14   
+Destination address 
+ 
+15    
+16    
+17    
+18    
+19    
+20  
+ 
+ 
+ 
+ 
+ 
+ 
+Header 
+MAC 
+ 
+Source address 
+ 
+21   0x8100 
+22   TPID  
+23  User priority CFI VID 4,0,0 
+24  
+Prior ity 
+tagged 
+VID 0 
+25  0x88BA 
+26  
+Ethertype  
+ 
+27  0x4000 
+28  APPID  
+29   
+30  Length  
+31  0x0000 
+32  reserved 1  
+33  0x0000 
+34  reserved 2  
+35   
+. See below 
+. 
+Ether-
+type  
+PDU 
+APDU 
+ 
+.  
+.
+ (Pad bytes if necessary)  
+.  
+.  
+.  
+. 
+ Frame check sequence 
+ 
+ 
+Figure 3 - C ontent of an Ether net f rame 
+Remarks to Figure 3 
+• Data fields c onsisting of one byte h ave the most significant bit on th e left and the l east 
+significant on the right. 
+• Data fields c onsisting of more than one byte have the most significant bit in the upper left 
+and the least significant bit in the lower right corner (as shown in the field ‘Preamble’). 
+• The octets are sent over the wire with bit 1 as the first bit. 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE15
+Page 15 / 31 
+The APDU resulting from the definitions in clause 7.1 (MSVCB02) is shown below. 
+ 
+savPdu 60 L (751…943)         
+noASDU  80 L (1) 8       
+Sequence of ASDU  A2 L (744..936)      
+Sequence ASDU1    30 L 
+(91..115) 
+     
+svID      80 L 
+(10..34) 
+values  
+smpCnt      82 L (2) values  
+confRev      83 L (4) 1  
+smpSynch      85 L (1) values  
+Sequence of Data      87 L (64)   
+      values 
+      values 
+      values 
+      values 
+      values 
+      values 
+      values 
+      
+ASDU 1 
+ 
+Data 
+Set 
+values 
+Sequence ASDU2    30 L  
+      ASDU 2 
+Sequence ASDU3    30 L  
+      ASDU 3 
+Sequence ASDU4    30 L  
+      ASDU 4 
+Sequence ASDU5    30 L  
+      ASDU 5 
+Sequence ASDU6    30 L  
+      ASDU 6 
+Sequence ASDU7    30 L  
+      ASDU 7 
+Sequence ASDU8    30 L  
+      ASDU 8 
+      
+ASN.1 Tag L = Length     
+ 
+Figure 4 – APDU acc ording the definitions  of clause 7.1 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE16
+Page 16 / 31 
+The encoding of the dataset PhsMeas1 will be as follows: 
+ 
+Octet  8 7 6 5 4 3 2 1  
+  msb   
+     
+     
+   
+InnATCTR1.Amp.instMag.i 
+lsb  
+     
+   InnATCTR1.Amp.q   
+    der OpB Test Source DetailQual  
+  DetailQual validity  
+     
+     
+     
+   
+InnBTCTR2.Amp.instMag.i 
+  
+     
+     
+     
+   
+InnBTCTR2.Amp.q 
+  
+     
+     
+     
+   
+InnCTCTR3.Amp.instMag.i 
+  
+     
+     
+     
+   
+InnCTCTR3.Amp.q 
+  
+     
+     
+     
+   
+InnNmTCTR4.Amp.instMag.i 
+  
+     
+     
+     
+   
+InnNmTCTR4.Amp.q 
+  
+     
+     
+     
+   
+UnnATVTR1.Vol.instMag.i 
+  
+     
+     
+     
+   
+UnnATVTR1.Vol.q 
+  
+     
+     
+     
+   
+UnnBTVTR2.Vol.instMag.i 
+  
+     
+     
+     
+   
+UnnBTVTR2.Vol.q 
+  
+     
+     
+     
+   
+UnnCTVTR3.Vol.instMag.i 
+  
+     
+     
+     
+   
+UnnCTVTR3.Vol.q 
+  
+     
+     
+     
+   
+UnnNmTVTR4.Vol.instMag.i 
+  
+     
+     
+     
+   
+UnnNmTVTR4.Vol.q 
+  
+           
+ 
+Figure 5 –  Encoding o f the dataset 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE17
+Page 17 / 31 
+APPENDIX B: XML FILE 
+The XML file below is a .icd file for a merging unit with 80 samples per period. 
+ 
+<?xml version="1.0" encoding="UTF-8"?> 
+<!-- edited with XMLSPY v5 rel. 4 U (http://www.xmlspy.com) by Christoph Brunner (ABB Switzerland Ltd) --> 
+<SCL xmlns ="http://www.iec.ch/61850/2003/SCL" xmlns:xsi ="http://www.w3.org/2001/XMLSchema-instance" 
+xsi:schemaLocation="http://www.iec.ch/61850/2003/SCL 
+SCL.xsd"> 
+ <Header id="9-2LE-Spec" nameStructure="FuncName" version="0.7" revision="1"/> 
+ <Substation name=""> 
+  <VoltageLevel name=""> 
+   <Bay name=""> 
+    <ConductingEquipment name="Inn" type="CTR"> 
+     <SubEquipment name="A" phase="A"> 
+      <LNode lnClass="TCTR" lnInst="1"/> 
+     </SubEquipment> 
+     <SubEquipment name="B" phase="B"> 
+      <LNode lnClass="TCTR" lnInst="2"/> 
+     </SubEquipment> 
+     <SubEquipment name="C" phase="C"> 
+      <LNode lnClass="TCTR" lnInst="3"/> 
+     </SubEquipment> 
+     <SubEquipment name="N" phase="N"> 
+      <LNode lnClass="TCTR" lnInst="4"/> 
+     </SubEquipment> 
+    </ConductingEquipment> 
+    <ConductingEquipment name="Unn" type="VTR"> 
+     <SubEquipment name="A" phase="A"> 
+      <LNode lnClass="TVTR" lnInst="1"/> 
+     </SubEquipment> 
+     <SubEquipment name="B" phase="B"> 
+      <LNode lnClass="TVTR" lnInst="2"/> 
+     </SubEquipment> 
+     <SubEquipment name="C" phase="C"> 
+      <LNode lnClass="TVTR" lnInst="3"/> 
+     </SubEquipment> 
+     <SubEquipment name="N" phase="N"> 
+      <LNode lnClass="TVTR" lnInst="4"/> 
+     </SubEquipment> 
+    </ConductingEquipment> 
+   </Bay> 
+  </VoltageLevel> 
+ </Substation> 
+ <IED name="TEMPLATE"> 
+  <AccessPoint name=""> 
+   <Server> 
+    <Authentication/> 
+    <LDevice inst="MUnn"> 
+     <LN0 lnType="9-2LELLN0" lnClass="LLN0" inst=""> 
+      <DataSet name="PhsMeas1"> 
+       <FCDA lnClass="TCTR" ldInst="1" fc="MX" doName="Amp"/> 
+       <FCDA lnClass="TCTR" ldInst="2" fc="MX" doName="Amp"/> 
+       <FCDA lnClass="TCTR" ldInst="3" fc="MX" doName="Amp"/> 
+       <FCDA lnClass="TCTR" ldInst="4" fc="MX" doName="Amp"/> 
+       <FCDA lnClass="TVTR" ldInst="1" fc="MX" doName="Vol"/> 
+       <FCDA lnClass="TVTR" ldInst="2" fc="MX" doName="Vol"/> 
+       <FCDA lnClass="TVTR" ldInst="3" fc="MX" doName="Vol"/> 
+       <FCDA lnClass="TVTR" ldInst="4" fc="MX" doName="Vol"/> 
+      </DataSet> 
+      <SampledValueControl name ="MSVCB01" da tSet="PhsMeas1" smvID ="xxxxMUnn01" 
+smpRate="80" nofASDU="1" confRev="1"> 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE18
+Page 18 / 31 
+       <SmvOpts refreshTime ="false" sa mpleSynchronized="true" sa mpleRate="false" 
+security="false" dataRef="false"/> 
+      </SampledValueControl> 
+     </LN0> 
+     <LN lnType="9-2LETCTR" lnClass="TCTR" inst="1"/> 
+     <LN lnType="9-2LETCTR" lnClass="TCTR" inst="2"/> 
+     <LN lnType="9-2LETCTR" lnClass="TCTR" inst="3"/> 
+     <LN lnType="9-2LETCTR" lnClass="TCTR" inst="4"/> 
+     <LN lnType="9-2LETVTR" lnClass="TVTR" inst="1"/> 
+     <LN lnType="9-2LETVTR" lnClass="TVTR" inst="2"/> 
+     <LN lnType="9-2LETVTR" lnClass="TVTR" inst="3"/> 
+     <LN lnType="9-2LETVTR" lnClass="TVTR" inst="4"/> 
+    </LDevice> 
+   </Server> 
+  </AccessPoint> 
+ </IED> 
+ <DataTypeTemplates> 
+  <LNodeType id="9-2LELLN0" lnClass="LLN0"> 
+   <DO name="Mod" type="9-2LEINC"/> 
+  </LNodeType> 
+  <LNodeType id="9-2LETCTR" lnClass="TCTR"> 
+   <DO name="Amp" type="9-2LESAVAmp"/> 
+  </LNodeType> 
+  <LNodeType id="9-2LETVTR" lnClass="TVTR"> 
+   <DO name="Vol" type="9-2LESAVVol"/> 
+  </LNodeType> 
+  <DOType id="9-2LESAVAmp" cdc="SAV"> 
+   <DA name="instMag" bType="Struct" type="9-2LEAV" fc="MX"/> 
+   <DA name="q" bType="Quality" fc="MX"/> 
+   <DA name="sVC" bType="Struct" type="9-2LEsVCAmp" fc="CF"/> 
+  </DOType> 
+  <DOType id="9-2LESAVVol" cdc="SAV"> 
+   <DA name="instMag" bType="Struct" type="9-2LEAV" fc="MX"/> 
+   <DA name="q" bType="Quality" fc="MX"/> 
+   <DA name="sVC" bType="Struct" type="9-2LEsVCVol" fc="CF"/> 
+  </DOType> 
+  <DOType id="9-2LEINC" cdc="INC"> 
+   <DA name="ctlVal" fc="CO" bType="INT32"/> 
+   <DA name="stVal" fc="ST" bType="INT32" dchg="true"/> 
+   <DA name="q" fc="ST" bType="Quality" dchg="true"/> 
+   <DA name="t" fc="ST" bType="Timestamp" dchg="true"/> 
+  </DOType> 
+  <DAType id="9-2LEAV"> 
+   <BDA name="i" bType="INT32"/> 
+  </DAType> 
+  <DAType id="9-2LEsVCAmp"> 
+   <BDA name="scaleFactor" bType="FLOAT32"> 
+    <Val>0.001</Val> 
+   </BDA> 
+   <BDA name="offset" bType="FLOAT32"> 
+    <Val>0</Val> 
+   </BDA> 
+  </DAType> 
+  <DAType id="9-2LEsVCVol"> 
+   <BDA name="scaleFactor" bType="FLOAT32"> 
+    <Val>0.01</Val> 
+   </BDA> 
+   <BDA name="offset" bType="FLOAT32"> 
+    <Val>0</Val> 
+   </BDA> 
+  </DAType> 
+ </DataTypeTemplates> 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE19
+Page 19 / 31 
+</SCL> 
+ 
+ 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE20
+Page 20 / 31 
+APPENDIX C: TABLES WITH MEASUREMENT ACCURACY REQUIREMENTS 
+The two tables compri se a summary of technical data ou t of IEC60044–7 and –8. Accuracy and 
+dynamic range data, whic h is of interest for pr otection functions has b een added both to th e 
+current and the voltage table. 
+ 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE21
+Page 21 / 31 
+ 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE22
+Page 22 / 31 
+APPENDIX D: NOMOGRAMS FOR CHECKING OF DYNAMIC RANGES 
+Appendix D demonstrates that the INT32 represen tation with the scaling as defined within IEC 
+61850-9-2LE will sati sfy th e complete d ynamic rang e required by all practical cases. The two 
+nomograms i llustrate the need for dyn amic rang es versus the p ossibilities of the INT32 data 
+representation. 
+ 
+The chosen values for the LSB’s are: 
+• Current: LSB = 1 mA (instantaneous value) 
+• Voltage: LSB = 10 mV (instantaneous value) 
+• One bit is used for the sign (+ or -) 
+ 
+The bit-r ange required has be en det ermined as shown in th e example below for a c urrent 
+measurement according to class 0.1 and application of protection and disturbance recording. The 
+LSB value is chosen to be around 4  times le ss than the mini mum voltage or current error  
+allowed. 
+ 
+Example: 
+Object with 100 A rated current. 
+100 A (r.m.s.) = 141'421 mA (peak) for pure sinusoidal signals. 
+141'421 = 217.1 represents the numerical expression for the rated object current in this example. 
+• The maximum current error tolerated for an ECT according to class 0.1 at 5% of its rated 
+current equals to 0.4%. 
+• The tolerated error thus becomes 0.0002 Irated. The value of 0.0002 / 4 equals to 0.00005 
+and further equals to 2-14.3 
+• The highest current value at accuracy limit is in this case 65 Irated x 2 = 130 Irated. 130 = 
+27.0 
+• We get the minimal binary peak value as: 217.1 x 2-14.3 = 22.8  Î o.k., since 22.8 > 20 
+• The max binary value becomes 217.1 x 27.0 = 224.1  Î o.k., since 224.1 < 231 
+ 
+Note: 
+Voltage measurement: 
+• Distance- and accurate reverse power- functions are not applied for voltages below 6 kV. 
+• For volt age measurement on obj ects with rated v oltages bel ow 3 kV, class 0.5 f or 
+metering is sufficient. 
+Current measurement: 
+• For current measurement on objects with rated c urrent below 100 A, class 0.5 for  
+metering is sufficient. 
+• Highest current values have to be expected for faults near terminals of large generators. 
+In such cases the maximum short-circuit current is limited by the block transformer to below 10 
+times the rated generator current. 
+ 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE23
+Page 23 / 31 
+20212223242526272829210211212213214215216218219220221222223224225226227228229230231 2'147 kA (peak)
+1 mA = LSB
+1 m A (r.m.s.)
+Class 0.2S/2
+Class 0.1
+Class 0.2
+Class 0.5
+Class 1
+Phase currents and 3 I0
+Class 0.2S
+Class 0.5S
+Move this line - together with the arrows applicable -
+to the rated current of the object.
+The two arrows shall remain within the +/- 31 Bit
+scale.
+(Application similar to the good old „slide-ruler“)
+Rated object current
+100 A (r.m.s.) in this
+example
+141 A (peak)
+217
+Max. current expected 65 Irated
+Doubling, to take into
+account a full DC-offset of
+the short-circuit current.
+Value for busbar and line
+protection applications.
+(Accuracy limit factor = 130)
+Value for generator and
+transformer protection
+applications.
+(Accuracy limit factor = 50)
+Max. current expected 25 Irated
+Requirement for distance, DEF et al protection functions
+10 m A (r.m.s.)
+100 m A (r.m.s.)
+1 A (r.m.s.)
+10 A (r.m.s.)
+100 A
+(r.m.s.)
+1 kA (r.m.s.)
+10 kA (r.m.s.)
+100 kA (r.m.s.)
+1'000 kA (r.m.s.)
+Peak value
+(sinusoidal
+waveform)
+r.m.s.
+value
+ 
+Figure 6 – Nom ogram for current 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE24
+Page 24 / 31 
+220221
+Rated object voltage
+10 kV (r.m.s.) in this
+example
+20212223242526272829210211212213214215216217218219222223224225226227228229230231 21'475 kV (peak)
+10 mV = LSB
+Class 0.1
+Class 0.2
+Class 0.5
+Class 1
+Maximum voltage = 2.5 Urated
+Move this line - together with the arrows applicable -
+to the rated voltage of the object.
+The two arrows shall remain within the +/- 31 Bit
+scale.
+(Application similar to the good old „slide-ruler“)
+Class 3P
+Class 6P
+Requirement for distance, DEF et al protection functions
+Phase to ground voltages and 3 U0
+10 m V  (r.m.s.)
+14.1 kV (peak)
+The maximum rated voltage factor is chosen to be 2.5
+to cover most applications
+(instead of only 1.9  according to IEC 60044-7).
+100  mV  (r.m.s.)
+1 V  (r.m.s.)
+10 V  (r.m.s.)
+100 V  (r.m.s.)
+1 kV  (r.m.s.)
+10 kV  (r.m.s.)
+100 kV  (r.m.s.)
+1'000 kV  (r.m.s.)
+10'000 kV  (r.m.s.)
+Peak value
+(sinusoidal
+waveform)
+r.m.s.
+value
+ 
+Figure 7 - Nomogram f or vo ltage 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE25
+Page 25 / 31 
+APPENDIX E: REFERENCE ARROW ORIENTATION SYSTEM 
+Legend 
+ 
+U V oltage 
+I Current 
+N Neutral 
+E Earth (IEC notation) = Ground (ANSI notation) 
+ 
+Indices (subscript) 
+A Phase A 
+B Phase B 
+C Phase C 
+N Neutral 
+E Earth = Ground 
+P Parallel overhead line, if applicable 
+1 Positiv e sequence 
+2 Negative sequence 
+0 Zero sequence 
+ 
+The positive sense of arrows (phasors) follows the „load vector system“ i.e., the voltage-drop 
+across a resistor is in phase with the current. 
+ 
+DBB Double Bus Bar arrangement 
+OHB 1½ (One and a Half) Breaker arrangement 
+IE Earth (ground) return current 
+ 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE26
+Page 26 / 31 
+IA
+UAN
+UBN
+UCNN
+UAE UBE UCE
+IB
+IC
+UAB
+UBC UCA
+Z = 0 ….  inf inite
+U0
+3 I0
+IE = 3 I0
+3 I0p
+3 U0  = UAE +UBE+UCE 3 I0 = I A+IB+IC 3 I0p is mainly  used for mutual zero-sequence
+compensation in distance to f ault locators
+A
+B
+C
+E
+Parallel Line (ov erhead line)
+Feeder under consideration
+ 
+Figure 8 - Generic  thr ee phas e syst em incl uding volt ages  and curr ents 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE27
+Page 27 / 31 
+HV
+LV
+Tertiary
+BZ1
+QA1
+Bus 1
+Bus 2
+IA, IB, IC, (3I0)
+IN
+IN
+IA, IB, IC, (3I0)
+IA, IB, IC, (3I0)
+IE
+P1 P2
+P1 P2
+P1
+P2
+P1
+P2
+P2 P1
+P1
+P2
+ 
+ 
+Figure 9 - Currents in DBB (double bus bar) ar rangem ent 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE28
+Page 28 / 31 
+Feeder 1
+Feeder 2
+QA11
+QA31
+HV
+LV
+Tertiary
+QA21
+Bus 2
+BZ31
+BZ11
+BZ21IA21. IB21, IC21, (3I021)
+IA11. IB11, IC11, (3I011)
+IA31. IB31, IC31, (3I031)
+P1
+P2
+P1
+P2
+IA11- IA31
+ IB11- IB31
+ IC11- IC31
+ (3I011- 3I031)
+IA21+ IA31
+IB21+ IB31
+IC21+ IC31
+(3I021+ 3I031)
+Sum
+of tw o currents
+Diffe rence
+of tw o currents
+P2
+P1
+IN
+IN
+IA, IB, IC, (3I0)
+IA, IB, IC, (3I0)
+IE
+P1 P2
+P1 P2
+P1
+P2
+P2 P1
+P1
+P2
+Bus 1
+ 
+Figure 10 - Curre nts in OHB (one a nd a half breaker ) arr angement 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE29
+Page 29 / 31 
+ 
+Figure 11 shows the connections between conventional equipment and C T’s. The neutral of the  
+CT’s is formed on object-side. The primary current and the current in the protection relay are “in 
+phase”. The arrow orientation is in line with the system used for NCIT’s (as defined in IEC 60044-
+8, clause 11.1.3). The drawing shall help to co-ordinate mixed mode configurations (mixed-mode 
+uses digital data streams from NCIT’s and inputs from conventional CT’s and VT’s). Furthermore 
+the diagram shall illustrate that IN, as it is used with conventional CT’s, results in IN = - 3 I0. 
+ 
+3 I0 = IA + IB + ICIA
+IB
+IC
+N
+IA
+IB
+IC
+IE = 3 I0 = IA + IB + IC
+Protection
+IN = -3 I0
+A
+B
+C
+N
+B
+C
+ 
+ 
+ 
+Figure 11 – Refer ence arrow  orient ation  system , conventi onal C Ts wit h CT st ar-poin t 
+(neutra l) on ob ject side 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE30
+Page 30 / 31 
+ 
+Figure 12 sh ows an alternative c onnection for conventional equipment as used by several 
+vendors i.e., the neutral of the CT’s is formed on bus-side. In this case the arrow orientation for 
+the secondary equipment is inverted (The primar y current and the current in the protec tion unit 
+are “in counter phase”. This must be considered for directional- and differential- functi ons. To 
+ease adaptation to the two conventions, the IEC61850-9 inputs should preferably be sel ectable: 
+direct or inverted. 
+ 
+3 I0 = IA + IB + ICIA
+IB
+IC
+N
+IA
+IB
+IC
+IE = 3 I0 = IA + IB + IC
+Protection
+IN = -3 I0
+A
+B
+C
+N
+B
+C
+ 
+ 
+Figure 12 - Refer ence arrow  orient ation system , conv enti onal C Ts wit h CT st ar-poin t 
+(neutr al) on bus -side  
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+
+PDF_PAGE31
+Page 31 / 31 
+ 
+Implementation Guideline for Digital Interface to Instrument Transformers using IEC 
+61850-9-2 
+ 
+Modification Index: R2-1 
+Last date of storage: 2004-07-07 
+CHANGE INFORMATION 
+ 
+Date Change Index Document State Author Remarks 
+04-03-01 2.0a Released Ch. Brunner Version released at UCA usersgroup 
+meeting  
+04-07-07 2.1 Released Ch. Brunner Modifications in Figure 4 (Length of 
+ConfRev) and 5 (Quality fields) 
+     
+ 
+ 

@@ -1,0 +1,53 @@
+No. Type Description
+2 ID K19
+3 Objective(s) To describe the charging process when Charging Stations uses ISO 15118-20 with dynamic
+control mode
+4 Description CSMS provides a charging profile with one charging schedule and optional price information that
+tries to match the energy needs of EV. Charging Station only sends the pricing schedule to EV. EV
+returns its fastest possible charging schedule back to Charging Station.
+Actors EV, Charging Station, CSMS.
+Scenario description 1. EV and Charging Station exchange charge parameters with an
+AC/DC_ChargeParameterDiscovery message.
+2. EV sends energy needs and departure time to Charging Station with a
+ScheduleExchangeReq message.
+3. Charging Station sends a NotifyEVChargingNeedsRequest message with controlMode =
+DynamicControl to CSMS.
+4. CSMS responds with status = Accepted.
+5. CSMS sends a charging profile with one charging schedule and optional price information
+to Charging Station via a SetChargingProfileRequest.
+6. Charging station responds with status = Accepted.
+7. Charging Station returns the offered pricing schedule (but not the charging schedule) to
+EV via a ScheduleExchangeRes response.
+8. EV sends a PowerDeliveryReq with its EVPowerProfile that describes its fastest possible
+charging schedule to Charging Station.
+9. Charging Station ignores this EVPowerProfile and sends the charging schedule provided
+by CSMS as a NotifyEVChargingScheduleRequest to CSMS.
+5 Prerequisites Both the Charging Station and the EV support ISO 15118-20 Dynamic Control Mode.
+6 Postcondition(s)
+7 Error handling Charging Station needs to use the information from the SetChargingProfileRequest message
+from CSMS to create the response to the ISO 15118-20 ScheduleExchangeReq message from EV.
+This message has a timeout of 60 seconds, which means the SetChargingProfileRequest has to
+be sent well within 60 seconds after receiving the NotifyEVChargingNeedsRequest.
+If the Charging Station does not receive the SetChargingProfileRequest in time or when the
+NotifyEVChargingNeedsResponse has status = Processing, then the Charging Station will return
+a schedule in ScheduleExchangeRes that matches charging profiles that are already active at
+EVSE, e.g. TxDefaultProfile or ChargingStationMaxProfile.
+When CSMS sends the SetChargingProfileRequest at a later time, then this will trigger a
+renegotiation according to use case K16 - Renegotiation initiated by CSMS.
+8 Remark(s) Signed PriceSchedules (ISO 15118-20) are supported in OCPP 2.1 via the signatureValue field in
+ChargingProfileType.
+When the Charging Station uses ISO 15118-20 "dynamic control mode", it does not send any
+charging schedules to the EV (only an optional price schedule). Instead, it will dynamically update
+the power limit over time to match the charging profile from CSMS.
+The EV still returns an EVPowerProfile to the Charging Station in PowerDeliveryReq. This
+EVPowerProfile is the fastest way the EV can charge given the charge parameters, and it
+disregards the charging profile provided to the Charging Station by CSMS. Therefore this should
+not be returned as a NotifyEVChargingSchedule to CSMS.
+Instead, Charging Station returns the CSMS charging schedule in NotifyEVChargingSchedule,
+since this is the schedule that EV will be made to follow.
+NOTE: ISO 15118-20 "dynamic control mode" does not require a charging profile from CSMS with
+chargingProfileKind = Dynamic. For example, CSMS can send an Absolute charging profile with
+several charging schedule periods, that the Charging Station executes towards the EV using
+dynamic control mode.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 393/803 Part 2 - Specification

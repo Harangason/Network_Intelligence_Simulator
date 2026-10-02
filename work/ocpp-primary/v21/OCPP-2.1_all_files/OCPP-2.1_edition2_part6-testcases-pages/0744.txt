@@ -1,0 +1,48 @@
+TC_N_101_CS: Retrieve Log Information - validations
+Test case name Retrieve Log Information - validations
+Test case Id TC_N_101_CS
+Use case Id(s) N01
+Requirement(s) N01.FR.30
+System under test Charging Station
+Description This test case covers the functionality of getting log information from a Charging Station. The CSMS can
+request a Charging Station to upload a file with log information to a given location (URL). The format of this
+log file is not prescribed. The Charging Station successfully uploads a log file and gives information about
+the status of the upload by sending status notifications to the CSMS.
+Purpose To verify if the Charging station will fail upload of a log of logType DiagnosticsLog to a redirected location.
+Prerequisite(s) - Charging Station has log information available.
+- OCPPCommCtrlr.FileTransferProtocols contains HTTP or HTTPS
+- A diagnostics logging server has been set up supporting for HTTP or HTTPS based on the file transfer
+protocols supported by the Charging Station (This is configured at the configuration variable
+OCPPCommCtrlr.FileTransferProtocols).
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a GetLogResponse
+1. The Test System sends a GetLogRequest with
+logType DiagnosticsLog
+log.remoteLocation <Configured redirecting log location> +
+<configured log filename>
+Note(s):
+- Charging Station is uploading log file
+3. The Charging Station sends a LogStatusNotificationRequest
+4. The Test System responds with a
+LogStatusNotificationResponse
+Tool validations
+* Step 2:
+Message GetLogResponse
+- status must be Accepted
+- filename must be <configured log filename>
+* Step 3:
+Message LogStatusNotificationRequest
+- status UploadFailure
+- requestId Same Id as the GetLogRequest
+Post scenario validations:
+- No file has been uploaded to remote location <Configured redirecting log location> + <configured log filename>.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 742/1383 Part 6 - Test Cases

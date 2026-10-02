@@ -1,0 +1,51 @@
+TC_L_06_CS: Secure Firmware Update - InvalidSignature
+Test case name Secure Firmware Update - InvalidSignature
+Test case Id TC_L_06_CS
+Use case Id(s) L01
+Requirement(s) L01.FR.01,L01.FR.03,L01.FR.04,L01.FR.10,L01.FR.20
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to securely download and install a new firmware by
+sending an UpdateFirmwareRequest with a signingCertificate.
+Purpose To verify if the Charging Station is able to identify if the signature is invalid and report this to the CSMS.
+Prerequisite(s) A file server has been setup according to the (by the Charging Station) supported file transfer protocol(s),
+indicated by the configuration variable FileTransferProtocols.
+Before (Preparations)
+Configuration State:
+<Configured invalid firmware signature> should be a real signature
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+UpdateFirmwareResponse
+1. The Test System sends a UpdateFirmwareRequest
+with firmware.installDateTime <Current DateTime - 2 hours>
+firmware.location <Configured firmware_location>
+firmware.retrieveDateTime <Current DateTime - 2 hours>
+firmware.signingCertificate <Configured signingCertificate>
+firmware.signature <Configured invalid firmware signature>
+3. The Charging Station sends a
+FirmwareStatusNotificationRequest.
+With status Downloading
+4. The Test System responds with a
+FirmwareStatusNotificationResponse.
+5. The Charging Station sends a
+FirmwareStatusNotificationRequest.
+With status Downloaded
+6. The Test System responds with a
+FirmwareStatusNotificationResponse.
+Note: Step 7 through 10 can be sent in a different order.
+7. The Charging Station sends a
+FirmwareStatusNotificationRequest.
+With status InvalidSignature
+8. The Test System responds with a
+FirmwareStatusNotificationResponse.
+9. The Charging Station sends a
+SecurityEventNotificationRequest.
+With type InvalidFirmwareSignature
+10. The Test System responds with a
+SecurityEventNotificationResponse.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 399/914 Part 6 - Test Cases

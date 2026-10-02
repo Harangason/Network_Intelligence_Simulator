@@ -1,0 +1,78 @@
+75 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+We are occasionally asked what the maximum
+data rate is that the ELM327 can handle. This is often
+after someone has tried to monitor all data using the
+default settings and has received a ‘BUFFER FULL’
+error. It is difficult to say exactly what the maximum
+rate is, however, as several factors are involved.
+The CAN ‘engine’ inside the ELM327 is actually
+configured with one receive register that accepts
+messages from the data bus, and another register that
+accepts messages from the first. As long as the
+firmware empties the second register before the first
+register needs it, there should not be any overflow
+problems with this component. The ELM327 actually
+moves the data quickly to temporary storage, so this is
+never a problem.
+It would be nice if all the firmware had to do was to
+empty the second register, and wait for it to fill again,
+but that is not so. It must also check for errors,
+possibly queue a CAN response, format the received
+Maximum CAN Data Rates
+CAN Data message message
+message from ECU
+11 bit/500 = 220
+29 bit/250 = 520
+min space
+11 bit/500 = 16
+29 bit/250 = 32 At 40% Bus Loading:
+11 bit/500 = 354
+29 bit/250 = 828
+Notes:
+- all times are in µsec
+- times shown are averaged typical
+- messages have 8 data bytes, and:
+headers on (AT H1), 
+spaces off (AT S0),
+linefeeds off (AT L0)
+Moving Data
+Processing Data
+Sending Results
+Rx register is empty and can 
+accept the next message
+moves and error checks
+500k = 29
+250k = 41 all data is in the 
+send buffer
+formatting & preparation
+11 bit ID = 193
+29 bit ID = 210
+send time depends on message length and baud rate,
+but on average is: 
+38.4k 115.2k 500k
+11 bit ID 5180 1740 400
+29 bit ID 6475 2175 500
+this is a background task - the ELM327 can 
+do other things while it is sending RS232
+message, convert it to ascii, load it into the RS232
+transmit buffer, and then prepare to receive the next
+message. These tasks can take a considerable time,
+depending on what formatting options you have
+chosen, and the baud rate that you select.
+The diagram below shows these processes
+grouped into blocks. The times shown are typical for
+an ISO15765-4 message, and as you can see, vary
+with both the length of the CAN message and the CAN
+baud rate. All values shown are time measurements in
+µsec (microseconds).
+When a message arrives, the ELM327 moves
+quickly to move the received bytes from the special
+CAN registers, so that they do not affect the next
+message that arrives. The data is then formatted (as
+ASCII bytes) and placed into the RS232 transmit
+buffer, for sending to the controlling processor. As long
+as messages do not arrive at a rate that is faster than
+the ELM327 can process them in, all messages will be

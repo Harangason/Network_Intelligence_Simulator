@@ -1,0 +1,54 @@
+N03 - Set Monitoring Base
+No. Type Description
+1 Name Set Monitoring Base
+2 ID N03
+3 Objective(s) To give the CSMS the ability to request the Charging Station to activate a set of preconfigured
+monitoring settings, as denoted by the value of MonitoringBase.
+4 Description This use case describes how the CSMS requests the Charging Station to activate a set of
+preconfigured monitoring settings, as denoted by the value of MonitoringBase. It is up to the
+manufacturer of the Charging Station to define which monitoring settings are activated by All,
+FactoryDefault and HardWiredOnly.
+Actors Charging Station, CSMS, CSO
+Scenario description 1. The CSO triggers the CSMS to request a Charging Station to set a monitoring base.
+2. The CSMS sends a SetMonitoringBaseRequest to the Charging Station.
+3. The Charging Station responds with a SetMonitoringBaseResponse.
+5 Prerequisite(s) Charging Station supports Monitoring
+6 Postcondition(s) The Charging Station activated the set of monitoring settings, as denoted by the value of
+MonitoringBase.
+7 Error handling n/a
+8 Remark(s) Upon receipt of a SetMonitoringBaseRequest for:
+• monitoringBase = HardWiredOnly: the Charging Station will deactivate all pre-
+configured monitors and remove any previously configured custom monitors. Only the
+HardWiredMonitor monitors remain.
+• monitoringBase = FactoryDefault: the Charging Station will (re)activate all
+PreconfiguredMonitor monitors and remove all custom monitors.
+• monitoringBase = All: the Charging Station will activate all pre-configured monitors and
+leave previously configured CustomMonitor monitors intact. This includes the custom
+monitors that were created when changing an existing pre-configured monitor.
+CSO
+CSMS Charging Station
+request to set a monitoring base
+SetMonitoringBaseRequest(monitoringBase)
+SetMonitoringBaseResponse(status)
+Figure 131. Sequence Diagram: Set Monitoring Base
+N03 - Set Monitoring Base - Requirements
+Table 124. N03 - Requirements
+ID Precondition Requirement definition
+N03.FR.01 When the Charging Station accepts a
+setMonitoringBaseRequest
+Then the Charging Station SHALL send a
+setMonitoringBaseResponse with Accepted.
+N03.FR.02 When the Charging Station receives a
+setMonitoringBaseRequest for a not supported
+monitoringBase
+Then the Charging Station SHALL send a
+setMonitoringBaseResponse with NotSupported.
+N03.FR.03 N03.FR.01 AND
+When the Charging Station received a
+setMonitoringBaseRequest with monitoringBase
+All
+Then the Charging Station SHALL activate all preconfigured
+monitoring whilst leaving all installed custom monitors
+(including changed preconfigured monitors) intact.
+Edition 4, 2025-12-03 N. Diagnostics
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 328/491 Part 2 - Specification

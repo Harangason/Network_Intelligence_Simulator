@@ -1,0 +1,32 @@
+FIELD NAME FIELD TYPE CARD. DESCRIPTION
+ stackLevel integer >=0 1..1 Required. Value determining level in hierarchy stack of profiles.
+Higher values have precedence over lower values. Lowest level is
+0.
+chargingProfilePurpose ChargingProfilePurposeType 1..1 Required. Defines the purpose of the schedule transferred by this
+message.
+chargingProfileKind ChargingProfileKindType 1..1 Required. Indicates the kind of schedule.
+recurrencyKind RecurrencyKindType 0..1 Optional. Indicates the start point of a recurrence.
+validFrom dateTime 0..1 Optional. Point in time at which the profile starts to be valid. If
+absent, the profile is valid as soon as it is received by the Charge
+Point.
+validTo dateTime 0..1 Optional. Point in time at which the profile stops to be valid. If
+absent, the profile is valid until it is replaced by another profile.
+chargingSchedule ChargingSchedule 1..1 Required. Contains limits for the available power or current over
+time.
+7.9. ChargingProfileKindType
+Enumeration
+Kind of charging profile, as used in: ChargingProfile.
+VALUE DESCRIPTION
+Absolute Schedule periods are relative to a fixed point in time defined in the schedule.
+Recurring The schedule restarts periodically at the first schedule period.
+Relative Schedule periods are relative to a situation-specific start point (such as the start of a Transaction) that is determined by the
+charge point.
+7.10. ChargingProfilePurposeType
+Enumeration
+Purpose of the charging profile, as used in: ChargingProfile.
+VALUE DESCRIPTION
+ChargePointMaxProfile Configuration for the maximum power or current available for an entire Charge Point.
+TxDefaultProfile Default profile *that can be configured in the Charge Point. When a new transaction is started, this profile
+SHALL be used, unless it was a transaction that was started by a RemoteStartTransaction.req with a
+ChargeProfile that is accepted by the Charge Point.
+79

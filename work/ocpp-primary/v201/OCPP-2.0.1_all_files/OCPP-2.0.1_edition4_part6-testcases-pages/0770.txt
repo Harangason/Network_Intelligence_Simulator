@@ -1,0 +1,28 @@
+Tool validations
+* Step 1:
+Message SetChargingProfileRequest
+chargingProfile.chargingSchedule.chargingSchedulePeriod.startPeriod 0 AND
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limit 8.0 (A) or 8000.0 (W)
+The chargingSchedule contains only one chargingSchedulePeriod
+* Step 3:
+Message SetChargingProfileRequest
+chargingProfile.chargingSchedule.chargingSchedulePeriod.startPeriod 0 AND
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limit 6.0 (A) or 6000.0 (W)
+The chargingSchedule contains only one chargingSchedulePeriod
+* Step 1/3:
+Message SetChargingProfileRequest
+chargingProfile.id <Same id for both chargingProfiles>
+chargingProfile.chargingSchedule.startSchedule must NOT be omitted.
+chargingProfile.stackLevel <Configured stackLevel> AND
+chargingProfile.chargingProfilePurpose <Equal value for both profiles> AND (TxDefaultProfile OR ChargingStationMaxProfile)
+chargingProfile.chargingProfileKind <Equal value for both profiles> AND
+If chargingProfile.chargingProfilePurpose is TxDefaultProfile then chargingProfile.chargingProfileKind must be Absolute OR
+Recurring
+If chargingProfile.chargingProfilePurpose is ChargingStationMaxProfile then chargingProfile.chargingProfileKind must be
+Absolute
+If chargingProfile.chargingProfileKind is Recurring then chargingProfile.recurrencyKind must NOT be omitted, else omitted
+The received Charging Profiles must comply with the requirements defined at part 2 specification.
+Post scenario validations:
+- N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 768/914 Part 6 - Test Cases

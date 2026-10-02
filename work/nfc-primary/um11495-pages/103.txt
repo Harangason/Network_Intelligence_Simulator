@@ -1,0 +1,72 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+1 WO (Write Only) parameters can only be written, using CORE_SET_CONFIG_CMD. PN7160 will always
+return CORE_GET_CONFIG_RSP(STATUS_INVALID_PARAM) to any attempt to read the value of the WO
+parameter.
+11.2.2  Listen Mode
+Name and Rights Description Ext.
+Tag Len. Default
+Value
+TO_RF_OFF_
+CFG
+RW in E²PROM
+Specifies the time-out (in ms) applied by PN7160 before it restarts a Polling
+sequence, after it has detected a Field-OFF in Listen Mode
+0xA0
+0x80
+2 0x012C
+(300 ms)
+LISTEN_ISODEP_
+FSCI_ CFG
+RW in E²PROM
+Parameter to define the FSC parameter (RF Frame Size for the PICC), as
+defined in [DIGITAL]:
+0x00 FSC = 16
+0x01 FSC = 24
+0x02 FSC = 32
+0x03 FSC = 40
+0x04 FSC = 48
+0x05 FSC = 64
+0x06 FSC = 96
+0x07 FSC = 128
+0x08 FSC = 256
+0x09 - 0xFF RFU
+0xA0
+0x83
+1 0x08
+NDEF_INTF_CFG Enable or disable NDEF emulation. See Section 5.6 for more details on this
+parameter.
+0xA0
+0x95
+1 0x00
+Table 100. Listen Mode Configuration
+11.3  [PN7160-NCI] extension: Contactless Interface configurations
+PN7160 offers multiple configuration options for the Contactless Interface, to allow an optimum match between
+the antenna characteristics and the transmitter and receiver in PN7160.
+A generic TLV mechanism has been defined to write the Contactless Interface settings. It relies on the [NCI]
+CORE_SET_CONFIG_CMD and is described hereafter:
+Name and Rights Description Ext.
+Tag
+Len. Default
+Value
+DLMA_CTRL
+RW in E²PROM
+Parameter enabing/disabling DLMA feature and defining options, see
+chapter Section 6.6.
+0xA0
+0xAF
+12 N/A
+DLMA_RSSI
+RW in E²PROM
+Parameter defining RSSI threshold values, see chapter Section 6.6. 0xA0
+0x34
+148 N/A
+DLMA_TX
+RW in E²PROM
+Parameter defining TX settings lookup table, see chapter Section 6.6. 0xA0
+0xA9
+160 N/A
+Table 101. Mechanism to configure the RF settings or RF transitions
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+103 / 147

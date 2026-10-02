@@ -1,0 +1,62 @@
+No. Type Description
+8 Remarks Only one tariff structure can be sent in a message, because a tariff structure can potentially be
+large.
+Sending a SetDefaultTariffRequest with evseId = 0 basically copies the tariff to each EVSE of the
+Charging Station.
+A tariffId uniquely identifies the tariff for the Charging Station. An updated default tariff must
+therefore have a new tariffId. In order to update the default tariff per a certain date, a new default
+tariff can be installed with a validFrom date after which it becomes valid and replaces the existing
+default tariff.
+EV Driver
+Charging Station CSMS
+TxStartPoint = PowerPathClosed
+SetDefaultTariffRequest( tariff = {"1", "0.50 ct/kWh", ""EUR", energy = {...}}} )
+SetDefaultTariffResponse(Accepted)
+Present charge card AB1234
+opt [If not in cache]
+AuthorizeRequest(idToken = AB1234)
+AuthorizeResponse(idTokenInfo.status = Accepted)
+Plug-in cable
+TransactionEventRequest(eventType = Started, transactionInfo.transactionId = 123,
+transactionInfo.tariffId = "1", idToken = AB1234, triggerReason = CablePluggedIn, ... )
+TransactionEventResponse(idTokenInfo.status = Accepted)
+User uses default tariff
+Figure 105. Sequence diagram when using default tariff
+I07 - Set Default Tariff - Requirements
+ID. Precondition Requirements Note
+I07.FR.01 Upon receiving a SetDefaultTariffRequest
+when TariffCostCtrlr is absent or
+TariffCostCtrlr.Enabled[Tariff] = false (i.e.
+Charging Station does not support local cost
+calculation)
+Charging Station SHALL respond with an RPC
+CALLERROR "NotSupported"
+Or "NotImplemented" if
+the message has not
+been implemented.
+I07.FR.02 Upon receiving a SetDefaultTariffRequest with
+a tariff structure in which the total count of
+TariffEnergyType, TariffTimeType and
+TariffFixedType elements is more than
+Charging Station is able to process
+Charging Station SHALL respond with
+SetDefaultTariffResponse with status =
+TooManyElements
+I07.FR.03 Upon receiving a SetDefaultTariffRequest with
+a tariff structure that contains elements with a
+TariffConditionsType or
+TariffConditionsFixedType AND
+TariffCostCtrlr.ConditionsSupported = false
+(i.e. Charging Station does not support
+conditions)
+Charging Station SHALL respond with
+SetDefaultTariffResponse with status =
+ConditionNotSupported.
+I07.FR.04 Upon receiving a SetDefaultTariffRequest with
+a tariff that has a tariffId that is already present
+in the Charging Station
+Charging Station SHALL respond with
+SetDefaultTariffResponse with status =
+DuplicateTariffId.
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 284/803 Part 2 - Specification

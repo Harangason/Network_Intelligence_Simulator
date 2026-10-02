@@ -1,0 +1,55 @@
+Main (Test scenario)
+11. The Test System sends a BatterySwapRequest with
+eventType BatteryIn
+requestId <requestId>
+idToken.idToken <Configured valid_idtoken_idtoken>
+batteryData[0].evseId <Configured evseId>_
+batteryData[0].serialNumber 1234
+batteryData[0].soC 23
+batteryData[0].soH 85
+batteryData[1].evseId <Configured evseId2>_
+batteryData[1].serialNumber 5678
+batteryData[1].soC 45
+batteryData[1].soH 87
+12. The CSMS responds with a BatterySwapResponse
+Note: Set of two batteries are extracted at this point in scenario.
+13. The Charging Station sends a TransactionEventRequest with
+eventType Ended
+triggerReason EnergyLimitReached
+idToken.idToken ""
+idToken.type NoAuthorization
+transactionInfo.transactionId 111-222-333-444-1
+transactionInfo.chargingState Idle
+transactionInfo.stoppedReason EVDisconnected
+14. The Test System responds with a
+TransactionEventResponse
+15. The Test System notifies the CSMS about the status change
+of the slot. 16. The CSMS responds accordingly.
+17. The Charging Station sends a TransactionEventRequest with
+eventType Ended
+triggerReason EnergyLimitReached
+idToken.idToken ""
+idToken.type NoAuthorization
+transactionInfo.transactionId 111-222-333-444-2
+transactionInfo.chargingState Idle
+transactionInfo.stoppedReason EVDisconnected
+18. The Test System responds with a
+TransactionEventResponse
+19. The Test System notifies the CSMS about the status change
+of the slot. 20. The CSMS responds accordingly.
+21. The Test System sends a BatterySwapRequest with
+eventType BatteryOut
+requestId <requestId>
+idToken.idToken <Configured valid_idtoken_idtoken>
+batteryData[0].evseId <Configured evseId3>_
+batteryData[0].serialNumber 4321
+batteryData[0].soC 80
+batteryData[0].soH 95
+batteryData[1].evseId <Configured evseId4>_
+batteryData[1].serialNumber 8765
+batteryData[1].soC 85
+batteryData[1].soH 78
+22. The CSMS responds with a BatterySwapResponse
+Note: Steps 13 and 14 are repeated for each battery taken out
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1366/1383 Part 6 - Test Cases

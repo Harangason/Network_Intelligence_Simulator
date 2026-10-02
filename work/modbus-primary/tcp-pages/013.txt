@@ -1,0 +1,46 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+October 24, 2006 http://www.Modbus.org 13/46
+• MODBUS data transfer
+A MODBUS request has to be sent on the righ t TCP connection already opened. The IP 
+address of the remote is used to find the TCP connection. In case of multiple TCP 
+connections opened with the same remote, one connection has to be chosen to send 
+the MODBUS message, different choice criteria can be used like the oldest one, the 
+first one. The connection has to maintain open during all the MODBUS communications. 
+As described in the following sections a client can initiate several MODBUS 
+transactions with a server without wait ing the ending of the previous one.  
+ Connection closing
+When the MODBUS communications are ended between a Client and a Server, the 
+client has to initiate a connection clos ing of the connection used for these 
+communications.  
+4.2.2 Impact of Operating Modes on the TCP Connection 
+Some Operating Modes (communication br eak between two operational End Points, 
+Crash and Reboot on one of the End Point, …) may have impacts on the TCP 
+Connections. A connection can be seen closed or aborted on one side without the 
+knowledge of the other side. The connection is said to be " half-open" . 
+This section describes the behavior for each main Operating Modes. It is assumed that 
+the Keep Alive  TCP mechanism is used on both end points (See section 4.3.2) 
+4.2.2.1 Communication break between two operational end points: 
+The origin of the communication break can be  the disconnection of the Ethernet cable 
+on the Server side. The expected behavior is: 
+• If no packet is currently sent on the connection:
+The communication break will not be seen if it lasts less than the Keep Alive timer 
+value. If the communication break lasts more than the Keep Alive timer value, an 
+error is returned to the TCP Management layer that can reset the connection. 
+• If Some packets are sent before and after the disconnection:
+The TCP retransmission algorithms (Jacobson's , Karn's algorithms and exponential 
+backoff. See section 4.3.2) are activated. This may lead to a stack TCP layer Reset 
+of the Connection before the Keep Alive timer is over. 
+4.2.2.2 Crash and Reboot of the Server end point 
+After the crash and Reboot of the Server, the connection is "half-open" on Client side. 
+The expected behavior is: 
+• If no packet is sent on the half-open connection:
+The TCP half-open connection is seen opened from the Client side as long as the 
+Keep Alive timer is not over. After that an error is returned to the TCP Management 
+layer that can reset the connection. 
+• If some packets are sent on the half-open connection:
+The Server receives data on a connection that doesn't exist anymore. The stack 
+TCP layer sends a Reset to close the half-open connection on the Client side 
+4.2.2.3 Crash and Reboot of the Client 
+After the crash and Reboot of the Client, the connection is "half-open" on Server side. 
+The expected behavior is: 
+Modbus Organization  

@@ -1,0 +1,24 @@
+MODBUS Messaging on TCP/IP Implem entation Guide V1.0b 
+October 24, 2006 http://www.Modbus.org 40/46
+General comments for a better understanding of the Client  sequence diagram : 
+First step : A Reading query comes from User Application (method m_Read).  
+Second Step : The ‘Client’ task  receives the MODBUS query  (method 
+m_ClientReceivingMessage). This is the entry point of the Client. To associate the 
+query with the corresponding response when it will arrive, the Client uses a 
+Transaction resource (Class CTransaction ). The MODBUS query is sent to the 
+TCP_Management by calling the class interface CInterfaceResponseMsg  (method 
+m_MODBUSRequest) 
+Third Step:  If the connection is already estab lished there is nothing to do on 
+connection, the message can be send over the network. Otherwise, a connection must 
+be opened before the message can be sent over the network. 
+At this time the client is waiting for a  response (from a remote serv er)  
+Fourth step:  Once a response has been received from the network, the TCP/IP stack 
+receives  data (method m_EventOnSocket  is implicitly called). 
+ If the connection is already established, th en the MBAP is read for retrieving the 
+connection object (connection  object gives memory resource and other information). 
+Data coming from network is read and confirmation is sent to the client  task  via the 
+class Interface CInterfaceIndicationMsg (method m_MODBUSConfirmation). Client 
+task receives the MODBUS Confirmation (method m_ClientReceivingResponse ). 
+Finally the  response is  written  to the  user application (method m_WriteData), and 
+transaction resource is freed . 
+Modbus Organization  

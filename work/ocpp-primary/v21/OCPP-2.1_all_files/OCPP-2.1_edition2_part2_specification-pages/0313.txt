@@ -1,0 +1,92 @@
+ID. Precondition Requirements Notes
+I12.FR.15 I12.FR.14 Charging Station MAY stop sending
+CostDetailsType elements in
+TransactionEventRequest messages for
+the remainder of the transaction.
+I12.FR.16 The field currency in TotalCostType SHALL
+match the currency of the tariff that was
+used.
+I12.FR.17 The field TotalCostType.total SHALL
+contain the totals of all exclTax and
+inclTax parts of fixed, energy,
+chargingTime, idleTime, reservationTime
+and reservationFixed fields.
+total is the sum of all costs.
+I12.FR.18 I12.FR.14 Charging Station SHALL set device model
+variable TariffCostCtrlr.Problem to "true"
+Set the Problem indicator for
+TariffCostCtrlr when tariff could
+not be calculated.
+I12.FR.19 I12.FR.14 AND
+Charging Station does not have a Delta
+monitor installed on
+TariffCostCtrlr.Problem
+Charging Station SHALL send a
+NotifyEventRequest with trigger =
+Alerting, eventNotificationType =
+HardWiredNotification, component =
+"TariffCostCtrlr", variable = "Problem",
+actualValue = "true"
+Tariff evaluation
+I12.FR.30 I12.FR.01 Charging Station SHALL evaluate the
+conditions of the TariffFixedPriceType
+once at start of the transaction.
+Fixed fee is only applied once in
+transaction.
+I12.FR.31 I12.FR.01 AND
+TariffCostCtrlr.Interval[Tariff] > 0
+Charging Station SHALL evaluate the
+conditions of a TariffEnergyPriceType and
+TariffTimePriceType for current, power
+and energy at least every
+TariffCostCtrlr.Interval[Tariff] seconds
+Conditions for date and time
+need to be followed exactly (as
+these are predictable), but
+changes in current, power and
+energy only need to be
+monitored every
+TariffInterval seconds.
+The use of tariffs requires that
+TariffCostCtrlr.Enabled[Tariff] =
+true
+I12.FR.32 I12.FR.01 AND
+TariffCostCtrlr.Interval[Tariff] = 0
+Charging Station SHALL evaluate the
+conditions of a TariffEnergyPriceType,
+TariffTimePriceType for current, power
+and energy as frequent as possible.
+See TariffInterval.
+I12.FR.33 I12.FR.31 OR I12.FR.32 Charging Station SHALL create lists
+existing of all TariffEnergyPriceType and
+TariffTimePriceType for which
+TariffConditionsType is applicable at the
+moment.
+This is the "applicable element
+list" in which multiple
+conditions may be applicable at
+this point in time.
+I12.FR.34 I12.FR.33 Charging Station SHALL select for each
+TariffEnergyPriceType (energy) and
+TariffTimePriceType (chargingTime,
+idleTime) the first
+Tariff{Energy/Time}PriceType element
+from the "applicable element list" to
+contribute to the cost calculation.
+This is the "used element list".
+I12.FR.35 Whenever the "used element list" changes,
+because new TariffConditionsType apply
+Charging Station SHALL end the current
+chargingPeriods entry
+(ChargingPeriodType) of CostDetailsType,
+and SHALL fill the dimensions fields with
+data of the CostDimensionType.
+Based on the values in
+dimensions and the tariffId it is
+possible to verify/recalculate
+the cost.
+I12.FR.36 I12.FR.35 Charging Station SHALL start a new
+chargingPeriods entry in CostDetailsType
+with startPeriod set to current time.
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 300/803 Part 2 - Specification

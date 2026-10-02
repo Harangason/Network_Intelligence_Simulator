@@ -1,0 +1,51 @@
+TC_B_14_CS: Get Base Report - SummaryInventory
+Test case name Get Base Report - SummaryInventory
+Test case Id TC_B_14_CS
+Use case Id(s) B07
+Requirement(s) B07.FR.01, B07.FR.03, B07.FR.04, B07.FR.09, B07.FR.10, B07.FR.12
+System under test Charging Station
+Description CSMS requests a SummaryInventory base report.
+Purpose To test that Charging Station supports the SummaryInventory base report.
+Prerequisite(s) Charging Station implementation supports the optional SummaryInventory report
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with:
+GetBaseReportResponse
+1. Test System sends GetBaseReportRequest with:
+- requestId = <Generated requestId>
+- reportBase = SummaryInventory
+3. Charging Station responds with:
+NotifyReportRequest 4. Test System sends NotifyReportResponse
+Step 3 and 4 are repeated as often as needed to report all configuration variables.
+Tool validations
+* Step 2:
+Message: GetBaseReportResponse 
+- status = Accepted
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+* Step 3:
+Message: NotifyReportRequest
+- requestId = <Generated requestId>
+- generatedAt = <timestamp at charging station>
+- seqNo = 0
+while tbc = true Expect NotifyReportRequest
+- seqNo is incremented by 1
+Post scenario validations:
+Check for all received variables:
+- variableCharacteristics are present
+- if variableCharacteristics.dataType = OptionList, SequenceList or MemberList then valuesList must be provided.
+Result must be a report that lists Components/Variables relating to the Charging Station’s current charging availability, and to any
+existing problem conditions.
+- For the Charging Station Component: AvailabilityState
+- For each EVSE Component: AvailabilityState
+- For each Connector Component: AvailabilityState (if known and different from EVSE). - For all Components in an abnormal State:
+- Problem, Tripped, Overload, Fallback variables.
+- Any other diagnostically relevant Variables of the Components.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 48/914 Part 6 - Test Cases

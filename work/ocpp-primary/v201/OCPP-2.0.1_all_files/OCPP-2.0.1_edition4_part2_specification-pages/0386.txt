@@ -1,0 +1,44 @@
+Field Name Field Type Card. Description
+evseId integer 1..1 Required. This contains a number (>0) designating an
+EVSE of the Charging Station. ‘0’ (zero) is used to
+designate the main power meter.
+meterValue MeterValueType 1..* Required. The sampled meter values with timestamps.
+1.32.2. MeterValuesResponse
+This contains the field definition of the MeterValuesResponse PDU sent by the CSMS to the Charging Station in response to a
+MeterValuesRequest PDU. This message might be removed in a future version of OCPP. It will be replaced by Device Management
+Monitoring events.
+No fields are defined.
+1.33. NotifyChargingLimit
+1.33.1. NotifyChargingLimitRequest
+The message NotifyChargingLimitRequest can be used to communicate a charging limit, set by an external system on the Charging
+Station (Not installed by the CSO via SetChargingProfileRequest), to the CSMS.
+Class
+Field Name Field Type Card. Description
+evseId integer 0..1 Optional. The charging schedule contained in this
+notification applies to an EVSE. evseId must be > 0.
+chargingLimit ChargingLimitType 1..1 Required. This contains the source of the charging limit
+and whether it is grid critical.
+chargingSchedule ChargingScheduleType 0..* Optional. Contains limits for the available power or
+current over time, as set by the external source.
+1.33.2. NotifyChargingLimitResponse
+The NotifyChargingLimitResponse message is sent by the CSMS to the Charging Station in response to a
+NotifyChargingLimitsRequest. No fields are defined.
+1.34. NotifyCustomerInformation
+This contains the field definition of the NotifyCustomerInformationRequest PDU sent by the Charging Station to the CSMS.
+1.34.1. NotifyCustomerInformationRequest
+Class
+Field Name Field Type Card. Description
+data string[0..512] 1..1 Required. (Part of) the requested data. No format
+specified in which the data is returned. Should be human
+readable.
+tbc boolean 0..1 Optional. “to be continued” indicator. Indicates whether
+another part of the monitoringData follows in an
+upcoming notifyMonitoringReportRequest message.
+Default value when omitted is false.
+seqNo integer 1..1 Required. Sequence number of this message. First
+message starts at 0.
+generatedAt dateTime 1..1 Required. Timestamp of the moment this message was
+generated at the Charging Station.
+requestId integer 1..1 Required. The Id of the request.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 376/491 Part 2 - Specification

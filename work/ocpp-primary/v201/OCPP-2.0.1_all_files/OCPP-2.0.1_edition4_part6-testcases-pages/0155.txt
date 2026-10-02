@@ -1,0 +1,45 @@
+TC_C_51_CS: Authorization using Contract Certificates 15118 - Online - Local
+contract certificate validation - Rejected
+Test case name Authorization using Contract Certificates 15118 - Online - Local contract certificate validation - Rejected
+Test case Id TC_C_51_CS
+Use case Id(s) C07
+Requirement(s) C07.FR.01,C07.FR.02
+System under test Charging Station
+Description The Charging Station is able to authorize with contract certificates when it supports ISO 15118.
+Purpose To verify if the Charging Station is able to handle a rejected on an AuthorizeRequest, when authorizing
+using a contract certificate with an invalid EMAID.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+TxCtrlr.TxStartPoint contains one or more of PowerPathClosed, Authorized, EVConnected, ParkingBayOccupancy
+AuthCtrlr.AuthEnabled is true (If implemented AND ReadWrite)
+AuthCtrlr.DisableRemoteAuthorization is false (If implemented)
+For the ISO15118Ctrlr of the EVSE used in the PnC transaction:
+ISO15118Ctrlr.CentralContractValidationAllowed is false
+ISO15118Ctrlr.PnCEnabled is true
+Memory State:
+CertificateInstalled for certificateType V2GRootCertificate
+CertificateInstalled for certificateType MORootCertificate
+RenewV2GChargingStationCertificate
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends an AuthorizeRequest
+Note(s):
+-The test case should be robust enough to also handle a
+GetCertificateStatusRequest
+2. The Test System responds with a AuthorizeResponse
+with idTokenInfo.status Invalid and certificateStatus =
+ContractCancelled
+Tool validations
+* Step 1:
+Message: AuthorizeRequest
+- idToken.type must be eMAID
+- iso15118CertificateHashData is provided
+Post scenario validations:
+EV is not authorized and shall not charge:
+Charging Station does not send TransactionEventRequest with:
+- triggerReason = Authorized or chargingState = Charging
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 153/914 Part 6 - Test Cases

@@ -1,0 +1,52 @@
+TC_B_03_CS: Cold Boot Charging Station - Rejected
+Test case name Cold Boot Charging Station - Rejected
+Test case Id TC_B_03_CS
+Use case Id(s) B03
+Requirement(s) B03.FR.02, B03.FR.04, B03.FR.06
+System under test Charging Station
+Description The booting mechanism allows a Charging Station to provide some general information about the Charging
+Station to the CSMS on startup AND it allows the Charging Station to request whether it is allowed to start
+sending other OCPP messages.
+Purpose To verify whether the Charging Station is able to correctly handle a rejected BootNotification.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Reboot the Charging Station.
+1. The Charging Station sends a BootNotificationRequest
+2. The Test System responds with a BootNotificationResponse
+with status Rejected
+interval <Configured heartbeatInterval>
+3. The Charging Station sends a BootNotificationRequest
+Note(s):
+- The Charging Station resends the BootNotificationRequest after
+x seconds, whereby x is equal to or greater than the interval from
+the BootNotificationResponse.
+- The Charging Station is not allowed to send any OCPP message
+in the meantime.
+- The Charging Station is allowed to close the connection until it
+needs to resend the BootNotificationRequest.
+4. The Test System responds with a BootNotificationResponse
+with status Accepted
+interval <Configured heartbeatInterval>
+5. The Charging Station notifies the CSMS about the current
+state of all connectors. 6. The Test System responds accordingly.
+Tool validations
+* Step 5:
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Available"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 31/914 Part 6 - Test Cases

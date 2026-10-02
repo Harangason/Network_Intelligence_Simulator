@@ -1,0 +1,51 @@
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- eventType must be Updated
+- triggerReason must be LimitSet
+- transactionInfo.transactionLimit.maxEnergy must be <omitted>
+- transactionInfo.transactionLimit.maxTime must be 3600
+- transactionInfo.transactionLimit.maxCost must be <omitted>
+* Step 3:
+Message: TransactionEventRequest
+- eventType must be Updated
+- triggerReason must be MeterValuePeriodic
+-  transactionInfo.transactionLimit  must be    <omitted>
+* Step 5:
+Message: TransactionEventRequest
+- eventType must be Updated
+- triggerReason must be LimitSet
+- transactionInfo.transactionLimit.maxEnergy must be <omitted>
+- transactionInfo.transactionLimit.maxTime must be 20
+- transactionInfo.transactionLimit.maxCost must be <omitted>
+* Step 7:
+Message: TransactionEventRequest
+- eventType must be Updated
+- triggerReason must be MeterValuePeriodic
+-  transactionInfo.transactionLimit  must be    <omitted>
+…
+6.2.31. Page 313/314 - (2026-02) - TC_E_114_CS/TC_E_115_CS -  Added main
+step to check the transaction is not resumed
+Added main step to check the transaction is not resumed, but Ended.
+Test case Id TC_E_114_CS / TC_E_115_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Cut the power to the Charging Station, wait 30 seconds and restore power to the Charging Station
+1.  The Charging Station sends a       TransactionEventRequest
+2.  The Test System responds with a        TransactionEventResponse
+Tool validations
+* Step 1:  
+Message:  TransactionEventRequest
+-  eventType  must be    Ended
+-  triggerReason  must NOT be     TxResumed
+-  stoppedReason  must be    PowerLoss  or   Reboot
+Post scenario validations (TC_E_114_CS):
+Charging Station boots normally, but no Transaction related messages are sent to the CSMS with triggerReason = TxResumed,
+since resuming is not supported.
+Note: It is allowed that some TransactionEventRequests are sent to report that the running transactions have been ended, e.g. via                  
+triggerReason  =   AbnormalCondition .
+Post scenario validations (TC_E_115_CS):
+Charging Station boots normally, but no Transaction related messages are sent to the CSMS with                triggerReason  =   TxResumed ,
+since resuming is disabled.   
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 55/116 Errata 2026-06

@@ -1,0 +1,60 @@
+Table 7-86. FPD3_PORT_SEL Register Field Descriptions (continued)
+Bit Field Type Reset Description
+1 RX_WRITE_PORT_1 R/W 0x0 Write Enable for RX port 1 registers
+This bit enables writes to RX port 1 registers. Any combination of RX 
+port registers can be written simultaneously. This applies to all paged 
+FPD3 Receiver port registers.
+0: Writes disabled
+1: Writes enabled
+When accessed via Bi-directional Control Channel, the default value 
+is 1 if accessed over RX port 1.
+0 RX_WRITE_PORT_0 R/W 0x0 Write Enable for RX port 0 registers
+This bit enables writes to RX port 0 registers. Any combination of RX 
+port registers can be written simultaneously. This applies to all paged 
+FPD3 Receiver port registers.
+0: Writes disabled
+1: Writes enabled
+When accessed via Bi-directional Control Channel, the default value 
+is 1 if accessed over RX port 0.
+7.6.1.65 RX_PORT_STS1 Register (Address = 0x4D) [Reset = 0x00] 
+RX_PORT_STS1 is shown in Table 7-87.
+Return to the Summary Table.
+RX port-specific register. The FPD-Link III Port Select register 0x4C configures which unique Rx port registers 
+can be accessed by I2C read and write commands.
+Table 7-87. RX_PORT_STS1 Register Field Descriptions
+Bit Field Type Reset Description
+7:6 RX_PORT_NUM R 0x0 RX Port Number
+This read-only field indicates the number of the currently selected RX 
+read port.
+5 BCC_CRC_ERROR RC 0x0 Bi-directional Control Channel CRC Error Detected
+This bit indicates a CRC error has been detected in the forward 
+control channel. If this bit is set, an error may have occurred in the 
+control channel operation. This bit is cleared on read.
+4 LOCK_STS_CHG RC 0x0 Lock Status Changed
+This bit is set if a change in receiver lock status has been detected 
+since the last read of this register. Current lock status is available in 
+the LOCK_STS bit of this register
+This bit is cleared on read.
+3 BCC_SEQ_ERROR/
+BCC_ERROR
+RC 0x0 The function of this bit depends on the setting of the 
+BCC_EN_ENH_ERR control in the BCC_ERR_CTL register. If 
+BCC_EN_ENH_ERR is 0 (disabled), this register is defined as 
+follows:
+Bidirectional Control Channel Sequence Error Detected
+This bit indicates a sequence error has been detected in the forward 
+control channel. If this bit is set, an error may have occurred in the 
+control channel operation. This bit is cleared on read.
+If BCC_EN_ENH_ERR is 1 (enabled), this register is defined as 
+follows:
+Bidirectional Control Channel Error Flag
+This flag indicates one or more errors have been detected during 
+Bidirectional Control Channel communication with the Deserializer. 
+The BCC_STATUS register contains further information on the 
+type of error detected. This bit will be cleared upon read of the 
+BCC_STATUS register.
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+110 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

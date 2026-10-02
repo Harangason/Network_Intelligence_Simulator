@@ -1,0 +1,104 @@
+ID Precondition Requirement definition Note
+N04.FR.04 When the Charging Station receives a
+SetVariableMonitoringRequest with a
+Variable that is unknown for the given
+Component in SetMonitoringData
+The Charging Station SHALL set the attributeStatus
+field in the corresponding SetMonitoringResult to:
+UnknownVariable.
+N04.FR.05 When the Charging Station receives a
+SetVariableMonitoringRequest with an
+MonitorType which is not supported
+by the specific Variable
+The Charging Station SHALL set the attributeStatus
+field in the corresponding SetMonitoringResult to:
+UnsupportedMonitorType.
+N04.FR.06 When the Charging Station receives a
+SetVariableMonitoringRequest with
+( monitor type = UpperThreshold
+AND
+value < minLimit OR
+value > maxLimit ) OR
+( monitor type = LowerThreshold
+AND
+value < minLimit OR
+value > maxLimit )
+The Charging Station SHALL set the attributeStatus
+field in the corresponding SetMonitoringResult to:
+Rejected.
+minLimit and maxLimit
+refer to the
+VariableCharacteristicsT
+ype for the VariableType.
+Be aware that setting a
+UpperThreshold to the
+maxLimit or setting a
+LowerThreshold to the
+minLimit will result in a
+monitor that will never
+trigger.
+More information on the
+reason of rejection can
+be provided in the
+optional statusInfo
+element.
+N04.FR.07 When the Charging Station receives a
+SetVariableMonitoringRequest for a
+monitor that conflicts with safety
+requirements.
+The Charging Station MAY set the attributeStatus
+field in the corresponding SetMonitoringResult to: <
+Rejected.
+e.g. when the requested
+monitoring overrides
+factory set security
+monitoring.
+N04.FR.08 When the Charging Station was able
+to set the given value in the
+SetMonitoringData
+The Charging Station SHALL set the attributeStatus
+field in the corresponding SetMonitoringResult to:
+Accepted.
+Please refer to use case
+N07 - Alert Event on how
+to handle the different
+monitor types .
+N04.FR.09 The maximum size and number of items of
+monitoringData in one
+SetVariableMonitoringRequest message is
+determined by the
+ItemsPerMessageSetVariableMonitoring
+and
+BytesPerMessageSetVariableMonitoring
+Configuration Variables.
+N04.FR.10 When the Charging Station receives a
+SetVariableMonitoringRequest for a
+component/variable combination for
+which a monitor with the same type
+and severity already exists with a
+different id.
+The Charging Station SHALL set the attributeStatus
+field in the corresponding SetMonitoringResult to:
+Duplicate.
+There cannot be two
+monitors of the same
+type with the same
+severity on the same
+variable. E.g. when a
+component/variable has
+a monitor with an
+UpperThreshold at value
+"67" and severity "4-
+Error", then there cannot
+be another
+UpperThreshold at value
+"78" with same severity
+"4-Error" defined.
+N04.FR.11 When the Charging Station receives a
+SetVariableMonitoringRequest without
+an Id AND
+N04.FR.08
+The Charging Station will generate an Id and return
+it in the SetVariableMonitoringResponse.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 459/803 Part 2 - Specification

@@ -1,0 +1,43 @@
+1.37. NotifyEVChargingSchedule
+1.37.1. NotifyEVChargingScheduleRequest
+The Charging Station uses this message to communicate the charging schedule as calculated by the EV to the CSMS.
+Class
+Field Name Field Type Card. Description
+timeBase dateTime 1..1 Required. Periods contained in the charging profile are
+relative to this point in time.
+evseId integer 1..1 Required. The charging schedule contained in this
+notification applies to an EVSE. EvseId must be > 0.
+chargingSchedule ChargingScheduleType 1..1 Required. Planned energy consumption of the EV over
+time. Always relative to timeBase.
+1.37.2. NotifyEVChargingScheduleResponse
+Response to a NotifyEVChargingScheduleRequest message.
+Class
+Field Name Field Type Card. Description
+status GenericStatusEnumType 1..1 Required. Returns whether the CSMS has been able to
+process the message successfully. It does not imply any
+approval of the charging schedule.
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+1.38. NotifyEvent
+1.38.1. NotifyEventRequest
+This contains the field definition of the NotifyEventRequest PDU sent by the Charging Station to the CSMS.
+Class
+Field Name Field Type Card. Description
+generatedAt dateTime 1..1 Required. Timestamp of the moment this message was
+generated at the Charging Station.
+tbc boolean 0..1 Optional. “to be continued” indicator. Indicates whether
+another part of the report follows in an upcoming
+notifyEventRequest message. Default value when
+omitted is false.
+seqNo integer 1..1 Required. Sequence number of this message. First
+message starts at 0.
+eventData EventDataType 1..* Required. List of EventData. An EventData element
+contains only the Component, Variable and
+VariableMonitoring data that caused the event. The list of
+EventData will usally contain one eventData element, but
+the Charging Station may decide to group multiple events
+in one notification. For example, when multiple events
+triggered at the same time.
+1.38.2. NotifyEventResponse
+Response to NotifyEventRequest. No fields are defined.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 378/491 Part 2 - Specification

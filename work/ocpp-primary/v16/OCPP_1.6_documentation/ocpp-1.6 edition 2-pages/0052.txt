@@ -1,0 +1,33 @@
+5.5. Clear Charging Profile
+Charge Point Central System
+ClearChargingProfile.req([id], [connectorId], [chargingProfilePurpose], [stackLevel])
+ClearChargingProfile.conf(status)
+Figure 26. Sequence Diagram: Clear Charging Profile
+If the Central System wishes to clear some or all of the charging profiles that were previously sent the Charge
+Point, it SHALL use the ClearChargingProfile.req PDU.
+The Charge Point SHALL respond with a ClearChargingProfile.conf PDU specifying whether it was able to process
+the request.
+5.6. Data Transfer
+Charge Point Central System
+DataTransfer.req(vendorId, [messageId], [data])
+DataTransfer.conf(status, [data])
+Figure 27. Sequence Diagram: Data Transfer
+If the Central System needs to send information to a Charge Point for a function not supported by OCPP , it
+SHALL use the DataTransfer.req PDU.
+Behaviour of this operation is identical to the Data Transfer operation initiated by the Charge Point. See Data
+Transfer for details.
+5.7. Get Composite Schedule
+Charge Point Central System
+GetCompositeSchedule.req(connectorId, duration, [schedulingUnit])
+GetCompositeSchedule.req(status, [connectorId], [scheduleStart], [chargingSchedule])
+Figure 28. Sequence Diagram: Get Composite Schedule
+The Central System MAY request the Charge Point to report the Composite Charging Schedule by sending a
+GetCompositeSchedule.req PDU. The reported schedule, in the GetCompositeSchedule.conf PDU, is the result of
+the calculation of all active schedules and possible local limits present in the Charge Point. Local Limits might be
+taken into account.
+Upon receipt of a GetCompositeSchedule.req, the Charge Point SHALL calculate the Composite Charging
+Schedule intervals, from the moment the request PDU is received: Time X, up to X + Duration, and send them in
+the GetCompositeSchedule.conf PDU to the Central System.
+If the ConnectorId in the request is set to '0', the Charge Point SHALL report the total expected power or current
+the Charge Point expects to consume from the grid during the requested time period.
+47

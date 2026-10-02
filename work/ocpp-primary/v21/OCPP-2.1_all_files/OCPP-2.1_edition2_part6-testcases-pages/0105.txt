@@ -1,0 +1,42 @@
+TC_B_108_CS: Set new NetworkConnectionProfile - Prevent overwriting configured
+Network Profile slot
+Test case name Set new NetworkConnectionProfile - Prevent overwriting configured Network Profile slot
+Test case Id TC_B_108_CS
+Use case Id(s) B09
+Requirement(s) B09.FR.22
+System under test Charging Station
+Description The CSMS updates the connection details on the Charging Station. For instance in preparation of a
+migration to a new CSMS.
+Purpose To verify that the Charging Station does not allow to change the configuration of a network slot that is in
+NetworkConfigurationPriority, which may be used during reconnection.
+Prerequisite(s) NetworkConfiguration component variables are writable.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with GetVariablesResponse
+1. Test System sends GetVariablesRequest for
+- OCPPCommCtrlr.NetworkConfigurationPriority
+Note: For each value in NetworkConfigurationPriority, try to set a NetworkConfiguration instance:
+FOR slot in attributeValue of OCPPCommCtrlr.NetworkConfigurationPriority DO
+4. Charging Station responds with SetVariablesResponse
+3. Test System sends SetVariablesRequest with:
+- setVariableData[0].component.name NetworkConfiguration
+- setVariableData[0].component.instance <slot>
+- setVariableData[0].variable.name MessageTimeout
+- setVariableData[0].attributeValue 123
+END FOR
+Tool validations
+* Step 2:
+Message GetVariablesResponse with:
+- getVariableResult[0].component = OCPPCommCtrlr
+- getVariableResult[0].variable = NetworkConfigurationPriority
+- getVariableResult[0].attributeValue = <a list of at least two values>
+- getVariableResult[0].attributeStatus = Accepted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 103/1383 Part 6 - Test Cases

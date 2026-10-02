@@ -1,0 +1,130 @@
+«BusinessComponent»
+Components::IdentifiedObject
+«Content»
++ MRID: NumericIdentifierType [0..1]
++ ObjectID: IdentifierType [0..*]
++ Name: NameType [0..1]
++ AliasName: NameType [0..*]
++ Description: TextType [0..*]
+«BusinessComponent»
+AuthorizationListType
+«Content»
++ VersionNumber: IntegerType [0..1]
++ MaxLength: CounterType [0..1]
++ MaxTransmitCount: CounterType [0..1]
++ LocalAuthListEnabled: IndicatorType [0..1]
++ LocalAuthListMaxLength: CounterType [0..1]
++ SendLocalListMaxLength: CounterType [0..1]
+«BusinessComponent»
+IDTokenInfoType
+«Content»
++ Status: AuthorizationStatusEnumType [0..1]
++ CacheExpiryDateTime: DateTimeType [0..1]
++ Language1: LanguageType [0..1]
++ Language2: LanguageType [0..1]
++ ChargingPriority: NumericIdentifierType [0..1]
++ ListID: IdentifierType [0..1]
++ ListEntryTimestamp: DateTimeType [0..1]
+«enumeration,BDT...
+CodeLists::
+IDTokenEnumType
+«enum, Facet»
+Central
+eMAID
+ISO14443
+ISO15693
+Local
+NoAuthorization
+KeyCode
+«BusinessComponent»
+AuthorizationFunctionType
+«Content»
++ AuthorizationListSupported: IndicatorType [0..1]
++ LocalAuthorizationEnabled: IndicatorType [0..1]
++ LocalAuthorizeOffline: IndicatorType [0..1]
++ LocalPreAuthorize: IndicatorType [0..1]
++ AuthorizationCacheEnabled: IndicatorType [0..1]
++ AllowOfflineTxForUnknownID: IndicatorType [0..1]
++ AuthorizeRequestTxRequests: IndicatorType [0..1]
++ LawEnforcementGroupId: TokenType [0..1]
+«BusinessComponent»
+RootModel::DeviceFunctionType
+«enumeration,BDTEnu...
+CodeLists::
+AuthorizationStatusEnumType
+«enum, Facet»
+Accepted
+Blocked
+Expired
+Invalid
+NoCredit
+NotAllowedTypeEVSE
+NotAtThisLocation
+NotAtThisTime
+ConcurrentTx
+Unknown
+«BusinessComponent»
+Transactions::TransactionType
+«Content»
++ SeqNo: CounterType [0..1]
++ ChargingState: ChargingStateEnumType [0..1]
++ Offline: IndicatorType [0..1]
++ StartedTimestamp: DateTimeType [0..1]
++ StoppedTimestamp: DateTimeType [0..1]
++ TimeSpentCharging: SecondsType [0..1]
++ StoppedReason: ReasonEnumType [0..1]
++ NumberOfPhasesUsed: CounterType [0..1]
++ MaxAllowedHours: SecondsType [0..1]
++ MaxAllowedKwh: PowerType [0..1]
++ TriggerReason: TriggerReasonEnumType [0..1]
++ RemoteStartID: RequestIdType [0..1]
++ Id: TransactionIdType [0..1]
++ RunningCost: AmountType [0..1]
++ TotalCost: AmountType [0..1]
+«BusinessComponent»
+Components::MessageContentType
+«Content»
++ Format: MessageFormatEnumType [0..1]
++ Language: LanguageType [0..1]
++ Content: MessageType [0..1]
+«BusinessComponent»
+IDTokenType
++ IDToken: TokenType [0..1]
++ Type: IDTokenEnumType [0..1]
+«BusinessComponent»
+OCSPRequestDataType
++ HashAlgorithm: HashAlgorithmEnumType [0..1]
++ IssuerNameHash: IssuerNameType [0..1]
++ IssuerKeyHash: HashType [0..1]
++ SerialNumber: SerialNumberType [0..1]
++ ResponderURL: URIType [0..1]
++AuthorizationFunction
+0..1
++Transaction
+0..*
++AuthorizationCache
+0..1
++AuthorizationList 0..1
++LocalAuthorization
+0..*
++IDTokenInfo0..1
++IDToken 0..1
++IDTokenInfo
+0..*
++PersonalMessage
+0..1
++AuthorizationList
+0..*
++AuthorizationFunction
+0..*
++OCSPCertificateHash 0..*
++Transaction 0..1
++IDToken
+0..*
++IDTokenInfo
+0..*
++TariffMessage
+0..1
+Figure 19. OCPP Information Model: Security-Authorization
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 24/26 Part 1 - Architecture & Topology

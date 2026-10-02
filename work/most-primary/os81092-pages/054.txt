@@ -1,0 +1,57 @@
+OS81092
+DS60001271B-page 54  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+15.4.2 RESET AND POWER MANAGEMENT
+TJ = -40 to 125 C; VDDCn,VDDA18 = 1.8 V ±5 %; VDDA33,VDDEn,VDDPn,VDDU = 3.3 V ±5 %;
+GNDn,GNDAn,GNDE,GNDU = 0.0 V; Load Capacitance = 30 pF; PLL locked at 48 kHz; unless otherwise noted.  
+TABLE 15-5: RESET AND POWER MANAGEMENT ELECTRICAL CHARACTERISTICS
+Parameter Symbol Min Typ Max Unit Test Conditions
+PS[1:0] transition time 1, 2, 3 tpstrans 0.75 ms
+PS[1:0] hold time t pshold 2.2 ms
+RST rising to PS[1:0] recognition tstp 5 100 ms
+RST input hysteresis Vhys-rst 200 mV
+RST pulse width 4, 5, 6 trspw 150 ns
+Configuration pin setup to RST rising: 4, 5, 6
+INT
+ERR/BOOT
+tcpsrs 0
+0
+ns
+ns
+Configuration pin hold from RST rising: 4, 5, 6
+INT
+ERR/BOOT
+tcphrs 25
+2.5
+ms
+ms
+RST rising to ETXP/ETXN output enabled 7 tinicinit 20 30 ms
+RST rising to PWROFF asserted low tpal 10 100 s
+Activity on ERXP/ERXN input to 
+ETXP/ETXN output enabled 7, 8 tNtwStartup 1.2 6 ms
+Loss of activity on ERXP/ERXN input to 
+ETXP/ETXN output disabled 9 tNtwShutdown 0.5 2 ms
+Note 1: Maximum time allowed by hardware for PS[1:0] to settle. Longer transition times may cause hardware to
+recognize an erroneous power management state.
+2: Minimum time required for an external power management state (PS[1:0]) to be recognized by hardware.
+The INIC Software Stack may define a longer hold time for responding to an external power event.
+3: Immediately following power-up (or reset), the PS[1:0] state is recognized after tstp. This requires tpshold be
+at least tstp(max) after power-up (or reset).
+4: After both the 3.3 V and 1.8 V power supplies have stabilized (excluding VDDU), INIC must be reset for
+normal operation. A proper reset is when both supplies are 90 % VDD; however, electrical specifications
+are applicable only within ±5 % VDD.
+5: Power-up configuration pins include: ERR/BOOT and INT; however, INT is only used as a configuration
+pin when PortConfiguration.DefPort() is set to INT_Select. When used as a configuration pin,
+an external component (e.g. resistor) must hold INT in a valid state (high or low) for at least tcphrs or until
+INT is driven low by INIC, whichever occurs first.
+6: The RST pulse width indicates the minimum time required to reset the part; however, the configuration pins
+can take longer to settle to their default state, ba sed on the trace capacitance and size of the on-board
+pull-up or pull-down resi stor. Therefore, the RST pulse width must be long enough to allow the external
+configuration pins to achieve their default state.
+7: When INIC’s ETXP/ETXN output is enabled, the INIC transceiver becomes visible and INIC enters the net-
+work (e.g. obtains a node address).
+8: The tNtwStartup parameter is only valid if t inicinit has elapsed, otherwise the time from activity on ERXP/
+ERXN until ETXP/ETXN enabled is determined by tinicint. tNtwStartup also assumes activity has been absent
+for at least the minimum tRestart time (refer to the MOST Specification [1]). The tNtwStartup parameter rep-
+resents the INIC component of the MOST Specification tWakeUp parameter.
+9: The tNtwShutdown parameter assumes tinicinit has previously expired. tNtwShutdown represents the INIC com-
+ponent of the MOST Specification tShutDown parameter.

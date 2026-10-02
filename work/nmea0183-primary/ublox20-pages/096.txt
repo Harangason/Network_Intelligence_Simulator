@@ -1,0 +1,50 @@
+u-blox 20 HPG 2.00 - Interface description
+4 U1 version - - Message version (0x01 for this version)
+5 U1 numSv - - Number of SVs in the database
+6 U1[2] reserved0 - - Reserved
+Start of repeated group (numSv times)
+8 + n·6 U1 gnssId - - GNSS ID
+9 + n·6 U1 svId - - Satellite ID
+10 + n·6 X1 svFlag - - Information Flags
+bits 1…0   U:2 health - - SV health:
+• 0 = unknown
+• 1 = healthy
+• 2 = not healty
+bits 3…2   U:2 visibility - - SV health:
+• 0 = unknown
+• 1 = below horizon
+• 2 = above horizon
+• 3 = above elevation mask
+11 + n·6 X1 eph - - Ephemeris data
+In products supporting L5 signals, the receiver may
+store multiple ephemeris data sets per satellite.
+ephUsability and ephSource ﬁelds show information
+on one of the data sets. It is not possible to choose
+which data set's status is shown.
+bits 4…0   U:5 ephUsability - - How long the receiver will be able to use the stored
+ephemeris data from now on:
+• 31 = The usability period is unknown
+• 30 = The usability period is more than 450
+minutes
+• 30 > n > 0 = The usability period is between
+(n-1)*15 and n*15 minutes
+• 0 = Ephemeris can no longer be used
+bits 7…5   U:3 ephSource - - • 0 = not available
+• 1 = GNSS transmission
+• 2 = external aiding
+• 3-7 = other
+12 + n·6 X1 alm - - Almanac data
+bits 4…0   U:5 almUsability - - How long the receiver will be able to use the stored
+almanac data from now on:
+• 31 = The usability period is unknown
+• 30 = The usability period is more than 30 days
+• 30 > n > 0 = The usability period is between n-1
+and n days
+• 0 = Almanac can no longer be used
+bits 7…5   U:3 almSource - - • 0 = not available
+• 1 = GNSS transmission
+• 2 = external aiding
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 96 of 224
+C1-Public

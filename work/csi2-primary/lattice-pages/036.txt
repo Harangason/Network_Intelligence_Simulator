@@ -1,0 +1,70 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  36 
+3. IP Parameter Description 
+The configurable attributes of the MIPI CSI/DSI IP are shown in the following tables. You can configure the IP by setting 
+the attributes accordingly in the IP Catalog Module/IP Block Wizard of the Lattice Radiant software.  
+Wherever applicable, default values are in bold. 
+3.1. General 
+Table 3.1. General Attributes 
+Attribute Selectable Values Description 
+PHY Configuration 
+PHY Direction TX, RX Selects the operating direction of the PHY. 
+PHY Mode Soft D-PHY, Hard D-PHY Selects the physical layer implementation.  
+Only CrossLink-NX devices support Hard D-PHY.  
+PHY Data Width 8, 16 Defines the width of the deserialized data stream per lane in bits.  
+PHY Data Width = 16 is available only when PHY Mode is set to Hard 
+D-PHY. 
+Not editable. For information only. 
+Number of D-PHY Lanes 1, 2, 4 Specifies the number of data lanes. D-PHY supports up to 4 lanes (1-
+wire differential signaling per lane).  
+Line Rate Per Lane (Mbps)1 160–1500, 1000 (Soft D-
+PHY) 
+320–2500, 1000 (Hard D-
+PHY) 
+Maximum bandwidth when PHY Direction is TX. 
+Set the data rate per lane in Mbps for D-PHY. This determines the 
+maximum bandwidth capability of each lane. 
+80–1500, 1000 (Soft 
+DPHY) 
+160–2500, 1000 (Hard 
+DPHY) 
+Maximum bandwidth when PHY Direction is RX. 
+Set the data rate per lane in Mbps for D-PHY. This determines the 
+maximum bandwidth capability of each lane. 
+Actual Byte Clock 
+Frequency (MHz) 
+10–187.5, 125 Operating byte clock frequency of the IP.  
+The value is Line Rate per Lane (Mbps)/ PHY Data Width. 
+Not editable. For information only. 
+Actual D-PHY Clock 
+Frequency (MHz) 
+40–1250, 500 Operating frequency of the PHY layer. 
+The value is Line Rate per Lane (Mbps)/2. 
+Not editable. For information only. 
+PHY Clock Mode Continuous, 
+Non-Continuous 
+Configures the clock mode for Soft D-PHY. Continuous mode keeps 
+the clock lane in high-speed clock. Non-continuous mode allows the 
+clock to enter low power state between high-speed data 
+transmissions. 
+Edge Clock Mode Internal, External Selects the source of the edge clock used by the Soft D-PHY TX. Edge 
+clock is the high-speed per-bank clock network in Lattice FPGAs that 
+drives DDR I/O elements and synchronizes PHY data transitions. Refer 
+to the MIPI CSI/DSI Transmitter Edge Clock Sharing section. 
+ 
+Internal: The Soft D-PHY TX generates its own edge clock using 
+internal edge clock synchronizer and divider resources. Use this mode 
+when the D-PHY operates independently and can use dedicated 
+per-bank edge clock resources. 
+ 
+External: The Soft D-PHY TX receives edge clock from another D-PHY 
+TX instance, enabling multiple TX instances in the same bank to share 
+a common edge clock source. Use this mode to optimize clock 
+resources and maintain synchronization across multiple TX instances 
+running at the same bit rate. 
+ 

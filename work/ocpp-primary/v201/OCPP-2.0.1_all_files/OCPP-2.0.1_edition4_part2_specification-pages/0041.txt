@@ -1,0 +1,59 @@
+ID Precondition Requirement definition
+A01.FR.03 A01.FR.02
+AND
+The Charging Station responds to this
+SetVariablesRequest with a
+SetVariablesResponse with status
+Accepted.
+The CSMS SHALL assume that the authorization key change was
+successful, and no longer accept the credentials previously used by the
+Charging Station.
+A01.FR.04 A01.FR.02
+AND
+The Charging Station responds to this
+SetVariablesRequest with a
+SetVariablesResponse with status other
+than Accepted
+The CSMS SHALL assume that the Charging Station has NOT changed
+the password. Therefore the CSMS SHALL keep accepting the old
+credentials.
+A01.FR.05 A01.FR.04 While the CSMS SHALL still accepts a connection from the Charging
+Station, it MAY restrict the functionality that the Charging Station can
+use. The CSMS can use the BootNotification state: Pending for this.
+During the Pending state, the CSMS can for example retry to update the
+credentials.
+A01.FR.06 Different passwords SHOULD be used for different Charging Stations.
+A01.FR.07 Passwords SHOULD be generated randomly to ensure that the
+passwords have sufficient entropy.
+A01.FR.08 the CSMS SHOULD only store salted password hashes, not the
+passwords themselves.
+A01.FR.09 the CSMS SHOULD NOT put the passwords in clear-text in log files or
+debug information. In this way, if the CSMS is compromised not all
+Charging Station password will be immediately compromised.
+A01.FR.10 On the Charging Station the password needs to be stored in clear-text.
+Extra care SHOULD be taken into storing it securely. Definitions of
+mechanisms how to securely store the credentials are however not in
+scope of the OCPP Security Profiles.
+A01.FR.11 A01.FR.02 The Charging Station SHALL log the change of an
+BasicAuthPassword in the Security log.
+A01.FR.12 A01.FR.11 The Charging Station SHALL NOT disclose the content of the
+BasicAuthPassword in its logging. This is to prevent exposure of key
+material to persons that may have access to a diagnostics file.
+A02 - Update Charging Station Certificate by request of CSMS
+No. Type Description
+1 Name Update Charging Station Certificate by request of CSMS
+2 ID A02
+3 Objective(s) To facilitate the management of the Charging Station client side certificate, a certificate update
+procedure is provided.
+4 Description The CSMS requests the Charging Station to update its key using TriggerMessageRequest with the
+requestedMessage field set to SignChargingStationCertificate (or
+SignV2GCertificate for separate ISO 15118 certificate).
+If the Charging Station has a separate ISO15118Ctrlr (SECC in ISO 15118) for each EVSE, then
+CSMS will have to send a request for each of them. The device model the Charging Station will tell
+if ISO15118Ctrlr is located at toplevel or EVSE-level.
+If the Charging Station has multiple SECCs that each control multiple EVSEs, then these are
+represented in device model by an ISO15118Ctrlr for each EVSE. The EVSEs that are controlled by
+the same SECC report an ISO15118Ctrlr with the same "SeccId".
+Actors Charging Station, CSMS, Certificate Authority Server
+Edition 4, 2025-12-03 A. Security
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 31/491 Part 2 - Specification

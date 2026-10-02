@@ -1,0 +1,48 @@
+Chapter 4 ssNMEA2000 Application Program Interface 
+ssNMEA2000 User’s Manual   - 11 - 
+4.1 Data Type Definitions 
+      
+         Data type: 
+               n2000_t  
+       
+            Description: 
+n2000_t is a data type used to store NMEA 2000 messages.  It contains the 
+NMEA 2000 message source, destination, PGN, priority, data, and the size of 
+data.  
+   
+            Definition: 
+     typedef struct { 
+ 
+        uint32_t pgn;        /* Parameter Group Number. */ 
+        uint8_t *buf;        /* Pointer to data. */ 
+        uint16_t buf_len;   /* Size of data. */ 
+        uint8_t dst;           /* Destination of message. */ 
+        uint8_t src;           /* Source of message. */ 
+        uint8_t pri;           /* Priority of message. */ 
+        uint8_t port;          /* CAN port of message */ 
+ 
+     } n2000_t; 
+ 
+ 
+            Data type: 
+               n2000_name_t  
+       
+            Description: 
+n2000_name_t is a data type used to store a CA’s NMEA 2000 NAME external 
+to the protocol stack.  The function n2000_name_set() must be used to load the 
+NAME field into the stack’s internal memory. 
+   
+            Definition: 
+     typedef struct { 
+ 
+        uint8_t aac;                     /* 1-bit Arbitrary Address Capable */ 
+        uint8_t ind_grp;              /* 3-bit Industry Group */ 
+        uint8_t dev_class_inst;   /* 4-bit Device Class Instance */ 
+        uint8_t dev_class;           /* 7-bit Device Class */  
+        uint8_t func;                   /* 8-bit Function */ 
+        uint8_t func_inst;          /* 5-bit Function Instance */ 
+        uint8_t ecu_inst;            /* 3-bit ECU Instance */ 
+        uint16_t mfg_code;       /* 11-bit Manufacturer Code */ 
+        uint32_t identy_num;    /* 21-bit Identity Number */ 
+ 
+     } n2000_name_t; 

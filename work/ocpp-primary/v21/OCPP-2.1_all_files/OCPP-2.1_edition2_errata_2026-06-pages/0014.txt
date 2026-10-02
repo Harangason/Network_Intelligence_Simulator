@@ -1,0 +1,88 @@
+ID Precondition Requirement definition Note
+New A03.FR.02 When the Charging
+Station is connected 
+with security profile 3   
+AND
+detects that the
+current Charging
+Station certificate will
+expire in one month.
+The Charging Station SHALL generate a new
+public / private key pair using one of the key
+generation functions described in Section
+4.2.1.3 of [16].
+2.10. Page 140 - (2026-06) - C22.FR.01/02 - clarify "without receipt
+information" [1286]
+Requirements C22.FR.01/02 mention that when settlement fails or is rejected, that Charging Station sends a
+NotifySettlementRequest without receipt information. C21.FR.03, however, always requires a receiptUrl, either from Charging
+Station or CSMS.
+The intention of C22.FR.01/02 is that the receipt is not a real receipt because there was no settlement. It is, however, allowed to
+provide a receiptUrl that points to a page that tells that the settlement has failed of was rejected. This is clarified by the following
+change of wording.
+Changed requirements
+ID Precondition Requirements Note
+Old C22.FR.01 When Charging Station
+receives a settlement status
+from payment terminal that is
+Rejected
+Charging Station SHALL send a
+[notifysettlementrequest] to CSMS with status =
+Rejected, settlementAmount, settlementTime,
+transactionId and pspRef without receipt
+information.
+This means the payment
+service provider has rejected
+the settlement.
+New C22.FR.01 When Charging Station
+receives a settlement status
+from payment terminal that is
+Rejected
+Charging Station SHALL send a
+[notifysettlementrequest] to CSMS with status =
+Rejected, settlementAmount, settlementTime,
+transactionId,  pspRef  and a    receiptUrl  for a  
+rejected settlement. 
+This means the payment
+service provider has rejected
+the settlement. Information
+about this may be provided in     
+receiptUrl
+Old C22.FR.02 When Charging Station
+receives a settlement status
+from payment terminal that is
+Failed
+Charging Station SHALL send a
+[notifysettlementrequest] to CSMS with status =
+Failed, settlementAmount, settlementTime,
+transactionId and pspRef without receipt
+information.
+This means that there are
+technical reasons why the
+settlement failed, e.g. a failure
+to communicate.
+New C22.FR.02 When Charging Station
+receives a settlement status
+from payment terminal that is
+Failed
+Charging Station SHALL send a
+[notifysettlementrequest] to CSMS with status =
+Failed, settlementAmount, settlementTime,
+transactionId,  pspRef  and a    receiptUrl  for a failed   
+settlement.
+This means that there are
+technical reasons why the
+settlement failed, e.g. a failure
+to communicate. Information
+about this may be provided in     
+receiptUrl
+2.11. Page 283 - (2026-02) - I06.FR.03 - added note about privacy [715]
+A note has been added about protecting privacy when showing messages.
+ID. Precondition Requirements
+Old I06.FR.03 I06.FR.02 The Charging Station SHALL display the updated tariff
+information to the EV Driver.
+New I06.FR.03 I06.FR.02 The Charging Station SHALL display the updated tariff
+information to the EV Driver.
+Note: Charging Station should take measures to protect       
+the privacy of the EV Driver, for example by ensuring that          
+only the authenticated user can view the message.       
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 10/116 Errata 2026-06

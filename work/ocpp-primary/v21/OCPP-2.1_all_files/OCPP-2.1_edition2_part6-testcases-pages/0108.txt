@@ -1,0 +1,56 @@
+Main (Test scenario)
+16 The Charging Station responds with
+SetNetworkProfileResponse
+15 The Test System sends a SetNetworkProfileRequest with:
+- configurationSlot is <the active configuration>
+- connectionData.ocppVersion OCPP21
+- connectionData.ocppInterface Any
+- connectionData.ocppTransport JSON
+- connectionData.messageTimeout <Configured
+messageTimeout>
+- connectionData.ocppCsmsUrl <Configured ocppCsmsUrl>
+- connectionData.securityProfile <security profile from step 14>
+- connectionData.identity = <Configured ChargingStationId> -
+connectionData.basicAuthPassword <Configured
+basicAuthPassword>
+18. Charging Station reconnects
+17. Test System closes the websocket connection
+20. The Charging Station responds with GetVariablesResponse
+19. Test System sends GetVariablesRequest for
+- OCPPCommCtrlr.ActiveNetworkProfile
+Tool validations
+* Step 2:
+Messages GetVariableResponse with:
+- getVariableResult[0].component = OCPPCommCtrlr
+- getVariableResult[0].variable = ActiveNetworkProfile
+- getVariableResult[0].attributeValue = <any configuration slot>
+- getVariableResult[0].attributeStatus = Accepted
+* Step 4:
+Messages GetVariableResponse with:
+- getVariableResult[0].component = NetworkConfiguration
+- getVariableResult[0].instance = <the active configuration>
+- getVariableResult[0].variable = Identity
+- getVariableResult[0].attributeValue = <identity of charging station>
+- getVariableResult[0].attributeStatus = Accepted
+* Step 6:
+Messages SetVariableResponse with:
+- setVariableResult[0].component.name = SecurityCtrlr
+- setVariableResult[0].variable.name = Identity
+- setVariableResult[0].attributeStatus = Accepted
+- setVariableResult[1].component.name = SecurityCtrlr
+- setVariableResult[1].variable.name = BasicAuthPassword
+- setVariableResult[1].attributeStatus = Accepted
+* Step 8:
+Messages GetVariableResponse with:
+- getVariableResult[0].component = NetworkConfiguration
+- getVariableResult[0].variable = Identity
+- getVariableResult[0].attributeValue = <empty>
+- getVariableResult[0].attributeStatus = Accepted
+* Step 12:
+Messages GetVariableResponse with:
+- getVariableResult[0].component = OCPPCommCtrlr
+- getVariableResult[0].variable = ActiveNetworkProfile
+- getVariableResult[0].attributeValue = <the active configuration>
+- getVariableResult[0].attributeStatus = Accepted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 106/1383 Part 6 - Test Cases

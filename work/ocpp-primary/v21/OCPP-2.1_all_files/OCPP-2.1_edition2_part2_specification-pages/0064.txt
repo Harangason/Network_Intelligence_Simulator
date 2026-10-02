@@ -1,0 +1,72 @@
+CSMS Charging Station
+Power up
+opt
+Self check
+BootNotificationRequest(reason, chargingStation)
+BootNotificationResponse(status = Accepted, currentTime, interval)
+opt
+loop [for all Connectors]
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Unavailable)
+NotifyEventResponse()
+Self check
+loop [for all Connectors]
+alt [Connector was set to Unavailable/Reserved/Faulted prior to (re)boot]
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Unavailable/Reserved/Faulted)
+NotifyEventResponse()
+[else]
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Available)
+NotifyEventResponse()
+loop [while powered up and no other messages,
+with frequency based on Interval from BootNotificationResponse]
+HeartbeatRequest()
+HeartbeatResponse(currentTime)
+Figure 10. Sequence Diagram: Cold Boot Charging Station
+B01 - Cold Boot Charging Station - Requirements
+Table 31. B01 - Requirements
+ID Precondition Requirement definition Note
+B01.FR.01 After start-up. The Charging Station SHALL send
+BootNotificationRequest to the CSMS with
+information about its configuration.
+Information: e.g. version,
+vendor, etc.
+B01.FR.02 B01.FR.01
+The CSMS has received
+BootNotificationRequest from the
+Charging Station.
+The CSMS SHALL respond to indicate whether it
+will accept the Charging Station.
+B01.FR.03 After a reboot (for instance due to a
+remote reset command, power
+outage, firmware update, software
+error etc.)
+The Charging Station SHALL again connect to the
+CSMS and SHALL send a BootNotificationRequest
+each time it boots or reboots.
+B01.FR.04 When the CSMS responds with
+BootNotificationResponse with the
+status Accepted AND
+interval > 0
+The Charging Station SHALL adjust the heartbeat
+interval in accordance with the interval from the
+response message.
+B01.FR.05
+(2.1)
+When the CSMS responds with
+BootNotificationResponse with the
+status Accepted.
+The Charging Station SHALL send a
+NotifyEventRequest with variable.name =
+"AvailabilityState" for each Connector with its
+current state.
+Use of
+StatusNotificationReque
+st instead of
+NotifyEventRequest is
+still allowed, but
+StatusNotificationReque
+st is deprecated.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 51/803 Part 2 - Specification

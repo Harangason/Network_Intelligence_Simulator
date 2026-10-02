@@ -1,0 +1,94 @@
+48 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+Using the CAN Mask and Filter
+Filtering of CAN messages (that is, deciding which
+to keep and which to reject), is usually handled most
+easily with the CRA command. The CRA command
+only allows for definition to the nibble level, however -
+if you need more selectivity (to the bit level), you must
+program the mask and filter.
+Internally, the ELM327 configures an ‘acceptance
+filter’ with 1’s and 0’s based on the type of message
+that it wishes to receive (OBD, J1939, etc.). This
+pattern is then compared to the ID bits of all incoming
+messages. If the two patterns match, then the entire
+message is accepted, and if they do not, the message
+is rejected.
+Having to match all 11 or 29 bits of the ID may be
+very restrictive in some cases (and would require a
+very large number of filters for some applications).  To
+allow a little more flexibility in what to accept, and what
+to reject, a mask is also defined, in addition to the
+filter. This mask acts just like the type worn on your
+face - some features are exposed and some are
+hidden. If the mask has a ‘1’ in a bit position, that bit in
+the filter must match with the bit in the ID, or the
+message will be rejected. If the mask bit is a ‘0’, then
+the ELM327 does not care if that filter bit matches with
+the message ID bit or not.
+As an example, consider the standard response to
+an 11 bit OBD request. ISO15765-4 states that all
+responses will use IDs in the range from 7E8 to 7EF.
+That is:
+1. There must always be a ‘7 ‘ (binary 111) as the
+first nibble (so the filter should have the value 111
+or 7). All 3 bits are relevant (so the mask should
+be binary 111 or 7). Note that this first nibble is
+only 3 bits wide for the 11 bit CAN ID.
+2. There must always be an ‘E’  (binary 1110) in
+the second position, so the filter needs to be of
+value 1110 or E. Since all 4 bits are relevant, the
+mask needs to be of value 1111 or F.
+3. If you analyze the patterns for the binary
+numbers from 8 to F, you will see that the only
+thing in common is that the most significant bit is
+always set. That is, the mask will have a value of
+1000 since only that one bit is relevant, and you
+do not care what the other bits are. The filter
+needs to be assigned a value that has a 1 in the
+first position, but we do not care what is in the
+other three positions. In the following, we use 0’s
+in the positions (but it doesn’t really matter).
+Putting this together, the filter will have a value:
+111 1110 1000 = 7E8
+and the mask will have a value:
+111 1111 1000 = 7F8
+In order to make these active, you will need to
+issue both a CAN Filter and a CAN Mask command:
+>AT CF 7E8
+OK
+>AT CM 7F8
+OK
+From that point on, only the IDs from 7E8 to 7EF
+will be accepted by the chip.
+The 29 bit IDs work in exactly the same way. For
+example, assume that you wish to receive only
+messages of the form:
+18 DA F1 XX
+where XX is the address of the ECU that is sending
+the message, but you do not care what the value is
+(this is the standard OBD response format). Putting 0’s
+in the mask for don’t care bits, then the mask needs to
+be set as follows:
+>AT CM 1F FF FF 00
+OK
+(as every bit except those in the last byte are relevant)
+while the filter may be set to:
+>AT CF 18 DA F1 00
+OK
+Note that if a filter has been set, it will be used for
+all CAN messages, so setting filters and masks may
+cause standard OBD requests to be ignored, and you
+may begin seeing ‘NO DATA’ replies. If this happens,
+and you are unsure of why, you may want to reset
+everything to the default values (with AT CRA, AT D,
+or possibly AT WS) and start over.
+Quite likely, you will never have to use the CM and
+CF commands. If you do, then creating your own
+masks and filters can be difficult. You may find it
+helpful to draw the bit patterns first, and think about
+which ones matter, and which ones do not. It may also
+help to connect to a vehicle, apply test settings, and
+send AT MA to see how the settings affect the
+displayed data.

@@ -1,0 +1,46 @@
+Field Name Field Type Card. Description
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+1.27. GetChargingProfiles
+1.27.1. GetChargingProfilesRequest
+The message GetChargingProfilesRequest can be used by the CSMS to request installed charging profiles from the Charging
+Station. The charging profiles will then be reported by the Charging Station via ReportChargingProfilesRequest messages.
+Class
+Field Name Field Type Card. Description
+requestId integer 1..1 Required. Reference identification that is to be used by
+the Charging Station in the
+ReportChargingProfilesRequest when provided.
+evseId integer, 0 <= val 0..1 Optional. For which EVSE installed charging profiles
+SHALL be reported. If 0, only charging profiles installed
+on the Charging Station itself (the grid connection)
+SHALL be reported. If omitted, all installed charging
+profiles SHALL be reported.
+Reported charging profiles SHALL match the criteria in
+field chargingProfile.
+chargingProfile ChargingProfileCriterionType 1..1 Required. Specifies the charging profile.
+1.27.2. GetChargingProfilesResponse
+This contains the field definition of the GetChargingProfilesResponse PDU sent by the Charging Station to the CSMS in response to
+a GetChargingProfilesRequest.
+Class
+Field Name Field Type Card. Description
+status GetChargingProfileStatusEnumTyp
+e
+1..1 Required. This indicates whether the Charging Station is
+able to process this request and will send
+ReportChargingProfilesRequest messages.
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+1.28. GetCompositeSchedule
+1.28.1. GetCompositeScheduleRequest
+This contains the field definition of the GetCompositeScheduleRequest PDU sent by the CSMS to the Charging Station.
+Class
+Field Name Field Type Card. Description
+duration integer 1..1 Required. Length of the requested schedule in seconds.
+chargingRateUnit ChargingRateUnitEnumType 0..1 Optional. Can be used to force a power or current profile.
+evseId integer, 0 <= val 1..1 Required. The ID of the EVSE for which the schedule is
+requested. When evseid=0, the Charging Station will
+calculate the expected consumption for the grid
+connection.
+1.28.2. GetCompositeScheduleResponse
+This contains the field definition of the GetCompositeScheduleResponse PDU sent by the Charging Station to the CSMS in
+response to a GetCompositeScheduleRequest .
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 591/803 Part 2 - Specification

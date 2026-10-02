@@ -1,0 +1,22 @@
+Tool validations
+* Step 2:
+Message: RequestStartTransactionResponse
+- status must be Accepted
+If the transaction has already been started, so if TxStartPoint contains ParkingBayOccupancy OR (<Configured TxStartPoint>
+contains EVConnected AND State pre reusable state execution was EVConnectedPreSession) then
+- transactionId must be <Provided transactionId in first TransactionEventRequest>
+* Step 3:
+Message: AuthorizeRequest
+- idToken.idToken <Configured valid_idtoken_idtoken>
+- idToken.type <Configured valid_idtoken_type>
+* Step 5:
+Message: TransactionEventRequest
+- eventType Started if TxStartPoint is Authorized or PowerPathClosed and State is EVConnectedPreSession, else updated
+- triggerReason must be RemoteStart
+- transactionInfo.remoteStartId must be present.
+- idToken.idToken <Configured valid_idtoken_idtoken>
+- idToken.type <Configured valid_idtoken_type>
+Post scenario validations:
+State is Authorized
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 924/1383 Part 6 - Test Cases

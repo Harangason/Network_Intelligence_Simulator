@@ -1,0 +1,54 @@
+OS81092
+DS60001271B-page 40  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+In a typical application, as illustrated in Figure 10-1, the power management circuitry is powered by a continuous supply
+and manages the switched power to the rest of the node. This circuitry also monitors the activity signal coming from the
+physical-layer interface (e.g. NOACTIVITY in Figure 10-1). When network activity is detected, the circuitry enables the
+switched supply and drives the PS[1:0] pins to the proper state, as depicted in Figure 10-2. When INIC powers up, it
+could take up  to tstp time for INIC to recognize the PS[1:0] state. When INIC is ready for shutdown, it releases the
+PWROFF pin (pulled high through an external resistor).
+The EHC can also implement a PWRHOLD line that the power management circuitry detects. This signal is used to sus-
+pend node power-down until the EHC is ready. Refer to the MOST INIC Hardware Concepts Specification [8] for more
+information on typical power management architectures.
+FIGURE 10-1: TYPICAL POWER MANAGEMENT DIAGRAM
+FIGURE 10-2: POWER MANAGEMENT STARTUP
+Microchip’s Automotive Power Management Device  (MPM85000) performs all power management functionality
+required of MOST Network nodes, including: wake detection, power supply monitoring (PS[1:0]), reset generation, and
+optional Switch-To-Power (STP) pulse detection. The MPM85000 also supplies a 3.3 V continuous output which can be
+used to power VDDU. Integrating both the OS81092 and MPM85000 on a MOST Network node minimizes application
+circuitry and software complexity, allowing the application de signer to focus on the application, rather than on MOST
+compliance. Contact Microchip for more information on the MPM85000.
+MOST
+Network
+OS81092 INIC
+Power Monitor
+and Control
+NOACTIVITY
+Power Manager
+(e.g. MPM85000)
+VDD
+Network
+Port
+PS[1:0]
+Battery 
+Power
+EHC
+Switched Supply
+PWROFF RSOUT
+ENABLE
+RST
+Activity 
+Detector
+Application Specific
+Load Dump Filter
+VDDU
+Continuous
+Supply
+PWRHOLD
+RESET
+Physical 
+Layer
+Interface
+RST
+VDD
+validPS[1:0]
+NOACTIVITY

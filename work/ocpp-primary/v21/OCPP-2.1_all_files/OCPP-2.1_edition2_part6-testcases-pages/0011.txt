@@ -1,0 +1,56 @@
+TC_A_06_CS: TLS - server-side certificate - TLS version too low
+Test case name TLS - server-side certificate - TLS version too low
+Test case Id TC_A_06_CS
+Use case Id(s) A00
+Requirement(s) A00.FR.314,A00.FR.316,A00.FR.416,A00.FR.417,A00.FR.419
+System under test Charging Station
+Description The CSMS uses a server-side certificate to identify itself to the Charging Station, when using security profile
+2 or 3.
+Purpose To verify whether the Charging Station is able to terminate the connection when it notices the used TLS
+version is lower than 1.2.
+Prerequisite(s) - The charging station supports security profile 2 and/or 3
+- The active NetworkConnectionProfile uses either security profile 2 OR 3.
+Before (Preparations)
+Configuration State:
+OCPPCommCtrlr.NetworkProfileConnectionAttempts is 1
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station initiates a TLS handshake and sends a
+Client Hello to the Test System. 2. The Test System responds with a Server Hello, but uses a TLS
+version lower than 1.2
+With a <Configured server certificate>
+3. The Charging Station notices the used TLS version is lower
+than 1.2 and terminates the connection.
+4. The Charging Station initiates a TLS handshake and sends a
+Client Hello to the Test System. 5. The Test System responds with a Server Hello
+With the <Configured server certificate>
+6. The Charging Station performs the following actions:
+Send client certificate
+Client Key Exchange
+Certificate verify
+Change Cipher Spec
+Finished
+Note(s):
+- The client certificate is only sent when the Charging Station uses
+security profile 3.
+7. The Test System performs the following actions:
+Change Cipher Spec
+Finished
+8. The Charging Station sends a HTTP upgrade request to the
+Test System
+Note(s):
+- The HTTP request only contains a username/password
+combination when the Charging Station uses security profile 2.
+9. The Test System upgrades the connection to a (secured)
+WebSocket connection.
+10. The Charging Station sends a BootNotificationRequest
+11. The Test System responds with a BootNotificationResponse
+with status Accepted
+12. The Charging Station notifies the CSMS about the current
+state of all connectors. 13. The Test System responds accordingly.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 9/1383 Part 6 - Test Cases

@@ -1,0 +1,40 @@
+TC_Q_102_CS: V2X Authorisation - ISO15118-20 - Charging only (V2X control)
+before starting V2X - Allowed Energy Transfer modes omitted
+Test case name V2X Authorisation - ISO15118-20 - Charging only (V2X control) before starting V2X - Allowed Energy
+Transfer modes omitted
+Test case Id TC_Q_102_CS
+Use case Id(s) Q02
+Requirement(s) Q02.FR.04
+System under test Charging Station
+Description Authorization of an EV by the CSMS to start a V2X power transfer loop.
+Purpose To verify if the Charging Station will enable charging only when CSMS doesn’t provide an allowed energy
+transfer modes.
+Prerequisite(s) - EV supports V2X power transfer loop
+- EV and charging station support ISO15118-20
+Before (Preparations)
+Configuration State:
+- ISO15118Ctrlr.Enabled is true
+- V2XChargingCtrlr.SupportedEnergyTransferMode contains [AC_single_phase, AC_BPT] or [DC, DC_BPT]
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Communicate that default charging station energy transfer mode will be used
+1. Execute Reusable State Iso1511820V2xControlBpt with controlMode ScheduledControl
+2. Execute Reusable State EVConnectedPreSession
+3. Execute Reusable State Authorized15118 (for 15118-20)
+Note(s):
+- The Test System omits the allowedEnergyTransfer from the AuthorizeResponse.
+4. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+Note(s):
+- This step is captured by Authorized15118 (for 15118-20), but
+validated on testcase level.
+5. Test System responds with a
+NotifyEVChargingNeedsResponse with
+status Accepted
+6. Execute Reusable State EnergyTransferStarted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 814/1383 Part 6 - Test Cases

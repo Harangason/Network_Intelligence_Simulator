@@ -1,0 +1,36 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 11
+MediaLB is a token-passing bus, where the Controller manages the token and generates the data clock.
+The Controller passes the token by sending out a ChannelAddress on the signal information line. The
+ChannelAddresses are pre-assigned by the board integrator and ar e associated with a specific transmitting
+Device and a receiving Device. Once the transmitting Device associated with the ChannelAddress is granted
+bus access, it can send one quadlet of data on the MediaLB data line after a defined time delay. The
+Device provides information about the data being transmitted by simultaneously sending out a command
+on the signal information line. After receiving the ChannelAddress, the receiving Device must decide whether to
+receive the associated message or reject it. A status byte from the receiving Device is placed on the signal
+information line, one byte after the command from the sending Device is received. Once per network
+frame, the Controller generates a unique pattern ( FRAMESYNC) on the signal information line. This defines
+the MediaLB frame edge, as well as the byte boundary of signal and data lines for all Devices. 
+Since MediaLB is a high-speed bus, connections to external devices should be implemented in hardware
+and not bit-banged on generic ports. A MediaLB Device interface, in the form of VHDL code, is available
+from SMSC. For more information about the Media Local Bus, refer to the MediaLB Specification [3].
+EHC devices without an integrated MediaLB interface can use one of SMSC’s I/O Companion  devices
+(IOCs) as a communication bridge between the OS81050 MediaLB Port and a parallel, SRAM-like EHC
+interface. For example, the IOC Host Bus Interface (HBI) is a 16-bit parallel communication interface for
+exchange of all network data types. This HBI Port is easily accommodated by EHCs with a generic SRAM
+port. In addition to serving as a communication bridge between its MediaLB and HBI Ports, the IOC pro-
+vides hardware port expansion to the application via the MediaLB Port, as described in Section 1.3.5.
+1.3.3   Streaming Port
+The Streaming Port provides a gateway for synchronous data exchange between the OS81050 and exter-
+nal legacy devices. Depending on the configuration of the OS81050, the Streaming Port supports up to
+four serial data pins, which share a common synchronization signal and bit clock. The data format of the
+Streaming Port is compatible with industry-standard serial interfaces found on many ADCs, DACs and
+other devices.
+1.3.4   Control Port
+The Control Port operates as an I 2C bus slave and supports asynchronous packet and control message
+exchange. An interrupt pin ( INT) is used to notify the EHC when Control Port servicing is required (e.g.
+control message or asynchronous packet received). While the EHC can communicate with the OS81050
+over the Control Port alone, the I2C data rate limits throughput on the Application Layer. Application perfor-
+mance can be maximized by using the MediaLB Port to transport all network data types. Configuring and
+enabling of the MediaLB Port is supported via the I 2C Control Port.

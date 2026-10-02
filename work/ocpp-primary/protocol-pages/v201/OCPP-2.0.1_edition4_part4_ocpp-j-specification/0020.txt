@@ -1,0 +1,40 @@
+Chapter 6. OCPP Routing
+For some topologies it is required to route OCPP-J messages. For example when implementing a Local Controller.
+This section contains a solution for OCPP message routing that will work with any Charging Station and CSMS.
+6.1. Local Controller
+A Local controller is a device that sits between the CSMS and any number of Charging Stations, creating a local group. It is located
+near to the Charging Station (maybe even connected wired to the Charging Stations), so it does not have problem of losing the
+connection to the Charging Stations. This is practically useful for doing Local Smart Charging: load balancing between the Charging
+Stations on the same location. The Local Controller can see all the messages, ongoing transactions etc. It can send charging
+profiles to the Charging Station to influence the energy used by the Charging Stations, this way preventing the group to use more
+energy than available at the location at that time.
+The Local Controller SHALL work so the Charging Station doesn’t have to behave different when connected to the Local Controller,
+compared to a direct connection to a CSMS. A Local Controller SHALL work so that a Charging Station can work out of the box with
+the Local Controller, requiring only the parameters that are needed to connect to the Local Controller to be set. The Local Controller
+SHALL work so that the CSMS can not notice if the Charging Station is connecting to it directly, or via the Local Controller.
+Local group
+Local Controller
+CS00
+Charging Station
+CS01
+Charging Station
+CS02
+Charging Station
+CS03
+CSMS
+Figure 3. Local Controller Topology
+6.2. Connections
+For each Charging Station that connects to the Local Controller, two connections will be established:
+1. A WebSocket connection from the Charging Station to the Local Controller (configured in the Charging Station)
+2. A WebSocket connection from the Local Controller to the CSMS (configured in the Local Controller)
+Both connections SHOULD use a similar connection URI with the same Charging Station identifier. To the CSMS, the connection
+from the Local Controller appears to be a regular Charging Station connection.
+The Local Controller may open a separate WebSocket connection to the CSMS that allows the CSMS to address the Local
+Controller directly, which may be useful for changing settings or setting overall Charging Profiles.
+When a Charging Station connects to the Local Controller, it SHALL connect to it like it would to a CSMS, using the same URI Path
+in the connection URL as it would use to connect to the CSMS. When the connection between Charging Station and the CSMS is
+successfully set up, the Local Controller SHALL set up a WebSocket connection to the CSMS with the same URI Path in the
+connection URL that was used by the Charging Station to setup the connection. The Local Controller SHALL open a WebSocket
+connection for every Charging Station that connects to it.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 18/26 Part 4 - JSON over WebSockets implementation guide

@@ -1,0 +1,38 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+7.4.2  [PN7160-NCI] extension: Specific parameters for NFC_15693 Poll Mode
+Once PN7160 detects and activates a remote NFC Endpoint based on NFC_15693, PN7160 will activate the
+Frame RF Interface, providing the following activation parameters:
+Parameter Length Description
+FLAGS 1 byte 1st Byte of the Inventory Response
+DSFID 1 byte 2nd Byte of the Inventory Response
+UID 8 bytes 3rd Byte to last Byte of the Inventory Response
+Table 78. Specific parameters for NFC_15693 Poll Mode
+7.4.3  [PN7160-NCI] extension: Data Mapping between the DH and RF
+7.4.3.1  Data from the DH to RF
+The NCI Data Message corresponds to the Request Format defined in [ISO15693-3] Section 7.3.
+After receiving a Data Message from the DH, the PN7160 appends the appropriate EoD, SOF and EOF and
+then sends the result in an RF Frame in NFC-15693 technology to the Remote NFC Endpoint.
+The following figure illustrates the mapping between the NCI Data Message Format and the RF frame when
+sending the RF frame to the Remote NFC Endpoint. This figure shows the case where NCI Segmentation and
+Reassembly feature are not used.
+Figure 48. Format for Frame RF Interface (NFC-15693) for Transmission
+Although the Frame RF interface is defined to be a transparent interface where the NFCC does not parse/
+modify the Bytes transmitted by the DH, the following exceptions occur:
+Note:  PN7160 is parsing the bit Option_Flag (bit b7 in the request Flags Byte, as defined in ISO15693) to
+check if this bit is set by the DH or not. If set, this indicates that the tag is from TI, and PN7160 is sending
+commands over RF using a special mode, as defined for some commands in ISO15693.
+7.4.3.2  Data from RF to the DH
+The NCI Data Message corresponds to the Payload of the Response Format defined in [ISO15693-3] Section
+7.4, followed by a Status field of 1 byte.
+After receiving an RF frame, the PN7160 checks and removes the EoD, the SOF and EOF and sends the result
+in a Data Message to the DH.
+In case of an error, the Data Message may consist of only a part of the Payload of the received RF frame but
+it will always include the trailing Status field. So the PN7160 may send a Data Message consisting of only the
+Status field if the whole RF frame is corrupted.
+If the RF frame was received correctly, the PN7160 sets the Status field of Data Message to a value of
+STATUS_OK. If the PN7160 detected an error when receiving the RF frame, it sets the Status field of the Data
+Message to a value of STATUS_RF_FRAME_CORRUPTED.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+71 / 147

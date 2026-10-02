@@ -46,9 +46,13 @@ def confirmed_serial_evidence(protocol: str, parameters: dict[str, Any], payload
         if any(registry.normalize_id(evidence[key]) != registry.normalize_id(protocol)
                for key in ('technology', 'protocol') if evidence.get(key)):
             return None
-    if not isinstance(evidence, dict) or evidence.get("confirmed") is not True or not evidence.get("source"):
+    if not isinstance(evidence, dict) or evidence.get("confirmed") is not True or not isinstance(evidence.get("source"),str) or not evidence['source'].strip():
         return None
-    if not evidence.get("master_node_id") or _positive(evidence.get("bitrate_bps"), 0) <= 0:
+    if technology=='I2C':
+        from backend.communication.technologies.i2c import evidence_issues
+        if evidence_issues(evidence,payload_bytes,require_transaction=True):
+            return None
+    if not isinstance(evidence.get('master_node_id'),str) or not evidence['master_node_id'].strip() or _positive(evidence.get("bitrate_bps"), 0) <= 0:
         return None
     transfer_bits = _positive(evidence.get("transfer_bits_bound"), 0)
     if transfer_bits < max(0, payload_bytes) * 8:
@@ -101,6 +105,18 @@ def serial_evidence_missing_fields(protocol: str, parameters: dict[str, Any], pa
         return []
     evidence = parameters.get('local_timing_evidence')
     evidence = evidence if isinstance(evidence, dict) else {}
+    if str(protocol).upper()=='I2C':
+        from backend.communication.technologies.i2c import local_fields, evidence_issues
+        scope=evidence.get('evidence_scope') or 'TRANSACTION'
+        missing=[f['key'] for f in local_fields() if
+            (not f.get('optional') and (not f.get('required_scopes') or scope in f['required_scopes']))
+            and (evidence.get(f['key']) is None or evidence.get(f['key'])=='')]
+        if evidence.get('multi_master')is True and evidence.get('arbitration_bound_us')is None: missing.append('arbitration_bound_us')
+        if not isinstance(evidence.get('source'),str) or not evidence.get('source','').strip(): missing.append('source')
+        if evidence.get('confirmed')is not True: missing.append('confirmed')
+        if scope in ('CONTROLLER_PORT','TARGET_PORT'): missing.append('transaction_evidence')
+        if not missing: missing=evidence_issues(evidence,payload_bytes,require_transaction=True)
+        return [f'local_timing_evidence.{key}' for key in dict.fromkeys(missing)] or ['local_timing_evidence.invalid_device_or_transaction_bounds']
     fields = [key for key, _ in LOCAL_EVIDENCE_FIELDS.get(str(protocol).upper(), ())
               if key != 'arbitration_bound_us' or evidence.get('multi_master') is not False]
     missing = [key for key in fields if evidence.get(key) is None or evidence.get(key) == '']
@@ -143,7 +159,8 @@ def estimate_frame(protocol: str, payload_bytes: int, parameters: dict[str, Any]
                                  is_generic_estimate=True, transmission_time_available=False)
         bits = int(evidence["transfer_bits_bound"])
         delay_us = (float(evidence["start_stop_bound_us"]) + float(evidence["clock_stretch_limit_us"])
-                    + float(evidence.get("arbitration_bound_us") or 0)) if normalized == "I2C" else (
+                    + float(evidence.get("arbitration_bound_us") or 0)
+                    + (float(evidence['hs_entry_bound_us']) if evidence['i2c_mode']=='HIGH_SPEED' else 0)) if normalized == "I2C" else (
                     float(evidence["cs_setup_bound_us"]) + float(evidence["inter_transfer_gap_us"]))
         return FrameEstimate(normalized, payload, bits,
                              bits / float(evidence["bitrate_bps"]) + delay_us / 1_000_000, model)

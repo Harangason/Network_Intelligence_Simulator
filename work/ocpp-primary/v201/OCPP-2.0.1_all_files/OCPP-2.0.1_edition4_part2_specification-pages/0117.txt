@@ -1,0 +1,62 @@
+No. Type Description
+6 Postcondition(s) Successful postcondition:
+The Charging Station accepts tokens on the Local Authorization List.
+Failure postcondition:
+The Charging Station does not accept tokens on the Local Authorization List.
+7 Error handling n/a
+8 Remark(s) n/a
+EV Driver
+Charging Station CSMS
+Present IdToken
+check local authorization list()
+[cached tariff: 0.23/kWh]
+alt [IdToken not known or IdToken status not Accepted]
+AuthorizeRequest(IdToken)
+AuthorizeResponse(Accepted)
+opt
+notification
+[tariff: 0.23/kWh]
+lock connector
+start energy offer
+Figure 33. Sequence Diagram: Online Authorization through Local Authorization List
+C14 - Online Authorization through Local Authorization List - Requirements
+Table 55. C14 - Requirements
+ID Precondition Requirement definition Note
+C14.FR.01 Where both Authorization Cache and Local
+Authorization List are supported, a Charging Station
+SHALL treat Local Authorization List entries as
+having priority over Authorization Cache entries for
+the same identifiers.
+Same as C13.FR.01
+C14.FR.02 Identifier presented is in the Local
+Authorization List with a status
+Accepted AND
+LocalAuthListSupportsExpiryD
+ateTime does not exist or is false
+The Charging Station SHALL start charging without
+sending an AuthorizeRequest.
+This means that
+Charging Station does
+not check for
+cacheExpiryDateTime.
+C14.FR.03 Identifiers presented is in the Local
+Authorization List with a status
+OTHER than Accepted
+The Charging Station SHALL send an
+AuthorizeRequest to try to authorize this IdToken.
+C14.FR.04 Identifier presented is in the Local
+Authorization List with a status
+Accepted AND
+LocalAuthListSupportsExpiryD
+ateTime = true AND
+the cacheExpiryDateTime has not
+passed
+The Charging Station SHALL start charging without
+sending an AuthorizeRequest.
+When
+cacheExpiryDateTime is
+absent, the idToken will
+not expire in Local
+Authorization List.
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 107/491 Part 2 - Specification

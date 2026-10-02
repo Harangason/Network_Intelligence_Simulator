@@ -1,0 +1,55 @@
+        "prices": [
+            {
+                "priceMinute": 1,
+                "conditions": {
+                    "startTimeOfDay": "08:00",
+                    "endTimeOfDay": "18:00"
+                }
+            }
+        ]
+    }
+}
+NOTE
+startTimeOfDay and endTimeOfDay in TariffConditions(Fixed)Type are in local time (without time zone).
+Tariff shows times as presented to driver. This is always local time. This also avoids the complexities of separate
+tariffs for summer and winter time and how to deal with switching between them. A Charging Station can easily
+convert times to the internally used time zone. This is not required to be UTC, as described in Section 3.1: "It is
+strongly RECOMMENDED to exchange all time values between CSMS and Charging Station as UTC"
+1.2.3. Complex hourly tariff
+The following describes a time-based tariff, that includes a higher start fee for credit cards and an hourly fee that depends on time
+of the day and day of the week.
+Complex hourly tariff with conditions based on time and day of week and an idle fee
+{
+  "id": "12",
+  "currency": "EUR",
+  "fixedFee": {
+    "taxRates": [ { "type": "vat", "tax": 10.0 } ],
+    "prices": [{
+        "priceFixed": 3.00,     -- start fee for credit card
+        "conditions": {
+            "paymentRecognition": "CC"
+        }
+    },
+    {
+        "priceFixed": 2.50     -- start fee other payment methods
+    }]
+  },
+  "chargingTime": {
+      "taxRates": [ { "type": "vat", "tax": 15.0 } ],
+      "prices": [{
+        "priceMinute": 1.00,    -- price per minute
+        "conditions": {
+            "maxPower": 11000      -- when charging speed < 11.0 kW.
+        }
+      },
+      {
+        "priceMinute": 2.00,
+        "conditions": {
+            "minPower": 11000       -- when charging speed >= 11.0 kW
+        }
+      }]
+  },
+  "idleTime": {
+      "taxRates": [ { "type": "vat", "tax": 15.0 } ],
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 271/803 Part 2 - Specification

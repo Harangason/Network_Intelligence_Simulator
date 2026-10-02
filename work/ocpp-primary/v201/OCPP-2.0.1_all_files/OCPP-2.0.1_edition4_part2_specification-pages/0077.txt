@@ -1,0 +1,84 @@
+B10 - Migrate to new NetworkConnectionProfile - Requirements
+Table 39. B10 - Requirements
+ID Precondition Requirement definition Note
+B10.FR.01 On receipt of a
+SetVariablesRequest,
+containing Configuration
+Variable
+NetworkConfigurationPri
+ority
+AND the NetworkProfile slots in
+the message all contain valid
+configurations
+The Charging Station SHALL send
+SetVariablesResponse with status
+Accepted, or RebootRequired.
+B10.FR.02 On receipt of a
+SetVariablesRequest,
+containing Configuration
+Variable
+NetworkConfigurationPri
+ority
+AND any of the NetworkProfile
+slots in the message does not
+contain a valid configuration
+The Charging Station SHALL send
+SetVariablesResponse with status
+Rejected and an optional
+statusInfo.reasonCode.
+Recommended reasonCode to use is
+"InvalidNetworkConf". The field
+additionalInfo is recommended to be
+used to convey which configuration slot
+and which configuration parameter is
+invalid and why.
+B10.FR.03 After a reboot OR
+When connection to CSMS is
+lost
+The Charging Station SHALL make the
+number of attempts as configured in
+NetworkProfileConnectionAttem
+pts per entry of
+NetworkConfigurationPriority.
+B10.FR.04 ( B10.FR.01 OR B09.FR.01 )
+AND
+After a reboot
+The Charging Station SHALL begin
+connecting to the first entry of
+NetworkConfigurationPriority
+Same as A05.FR.05
+B10.FR.05 It is RECOMMENDED to set the
+Charging Station to Inoperative (via
+ChangeAvailabilityRequest) to ensure
+that no new transactions can be started
+and wait until the transaction message
+queue in the Charging Station is empty
+before sending the ResetRequest.
+Otherwise the Charging Station might
+send transaction related messages to
+the new CSMS that has not received the
+start of the Transaction, and the old
+system will miss the ended messages.
+To determine if there are still
+transaction for an ongoing transaction
+in the queue, the
+getTransactionStatusRequest message
+can be used.
+B10.FR.06 The Charging Station SHALL disconnect
+from the old CSMS, before trying to
+connect to the new CSMS.
+B10.FR.07 B10.FR.09 The Charging Station SHOULD fallback
+and start 'reconnecting' to the
+NetworkConnectionProfile for which the
+last successful connection was made.
+'reconnecting' in this requirement, refers
+to the reconnection mechanism
+described at section 5.3. Reconnecting
+from "Part 4 - JSON over WebSockets
+implementation guide".
+B10.FR.08 B10.FR.09 The Charging Station SHOULD restart
+connecting with all configured entries of
+the
+NetworkConfigurationPriority
+Edition 4, 2025-12-03 B. Provisioning
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 67/491 Part 2 - Specification

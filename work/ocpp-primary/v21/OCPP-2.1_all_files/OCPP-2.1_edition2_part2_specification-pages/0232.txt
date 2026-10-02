@@ -1,0 +1,28 @@
+No. Type Description
+Scenario description #2 Ending transaction after TxResumptionTimeout seconds
+1. Configuration variable TxResumptionTimeout has been set to a value > 0.
+2. An ongoing transaction is interrupted, for example as a result of power loss.
+3. Charging Station reboots when power is restored.
+4. If the interruption occurred more than TxResumptionTimeout seconds ago, then
+Charging Station ends the transaction.
+a. Charging Station sends TransactionEventRequest with eventType = Ended and
+triggerReason = AbnormalCondition and stoppedReason = PowerLoss (or
+Reboot if Charging Station rebooted because of a local issue).
+5 Prerequisite(s) TxResumptionTimeout has been set.
+6 Postcondition(s) Transactions survive forced reboot.
+Failure postcondition:
+- The Charging Station was not able to resume the transaction,
+- The EV was not able to resume the energy transfer.
+7 Error handling
+8 Remark(s) The EVSE of the Charging Station will have to resume the charging session towards the EV.
+Depending on the type of connector and protocol (Mode 3, ISO 15118, CHAdeMO, etc.) this will
+involve different actions, which are not detailed in this specification.
+Charging profiles of type TxProfile are not required to be stored in persistent memory. If such
+a charging profile is applicable to the resumed transaction(s), then CSMS will have to send the
+charging profile again.
+TxAllowEnergyTransferResumption = false can be used to protect the user from a scenario
+where e.g. the plug has been removed and inserted into another vehicle during the interruption,
+therefore enabling another EV driver to charge based on a different EV driver’s transaction and
+authorization.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 219/803 Part 2 - Specification

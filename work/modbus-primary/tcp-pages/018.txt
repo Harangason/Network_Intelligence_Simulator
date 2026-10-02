@@ -1,0 +1,60 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+October 24, 2006 http://www.Modbus.org 18/46
+4.3.2 TCP  layer parameterization 
+Some parameters of the TCP/IP stack can be adjusted to adapt its behavior to the 
+product or system constraints. The following parameters can be adjusted in the TCP 
+layer: 
+• Parameters for each connection:
+SO-RCVBUF, SO-SNDBUF:  
+These parameters allow setting the high water mark for the Send and the Receive 
+Socket. They can be adjusted for flow control management. The 
+size of the received 
+buffer is the maximum size advertised window for that connection. Socket buffer sizes 
+must be increased in order to increase performances. Nevertheless these values must 
+be smaller than internal driver resources in order to close the TCP window before 
+exhausting internal driver resources.  
+The received buffer size depends on the TCP Windows size, the TCP Maximum 
+segment size and the time needed to absorb the incoming frames. 
+With a Maximum 
+Segment Size of 300 bytes (a MODBUS requ est needs a maximum of 256 bytes + the 
+MBAP header size), if we need 3 frames buffering, the socket buffer size value can be 
+adjusted to 900 bytes. For biggest needs and best-scheduled time, the size of the TCP 
+window may be increased.  
+TCP-NODELAY:  
+Small packets (called tinygrams) are normally not a problem on LANs, since most LANs 
+are not congested, but these tinygrams can lead to congestion on wide 
+area networks. 
+A simple solution, called the "NAGLE algorithm" , is to collect small amounts of data and 
+sends them in a single segment when TC P acknowledgments of previous packets 
+arrive.  
+In order to have better real-time behavior it is recommended to send small amounts of 
+data directly without trying to gather them in a single segment. That is why it is 
+recommended to force the TCP-NODELAY option  that disables the 
+"NAGLE algorithm" 
+on client and server connections.  
+SO-REUSEADDR:  
+When a MODBUS server closes a TCP connec tion initialized by a remote client, the 
+local port number used for this connection cannot be reused for a new 
+opening while 
+that connection stays in the "Time-wait " state (during two MSL : Maximum Segment 
+Lifetime). 
+It is recommended specifying the SO-REUSEADDR option for each client and server 
+connection to bypass this restriction. This op tion allows the process to assign itself a 
+port number that is part of a connection that is in the 2MSL wait 
+for client and listening 
+socket. 
+SO-KEEPALIVE:  
+By default on TCP/IP protocol no data ar e sent across an idle TCP connection. 
+Therefore if no process at the ends of a TC P connection is 
+sending data to the other, 
+nothing is exchanged between the two TCP modules. This assumes that either the 
+client application or the server application uses  timers to detect inactivity in order to 
+close a connection. 
+It is recommended to enable the KEEPALIVE option on both client and server 
+connection in order to poll the other end to know if the distant has either crashed and 
+is 
+down or crashed and rebooted. 
+Nevertheless we must keep on mind that enabling KEEPALIVE can cause perfectly 
+good connections to be dropped during transient failures, that it consumes unnecessary 
+bandwidth on the network if the keep alive timer is too short. 
+Modbus Organization  

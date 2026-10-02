@@ -1,0 +1,45 @@
+2.90. SetVariableDataType
+Class
+SetVariableDataType is used by: SetVariablesRequest
+Field Name Field Type Card. Description
+attributeType AttributeEnumType 0..1 Optional. Type of attribute: Actual, Target, MinSet,
+MaxSet. Default is Actual when omitted.
+attributeValue string[0..2500] 1..1 Required. Value to be assigned to attribute of variable.
+This value is allowed to be an empty string ("").
+The Configuration Variable ConfigurationValueSize can
+be used to limit SetVariableData.attributeValue and
+VariableCharacteristics.valuesList. The max size of these
+values will always remain equal.
+component ComponentType 1..1 Required. The component for which the variable data is
+set.
+variable VariableType 1..1 Required. Specifies the that needs to be set.
+2.91. SetVariableResultType
+Class
+SetVariableResultType is used by: SetVariablesResponse
+Field Name Field Type Card. Description
+attributeType AttributeEnumType 0..1 Optional. Type of attribute: Actual, Target, MinSet,
+MaxSet. Default is Actual when omitted.
+attributeStatus SetVariableStatusEnumType 1..1 Required. Result status of setting the variable.
+component ComponentType 1..1 Required. The component for which result is returned.
+variable VariableType 1..1 Required. The variable for which the result is returned.
+attributeStatusInfo StatusInfoType 0..1 Optional. Detailed attribute status information.
+2.92. SignedMeterValueType
+Class
+Represent a signed version of the meter value.
+SignedMeterValueType is used by: Common:SampledValueType
+Field Name Field Type Card. Description
+signedMeterData string[0..32768] 1..1 Required. Base64 encoded, contains the signed data
+from the meter in the format specified in
+encodingMethod, which might contain more then just the
+meter value. It can contain information like timestamps,
+reference to a customer etc.
+signingMethod string[0..50] 0..1 Optional. (2.1) Method used to create the digital
+signature. Optional, if already included in
+signedMeterData. Standard values for this are defined in
+Appendix as SigningMethodEnumStringType.
+encodingMethod string[0..50] 1..1 Required. Format used by the energy meter to encode the
+meter data. For example: OCMF or EDL.
+publicKey string[0..2500] 0..1 Optional. (2.1) Base64 encoded, sending depends on
+configuration variable PublicKeyWithSignedMeterValue.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 665/803 Part 2 - Specification

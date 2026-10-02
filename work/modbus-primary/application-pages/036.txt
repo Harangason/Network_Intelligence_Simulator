@@ -1,0 +1,58 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  36/50 
+MB Server Sends mb_exception_rsp EXIT
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+YES
+NO
+NO
+ExceptionCode = 02
+YES
+NO
+ExceptionCode = 03
+YES
+ENTRY
+WriteGeneralReference == OK
+MB Server Sends mb_rsp
+NO
+YES
+0x07  Byte Count  0xF5
+Function code
+supported
+Reference Type == OK
+AND
+File Number == OK
+AND
+Record number == OK
+AND
+Starting Address + Register length == OK
+ExceptionCode = 04
+Request Processing
+For each Sub-Req
+ 
+ 
+Figure 25: Write File Record state diagram  
+ 
+6.16  22 (0x16) Mask Write Register  
+This function code is used to modify the contents of a specified holding register using a 
+combination of an AND mask, an OR mask, and the register's current contents. The function 
+can be used to set or clear individual bits in the register.  
+The request specifies the holding register to be written, the data to be used as the AND mask, 
+and the data to be used as the OR mask. Registers are addressed starting at zero. Therefore 
+registers 1 -16 are addressed as 0 -15.  
+The function’s algorithm is:  
+Result = (Curr ent Contents AND And_Mask) OR (Or_Mask AND (NOT And_Mask))  
+For example:   
+  Hex Binary  
+Current Contents=    12 0001 0010  
+And_Mask =    F2 1111 0010  
+Or_Mask =    25 0010 0101  
+ 
+(NOT And_Mask)=    0D 0000 1101  
+ 
+Result =    17 0001 0111  
+ Note : 
+ If the Or_Mask valu e is zero, the result is simply the logical ANDing of the current contents and 
+And_Mask. If the And_Mask value is zero, the result is equal to the Or_Mask value.  
+ The contents of the register can be read with the Read Holding Registers function (function code 03). 
+They could, however, be changed subsequently as the controller scans its user logic program.  

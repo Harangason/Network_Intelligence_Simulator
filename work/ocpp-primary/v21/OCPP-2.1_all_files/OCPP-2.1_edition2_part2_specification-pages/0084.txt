@@ -1,0 +1,129 @@
+ID Precondition Requirement definition Note
+B09.FR.11
+(2.1)
+B09.FR.09 AND
+The SetNetworkProfileRequest
+does not contain the apn or the
+vpn field
+Charging Station SHALL set variable
+ApnEnabled resp. VpnEnabled in
+NetworkConfiguration to False.
+B09.FR.12
+(2.1)
+B09.FR.09 AND
+The SetNetworkProfileRequest
+contains the apn or the vpn field
+Charging Station SHALL set variable
+ApnEnabled resp. VpnEnabled in
+NetworkConfiguration to True.
+B09.FR.13
+(2.1)
+B09.FR.10 AND
+Charging Station does not support
+APN or VPN connections
+Charging Station SHALL report the variable
+ApnEnabled resp. VpnEnabled in
+NetworkConfiguration as False and
+ReadOnly.
+B09.FR.14
+(2.1)
+CSMS SHOULD use the
+SetNetworkProfileRequest to set the Identity or
+BasicAuthPassword of the Charging Station.
+Alternatively the
+NetworkConfiguration component
+can be used, if the corresponding
+variables are writable. See
+requirements from the
+"NetworkConfiguration" section
+below.
+B09.FR.15
+(2.1)
+If Charging Station does NOT
+support setting network
+configuration via configuration
+variables in NetworkConfiguration
+Charging Station SHALL report these variables
+with mutability ReadOnly (or omit the variable
+value when the variable is WriteOnly, in case
+of BasicAuthPassword).
+B09.FR.16
+(2.1)
+If Identity and/or
+BasicAuthPassword are not set for
+a specific
+NetworkConnectionProfile or
+NetworkConfiguration and this
+profile/configuration is used for
+establishing a connection
+The Charging Station SHALL use the values
+from the deprecated SecurityCtrlr.Identity and
+SecurityCtrlr.BasisAuthPassword for basic
+authentication.
+Common requirement to both
+SetNetworkProfileRequest and
+NetworkConfiguration.
+B09.FR.18
+(2.1)
+If an Identity and/or
+BasicAuthPassword are set for a
+specific NetworkConnectionProfile
+or NetworkConfiguration and this
+profile/configuration is used for
+establishing a connection
+The Charging Station SHALL use the values of
+Identity and/or BasicAuthPassword of this
+NetworkConnectionProfile or
+NetworkConfiguration for basic authentication.
+Common requirement to both
+SetNetworkProfileRequest and
+NetworkConfiguration.
+When using SetVariablesRequest for NetworkConfiguration component
+B09.FR.20
+(2.1)
+On receipt of a
+SetVariablesRequest containing
+the variable
+NetworkConfigurationPriority AND
+the new value only removes
+configuration slot(s) from the
+current value
+The Charging Station SHALL respond by
+sending a SetVariablesResponse with the
+corresponding setVariableResult containing
+status Accepted
+B09.FR.21
+(2.1)
+B09.FR.10 CSMS SHALL NOT send a
+SetVariablesRequest containing any
+NetworkConfiguration component variable for
+which the component instance matches any of
+the members in the currently configured
+NetworkConfigurationPriority
+It is not allowed to update any
+NetworkConfiguration instance
+that can potentially be used during
+a reconnection attempt.
+B09.FR.22
+(2.1)
+B09.FR.10 AND
+On receipt of a
+SetVariablesRequest containing
+any NetworkConfiguration
+component variable AND
+the component instance matches
+any of the members in the
+currently configured
+NetworkConfigurationPriority
+The Charging Station SHALL respond by
+sending a SetVariablesResponse with the
+corresponding setVariableResult with
+attributeStatus Rejected and
+attributeStatusInfo.reasonCode =
+"PriorityNetworkConf"
+It is not allowed to update any
+NetworkConfiguration instance
+that can potentially be used during
+a reconnection attempt.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 71/803 Part 2 - Specification

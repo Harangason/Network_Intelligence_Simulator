@@ -1,0 +1,49 @@
+PDF_PAGE20
+PROFIsafe System Description16
+be located inside security zones and protected by 
+Security Gates. If connections to open networks 
+cannot be avoided, refer to PROFINET Security 
+Guideline, V2.0; Order No. 7.002.
+For wireless transmission, the IEEE 802.11 standard 
+provides sufficient security measures for PROFIsafe 
+networks. Only the Infrastructure Mode is permitted; 
+the Adhoc Mode shall not be used. More details can 
+be found in the PROFIsafe specification.
+7.8. Response time
+Usually the response times of normal control 
+functions are fast enough for safety functions 
+as well. However, some time-critical safety 
+applications need safety function response times 
+(SFRT) to be considered more thoroughly such 
+as presses protected by light curtains. A machine 
+designer has to know at what distance the light 
+curtain must be mounted away from the hazardous 
+press. It is common agreement that a hand moves at 
+a maximum of 2 m/s. The minimum distance to be 
+considered then is s = 2 m/s x SFRT if the resolution 
+of the light curtain is high enough to detect a single 
+finger (EN 999). Otherwise correction summands 
+are needed.
+The model in figure 17 is used to explain the 
+calculation of the SFRT. The model consists of an 
+input F-Device, a PROFIsafe bus transmission, signal 
+processing in a F-Host, another PROFIsafe bus 
+transmission, and an output F-Device, each with its 
+own statistical cycle times. The maximum time for 
+a safety signal to pass through this chain is called 
+TWCDT (Total Worst Case Delay Time) considering 
+that all parts require their particular maximum cycle 
+times. In case of safety, the considerations go even 
+further: The signal could be delayed even more if 
+one of the parts just fails at that point in time. Thus, 
+a delta time needs to be added for that particular 
+part which represents the maximum difference 
+between its watchdog time and its worst case delay 
+time (there is no need to consider more than one 
+failure at one time). Eventually, TWCDT plus this 
+delta time comprise the SFRT.
+Each and every F-Device shall provide information 
+about its worst case delay time as required in the 
+PROFIsafe specification in order for the engineering 
+tools to estimate the SFRTs.
+Figure 17: Safety Function Response Time (SFRT) 

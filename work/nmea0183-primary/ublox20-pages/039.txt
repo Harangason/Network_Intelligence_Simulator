@@ -1,0 +1,47 @@
+u-blox 20 HPG 2.00 - Interface description
+2.8.2.1 Poll a PUBX,00 message
+Message NMEA-PUBX-POSITION
+Poll a PUBX,00 message
+Type Poll request
+Comment A PUBX,00 message is polled by sending the PUBX,00 message without any data ﬁelds.
+Information Class/ID: 0xf1 0x00 Number of fields: 4
+Structure $PUBX,00*33\r\n
+Example $PUBX,00*33\r\n
+Payload:
+Field Name Format Unit Example Description
+0 PUBX string - $PUBX Message ID, UBX protocol header, proprietary sentence
+1 msgId numeric - 00 Set to 00 to poll a PUBX,00 message
+2 cs hexadecimal - *33 Checksum
+3 CRLF character - - Carriage return and line feed
+2.8.2.2 Lat/Long position data
+Message NMEA-PUBX-POSITION
+Lat/Long position data
+Type Output
+Comment This message contains position solution data. The datum selection may be changed using the conifg item
+CFG-NAVSPG-USE_USRDAT.
+☞ The output of this message is dependent on the currently selected datum (default: WGS84).
+Information Class/ID: 0xf1 0x00 Number of fields: 23
+Structure $PUBX,00,time,lat,NS,long,EW,altRef,navStat,hAcc,vAcc,SOG,COG,vVel,diffAge,HDOP,VDOP ↲
+,TDOP,numSvs,reserved,DR,*cs\r\n
+Example $PUBX,00,081350.00,4717.113210,N,00833.915187,E,546.589,G3,2.1,2.0,0.007,77.52,0.007 ↲
+,,0.92,1.19,0.77,9,0,0*5F\r\n
+Payload:
+Field Name Format Unit Example Description
+0 PUBX string - $PUBX Message ID, UBX protocol header, proprietary sentence
+1 msgId numeric - 00 Proprietary message identiﬁer: 00
+2 time hhmmss.ss - 081350.00 UTC time. See section UTC representation in the
+integration manual for details.
+3 lat ddmm.
+mmmmm
+- 4717.113210 Latitude (degrees and minutes), see format description
+4 NS character - N North/South Indicator
+5 long dddmm.
+mmmmm
+- 00833.915187 Longitude (degrees and minutes), see format
+description
+6 EW character - E East/West indicator
+7 altRef numeric m 546.589 Altitude above user datum ellipsoid
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 39 of 224
+C1-Public

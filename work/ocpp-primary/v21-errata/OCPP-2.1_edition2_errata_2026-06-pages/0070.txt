@@ -1,0 +1,51 @@
+Main (Test scenario)
+ 6.  The Charging Station responds with a      
+GetDisplayMessagesResponse
+5.  The Test System sends a       GetDisplayMessagesRequest  with 
+ id   <Configured displayMessageId> 
+6. 8.  The Charging Station responds with a
+GetDisplayMessagesResponse
+5. 7.  The Test System sends a GetDisplayMessagesRequest
+with
+id <Configured displayMessage2Id>
+7. 9.  The Charging Station sends a
+NotifyDisplayMessagesRequest 8. 10.  The Test System responds with a
+NotifyDisplayMessagesResponse .
+Note(s):
+- If tbc is True at Step 7 9  then step 7 9  and 8 10  will be repeated
+- The message from step 1 is NOT displayed anymore and is replaced by the message from step 5 7 .
+Tool validations
+* Step 2:
+Message SetDisplayMessageResponse
+- status Accepted
+* Step 4:
+Message SetDisplayMessageResponse
+- status Accepted
+* Step 6:  
+Message  GetDisplayMessagesResponse
+-  status   Unknown
+* Step 6: Step 8: 
+Message GetDisplayMessagesResponse
+- status Accepted
+* Step 7: Step 9: 
+Message NotifyDisplayMessagesRequest
+- requestId <Generated requestId>
+Post scenario validations:
+- N/a
+6.2.41. Page 567/568/569 - (2026-02) - TC_K_116_CS - Updated limits to more
+practical ones and aligned chargingProfileIds
+Aligned the chargingProfileIds, so they are replacing each other.
+Test case name Renegotiating a Charging Schedule ISO 15118-20 - Adjusting charging schedule when energy needs
+change
+Test case Id TC_K_116_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Use EV to trigger renegotiation requesting:
+departureTime <Current DateTime + 2 hours>
+evTargetEnergyRequest* 5000 6000
+1. The Charging Station sends a
+NotifyEVChargingNeedsRequest. 2. The Test System responds with a
+NotifyEVChargingNeedsResponse.
+With status Accepted
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 66/116 Errata 2026-06

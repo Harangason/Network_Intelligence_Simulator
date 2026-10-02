@@ -1,0 +1,52 @@
+TC_K_10_CS: Set Charging Profile - TxDefaultProfile - All EVSE
+Test case name Set Charging Profile - TxDefaultProfile - All EVSE
+Test case Id TC_K_10_CS
+Use case Id(s) K01
+Requirement(s) K01.FR.07, K01.FR.14
+System under test Charging Station
+Description To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the entire
+Charging Station over a period of time. The CSMS sends a SetChargingProfileRequest to the Charging
+Station to influence the power or current drawn by EVs. The CSMS calculates a ChargingSchedule to stay
+within certain limits, which MAY be imposed by any external system.
+Purpose To verify if the Charging station is able to accept and successfully change to the TxDefaultProfile charging
+profile sent by the CSMS for all EVSE as described at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId 0 AND
+chargingProfile.id <Configured chargingProfileId> AND
+chargingProfile.chargingProfilePurpose TxDefaultProfile
+chargingProfile.chargingSchedule.duration <Configured
+duration>
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.star
+tPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limi
+t 6.0 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.nu
+mberPhases <Configured numberPhases>
+4. The Charging Station responds with a
+GetChargingProfilesResponse
+3. The Test System sends a GetChargingProfilesRequest with
+chargingProfile.chargingProfileId <Configured
+chargingProfileId> requestId <Generated requestId>
+5. The Charging Station sends a ReportChargingProfilesRequest
+6. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If tbc is True at Step 5 then step 5 and 6 will be repeated
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 339/914 Part 6 - Test Cases

@@ -1,0 +1,42 @@
+3.68. RecurrencyKindEnumType
+Enumeration
+RecurrencyKindEnumType is used by: Common:ChargingProfileType
+Value Description
+Daily The schedule restarts every 24 hours, at the same time as in the startSchedule.
+Weekly The schedule restarts every 7 days, at the same time and day-of-the-week as in the startSchedule.
+3.69. RegistrationStatusEnumType
+Enumeration
+Result of registration in response to BootNotificationRequest.
+RegistrationStatusEnumType is used by: bootNotification:BootNotificationResponse
+Value Description
+Accepted Charging Station is accepted by the CSMS.
+Pending CSMS is not yet ready to accept the Charging Station. CSMS may send messages to retrieve information or
+prepare the Charging Station.
+Rejected Charging Station is not accepted by CSMS. This may happen when the Charging Station id is not known by
+CSMS.
+3.70. ReportBaseEnumType
+Enumeration
+ReportBaseEnumType is used by: getBaseReport:GetBaseReportRequest
+Value Description
+ConfigurationInvent
+ory
+Required. A (configuration) report that lists all Components/Variables that can be set by the operator.
+FullInventory Required. A (full) report that lists everything except monitoring settings.
+SummaryInventory Optional. A (summary) report that lists Components/Variables relating to the Charging Station’s current
+charging availability, and to any existing problem conditions.
+For the Charging Station Component:
+- AvailabilityState.
+For each EVSE Component:
+- AvailabilityState.
+For each Connector Component:
+- AvailabilityState (if known and different from EVSE).
+For all Components in an abnormal State:
+- Active (Problem, Tripped, Overload, Fallback) variables.
+- Any other diagnostically relevant Variables of the Components.
+- Include TechCode and TechInfo where available.
+All monitored Component.Variables in Critical or Alert state shall also be included.
+- Charging Stations that do not have Monitoring implemented are NOT REQUIRED to include Connector
+Availability, monitoring alerts, and MAY limit problem reporting detail to just the active Problem boolean
+Variable.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 436/491 Part 2 - Specification

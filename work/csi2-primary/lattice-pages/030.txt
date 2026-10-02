@@ -1,0 +1,56 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  30 
+• Initial skew calibration can be re-triggered at runtime using a level-write pulse to CSR via the 
+CAL_INITIAL_TRIGGER_EN register space. This operation allows the recalibration after the link has been 
+established. 
+• When configured through CSR, initial skew calibration and re-trigger are supported at any line rate, provided 
+the PHY Mode is set to Hard D-PHY . 
+• When configured through CSR, periodic skew calibration is supported at any line rate, provided the PHY Mode 
+is set to Hard D-PHY . 
+2.7.1.1. Initial Skew Calibration Operation 
+When Initial skew calibration is enabled through the GUI, the skew calibration FSM in the TX controller issues a skew 
+calibration pulse to the PHY after PHY initialization is complete. The PHY then transmits a calibration pattern across all 
+active data lanes. When the calibration pattern transmission is complete, the TREADY signal on the IP interface is 
+asserted, indicating that the IP is ready to accept data for HS transmission . Figure 2.28 shows the signal transition 
+during initial skew calibration. 
+Alternatively, initial skew calibration can be configured at runtime through the CSR register at address 0x220. The 
+CAL_INITIAL_EN field controls whether initial calibration is enabled, and the T_SKEW_INITIAL field specifies the 
+calibration duration in byte clock cycles. The IP also supports re-triggering the initial calibration process via the 
+CAL_INITIAL_TRIGGER_EN field in the same register. This enables recalibration for systems where external devices have 
+varying power-up times or where link conditions may have changed since the initial calibration. Suspend any incoming 
+packets of the interval when initial skew calibration is re-triggered. 
+axis_vid_clk_i
+axis_vid_tready_o/
+axis_byte_tready_o
+d_p_io/d_n_io Initial          Skew sequence
+axis_vid_rst_n_i
+tinit_done_o
+Calibration completes, 
+IP is ready for packet transfer
+ 
+Figure 2.28. Initial Skew Calibration Sequence 
+2.7.1.2. Periodic Skew Calibration Operation 
+When Periodic skew calibration is enabled, the TX controller schedules calibration between image frames to avoid 
+disrupting active data transmission. After a Frame End is transmitted, the TX controller waits for the PHY to enter the 
+Stop state, indicating that the link is idle and ready for calibration. The scheduler in the TX controller then issues a  skew 
+calibration pulse to the PHY, triggering a periodic calibration pattern across the serial links.  Figure 2.29 shows the signal 
+transition during periodic skew calibration. 
+Periodic skew calibration can also be enabled or disabled at runtime through the CSR register at address 0x220 via the 
+CAL_PERIODIC_EN field. The calibration duration is configured through the T_SKEW_PERIODIC field. 
+axis_vid_clk_i
+axis_vid_tready_o/
+axis_byte_tready_o
+d_p_io/d_n_io    Initial       Skew sequence
+axis_vid_rst_n_i
+tinit_done_o
+Periodic     Skew sequence
+Packet transfer
+End-of-frame short packet 
+received
+  
+Figure 2.29. Periodic Skew Calibration Sequence 

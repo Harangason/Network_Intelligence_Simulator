@@ -1,0 +1,79 @@
+CSO
+CSMS Charging Station
+request to set one or more variables
+SetVariablesRequest(setVariableData)
+SetVariablesResponse(setVariableResult)
+Figure 14. Sequence Diagram: Set Variables
+B05 - Set Variables - Requirements
+Table 35. B05 - Requirements
+ID Precondition Requirement definition
+B05.FR.01 When the Charging Station receives a
+SetVariablesRequest with an X number of
+SetVariableData elements
+The Charging Station SHALL respond with an
+SetVariablesResponse with an equal (X) number of
+SetVariableResult elements, one for every SetVariableData
+element in the SetVariablesRequest.
+B05.FR.02 B05.FR.01 Every SetVariableResult element in the SetVariablesResponse
+SHALL contain the same component and variable combination
+as one of the SetVariableData elements in the
+SetVariablesRequest.
+B05.FR.03 B05.FR.02
+AND
+If the SetVariablesRequest contains an
+attributeType
+The corresponding SetVariableResult element in the
+SetVariablesResponse SHALL also contain the same
+attributeType
+B05.FR.04 When the Charging Station receives a
+SetVariablesRequest with an unknown
+Component in the SetVariableData
+The Charging Station SHALL set the attributeStatus field in the
+corresponding SetVariableResult to: UnknownComponent.
+B05.FR.05 When the Charging Station receives a
+SetVariablesRequest with a Variable that is
+unknown for the given Component in the
+SetVariableData
+The Charging Station SHALL set the attributeStatus field in the
+corresponding SetVariableResult to: UnknownVariable.
+B05.FR.06 When the Charging Station receives a
+SetVariablesRequest with an attributeType that
+is unknown for the given Variable in the
+SetVariableData
+The Charging Station SHALL set the attributeStatus field in the
+corresponding SetVariableResult to: NotSupportedAttributeType.
+B05.FR.07 When the Charging Station receives a
+SetVariablesRequest with a value that is
+incorrectly formatted for the given Variable in
+the SetVariableData
+The Charging Station SHALL set the attributeStatus field in the
+corresponding SetVariableResult to: Rejected. (More information
+can be provided in the optional statusInfo element.)
+B05.FR.08 When the Charging Station receives a
+SetVariablesRequest with a value that is lower
+or higher than the range of the given Variable in
+the SetVariableData
+The Charging Station SHALL set the attributeStatus field in the
+corresponding SetVariableResult to: Rejected. (More information
+can be provided in the optional statusInfo element.)
+B05.FR.09 NOT (B05.FR.04 to B05.FR.08) AND
+When the Charging Station receives a
+SetVariablesRequest for a Variable in the
+SetVariableData, but is not able to set it
+The Charging Station SHALL set the attributeStatus field in the
+corresponding SetVariableResult to: Rejected.
+(This happens if the variable is ReadOnly, but may also occur
+when setting the variable fails because of technical problems.)
+B05.FR.10 When the Charging Station was able to set the
+given value from the SetVariableData
+The Charging Station SHALL set the attributeStatus field in the
+corresponding SetVariableResult to: Accepted.
+B05.FR.11 The CSMS SHALL NOT send more SetVariableData elements in a
+SetVariablesRequest than reported by the Charging Station via
+ItemsPerMessageSetVariables.
+B05.FR.12 When the Charging Station receives a
+SetVariablesRequest without an attributeType.
+The corresponding SetVariableResult element in the
+SetVariablesResponse SHALL contain the attributeType Actual.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 59/803 Part 2 - Specification

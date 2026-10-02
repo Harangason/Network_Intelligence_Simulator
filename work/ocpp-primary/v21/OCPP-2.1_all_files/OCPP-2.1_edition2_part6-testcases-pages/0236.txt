@@ -1,0 +1,52 @@
+TC_E_02_CS: Start transaction options - EnergyTransfer
+Test case name Start transaction options - EnergyTransfer
+Test case Id TC_E_02_CS
+Use case Id(s) E01(S6)
+Requirement(s) E01.FR.06, E01.FR.07, E01.FR.10, E01.FR.15, E01.FR.16
+System under test Charging Station
+Description OCPP 2.x.x has a flexible transaction mechanism that allows the transaction start and stop points to be
+configured differently. This test covers one of the start options.
+Purpose To verify if the Charging Station starts a transaction when the energy transfer starts and it has been
+configured to do so.
+Prerequisite(s) - The Charging Station does NOT have the following configuration; The mutability of TxStartPoint is
+ReadOnly AND (the value EnergyTransfer is NOT set OR (ParkingBayOccupancy OR EVConnected OR
+Authorized OR DataSigned OR PowerPathClosed), is set).
+- If the mutability of TxStartPoint is ReadWrite, then the value EnergyTransfer must be supported.
+Before (Preparations)
+Configuration State:
+If the mutability of TxStartPoint is ReadWrite then TxStartPoint contains EnergyTransfer
+Memory State:
+N/a
+Reusable State(s):
+State is Authorized
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Connect the EV and EVSE.
+1. The Charging Station notifies the CSMS about the status
+change of the connector. 2. The Test System responds accordingly.
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: StatusNotificationRequest
+- connectorStatus must be Occupied
+Message: NotifyEventRequest
+- eventData[0].trigger must be Delta
+- eventData[0].actualValue must be Occupied
+- eventData[0].component.name must be Connector
+- eventData[0].variable.name must be AvailabilityState
+* Step 3:
+Message: TransactionEventRequest
+- eventType must be Started
+- If the Test System is configured to start transactions using a RequestStartTransactionRequest message then
+triggerReason must be RemoteStart
+Else triggerReason must be ChargingStateChanged or Authorized
+- idToken.idToken <Configured valid_idtoken_idtoken>
+- idToken.type <Configured valid_idtoken_type>
+- evse must be provided
+- evse.connectorId must be provided
+- transactionInfo.chargingState must be Charging
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 234/1383 Part 6 - Test Cases

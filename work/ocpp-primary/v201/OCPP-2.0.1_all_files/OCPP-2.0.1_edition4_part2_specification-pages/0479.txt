@@ -1,0 +1,66 @@
+Component componentNa
+me
+SampledDataCtrlr
+Variable variableName SignUpdatedReadings
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+dataType boolean
+Description If set to true, the Charging Station SHALL include signed meter values in the
+metervalues field in the TransactionEventRequest(Updated) as defined in
+SampledDataTxUpdatedMeasurands. 
+This setting only has an effect if SampledDataSignReadings is set to true.
+When a Charging Station does not support signing meter values, it SHALL NOT
+report this variable.
+2.7.7. SampledDataTxEndedMeasurands
+Required yes
+Component componentNa
+me
+SampledDataCtrlr
+Variable variableName TxEndedMeasurands
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+dataType MemberList
+maxLimit The maximum length of the CSV formatted string, to
+be defined by the implementer.
+valuesLis
+t
+values from Measurands
+Description Sampled measurands to be included in the meterValues element of
+TransactionEventRequest (eventType = Ended), every
+SampledDataTxEndedInterval seconds from the start of the transaction
+until and including the last measurands at the end of the transaction.
+The Charging Station reports the list of supported Measurands in
+VariableCharacteristicsType.valuesList of this variable. This way the CSMS
+knows which Measurands it can put in the TxEndedSampledData.
+When left empty, no sampled measurands SHALL be put into the
+TransactionEventRequest (eventType = Ended).
+2.7.8. SampledDataTxEndedInterval
+Required yes
+Component componentNa
+me
+SampledDataCtrlr
+Variable variableName TxEndedInterval
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+unit s
+dataType integer
+Description Interval between sampling of metering (or other) data, intended to be transmitted
+in the TransactionEventRequest (eventType = Ended) message. For transaction
+data (evseId>0), samples are acquired and transmitted only in the
+TransactionEventRequest (eventType = Ended) message.
+A value of "0" (numeric zero), by convention, is to be interpreted to mean that only
+the values taken at the start and end of a transaction SHALL be transmitted (no
+intermediate values). A TxEndedInterval = 0 is recommended, since other values
+may result in a lot of data to be transmitted in the TransactionEventRequest
+(eventType = Ended) message.
+Edition 4, 2025-12-03 Referenced Components and Variables
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 469/491 Part 2 - Specification

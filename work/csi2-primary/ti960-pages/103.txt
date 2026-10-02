@@ -1,0 +1,57 @@
+CSI-2 TX port-specific register. The CSI-2 Port Select register 0x32 configures which unique CSI-2 TX port 
+registers can be accessed by I2C read and write commands.
+Table 7-75. CSI_CTL2 Register Field Descriptions
+Bit Field Type Reset Description
+7:6 RESERVED R 0x0 Reserved
+5:4 CSI_CAL_LEN R/W 0x0 These bits control the length of the periodic calibration sequence
+00: 210 bits
+01: 212 bits
+10: 214 bits
+11: 215 bits
+3 CSI_PASS_MODE R/W 0x0 CSI-2 PASS indication mode
+Determines whether the CSI-2 Pass indication is for a single port or 
+all enabled ports.
+0: Assert PASS if at least one enabled Receive port is providing valid 
+video data
+1: Assert PASS only if ALL enabled Receive ports are providing valid 
+video data
+2 CSI_CAL_INV R/W 0x0 CSI-2 Calibration Inverted Data pattern
+During the CSI-2 skew-calibration pattern, the CSI-2 Transmitter will 
+send a sequence of 01010101 data (first bit 0). Setting this bit to a 1 
+will invert the sequence to 10101010 data.
+1 CSI_CAL_SINGLE R/W 0x0 Enable single periodic CSI-2 Skew-Calibration sequence
+Setting this bit will send a single skew-calibration sequence from the 
+CSI-2 Transmitter. The skew-calibration sequence length matches 
+the length set for periodic calibration in CSI_CAL_LEN. The 
+calibration sequence is sent at the next idle period on the CSI-2 
+interface. This bit is self-clearing and will reset to 0 after the 
+calibration sequence is sent.
+0 CSI_CAL_PERIODIC R/W 0x0 Enable periodic CSI-2 Skew-Calibration sequence
+When the periodic skew-calibration sequence is enabled, the 
+CSI-2 Transmitter will send the periodic skew-calibration sequence 
+following the sending of Frame End packets.
+0: Disabled
+1: Enabled
+7.6.1.54 CSI_STS Register (Address = 0x35) [Reset = 0x00] 
+CSI_STS is shown in Table 7-76.
+Return to the Summary Table.
+CSI-2 TX port-specific register. The CSI-2 Port Select register 0x32 configures which unique CSI-2 TX port 
+registers can be accessed by I2C read and write commands.
+Table 7-76. CSI_STS Register Field Descriptions
+Bit Field Type Reset Description
+7:5 RESERVED R 0x0 Reserved
+4 TX_PORT_NUM R 0x0 TX Port Number
+This read-only field indicates the number of the currently selected TX 
+read port.
+3:2 RESERVED R 0x0 Reserved
+1 TX_PORT_SYNC R 0x0 TX Port Synchronized
+This bit indicates the CSI-2 Transmit Port is able to properly 
+synchronize input data streams from multiple sources. This bit is 0 
+if synchronization is disabled via the FWD_CTL2 register.
+0: Input streams are not synchronized
+1: Input streams are synchronized
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 103
+Product Folder Links: DS90UB960-Q1

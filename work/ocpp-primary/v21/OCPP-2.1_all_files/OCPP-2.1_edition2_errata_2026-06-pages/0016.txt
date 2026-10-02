@@ -1,0 +1,55 @@
+Changed requirements
+ID Precondition Requirements Note
+K18.FR.17 When Charging Station receives
+a SetChargingProfileRequest
+immediately after the
+transaction has started and
+before it has sent the
+NotifyEVChargingNeedsReques
+t to CSMS
+The Charging Station SHOULD respond with
+SetChargingProfileResponse with status =
+Rejected and a statusInfo with reasonCode=
+"InvalidMessageSeq" .
+CSMS sent profile too early. It
+does not harm if CS accepts the
+charging profile instead of
+rejecting it, as long as it sends a
+charging profile again when it
+receives the
+NotifyEVChargingNeedsReques
+t.
+K19.FR.13 When Charging Station receives
+a SetChargingProfileRequest
+immediately after the
+transaction has started and
+before it has sent the
+NotifyEVChargingNeedsReques
+t to CSMS
+The Charging Station SHOULD respond with
+SetChargingProfileResponse with status =
+Rejected and a statusInfo with reasonCode=
+"InvalidMessageSeq" .
+CSMS sent profile too early. It
+does not harm if CS accepts the
+charging profile instead of
+rejecting it, as long as it sends a
+charging profile again when it
+receives the
+NotifyEVChargingNeedsReques
+t.
+2.15. Page 502 - (2026-02) - Improved description of
+LocalLoadBalancing
+The section about OperationMode "LocalLoadBalancing" is replaced in its entirety by the following text.
+OperationMode LocalLoadBalancing
+OperationMode LocalLoadBalancing can be used to limit grid import and export of a home by charging or discharging an EV.
+Only one measurement is assumed: the active power at the grid connection point (PCC), where import from the grid is positive and
+export to the grid is negative. This measured value already includes the EV power, as shown in below diagram.
+Figure 1. Diagram of a local load-balancing setup
+Objective
+The goal is to keep the measured grid power within an allowed range by using the EV as a buffer:
+• Too much grid import ⇒ EV discharges
+• Too much grid export ⇒ EV charges
+• Inside the allowed range ⇒ EV does nothing
+Because the EV power is already included in the grid measurement, the controller must work incrementally to avoid oscillations.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 12/116 Errata 2026-06

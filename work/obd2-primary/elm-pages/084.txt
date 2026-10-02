@@ -1,0 +1,89 @@
+84 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Example Applications (continued)
+value that is stored in Programmable Parameter 0C,
+then enable it:
+>AT PP 0C SV 23
+OK
+> AT PP 0C ON
+OK
+That is all that is needed to semi-permanently
+change the ELM327. We say semi, because it stays in
+effect through power downs, and resets, but you can
+change it again if you wish. If you now reset the
+ELM327 (send AT Z or power down then up), the
+ELM327 will begin operating at the new rate (of
+115200 bps, rather than to 38400 bps). Change your
+software setting to also be 115200 bps, and you
+should be communicating. If you go through the
+calculations, you will note that the ELM327 baud rate
+is actually off by about 0.8%, but modern UARTs can
+typically handle rate errors of a few % without any
+problems.
+When working with the CP2102, we do caution
+that it is very small and difficult to solder by hand, so
+be prepared for that. Also, if you provide protection on
+the data lines with transient voltage suppressors
+(TVS’s), be careful when choosing devices, as some
+exhibit a very large capacitance and will affect the
+transmission of the USB data.
+Our final circuit (Figure 14) shows one way to
+interface the ELM327 to circuits that operate at a
+different voltage level. We show 3.3V as an example,
+but it can actually be anything from 2.7V to 5.5V.
+The circuit uses the ADuM1201 iCoupler chip from
+Analog Devices (www.analog.com). In addition to
+acting as a level translator, this device also provides
+isolation (galvanic, to 2500 Vrms) between the two
+sides. This is often desired in order to keep the vehicle
+circuit completely separate from the computer circuit.
+Typically, one might use a standard level shifter IC
+to interface to 3.3V – for example the TXB0102 by
+Texas Instruments (www.ti.com), or the ST2129 from
+ST Microelectronics (www.st.com), but the ADuM1201
+offers several other advantages. The main difference
+is that it offers isolation, as mentioned, but it also can
+be used with 2.7V to 5.5V on either side, it provides a
+high output if the input side is unpowered, and it
+typically uses less current and is much faster than
+many opto-isolator solutions (the ‘1201 minimum data
+is 1 MHz). Of course there are a couple disadvantages
+too. It does use current (almost 1 mA), so may be an
+issue if trying to reduce sleep current to a minimum,
+and it does cost more than devices like the TXB0102.
+Many wireless modules (WiFi or Bluetooth®) use
+serial interfaces just like what we have shown here for
+the RS232 connections. Connecting to them should
+not be very difficult if you follow the manufacturers
+directions (and perhaps consider using devices like the
+ADuM1201 or the TXB0102). If you are considering
+using a Bluetooth interface, you might read our ‘AN-04
+ELM327 and Bluetooth®’ application note first.
+This has provided a few examples of how the
+ELM327 integrated circuit might typically be used.
+Hopefully it has been enough to get you started on
+your way to many more. The following section shows
+how you might be able to optimize these circuits to
+reduce power consumption…
+Figure 14. Connecting to a 3.3V System
+7 9 10 11 12 13 14
+15161718192021
++5V
+n.c.
++5V
+TxRx
+ADuM1201
+Busy RTS
+327
+8
+1 2 3 4
+5678
++5V
+Tx
++3.3V
+3.3V common
+Rx
+3.3V
+Interface

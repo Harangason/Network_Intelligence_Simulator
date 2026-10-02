@@ -1,0 +1,57 @@
+TC_K_122_CS: Dynamic charging profiles from CSMS - Push
+Test case name Dynamic charging profiles from CSMS - Push
+Test case Id TC_K_122_CS
+Use case Id(s) K28
+Requirement(s) K28.FR.05, K28.FR.06, K28.FR.09, K28.FR.13, K28.FR.14
+System under test Charging Station
+Description To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the entire
+Charging Station over a period of time. The CSMS sends a SetChargingProfileRequest to the Charging
+Station to influence the power or current drawn by EVs. The CSMS calculates a ChargingSchedule to stay
+within certain limits, which MAY be imposed by any external system.
+Purpose To verify if the Charging Station is able to support DynamicControl charging profiles with the CSMS pushing
+changes to the CS.
+Prerequisite(s) SmartChargingCtrlr.SupportsFeature[DynamicProfiles] is true
+Before (Preparations)
+Configuration State:
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+chargingProfile.id 122
+chargingProfile.stackLevel 0
+chargingProfile.chargingProfilePurpose
+ChargingStationMaxProfile
+chargingProfile.chargingProfileKind Dynamic
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].duration <omitted>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+4. The Charging Station responds with a
+SetChargingProfileResponse
+3. The Test System sends a SetChargingProfileRequest with
+chargingProfile.id 123
+chargingProfile.stackLevel 1
+chargingProfile.chargingProfilePurpose
+ChargingStationMaxProfile
+chargingProfile.chargingProfileKind Dynamic
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].duration 15
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 8 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 578/1383 Part 6 - Test Cases

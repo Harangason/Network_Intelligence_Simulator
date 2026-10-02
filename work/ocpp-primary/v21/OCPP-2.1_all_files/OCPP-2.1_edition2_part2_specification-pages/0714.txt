@@ -1,0 +1,55 @@
+Value Description
+SignChargingStation
+Certificate
+To trigger a SignCertificate with typeOfCertificate: ChargingStationCertificate.
+SignV2GCertificate To trigger a SignCertificate with typeOfCertificate: V2GCertificate
+SignV2G20Certificat
+e
+(2.1) Same as SignV2GCertificate, but this triggers Charging Station explicitly to only sign V2G certificate for
+ISO 15118-20.
+StatusNotification To trigger StatusNotification.
+TransactionEvent To trigger TransactionEvent.
+SignCombinedCertif
+icate
+To trigger a SignCertificate with typeOfCertificate: ChargingStationCertificate AND V2GCertificate
+PublishFirmwareSta
+tusNotification
+To trigger PublishFirmwareStatusNotification.
+CustomTrigger (2.1) To trigger the message referred to in customTrigger field.
+3.64. MobilityNeedsModeEnumType
+Enumeration
+(2.1) ISO 15118-20 service parameter for mobility needs mode.
+MobilityNeedsModeEnumType is used by: Common:ChargingNeedsType
+Value Description
+EVCC Only EV determines min/target SOC and departure time.
+EVCC_SECC Charging station or CSMS may also update min/target SOC and departure time.
+3.65. MonitorEnumType
+Enumeration
+MonitorEnumType is used by: Common:VariableMonitoringType ,
+setVariableMonitoring:SetVariableMonitoringRequest.SetMonitoringDataType ,
+setVariableMonitoring:SetVariableMonitoringResponse.SetMonitoringResultType
+Value Description
+UpperThreshold Triggers an event notice when the actual value of the Variable rises above value.
+LowerThreshold Triggers an event notice when the actual value of the Variable drops below value.
+Delta Triggers an event notice when the actual value has changed more than plus or minus value since the time
+that this monitor was set or since the last time this event notice was sent, whichever was last. For variables
+that are not numeric, like boolean, string or enumerations, a monitor of type Delta will trigger an event notice
+whenever the variable changes, regardless of the value of value.
+Periodic Triggers an event notice every value seconds interval, starting from the time that this monitor was set.
+PeriodicClockAligne
+d
+Triggers an event notice every value seconds interval, starting from the nearest clock-aligned interval after
+this monitor was set. For example, a value of 900 will trigger event notices at 0, 15, 30 and 45 minutes after
+the hour, every hour.
+TargetDelta (2.1) Triggers an event notice when the actual value differs from the target value more than plus or minus
+value since the time that this monitor was set or since the last time this event notice was sent, whichever
+was last. Behavior of this type of monitor for a variable that is not numeric, is not defined.
+Example: when target = 100, value = 10, then an event is triggered when actual < 90 or actual > 110.
+TargetDeltaRelative (2.1) Triggers an event notice when the actual value differs from the target value more than plus or minus
+(value * target value) since the time that this monitor was set or since the last time this event notice was
+sent, whichever was last. Behavior of this type of monitor for a variable that is not numeric, is not defined.
+Example: when target = 100, value = 0.1, then an event is triggered when actual < 90 or actual > 110.
+3.66. MonitoringBaseEnumType
+Enumeration
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 701/803 Part 2 - Specification

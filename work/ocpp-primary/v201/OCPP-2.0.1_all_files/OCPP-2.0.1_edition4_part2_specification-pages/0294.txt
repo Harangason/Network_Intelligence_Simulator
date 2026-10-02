@@ -1,0 +1,58 @@
+No. Type Description
+Actors EV, Charging Station, CSMS
+Scenario description 1 When EV sends a ChargeParameterDiscoveryReq with with charging needs parameters, then
+Charging Station sends this information in a NotifyEVChargingNeedsRequest to CSMS.
+2 CSMS responds with NotifyEVChargingNeedsResponse to Charging Station.
+3 CSMS calculates new charging schedule, that tries to accomodate the EV charging needs and
+still fits within the schedule boundaries imposed by other parameters.
+4 CSMS sends a SetChargingProfileRequest with the new schedule to the Charging Station.
+5 Charging Station responds with SetChargingProfileResponse with status Accepted.
+6 Charging Station sends new charging schedule to EV in a ChargeParameterDiscoveryRes
+message.
+7 EV sends a PowerDeliveryReq with chargeProgress = Start (with an optional charging profile)
+to confirm this.
+8 Charging Station responds with PowerDeliveryRes and, if charging was suspended at start of
+the renegotiation, will resume power delivery.
+9 If EV provided a charging profile in the previous step, then Charging Station will send a
+NotifyEVChargingScheduleRequest to the CSMS.
+5 Prerequisites Charging session started according to use case K15.
+6 Postcondition(s) Charging session uses the new charging profile.
+7 Remark(s) Signed SalesTariffs are currently not supported. If these are needed, please use P01 - Data
+Transfer to the Charging Station to send these to the Charging Station.
+EV Charging Station CSMS
+loop [Charging in progress...]
+alt [if AC Charging]
+ChargingStatusReq()
+ChargingStatusRes()
+[if DC Charging]
+CurrentDemandReq()
+CurrentDemandRes()
+TransactionEventRequest(eventType = Updated,...)
+TransactionEventResponse(...)
+EV proposes new schedule
+PowerDeliveryReq(Renegotiate)
+PowerDeliveryRes(OK) Power delivery may be halted
+ChargeParameterDiscoveryReq(EnergyTransferMode, EVChargeParam)
+NotifyEVChargingNeedsRequest(evseId, chargingNeeds)
+NotifyEVChargingNeedsResponse(Accepted)
+calculate new profile
+SetChargingProfileRequest(evseId, chargingProfile)
+SetChargingProfileResponse(Accepted)
+ChargeParameterDiscoveryRes(SAScheduleList) Charging Station supplies charging profile as SASchedule
+PowerDeliveryReq(Start, ChargingProfile, EVPowerDeliveryParam)
+PowerDeliveryRes(OK) Power delivery continues
+opt [If EV provides a charging schedule]
+NotifyEVChargingScheduleRequest(evseId, chargingSchedule)
+NotifyEVChargingScheduleResponse(Accepted)
+Figure 114. Renegotiation initiated by EV when using ISO 15118-2
+K17 - Renegotiation initiated by EV - Requirements
+Table 109. K17 - Requirements
+ID Precondition Requirements Note
+K17.FR.01 EV triggers a
+renegotiation and
+sends new charging
+needs
+The Charging Station SHALL send a
+NotifyEVChargingNeedsRequest to the CSMS.
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 284/491 Part 2 - Specification

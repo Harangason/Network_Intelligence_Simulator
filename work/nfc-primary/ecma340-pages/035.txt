@@ -1,0 +1,32 @@
+ 
+© Ecma International 2024  29 
+ 
+12.6.2 Wakeup Request and Response Commands 
+12.6.2.1 General 
+− The Wakeup Request and Response commands are only defined for the active communication mode.  
+12.6.2.2 Wakeup Request (WUP_REQ) 
+12.6.2.2.1 General 
+Figure 24 specifies the Wakeup Request for Attributes WUP_REQ with its parameter bytes. The Initiator sends 
+the WUP_REQ to the Target only in the active communication mode. It shall be applied to reactivate a distinct 
+Target device by its NFCID3, which was deactivated by the DSL command. 
+ 
+Figure 24 — Structure of the WUP_REQ 
+12.6.2.2.2 Definition of the WUP_REQ bytes 
+CMD 1: Shall be set to ‘D4’. 
+CMD 2: WUP_REQ 
+The WUP_REQ byte shall specify the command Wake Up for the Initiator device. The value of WUP_REQ shall 
+be ‘02’. 
+Byte 1 to Byte 10: NFCID3t 
+The 10 nfcid3t bytes shall be defined as the random identifier of the Target. For the WUP_REQ command the 
+Initiator shall send the known NFCID3t random identifier to wake up the Target.  
+Byte 11: DID 
+The DID byte shall be used for multiple data transport protocol activation with more than one Targets. The range 
+of the DID shall be defined between 1 and 14. The value 0 shall be used, if no DID is used during the data 
+transport protocol. All other values shall not be used. The Initiator may assign a different value to the Target, as 
+used before the last DSL command. 
+12.6.2.3 Wakeup Response (WUP_RES) 
+12.6.2.3.1 General 
+Figure 25 specifies the structure of the Wakeup Response for attributes WUP_RES. The WUP_RES shall be 
+the response to the WUP_REQ and shall be sent by the selected NFCIP-1 Target device. 
+ 
+Figure 25 — Structure of the WUP_RES 

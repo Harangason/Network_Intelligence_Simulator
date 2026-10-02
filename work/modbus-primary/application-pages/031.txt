@@ -1,0 +1,62 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  31/50 
+Quantity of Registers Hi  00 Quantity of Registers Hi  00 
+Quantity of Registers Lo  02 Quantity of Registers Lo  02 
+Byte Count  04   
+Registers Value Hi  00   
+Registers Value Lo  0A   
+Registers Value Hi  01   
+Registers Value Lo  02   
+ 
+ 
+MB Server Sends mb_exception_rsp EXIT
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+YES
+NO
+NO
+ExceptionCode = 02
+YES
+NO
+ExceptionCode = 03
+YES
+ENTRY
+WriteMultipleRegisters == OK
+MB Server Sends mb_rsp
+NO
+YES
+0x0001  Quantity of Registers  0x007B
+AND
+Byte Count == Quantity of Registers x 2
+Function code
+supported
+Starting Address == OK
+AND
+Starting Address + Quantity of Registers == OK
+ExceptionCode = 04
+Request Processing
+ 
+Figure 22: Write Multiple Registers state diagram  
+ 
+ 
+ 
+6.13  17 (0x11) Report Server  ID (Serial Line only)  
+This function code is used to read the description of the type, the current status, and other 
+information specific to a remote device.  
+The format of a normal response is shown in the following example. The data contents are 
+specific to each type of device.  
+Request  
+Function code  1 Byte  0x11  
+Response  
+Function code  1 Byte  0x11  
+Byte Count  1 Byte   
+Server  ID device 
+specific  
+ 
+Run Indicator Status  1 Byte  0x00 = OFF, 0xFF = ON  
+Additional Data    
+Error  
+Error code  1 Byte  0x91  
+Exception code  1 Byte  01 or 04  
+ 
+Here is an example of a request to report the ID and status:  

@@ -1,0 +1,30 @@
+MeterValuesAlignedDataMaxLength
+StopTxnAlignedData is a comma separated list that prescribes the set of clock-aligned periodic measurands
+to be included in the TransactionData element of StopTransaction.req PDU for every
+ClockAlignedDataInterval of the Transaction. The maximum amount of elements in the
+StopTxnAlignedData list can be reported by the Charge Point via: StopTxnAlignedDataMaxLength
+3.16.3. Multiple Locations/Phases
+When a Charge Point can measure the same measurand on multiple locations or phases, all possible locations
+and/or phases SHALL be reported when configured in one of the relevant configuration keys.
+For example: A Charge Point capable of measuring Current.Import on Inlet (all 3 phases) (grid connection) and
+Outlet (3 phases per connector on both its connectors). Current.Import is set in MeterValuesSampledData.
+MeterValueSampleInterval is set to 300 (seconds). Then the Charge Point should send:
+• a MeterValues.req with: connectorId = 0; with 3 SampledValue elements, one per phase with location = Inlet.
+• a MeterValues.req with: connectorId = 1; with 3 SampledValue elements, one per phase with location =
+Outlet.
+• a MeterValues.req with: connectorId = 2; with 3 SampledValue elements, one per phase with location =
+Outlet.
+3.16.4. Unsupported measurands
+When a Central System sends a ChangeConfiguration.req to a Charge Point with one of the following
+configuration keys:
+• MeterValuesAlignedData
+• MeterValuesSampledData
+• StopTxnAlignedData
+• StopTxnSampledData
+If the comma separated list contains one or more measurands that are not supported by this Charge Point, the
+Charge Point SHALL respond with: ChangeConfiguration.conf with: status = Rejected. No changes SHALL be made
+to the currently configuration.
+3.16.5. No metering data in a Stop Transaction
+When the configuration keys: StopTxnAlignedData and StopTxnSampledData are set to an empty string, the
+Charge Point SHALL not put meter values in a StopTransaction.req PDU.
+31

@@ -1,0 +1,42 @@
+Chapter 7. Signed Messages
+For certain architectures it can be useful to use signed OCPP messages. This gives the Charging Station and the CSMS the ability
+to guarantee that messages are sent by the other party. For example when a Local Controller is involved, the Charging Station can
+know that a message received from the Local Controller is created and signed by the CSMS.
+Message signing can also be used when forwarding data from the Charging Station or the CSMS to 3th parties such as a DSO
+(Distribution System Operator).
+Because message signing is not needed in all architectures and scenarios, it is not required for all OCPP implementations. It will
+depend on the security requirements if this is required.
+This section defines a method to digitally sign any OCPP-J message. For each normal OCPP message an equivalent signed
+message is defined that encapsulates the normal message, and adds a digital signature.
+7.1. Signed Message Format
+For Signed OCPP Messages, JWS is used. For more information see: [RFC7515].
+Suppose we have an OPC calls encoded in the OCPP-J message:
+[<MessageTypeId>, "<MessageId>", {<Extension>}, "<Action>", {<Payload>}]
+Then we define the equivalent signed message as follows.
+[<MessageTypeId>, "<MessageId>", {<Extension>}, "<SignedAction>", {<SignedPayload>}]
+The MessageTypeId and MessageId SHALL stay the same. The <SignedAction> field SHALL be the action name (<Action>) with the
+string "-Signed" appended. For instance, if "<Action>" is "BootNotification", then "<SignedAction>" is "BootNotification-Signed". The
+<SignedPayload> SHALL be the JWS encoding of the payload, computed according to the following settings:
+• The JWS Payload SHALL be the <Payload> from the original message.
+• The JWS Protected Header SHALL contain a field called "OCPPAction" containing the name (<Action>) of the OCPP action,
+and a field called "OCPPMessageTypedId" containing the message ID (<MessageTypeId>).
+• The JWS Protected Header SHOULD contain the x5t#S256 field to identify the key used for signing, as specified in Section
+7.4.
+• The <SignedPayload> SHALL be encoded using the Flattened JWS JSON Serialization syntax.
+7.2. Handling Signed Messages
+When a Charging Station or CSMS receives a signed message, it SHALL extract the encapsulated normal message. It SHALL
+process it normally, following the OCPP 2.0.1 standard. It MAY perform additional actions that use the digital signature. This is
+optional, because a secure connection between the CSMS and the Charging Station is expected, hence a second process to
+validate a signature on message level is redundant. When a Charging Station receives a signed request, and it supports digital
+signing, it SHALL send a signed reply.
+7.3. Allowed Algorithms
+The algorithms allowed for use with JSON Web Signatures are defined in the JSON Web Algorithms standard [RFC7518]. To limit
+the cryptographic algorithms that a Charging Station has to implement, for OCPP the same algorithms SHALL be used as for the
+TLS connection used to secure communications. This means that for generating the digital signatures, the Charging Station and
+CSMS SHALL use the following algorithms from the JSON Web Algorithms standard [RFC7518], section 3.1:
+• ES256: ECDSA using P-256 and SHA-256
+• RS256: RSASSA-PKCS1-v1_5 using SHA-256
+• RS384: RSASSA-PKCS1-v1_5 using SHA-384
+Note that RS256 and ES256 are the algorithms recommended by [RFC7518].
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 21/26 Part 4 - JSON over WebSockets implementation guide

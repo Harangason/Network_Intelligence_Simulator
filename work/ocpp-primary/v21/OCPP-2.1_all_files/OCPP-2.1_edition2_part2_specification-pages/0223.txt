@@ -1,0 +1,27 @@
+ID Precondition Requirement definition
+E13.FR.02 When the Charging Station encounters a first
+failure to deliver a certain transaction-related
+message.
+The Charging Station SHALL send this message again as long as
+it keeps resulting in a failure to process this message and it has
+not yet encountered as many failures to process this message
+for this message as specified in its
+MessageAttemptsTransactionEvent Configuration
+Variable.
+E13.FR.03 The CSMS does not accept a transaction-related
+message.
+The Charging Station SHALL wait as many seconds as specified
+in its MessageAttemptIntervalTransactionEvent key,
+multiplied by the number of preceding transmissions of this
+same message.
+E13.FR.04 If the final attempt fails. The Charging Station SHALL discard the message and continue
+with the next transaction-related message, if there is any.
+E13 - Transaction-related message not accepted by CSMS - Example
+As an example, consider a Charging Station that has the value "3" for the MessageAttemptsTransactionEvent Configuration
+Variable and the value "60" for the MessageAttemptIntervalTransactionEvent Configuration Variable. It sends a
+TransactionEventRequest message and detects a failure to process the message in the CSMS. The Charging Station SHALL wait
+for 60 seconds, and resend the message. In the case when there is a second failure, the Charging Station SHALL wait for 120
+seconds, before resending the message. If this final attempt fails, the Charging Station SHALL discard the message and continue
+with the next transaction-related message, if there is any.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 210/803 Part 2 - Specification

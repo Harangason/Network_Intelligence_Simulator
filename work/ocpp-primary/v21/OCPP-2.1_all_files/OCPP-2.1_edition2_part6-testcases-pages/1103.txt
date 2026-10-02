@@ -1,0 +1,37 @@
+Main (Test scenario)
+9 The Test System sends a NotifyEventRequest
+eventData.trigger = Delta
+eventData.transactionId = <transactionId from this transaction>
+eventData.eventNotificationType = HardWiredNotification
+eventData.severity = 3
+eventData.actualValue = true
+eventData.component.name = ElectricalFeed
+eventData.variable.name = Problem
+10 The CSMS responds with a NotifyEventResponse
+11 The Test System sends a NotifyEventRequest
+Same content as step 9, but with actualValue = false:
+eventData.actualValue = false
+12 The CSMS responds with a NotifyEventResponse
+13. The Test System sends a TransactionEventRequest
+eventType Updated
+triggerReason TxResumed
+transactionInfo.transactionId <transactionId>
+transactionInfo.chargingState Charging
+14. The CSMS responds with a TransactionEventResponse
+16. The Test System responds with a
+SetChargingProfileResponse with
+status Accepted
+15. The CSMS sends a SetChargingProfileRequest
+Tool validations
+* Step 1:
+Message SetChargingProfileRequest
+- chargingProfile.chargingProfilePurpose must be TxProfile
+* Step 4:
+Message: BootNotificationResponse
+- status must be Accepted
+* Step 15:
+Message: SetChargingProfileRequest must contain an identical chargingProfile as in Step 1 or identical as of time of Step 15.
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1101/1383 Part 6 - Test Cases

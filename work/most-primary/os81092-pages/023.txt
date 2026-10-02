@@ -1,0 +1,47 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 23
+OS81092
+The first byte of an I2C message is the bus address plus the read/write (R/W ) bit, which determines whether the EHC
+is reading or writing Port Messages. The OS81092 Factory default I2C address is 41h for read, 40h for write; however,
+the default I2C address can be changed in OTP memory.
+Clock stretching is a handshaking mechanism supported on the Control Port. If the OS81092 cannot keep up with a
+message, it stretches the clock following the 8th data bit or the acknowledge bit; therefore, the I 2C bus master must
+monitor SCL when communicating with INIC.
+If the OS81092 is busy supporting higher priority tasks, it will NACK the I2C address, indicating that the master should
+retry the message at a later time. I2C NACK responses occur at the address byte boundary (e.g. following the R/W bit).
+For information on the I2C protocol, refer to the I2C-Bus Specification [5].
+7.1.1 WRITING TO THE CONTROL PORT
+The beginning of transmission is marked by a start condition . The first byte specifies t he chip address, as well as
+whether the operation is a read or a write. The OS81092 address (Factory default of 0100000) occupies the upper seven
+bits of the first byte; the R/W bit is the LSB.
+When the Control Port receives an address byte of 40h (Factory default of OS81092 address and R/W  bit clear), it
+acknowledges reception of the byte through an acknowledge bit and the rest of the data is written into the Control Port.
+The write data is defined as the Port Message (PM) and can be one of the following:
+• FIFO Command message
+• FIFO Data (Write) message
+• FIFO Status (Write) message
+Figure 7-2 illustrates the I2C transmission write sequence. The characters “S” and “P” represent the start and stop con-
+ditions for messages. 
+FIGURE 7-2: CONTROL PORT WR ITE SEQUENCE (SLAVE MODE)
+External
+System:
+Control Port:
+Start bit
+Part Address
+Write
+Acknowledge
+S 01000
+R/W
+A Data1 A Data2 A DataN P0
+Acknowledge Acknowledge
+Stop bit
+A
+Acknowledge
+SDA
+Port Message (PM)
+FIFO Data Body
+FIFO Command
+00
+PML PMHL FDHFPH
+PML PMHL FPHFIFO Command message:
+FIFO Data Write message:
+FIFO Status WritePML PMHL FPHFIFO Status Write message:

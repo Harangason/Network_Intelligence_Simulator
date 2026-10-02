@@ -1,0 +1,248 @@
+--- before/backend/communication/technologies/pcie.py
++++ after/backend/communication/technologies/pcie.py
+@@ -0,0 +1,245 @@
++"""PCIe negotiated link, transaction and implementation-qualified constraints."""
++REG = 'https://raw.githubusercontent.com/torvalds/linux/v6.12/include/uapi/linux/pci_regs.h'
++PHY = 'https://www.intel.com/content/www/us/en/docs/programmable/683724/18-0/physical-layer.html'
++GEN45 = 'https://edc.intel.com/content/www/us/en/design/products/platforms/details/raptor-lake-s/13th-generation-core-processors-datasheet-volume-1-of-2/004/pci-express-architecture/'
++GEN6 = 'https://pcisig.com/blog/evolution-pci-express-specification-its-sixth-generation-third-decade-and-still-going-strong'
++GEN7 = 'https://pcisig.com/blog/pcie-70-specification-next-generation-performance-meet-needs-advanced-ai-applications-webinar'
++GUIDE = 'https://docs.altera.com/r/docs/813754/25.3/gts-axi-streaming-ip-for-pci-express-user-guide-agilextm-5-and-agilextm-3-fpgas-and-socs/'
++DEVICE = GUIDE+'pcie0/pcie1-device?contentId=QNUfbZtk~fLvEcCt9_ylNQ'
++FEATURES = GUIDE+'supported-features?contentId=oYPcJulNu6b8S9_OxwM4Zg'
++CREDIT = GUIDE+'transmit-flow-control-credit-interface?contentId=4jxXGgx_nObvvH4KBB6tjA'
++TIMEOUT = GUIDE+'completion-timeout-interface?contentId=EBTDmC2PKISZT4Arera3qQ'
++ERRORS = 'https://docs.altera.com/r/docs/683411/current/transaction-layer-errors'
++SOURCES = {
++ REG:'Linux v6.12 explicit PCIe capability/control/status masks. Register meanings/encodings, not full normative protocol or every optional capability.',
++ PHY:'Intel/Altera archive18.0 physical-layer public search excerpt: Gen1/2 8b10b, Gen3 128b130b, per-lane rates; direct page redirected, not claimed full document.',
++ GEN45:'Intel ID743844 revision004 2023-01-30, rates and128b130b for Gen4/5; actual processor port limits are device-specific.',
++ GEN6:'PCI-SIG 2022-01-11 technical article,64GT/s PAM4, FLIT256 with236TLP/6DLP/8CRC/6FEC. Public excerpt, not full licensed specification.',
++ GEN7:'PCI-SIG 2025-09-03 Q&A, released7.0 128GT/s PAM4, identical256byte FLIT layout; implementation-dependent bifurcation/channel compliance.',
++ DEVICE:'Altera813754 v25.3 2025-12-16 device table38: capabilities versus actual configured MPS, PF/VF and source-specific settings.',
++ FEATURES:'Altera813754 v25.3 2025-12-16 supported features: Agilex3/5 rates/lanes/tags/MPS512/MRRS4096/oneVC/clock modes, conventional reset1s caveat.',
++ CREDIT:'Altera813754 v25.3 2025-12-16 credit interface, header credit and data credit16bytes; actual limits versus available space.',
++ TIMEOUT:'Altera813754 v25.3 2025-12-16 non-posted completion timeout correlation by tag/function/remainingbytes/TC/attributes.',
++ ERRORS:'Altera683411 document15.1, page timestamp2025-12-16 transaction-error table70: length/TD/byte enables,4KB boundary, correlation/credits/poison. Legacy implementation-qualified checks, not Agilex25.3 certification.'}
++DECLARATIONS=[]
++
++def d(key,kind,meaning,minimum=None,maximum=None,unit=None,options=None,source=REG,integer=False):
++ DECLARATIONS.append(dict(key='pcie_'+key,type=kind,description=meaning,min=minimum,max=maximum,
++   unit=unit,options=options,source=source,source_revision=SOURCES[source],integer=integer))
++
++for key,meaning,options,src in [
++ ('implementation','Actual controller/firmware family; registered actual values distinct reviewed Altera implementation.', ['REGISTERED_ACTUAL','AGILEX3_GTS_25_3','AGILEX5_GTS_25_3'],FEATURES),
++ ('mode','Actual negotiated FLIT status, independent generation capability or downtraining.', ['NON_FLIT','FLIT'],GEN6),
++ ('encoding','Actual link coding, lower-rate FLIT needs an explicitly qualified coding source.', ['8B10B','128B130B','FLIT_PAM4','REGISTERED_LOWER_RATE_FLIT'],PHY),
++ ('role','Actual port role; PCIe is not a multi-master CAN bus.', ['ROOT_PORT','ENDPOINT','UPSTREAM_SWITCH','DOWNSTREAM_SWITCH'],FEATURES),
++ ('traffic','Actual posted/nonposted/completion transaction flow; distinct frame class and service acceptance.', ['POSTED','NON_POSTED','COMPLETION'],CREDIT),
++ ('clock','Actual common/separate reference clock configuration and partner compatibility.', ['COMMON','SRIS','SRNS','REGISTERED_ACTUAL'],FEATURES),
++ ('link_state','Actual LTSSM/low-power state, not a speed capability.', ['L0','L0P','L0S','L1','L2','DETECT','POLLING','CONFIGURATION','RECOVERY','DISABLED','OTHER'],REG),
++ ('outcome','Actual correlated application acceptance, distinct successful link training.', ['ACCEPTED','REJECTED','PENDING','UNKNOWN'],TIMEOUT)]:
++ d(key,'select',meaning,options=options,source=src)
++d('address_space','select','Actual memory/IO/configuration request; their payload and completion rules differ.',options=['MEMORY','IO','CONFIGURATION','OTHER'],source=ERRORS)
++for key,meaning,src in [
++ ('edition_source','Actual Base/CEM/ECN edition and enabled feature set. Public source review is not full conformance.',GEN7),
++ ('device_source','Actual device capabilities, register snapshot and configured values on each hop.',REG),
++ ('link_source','Actual trained generation/width/mode, lane layout and link status at this hop.',REG),
++ ('physical_source','Actual channel/connector/loss/clock/retimer/equalization and measured compliance evidence.',GEN7),
++ ('schedule_source','Actual per-direction traffic, credits/backpressure/replay/power-state service bounds.',CREDIT),
++ ('transaction_source','Actual request/completion tags, lengths, addresses, ordering and error status.',TIMEOUT),
++ ('acceptance_source','Actual application age/deadline/validity and correlated consumption evidence.',TIMEOUT),
++ ('clock_source','Actual partner clock capability and measured implementation tolerances.',FEATURES),
++ ('address_hex','Actual 32/64-bit request address encoded losslessly as hexadecimal, not floating-point number.',REG),
++ ('ordering_source','Actual relaxed/no-snoop/VC/TC mapping and end-to-end coherency contract.',REG)]:
++ d(key,'text',meaning,source=src)
++d('link_status_hex','text','Actual four hexadecimal digits for the Link Status register, decoded losslessly against generation/lanes/training/active values.',source=REG)
++for key,meaning,lo,hi,unit,integer,src in [
++ ('generation','Actual negotiated generation1..7, not maximum card capability or hypothetical Gen8 draft.',1,7,None,True,GEN7),
++ ('max_generation','Actual endpoint/port supported maximum generation.',1,7,None,True,GEN7),
++ ('lanes','Actual negotiated width; independent slot mechanical width and bifurcation.',1,32,None,True,REG),
++ ('max_lanes','Actual port maximum lane count.',1,32,None,True,REG),
++ ('rate_gts','Actual per-lane transfer rate GT/s, not byte throughput or PAM4 baud.',2.5,128,'GT/s',False,GEN7),
++ ('raw_direction_bps','Derived raw aggregate one-direction bit rate, before codec/packets/credits/replay/power gaps.',1,None,'bit/s',False,GEN7),
++ ('decoded_ceiling_bps','Theoretical NON_FLIT decoded bit ceiling; not application goodput/capacity evidence.',1,None,'bit/s',False,PHY),
++ ('mps','Actual configured Max_Payload_Size, independent read request length.',128,4096,'byte',True,REG),
++ ('mps_supported','Actual read-only device MPS capability, not configured MPS.',128,4096,'byte',True,REG),
++ ('path_mps','Actual compatible maximum payload along every traversed port/function.',128,4096,'byte',True,REG),
++ ('mrrs','Actual configured Max_Read_Request_Size, may exceed configured MPS.',128,4096,'byte',True,REG),
++ ('mps_code','Actual three-bit payload encoding0..5;6/7 reserved.',0,5,None,True,REG),
++ ('mrrs_code','Actual read-request encoding0..5, independently decoded.',0,5,None,True,REG),
++ ('tlp_payload_bytes','Actual DWORD-aligned on-wire data of one TLP, includes disabled/padding bytes; distinct whole application/read request/completion.',0,4096,'byte',True,ERRORS),
++ ('request_bytes','Actual nonposted read request length, distinct response splitting into several completions.',1,4096,'byte',True,TIMEOUT),
++ ('remaining_bytes','Actual still outstanding completion bytes for same request, not full application buffer.',0,4096,'byte',True,TIMEOUT),
++ ('header_bytes','Actual NON_FLIT base header size from3DW/4DW; prefix/digest separately.',12,16,'byte',True,FEATURES),
++ ('prefix_bytes','Actual enabled TLP prefix bytes; requires selected format/device source.',0,None,'byte',True,REG),
++ ('digest_bytes','Actual optional NON_FLIT ECRC digest, distinct link CRC.',0,4,'byte',True,REG),
++ ('lcrc_bytes','Actual NON_FLIT link checksum4bytes, not Ethernet FCS or FLIT CRC8.',0,4,'byte',True,GEN6),
++ ('framing_bytes','Actual selected coding framing/sequence overhead, no fixed Ethernet header.',0,None,'byte',True,GEN6),
++ ('packet_bytes','Actual NON_FLIT packet sum before line coding/SKP.',12,None,'byte',True,GEN6),
++ ('flit_bytes','Selected FLIT fixed whole unit size256.',256,256,'byte',True,GEN6),
++ ('flit_tlp_bytes','FLIT area236 for TLPs, not236application bytes guaranteed.',236,236,'byte',True,GEN6),
++ ('flit_dlp_bytes','FLIT data-link area6, distinct TLP data.',6,6,'byte',True,GEN6),
++ ('flit_crc_bytes','FLIT checksum8, independent NON_FLIT LCRC4.',8,8,'byte',True,GEN6),
++ ('flit_fec_bytes','FLIT FEC6, no guaranteed application validity implied.',6,6,'byte',True,GEN6),
++ ('traffic_class','Actual TC0..7; not CAN arbitration priority.',0,7,None,True,REG),
++ ('virtual_channel','Actual mapped VC0..7 within enabled endpoint capabilities.',0,7,None,True,REG),
++ ('vc_count','Actual enabled virtual channel count, source-qualified arbitration/backpressure.',1,8,None,True,REG),
++ ('header_credits','Actual available usable header credits for this flow/VC, not raw advertised counter.',0,None,None,True,CREDIT),
++ ('data_credits','Actual available usable data credits, distinct scaled/modular advertised limit.',0,None,None,True,CREDIT),
++ ('data_credit_bytes','Reviewed data-credit size16bytes for selected Altera NON_FLIT interface.',16,16,'byte',True,CREDIT),
++ ('needed_data_credits','Data credits needed, rounded up on actual TLP data bytes.',0,None,None,True,CREDIT),
++ ('tag_bits','Actual enabled requester tag width, not all generations always8.',5,10,'bit',True,FEATURES),
++ ('tag','Actual outstanding tag under enabled width and correlated requester/function.',0,1023,None,True,TIMEOUT),
++ ('tag_capacity','Actual supported outstanding tags for selected controller.',1,1024,None,True,FEATURES),
++ ('outstanding_requests','Actual currently allocated request tags, no duplicate reuse while outstanding.',0,1024,None,True,FEATURES),
++ ('requester_bus','Actual BDF bus identifier.',0,255,None,True,REG),
++ ('requester_device','Actual conventional BDF device identifier; ARI requires registered interpretation.',0,31,None,True,REG),
++ ('requester_function','Actual conventional BDF function0..7; ARI source-qualified separately.',0,7,None,True,REG),
++ ('completion_timeout_us','Actual device timeout selection, not a copied CAN or generic50ms default.',0,None,'us',False,TIMEOUT),
++ ('completion_elapsed_us','Actual elapsed nonposted request time at observation.',0,None,'us',False,TIMEOUT),
++ ('replay_bound_us','Actual ACK/NAK/replay service bound for active format/rate/width/device.',0,None,'us',False,GEN6),
++ ('wake_bound_us','Actual power-state exit latency, not always zero.',0,None,'us',False,REG),
++ ('age_us','Actual source-data age at correlated application consumption.',0,None,'us',False,TIMEOUT),
++ ('freshness_limit_us','Actual required maximum source-data age.',0,None,'us',False,TIMEOUT),
++ ('reset_wait_us','Actual Conventional Reset configuration-request wait; separate link-training duration.',0,None,'us',False,FEATURES),
++ ('link_status','Actual16-bit Link Status register snapshot, source-version qualified.',0,65535,None,True,REG),
++ ('aer_uncorrectable','Actual32-bit AER uncorrectable status; not a CRC-success boolean.',0,4294967295,None,True,REG),
++ ('aer_correctable','Actual32-bit AER correctable status, replay need not imply application failure.',0,4294967295,None,True,REG)]:
++ d(key,'number',meaning,lo,hi,unit,source=src,integer=integer)
++d('page_offset','number','Actual request address low12bits, compared to the selected memory request span; not full64bit floating address.',0,4095,'byte',source=ERRORS,integer=True)
++for key,meaning,src in [
++ ('flit_supported','Actual both-partner FLIT capability; separate negotiated status.',GEN6),
++ ('link_active','Actual Data Link Layer Link Active, separate physical speed.',REG),
++ ('training','Actual Link Training status; not a steady service bound.',REG),
++ ('ecrc_enabled','Actual optional end-to-end digest enable, not automatic all-packet validity.',REG),
++ ('ecrc_supported','Actual generator/checker capability for chosen direction.',REG),
++ ('relaxed_ordering','Actual selected ordering attribute requires application coherency evidence.',REG),
++ ('no_snoop','Actual selected no-snoop attribute, not safe by default for all memory.',REG),
++ ('completion_timeout_disabled','Actual disable setting; no timeout means no finite completion proof.',REG),
++ ('completion_timeout_disable_supported','Actual device disable capability.',REG),
++ ('transmission_started','Actual TLP emission subject to link and usable credits.',CREDIT),
++ ('completion_received','Actual completion received for correlated request/tag/function.',TIMEOUT),
++ ('completion_success','Actual completion status Success, not only link ACK.',TIMEOUT),
++ ('poisoned','Actual transaction poison indication.',REG),
++ ('tag_unique','Actual outstanding tag uniqueness/correlation verified by source.',FEATURES),
++ ('data_accepted','Actual functional consumption, separate raw rate/CRC/physical qualification.',TIMEOUT),
++ ('readiness_notification','Actual RN mechanism used after Conventional Reset.',FEATURES),
++ ('conventional_reset','Actual reset event; not every power transition.',FEATURES)]:
++ d(key,'boolean',meaning,source=src)
++REQUIRED=('implementation','mode','encoding','role','generation','lanes','edition_source','device_source','link_source',
++ 'physical_source','schedule_source','transaction_source','acceptance_source')
++REMOVED={k:'Not a universal PCIe '+k+' setting. Actual generation/lanes/codec/credits/transaction or device service evidence replaces foreign transport values.'
++ for k in ('bitrate','mtu_bytes','duplex','vlan_id','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent',
++ 'rate_limit_bit_s','retry_limit','retransmission_enabled','retransmission_rate','retransmission_delay_ms','recovery_ms',
++ 'link_fault_detect_ms','failover_ms','restore_delay_ms','mtbf_ms','sync_method')}
++
++def semantics():
++ rules=[]
++ def r(key,when=None,source=REG,**kw):
++  name=key if key in ('bitrate_bps','payload_bytes','local_timing_evidence')else'pcie_'+key
++  rules.append(dict(parameter=name,when={'pcie_'+k:v for k,v in(when or{}).items()},source=source,source_revision=SOURCES[source],**kw))
++ for key in REQUIRED:r(key,required=True)
++ for key in ('bitrate_bps','local_timing_evidence'):r(key,allowed=[])
++ for key in ('lanes','max_lanes'):r(key,allowed=[1,2,4,8,12,16,32])
++ r('generation',maximum_parameter='pcie_max_generation')
++ r('lanes',maximum_parameter='pcie_max_lanes')
++ for gen,rate in enumerate((2.5,5,8,16,32,64,128),1):
++  r('rate_gts',{'generation':gen},allowed=[rate],source=GEN7)
++  if gen<=5:r('encoding',{'generation':gen,'mode':'NON_FLIT'},allowed=['8B10B'if gen<=2 else'128B130B'],source=PHY if gen<=3 else GEN45)
++  else:
++   r('mode',{'generation':gen},allowed=['FLIT'],source=GEN7)
++   r('encoding',{'generation':gen},allowed=['FLIT_PAM4'],source=GEN7)
++ r('flit_supported',{'mode':'FLIT'},required=True,allowed=[True],source=GEN6)
++ r('encoding',{'mode':'FLIT'},when_ranges={'pcie_generation':[1,5]},allowed=['REGISTERED_LOWER_RATE_FLIT'],source=GEN6)
++ r('raw_direction_bps',equal_expression={'product':['pcie_rate_gts',1000000000,'pcie_lanes']},source=GEN7)
++ for k in ('rate_gts','lanes'):r(k,when_present=['pcie_raw_direction_bps'],required=True,source=GEN7)
++ for encoding,num,den in [('8B10B',8,10),('128B130B',128,130)]:
++  r('decoded_ceiling_bps',{'mode':'NON_FLIT','encoding':encoding},equal_expression={'product':['pcie_raw_direction_bps',num/den]},source=PHY)
++ r('raw_direction_bps',when_present=['pcie_decoded_ceiling_bps'],required=True,source=PHY)
++ r('decoded_ceiling_bps',{'mode':'FLIT'},allowed=[],source=GEN6)
++ for k in ('mps','mps_supported','path_mps','mrrs'):r(k,allowed=[128,256,512,1024,2048,4096])
++ for code in range(6):
++  r('mps',{'mps_code':code},allowed=[128*(2**code)])
++  r('mrrs',{'mrrs_code':code},allowed=[128*(2**code)])
++ r('mps',maximum_parameter='pcie_mps_supported');r('mps',maximum_parameter='pcie_path_mps')
++ r('tlp_payload_bytes',maximum_parameter='pcie_mps');r('request_bytes',maximum_parameter='pcie_mrrs')
++ r('tlp_payload_bytes',multiple_of=4,source=ERRORS)
++ r('remaining_bytes',maximum_parameter='pcie_request_bytes',source=TIMEOUT)
++ r('header_bytes',allowed=[12,16]);r('digest_bytes',{'ecrc_enabled':True},allowed=[4]);r('digest_bytes',{'ecrc_enabled':False},allowed=[0])
++ r('ecrc_supported',{'ecrc_enabled':True},required=True,allowed=[True])
++ r('digest_bytes',allowed=[0,4]);r('lcrc_bytes',{'mode':'NON_FLIT'},allowed=[4],source=GEN6)
++ r('packet_bytes',{'mode':'NON_FLIT'},equal_expression={'sum':['pcie_header_bytes','pcie_prefix_bytes','pcie_tlp_payload_bytes','pcie_digest_bytes','pcie_lcrc_bytes','pcie_framing_bytes']},source=GEN6)
++ for k in ('header_bytes','prefix_bytes','tlp_payload_bytes','digest_bytes','lcrc_bytes','framing_bytes'):
++  r(k,when_present=['pcie_packet_bytes'],required=True,source=GEN6)
++  if k!='tlp_payload_bytes':r(k,{'mode':'FLIT'},allowed=[],source=GEN6)
++ r('packet_bytes',{'mode':'FLIT'},allowed=[],source=GEN6)
++ for k in ('flit_bytes','flit_tlp_bytes','flit_dlp_bytes','flit_crc_bytes','flit_fec_bytes'):r(k,{'mode':'NON_FLIT'},allowed=[],source=GEN6)
++ r('tag_bits',allowed=[5,8,10],source=FEATURES)
++ r('tag',maximum_expression={'subtract':[{'power':[2,'pcie_tag_bits']},1]},source=FEATURES)
++ r('tag_bits',when_present=['pcie_tag'],required=True,source=FEATURES)
++ r('outstanding_requests',maximum_parameter='pcie_tag_capacity',source=FEATURES)
++ r('virtual_channel',maximum_expression={'subtract':['pcie_vc_count',1]})
++ for k in ('relaxed_ordering','no_snoop'):r('ordering_source',{k:True},required=True)
++ r('address_hex',pattern=r'(?:[0-9A-Fa-f]{8}|[0-9A-Fa-f]{16})')
++ r('address_hex',integer_bitfields=[dict(parameter='pcie_page_offset',offset=0,width=12)],source=ERRORS)
++ r('address_hex',when_present=['pcie_page_offset'],required=True,source=ERRORS)
++ r('request_bytes',{'address_space':'MEMORY'},maximum_expression={'subtract':[4096,'pcie_page_offset']},source=ERRORS)
++ r('page_offset',{'address_space':'MEMORY'},when_present=['pcie_request_bytes'],required=True,source=ERRORS)
++ r('link_status_hex',pattern=r'[0-9A-Fa-f]{4}',integer_bitfields=[
++  dict(parameter='pcie_link_status',offset=0,width=16),dict(parameter='pcie_generation',offset=0,width=4),
++  dict(parameter='pcie_lanes',offset=4,width=6),dict(parameter='pcie_training',offset=11,width=1,boolean=True),
++  dict(parameter='pcie_link_active',offset=13,width=1,boolean=True)])
++ for implementation,gen,width in [('AGILEX3_GTS_25_3',3,4),('AGILEX5_GTS_25_3',4,8)]:
++  w={'implementation':implementation}
++  r('generation',w,maximum=gen,source=FEATURES);r('lanes',w,allowed=[1,2,4]if width==4 else[1,2,4,8],source=FEATURES)
++  r('mode',w,allowed=['NON_FLIT'],source=FEATURES)
++  r('role',w,allowed=['ROOT_PORT','ENDPOINT'],source=FEATURES)
++  r('mps_supported',w,allowed=[128,256,512],source=DEVICE);r('vc_count',w,allowed=[1],source=FEATURES)
++  r('virtual_channel',w,allowed=[0],source=FEATURES)
++  r('needed_data_credits',w,equal_expression={'ceiling':[{'product':['pcie_tlp_payload_bytes',1/16]}]},source=CREDIT)
++  r('tlp_payload_bytes',w,when_present=['pcie_needed_data_credits'],required=True,source=CREDIT)
++  r('clock',w,allowed=['COMMON','SRIS','SRNS'],source=FEATURES)
++  r('tag_capacity',w,when_ranges={'pcie_lanes':[1,4]},allowed=[32,64,128,256],source=FEATURES)
++  r('tag_bits',w,when_ranges={'pcie_lanes':[1,4]},allowed=[5,8],source=FEATURES)
++  r('tag_capacity',w,when_ranges={'pcie_lanes':[8,8]},allowed=[32,64,128,256,512],source=FEATURES)
++  r('needed_data_credits',{**w,'transmission_started':True},maximum_parameter='pcie_data_credits',source=CREDIT)
++  for k in ('needed_data_credits','data_credits','tlp_payload_bytes'):
++   r(k,{**w,'transmission_started':True},required=True,source=CREDIT)
++ r('data_credit_bytes',{'implementation':'REGISTERED_ACTUAL'},allowed=[],source=CREDIT)
++ for k in ('link_active',):r(k,{'transmission_started':True},required=True,allowed=[True],source=CREDIT)
++ r('training',{'transmission_started':True},required=True,allowed=[False],source=CREDIT)
++ r('header_credits',{'transmission_started':True},required=True,minimum=1,source=CREDIT)
++ r('completion_timeout_us',exclusive_minimum=0,source=TIMEOUT)
++ r('completion_timeout_disable_supported',{'completion_timeout_disabled':True},required=True,allowed=[True])
++ r('completion_elapsed_us',{'completion_timeout_disabled':False},maximum_parameter='pcie_completion_timeout_us',source=TIMEOUT)
++ w={'data_accepted':True}
++ for k in ('transaction_source','acceptance_source'):r(k,w,required=True,source=TIMEOUT)
++ r('outcome',w,required=True,allowed=['ACCEPTED'],source=TIMEOUT);r('poisoned',w,required=True,allowed=[False])
++ for k in ('completion_received','completion_success','tag_unique'):
++  r(k,{**w,'traffic':'NON_POSTED'},required=True,allowed=[True],source=TIMEOUT)
++ r('completion_timeout_us',{**w,'traffic':'NON_POSTED','completion_timeout_disabled':False},required=True,source=TIMEOUT)
++ r('completion_elapsed_us',{**w,'traffic':'NON_POSTED','completion_timeout_disabled':False},required=True,source=TIMEOUT)
++ r('age_us',maximum_parameter='pcie_freshness_limit_us',source=TIMEOUT)
++ r('freshness_limit_us',when_present=['pcie_age_us'],required=True,source=TIMEOUT)
++ r('reset_wait_us',{'conventional_reset':True,'readiness_notification':False},minimum=1000000,source=FEATURES)
++ return dict(rate_model={'type':'NEGOTIATED_GENERATION_LANES_CODEC','fields':[]},required_parameters=['pcie_'+k for k in REQUIRED],
++  native_parameter_prefixes=['pcie_'],parameter_evidence_scope='EXPLICIT_LAYER',parameter_constraints=rules,
++  physical_layer_profile_id='explicit_pcie_trained_channel',medium_access_model='POINT_TO_POINT_FULL_DUPLEX_LANES',
++  arbitration_model_id='ACTUAL_VC_CREDITS_ORDERING_AND_REPLAY',mechanisms={'framing':['NON_FLIT_VERSUS_FLIT_FEC'],
++  'qualification':['NEGOTIATED_RATE_NOT_APPLICATION_GOODPUT','DEVICE_CAPABILITY_DISTINCT_CONFIGURATION','NO_CAN_ETHERNET_FALLBACK']})
++
++def fields():
++ result=[]
++ for spec in DECLARATIONS:
++  k=spec['key'][5:];item={a:b for a,b in spec.items()if b is not None}
++  item.update(label=k.replace('_',' '),category='timing'if spec.get('unit')=='us'else'communication',scope='route',
++   editable=True,required=k in REQUIRED,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
++  if k in ('generation','lanes','mps','mrrs'):
++   item.update(default=1 if k in ('generation','lanes') else 128,default_status='PROPOSED',parameter_origin='TRANSPORT_PROFILE')
++  if k in ('rate_gts','encoding'):
++   item.update(conditional_defaults=[dict(when={'pcie_generation':gen,**({'pcie_mode':'NON_FLIT'}if k=='encoding'else{})},
++      value=rate if k=='rate_gts'else('8B10B'if gen<=2 else'128B130B'),source=PHY if gen<=3 else GEN45 if gen<=5 else GEN7,
++      source_revision=SOURCES[PHY if gen<=3 else GEN45 if gen<=5 else GEN7])
++      for gen,rate in enumerate((2.5,5,8,16,32,64,128),1)if k=='rate_gts'or gen<=5],default_status='PROPOSED_CONDITIONAL',parameter_origin='TRANSPORT_PROFILE')
++  if k in ('flit_bytes','flit_tlp_bytes','flit_dlp_bytes','flit_crc_bytes','flit_fec_bytes'):
++   item.update(conditional_defaults=[dict(when={'pcie_mode':'FLIT'},value=spec['min'],source=GEN6,source_revision=SOURCES[GEN6])],default_status='PROPOSED_CONDITIONAL',parameter_origin='TRANSPORT_PROFILE')
++  result.append(item)
++ return result

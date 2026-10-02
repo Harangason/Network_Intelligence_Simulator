@@ -1,0 +1,49 @@
+TC_B_10_CS: Set Variables - multiple values
+Test case name Set Variables - multiple values
+Test case Id TC_B_10_CS
+Use case Id(s) B05
+Requirement(s) B05.FR.01, B05.FR.02, B05.FR.03, B05.FR.10, B05.FR.12
+System under test Charging Station
+Description Set the value of two required variables
+Purpose To test setting multiple values using GetVariablesRequest for one of the
+mandatory component/variable combinations that must exist in the DM implementation.
+Prerequisite(s) N/A
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with SetVariablesResponse with
+attributeStatus = Accepted.
+1. Test System sends SetVariablesRequest with:
+- setVariableData[0].variable.name = "OfflineThreshold"
+- setVariableData[0].component.name = "OCPPCommCtrlr"
+- setVariableData[0].attributeValue = "300"
+- setVariableData[0].attributeType = Actual -
+setVariableData[1].variable.name = "LocalAuthorizeOffline"
+- setVariableData[1].component.name = "AuthCtrlr"
+- setVariableData[1].attributeValue = "true"
+- setVariableData[0].attributeType = Actual
+Tool validations
+* Step 2:
+Message: SetVariablesResponse has (in arbitrary order)
+SetVariableResultType[1]:
+- attributeStatus = Accepted
+- attributeType = Actual
+- component.name = "OCPPCommCtrlr"
+- variable.name = "OfflineThreshold"
+- attributeStatusInfo is absent or attributeStatusInfo.reasonCode = "NoError"
+SetVariableResultType[2]:
+- attributeStatus = Accepted
+- attributeType = Actual
+- component.name = "AuthCtrlr"
+- variable.name = "LocalAuthorizeOffline"
+- attributeStatusInfo is absent or attributeStatusInfo.reasonCode = "NoError"
+Post scenario validations:
+N/A
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 39/1383 Part 6 - Test Cases

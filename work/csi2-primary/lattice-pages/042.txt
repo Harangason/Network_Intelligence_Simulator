@@ -1,0 +1,63 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  42 
+Notes: 
+1. The maximum data rate depends on the family, package, and performance grade of the device. Check the device data sheet for 
+more information. 
+2. Only one-color format can be enabled at a time. 
+3. Device selection must account for the required TX Line Buffer/Byte Buffer FIFO depth. Smaller devices may have limited EBR 
+resources. Select a device with sufficient EBR capacity to store the MIPI packet, payload, and sideband information. 
+3.2. MIPI CSI/DSI TX Protocol Timing Parameters 
+Table 3.2. MIPI CSI/DSI TX Protocol Timing Parameters – General Attributes 
+Attribute Selectable Values Description 
+requirement. 
+This setting is available only when PHY Direction is set to TX and 
+Enable tINIT Counter is checked. 
+tINIT Duration (ns) 8000 Displays the effective tINIT duration in ns computed from the 
+user-programmed tINIT counter value. 
+tINIT_ns = tINIT counter value × Byte_Clock_Period_ns 
+This setting is available only when PHY Direction is set to TX. 
+Not editable. For information only. 
+Enable Initial Skew 
+Calibration 
+checked, unchecked Enables initial skew calibration. 
+This option is available only when PHY Mode is set to Hard D-PHY and 
+Line Rate > 1500 Mbps. 
+Enable Periodic Skew 
+Calibration 
+checked, unchecked Enables periodic skew calibration and performs periodic skew 
+calibration during video frame end blanking period. You can disable 
+this feature at runtime through CSR access. 
+This option is available only when PHY Mode is set to Hard D-PHY. 
+Attribute Selectable Values Description 
+Protocol Timing Parameters 
+TX Global Operation Timing Parameters 
+t_LPX 1–2554 Duration of any low-power state.  
+t_HS-PREPARE 1–255 Duration of the LP-00 line state before the HS-0 line state. 
+Default value of t_HS-PREPARE = ceil(Minimum timing parameter 
+value/ByteClk Period) 
+If t_HS-PREPARE_val > 0, the default value of t_HS-PREPARE is t_HS-
+PREPARE_val + 1, otherwise, the default value is 1. 
+t_HS-ZERO 1–255 Delay from LP 00 entry to the point when the IP is ready to begin HS 
+transmission. 
+The actual HS-ZERO on the D-PHY data lanes depends on the serializer 
+delay and internal packet processing. 
+Default value of t_HS_ZERO = ceil(Minimum timing parameter 
+value/ByteClk Period). 
+t_HS-TRAIL 3–255 Duration of the flipped bit after the last payload data bit of an HS 
+transmission burst. 
+Default value of t_HS_TRAIL = floor(Maximum T_EOT timing parameter 
+value/ByteClk Period). 
+t_HS-EXIT 1–255 Duration of the data LP-11 state following an HS transmission burst. 
+Default value of t_HS_EXIT = floor((Minimum timing parameter 
+value/ByteClk Period) + 1). 
+t_CLK-PREPARE 1–255 Duration of the LP-00 clock state immediately before the HS-0 clock state 
+in the LP-to-HS sequence. 
+Default value of t_CLK-PREPARE = ceil(Minimum timing parameter 
+value/ByteClk Period). 
+t_CLK-ZERO 1–255 Duration of the clock HS-0 state prior to starting the toggling of the high-
+speed clock.  

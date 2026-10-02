@@ -1,0 +1,57 @@
+Field Name Field Type Card. Description
+idToken IdTokenType 0..1 Optional. This contains the identifier for which a
+transaction is (or will be) started or stopped. Is required
+when the EV Driver becomes authorized for this
+transaction and when the EV Driver ends authorization.
+The IdToken should only be sent once in a
+TransactionEventRequest for every authorization (for
+starting or for stopping) done for this transaction, so that
+CSMS can return the idTokenInfo in the
+TransactionEventResponse.
+idToken should not be present in the
+TransactionEventRequest when a transaction is ended by
+a RequestStopTransactionRequest or a ResetRequest.
+evse EVSEType 0..1 Optional. This identifies which evse (and connector) of
+the Charging Station is used.
+transactionInfo TransactionType 1..1 Required. Contains transaction specific information.
+costDetails CostDetailsType 0..1 Optional. (2.1) Optional. Only required in
+TransactionEventRequest('Ended') and only if Charging
+Station calculated cost locally.
+1.84.2. TransactionEventResponse
+This contains the field definition of the TransactionEventResponse PDU sent by the CSMS to the Charging Station in response to a
+TransactionEventRequest.
+Class
+Field Name Field Type Card. Description
+totalCost decimal 0..1 Optional. When eventType of TransactionEventRequest is
+Updated, then this value contains the running cost. When
+eventType of TransactionEventRequest is Ended, then
+this contains the final total cost of this transaction,
+including taxes, in the currency configured with the
+Configuration Variable: Currency. Absence of this value
+does not imply that the transaction was free. To indicate
+a free transaction, the CSMS SHALL send a value of 0.00.
+chargingPriority integer 0..1 Optional. Priority from a business point of view. Default
+priority is 0, The range is from -9 to 9. Higher values
+indicate a higher priority. The chargingPriority in
+TransactionEventResponse is temporarily, so it may not
+be set in the IdTokenInfoType afterwards. Also the
+chargingPriority in TransactionEventResponse has a
+higher priority than the one in IdTokenInfoType.
+idTokenInfo IdTokenInfoType 0..1 Optional. This contains information about authorization
+status, expiry and group id. Is required when the
+transactionEventRequest contained an idToken.
+updatedPersonalMessage MessageContentType 0..1 Optional. This can contain updated personal message
+that can be shown to the EV Driver. This can be used to
+provide updated tariff information .
+updatedPersonalMessageE
+xtra
+MessageContentType 0..4 Optional. (2.1) Additional languages besides the default
+language in updatedPersonalMessage.
+transactionLimit TransactionLimitType 0..1 Optional. (2.1) Maximum cost/energy/time limit allowed
+for this transaction.
+1.85. TriggerMessage
+1.85.1. TriggerMessageRequest
+This contains the field definition of the TriggerMessageRequest PDU sent by the CSMS to the Charging Station.
+Class
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 619/803 Part 2 - Specification

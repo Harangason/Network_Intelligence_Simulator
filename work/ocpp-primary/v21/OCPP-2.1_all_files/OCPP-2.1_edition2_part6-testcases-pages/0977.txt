@@ -1,0 +1,40 @@
+Main (Test scenario)
+12. The Test System reconnects to the CSMS using the new
+NetworkProfile, containing the upgraded security profile
+<Configured securityProfile + 1>.
+Note(s):
+- This is done to restore the connection before ending the
+testcase.
+13. The CSMS accepts the connection attempt.
+Tool validations
+* Step 1:
+Message SetNetworkProfileRequest
+- connectionData.messageTimeout <Configured messageTimeout>
+- connectionData.ocppInterface <Configured ocppInterface>
+- connectionData.ocppTransport JSON
+- connectionData.ocppVersion OCPP20
+- connectionData.securityProfile <Configured securityProfile + 1>
+* Step 3:
+Message SetVariablesRequest
+setVariableData:
+- variable.name = "NetworkConfigurationPriority"
+- component.name = "OCPPCommCtrlr"
+- attributeValue = <contains configurationSlot provided at step 1>
+* Step 11:
+When upgrading a Charging Station to a higher security profile, a CSMS has several options regarding which endpoint to use. This
+affects the way the CSMS is able to detect it needs to reject the incoming connection attempt. 
+In case of having upgraded from security profile 2 to 3, but there is an incoming connection attempt using security profile 2:
+When the same endpoint is used, then it depends on the CSMS endpoint configuration. 
+- When the CSMS does a full switch and only allows TLS handshakes when a client certificate is provided, then the TLS handshake
+is rejected.
+- When the CSMS only requires this Charging Station to use a client certificate, then it accepts the TLS handshake (because it will
+be unable to detect which Charging Station is connecting) and it rejects the HTTP request to establish the WebSocket connection.
+When a different port or a whole different endpoint is used for the upgrade, then on the original endpoint the CSMS accepts the
+TLS handshake and it rejects the HTTP request to establish the WebSocket connection (because this Charging Station is not
+allowed to connect with security profile 2 anymore).
+In case of security profile 1, the case is always the same. The CSMS shall always reject the HTTP request to establish the
+WebSocket connection, because TLS is required for this Charging Station.
+Post scenario validations:
+The Test System and the CSMS are connected.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 975/1383 Part 6 - Test Cases

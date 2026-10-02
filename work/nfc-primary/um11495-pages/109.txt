@@ -1,0 +1,44 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Parameter Length Value/Description
+1 PRBS Mode 1 Byte 0x00: Firmware generated PRBS
+0x01: Hardware generated PRBS
+Others: RFU
+2 PRBS type 1 Byte 0x00: PRBS9 when Hardware generated PRBS selected
+0x01: PRBS15 when Hardware generated PRBS selected
+Others: Ignored when Firmware generated PRBS is selected
+3 Technology to stream 1 Byte 0x00: Type A
+0x01: Type B
+0x02: Type F
+0x03: Type V (Note: From FW version 12.50.09 onwards)
+Others: RFU
+4 Bitrate 1 Byte 0x00: 106 kbit/s (Type A,B)
+0x01: 212 kbit/s (Type A,B and F)
+0x02: 424 kbit/s (Type A,B and F)
+0x03: 848 kbit/s (Type A,B)
+0x04: 26 kbit/s (Type V) (Note: From FW version 12.50.09 onwards)
+Others: RFU
+5 PRBS series length 2 bytes Only 0x01FF value is supported, when Firmware generated PRBS is
+selected
+Table 113. TEST_PRBS_CMD parameters
+GID OID Numbers of
+parameter(s) Description
+1111b 0x30 1 PN7160 reports if the TEST_PRBS_CMD is successful.
+Table 114. TEST_PRBS_RSP
+In case the NCI package is malformed (wrong length for example), STATUS_SYNTAX_ERROR is returned. If
+parameters are out of bounds (RFU values as stated above), STATUS_INVALID_PARAM will be sent. In case
+the PRBS tests are started in any state other than RFST_IDLE, STATUS_SEMANTIC_ERROR will be returned.
+Parameter Length Value/Description
+Status 1 byte 0x00: STATUS_OK
+0x05: STATUS_SYNTAX_ERROR
+0x06: STATUS_SEMANTIC_ERROR
+0x09: STATUS_INVALID_PARAM
+Others: RFU
+Table 115. TEST_PRBS_RSP parameter
+Note:  The only way to stop the on-going PRBS pattern generation is to apply an HW reset (through the VEN
+pin).
+12.4  TEST_GET_REGISTER_CMD/RSP
+This command is used to retrieve the current Value of the AGC_VALUE_REGISTER.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+109 / 147

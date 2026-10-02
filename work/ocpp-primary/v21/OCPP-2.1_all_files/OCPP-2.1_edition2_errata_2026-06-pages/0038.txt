@@ -1,0 +1,47 @@
+Tool validations
+Post scenario validations:
+- N/a
+6.2.8. Page 98 - 113 - (2026-06) - TC_B_105_CS/TC_B_111_CS/TC_B_113_CS
+-Ensure NetworkConfigurationPriority contains only active configurationSlot
+At the start of the test cases (TC_B_105_CS, TC_B_111_CS, and TC_B_113_CS), the NetworkConfigurationPriority is configured to
+include only the currently active configurationSlot. This setup ensures that the non‑active configuration slot can be modified and
+activated as intended during the execution of the test cases.
+In addition, the previously included note was removed because it was no longer required.
+Main (Test scenario)
+Charging Station CSMS
+Note: In the following steps <configurationSlot> equals <Configured non-active configurationSlot>
+2.  Charging Station responds with      SetVariablesResponse
+1.  Test System sends     SetVariablesRequest  with 
+-  setVariableData[0].component.name   OCPPCommCtrlr
+-  setVariableData[0].variable.name   NetworkConfigurationPriority
+-  setVariableData[0].attributeValue   <Active configuration slot>  
+…
+Tool validations
+* Step 2: 
+Message  SetVariablesResponse
+-  setVariableResult.attributeStatus  must be    Accepted
+…
+6.2.9. Page 105 - 107 - (2026-02) - TC_B_109_CS - Testcase updated
+Added descriptions for WebSocket disconnection and reconnection. NetworkConfiguration.Identity and
+NetworkConfiguration.BasicAuthPassword are now set using SetNetworkProfileRequest. To ensure
+SecurityCtrlr.BasicAuthPassword is correctly applied during reconnection, a new valid password is generated and used instead of
+the originally configured basicAuthPassword.
+Test case name Set new NetworkConnectionProfile - When changing SecurityCtrlr.Identity/BasicAuthPassword the
+NetworkProfiles.Identity/BasicAuthPassword must be cleared
+Test case Id TC_B_109_CS
+…
+Prerequisite(s) NetworkConfiguration component variables are writable.
+NetworkConfiguration.Identity and NetworkConfiguration.BasicAuthPassword are set.
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with GetVariablesResponse
+1. Test System sends GetVariablesRequest for
+- OCPPCommCtrlr.ActiveNetworkProfile
+Note: The result of Step #2 is called <the active configuration>
+4. The Charging Station responds with GetVariablesResponse
+3. Test System sends GetVariablesRequest for
+- NetworkConfiguration[<the active configuration>].Identity
+- NetworkConfiguration [ <the active configuration>  
+. SecurityProfile
+Note :  The security profile of step 4 is used in the SetNetworkProfileRequest          
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 34/116 Errata 2026-06

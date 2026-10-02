@@ -1,0 +1,93 @@
+19 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+IB48 [ set the ISO Baud rate to 4800 ]
+This command  is used to change the baud rate
+used for the ISO 9141-2 and ISO 14230-4  protocols
+(numbers 3, 4, and 5) to 4800 baud.
+IB96 [ set the ISO Baud rate to 9600 ]
+This command is used to change the baud rate
+used for the ISO 9141-2 and ISO 14230-4  protocols
+(numbers 3, 4, and 5) to 9600 baud.
+IFR0, IFR1, and IFR2 [ IFR control - not monitoring ]
+The SAE J1850 protocol allows for an In-Frame
+Response (IFR) byte to be sent after each message,
+usually to acknowledge the correct receipt of that
+message. The ELM327 automatically generates and
+sends this byte for you, unless you are monitoring (by
+default, the ELM327 is always silent while monitoring).
+You can override this behaviour with the IFR
+command.
+The IFR0 command will disable the sending of all
+IFRs, no matter what the header bytes require. IFR2 is
+the opposite - it will cause an IFR byte to always be
+sent, no matter what the header bytes say. The IFR1
+command determines whether to send an IFR from the
+value of the ‘K’ bit in the first header byte (for both
+PWM and VPW). The default setting is IFR1.
+IFR4, IFR5, and IFR6 [ IFR control - at all times ]
+While the original ELM327 ICs would never send
+IFRs while monitoring, there are certain situations
+(typically when simulating an ECU and using one
+ELM327 to continuously receive data while another
+only sends). In this case, it is desirable to be able to
+send IFRs while monitoring.
+The IFR4, IFR5, and IFR6 commands mimic the
+IFR0, IFR1 and IFR2 commands respectively, except
+that they apply at all times (whether monitoring or not).
+IFR4 will never generate an IFR, IFR5 will do it based
+on the ‘K’ bit value, and IFR6 always generate one.
+IFR H and IFR S [ IFR from Header or Source ] 
+The value sent in the J1850 In-Frame Response
+(IFR) byte is normally the same as the value sent as
+the source (ie tester) address byte that was in the
+header of the request. There may be occasions when
+it is desirable to use some other value, however, and
+this set of commands allows for this.
+If you send AT IFR S, the ELM327 will use the
+value defined as the Source address (usually F1, but it
+can be changed with PP 06 or AT TA), even if another
+value was sent in the Header bytes. This is not what is
+normally required, and caution should be used when
+doing this. AT IFR H restores the sending of the IFR
+bytes to those provided in the Header, and is the
+default setting.
+IGN [ read the IgnMon input level ]
+This command reads the signal level at pin 15. It
+assumes that the logic level is related to the ignition
+voltage, so if the input is at a high level, the response
+will be ‘ON’, and a low level will report ‘OFF’.
+This feature is most useful if you wish to perform
+the power control functions using your own software. If
+you disable the Low Power automatic response to a
+low input on this pin (by setting bit 2 of PP 0E to 0),
+then pin 15 will function as the RTS input. A low level
+on the input will not turn the power off, but it will
+interrupt any OBD activity that is in progress. All you
+need to do is detect the ‘STOPPED’ message that is
+sent when the ELM327 is interrupted, and then check
+the level at pin 15 using AT IGN. If it is found to be
+OFF, you can perform an orderly shutdown yourself.
+IIA hh [ set the ISO Init Address to hh ]
+The ISO 9141-2 and ISO 14230-4 standards state
+that when beginning a session with an ECU, the
+initiation sequence is to be directed to a specific
+address ($33). If you wish to experiment by directing
+the slow five baud sequence to another address, it is
+done with this command. For example, if you prefer
+that the initiation be performed with the ECU at
+address $7A, then simply send:
+>AT IIA 7A
+and the ELM327 will use that address when called to
+do so (protocols 3 or 4). The full eight bit value is used
+exactly as provided – no changes are made to it (ie no
+adding of parity bits, etc.)
+Note that setting this value does not affect any
+address values used in the header bytes. The ISO init
+address is restored to $33 whenever the defaults, or
+the ELM327, are reset.
+JE [ enables the J1939 ELM data format ]
+The J1939 standard requires that PGN requests
+be sent with the byte order reversed from the standard
+AT Command Descriptions (continued)

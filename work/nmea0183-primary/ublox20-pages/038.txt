@@ -1,0 +1,47 @@
+u-blox 20 HPG 2.00 - Interface description
+0 xxZDA string - $GPZDA ZDA Message ID (xx = current Talker ID, see NMEA
+Talker IDs table)
+1 time hhmmss.ss - 082710.00 UTC Time. See section UTC representation in the
+integration manual for details.
+2 day dd day 16 UTC day (range: 1-31)
+3 month mm month 09 UTC month (range: 1-12)
+4 year yyyy year 2002 UTC year
+5 ltzh xx - 00 Local time zone hours (ﬁxed ﬁeld, always 00)
+6 ltzn zz - 00 Local time zone minutes (ﬁxed ﬁeld, always 00)
+7 cs hexadecimal - *64 Checksum
+8 CRLF character - - Carriage return and line feed
+2.8 PUBX messages
+Proprietary NMEA messages for u-blox positioning receivers. See also NMEA proprietary messages.
+2.8.1 CONFIG (PUBX,41)
+2.8.1.1 Set protocols and baud rate
+Message NMEA-PUBX-CONFIG
+Set protocols and baud rate
+Type Set
+Comment
+Information Class/ID: 0xf1 0x41 Number of fields: 9
+Structure $PUBX,41,portId,inProto,outProto,baudrate,autobauding*cs\r\n
+Example $PUBX,41,1,0007,0003,19200,0*25\r\n
+Payload:
+Field Name Format Unit Example Description
+0 PUBX string - $PUBX Message ID, UBX protocol header, proprietary sentence
+1 msgId numeric - 41 Proprietary message identiﬁer
+2 portId numeric - 1 ID of communication port. See section Communication
+ports in the integration manual for details.
+3 inProto hexadecimal - 0007 Input protocol mask. Bitmask, specifying which
+protocols(s) are allowed for input. See section
+Communication ports in the integration manual for
+details.
+4 outProto hexadecimal - 0003 Output protocol mask. Bitmask, specifying which
+protocols(s) are allowed for input. See section
+Communication ports in the integration manual for
+details.
+5 baudrate numeric bits/s 19200 Baud rate
+6 autobauding numeric - - Autobauding: 1=enable, 0=disable (not supported on u-
+blox 5, set to 0)
+7 cs hexadecimal - *25 Checksum
+8 CRLF character - - Carriage return and line feed
+2.8.2 POSITION (PUBX,00)
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 38 of 224
+C1-Public

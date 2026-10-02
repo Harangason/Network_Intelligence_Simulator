@@ -1,0 +1,32 @@
+New text Required. In case of a full update this is the version number of the full list. In case of a differential update it is the version number of the
+list after the update has been applied. SHALL NOT be -1 or 0 as these have a special meaning in GetLocalListVersion.conf
+3.53. Page 70, section: 6.43: Description connectorId = 0 in SetChargingProfile.req
+causes confusion
+Added in errata sheet v4.0
+OCPP 1.6 FINAL Page 78
+The description of the connectorId in the SetChargingProfile.req does not take into account that it can also be
+used for setting a TxDefaultProfile. It seems to only take into account a ChargePointMaxProfile.
+Old text If connectorId = 0, the message contains an overall limit for the Charge Point.
+New text If connectorId = 0, and the message contains a ChargePointMaxProfile it contains an overall limit for the Charge Point. If connectorId = 0,
+and the message contains a TxDefaultProfile it contains limits that are to be used for any new transaction on any connector of that
+Charge Point.
+3.54. Page 71, section: 6.46: Useful values for Transaction ID not clear
+Added in errata sheet v4.0
+It is not clear to some that the expected value for Transaction IDs are unique positive integers.
+Old description Required. This contains the transaction id supplied by the Central System.
+New description Required. This contains the transaction id supplied by the Central System.
+It is RECOMMENDED to use unique positive numbers for transactionIds. Negative numbers and zero (0) are possible, but
+don’t have any special meaning to the Charge Point (they don’t mean the transaction is rejected or something like that.) Note
+that the Charge Point might use transactionId = -1 in transaction related message when the Charge Point was not able to
+successfully deliver the StartTransaction.req.
+3.55. Page 77, section: 7.7: Definition of SuspendedEV is too confusing
+Added in errata sheet v4.0
+The new text for SuspendedEV is too confusing. The way it is written now implies that, even if the EVSE is in
+charging state (C2 with contactor closed) and the EV is not consuming any power that the state should be
+SuspendedEV.
+SuspendedEV Old text When the EV is connected to the EVSE and the EVSE is offering energy but the EV is not taking any energy.
+(Operative)
+SuspendedEV New text When the EV is connected to the EVSE and the EVSE is willing and ready to offer energy, but EV is not
+asking or taking energy. For example: A Charge Point using mode 3: if the EV is in B2 this also means
+SuspendedEV. (Operative)
+21

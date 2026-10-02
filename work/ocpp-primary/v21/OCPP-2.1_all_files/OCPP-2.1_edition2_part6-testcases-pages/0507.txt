@@ -1,0 +1,45 @@
+TC_K_29_CS: Get Charging Profile - EvseId 0
+Test case name Get Charging Profile - EvseId 0
+Test case Id TC_K_29_CS
+Use case Id(s) K09
+Requirement(s) K09.FR.02, K09.FR.05
+System under test Charging Station
+Description With the GetChargingProfilesRequest message the CSMS can ask a Charging Station to report all, or a
+subset of all the install Charging Profiles from the different possible sources. This can be used for some
+automatic smart charging control system, or for debug purposes by a CSO.
+Purpose To verify if the Charging station is able to successfully report the charging profile(s) requested as described
+at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+Charging station has a charging profile with <Generated Id1> AND chargingProfilePurpose ChargingStationMaxProfile configured
+on the charging statation.
+Charging station has a second charge profile with <Generated Id2> AND chargingProfilePurpose TxDefaultProfile configured on
+<Configured evseId>.
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+GetChargingProfilesResponse
+1. The Test System sends a GetChargingProfilesRequest with
+evseId 0
+3. The Charging Station sends a ReportChargingProfilesRequest
+4. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If tbc is True at Step 3 then step 3 and 4 will be repeated
+Tool validations
+* Step 2:
+Message GetChargingProfilesResponse
+- status Accepted
+* Step 3:
+Message ReportChargingProfilesRequest
+- requestId <Generated requestId>
+- chargingProfile <Generated ChargingProfile1> with chargingProfilePurpose ChargingStationMaxProfile
+Post scenario validations:
+- All report message have been received
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 505/1383 Part 6 - Test Cases

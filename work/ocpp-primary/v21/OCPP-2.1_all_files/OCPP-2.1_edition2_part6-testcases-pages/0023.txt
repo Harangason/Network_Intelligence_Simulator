@@ -1,0 +1,58 @@
+TC_A_19_CS: Upgrade Charging Station Security Profile - Accepted
+Test case name Upgrade Charging Station Security Profile - Accepted
+Test case Id TC_A_19_CS
+Use case Id(s) A05
+Requirement(s) A05.FR.04,A05.FR.05,A05.FR.06
+System under test Charging Station
+Description The CSMS updates the connection details on the Charging Station, to increase the security profile level.
+Purpose To verify if the Charging Station is able to increase the security profile level when configured to do so by the
+CSMS.
+Prerequisite(s) Security profile must be set to 1 or 2
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+If configured <Security profile> is 1, then CertificateInstalled
+If configured <Security profile> is 2, then RenewChargingStationCertificate
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetNetworkProfileResponse
+1. The Test System sends a SetNetworkProfileRequest
+with configurationSlot is <Configured configurationSlot> or
+<Configured configurationSlot2> depending on which one is
+already in use
+- connectionData.messageTimeout <Configured
+messageTimeout>
+- connectionData.ocppCsmsUrl <Configured ocppCsmsUrl>
+- connectionData.ocppInterface <Configured ocppInterface>
+- connectionData.ocppVersion OCPP20
+- connectionData.securityProfile <Configured securityProfile + 1>
+Note(s):
+- The Test System checks the ActiveNetworkProfile variable to
+see which slot is currently active.
+- The Test System prevents overwriting the NetworkProfile at the
+active slot, as this is not recommended.
+4. The Charging Station responds with a SetVariablesResponse
+3. The Test System sends a SetVariablesRequest
+with variable.name is "NetworkConfigurationPriority"
+component.name is "OCPPCommCtrlr"
+attributeValue is <configurationSlot set at Step 1, the other
+configured configurationSlot>
+6. The Charging Station responds with a ResetResponse
+5. The Test System sends a ResetRequest
+with type OnIdle
+7. The Test System restarts the WebSocket server using
+<Configured securityProfile + 1>
+8. The Charging Station reconnects to the Test System using
+<Configured securityProfile + 1>
+9. The Test System accepts the connection attempt.
+10. Execute Reusable State Booted
+12. The Charging Station responds with GetVariablesResponse
+11. Test System sends GetVariablesRequest with:
+- variable.name = "SecurityProfile"
+- component.name = "SecurityCtrlr"
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 21/1383 Part 6 - Test Cases

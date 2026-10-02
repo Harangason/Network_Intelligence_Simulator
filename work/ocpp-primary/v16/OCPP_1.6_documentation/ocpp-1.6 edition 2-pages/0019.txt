@@ -1,0 +1,35 @@
+Whether the Local Authorization List is enabled is reported and controlled by the LocalAuthListEnabled
+configuration key.
+The Central System can synchronize this list by either (1) sending a complete list of identifiers to replace the
+Local Authorization List or (2) by sending a list of changes (add, update, delete) to apply to the Local
+Authorization List. The operations to support this are Get Local List Version and Send Local List.
+Charge Point Central System
+SendLocalList.req( listVersion: 234 , updateType: Full , [localAuthorizationList])
+SendLocalList.conf( status: Accepted )
+Figure 3. Sequence Diagram: Example of a full local authorization list update
+Charge Point Central System
+GetLocalListVersion.req()
+GetLocalListVersion.conf( listVersion: 234 )
+SendLocalList.req( listVersion: 239 , updateType: Differential , [AuthorisationData])
+SendLocalList.conf( status: Accepted )
+Figure 4. Sequence Diagram: Example of a differential local authorization list update
+The Charge Point SHALL NOT modify the contents of the Authorization List by any other means than upon a the
+receipt of a SendLocalList PDU from the Central System.
+
+Conflicts between the local authorization list and the validity reported in, for instance, a
+StartTransaction.conf message might occur. When this happens the Charge Point SHALL
+inform the Central System by sending a StatusNotification with ConnectorId set to 0, and
+ErrorCode set to 'LocalListConflict'.
+3.5.3. Relation between Authorization Cache and Local Authorization List
+The Authorization Cache and Local Authorization List are distinct logical data structures. Identifiers known in the
+Local Authorization List SHALL NOT be added to the Authorization Cache.
+Where both Authorization Cache and Local Authorization List are supported, a Charge Point SHALL treat Local
+Authorization List entries as having priority over Authorization Cache entries for the same identifiers.
+3.5.4. Unknown Offline Authorization
+When offline, a Charge Point MAY allow automatic authorization of any "unknown" identifiers that cannot be
+explicitly authorized by Local Authorization List or Authorization Cache entries. Identifiers that are present in a
+Local Authorization List that have a status other than “Accepted” (Invalid, Blocked, Expired) MUST be rejected.
+Identifiers that were valid but are apparently expired due to passage of time MUST also be rejected.
+Operation of the Unknown Offline Authorization capability, when supported, is reported (and controlled, where
+possible) by the AllowOfflineTxForUnknownId configuration key.
+14

@@ -1,0 +1,42 @@
+Main (Test scenario)
+11. Execute Reusable State EnergyTransferStarted for <Configured second Connector>
+Note(s):
+- It is allowed to start a second transaction while there is a (scheduled) firmware update.
+11a. If Charging Station reported Installing in step 9 then wait a while (30-60 s) before continuing with next steps to stop
+transactions to allow time to install firmware.
+12. Execute Reusable State ParkingBayUnoccupied for <Configured connectorId>
+Note(s):
+- The Charging Station will proceed to this end state. This will cause the first transaction to stop.
+13. Execute Reusable State ParkingBayUnoccupied for <Configured second Connector>
+Note(s):
+- The Charging Station will proceed to this end state. This will cause the second transaction to stop.
+- The Charging Station will start the firmware update process (if it had not started installing in step 9) the moment this second
+transaction ends or when all interactions with the EV Driver are done (so after the cable has been unplugged, assuming there is no
+parking bay sensor).
+14. The Charging Station notifies the CSMS about the current
+state of all connectors.
+Note(s):
+- This step is optional. The Charging Station may want to set its
+connectors to Unavailable, before proceeding installing the new
+firmware.
+15. The Test System responds accordingly.
+16. Execute Reusable State RebootBeforeFirmwareInstallation
+Note: This step only needs to be executed if the Charging Station needs to reboot before firmware installation.
+17. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Installing
+Note(s):
+- This step only needs to be executed if the Charging Station did
+not report Installing at step 9 and did not reboot before firmware
+installation, at step 16 (because that step already reports
+Installing).
+18. The Test System responds with a
+FirmwareStatusNotificationResponse
+19. Execute Reusable State RebootBeforeFirmwareActivation
+Note: This step only needs to be executed if the Charging Station needs to reboot before firmware activation.
+20. The Test System waits for the Charging Station to reconnect.
+Note: This step only needs to be executed if the Charging Station did not reboot/reconnect up until this point. The Charging Station
+should at least reconnect to reestablish the protocol version handshake.
+Note: Step 21 through 26 can be sent in a different order.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 419/914 Part 6 - Test Cases

@@ -1,0 +1,702 @@
+PAGE 64
+System integration Proline Prowirl O 200 PROFIBUS PA
+64 Endress+Hauser
+Manual setting
+The manual setting is made in the Ident number selector parameter via the option
+Prowirl 72 (0x153B) or Prowirl 73 (0x153C).
+Afterwards, the Prowirl 200 PROFIBUS PA makes the same input and output data and
+measured status information available for cyclic data exchange.
+• If the Prowirl 200 PROFIBUS PA is acyclically configured via an operating program
+(Class 2 master), access is directly via the block structure or the parameters of the
+measuring device.
+• If parameters have been changed in the device to be replaced (Prowirl 72 PROFIBUS
+PA or Prowirl 73 PROFIBUS PA) (parameter setting no longer corresponds to the
+original factory setting), these parameters must be changed accordingly in the new
+replacement Prowirl 200 PROFIBUS PA via an operating program (Class 2 master).
+Example
+The setting for low flow cut off has been changed from mass flow (factory setting)
+to corrected volume flow in a Prowirl 72 PROFIBUS PA currently in operation. This
+device is now replaced by a Prowirl 200 PROFIBUS PA device. After replacing the
+device, the assignment for the low flow cut off must be changed manually in the
+Prowirl 200 PROFIBUS, i.e. to corrected volume flow, to ensure the measuring
+device behaves identically.
+Replacing the measuring devices without changing the GSD file or restarting the
+controller
+In the procedure described below, the device can be replaced without interrupting ongoing
+operation or restarting the controller. However with this procedure the measuring device is
+not fully integrated!
+1. Replace the measuring device Prowirl 72 or 73 PROFIBUS PA by a Prowirl 200
+PROFIBUS PA device.
+2. Set the device address: The same device address that was set for the Prowirl 72,
+Prowirl 73 or PROFIBUS PA Profile GSD must be used.
+3. Connect the Prowirl 200 PROFIBUS PA.
+If the factory setting had been changed on the replaced device (Prowirl 72 or Prowirl 73),
+the following settings may need to be changed:
+1. Configuration of the application-specific parameters.
+2. Choice of process variables to be transmitted via the CHANNEL parameter in the
+Analog Input or Totalizer function block.
+3. Setting of the units for the process variables.
+9.3  Cyclic data transmission 
+Cyclic data transmission when using the device master file (GSD).
+9.3.1  Block model
+The block model shows which input and output data the measuring device makes available
+for cyclic data exchange. Cyclic data exchange takes place with a PROFIBUS master (Class
+1), e.g. a control system.
+Measuring device Control system
+Transducer
+Block
+Analog Input block 1  to  4 →   65 Output value AI →
+PROFIBUS PA
+Totalizer block 1  to  3 →   66
+Output value TOTAL →
+Controller SETTOT ←
+PAGE 65
+Proline Prowirl O 200 PROFIBUS PA System integration
+Endress+Hauser 65
+Configuration MODETOT ←
+Analog Output block 1 →   68 Input values AO ←
+Discrete Input block 1  to  2 →   69 Output values DI →
+Discrete Output block 1  to
+ 3
+→   69 Input values DO ←
+Defined order of modules
+The measuring device works as a modular PROFIBUS slave. In contrast to a compact slave,
+a modular slave has a variable design and consists of several individual modules. The
+device master file (GSD) contains a description of the individual modules (input and output
+data) along with their individual properties.
+The modules are permanently assigned to the slots, i.e. when configuring the modules, the
+order and the arrangement of the modules must be respected.
+Slot Module Function block
+1 … 4 AI Analog Input block 1  to  4
+5 TOTAL or
+SETTOT_TOTAL or
+SETOT_MODETOT_TOTAL
+Totalizer block 1
+6 Totalizer block 2
+7 Totalizer block 3
+8 AO Analog Output block 1
+9 … 10 DI Discrete Input block 1  to  2
+11 … 13 DO Discrete Output block 1  to  3
+To optimize the data throughput rate of the PROFIBUS network, it is advisable to only
+configure modules that are processed in the PROFIBUS master system. If this results in
+gaps between the configured modules, these gaps must be assigned to the
+EMPTY_MODULE.
+9.3.2  Description of the modules
+The data structure is described from the perspective of the PROFIBUS master:
+• Input data: Are sent from the measuring device to the PROFIBUS master.
+• Output data: Are sent from the PROFIBUS master to the measuring device.
+AI module (Analog Input)
+Transmit an input variable from the measuring device to the PROFIBUS master (Class 1).
+The selected input variable, along with the status, is cyclically transmitted to the
+PROFIBUS Master (Class 1) via the AI module. The input variable is depicted in the first
+four bytes in the form of a floating point number as per the IEEE 754 standard. The fifth
+byte contains standardized status information pertaining to the input variable.
+Four Analog Input blocks are available (slot 1  to  4).
+Selection: input variable
+The input variable can be determined using the Channel parameter.
+Channel Input variable
+7 Temperature
+9 Volume flow
+11 Mass flow
+PAGE 66
+System integration Proline Prowirl O 200 PROFIBUS PA
+66 Endress+Hauser
+Channel Input variable
+13 Corrected volume flow
+14 Density
+22 Pressure
+37 Flow velocity
+38 Energy flow
+45 Calculated saturated steam pressure
+46 Total mass flow
+49 Heat flow difference
+50 Reynolds number
+51 Specific volume
+52 Degree of overheating
+Factory setting
+Function block Factory setting
+AI 1 Volume flow
+AI 2 Mass flow
+AI 3 Corrected volume flow
+AI 4 Density
+Data structure
+Input data of Analog Input
+Byte 1 Byte 2 Byte 3 Byte 4 Byte 5
+Measured value: floating point number (IEEE 754) Status
+TOTAL module
+Transmit a totalizer value from the measuring device to the PROFIBUS master (Class 1).
+A selected totalizer value, along with the status, is cyclically transmitted to a PROFIBUS
+Master (Class 1) via the TOTAL module. The totalizer value is depicted in the first four
+bytes in the form of a floating point number as per the IEEE 754 standard. The fifth byte
+contains standardized status information pertaining to the totalizer value.
+Three Totalizer blocks are available (slot 5  to  7).
+Selection: totalizer value
+The totalizer value can be specified using the CHANNEL parameter.
+Channel Input variable
+9 Volume flow
+11 Mass flow
+13 Corrected volume flow
+38 Energy flow
+46 Total mass flow
+47 Condensate mass flow
+49 Heat flow difference
+PAGE 67
+Proline Prowirl O 200 PROFIBUS PA System integration
+Endress+Hauser 67
+Factory setting
+Function block Factory setting: TOTAL
+Totalizer 1, 2 and 3 Volume flow
+Data structure
+Input data of TOTAL
+Byte 1 Byte 2 Byte 3 Byte 4 Byte 5
+Measured value: floating point number (IEEE 754) Status
+SETTOT_TOTAL module
+The module combination consists of the SETTOT and TOTAL functions:
+• SETTOT: Control the totalizers via the PROFIBUS master.
+• TOTAL: Transmit totalizer value, along with the status, to the PROFIBUS master.
+Three Totalizer blocks are available (slot 5  to  7).
+Selection: control totalizer
+Channel Value SETTOT Control totalizer
+0 0 Totalize
+1 1 Resetting
+2 2 Adopt totalizer initial setting
+Factory setting
+Function block Factory setting: Value SETTOT (meaning)
+Totalizer 1, 2 and 3 0 (totalizing)
+Data structure
+Output data of SETTOT
+Byte 1
+Control variable 1
+Input data of TOTAL
+Byte 1 Byte 2 Byte 3 Byte 4 Byte 5
+Measured value: floating point number (IEEE 754) Status
+SETTOT_MODETOT_TOTAL module
+The module combination consists of the SETTOT, MODETOT and TOTAL functions:
+• SETTOT: Control the totalizers via the PROFIBUS master.
+• MODETOT: Configure the totalizers via the PROFIBUS master.
+• TOTAL: Transmit totalizer value, along with the status, to the PROFIBUS master.
+Three Totalizer blocks are available (slot 5  to  7).
+PAGE 68
+System integration Proline Prowirl O 200 PROFIBUS PA
+68 Endress+Hauser
+Selection: totalizer configuration
+Channel MODETOT value Totalizer configuration
+0 0 Balancing
+1 1 Balance the positive flow
+2 2 Balance the negative flow
+3 3 Stop totalizing
+Factory setting
+Function block Factory setting: Value MODETOT (meaning)
+Totalizer 1, 2 and 3 0 (balancing)
+Data structure
+Output data of SETTOT and MODETOT
+Byte 1 Byte 2
+Control variable 1: SETTOT Control variable 2: MODETOT
+Input data of TOTAL
+Byte 1 Byte 2 Byte 3 Byte 4 Byte 5
+Measured value: floating point number (IEEE 754) Status
+AO module (Analog Output)
+Transmit a compensation value from the PROFIBUS master (Class 1) to the measuring
+device.
+A compensation value, along with the status, is cyclically transmitted from the PROFIBUS
+Master (Class 1) to the measuring device via the AO module. The compensation value is
+depicted in the first four bytes in the form of a floating point number as per the IEEE 754
+standard. The fifth byte contains standardized status information pertaining to the
+compensation value.
+One Analog Output block is available (slot 8).
+Assigned compensation values
+A compensation value is permanently assigned to the individual Analog Output blocks.
+CHANNEL Function block Compensation value
+1507 AO 1 External compensation 1)
+1) The compensation values must be transmitted to the device in the SI basic unit
+The selection is made via: Expert → Sensor → External compensation
+Data structure
+Output data of Analog Output
+Byte 1 Byte 2 Byte 3 Byte 4 Byte 5
+Measured value: floating point number (IEEE 754) Status
+PAGE 69
+Proline Prowirl O 200 PROFIBUS PA System integration
+Endress+Hauser 69
+DI module (Discrete Input)
+Transmit discrete input values from the measuring device to the PROFIBUS master (Class
+1). Discrete input values are used by the measuring device to transmit the state of device
+functions to the PROFIBUS master (Class 1).
+The DI module cyclically transmits the discrete input value, along with the status, to the
+PROFIBUS Master (Class 1). The discrete input value is depicted in the first byte. The
+second byte contains standardized status information pertaining to the input value.
+Two Discrete Input blocks are available (slot 9 to 10).
+Selection: device function
+The device function can be specified using the CHANNEL parameter.
+CHANNEL Device function Factory setting: Status (meaning)
+893 Switch output state
+• 0 (device function not active)
+• 1 (device function active)895 Low flow cut off
+1430 Status verification 1)
+1) Only available with the "Heartbeat Verification" application package
+Function block Factory setting
+DI 1 Switch output state
+DI 2 Low flow cut off
+Data structure
+Input data of Discrete Input
+Byte 1 Byte 2
+Discrete Status
+DO module (Discrete Output)
+Transmit discrete output values from the PROFIBUS master (Class 1) to the measuring
+device. Discrete output values are used by the PROFIBUS master (Class 1) to enable and
+disable device functions.
+The DO module cyclically transmits the discrete output value, along with the status, to the
+measuring device. The discrete output value is depicted in the first byte. The second byte
+contains standardized status information pertaining to the output value.
+Three Discrete Output blocks are available (slot 11 to 13).
+Assigned device functions
+A device function is permanently assigned to the individual Discrete Output blocks.
+CHANNEL Function block Device function Values: control (meaning)
+891 DO 1 Flow override • 0 (disable device function)
+• 1 (enable device function)1429 DO 2 Start verification 1)
+1) Only available with the Heartbeat Verification application package
+PAGE 70
+System integration Proline Prowirl O 200 PROFIBUS PA
+70 Endress+Hauser
+Data structure
+Output data of Discrete Output
+Byte 1 Byte 2
+Discrete Status
+EMPTY_MODULE module
+This module is used to assign empty spaces arising from modules not being used in the
+slots .
+The measuring device works as a modular PROFIBUS slave. In contrast to a compact slave,
+a modular PROFIBUS slave has a variable design and consists of several individual
+modules. The GSD file contains a description of the individual modules along with their
+individual properties.
+The modules are permanently assigned to the slots. When configuring the modules, it is
+absolutely essential to observe the sequence/arrangement of the modules. Any gaps
+between the configured modules must be filled with the EMPTY_MODULE.
+PAGE 198
+Technical data Proline Prowirl O 200 PROFIBUS PA
+198 Endress+Hauser
+Number of switching
+cycles
+Unlimited
+Assignable functions • Off
+• On
+• Diagnostic behavior
+• Limit value
+• Volume flow
+• Corrected volume flow
+• Mass flow
+• Flow velocity
+• Temperature
+• Calculated saturated steam pressure
+• Total mass flow
+• Energy flow
+• Heat flow difference
+• Pressure
+• Reynolds number
+• Totalizer 1-3
+• Status
+• Status of low flow cut off
+PROFIBUS PA
+PROFIBUS PA In accordance with EN 50170 Volume 2, IEC 61158-2 (MBP), galvanically
+isolated
+Data transmission 31.25 kbit/s
+Current consumption 16 mA
+Permitted supply voltage 9 to 32 V
+Bus connection With integrated reverse polarity protection
+Signal on alarm Depending on the interface, failure information is displayed as follows:
+Pulse/frequency/switch output
+Pulse output
+Failure mode No pulses
+Frequency output
+Failure mode Choose from:
+• Actual value
+• 0 Hz
+• Definable value between: 0 to 1 250 Hz
+Switch output
+Failure mode Choose from:
+• Current status
+• Open
+• Closed
+PROFIBUS PA
+Status and alarm
+messages
+Diagnostics in accordance with PROFIBUS PA Profile 3.02
+Failure current FDE (Fault
+Disconnection Electronic)
+0 mA
+PAGE 199
+Proline Prowirl O 200 PROFIBUS PA Technical data
+Endress+Hauser 199
+Local display
+Plain text display With information on cause and remedial measures
+Backlight Additionally for device version with SD03 local display: red lighting indicates a
+device error.
+Status signal as per NAMUR recommendation NE 107
+Interface/protocol
+• Via digital communication:
+PROFIBUS PA
+• Via service interface
+Endress+Hauser Common Data Interface (CDI)
+Plain text display With information on cause and remedial measures
+Low flow cut off The switch points for low flow cut off are preset and can be configured.
+Galvanic isolation All inputs and outputs are galvanically isolated from one another.
+Protocol-specific data Manufacturer ID 0x11
+Ident number 0x1564
+Profile version 3.02
+Device description files (GSD,
+DTM, DD)
+Information and files at:
+• www.endress.com → Download Area
+• https://www.profibus.com
+Supported functions • Identification & Maintenance
+Simple device identification via control system and nameplate
+• PROFIBUS upload/download
+Reading and writing parameters is up to ten times faster with PROFIBUS
+upload/download
+• Condensed Status
+Simplest and self-explanatory diagnostic information by categorizing
+diagnostic messages that occur
+Configuration of the device
+address
+• DIP switches on the I/O electronics module
+• Local display
+• Via operating tools (e.g. FieldCare)
+System integration For information on system integration, see →   64
+• Cyclic data transmission
+• Block model
+• Description of the modules
+16.5  Power supply
+Terminal assignment →   32
+Available device plugs →   32
+PAGE 200
+Technical data Proline Prowirl O 200 PROFIBUS PA
+200 Endress+Hauser
+Supply voltage Transmitter
+An external power supply is required for each output.
+The following supply voltage values apply for the outputs available:
+Supply voltage for a compact version without a local display 1)
+Order code for "Output; input" Minimum
+terminal voltage 2)
+Maximum
+Terminal voltage
+Option G: PROFIBUS PA, pulse/frequency/
+switch output ≥ DC 9 V DC 32 V
+1) In event of external supply voltage of the PROFIBUS DP/PA coupler
+2) The minimum terminal voltage increases if local operation is used: see the following table
+Increase of minimum terminal voltage with local operation
+Order code for "Display; operation" Increase in minimum
+Terminal voltage
+Option C:
+Local operation SD02 + DC 1 V
+Option E:
+Local operation SD03 with lighting
+(backlighting not used)
++ DC 1 V
+Option E:
+Local operation SD03 with lighting
+(backlighting used)
++ DC 3 V
+Power consumption Transmitter
+Order code for "Output; input" Maximum power consumption
+Option G: PROFIBUS PA, pulse/frequency/
+switch output
+• Operation with output 1: 512 mW
+• Operation with output 1 and 2: 2 512 mW
+Current consumption 20 to 55.56 mA
+Power supply failure • Totalizers stop at the last value measured.
+• Depending on the device version, the configuration is retained in the device memory or
+in the pluggable data memory (HistoROM DAT).
+• Error messages (incl. total operated hours) are stored.
+Electrical connection →   35
+Potential equalization →   41
+Terminals • For device version without integrated overvoltage protection: plug-in spring terminals
+for wire cross-sections 0.5 to 2.5 mm2 (20 to 14 AWG)
+• For device version with integrated overvoltage protection: screw terminals for wire cross-
+sections 0.2 to 2.5 mm2 (24 to 14 AWG)
+Cable entries
+ The type of cable entry available depends on the specific device version.
+PAGE 201
+Proline Prowirl O 200 PROFIBUS PA Technical data
+Endress+Hauser 201
+Cable gland (not for Ex d)
+M20 × 1.5
+Thread for cable entry
+• NPT ½"
+• G ½"
+• M20 × 1.5
+Cable specification →   30
+Overvoltage protection The device can be ordered with integrated overvoltage protection:
+Order code for "Accessory mounted", option NA "Overvoltage protection"
+Input voltage range Values correspond to supply voltage specifications →   34 1)
+Resistance per channel 2 ⋅ 0.5 Ω max.
+DC sparkover voltage 400 to 700 V
+Trip surge voltage < 800 V
+Capacitance at 1 MHz < 1.5 pF
+Nominal discharge current
+(8/20 μs)
+10 kA
+Temperature range –40 to +85 °C (–40 to +185 °F)
+1) The voltage is reduced by the amount of the internal resistance I min⋅ Ri
+Depending on the temperature class, restrictions apply to the ambient temperature
+for device versions with overvoltage protection .
+For detailed information on the temperature tables, see the "Safety Instructions" (XA)
+for the device.
+16.6  Performance characteristics
+Reference operating
+conditions
+• Error limits following ISO/DIN 11631
+• +20 to +30 °C (+68 to +86 °F)
+• 2 to 4 bar (29 to 58 psi)
+• Calibration system traceable to national standards
+• Calibration with the process connection corresponding to the particular standard
+To obtain measured errors, use the Applicator sizing tool →   188
+Maximum measurement
+error
+Base accuracy
+o.r. = of reading
+PAGE 37
+Proline Prowirl O 200 PROFIBUS PA Electrical connection
+Endress+Hauser 37
+3. Connect the transmitter.
+How the connecting cable is connected in the transmitter housing depends on the
+measuring instrument approval and the version of the connecting cable used.
+In the following versions, only terminals can be used for connection in the transmitter
+housing:
+• Order code for "Electrical connection", option B, C, D, 6
+• Certain approvals: Ex nA, Ex ec, Ex tb and Division 1
+• Use of reinforced connecting cable
+In the following versions, an M12 device connector is used for connection in the
+transmitter housing:
+• All other approvals
+• Use of connecting cable (standard)
+Terminals are always used to connect the connecting cable in the sensor connection
+housing (tightening torques for screws for cable strain relief: 1.2 to 1.7 Nm).
+Connecting the sensor connection housing
+3 mm
+1.
+2.
+  A0034167
+1. Loosen the securing clamp.
+2. Unscrew the housing cover.
+3.
+4.
+  A0034171
+ 10 Sample graphic
+Connecting cable (standard, reinforced)
+3. Guide the connecting cable through the cable entry and into the connection housing
+(if using a connecting cable without an M12 device plug, use the shorter stripped end
+of the connecting cable).
+PAGE 38
+Electrical connection Proline Prowirl O 200 PROFIBUS PA
+38 Endress+Hauser
+4. Wire the connecting cable:
+ Terminal 1 = brown cable
+Terminal 2 = white cable
+Terminal 3 = yellow cable
+Terminal 4 = green cable
+5. Connect the cable shield via the cable strain relief.
+6. Tighten the screws for the cable strain relief using a torque in the range of
+1.2 to 1.7 Nm.
+7. Reverse the removal procedure to reassemble the connection housing.
+Connecting cable (option "mass pressure-/temperature-compensated")
+3. Guide the connecting cable through the cable entry and into the connection housing
+(if using a connecting cable without an M12 device plug, use the shorter stripped end
+of the connecting cable).
+4. Wire the connecting cable:
+ Terminal 1 = brown cable
+Terminal 2 = white cable
+Terminal 3 = green cable
+Terminal 4 = red cable
+Terminal 5 = black cable
+Terminal 6 = yellow cable
+Terminal 7 = blue cable
+5. Connect the cable shield via the cable strain relief.
+6. Tighten the screws for the cable strain relief using a torque in the range of
+1.2 to 1.7 Nm.
+7. Reverse the removal procedure to reassemble the connection housing.
+Connecting the transmitter
+Connecting transmitter via plug
+  A0034172
+‣ Connect the plug.
+PAGE 40
+Electrical connection Proline Prowirl O 200 PROFIBUS PA
+40 Endress+Hauser
+7. NOTICE
+The connection board of the wall housing is connected to the electronics board
+of the transmitter via a signal cable!
+‣ Pay attention to the signal cable when lifting the transmitter housing!
+Lift the transmitter housing.
+8.
+  A0034176
+ 12 Sample graphic
+9.
+10.
+  A0034177
+ 13 Sample graphic
+Connecting cable (standard, reinforced)
+8. Disconnect the signal cable from the connection board of the wall housing . by
+pressing in the locking clip on the connector. Remove the transmitter housing.
+9. Guide the connecting cable through the cable entry and into the connection housing
+(if using a connecting cable without an M12 device plug, use the shorter stripped end
+of the connecting cable).
+10. Wire the connecting cable:
+ Terminal 1 = brown cable
+Terminal 2 = white cable
+Terminal 3 = yellow cable
+Terminal 4 = green cable
+11. Connect the cable shield via the cable strain relief.
+12. Tighten the screws for the cable strain relief using a torque in the range of
+1.2 to 1.7 Nm.
+13. Reverse the removal procedure to reassemble the transmitter housing.
+PAGE 52
+Operation options Proline Prowirl O 200 PROFIBUS PA
+52 Endress+Hauser
+8.3.5  Opening the context menu
+Using the context menu, the user can call up the following menus quickly and directly from
+the operational display:
+• Setup
+• Configuration backup display
+• Simulation
+Calling up and closing the context menu
+The user is in the operational display.
+1. Press the  and  keys for longer than 3 seconds.
+ The context menu opens.
+XXXXXXXXXX
+Setup
+Conf.backup disp
+Simulation
+Keylock on
+  A0034284-EN
+2. Press  +  simultaneously.
+ The context menu is closed and the operational display appears.
+Calling up the menu via the context menu
+1. Open the context menu.
+2. Press  to navigate to the desired menu.
+3. Press  to confirm the selection.
+ The selected menu opens.
+PAGE 53
+Proline Prowirl O 200 PROFIBUS PA Operation options
+Endress+Hauser 53
+8.3.6  Navigating and selecting from list
+Different operating elements are used to navigate through the operating menu. The
+navigation path is displayed on the left in the header. Icons are displayed in front of the
+individual menus. These icons are also shown in the header during navigation.
+For an explanation of the navigation view with symbols and operating elements
+→   48
+Example: Setting the number of displayed measured values to "2 values"
+X X X X X X XX X
+20.50
+0104-1
+2 s
+0091-1
+0098-1
+0098-1
+0098-1
+X X X X X X XX X
+10.50
+2800
+Hz
+mA
+3.
+4.
+5.
+6.
+7.
+8.
+1.
+2. Display/operat.
+Display/operat.
+Setup
+Main menu
+English
+Main menu
+Format display
+/ ../Display
+Contrast display
+Display intervall
+1 value,  max.
+Setup
+Access stat.disp
+/ ../Display/operat.
+Display
+Locking status
+1 value, max.
+/ ../Format display
+2 values
+Val. large+2val.
+Bargr. + 1 value
+Locking status
+/ ../Display/operat.
+Display
+1 value, max.
+/ ../Format display
+2 values
+Val. large+2val.
+Bargr. + 1 value
+Operator
+Language
+Language
+  A0029562-EN
+8.3.7  Calling the parameter directly
+A parameter number is assigned to every parameter to be able to access a parameter
+directly via the onsite display. Entering this access code in the Direct access parameter
+calls up the desired parameter directly.
+Navigation path
+Expert → Direct access
+PAGE 82
+Commissioning Proline Prowirl O 200 PROFIBUS PA
+82 Endress+Hauser
+Navigation
+"Setup" menu → Communication
+‣ Communication
+Device address →   82
+Parameter overview with brief description
+Parameter Description User entry Factory setting
+Device address Enter device address. 0 to 126 126
+10.4.7  Configuring the low flow cut off
+The Low flow cut off wizard systematically guides the user through all the parameters
+that must be set to configure low flow cut off.
+Navigation
+"Setup" menu → Low flow cut off
+‣ Low flow cut off
+Assign process variable →   83
+On value low flow cutoff →   83
+Off value low flow cutoff →   83
+PAGE 83
+Proline Prowirl O 200 PROFIBUS PA Commissioning
+Endress+Hauser 83
+Parameter overview with brief description
+Parameter Prerequisite Description Selection / User
+entry
+Factory setting
+Assign process variable – Select process variable for low
+flow cut off.
+• Off
+• Volume flow
+• Corrected volume
+flow
+• Mass flow
+• Reynolds number *
+Off
+On value low flow cutoff One of the following options is
+selected in the Assign process
+variable parameter (→   83):
+• Volume flow
+• Corrected volume flow
+• Mass flow
+• Reynolds number *
+Enter on value for low flow cut
+off.
+Positive floating-
+point number
+0
+Off value low flow cutoff One of the following options is
+selected in the Assign process
+variable parameter (→   83):
+• Volume flow
+• Corrected volume flow
+• Mass flow
+• Reynolds number *
+Enter off value for low flow cut
+off.
+0 to 100.0 % 50 %
+* Visibility depends on order options or device settings

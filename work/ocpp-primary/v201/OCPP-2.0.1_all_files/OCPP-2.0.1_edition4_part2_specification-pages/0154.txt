@@ -1,0 +1,106 @@
+ID Precondition Requirement definition Note
+E05.FR.03 E05.FR.01 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is set to false
+AND
+MaxEnergyOnInvalidId is set and
+has NOT been exceeded.
+Energy delivery to the EV SHALL be allowed until
+the amount of energy specified in
+MaxEnergyOnInvalidId has been reached.
+E05.FR.04 When a TransactionEventRequest has
+to be created
+The Charging Station SHALL set the message’s
+seqNo field as specified in Sequence Number
+Generation.
+This enables the CSMS
+to track the
+completeness of
+transaction information.
+Same as E01.FR.07
+E05.FR.05 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Started), See: Meter
+Values - Configuration AND
+EVSE is known at start of transaction
+The Charging Station SHALL add the configured
+measurands to the optional meterValue field with
+context = Transaction.Begin in the
+TransactionEventRequest(eventType = Started)
+sent to the CSMS to provide more details during the
+transaction.
+Same as E01.FR.09
+E05.FR.06 SampledDataSignReadings is true The Charging Station SHALL retrieve signed meter
+values and put them in the signedMeterValue field
+of sampledValues.
+Same as E01.FR.14
+E05.FR.08 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Started), See: Meter
+Values - Configuration AND
+EVSE is not known at start of
+transaction
+The Charging Station SHALL add the measurands
+for eventType = Started to the optional
+meterValue field with context =
+Transaction.Begin in the
+TransactionEventRequest(eventType = Updated)
+that occurs when charging starts.
+Same as E01.FR.17
+E05.FR.09 E05.FR.01 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is true AND
+TxStopPoint does NOT contain:
+(Authorized OR PowerPathClosed OR
+EnergyTransfer)
+The Charging Station SHALL stop the energy
+transfer and send TransactionEventRequest
+(eventType = Updated) with triggerReason set to
+Deauthorized and in the same or next
+TransactionEventRequest report chargingState set
+preferably to EVConnected, or alternatively to
+SuspendedEVSE.
+If the physical change of
+charging state in the
+Charging Station occurs
+a few seconds or
+milliseconds later than
+the trigger Deauthorized,
+then the chargingState
+change may be reported
+separately as a
+triggerReason =
+ChargingStateChanged. 
+Use of charging state
+SuspendedEVSE that is
+not followed by
+EVConnected in this
+situation will become
+deprecated in the next
+OCPP release.
+E05.FR.10 E05.FR.01 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is true AND
+TxStopPoint does contain:
+(Authorized OR PowerPathClosed OR
+EnergyTransfer)
+The Charging Station SHALL stop the transaction
+and send TransactionEventRequest (eventType =
+Ended) with triggerReason set to Deauthorized and
+stoppedReason set to DeAuthorized.
+E05.FR.11 E05.FR.10 AND
+If the Charging Station has the
+possibility to lock the Charging Cable
+The Charging Station SHOULD keep the Charging
+Cable locked until the owner presents his identifier.
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 144/491 Part 2 - Specification

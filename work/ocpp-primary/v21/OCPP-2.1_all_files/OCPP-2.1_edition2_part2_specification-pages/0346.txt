@@ -1,0 +1,106 @@
+ID Precondition Requirement definition Note
+K01.FR.50 When a
+SetChargingProfileRequest
+with a chargingRateUnit = W
+is received AND
+The charging profile is used
+for AC charging
+The Charging Station SHALL calculate the phase current
+limit via: Current per phase = limit / (Line Voltage *
+numberPhases), in which limit and numberPhases are the
+values from the ChargingSchedulePeriod.
+The "Line Voltage" used in
+the calculation is not the
+measured voltage, but the
+set voltage for the area (for
+example, 230 or 110 V).
+When numberPhases is not
+specified, a value of 3 is
+assumed (see K01.FR.49). It
+is usually more convenient
+to use chargingRateUnit = A
+for AC charging, since in
+that case the power does
+not change depending on
+number of phases in use.
+K01.FR.51 When a
+SetChargingProfileRequest
+with a chargingRateUnit = A
+is received
+The Charging Station SHALL use the provided limits, to
+limit the amount of Ampere per phase, not the sum of all
+phases.
+K01.FR.52 When a
+SetChargingProfileRequest
+with a TxDefaultProfile and
+evseId = 0 is received AND
+A TxDefaultProfile with the
+same stackLevel is installed
+on a specific EVSE and its
+chargingProfile.id does NOT
+equal the received
+chargingProfile.id
+The Charging Station SHALL respond with a
+SetChargingProfileResponse with status Rejected and
+optionally with reasonCode = DuplicateProfile.
+K01.FR.53 When a
+SetChargingProfileRequest
+with a TxDefaultProfile and
+evseId > 0 is received AND
+A TxDefaultProfile with the
+same stackLevel is installed
+on EVSE #0 and its
+chargingProfile.id does NOT
+equal the received
+chargingProfile.id
+The Charging Station SHALL respond with a
+SetChargingProfileResponse with status Rejected and
+optionally with reasonCode = DuplicateProfile.
+K01.FR.54
+(2.1)
+When Charging Station
+receives a
+ChargingProfileType with a
+ChargingSchedulePeriodTyp
+e with a value for
+numberPhases or
+phaseToUse AND
+the EVSE is of type DC AND
+DCInputPhaseControl is
+true
+The Charging Station SHALL use numberPhases and
+phaseToUse to select the input phases from the grid for
+the DC EVSE.
+See also K01.FR.44
+K01.FR.55
+(2.1)
+When Charging Station
+stores charging profiles of
+purpose TxProfile,
+LocalGeneration or
+ChargingStationExter
+nalConstraints in
+persistent memory
+Charging Station SHOULD report
+ChargingProfilePersistence with the instance set
+to the charging profile purpose, to true.
+This tells CSMS that these
+charging profiles remain
+present after a reboot.
+K01.FR.56
+(2.1)
+When Charging Station
+receives frequent
+SetChargingProfileRequest
+messages at a rate that
+threatens to wear out its
+persistent memory
+Charging Station MAY respond with
+SetChargingProfileResponse with status = Rejected
+and reasonCode = "RateLimitExceeded"
+See K01.FR.55 and
+K01.FR.27 for which
+charging profiles are
+persistent.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 333/803 Part 2 - Specification

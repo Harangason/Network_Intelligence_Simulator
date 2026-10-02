@@ -1,0 +1,50 @@
+TC_S_104_CS: Battery Swap - Charging - Variables validation
+Test case name Battery Swap - Charging - Variables validation
+Test case Id TC_S_104_CS
+Use case Id(s) S04
+Requirement(s) S04.FR.08, S04.FR.09, S04.FR.10
+System under test Charging Station
+Description Charging station is able to support battery swapping.
+Purpose To verify whether the Charging Station is able to be configured correctly.
+Prerequisite(s) Charging Station supports battery swapping (BatterySwapCtrlr.Available is true)
+Before (Preparations)
+Configuration State:
+BatterySwapCtrlr.TargetSoc is 80
+BatterySwapCtrlr.MaxSoc is 90
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with GetBaseReportResponse
+1. The Test System sends GetBaseReportRequest with
+requestId = <Generated requestId>
+reportBase = FullInventory
+3. The Charging Station sends NotifyReportRequest
+4. The Test System responds with NotifyReportResponse
+5. The Charging Station sends NotifyReportRequest
+6. The Test System responds with NotifyReportResponse
+Note: If NotifyReportRequest.tbc is true in step 3 then steps 5 and 6 repeat until NotifyReportRequest.tbc is false in step 5.
+7. The Test System sends a SetVariablesRequest with
+setVariableData[0].component.name = BatterySwapCtrlr
+setVariableData[0].variable.name = TargetSoc
+setVariableData[0].attributeValue = "91"
+8. The Charging Station responds with SetVariablesResponse
+9. The Test System sends a SetVariablesRequest with
+setVariableData[0].component.name = BatterySwapCtrlr
+setVariableData[0].variable.name = MaxSoc
+setVariableData[0].attributeValue = "79"
+10. The Charging Station responds with SetVariablesResponse
+11. The Test System sends a SetVariablesRequest with
+setVariableData[0].component.name = BatterySwapCtrlr
+setVariableData[0].variable.name = TargetSoc
+setVariableData[0].attributeValue = "79"
+12. The Charging Station responds with SetVariablesResponse
+13. The Test System sends a SetVariablesRequest with
+setVariableData[0].component.name = BatterySwapCtrlr
+setVariableData[0].variable.name = MaxSoc
+setVariableData[0].attributeValue = "79"
+14. The Charging Station responds with SetVariablesResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 902/1383 Part 6 - Test Cases

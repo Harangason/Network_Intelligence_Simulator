@@ -1,0 +1,51 @@
+RenewV2GChargingStationCertificate
+State RenewV2GChargingStationCertificate
+System under test Charging Station
+Description The V2G ChargingStationCertificate is renewed using A02/A03
+Before (Preparations)
+Configuration State:
+ISO15118Ctrlr.V2GCertificateInstallationEnabled is true if implementated
+ISO15118Ctrlr.CountryName is NL if implemented
+ISO15118Ctrlr.OrganizationName is configured vendorId if implemented
+Test System will check all configured ISO15118Ctrlr.SeccId’s using a GetBaseReportRequest
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+TriggerMessageResponse
+1. The Test System sends a TriggerMessageRequest
+With requestedMessage SignV2GCertificate
+EVSE EVSE (having an seccId) returned in the GetReportResponse
+or omitted in case none is available
+3 The Charging Station sends a SignCertificateRequest
+4. The Test System responds with a SignCertificateResponse
+With status Accepted
+6. The Charging Station responds with a
+CertificateSignedResponse
+5. The Test System sends a CertificateSignedRequest
+With certificateChain <Certificate generated from the received
+CSR from step 3 and signed by SubCA2 or SubCA (if SubCA2 does
+not exist) certificate from the provided V2G certificate chain>
+certificateType V2GCertificate
+Note(s): Steps 1, 2, 3, 4, 5, and 6 are repeated for all returned seccIds
+Tool validations
+* Step 2:
+Message: TriggerMessageResponse
+- status must be Accepted
+* Step 3:
+Message: SignCertificateRequest
+- csr must contain <An CSR that meets the following requirements:
+The key must be at least 256 bits long.
+The received CSR must be transmitted as described in RFC 2986 and then encoded in Privacy-Enhanced Mail (PEM) format.>
+The certificate can only be an ECDSA certificate (ISO15118 cannot be used with RSA).
+If an seccId is found the csr should contain the seccId in the CN.
+* Step 6:
+Message: CertificateSignedResponse
+- status must be Accepted
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 583/914 Part 6 - Test Cases

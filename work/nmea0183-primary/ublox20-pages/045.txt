@@ -1,0 +1,45 @@
+u-blox 20 HPG 2.00 - Interface description
+3.3 UBX payload deﬁnition rules
+This section contains the rules and guidelines for UBX message payloads. See also UBX message
+example.
+3.3.1 UBX structure packing
+Values are placed in such an order that structure packing is not a problem. This means that two-
+byte values shall start on oﬀsets that are a multiple of two; four-byte values shall start at a multiple
+of four; and so on.
+3.3.2 UBX reserved elements
+Some messages contain reserved ﬁelds or bits to allow for future expansion. The contents of these
+elements should be ignored in output messages and must be set to zero in input messages. Where
+a message is output and subsequently returned to the receiver as an input message, reserved
+elements can either be explicitly set to zero or left with whatever value they were output with.
+For ﬁelds in a bitﬁeld the same rules apply. Note that bits not described are automatically reserved
+and are not explicitly stated (see UBX message example).
+3.3.3 UBX undeﬁned values
+The description of some ﬁelds provide speciﬁc meanings for speciﬁc values. For example, the ﬁeld
+gnssId appears in many UBX messages and uses 0 to indicate GPS, 1 for SBAS and so on (see GNSS
+identiﬁers for details); however it is usually stored in a byte with far more possible values than the
+handful currently deﬁned. All such undeﬁned values are reserved for future expansion and therefore
+should not be used.
+3.3.4 UBX conditional values
+Some UBX messages use validity ﬂag ﬁelds to indicate whether the values of some value ﬁelds
+are valid. For example, the UBX-NAV-PVT message has the validDate and validTime ﬁelds that
+indicate whether the date (year, month and day ﬁelds), and, respectively, the time (hour, min and
+sec ﬁelds) are valid. This means that these value ﬁelds will only contain meaningful data if the
+corresponding ﬂag ﬁeld is set (has the value 1).
+3.3.5 UBX data types
+The following data types (number formats) are deﬁned.
+Name Type Size
+(Bytes)
+Range Resolution
+U1 unsigned 8-bit integer 1 0…28-1 1
+I1 signed 8-bit integer, two's complement 1 -27…27-1 1
+X1 8-bit bitﬁeld 1 n/a n/a
+U2 unsigned little-endian 16-bit integer 2 0…216-1 1
+I2 signed little-endian 16-bit integer, two's complement 2 -215…215-1 1
+X2 16-bit little-endian bitﬁeld 2 n/a n/a
+U4 unsigned little-endian 32-bit integer 4 0…232-1 1
+I4 signed little-endian 32-bit integer, two's complement 4 -231…231-1 1
+X4 32-bit little-endian bitﬁeld 4 n/a n/a
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 45 of 224
+C1-Public

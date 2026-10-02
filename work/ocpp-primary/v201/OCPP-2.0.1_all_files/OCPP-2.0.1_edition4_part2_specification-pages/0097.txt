@@ -1,0 +1,53 @@
+C04 - Authorization using PIN-code
+This is an informative use case. Its purpose is to demonstrate the use of the idToken.type KeyCode. Another use of KeyCode
+might be, for example, a licence plate number.
+No. Type Description
+1 Name Authorization using PIN-code
+2 ID C04
+3 Objective(s) To make it possible for a Charging Station that has a key entry terminal to authorize the PIN-code.
+4 Description When a Charging Station has a PIN-code entry terminal, an EV driver enters his/her PIN-code. This
+PIN-code is sent to the CSMS for validation using an AuthorizeRequest.
+Actors EV Driver, Charging Station, CSMS
+Scenario description 1. The EV Driver wants to start or stop charging the EV and enters his/her PIN-code into the
+terminal.
+2. The Charging Station sends an AuthorizeRequest message, with the field idToken.type set to
+KeyCode, to the CSMS to request authorization.
+3. Upon receipt of the AuthorizeRequest, the CSMS responds with an AuthorizeResponse. This
+response indicates whether or not the KeyCode is accepted by the CSMS.
+Alternative scenario(s) C01 - EV Driver Authorization using RFID
+C02 - Authorization using a start button
+C03 - Authorization using credit/debit card
+C05 - Authorization for CSMS initiated transactions
+C06 - Authorization using local id type
+C07 - Authorization using Contract Certificates
+C08 - Authorization at EVSE using ISO 15118 External Identification Means (EIM)
+C15 - Unknown Offline Authorization
+5 Prerequisites Charging Station has a PIN-code entry terminal to start charging of an EV.
+6 Postcondition(s) Transaction ongoing on Charging Station, CSMS is aware of transaction.
+7 Error Handling n/a
+8 Remarks When the PIN-code is validated in the Charging Station, instead of the CSMS, use case C02 -
+Authorization Using a Start button applies.
+EV Driver
+Charging Station CSMS
+enter pin-code(1234)
+AuthorizeRequest(idToken(id = 1234,
+type = KeyCode), ...)
+AuthorizeResponse(idTokenInfo.status = Accepted, ...)
+opt
+notification
+Figure 23. Sequence Diagram: Authorization using PIN-code
+C04 - Authorization using PIN-code - Requirements
+Table 45. C04 - Requirements
+ID. Precondition Requirement definition
+C04.FR.01 When the CSMS receives an AuthorizeRequest
+with a keyCode that is not valid at this Charging
+Station
+The CSMS SHALL respond with an AuthorizeResponse message
+with status = Invalid.
+C04.FR.02 When the CSMS receives an AuthorizeRequest
+with a keyCode that is valid and the EV Driver is
+allowed to charge at this Charging Station
+The CSMS SHALL respond with an AuthorizeResponse message
+with status = Accepted.
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 87/491 Part 2 - Specification

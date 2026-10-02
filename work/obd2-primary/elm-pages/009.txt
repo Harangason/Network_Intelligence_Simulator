@@ -1,0 +1,53 @@
+Communicating with the ELM327 (continued)
+question mark. These include incomplete messages,
+incorrect AT commands, or invalid hexadecimal digit
+strings, but are not an indication of whether or not the
+message was understood by the vehicle. One must
+keep in mind that the ELM327 is a protocol interpreter
+that makes no attempt to assess the OBD messages
+that you send for validity – it only ensures that
+hexadecimal digits were received, combined into
+bytes, then sent out the OBD port, and it does not
+know if a message sent to the vehicle was in error.
+While processing OBD commands, the ELM327
+will continually monitor for either an active RTS input,
+or an RS232 character received. Either one will
+interrupt the IC, quickly returning control to the user,
+while possibly aborting any initiation, etc. that was in
+progress. After generating a signal to interrupt the
+ELM327, software should always wait for either the
+prompt character (‘>’ or hex 3E), or a low level on the
+Busy output before beginning to send the next
+command.
+Finally, it should be noted that the ELM327 is not
+case-sensitive, so the commands ‘ATZ’, ‘atz’, and
+‘AtZ’ are all exactly the same to the ELM327. All
+commands may be entered as you prefer, as no one
+method is faster or better. The ELM327 also ignores
+space characters and all control characters (tab, etc.),
+so they can be inserted anywhere in the input if that
+improves readability.
+One other feature of the ELM327 is the ability to
+repeat any command (AT or OBD) when only a single
+carriage return character is received. If you have sent
+a command (for example, 01 0C to obtain the rpm),
+you do not have to resend the entire command in
+order to resend the request to the vehicle - simply
+send a carriage return character, and the ELM327 will
+repeat the command for you. The memory buffer only
+remembers one command though, and there is no
+provision in the current ELM327 to provide storage for
+any more.
+9 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Please Note:
+There is a very small chance that NULL characters (byte value 00) may occasionally
+be inserted into the RS232 data that is transmitted by the ELM327.
+Microchip Technology has reported that some ICs which use the same EUSART as
+in the ELM327 may, under very specific (and rare) conditions, insert an extra byte
+(always of value 00) into the transmitted data. If you are using a terminal program to view
+the data, you should select the ‘hide control characters’ option if it is available, and if you
+are writing software for the ELM327, then ignore incoming bytes that are of value 00 (ie.
+remove NULLs).

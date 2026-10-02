@@ -1,0 +1,52 @@
+Field Name Field Type Card. Description
+maxOfflineDuration integer 0..1 Optional. (2.1) Period in seconds that this charging
+profile remains valid after the Charging Station has gone
+offline. After this period the charging profile becomes
+invalid for as long as it is offline and the Charging Station
+reverts back to a valid profile with a lower stack level. If
+invalidAfterOfflineDuration is true, then this charging
+profile will become permanently invalid. A value of 0
+means that the charging profile is immediately invalid
+while offline. When the field is absent, then no timeout
+applies and the charging profile remains valid when
+offline.
+invalidAfterOfflineDuration boolean 0..1 Optional. (2.1) When set to true this charging profile will
+not be valid anymore after being offline for more than
+maxOfflineDuration.
+When absent defaults to false.
+dynUpdateInterval integer 0..1 Optional. (2.1) Interval in seconds after receipt of last
+update, when to request a profile update by sending a
+PullDynamicScheduleUpdateRequest message. A value
+of 0 or no value means that no update interval applies.
+Only relevant in a dynamic charging profile.
+dynUpdateTime dateTime 0..1 Optional. (2.1) Time at which limits or setpoints in this
+charging profile were last updated by a
+PullDynamicScheduleUpdateRequest or
+UpdateDynamicScheduleRequest or by an external actor.
+Only relevant in a dynamic charging profile.
+priceScheduleSignature string[0..256] 0..1 Optional. (2.1) ISO 15118-20 signature for all price
+schedules in chargingSchedules.
+Note: for 256-bit elliptic curves (like secp256k1) the
+ECDSA signature is 512 bits (64 bytes) and for 521-bit
+curves (like secp521r1) the signature is 1042 bits. This
+equals 131 bytes, which can be encoded as base64 in
+176 bytes.
+chargingSchedule ChargingScheduleType 1..3 Required. Schedule that contains limits for the available
+power or current over time. In order to support ISO 15118
+schedule negotiation, it supports at most three schedules
+with associated tariff to choose from. Having multiple
+chargingSchedules is only allowed for charging profiles of
+purpose TxProfile in the context of an ISO 15118
+charging session. For ISO 15118 Dynamic Control Mode
+only one chargingSchedule shall be provided.
+2.18. ChargingSchedulePeriodType
+Class
+Charging schedule period structure defines a time period in a charging schedule. It is used in: CompositeScheduleType and in
+ChargingScheduleType. When used in a NotifyEVChargingScheduleRequest only startPeriod, limit, limit_L2, limit_L3 are relevant.
+ChargingSchedulePeriodType is used by: Common:ChargingScheduleType , Common:CompositeScheduleType
+Field Name Field Type Card. Description
+startPeriod integer 1..1 Required. Start of the period, in seconds from the start of
+schedule. The value of StartPeriod also defines the stop
+time of the previous period.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 632/803 Part 2 - Specification

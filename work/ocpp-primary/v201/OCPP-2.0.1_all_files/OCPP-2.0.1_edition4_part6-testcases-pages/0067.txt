@@ -1,0 +1,50 @@
+TC_B_41_CS: Reset Charging Station - With multiple ongoing transactions - OnIdle
+Test case name Reset Charging Station - With multiple ongoing transactions - OnIdle
+Test case Id TC_B_41_CS
+Use case Id(s) B12
+Requirement(s) B12.FR.01, B12.FR.03, E07.FR.03
+System under test Charging Station
+Description This test case covers how the CSMS can remotely request the Charging Station to reset itself by sending a
+ResetRequest during a transaction. When ResetRequest "OnIdle" is send the charging stations schedules a
+reboot after all transactions are stopped.
+This could for example be necessary if the Charging Station is not functioning correctly.
+Purpose To verify if the Charging Station is able to perform the reset mechanism while there are multiple ongoing
+transactions as described at the OCPP specification.
+Prerequisite(s) The Charging Station has more than one EVSE.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted for EVSE.id = 1
+State is EnergyTransferStarted for EVSE.id = 2
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ResetResponse
+1. The Test System sends a ResetRequest
+with type OnIdle
+3. Execute Reusable State StopAuthorized for EVSE.id = 1
+4. Execute Reusable State EVConnectedPostSession for EVSE.id = 1
+5. Execute Reusable State EVDisconnected for EVSE.id = 1
+6. Execute Reusable State ParkingBayUnoccupied for EVSE.id = 1
+7. Execute Reusable State StopAuthorized for EVSE.id = 2
+8. Execute Reusable State EVConnectedPostSession for EVSE.id = 2
+Note(s):
+If TxStopPoint contains one of the following values; Authorized, EnergyTransfer, PowerPathClosed, DataSigned.
+Then the transaction will have ended at the EVConnectedPostSession state AND the Charging Station will proceed with resetting
+itself. Proceed to step 11
+Else proceed with step 9.
+9. Execute Reusable State EVDisconnected for EVSE.id = 2
+Note(s):
+If TxStopPoint contains the value EVConnected.
+Then the transaction will have ended at the EVDisconnected state AND the Charging Station will proceed with resetting itself.
+Proceed to step 11
+Else proceed with step 10
+10. Execute Reusable State ParkingBayUnoccupied for EVSE.id = 2
+Note(s):
+The transaction will end at this state, if it was not ended at an earlier state. Proceed to step 11.
+11. The Charging Station sends a BootNotificationRequest
+12. The Test System responds with a BootNotificationResponse
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 65/914 Part 6 - Test Cases

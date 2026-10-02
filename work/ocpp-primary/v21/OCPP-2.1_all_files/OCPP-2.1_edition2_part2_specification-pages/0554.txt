@@ -1,0 +1,43 @@
+Chapter 2. DER Control using OCPP and ISO 15118-20
+2.1. CSO acting as aggregator
+OCPP does not prescribe the protocol that must be used to communicate DER settings towards a CSO. The OCPP message set
+aims to provide support for DER control features from IEEE 1547 shown in Table 1. This table references two common protocols:
+IEC 61850, mostly used in Europe and Asia, and IEEE 2030.5, mostly used in the USA. In addition, IEEE 1547 D.3 mentions IEEE
+1815 DNP3 and SunSpec Modbus as standardized interfaces that can be used for this. The fact that these are not referenced any
+further in this specification does not preclude them being used as a communication interface between utility and CSO for DER
+control.
+Table 161. Comparing terminology across standards (based on Table C6 of [RefJ3072])
+IEEE 1547-2018 IEC 61850 IEEE 2030.5-2018 OCPP
+Mode/Function LN DERControl controlType
+Constant Power Factor DFPF opModFixedPFInject: Excit FixedPFInject
+Voltage - Reactive Power DVVR opModVoltVar: Curve VoltVar
+Active Power - Reactive Power DWVR opModWattVar: Curve WattVar
+Constant Reactive Power DVAR opModFixedVar: FixedVar FixedVar
+Voltage - Active Power DVWC opModVoltWatt: Curve VoltWatt
+High Voltage Trip Curve DHVT opModHVRTMustTrip: Curve HVMustTrip
+Low Voltage Trip Curve DLVT opModLVRTMustTrip: Curve LVMustTrip
+High Frequency Trip Curve DHFT opModHFRTMustTrip: Curve HFMustTrip
+Low Frequency Trip Curve DLFT opModLFRTMustTrip: Curve LFMustTrip
+Frequency-Droop (HF) DHFW opModFreqDroop FreqDroop
+Frequency-Droop (LF) DLFW opModFreqDroop FreqDroop
+Enter Service DCTE DefaultDERControl: setES… EnterService
+Cease to Energize and Trip DCTE opModEnergize ChargingProfile
+Limit Active Power DWMX opModMaxLimW: PerCent LimitMaxDischarge
+NA DTCD opModFixedW: SignedPerCent ChargingProfile
+NA DWGC opModFixedW: SignedPerCent ChargingProfile
+It is important to realize, that the OCPP messages do not provide one-to-one replacement of IEC 61850 or IEEE 2030.5 messages. It
+is assumed that the CSO performs an aggregator role towards the utility. The utility connects with the CSMS of the CSO, using an
+agreed protocol (e.g. one of IEC 61850, IEEE 2030.5, DNP3, Modbus). CSMS will then forward the appropriate information to the
+impacted charging stations. The burden of scheduling and prioritizing of messages lies mostly with CSMS.
+For example, a utility can schedule a series of events with a start time and duration for a DER. A DER can be part of multiple groups,
+and one group can have a higher priority than another group. CSMS will receive these events and construct a timeline of events in
+which higher priority events supersede events with lower priority. CSMS will then send the appropriate OCPP messages to the
+affected charging station. ISO 15118-20 Amendment 1 can be used to transfer the DER control parameters to the EV, guaranteeing
+the EV will comply with the grid code requirements during times when the EV is feeding back to the grid to satisfy a request coming
+from the CSMS or an EMS. This is illustrated in the figure below.
+Figure 197. Protocol chain for DER control
+2.2. DER Control for DC bidirectional power transfer
+In case of a DC charging station, the AC-DC inverter is part of the EVSE in the charging station. The bidirectional EVSE is therefore
+the device that is acting as the DER that needs to be configured such that it complies to the grid codes.
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 541/803 Part 2 - Specification

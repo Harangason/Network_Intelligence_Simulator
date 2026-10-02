@@ -1,0 +1,43 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Following the anti-collision sequence, if the Remote NFC Endpoint supports ISO-DEP Protocol, the NFCC
+sends the RATS Command to the Remote NFC Endpoint and after receiving the RATS response, the NFCC
+MAY send the PPS command if PI_BIT_RATE was set by the DH to an allowed value higher than 0x00.
+It SHALL then send the RF_INTF_ACTIVATED_NTF to the DH to indicate a Remote NFC Endpoint based on
+ISO-DEP has been activated. The RF_INTF_ACTIVATED_NTF will inform the Dh on the actual bit rate used on
+RF.
+For NFC-A the RF_INTF_ACTIVATED_NTF SHALL include the Activation Parameters defined in Table 75 (see
+below).
+Parameter Length Description
+RATS Response Length 1 byte Length of RATS Response Parameter (n)
+RATS Response n bytes All Bytes of the RATS Response as defined in [DIGITAL] starting from and
+including Byte 2
+Table 75. Activation Parameters for NFC-A/ISO-DEP Poll Mode
+______________________ End of Copy from [NCI] __________________________
+Note: due to internal limitation, the default value set for bLA_RATS_RESP_TC1 parameter is not correct and
+shall be reset individually with a SET_Configuration
+7.4  [PN7160-NCI] extension: 15693 and ICODE tags
+The version 1.0 of the NCI standard allows the data exchange with a tag ISO 15693 by using the RF Frame
+interface. No additional interface is needed for this protocol. However, the data mapping is not yet defined in
+[NCI], therefore, NXP has defined it for [PN7160-NCI-1.0].
+7.4.1  Access through the Frame RF interface
+The Frame RF interface allows full access to all the Tags based on NFC-15693 technology. Here is a list of such
+tags from the NXP portfolio:
+Tag/Card Access through the Frame RF Interface
+ICODE SLI Supported
+ICODE SLI-L Supported
+ICODE SLI-S Supported
+Table 76. NFC-15693 compliant Tag/Cards accessible over the Frame RF Interface
+Here are the commands and configuration parameters to prepare the Reader/Writer Mode for NFC-15693 Tags/
+Cards through the Frame RF Interface:
+Command Main Parameters Values
+RF Protocol PROTOCOL_T5T (NCI 2.0)
+Mode PollRF_DISCOVER_MAP_CMD *
+RF Interface Frame RF
+RF_DISCOVER_CMD RF Technology and Mode NFC_15693_PASSIVE_POLL_MODE (NCI 1.0)
+NFC_V_PASSIVE_POLL_MODE (NCI 2.0)
+Table 77. Configuration sequence for R/W of NFC-15693 through the Frame RF Interface
+* Note: RF_DISCOVER_MAP_CMD is optional since the mapping to Frame RF Interface is done by default.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+70 / 147

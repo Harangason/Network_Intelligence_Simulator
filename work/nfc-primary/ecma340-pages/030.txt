@@ -1,0 +1,31 @@
+ 
+24  © Ecma International 2024 
+ 
+ 
+Figure 18 — Coding of the PPi byte 
+− bit 8: SECi. If set to ONE the Initiator supports NFC-SEC; ZERO indicates no support. 
+− bit 7: RFU. The Initiator shall set it to ZERO. The Target shall ignore it. 
+− bit 6 and bit 5: LRi. Length Reduction value, see Table 5. 
+Table 5 — Definition of LRi 
+LRi LENMAX 
+00 Only Byte 1 to Byte 64 is valid in the Transport Data 
+01 Only Byte 1 to Byte 128 is valid in the Transport Data 
+10 Only Byte 1 to Byte 192 is valid in the Transport Data 
+11 Only Byte 1 to Byte 252 is valid in the Transport Data 
+ 
+− bit 4 and bit 3: RFU. The Initiator shall set it to ZERO. The Target shall ignore it.  
+− bit 2: If bit is set to ONE then it indicates General bytes are available. 
+− bit 1: If bit is set to ONE then it indicates the Initiator uses NAD. 
+Byte 15 to Byte n: Gi[1] to Gi[n] 
+The general bytes shall be optional and designate general information. The maximum length of the ATR_REQ 
+subtracted by the mandatory bytes give the maximum number of general bytes.  
+12.6.1.2 Attribute Response (ATR_RES) 
+The ATR_RES, see Figure 19 shall be the response to the ATR_REQ and shall be sent by the selected NFCIP-
+1 Target device. 
+ 
+Figure 19 — Structures of the ATR_RES 
+12.6.1.2.1 Definition of the ATR_RES bytes 
+CMD 1: Shall be set to ‘D5’. 
+CMD 2: ATR_RES 
+The ATR_RES byte shall specify the Target’s Response to the ATR_REQ send by the Initiator. The value of 
+CMD1 for ATR_RES shall be set to ‘01’. 

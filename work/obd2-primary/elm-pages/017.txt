@@ -1,0 +1,90 @@
+17 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+command but do not have an accurate voltmeter as a
+reference, you may soon get into trouble. If this
+happens, you can always send AT CV 0000 to restore
+the ELM327 to the factory calibration value.
+D [ set all to Defaults ]
+This command is used to set the options to their
+default (or factory) settings, as when power is first
+applied. The last stored protocol will be retrieved from
+memory, and will become the current setting (possibly
+closing other protocols that are active). Any settings
+that the user had made for custom headers, filters, or
+masks will be restored to their default values, and all
+timer settings will also be restored to their defaults.
+D0 and D1 [ display of DLC off or on ]
+Standard CAN (ISO 15765-4) OBD requires that
+all messages have 8 data bytes, so displaying the
+number of data bytes (the DLC) is not normally very
+useful. When experimenting with other protocols,
+however, it may be useful to be able to see what the
+data lengths are. The D0 and D1 commands control
+the display of the DLC digit (the headers must also be
+on in order to see this digit). When displayed, the
+single DLC digit will appear between the ID (header)
+bytes and the data bytes. The default setting is
+determined by PP 29.
+DM1 [ monitor for DM1s ]
+The SAE J1939 Protocol broadcasts trouble codes
+periodically, by way of Diagnostic Mode 1 (DM1)
+messages. This command sets the ELM327 to
+continually monitor for this type of message for you,
+following multi-segment transport protocols as
+required. Note that a combination of masks and filters
+could be set to provide a similar output, but they would
+not allow multiline messages to be detected. The DM1
+command adds the extra logic that is needed for
+multiline messages.
+This command is only available when a CAN
+Protocol (A, B, or C) has been selected for J1939
+formatting. It returns an error if attempted under any
+other conditions.
+DP [ Describe the current Protocol ]
+The ELM327 automatically detects a vehicle’s
+OBD protocol, but does not normally report what it is.
+The DP command is a convenient means of asking
+what protocol the IC is currently set to (even if it has
+not yet ‘connected’ to the vehicle).
+If a protocol is chosen and the automatic option is
+also selected, AT DP will show the word 'AUTO' before
+the protocol description. Note that the description
+shows the actual protocol names, not the numbers
+used by the protocol setting commands.
+DPN [ Describe the Protocol by Number ]
+This command is similar to the DP command, but
+it returns a number which represents the current
+protocol. If the automatic search function is also
+enabled, the number will be preceded with the letter
+‘A’. The number is the same one that is used with the
+set protocol and test protocol commands.
+E0 and E1 [ Echo off or on ]
+These commands control whether or not the
+characters received on the RS232 port are echoed
+(retransmitted) back to the host computer. Character
+echo can be used to confirm that the characters sent
+to the ELM327 were received correctly. The default is
+E1 (or echo on).
+FC SD [1-5 bytes] [ Flow Control Set Data to… ]
+The data bytes that are sent in a CAN Flow
+Control message may be defined with this command.
+One to five data bytes may be specified, with the
+remainder of the data bytes in the message being
+automatically set to the default CAN filler byte, if
+required by the protocol. Data provided with this
+command is only used when Flow Control modes 1 or
+2 have been enabled.
+FC SH hhh [ Flow Control Set Header to… ]
+The header (or more properly ‘CAN ID’) bytes
+used for CAN Flow Control messages can be set using
+this command. Only the right-most 11 bits of those
+provided will be used -  the most significant bit is
+always removed. This command only affects Flow
+Control mode 1.
+FC SH hhhhhhhh [ Flow Control Set Header to… ]
+This command is used to set the header (or ‘CAN
+ID’) bits for Flow Control responses with 29 bit CAN ID
+systems. Since the 8 nibbles define 32 bits, only the
+AT Command Descriptions (continued)

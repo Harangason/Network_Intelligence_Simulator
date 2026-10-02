@@ -1,0 +1,83 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 53
+11.5  Switching Characteristics
+11.5.1   Clocks
+TJ = -40 to 125 °C; VDDCn,VDDAn = 2.5 V ±5 %; VDDPn = 3.3 V ±5 %; GNDCn,GNDAn,GNDPn = 0.0 V; 
+Load Capacitance = 30 pF; PLL locked at 48 kHz; unless otherwise noted.   
+Parameter Symbol Min Typ Max Unit Test Conditions
+Rise Time:
+  ERR, SYNC, TDO, PWROFF
+  RMCK, SX0, SX1, FSY, SCK
+thdr 12
+5
+ns
+ns
+VOL to VOH
+CL = 30 pF
+CL = 30 pF
+Rise Time:
+  MLBCLK, MLBDAT, MLBSIG
+  MLBCLK, MLBDAT, MLBSIG
+tmlbr 3
+1
+ns
+ns
+0.7 to 1.8 V
+CL = 60 pF
+CL = 40 pF
+Fall Time:
+  ERR, SYNC, SDA, SCL, INT, RSOUT
+  TDO, DSDA, DSCL, PWROFF
+  RMCK, SX0, SX1, FSY, SCK, TXGAIN
+thdf
+12
+12
+5
+ns
+ns
+ns
+VOH to VOL
+CL = 30 pF
+CL = 30 pF
+CL = 30 pF
+Fall Time:
+  MLBCLK, MLBDAT, MLBSIG
+  MLBCLK, MLBDAT, MLBSIG
+tmlbf 3
+1
+ns
+ns
+1.8 to 0.7 V
+CL = 60 pF
+CL = 40 pF
+Clocks:
+Sample Frequency: PLL Locked
+PLL Unlocked Fs 44.0
+0.95×fosc
+48 48.1
+1.04×fosc
+kHz
+kHz (Note 1)
+RMCK Master Clock Output frmck 64×Fs 1536 ×Fs Hz when enabled
+SYNC Clock Output fsync 1×Fs 64 ×Fs Hz when enabled
+Crystal Oscillator (Note 2) fosc
+11.264
+12.3136
+MHz
+MHz
+256×Fs at 44.0 kHz
+256×Fs at 48.1 kHz
+Jitter Tolerance (timing-master):    XTI tjm 0.8 ns (pp) (Note 3)
+1. Due to the on-chip frequency regulator, the PLL unlock time is very small and only occurs when switching the PLL 
+input source between the network (RX) and the crystal (XTI/XTO). At power-up, the PLL starts from zero; 
+therefore, the minimum PLL unlock frequency is only applicable after the first network loss of lock. In addition, the 
+minimum PLL unlock frequency assumes a crystal start-up time of less than 1.4 ms when the crystal is reenabled 
+after each network unlock (e.g. when MSVOptions().XTALConfiguration  is set to 0). When this start-up time 
+cannot be met, the crystal may remain enabled when the PLL is locked to RX with 
+MSVOptions().XTALConfiguration  set to 1.
+2. The MOST Specification requires each node have a crystal-based master-clock source to support ring-break 
+diagnostics, where nodes normally configured as timing-slaves can be re-configured as the timing-master. The 
+crystal frequency must be 256 times the desired operational frequency of the network.
+3. Jitter Tolerance: The OS81050 tolerates at least the amount of clock jitter defined by the tjm (minimum) specification 
+without errors.

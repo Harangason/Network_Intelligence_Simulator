@@ -1,0 +1,79 @@
+7.6 Register Maps
+7.6.1 Control and Status Registers Overview
+Many of the SN65DSI83 device functions are controlled by the control and status registers (CSR). All CSR
+registers are accessible through the local I2C interface.
+See Table 7-4 through Table 7-9 for the SN65DSI83 CSR descriptions. Reserved or undefined bit fields must not
+be modified. Otherwise, the device may operate incorrectly.
+Table 7-4. CSR Bit Field Definitions – ID Registers
+ADDRESS BIT DESCRIPTION DEFAULT ACCESS(1)
+0x00 – 0x08 7:0
+Reserved
+Addresses 0x08 – 0x00 = {0x01, 0x20, 0x20, 0x20, 0x44, 0x53, 0x49, 0x38,
+0x35}
+Reserved R/O
+(1) R/O = Read only; R/W = Read/write; R/W1C = Read/write 1 to clear; W/O = Write only (reads return undetermined values)
+Table 7-5. CSR Bit Field Definitions – Reset and Clock Registers
+ADDRESS BIT DESCRIPTION DEFAULT ACCESS (1)
+0x09 0
+SOFT_RESET
+This bit automatically clears when set to 1 and returns 0s when read. This bit
+must be set after the CSR’s are updated. This bit must also be set after
+making any changes to the DIS clock rate or after changing between DSI
+burst and nonburst modes.
+0 – No action (default)
+1 – Reset device to default condition excluding the CSR bits
+0 W/O
+0x0A
+7
+PLL_EN_STAT
+After PLL_EN_STAT = 1, wait at least 3 ms for PLL to lock
+0 – PLL not enabled (default)
+1 – PLL enabled
+0 R/O
+3:1
+LVDS_CLK_RANGE
+This field selects the frequency range of the LVDS output clock.
+000 – 25 MHz ≤ LVDS_CLK < 37.5 MHz
+001 – 37.5 MHz ≤ LVDS_CLK < 62.5 MHz
+010 – 62.5 MHz ≤ LVDS_CLK < 87.5 MHz
+011 – 87.5 MHz ≤ LVDS_CLK < 112.5 MHz
+100 – 112.5 MHz ≤ LVDS_CLK < 137.5 MHz
+101 – 137.5 MHz ≤ LVDS_CLK ≤ 154 MHz (default)
+110 – Reserved
+111 – Reserved
+101 R/W
+0
+HS_CLK_SRC
+0 – LVDS pixel clock derived from input REFCLK (default)
+1 – LVDS pixel clock derived from MIPI D-PHY channel A HS continuous
+clock
+0 R/W
+0x0B
+7:3
+DSI_CLK_DIVIDER
+When CSR 0x0A.0 = 1, this field controls the divider used to generate the
+LVDS output clock from the MIPI D-PHY Channel A HS continuous clock.
+When CSR 0x0A.0 = 0, this field must be programmed to 00000.
+00000 – LVDS clock = source clock (default)
+00001 – Divide by 2
+00010 – Divide by 3
+00011 – Divide by 4
+…
+10111 – Divide by 24
+11000 – Divide by 25
+11001 through 11111 – Reserved
+00000 R/W
+1:0
+REFCLK_MULTIPLIER
+When CSR 0x0A.0 = 0, this field controls the multiplier used to generate the
+LVDS output clock from the input REFCLK. When CSR 0x0A.0 = 1, this field
+must be programmed to 00.
+00 – LVDS clock = source clock (default)
+01 – Multiply by 2
+10 – Multiply by 3
+11 – Multiply by 4
+00 R/W
+SN65DSI83
+SLLSEC1I – SEPTEMBER 2012 – REVISED OCTOBER 2020 www.ti.com
+24 Submit Document Feedback Copyright © 2020 Texas Instruments Incorporated
+Product Folder Links: SN65DSI83

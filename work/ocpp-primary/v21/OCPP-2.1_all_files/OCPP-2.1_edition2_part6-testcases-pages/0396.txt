@@ -1,0 +1,32 @@
+TC_H_23_CS: Reserve a specific EVSE - Replace reservation
+Test case name Reserve a specific EVSE - Replace reservation
+Test case Id TC_H_23_CS
+Use case Id(s) H01
+Requirement(s) H01.FR.02
+System under test Charging Station
+Description The CSMS is able to reserve a specific EVSE for a specific IdToken by sending a ReserveNowRequest
+containing an evseId.
+Purpose To verify if the Charging Station is able to replace a reservation of a specific EVSE, until the EV Driver with
+the specified IdToken arrives.
+Prerequisite(s) The configuration variable ReservationCtrlr.ReservationAvailable is implemented with value true
+Before (Preparations)
+Configuration State:
+ReservationCtrlr.ReservationEnabled is true (If implemented)
+Memory State:
+A reservation is valid on <Configured evseId> with <Configured valid_idtoken>
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ReserveNowResponse
+1. The Test System sends a ReserveNowRequest with
+id <Configured reservationId>
+evseId is <Configured evseId>
+idToken.idToken <Configured valid_idtoken_idtoken2>
+idToken.type <Configured valid_idtoken_type2>
+3. Execute Reusable State Authorized
+Note(s):
+- <Configured valid idToken2 fields> are used for the authorization.
+4. Execute Reusable State EnergyTransferStarted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 394/1383 Part 6 - Test Cases

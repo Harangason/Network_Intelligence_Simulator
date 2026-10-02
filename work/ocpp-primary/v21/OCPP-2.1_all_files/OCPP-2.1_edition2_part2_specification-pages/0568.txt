@@ -1,0 +1,45 @@
+No. Type Description
+Scenario description A AC bidirectional session using AC_BPT_DER
+1. EV and Charging Station start an ISO 15118-20 session.
+2. Upon successful authorization the EV starts service negotiation and requests service
+details fo the AC_BPT_DER service.
+3. Charging Station presents service parameters that EV must comply with.
+a. Parameter DERControlFunctions in the service negotiation specifies in this use
+case that EV must at least support high frequency ride-through Must Trip mode
+(bit 11).
+4. EV selects the AC_BPT_DER service.
+5. EV and Charging Station exchange charge parameters.
+a. EV does not report support for PowerMonitoring in evSupportedDERControl.
+This can be emulated by the Charging Station if it is listed in the variable
+ACDERCtrlr.modesSupported.
+b. Charging Station sends a field DERControl with FrequencyTripCurve containing the
+FrequencyTrip curve.
+c. During charging the Charging Station will limit the maximum discharge power to
+50% of the reported EVMaximumDischargePower in the ChargeLoopRes message
+with field EVSETargetActivePower.
+Remaining steps 6 to 11 are identical to use case R02
+12. The following DER control is executed by inverter in EV:
+a. It will stop discharging when the frequency deviates from nominal for a certain
+amount and time as defined in the high frequency trip curve.
+b. When the above occurs EV will notify Charging Station about this via the
+DERAlarm element in the ChargeLoop message with derFunctionName set to
+HFTrip.
+13. The following DER control is executed by Charging Station:
+a. It will limit discharging power to 50% of EVMaximumDischargePower as defined
+by the ActivePowerSupport limitation.
+14. When a DER control influences the (dis)charging process, for example an overfrequency,
+Charging Station will notify CSMS about this via the NotifyDERAlarmRequest with
+controlType set to HFMustTrip and gridEventFault = OverFrequency and the
+timestamp.
+5 Prerequisites • In advance utility has sent DER control settings to the CSMS of CSO. In this example these
+are a high frequency trip curve (HFMustTrip) and a limitation of discharging power
+(LimitMaxDischarge) to 50% of the rated power of the inverter.
+• Charging Station reports "LimitMaxDischarge" in ACDERCtrlr.ModesSupported.
+• CSMS has conveyed the settings as SetDERControlRequest messages to Charging
+Station.
+6 Post conditions
+7 Error Handling
+8 Remarks The descriptions using ISO 15118 messages, such as the use of ChargeParameterDiscovery and
+ChargeLoop for DER control, are only informative and not prescriptive.
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 555/803 Part 2 - Specification

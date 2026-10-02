@@ -1,0 +1,20 @@
+numberPhases
+The lowest value for a schedule period of all applicable profiles is used for the composite schedule period. If
+ChargingStationMaxProfile has numberPhases = 2 or 3 and TxProfile has numberPhases = 1, then the value 1 is
+used. The same applies to the reverse situation.
+phaseToUse
+When there is a conflicting value of phaseToUse between the schedule periods of applicable profiles, then there is no way to
+create a composite schedule period. For example, a CSMS should not submit a charging profile of purpose
+ChargingStationMaxProfile for phaseToUse = 1 and then a TxProfile for phaseToUse = 3, because the charging
+station will not know which value has preference. Therefore, a SetChargingProfileRequest that causes such a conflict will
+have to be rejected.
+When a relative TxProfile is being used and different phases occur in various schedule periods, then it may become
+difficult to detect if and where such a phase conflict occurs. A charging station should only accept a
+SetChargingProfileRequest when it can be certain, that there is a no risk of a phase conflict. This means, that when the
+charging station is not able to verify that no phase conflict occurs in any schedule period (which can happen when the
+TxProfile is received for a transaction, but charging has not yet started, so that start time of the first schedule period is
+not known), that it cannot accept a charging profile if any of the schedule periods contains a value for phaseToUse that
+differs from the value used in the ChargingStationMaxProfile or ChargingStationExternalConstraints.
+NOTE A value of phaseToUse may only be used when numberOfPhases = 1.
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 245/491 Part 2 - Specification

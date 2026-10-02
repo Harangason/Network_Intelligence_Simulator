@@ -1,0 +1,60 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  44/50 
+Exception code  1 Byte  01 or  02 or 03 or  04 
+ 
+ 
+Request parameters description :  
+A MODBUS Encapsulated Interface assigned number 14 identifies the Read identification 
+request.  
+The parameter " Read Device ID code " allows to define four access types  :  
+01: request  to get the basic device identification (stream access)  
+02: request to get the regular device identification (str eam access)  
+03: request to get the  extended device identification (stream access)  
+04: request to get one specific identification object (individual access)  
+An exception code 03 is sent back in the response if the Read device ID code is illegal.  
+In case of a response that does not fit into a single response, several  transactions 
+(request/response ) must be done. The Object Id byte gives the identification of the first 
+object to obtain. For the first transaction, the client must set the Object Id to 0 to obtain 
+the beginning of the device identification data. For the following transactions, the client 
+must set the Object Id to the value returned by the server in its previous response.  
+Remark :  An object is indivisible, therefore any object must ha ve a size consistent with 
+the size of  transaction response.  
+ 
+If the Object Id does not match any known object, the server responds as if object 0 were 
+pointed out (restart at the beginning).  
+ In case of an individual access: ReadDevId code 04 , the Object  Id in the request gives 
+the identification of the object to obtain, and if the Object Id doesn't match to any known 
+object, the server returns an exception response with exception code = 02 (Illegal data 
+address).  
+If the server device is asked for a desc ription level ( readDevice Code )higher that its 
+conformity level , It must respond in accordance with its actual conformity level.  
+ 
+Response parameter description :  
+Function code :  Function code 43 (decimal) 0x2B (hex)  
+MEI Type  14 (0x0E) MEI Type assign ed number for Device Identification 
+Interface  
+ReadDevId code :  Same as request ReadDevId code : 01, 02, 03 or 04  
+Conformity Level  Identification conformity level of the device and type of supported 
+access  
+0x01: basic identification (stream access only)  
+0x02: regular identification (stream access only)  
+0x03: extended identification (stream access only)  
+0x81: basic identification (stream access and individual access)  
+0x82: regular identification (stream access and individual access)  
+0x83: extended identificat ion(stream access and individual 
+access)  
+More Follows  In case of ReadDevId codes 01, 02 or 03 (stream access),  
+If the identification data doesn't fit into a single response, several 
+request/response transactions may be required.  
+0x00 : no more Object are a vailable  
+0xFF : other identification Object are available and further 
+MODBUS transactions are required  
+In case of ReadDevId code 04 (individual access),  
+this field must be set to 00.  
+Next Object Id  If "MoreFollows = FF", identification of the next Object to be 
+asked for.  
+If "MoreFollows = 00", must be set to 00 (useless)  
+Number Of Objects  Number of identification Object returned in the response  
+(for an individual access, Number Of Objects = 1)  
+Object0.Id  Identification of the first Object returned in the P DU (stream 
+access) or the requested Object (individual access)  

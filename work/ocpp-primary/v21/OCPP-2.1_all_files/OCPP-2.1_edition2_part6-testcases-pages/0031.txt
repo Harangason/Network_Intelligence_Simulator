@@ -1,0 +1,52 @@
+TC_B_02_CS: Cold Boot Charging Station - Pending
+Test case name Cold Boot Charging Station - Pending
+Test case Id TC_B_02_CS
+Use case Id(s) B02, F06
+Requirement(s) B02.FR.01, B02.FR.02, B02.FR.04, B02.FR.05, B02.FR.06, B02.FR.08, F06.FR.17
+System under test Charging Station
+Description The booting mechanism allows a Charging Station to provide some general information about the Charging
+Station to the CSMS on startup AND it allows the Charging Station to request whether it is allowed to start
+sending other OCPP messages. A CSMS can temporarily halt the Charging Stations operations by returning
+the Pending status at the BootNotificationResponse. During this time the CSMS is able to retrieve and set
+configurations from the Charging Station.
+Purpose To verify whether the Charging Station is able to correctly handle the pending state of the boot mechanism.
+Prerequisite(s) The testcases; TC_B_06_CS, TC_B_09_CS, TC_B_13_CS are executed with test result PASS.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Reboot the Charging Station.
+1. The Charging Station sends a BootNotificationRequest
+2. The Test System responds with a BootNotificationResponse
+with status Pending
+interval <Configured heartbeatInterval>
+4. The Charging Station responds with SetVariablesResponse
+3. Test System sends SetVariablesRequest with:
+- variable.name = "OfflineThreshold"
+- component.name = "OCPPCommCtrlr"
+- attributeValue = "300"
+- attributeType is omitted
+6. The Charging Station responds with GetVariablesResponse
+5. Test System sends GetVariablesRequest with:
+- variable.name = "OfflineThreshold"
+- component.name = "OCPPCommCtrlr"
+- attributeType is omitted
+8. Charging Station responds with:
+GetBaseReportResponse
+7. Test System sends GetBaseReportRequest with:
+- requestId = <Generated requestId>
+- reportBase = FullInventory
+Charging Station CSMS
+9. Charging Station responds with:
+NotifyReportRequest
+Note(s):
+- This step is repeated as often as needed to report all
+configuration variables.
+10. Test System sends NotifyReportResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 29/1383 Part 6 - Test Cases

@@ -1,0 +1,75 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  37 
+Attribute Selectable Values Description 
+This setting is available only when PHY Direction is set to TX. 
+Reference Clock Frequency 
+(MHz) 
+60 (Soft D-PHY) 
+60–200, 100 (Hard D-PHY) 
+Sets the operating frequency of the clock domain for soft PHY related 
+components in Soft D-PHY mode. 
+Sets the reference clock frequency of the internal PLL for hard PHY 
+related components in Hard D-PHY mode. 
+Controller 
+Protocol Mode DSI-2, CSI-2 Selects the MIPI protocol type. CSI-2 is optimized for camera and 
+imaging applications with support for image data types and timing. 
+DSI-2 is designed for display applications with video-specific packet 
+structures and flow control mechanisms. DSI-2 is available only when 
+PHY Direction is set to RX. 
+ECC Insert (TX) / ECC Check 
+(RX) 
+checked, unchecked Enables or disables ECC insertion for TX and ECC checking for RX. 
+Disabling ECC can reduce IP resource usage. 
+ 
+PHY Direction == TX: 
+When checked, the IP recalculates ECC and updates the packet 
+header with VC and VCX value provided in the sideband signal. Refer 
+to the MIPI Byte Streaming Interface (MBSI) section. 
+This setting is available only when PHY Direction == TX and MIPI BYTE 
+Streaming Interface (MBSI) is checked.  
+ 
+PHY Direction == RX: 
+By default, the IP enables ECC checking. The 6‑bit packet header ECC 
+can correct single‑bit errors and detect two‑bit errors in the D‑PHY 
+configuration. 
+In Passthrough Mode, the IP transmits the original ECC received in 
+axis_byte_tdata_o.  
+This setting is available only when PHY Direction == RX and Protocol 
+Mode == CSI2. When Protocol Mode == DSI2, this is always enabled to 
+qualify valid header assertion. 
+CRC Insert (TX) / CRC Check 
+(RX) 
+checked, unchecked Enables or disables CRC insertion for TX and CRC checking for RX. 
+Disabling CRC can reduce the IP resource usage. 
+ 
+PHY Direction == TX: 
+When checked, the IP recalculates CRC checksum and updates the 
+packet footer with recalculated CRC checksum for each long packet. 
+Refer to the MIPI Byte Streaming Interface (MBSI) section. 
+This setting is available only when PHY Direction == TX and MIPI BYTE 
+Streaming Interface (MBSI) is checked. 
+ 
+PHY Direction == RX: 
+By default, the IP enables CRC checking. A checksum is computed 
+over the WC bytes of each long packet. 
+Enable AXI4-Lite Interface checked, unchecked Enables the AXI4-Lite bus used for accessing IP registers. 
+Dynamic Reconfiguration checked, unchecked When checked, the IP enables dynamic reconfiguration feature 
+through the AXI4-Lite interface register access. Refer to the Dynamic 
+Reconfiguration section for details. 
+This setting is available only when Enable AXI4-Lite Interface is 
+checked. 
+Streaming Interface 
+Unified Video Streaming 
+Interface (UVSI) 
+checked, unchecked When checked, the IP enables transmission and reception of pixel 
+data via the UVSI AXI4-Stream interface. Refer to the Unified Video 
+Streaming Interface (UVSI) section for details. 
+MIPI Byte Streaming 
+Interface (MBSI) 
+checked, unchecked When checked, the IP enables transmission and reception of byte 
+data via the MBSI AXI4-Stream interface. The IP maps internal high 

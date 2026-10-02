@@ -1,0 +1,24 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+10.2  NFC Forum profile as defined in [NCI]
+The NFC Forum profile is the implementation of the RF discovery activity as defined in the NFC Forum (see the
+[ACTIVITY] specification).
+[NCI] only covers technologies NFC-A, NFC-B and NFC-F. So the basic NFC Forum profile will poll for these
+technologies only. Furthermore, for NFC-F, only one-bit rate is used during the polling phase. This is configured
+thanks to the “Poll F parameter” PF_BIT_RATE as defined in [NCI], section 6.1.4. So the DH configures if NFC-
+F is polled at 212 kb/s or at 424 kb/s, before it activates the discovery by sending the RF_DISCOVER_CMD
+command.
+The figure bellow represents the profile defined by the NFC Forum, assuming that the DH has enabled the 3
+technologies currently supported by the NFC Forum (NFC-A, NFC-B, NFC-F) in Poll mode and Listen mode. To
+do so, it has to send the following command:
+RF_DISCOVER_CMD( 6,
+[NCI_DISCOVERY_TYPE_POLL_A_PASSIVE,1],
+[NCI_DISCOVERY_TYPE_POLL_B_PASSIVE,1],
+[NCI_DISCOVERY_TYPE_POLL_F_PASSIVE,1],
+[NCI_DISCOVERY_TYPE_LISTEN_A_PASSIVE,1],
+[NCI_DISCOVERY_TYPE_LISTEN_B_PASSIVE,1],
+[NCI_DISCOVERY_TYPE_LISTEN_F_PASSIVE,1] )
+Figure 51. RF Discovery NFC Forum profile (when there is no card/tag in the field)
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+82 / 147

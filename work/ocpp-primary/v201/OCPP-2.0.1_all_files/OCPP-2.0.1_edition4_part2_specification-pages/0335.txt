@@ -1,0 +1,98 @@
+ID Precondition Requirement definition Note
+N01.FR.13 The field requestId in LogStatusNotificationRequest
+is mandatory, unless the message was triggered by
+a TriggerMessageRequest AND there is no log
+upload ongoing.
+N01.FR.14 It is RECOMMENDED that Charging Station and
+CSMS support at least HTTP(s) as transport
+mechanism for the log file upload
+HTTP transport is most
+likely to be supported,
+since it is also used for
+OCPP messaging.
+N01.FR.15 Charging Station SHALL at least support the CSMS
+trust chain for secure transports
+N01.FR.16 It is RECOMMENDED that Charging Station
+supports the usual CAs provided by the operating
+system
+The log file storage of
+CSMS may be a cloud
+service operated
+separately from the
+CSMS itself and not part
+of the CSMS trustchain.
+N01.FR.17 When CSMS requires basic
+authorization for the upload
+CSMS is RECOMMENDED to require a different
+basic authorization password for the upload, then
+the one used for OCPP connectivity.
+This is to avoid leaking
+the OCPP password to
+3rd parties if the log file
+storage is a different
+system.
+Basic authorization can
+be added to the URL as
+follows:
+http://username:passwor
+d@csms.org/logs
+N01.FR.18 Is is RECOMMENDED that CSMS accepts both PUT
+and POST requests for uploads from Charging
+Station.
+N01.FR.19 When Charging Station uses a
+HTTP(s) POST request to upload the
+log file
+Charging Station SHALL provide at least the
+following attributes: Content-Type: (e.g.
+application/octet-stream) and Content-
+Disposition: with a specification of the
+filename.
+For example:
+Content-Type:
+application/octet-stream
+Content-Disposition:
+form-data;
+name="uploadedfile";
+filename="logfile_202104
+20.zip"
+N01.FR.20 N01.FR.12 AND
+Charging Station cancels the log file
+upload
+The Charging Station SHALL send a
+LogStatusNotificationRequest with status =
+AcceptedCanceled.
+N01.FR.12 is a "SHOULD"
+requirement. Only send
+status notification when
+requirement is executed.
+N01.FR.21 N01.FR.18 AND
+the GetLogRequest
+log.remoteLocation string ends with a
+slash character ("/")
+The Charging Station SHALL append the filename
+that it returned in the GetLogResponse filename
+field to this string.
+N01.FR.22 N01.FR.18 AND
+the file to upload exceeds the
+threshold of 1MB (1024 * 1024 bytes)
+The Charging Station MAY include the "Expect: 100-
+continue" header in the HTTP PUT request.
+This gives the server a
+chance to deny the
+request before a lot of
+data is sent.
+N01.FR.23 N01.FR.18 The Charging Station MAY implement a mechanism
+to resume HTTP uploads, if it can identify whether
+the upload server supports the same mechanism.
+At the time of this
+writing, no official HTTP
+resume mechanism
+existed, only vendor-
+specific solutions and an
+IETF draft, which were
+not aligned.
+2.2. Configure Monitoring
+NOTE For managing the monitoring of a Charging Station a basic understanding of Device Model concepts is essential.
+These concepts are explained in "OCPP 2.0.1: Part 1 - Architecture & Topology", chapter 4.
+Edition 4, 2025-12-03 N. Diagnostics
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 325/491 Part 2 - Specification

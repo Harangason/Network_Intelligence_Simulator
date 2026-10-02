@@ -1,0 +1,54 @@
+Description
+TxStartPoint MemberList Defines when the Charging Station starts a new transaction: first
+transactioneventRequest: eventType = Started.
+When any event in the given list occurs, the Charging Station SHALL start a
+transaction The Charging Station SHALL only send the Started event once for
+every transaction.
+It is advised to put all events that should be part of a transaction in the list, in
+case the start event never occurs. Because the possible events don’t always have
+to come in the same order it is possible to provide a list of events. Which ever
+comes first will then cause a transaction to be started.
+For example: EVConnected, Authorized would mean that a transaction is started
+when an EV is detected (Cable is connected), or when an EV Driver swipes his
+RFID card en the CSMS successfully authorizes the ID for charging.
+TxStopPoint MemberList Defines when the Charging Station ends a transaction: last
+transactioneventRequest: eventType = Ended.
+When any event in the given list is no longer valid, the Charging Station SHALL
+end the transaction. The Charging Station SHALL only send the Ended event once
+for every transaction.
+MaxEnergyOnInvalidId integer Maximum amount of energy in Wh delivered when an identifier is deauthorized by
+the CSMS after start of a transaction.
+StopTxOnInvalidId boolean whether the Charging Station will stop an ongoing transaction when it receives a
+non- Accepted authorization status in TransactionEventResponse for this
+transaction.
+StopTxOnEVSideDisconnect boolean When set to true, the Charging Station SHALL administratively stop the
+transaction when the cable is unplugged from the EV.
+3.2. Physical Components
+This is a non-exhaustive list of Standardized Physical Components that SHALL be used when mapping a real Charging Station to
+the Device Model (for monitoring purposes).
+When the physical component that is to be mapped, matches the description of one of the Standardized Components in this
+section, for interoperability reasons, the Standardized Component from this section SHALL be used, instead of adding a new
+(proprietary) component.
+The list of typically used variables that is given for each Component is also non-exhaustive and all variables are optional. See also
+Part 1, paragraph 4.5. If a description of a variable is empty, please refer to the description in Standardized Variables.
+3.2.1. AccessBarrier
+Description
+Allows physical access of vehicles to a charging site to be controlled.
+Typically used variables Description
+Enabled
+Active Open
+Problem
+3.2.2. AcDcConverter
+Description
+Provides a variable DC current source to force energy directly into an EV battery stack, under tight control of the EV’s battery
+management system.
+Typically used variables Description
+Enabled (not commanded Out of Service)
+Problem some problem/fault exists
+Tripped A problem requiring intervention has occurred
+Overload Excessive current/power consumption
+DCVoltage measured DC voltage
+DCCurrent measured DC current
+Power measured power
+v1.5, 2025-12-03 Chapter 3. Standardized Components
+OCPP 2.0.1 - © Open Charge Alliance 2025 13/46 Part 2 - Appendices

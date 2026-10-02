@@ -1,0 +1,51 @@
+B09 - Setting a new NetworkConnectionProfile
+(Updated in OCPP 2.1)
+No. Type Description
+1 Name Setting a new NetworkConnectionProfile.
+2 ID B09
+3 Objective(s) To enable the CSMS to update the connection details on the Charging Station.
+4 Description The CSMS updates the connection details on the Charging Station. For instance in preparation of
+a migration to a new CSMS. After completion of this use case, the Charging Station to CSMS
+connection data has been updated.
+Actors Charging Station, CSMS
+Scenario description A Charging Station supports at least two network configuration slots, that are identified by a
+number. The available slot numbers are reported by the Charging Station in the valuesList of
+variable NetworkConfigurationPriority.
+For example: valuesList = "0,1,2" in the base report tells CSMS that three configuration slots,
+numbered 0, 1 and 2, are available (but not necessarily set).
+The configuration slot number that is used for the active connection is reported by variable
+OCPPCommCtrlr.ActiveNetworkProfile.
+1. The CSMS sends a SetNetworkProfileRequest PDU containing an updated connection
+profile and a configurationSlot out of the valuesList of NetworkConfigurationPriority.
+2. The Charging Station receives the PDU, validates the content and stores the new data
+3. The Charging Station responds by sending a SetNetworkProfileResponse PDU, with status
+Accepted.
+Alternative scenario
+(New in OCPP 2.1)
+Setting network configuration via device model
+The changing of network configuration parameters must be done for a configuration slot that is
+currently not listed in the NetworkConfigurationPriority variable. This ensures that Charging
+Station cannot use an incompletely configured network configuration.
+All parameters of a SetNetworkProfileRequest for a configurationSlot are present as device model
+variables on component NetworkConfiguration with instance = configurationSlot and are set
+directly via a SetVariablesRequest. See NetworkConfiguration for a list of variables.
+1. If the configuration slot to be set is part of NetworkConfigurationPriority configuration
+variable
+a. CSMS will remove this configuration slot from the NetworkConfigurationPriority
+via a SetVariablesRequest, so that it can be updated.
+2. The CSMS sends one or multiple SetVariablesRequest(s) to set new values for the
+variables in the NetworkConfiguration component with instance configurationSlot.
+3. The Charging Station responds to each request with a SetVariablesResponse with status
+Accepted.
+5 Prerequisites The data supplied by the CSMS matches the Charging Station’s capabilities
+6 Postcondition(s) The Charging Station was able to store the new connection data
+7 Error Handling Activation of a new NetworkConnectionProfile is described in B10 - Migrate to new CSMS. Errors
+during this use-case are not destructive to the current data connection. Error handling is further
+described in B10 - Migrate to new CSMS
+8 Remarks When changes are made to the currently active NetworkConnectionProfile using
+SetNetworkProfileRequest, these will not be used until a reconnect occurs, which can be triggered
+by resetting a Charging Station as described in B10 - Migrate to new CSMS.
+The existing SetNetworkProfileRequest has become deprecated and may be subject to removal in
+a future OCPP release.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 69/803 Part 2 - Specification

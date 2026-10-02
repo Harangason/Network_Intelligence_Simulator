@@ -1,0 +1,94 @@
+ELM327
+53 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Setting Timeouts - AT ST and AT AT Commands
+Users often ask about how to obtain faster OBD
+scanning rates. There is nothing that we can do about
+how fast (or slow) a vehicle is to respond, but we can
+optimize how the ELM327 handles the responses.
+A typical vehicle request and response is shown in
+the diagram below:
+ELM327
+Vehicle
+ELM sends request
+Vehicle responds
+ELM waits up
+to 200 msec
+ELM waits 200 msec
+for more responses
+The ELM327 sends a request then waits up to
+200 msec for a reply. If none were to come, an internal
+timer would stop the waiting, and the ELM327 would
+print ‘NO DATA’.
+After each reply has been received, the ELM327
+must wait to see if any more replies are coming (and it
+uses the same internal timer to stop the waiting if no
+more replies arrive). With our initial OBD products (the
+ELM320, ELM322 and ELM323) we found that older
+vehicles often needed a timeout setting of about 100
+msec, and occasionally needed more, so we settled on
+a standard default setting of 200 msec.
+If a typical vehicle query response time were about
+50 msec, and the timeout were set to 200 msec, the
+fastest scan rate possible would only be about 4
+queries per second. Changing the ST time to about
+100 msec would almost double that rate, giving about
+7 queries per second. Clearly, if you were to know how
+long it takes for your vehicle to reply, you might be
+able to improve on the scan rate, by adjusting the ST
+time.
+It is not easy to tell how fast a vehicle replies to
+requests. For one thing, requests all have priorities
+assigned, so responses may be fast at some times,
+and slower at others. The physical measurement of
+the time is not easy either - it requires expensive test
+equipment just to make one measurement. To help
+with this, we added a feature to the ELM327 called
+‘Adaptive Timing’.
+Adaptive Timing actually makes the response time
+measurements for you, and adjusts the AT ST time to
+a value that should work for most situations. It is
+enabled by default, but can be disabled with the AT0
+command should you not agree with what it is doing
+(there is also an AT2 setting that is a little more
+aggressive, should you wish to experiment). For 99%
+of all vehicles, we recommend that you simply leave
+the settings at their default values, and let the ELM327
+make the adjustments for you.
+Consider the following times taken from a J1850
+VPW vehicle, in response to an 01 00 request:
+ELM327
+Vehicle
+58 msec
+engine
+(ECU 10)
+transmission
+(ECU 18)
+4 msec
+The engine controller responds very quickly, but
+the transmission takes considerably longer. The
+adaptive timing algorithm measures the longer
+transmission response times and will use them to set
+the timeout, likely to a value in the range of 90 msec.
+With a timeout of 90 msec, the maximum scan rate
+would be about 6 readings per second.
+Surely there has to be a way to eliminate that final
+timeout, if you know how many responses to expect?
+There is a way – instead of sending 01 00 for the
+above request, the ELM327 will also accept 01 00 2.
+This tells the IC to send 01 00, then return immediately
+after receiving 2 responses. It can not speed up a slow
+ECU, but it will eliminate the final delay, as the
+ELM327 knows the number of responses to expect.
+This one change might give you 10 to 12 responses
+per second, instead of the 6 obtained previously.
+We do caution you to use this feature carefully. If
+you set the last digit to a number that is less than the
+actual number of responses, then acknowledgements
+that may be required will not be sent, and some
+protocols may begin resending the replies, looking for
+a response. This will lead to unnecessary network
+congestion, which must be avoided. Before using this
+feature, always determine the number of responses
+that will be coming from the vehicle, and then set the
+responses digit to that value.

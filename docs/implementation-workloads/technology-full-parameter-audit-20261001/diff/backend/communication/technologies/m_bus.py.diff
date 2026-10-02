@@ -1,0 +1,331 @@
+--- before/backend/communication/technologies/m_bus.py
++++ after/backend/communication/technologies/m_bus.py
+@@ -0,0 +1,328 @@
++"""Wired M-Bus OMS parameters; independent from wireless M-Bus and CAN."""
++P='https://oms-group.org/wp-content/uploads/2024/05/OMS-Spec_Vol2_AnnexP_C113.pdf'
++V='https://oms-group.org/wp-content/uploads/2024/10/OMS-Spec_Vol2_Primary_v501_01.pdf'
++N='https://oms-group.org/wp-content/uploads/2024/10/Open-Metering-System-Specification_Annex-N.pdf'
++G='https://oms-group.org/wp-content/uploads/2024/05/OMS-TR09_Guide_to_Wired_M-Bus_Installations_v_1.0.3-2.pdf'
++T='https://www.ti.com/lit/ds/symlink/tss721a.pdf'
++S='https://cache.industry.siemens.com/dl/files/827/109759827/att_1150736/v2/MAN_2514284147-07_en_en-US.pdf'
++SOURCES={P:'OMS AnnexP ReleaseC1.1.3(2023-12),normativeP.2 and informativeP.3; not full licensed EN13757-2:2018+A1:2023',
++ V:'OMS Vol2 Issue5.0.1/2023-12;2.1.5/2.2table1and footnotee,3.1.2/3.1.5,4.2/5.1; wired versus wireless scopes distinct',
++ N:'OMS AnnexN ReleaseE2.0.2/2024-07-09; wired examplesN.2.2/N.2.5/N.4; illustrative values are not device defaults',
++ G:'OMS TR09 Version1.0.3/2022-05-27;2.4-2.9 installation/voltage/current/UL/baud/framing, not one universal cable length',
++ T:'TI TSS721A SLAS222B April1999/revisedNovember2010; recommended conditions versus absolute stress, electrical fixture and typical values distinct',
++ S:'Siemens7KT16 EquipmentManual07/2023 2514284147-07 B.1.1 page107(PDF109), character11bits/8E1/LSBfirst only; device-specific additionalbaud/address/load behavior is not universal OMSpolicy'}
++EDITION='OMS_V501_P_C113_N_E202';CHIP='TSS721A_SLAS222B_2010'
++BAUDS=(300,2400,9600,19200,38400)
++# OMS5.0.1 table1. Footnotee explicitly excludes the listed wireless/ELL/MBAL CIs.
++# Lower-layer90h requires a separately declared inner TPL rather than a fabricated header.
++CI={0x50:('DOWN','NONE'),0x51:('DOWN','NONE'),0x52:('DOWN','NONE'),0x53:('DOWN','LONG'),
++ 0x54:('DOWN','NONE'),0x55:('DOWN','LONG'),0x5B:('DOWN','LONG'),0x5F:('DOWN','LONG'),
++ 0x60:('DOWN','LONG'),0x64:('DOWN','LONG'),0x66:('UP','NONE'),0x67:('UP','SHORT'),
++ 0x68:('UP','LONG'),0x6C:('DOWN','LONG'),0x6D:('DOWN','LONG'),0x6E:('UP','SHORT'),
++ 0x6F:('UP','LONG'),0x70:('UP','NONE'),0x71:('UP','NONE'),0x72:('UP','LONG'),
++ 0x74:('UP','SHORT'),0x75:('UP','LONG'),0x7C:('UP','LONG'),0x7D:('UP','SHORT'),
++ 0x7E:('UP','LONG'),0x7F:('UP','SHORT'),0x80:('DOWN','LONG'),0x8A:('UP','SHORT'),
++ 0x8B:('UP','LONG'),0x90:('LOWER','NA'),0x9E:('UP','SHORT'),0x9F:('UP','LONG'),
++ 0xB8:('DOWN','NONE'),0xBB:('DOWN','NONE'),0xBD:('DOWN','NONE'),0xBE:('DOWN','NONE'),
++ 0xBF:('DOWN','NONE'),0xC0:('DOWN','LONG'),0xC1:('UP','SHORT'),0xC2:('UP','LONG'),
++ 0xC3:('DOWN','LONG'),0xC4:('UP','SHORT'),0xC5:('UP','LONG')}
++FORBIDDEN_CI=(0x56,0x57,0x5A,0x61,0x62,0x65,0x7A,0x82,0x87,0x88,0x8C,0x8E,0x92,0x93,0xC6,0xC7,0xCF)
++DECLARATIONS=[]
++
++
++def d(key,kind,meaning,source=P,lo=None,hi=None,unit=None,options=None,integer=False):
++    DECLARATIONS.append(dict(key='mb_'+key,type=kind,description=meaning,source=source,source_revision=SOURCES[source],
++      min=lo,max=hi,unit=unit,options=options,integer=integer))
++
++
++for key,meaning,options,source in [
++ ('edition','Actual OMS5.0.1/AnnexP-C1.1.3 source scope versus separately registered newer EN/OMS/vendor edition.',[EDITION,'REGISTERED_EDITION'],P),
++ ('role','Actual endpoint master/repeater versus end-device; one master per electrical segment, not a master slave address.',['MASTER','SLAVE','REPEATER'],G),
++ ('direction','Actual master voltage-modulated downlink versus slave current-modulated uplink.',['DOWN','UP'],G),
++ ('hardware','Actual TSS721A2010 slave silicon versus independently qualified master/slave/adapter hardware.',[CHIP,'REGISTERED_HARDWARE'],T),
++ ('topology','Actual star/line/tree or combination; no ring or LVDS/CAN termination.',['STAR','LINE','TREE','COMBINATION','RING'],P),
++ ('phase','Actual commissioning/search versus selected data exchange versus disruptive qualification test.',['COMMISSIONING','SEARCH','DATA','TEST'],G),
++ ('rate_set','Actual standard OMS baud set versus independently qualified optional additional baud.',['OMS_STANDARD_SET','REGISTERED_ADDITIONAL'],P),
++ ('addressing','Actual primary/secondary/enhanced selection versus broadcast/test/unconfigured addressing.',['PRIMARY','SECONDARY','ENHANCED','BROADCAST_NO_REPLY','TEST_FE','UNCONFIGURED'],V),
++ ('frame','Actual single ACK versus short/control/long FT1.2 datagram; not a fixed8byte CANframe.',['ACK','SHORT','CONTROL','LONG'],G),
++ ('tpl_header','Actual CI-selected transport header; outer AFL does not prescribe the inner header.',['NONE','SHORT','LONG','NA'],V),
++ ('security','Actual unencrypted versus selected complete registered security profile; no default encryption or key.',['NONE','A','B','REGISTERED_SECURITY'],N),
++ ('load_scope','Actual no-load edge test versus referenced EN2018 load fixture versus installation measurement.',['NO_LOAD','EN2018_LOAD_FIXTURE','INSTALLED'],P),
++ ('chip_direction','Actual TSS721A bus receiver versus bus current transmitter; UART pin naming is not the direction.',['RECEIVE_BUS','TRANSMIT_BUS'],T),
++ ('receive_state','Actual master-received incremental current state, distinct from total idle current.',['MARK','SPACE','MANDATORY_COLLISION','EARLY_COLLISION'],P),
++ ('secondary_change','Actual device-address command target, not automatic correction of a registered identity.',['NO_CHANGE','ADAPTER_IDENT','ADAPTER_TYPE','MANUFACTURER','VERSION'],P),
++ ('ci_direction','Actual semantic direction of the CI, not an AFL layer wrongly classified as an application reply.',['UP','DOWN','LOWER'],V)]:d(key,'select',meaning,source=source,options=options)
++d('char_parity','select','Actual wiredFT1.2 EVEN parity; UARTnone/odd/vendorprotocolrequires independent edition.',S,options=['EVEN','ODD','NONE'])
++d('bit_order','select','Actual UARTLSBfirst character bit sequence, independent from application multibyte address/data order.',S,options=['LSB_FIRST','MSB_FIRST'])
++
++for key,meaning,source in [
++ ('revision','Actual device/OMS/EN/firmware/codec source editions and physical/app support.',P),
++ ('registered_source','Actual independently qualified additional hardware/rate/application/security/edition schema.',V),
++ ('binding_source','Actual segment/master/slave/repeater/poll ownership; not every port gets a fabricated slave address.',G),
++ ('device_source','Actual supported baud/auto-detection/UL/physical current/capacitance and optional application commands.',P),
++ ('physical_source','Actual mark/space/current/drop/cable/load/capacitance/ground/shield/protection and recovery measurements.',P),
++ ('poll_source','Actual polling/search/selection/repeat/collision/timeout and silence bounds for all devices and segments.',P),
++ ('frame_source','Actual complete FT1.2 encoded characters, checksums, C/A/CI and higher-layer lengths.',V),
++ ('application_source','Actual DIF/DIFE/VIF/VIFE/data records, units, byte order, interpretation and function.',G),
++ ('security_source','Actual cryptographic profile/keys/counter/verification/authentication/fragmentation proof; checksum is not cryptography.',N),
++ ('capacity_source','Actual all polls/requests/replies/retries/searches/idle/control/fragmentation and physical qualified workload.',P),
++ ('acceptance_source','Actual metrology/application functional freshness/deadline/safety acceptance, independent from bus response window.',P),
++ ('measurement_source','Actual measurement location/state/instrument/load/fixtures/worst-case range, not nominal36/24V example.',G),
++ ('secondary_id','Actual eight decimal digits including leading zeros; no copied12345678example or generated unknownidentity.',G),
++ ('manufacturer_id','Actual registered DLMS FLAG identity, not a user-free generic industry label.',V),
++ ('key_ref','Actual protected key reference, never a example AES key or automatic plaintext.',N),
++ ('manufacturer_declaration','Actual device declaration for permanent connection/battery/communication depot/address uniqueness exception.',P),
++ ('inner_ci_source','Actual inner layers and continuation rules when outerCI90h carries AFL, not inferred from one packet example.',N),
++ ('reply_address_source','Actual commissioned slave own-primary response address; normativeVol2 requires ownPA despite AnnexN N.2.2 FDh example.',V),
++ ('tolerance_source','Actual exact EN/device UART clock/bit-distortion/receiver budget; no CAN oscillator/sampling tolerance.',P)]:d(key,'text',meaning,source)
++
++for key,meaning,lo,hi,unit,integer,source in [
++ ('master_max_baud','Actual commissioned master supported maximum OMS baud; optional38400 capability not automatic.',2400,38400,'baud',True,P),
++ ('slave_max_baud','Actual commissioned slave supported maximum OMS baud; optional9600 and above require capability.',2400,38400,'baud',True,P),
++ ('rx_baud','Actual receiver baud for the transaction; no asymmetric split receive/transmit rate.',1,None,'baud',True,P),
++ ('tx_baud','Actual transmitter baud for the transaction, matched to selected physical endpoints.',1,None,'baud',True,P),
++ ('requested_baud','Actual baud-rate command target, distinct from the old baud used for command and ACK.',1,None,'baud',True,V),
++ ('master_count','Actual electrical segment ownership; repeats/subsegments are separate registered paths.',1,1,None,True,V),
++ ('slave_count','Actual installed devices versus primary address count or marked unit loads.',0,None,None,True,G),
++ ('slave_units','Actual marked unit-load class1..4; not a universal one-load meter.',1,4,'UL',True,P),
++ ('total_units','Actual sum of installed device unit loads, not device count multiplied by an invented load.',0,None,'UL',True,P),
++ ('master_capacity_units','Actual master/repeater declared load capability, not250UL from an address-space limit.',1,None,'UL',True,P),
++ ('slave_mark_ma','Actual quiescent slave current at the specified voltage/temperature; ULclass ranges are separate.',0,6,'mA',False,P),
++ ('slave_space_increment_ma','Actual slave transmitted additional current11..20mA, not total master bus current.',11,20,'mA',False,P),
++ ('slave_space_total_ma','Actual slave quiescent plus modulation current; no fixed21.5mA all-device default.',0,None,'mA',False,G),
++ ('master_idle_ma','Actual sum of currents at the master before a reply; not one slave UL.',0,None,'mA',False,P),
++ ('master_delta_ma','Actual received current increment above measured idle, not absolute bus current.',0,None,'mA',False,P),
++ ('current_budget_ma','Actual worst-case usable total bus current used in voltage-drop dimensioning.',0,None,'mA',False,P),
++ ('line_loop_ohm','Actual worst-case segment loop resistance; not a fixed1000m length.',0,None,'ohm',False,P),
++ ('master_source_ohm','Actual source resistance at the master, separate from line loop.',0,None,'ohm',False,P),
++ ('drop_v','Actual worst-case current budget times line+source resistance, not typical wiring loss.',0,None,'V',False,P),
++ ('master_mark_v','Actual mark voltage at master output, requires allowance for worst-caseUr; nominal36V is an example.',0,42,'V',False,P),
++ ('master_space_v','Actual space voltage at master output, at least12V+Ur; not fixed24V.',0,42,'V',False,P),
++ ('slave_mark_v','Actual steady mark at slave terminals21..42V, not the master output.',21,42,'V',False,P),
++ ('slave_space_v','Actual space voltage at slave terminals remains at least12V after drop.',12,42,'V',False,P),
++ ('voltage_delta_v','Actual mark-to-space variation at the slave12..15V; may need a higher-than-minimum mark.',12,15,'V',False,P),
++ ('series_protection_ohm','Actual total serial slave protection420..440ohm; not bus termination.',420,440,'ohm',False,V),
++ ('design_protection_ohm','Reference nominal430ohm protection proposal, separate from installed resistor.',420,440,'ohm',False,V),
++ ('inrush_ma','Actual first1us current after supply activation; strictly below100mA, not100mAdefault.',0,None,'mA',False,P),
++ ('charge_v_s','Actual SCreference charge slope25..500V/s.',25,500,'V/s',False,P),
++ ('discharge_v_s','Actual SCreference discharge slope0.5..15V/s; ratio constraint remains independent.',.5,15,'V/s',False,P),
++ ('sc_capacitance_nf','Actual storage capacitor;100..330nF is informative practice, not universal load or compliance proof.',0,None,'nF',False,P),
++ ('design_sc_nf','Context proposal lowest cited best-practice storage capacitance, not installed capacitor.',0,None,'nF',False,P),
++ ('switchon_slew_v_s','Actual strictly increasing bus activation slope at least168V/s.',168,None,'V/s',False,P),
++ ('startup_delay_s','Actual measured full communication recovery after slave reaches21V; strictly less3s.',0,None,'s',False,P),
++ ('rise_us','Actual voltage modulation edge under declared load; below half-bit interval at referenced ENload.',0,None,'us',False,P),
++ ('fall_us','Actual separate falling voltage modulation edge, same scoped load conditions.',0,None,'us',False,P),
++ ('no_load_slew_v_us','Actual unloaded voltage slope, strictly below75V/us; not installed load time.',0,None,'V/us',False,P),
++ ('primary_address','Actual device assignedPA1..250 versus unconfigured0, not master address.',0,250,None,True,V),
++ ('request_address','Actual downlink A-field primary or secondary253/test254/broadcast255;251/252not arbitrary device IDs.',0,255,None,True,V),
++ ('reply_address','Actual own commissioned slavePA response, not echoFD/FE/FF request addresses.',0,250,None,True,V),
++ ('version','Actual manufacturer application address version, not forced software version1.',0,255,None,True,V),
++ ('device_type','Actual source-qualified application media/type, not hardcodedgas/water/example.',0,255,None,True,V),
++ ('ci','Actual source-qualified CI byte; wireless7Ah/ELL8Ch/8Eh excluded from wiredOMS.',0,255,None,True,V),
++ ('inner_ci','Actual inner CI in an AFLfirst fragment if present; continuation need not containTPL.',0,255,None,True,N),
++ ('length_field','Actual FT1.2 Lfield countingC/A/CIand user area, not full wire length or app payload.',3,255,'octet',True,V),
++ ('user_area_octets','Actual bytes following firstCI, includes transport/AFL/security/record overhead, not only useful readings.',0,252,'octet',True,G),
++ ('wire_octets','Actual entire encoded datagram, including doubledL/start and checksum/stop.',1,261,'octet',True,N),
++ ('wire_bits','Actual encoded characters with start/8data/evenparity/stop; not8bits/octet.',1,None,'bit',True,P),
++ ('serialization_ms','Actual UART serialization11*wire_octets/baud, separate from reply wait/timeout/function deadline.',0,None,'ms',False,P),
++ ('response_wait_ms','Actual valid datagram reply delay11bits..330bits+50ms; not selected as a measured default.',0,None,'ms',False,P),
++ ('receive_pulse_ms','Actual master data-detection current pulse duration; EN2018 quoted fixture requires strictly below50ms, not a default response delay.',0,None,'ms',False,P),
++ ('receive_duty_ratio','Actual master data-detection current pulse duty ratio; EN2018 quoted fixture requires strictly below0.92, independent from bus utilization.',0,1,None,False,P),
++ ('response_min_bits','Reference11bit-time earliest reply rule, not measured processing delay.',0,None,'bit',True,P),
++ ('response_max_bits','Reference330bit part of latest-response window, separate from50msfixedaddition.',0,None,'bit',True,P),
++ ('response_max_add_ms','Reference50msfixedaddition, not complete response timeout for every baud.',0,None,'ms',False,P),
++ ('disturbed_idle_bits','Reference22bit idle recognition after disturbed frame; distinct from clean11bit wait.',0,None,'bit',True,P),
++ ('master_repetitions','Actual master error repeats at least2:3attempts, not CANretry_limit2 universally.',0,None,None,True,P),
++ ('fcb','Actual per logical peer/direction frame count bit; not defaultconfirmed persistent sequence.',0,1,None,True,P),
++ ('fcv','Actual frame count validity for a transaction; broadcastno-reply state requires separate policy.',0,1,None,True,P),
++ ('char_data_bits','Reference8data bits per character.',1,None,'bit',True,S),
++ ('char_start_bits','Reference1space start bit.',1,None,'bit',True,S),
++ ('char_parity_bits','Reference1even parity bit.',0,None,'bit',True,S),
++ ('char_stop_bits','Reference1mark stop bit, making eleven encoded bits.',1,None,'bit',True,S),
++ ('char_bits','Reference11encodedbits per octet; not payload capacity.',1,None,'bit',True,S),
++ ('chip_bus_v','Actual selected TSS721A bus voltage atBUSL1/BUSL2, not absolute maximum50V.',0,None,'V',False,T),
++ ('chip_bat_v','Actual TSS721Alogic/battery input2.5..3.8V and ≤STC−1V.',0,None,'V',False,T),
++ ('chip_stc_v','Actual support capacitor voltage needed forBATrelation; not fixed6.5Vtypical.',0,None,'V',False,T),
++ ('chip_ridd_kohm','Actual current-setting resistor13..80kohm; not copied30kohmfixture.',0,None,'kohm',False,T),
++ ('chip_ris_ohm','Actual modulation-setting resistor minimum100ohm, not bus protection/termination.',0,None,'ohm',False,T),
++ ('chip_temperature_c','Actual2010 recommended free-air condition−25..85C; package/source qualification distinct from nominal25C.',None,None,'C',False,T),
++ ('chip_modulation_ma','Actual100ohmfixture current11.5..19.5mA; no fixedtypical current.',0,None,'mA',False,T)]:d(key,'number',meaning,source,lo,hi,unit,integer=integer)
++
++for key,meaning,source in [
++ ('auto_baud','Actual end-device automatic detection for all supported rates; not an autoconfiguration confirmation.',P),
++ ('half_duplex','Actual alternating master/slave bus ownership; no RS485/CANfull-duplex override.',G),
++ ('break_detection','Actual mandatoryOMSbreak detection, not fabricated implementation evidence.',P),
++ ('secondary_supported','Actual mandatory secondary addressing and wildcard support, distinct from chosen address.',P),
++ ('enhanced_supported','Actual master capability required; slave enhancement optional.',P),
++ ('shield_at_master_only','Actual shield earthed only at master side; neither bus line is tied toearth.',P),
++ ('bus_ground_coupled','Actual bus-line coupling to ground/earth/otherpotential; prohibited in selectedOMSprofile.',P),
++ ('termination_present','Actual bus termination; prohibited unlikeCAN/LVDS.',P),
++ ('reply_expected','Actual request/confirmation policy; FFbroadcastnever replies.',P),
++ ('is_adapter','Actual adapter identity qualification; only qualified adapter address parts maychange.',P),
++ ('capacity_confirmed','Actual complete commissioned capacity approval, neverTrue frombaud or nominalUL.',P)]:d(key,'boolean',meaning,source)
++for endpoint in ('master','slave'):
++    for rate in BAUDS:
++        d(endpoint+'_support_'+str(rate),'boolean',f'Actual {endpoint} capability at{rate}baud, separate from the other endpoint.300/2400mandatory and optional higher rates require all preceding listed rates.',P)
++
++REQUIRED=['edition','role','direction','hardware','revision','binding_source','device_source','physical_source','poll_source',
++ 'frame_source','application_source','security_source','capacity_source','acceptance_source']
++REMOVED={k:'Removed foreign '+k+': wiredM-Bus uses qualified voltage/current half-duplex polls, addresses, FT1.2characters and per-transaction repetitions; no CAN/Ethernet packet queue/QoS/bandwidth/synchronization/gateway default.'for k in
++ ('queue_size','queue_policy','qos_priority','traffic_class','reserved_bandwidth_percent','sync_method','rate_limit_bit_s',
++  'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms','gateway_maximum_throughput',
++  'gateway_input_buffer','gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
++
++
++def semantics():
++    rules=[dict(parameter='local_timing_evidence',allowed=[],source=P,source_revision='WiredM-Bus is not I2Cmaster/address/timing evidence')]
++    def r(key,when=None,source=P,**kw):
++        rules.append(dict(parameter=key if key in ('bitrate_bps','payload_bytes')else'mb_'+key,
++          when={'mb_edition':EDITION,**{'mb_'+k:v for k,v in (when or{}).items()}},
++          source=source,source_revision=SOURCES[source],**kw))
++    rules.append(dict(parameter='mb_registered_source',when={'mb_edition':'REGISTERED_EDITION'},required=True,source=P,source_revision=SOURCES[P]))
++    for key,value in [('hardware','REGISTERED_HARDWARE'),('rate_set','REGISTERED_ADDITIONAL'),('security','REGISTERED_SECURITY')]:
++        r('registered_source',{key:value},required=True)
++    r('topology',forbidden=['RING']);r('termination_present',allowed=[False]);r('bus_ground_coupled',allowed=[False])
++    for key in ('shield_at_master_only','half_duplex','break_detection','secondary_supported'):r(key,allowed=[True])
++    for endpoint in ('master','slave'):
++        for rate in (300,2400):r(endpoint+'_support_'+str(rate),allowed=[True])
++    r('auto_baud',{'role':'SLAVE'},allowed=[True]);r('enhanced_supported',{'role':'MASTER'},allowed=[True])
++    for key in ('master_max_baud','slave_max_baud'):r(key,allowed=list(BAUDS[1:]))
++    r('bitrate_bps',multiple_of=1,minimum=1)
++    r('bitrate_bps',{'rate_set':'OMS_STANDARD_SET'},allowed=list(BAUDS),required=True)
++    for key in ('master_max_baud','slave_max_baud','rx_baud','tx_baud','rate_set'):
++        r(key,when_present=['bitrate_bps'],required=True)
++    for key in ('master_max_baud','slave_max_baud'):r('bitrate_bps',maximum_parameter='mb_'+key)
++    for key in ('rx_baud','tx_baud'):r(key,equal_parameter='bitrate_bps')
++    for maximum in BAUDS[1:]:
++        for endpoint in ('master','slave'):
++            for rate in BAUDS:
++                if rate<=maximum:r(endpoint+'_support_'+str(rate),{endpoint+'_max_baud':maximum},allowed=[True],required=True)
++    for endpoint in ('master','slave'):
++        for rate in BAUDS[1:]:r(endpoint+'_max_baud',{endpoint+'_support_'+str(rate):True},minimum=rate)
++    r('slave_space_total_ma',equal_expression={'sum':['mb_slave_mark_ma','mb_slave_space_increment_ma']})
++    for key in ('slave_mark_ma','slave_space_increment_ma'):r(key,when_present=['mb_slave_space_total_ma'],required=True)
++    r('slave_mark_ma',maximum_expression={'product':[1.5,'mb_slave_units']})
++    for units in (2,3,4):r('slave_mark_ma',{'slave_units':units},exclusive_minimum=1.5*(units-1))
++    r('slave_units',when_present=['mb_slave_mark_ma'],required=True)
++    r('total_units',maximum_parameter='mb_master_capacity_units')
++    r('master_capacity_units',when_present=['mb_total_units'],required=True)
++    r('drop_v',equal_expression={'product':['mb_current_budget_ma',{'sum':['mb_line_loop_ohm','mb_master_source_ohm']},.001]})
++    for key in ('current_budget_ma','line_loop_ohm','master_source_ohm'):r(key,when_present=['mb_drop_v'],required=True)
++    for key in ('master_mark_v','master_space_v'):r('drop_v',when_present=['mb_'+key],required=True)
++    r('master_mark_v',minimum_expression={'sum':[24,'mb_drop_v']})
++    r('master_space_v',minimum_expression={'sum':[12,'mb_drop_v']},maximum_expression={'subtract':['mb_master_mark_v',12]})
++    r('master_mark_v',when_present=['mb_master_space_v'],required=True)
++    r('voltage_delta_v',equal_expression={'subtract':['mb_slave_mark_v','mb_slave_space_v']})
++    for state in ('mark','space'):
++        r('slave_'+state+'_v',minimum_expression={'subtract':['mb_master_'+state+'_v','mb_drop_v']},maximum_parameter='mb_master_'+state+'_v')
++    for key in ('slave_mark_v','slave_space_v'):r(key,when_present=['mb_voltage_delta_v'],required=True)
++    r('inrush_ma',exclusive_maximum=100)
++    r('charge_v_s',exclusive_minimum_expression={'product':[30,'mb_discharge_v_s']})
++    for key,other in [('charge_v_s','discharge_v_s'),('discharge_v_s','charge_v_s')]:r(other,when_present=['mb_'+key],required=True)
++    r('startup_delay_s',exclusive_maximum=3)
++    for key in ('rise_us','fall_us'):
++        r(key,{'load_scope':'EN2018_LOAD_FIXTURE'},maximum_ratio={'numerator_offset':500_000,'denominator_offset':1,'denominator_product':['bitrate_bps']},exclusive_maximum_ratio=True)
++        for target in ('load_scope','bitrate_bps','measurement_source'):r(target,when_present=['mb_'+key],required=True)
++    r('no_load_slew_v_us',{'load_scope':'NO_LOAD'},exclusive_maximum=75)
++    r('load_scope',when_present=['mb_no_load_slew_v_us'],allowed=['NO_LOAD'],required=True)
++    for address,when in [(253,'SECONDARY'),(253,'ENHANCED'),(254,'TEST_FE'),(255,'BROADCAST_NO_REPLY'),(0,'UNCONFIGURED')]:
++        r('request_address',{'addressing':when},allowed=[address],required=True,source=V)
++    r('primary_address',{'addressing':'PRIMARY'},minimum=1,maximum=250,required=True,source=V)
++    r('request_address',{'addressing':'PRIMARY'},equal_parameter='mb_primary_address',required=True,source=V)
++    r('request_address',forbidden=[251,252],source=V)
++    r('reply_address',equal_parameter='mb_primary_address',source=V)
++    for key in ('primary_address','reply_address_source'):r(key,when_present=['mb_reply_address'],required=True,source=V)
++    r('reply_expected',{'addressing':'BROADCAST_NO_REPLY'},allowed=[False],required=True)
++    r('slave_count',{'addressing':'TEST_FE','phase':'DATA'},maximum=1)
++    for mode in ('SECONDARY','ENHANCED'):
++        for key in ('secondary_id','manufacturer_id','version','device_type'):r(key,{'addressing':mode},required=True,source=V)
++    r('secondary_id',pattern=r'[0-9]{8}',source=G);r('manufacturer_id',pattern=r'[A-Z]{3}',source=V)
++    r('secondary_change',{'is_adapter':False},allowed=['NO_CHANGE'])
++    r('secondary_change',{'is_adapter':True},forbidden=['MANUFACTURER','VERSION'])
++    r('ci',allowed=list(CI),source=V)
++    for ci,(direction,header)in CI.items():
++        r('ci_direction',{'ci':ci},allowed=[direction],required=True,source=V)
++        r('tpl_header',{'ci':ci},allowed=[header],required=True,source=V)
++        if direction!='LOWER':r('direction',{'ci':ci},allowed=[direction],source=V)
++    r('inner_ci_source',{'ci':0x90},required=True,source=N)
++    for ci,baud in ((0xB8,300),(0xBB,2400),(0xBD,9600),(0xBE,19200),(0xBF,38400)):
++        # Command's requested new rate is not the current transaction rate.
++        r('frame',{'ci':ci},allowed=['CONTROL'],source=V)
++        r('requested_baud',{'ci':ci},allowed=[baud],required=True,source=V)
++    for key in ('master_max_baud','slave_max_baud'):r('requested_baud',maximum_parameter='mb_'+key)
++    for frame,size in [('ACK',1),('SHORT',5),('CONTROL',9)]:r('wire_octets',{'frame':frame},allowed=[size],source=N)
++    for frame in ('ACK','SHORT'):
++        for key in ('ci','tpl_header','length_field','user_area_octets'):r(key,{'frame':frame},allowed=[],source=N)
++    r('user_area_octets',{'frame':'CONTROL'},allowed=[0],source=G)
++    r('length_field',{'frame':'CONTROL'},allowed=[3],source=N)
++    r('length_field',{'frame':'LONG'},equal_expression={'sum':['mb_user_area_octets',3]},source=N)
++    r('wire_octets',{'frame':'LONG'},equal_expression={'sum':['mb_length_field',6]},source=N)
++    for key in ('user_area_octets','length_field'):r(key,{'frame':'LONG'},when_present=['mb_wire_octets'],required=True,source=N)
++    r('wire_bits',equal_expression={'product':['mb_wire_octets',11]},source=S)
++    r('wire_octets',when_present=['mb_wire_bits'],required=True,source=N)
++    r('serialization_ms',equal_ratio={'numerator_parameter':'mb_wire_bits','denominator_offset':1,'denominator_product':['bitrate_bps'],'factor':1000},source=N)
++    for key in ('bitrate_bps','wire_bits'):r(key,when_present=['mb_serialization_ms'],required=True,source=N)
++    r('response_wait_ms',minimum_expression={'product':[11000,{'power':['bitrate_bps',-1]}]},
++      maximum_expression={'sum':[50,{'product':[330000,{'power':['bitrate_bps',-1]}]}]},exact_decimal_bounds=True)
++    r('bitrate_bps',when_present=['mb_response_wait_ms'],required=True)
++    r('payload_bytes',maximum_parameter='mb_user_area_octets',source=G)
++    for key,value in [('response_min_bits',11),('response_max_bits',330),('response_max_add_ms',50),
++                      ('disturbed_idle_bits',22),('char_data_bits',8),('char_start_bits',1),
++                      ('char_parity_bits',1),('char_stop_bits',1),('char_bits',11)]:r(key,allowed=[value])
++    r('char_parity',allowed=['EVEN'],source=S);r('bit_order',allowed=['LSB_FIRST'],source=S)
++    r('master_repetitions',minimum=2)
++    r('master_delta_ma',{'receive_state':'MARK'},maximum=6)
++    r('master_delta_ma',{'receive_state':'SPACE'},minimum=9,maximum=50)
++    r('master_delta_ma',{'receive_state':'MANDATORY_COLLISION'},exclusive_minimum=50)
++    r('master_delta_ma',{'receive_state':'EARLY_COLLISION'},exclusive_minimum=25)
++    r('receive_state',when_present=['mb_master_delta_ma'],required=True)
++    for state in ('MARK','SPACE'):
++        r('receive_pulse_ms',{'receive_state':state},exclusive_maximum=50,required=True)
++        r('receive_duty_ratio',{'receive_state':state},exclusive_maximum=.92,required=True)
++    r('measurement_source',when_present=['mb_master_delta_ma'],required=True)
++    for key in ('current_budget_ma','master_mark_v','master_space_v','slave_mark_v','slave_space_v','inrush_ma',
++                'charge_v_s','discharge_v_s','startup_delay_s','slave_mark_ma','chip_bus_v','chip_bat_v'):
++        r('measurement_source',when_present=['mb_'+key],required=True)
++    hw={'hardware':CHIP}
++    r('role',hw,allowed=['SLAVE'],source=T);r('bitrate_bps',hw,maximum=9600,source=T)
++    r('chip_bus_v',{**hw,'chip_direction':'RECEIVE_BUS'},minimum=10.8,maximum=42,source=T)
++    r('chip_bus_v',{**hw,'chip_direction':'TRANSMIT_BUS'},minimum=12,maximum=42,source=T)
++    r('chip_direction',hw,when_present=['mb_chip_bus_v'],required=True,source=T)
++    r('chip_bat_v',hw,minimum=2.5,maximum=3.8,maximum_expression={'subtract':['mb_chip_stc_v',1]},source=T)
++    r('chip_stc_v',hw,when_present=['mb_chip_bat_v'],required=True,source=T)
++    r('chip_ridd_kohm',hw,minimum=13,maximum=80,source=T)
++    r('chip_ris_ohm',hw,minimum=100,source=T)
++    r('chip_temperature_c',hw,minimum=-25,maximum=85,source=T)
++    r('chip_modulation_ma',{**hw,'chip_ris_ohm':100},minimum=11.5,maximum=19.5,source=T)
++    r('chip_ris_ohm',hw,when_present=['mb_chip_modulation_ma'],required=True,source=T)
++    return dict(rate_model={'type':'WIRED_MBUS_VOLTAGE_CURRENT_POLL_AND_FT12_DEPENDENT','fields':['bitrate_bps']},
++      required_parameters=['mb_'+v for v in REQUIRED],native_parameter_prefixes=['mb_'],parameter_constraints=rules,
++      physical_layer_profile_id='wired_mbus_actual_voltage_current_segment',medium_access_model='SINGLE_MASTER_POLL_AND_REPLY',
++      arbitration_model_id='SINGLE_MASTER_POLL_SEARCH_COLLISION_AND_SELECTION',
++      mechanisms={'addressing':['ACTUAL_PRIMARY_OR_SECONDARY_OR_ENHANCED_SELECTION'],
++        'integrity':['UART_EVEN_PARITY_AND_FT12_CHECKSUM_NOT_AUTHENTICATION'],
++        'medium_access':['HALF_DUPLEX_SINGLE_MASTER_POLL','SEARCH_COLLISION_IS_NOT_CAN_ARBITRATION'],
++        'supervision':['SOURCE_QUALIFIED_RESPONSE_WINDOW_AND_REPEATS'],'clocking':['ACTUAL_TRANSACTION_BAUD_AND_CAPABILITY']})
++
++
++def fields():
++    result=[];required=set(semantics()['required_parameters'])
++    for spec in DECLARATIONS:
++        item={k:v for k,v in spec.items()if v is not None};key=spec['key'].removeprefix('mb_')
++        item.update(label=key.replace('_',' '),category='physical',scope='network',required=spec['key']in required,
++          editable=True,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
++        if item['type']in('number','boolean'):item['schema_when']={'mb_edition':EDITION}
++        proposals=[]
++        def p(value,**when):proposals.append(dict(when={'mb_edition':EDITION,**{'mb_'+k:v for k,v in when.items()}},
++          value=value,source=spec['source'],source_revision=spec['source_revision']))
++        constants={'response_min_bits':11,'response_max_bits':330,'response_max_add_ms':50,'disturbed_idle_bits':22,
++                   'char_data_bits':8,'char_start_bits':1,'char_parity_bits':1,'char_stop_bits':1,'char_bits':11,
++                   'design_protection_ohm':430}
++        if key in constants:p(constants[key])
++        if key=='design_sc_nf':p(100,hardware=CHIP)
++        if key=='master_repetitions':p(2,role='MASTER')
++        if proposals:item.update(conditional_defaults=proposals,default_status='PROPOSED_CONDITIONAL')
++        # No installed addresses, hardware/rates/UL/current/voltage measurements,
++        # capabilities, keys, replies, timers or confirmation are guessed.
++        result.append(item)
++    return result

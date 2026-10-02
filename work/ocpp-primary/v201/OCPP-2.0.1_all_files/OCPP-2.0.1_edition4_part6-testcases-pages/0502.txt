@@ -1,0 +1,50 @@
+Tool validations
+* Step 2:
+Message CustomerInformationResponse
+- status Accepted
+* Step 3:
+Message NotifyCustomerInformationRequest
+- data Not empty
+* Step 6:
+Message CustomerInformationResponse
+- status Accepted
+* Step 7:
+Message NotifyCustomerInformationRequest
+- data empty
+Post scenario validations:
+- All report parts have been received
+TC_N_63_CS: Clear Customer Information - Clear and report - customerCertificate
+Test case name Clear Customer Information - Clear and report - customerCertificate
+Test case Id TC_N_63_CS
+Use case Id(s) N10
+Requirement(s) N10.FR.09
+System under test Charging Station
+Description The CSMS sends a message to the Charging Station to clear (and retrieve) customer certificate
+information, for example to be compliant with local privacy laws. The Charging Station notifies the CSMS by
+sending one or more reports.
+Note: The only customer certificate that could exist in a charging station is a PnC contract certificate, which
+should not remain in the charging station.
+Purpose To verify if the Charging Station accepts the request and removes all customer related data and sent
+notifies as described at the OCPP specification.
+Prerequisite(s) The Charging Station needs to support retrieving / deleting CustomerInformation - CustomerCertificate.
+Before (Preparations)
+Configuration State:
+- AuthCtrlr.Enabled is true
+- AuthCtrlr.DisableRemoteAuthorization is false
+- ISO15118Ctrlr.CentralContractValidationAllowed is false
+- ISO15118Ctrlr.V2GCertificateInstallationEnabled is true
+- ISO15118Ctrlr.ContractCertificateInstallationEnabled is true
+- ISO15118Ctrlr.PnCEnabled is true
+Memory State:
+RenewV2GChargingStationCertificate (If none are present, when checking with GetInstalledCertificateIds.certificateType =
+V2GCertificateChain)
+Reusable State:
+Execute Reusable State EVConnectedPreSession
+Execute Reusable State Authorized15118 (PnC)
+Execute Reusable State EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual action: EV ends the charging session.
+Note: The Charging Station receives a SessionStopReq(Terminate) message from the EV to finish the transaction.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 500/914 Part 6 - Test Cases

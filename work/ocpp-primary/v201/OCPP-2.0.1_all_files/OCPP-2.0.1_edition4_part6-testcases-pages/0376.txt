@@ -1,0 +1,52 @@
+TC_K_40_CS: Get Composite Schedule - Stacking ChargingProfiles
+Test case name Get Composite Schedule - Stacking ChargingProfiles
+Test case Id TC_K_40_CS
+Use case Id(s) K08
+Requirement(s) K08.FR.02,K08.FR.06
+System under test Charging Station
+Description The CSMS requests a composite schedule which is a combination of local limits and the prevailing
+Charging Profiles of the different chargingProfilePurposes and stack levels.
+2 ChargingProfiles with same startSchedule and different stackLevels are submitted.
+Purpose To verify if the Charging Station is able to calculate a correct composite schedule and provide this to the
+CSMS on request.
+Prerequisite(s) - ChargingProfileEntries.maxLimit must be > 1
+- The configuration variable ChargingProfileMaxStackLevel must be > 0
+- The configuration variable PeriodsPerSchedule must be > 2
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+set <startScheduleTime> = <current dateTime> - <Configured max time deviation>
+SetChargingProfile with
+ChargingProfile 1:
+chargingProfilePurpose is TxDefaultProfile
+chargingProfileKind should be Absolute
+stackLevel should be 0
+evseId <Configured evseId>
+startSchedule <startScheduleTime>
+numberPhases <Configured numberPhases>
+ChargingSchedule:
+duration 400
+chargingRateUnit <Configured chargingRateUnit>
+startPeriod 0, limit 6 * <limit multiplier>
+startPeriod 100, limit 8 * <limit multiplier>
+startPeriod 200, limit 10 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+ChargingProfile 2:
+chargingProfilePurpose is TxDefaultProfile
+chargingProfileKind should be Absolute
+stackLevel should be 1
+evseId <Configured evseId>
+startSchedule <startScheduleTime>
+numberPhases <Configured numberPhases>
+ChargingSchedule:
+duration 150
+chargingRateUnit <Configured chargingRateUnit>
+startPeriod 0, limit 7 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+startPeriod 100, limit 9 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Reusable State(s):
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 374/914 Part 6 - Test Cases

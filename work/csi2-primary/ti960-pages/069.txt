@@ -1,0 +1,54 @@
+• Number of bytes per line
+• Number of bytes per color bar
+• CSI-2 DataType field and VC-ID
+• Number of active video lines per frame
+• Number of total lines per frame (active plus blanking)
+• Line period (possibly program in units of 10 ns)
+• Vertical front porch – number of blank lines prior to FrameEnd packet
+• Vertical back porch – number of blank lines following FrameStart packet
+The pattern generator relies on proper programming by software to ensure the color bar widths are set to 
+multiples of the block (or word) size required for the specified DataType. For example, for RGB888, the block 
+size is 3 bytes which also matches the pixel size. In this case, the number of bytes per color bar must be a 
+multiple of 3. The Pattern Generator is implemented in the CSI-2 Transmit clock domain, providing the pattern 
+directly to the CSI-2 Transmitter. The circuit generates the CSI-2 formatted data.
+7.5.12.2 Fixed Color Patterns
+When programmed for Fixed Color Pattern mode, Pattern Generator can generate a video image with a 
+programmable fixed data pattern. The basic programming fields for image dimensions are the same as used 
+with the Color Bar Patterns. When sending Fixed Color Patterns, the color bar controls allow alternating between 
+the fixed pattern data and the bit-wise inverse of the fixed pattern data.
+The Fixed Color patterns assume a fixed block size for the byte pattern to be sent. The block size is 
+programmable through the register and is designed to support most 8-bit, 10-bit, and 12-bit pixel formats. The 
+block size should be set based on the pixel size converted to blocks that are an integer multiple of bytes. For 
+example, an RGB888 pattern would consist of 3-byte pixels and therefore require a 3-byte block size. A 2x12-bit 
+pixel image would also require 3-byte block size, while a 3x12-bit pixel image would require nine bytes (two 
+pixels) to send an integer number of bytes. Sending a RAW10 pattern typically requires a 5-byte block size for 
+four pixels, so 1x10-bit and 2x10-bit could both be sent with a 5-byte block size. For 3x10-bit, a 15-byte block 
+size would be required.
+The Fixed Color patterns support block sizes up to 16 bytes in length, allowing additional options for patterns 
+in some conditions. For example, an RGB888 image could alternate between four different pixels by using a 
+12-byte block size. An alternating black and white RGB888 image could be sent with a block size of 6-bytes and 
+setting first three bytes to 0xFF and next three bytes to 0x00.
+To support up to 16-byte block sizes, a set of sixteen registers are implemented to allow programming the value 
+for each data byte. The line period is calculated in units of 10 ns, unless the CSI-2 mode is set to 400-Mbps 
+operation in which case the unit time dependancy is 20 ns.
+7.5.12.3 Pattern Generator Programming
+The information in this section provides details on how to program the Pattern Generator to provide a specific 
+color bar pattern, based on data type, frame size, and line size.
+Most basic configuration information is determined directly from the expected video frame parameters. The 
+requirements should include the data type, frame rate (frames per second), number of active lines per frame, 
+number of total lines per frame (active plus blanking), and number of pixels per line.
+• PGEN_ACT_LPF – Number of active lines per frame
+• PGEN_TOT_LPF – Number of total lines per frame
+• PGEN_LSIZE – Video line length size in bytes. Compute based on pixels per line multiplied by pixel size in 
+bytes
+• CSI-2 DataType field and VC-ID
+• Optional: PGEN_VBP – Vertical back porch. This is the number of lines of vertical blanking following Frame 
+Valid
+• Optional: PGEN_VFP – Vertical front porch. This is the number of lines of vertical blanking preceding Frame 
+Valid
+• PGEN_LINE_PD – Line period in 10-ns units. Compute based on Frame Rate and total lines per frame
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 69
+Product Folder Links: DS90UB960-Q1

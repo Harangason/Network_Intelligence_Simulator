@@ -1,0 +1,42 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+13   PN7160 download mode
+13.1  Introduction
+The main part of the PN7160 firmware is permanently stored in an embedded ROM and a small part in an
+embedded FLASH. This last part of firmware can be updated using the secured firmware update mechanism,
+most commonly called “sFWu”.
+User data is stored in EEPROM and is protected by anti-tearing mechanisms that ensure the integrity and
+availability of the data. Confidentiality is also ensured for critical data in a dedicated protected area that cannot
+be updated.
+In order to provide NXP’s customers with features that are compliant with the last standards (for instance NFC
+Forum specifications), both the code in FLASH and the user data in EEPROM can be updated. NXP is in
+charge of delivering new firmware updates, together with new User data.
+The aim of this section is to detail the PN7160 firmware update concepts.
+13.2  DH Interface
+As already mentioned in Section 4.1, the PN7160 has two main modes of operation to communicate with the
+DH:
+1. NCI-based communications
+2. HDLL-Based communications, only used when the PN7160 is triggered to enter the download mode
+Most of the information given in Section 4 still applies here; the only difference is that the frames exchanged do
+not carry NCI packets anymore, they carry HDLL packets.
+13.2.1  Accessing download mode
+In order to force the PN7160 enter the download mode, the DH has to follow the sequence described below:
+1. Force DWL_REQ pin to logical ‘1’
+2. Generate a reset, either:
+• A hardware reset by pulsing VEN pin low for at least 10 µs
+• A software reset by sending the NCI CORE_RESET_CMD command
+PN7160 is now ready to receive commands in download mode, using the HDLL framing.
+To get out of the download mode and come back to the normal mode (NCI framing), the DH has to follow the
+sequence described below:
+1. Force DWL_REQ pin to logical ‘0’
+2. Generate a reset, either
+• A hardware reset by pulsing VEN pin low for at least 10 µs
+• A software reset by sending the DL_RESET command
+PN7160 is now ready to receive NCI commands, assuming that the previous sFWu sequence was successful.
+13.2.2  Description of HDLL
+HDLL is the link layer developed by NXP to ensure a reliable upload mode.
+An HDLL message is made of a 2-Bytes header, followed by a frame, comprising the Opcode and the Payload
+of the command. Each message ends with a 16-bits CRC, as described on the picture below:
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+111 / 147

@@ -1,0 +1,25 @@
+u-blox 20 HPG 2.00 - Interface description
+bits 7…0   U:8 preamble - - Preamble (0x73, 's')
+1 X1 spartnByte1 - - SPARTN frame byte 1
+bit 0   U:1 nDataMSB - - Payload length (MSB)
+bits 7…1   U:7 msgType - - Message type
+2 X1 spartnByte2 - - SPARTN frame byte 2
+bits 7…0   U:8 nData - - Payload length (middle 8 bits)
+3 X1 spartnByte3 - - SPARTN frame byte 3
+bits 3…0   U:4 frameCrc - - Frame CRC
+bits 5…4   U:2 crcType - - Message CRC type
+bit 6   U:1 eaf - - Encryption and/or authentication ﬂag
+bit 7   U:1 nDataLSB - - Payload length (LSB)
+Start of repeated group (nData times)
+4 + n U1 data - - Message payload data. Payload data length deﬁned by
+combining nDataMSB, nData and nDataLSB to form a
+10-bit value.
+End of repeated group (nData times)
+4 + nData U1 crc0 - - Message CRC 1st byte
+Start of repeated group (crcType times)
+5 + nData + n U1 crcN - - Message CRC additional bytes
+End of repeated group (crcType times)
+UBXDOC-304424225-19888 - R01
+ 
+5 SPARTN protocol Page 165 of 224
+C1-Public

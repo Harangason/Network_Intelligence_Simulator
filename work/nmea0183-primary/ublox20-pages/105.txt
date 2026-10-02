@@ -1,0 +1,48 @@
+u-blox 20 HPG 2.00 - Interface description
+End of repeated group (numSvs times)
+3.15.16 UBX-NAV-SBAS (0x01 0x32)
+3.15.16.1 SBAS status data
+Message UBX-NAV-SBAS
+SBAS status data
+Type Periodic/polled
+Comment This message outputs the status of the SBAS sub system
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x32 12 + cnt·12 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+See the description of iTOW for details.
+4 U1 geo - - PRN Number of the GEO where correction and
+integrity data is used from
+5 U1 mode - - SBAS Mode
+• 0 Disabled
+• 1 Enabled integrity
+• 3 Enabled test mode
+6 I1 sys - - SBAS System (WAAS/EGNOS/...)
+• -1 Unknown
+• 0 WAAS
+• 1 EGNOS
+• 2 MSAS
+• 3 GAGAN
+• 16 GPS
+7 X1 service - - SBAS Services available
+bit 0   U:1 Ranging - - GEO may be used as ranging source
+bit 1   U:1 Corrections - - GEO is providing correction data
+bit 2   U:1 Integrity - - GEO is providing integrity
+bit 3   U:1 Testmode - - GEO is in test mode
+bit 4   U:1 Bad - - Problem with signal or broadcast data indicated
+8 U1 cnt - - Number of SV data following
+9 X1 statusFlags - - SBAS status ﬂags
+bits 1…0   U:2 integrityUsed - - SBAS integrity used
+• 0 = Unknown
+• 1 = Integrity information is not available or SBAS
+integrity is not enabled
+• 2 = Receiver uses only GPS satellites for which
+integrity information is available
+10 U1[2] reserved0 - - Reserved
+Start of repeated group (cnt times)
+12 + n·12 U1 svid - - SV ID
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 105 of 224
+C1-Public

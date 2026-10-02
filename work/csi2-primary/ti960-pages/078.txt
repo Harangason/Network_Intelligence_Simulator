@@ -1,0 +1,58 @@
+Table 7-24. RESET_CTL Register Field Descriptions (continued)
+Bit Field Type Reset Description
+0 DIGITAL_RESET0 RH/W1S 0x0 Digital Reset
+Resets the entire digital block except registers. This bit is self-
+clearing.
+1: Reset
+0: Normal operation
+7.6.1.3 GENERAL_CFG Register (Address = 0x2) [Reset = 0x1E] 
+GENERAL_CFG is shown in Table 7-25.
+Return to the Summary Table.
+The general configuration register enables and disables high level block functionality.
+Table 7-25. GENERAL_CFG Register Field Descriptions
+Bit Field Type Reset Description
+7:6 RESERVED R 0x0 Reserved
+5 I2C_CONTROLLER_EN R/W 0x0 I2C Controller Enable
+When this bit is 0, the local I2C controller is disabled, when it is 1, 
+the controller is enabled
+4 OUTPUT_EN_MODE R/W 0x1 Output Enable Mode
+If set to 0, the CSI-2 TX output port is forced to the high-impedance 
+state if no assigned RX ports have an active Receiver lock. If set to 
+1, the CSI-2 TX output port will continue in normal operation if no 
+assigned RX ports have an active Receiver lock. CSI-2 TX operation 
+will remain under register control via the CSI_CTL register for each 
+port. If no assigned RX ports have an active Receiver lock, this will 
+result in the CSI-2 Transmitter entering the LP-11 state.
+3 OUTPUT_ENABLE R/W 0x1 Output Enable Control (in conjunction with Output Sleep State 
+Select)
+If OUTPUT_SLEEP_STATE_SEL is set to 1 and this bit is set to 0, 
+the CSI TX outputs is forced into a high impedance state.
+2 OUTPUT_SLEEP_STATE
+_SEL
+R/W 0x1 OSS Select to control output state when LOCK is low (used in 
+conjunction with Output Enable)
+When this bit is set to 0, the CSI TX outputs is forced into a HS-0 
+state.
+1 RX_PARITY_CHECK_EN R/W 0x1 FPD3 Receiver Parity Checker Enable
+When enabled, the parity check function is enabled for the FPD3 
+receiver. This allows detection of errors on the FPD3 receiver data 
+bits.
+0: Disable
+1: Enable
+0 FORCE_REFCLK_DET R/W 0x0 Force indication of external reference clock
+0: Normal operation, reference clock detect circuit indicates the 
+presence of an external reference clock
+1: Force reference clock to be indicated present
+7.6.1.4 REV_MASK_ID Register (Address = 0x3) [Reset = 0x40] 
+REV_MASK_ID is shown in Table 7-26.
+Return to the Summary Table.
+Revision ID field for production silicon version can be read back from this register.
+Table 7-26. REV_MASK_ID Register Field Descriptions
+Bit Field Type Reset Description
+7:4 REVISION_ID R 0x4 Revision ID
+0100: DS90UB960-Q1
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+78 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

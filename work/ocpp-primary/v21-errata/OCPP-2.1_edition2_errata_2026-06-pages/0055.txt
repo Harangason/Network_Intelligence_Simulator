@@ -1,0 +1,40 @@
+Main (Test scenario)
+2. The Charging Station responds with
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.reservationFixed.prices[0].priceFixed 20.00
+tariff.reservationFixed.taxRates[0].type t5_0
+tariff.reservationFixed.taxRates[0].tax 5.0
+tariff.fixedFee.prices[0].priceFixed 10.00
+tariff.fixedFee.prices[2 1 ].priceFixed 5.00
+tariff.fixedFee.taxRates[0].type t5_0
+tariff.fixedFee.taxRates[0].tax 5.0
+tariff.chargingTime.prices[0].priceMinute 6.00
+tariff.chargingTime.prices[0].conditions.minTime 30
+tariff.chargingTime.prices[1].priceMinute 60.00
+tariff.chargingTime.taxRates[0].type t20_0
+tariff.chargingTime.taxRates[0].tax 20.0
+Tool validations
+…
+Post scenario validations:
+Note: The value of TransactionEventRequest.timestamp of step 6 where TransactionEventRequest.eventType is Started is called
+<TxStartDateTime>.
+* A message TransactionEventRequest must have been received with:
+…
+-  costDetails.totalCost.total.exclTax  must be    <sum of all exclTax subtotals after rounding>      
+-  costDetails.totalCost.total.inclTax  must be    <sum of all inclTax subtotals after rounding>      
+..
+6.2.27. Page 297/298 - (2026-02) - TC_E_103_CS - Test case and tool validation
+corrections
+Updated reusable state usage to include transactionLimit.maxCost set through CSMS and removed
+transactionLimit.maxCost from step 5. Incorrect references to elapsed time in the note after step 9 and to
+EnergyLimitsReached in step 8 tool validations have been corrected.
+Test case name Transactions with fixed cost, energy or time - CS calculates costs and CSMS specifies limit
+Test case Id TC_E_103_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 51/116 Errata 2026-06

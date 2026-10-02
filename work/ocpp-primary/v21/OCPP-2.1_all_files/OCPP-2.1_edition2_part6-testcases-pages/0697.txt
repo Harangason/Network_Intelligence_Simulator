@@ -1,0 +1,48 @@
+Main (Test scenario)
+Notes: Steps 2, 3, 7, and 8 may be repeated if the data is sent using two requests instead of one.
+Depending on the configuration the Charging Station may also send other notifications during step 4 and 9.
+Tool validations
+* Step 2: Message: NotifyEventRequest with:
+- generatedAt = <time of generation at Charging Station>
+- seqNo = 0
+and an eventData element with:
+- eventId = <id1>
+- timestamp = <time of event at Charging Station>
+- trigger = Alerting
+- actualValue = <current power> (must be > <Configured threshold monitor value>)
+- cleared is absent or cleared = false
+- transactionId = <transaction id> (delivery of power is always in transaction)
+- variableMonitoringId = <monitor id1>
+- component = <Configured threshold monitor component variable>
+- variable.name = <Configured threshold monitor component variable>
+Other eventData elements can be ignored.
+* Step 7: Message: NotifyEventRequest with:
+- generatedAt = <time of generation at Charging Station>
+- seqNo = 0
+and an eventData element with:
+- eventId = <id2>
+- timestamp = <time of event at Charging Station>
+- trigger = Alerting
+- actualValue = <current power> (must be =< <Configured threshold monitor value>)
+- cleared is true
+- transactionId = <transaction id> (delivery of power is always in transaction)
+- variableMonitoringId = <monitor id1>
+- eventNotificationType = CustomMonitor
+- component = <Configured threshold monitor component variable>
+- variable.name = <Configured threshold monitor component variable>
+and an eventData element with:
+- eventId = <id3>
+- timestamp = <time of event at Charging Station>
+- trigger = Alerting
+- actualValue = <current power> (must be < <Configured threshold monitor2 value>)
+- cleared is absent or cleared is false
+- transactionId = <transaction id> (delivery of power is always in transaction)
+- variableMonitoringId = <monitor id2>
+- eventNotificationType = CustomMonitor
+- component = <Configured threshold monitor component variable>
+- variable.name = <Configured threshold monitor component variable>
+Other eventData elements can be ignored. This can also be sent in two NotifyEventRequests, instead of one.
+Post scenario validations:
+N/A
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 695/1383 Part 6 - Test Cases

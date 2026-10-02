@@ -1,0 +1,49 @@
+TC_G_08_CS: Change Availability Connector - Inoperative to operative
+Test case name Change Availability Connector - Inoperative to operative
+Test case Id TC_G_08_CS
+Use case Id(s) G03
+Requirement(s) G03.FR.01, G03.FR.02, G03.FR.04, G03.FR.07
+System under test Charging Station
+Description This test case covers how the CSMS requests the Charging Station to change the availability of one of the
+Connectors from one EVSE from Inoperative to Operative. A Connector is considered Operative in any
+status other than Faulted and Unavailable.
+Purpose To verify if the Charging Station is able to perform the change availability mechanism as described at the
+OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+Unavailable for <Configured connectorId>
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+ChangeAvailabilityResponse
+1. The Test System sends a ChangeAvailabilityRequest
+with operationalStatus Operative
+and evse.id <Configured evseId>
+and evse.connectorId <Configured connectorId>
+3. The Charging Station notifies the CSMS about the current
+state of the connectors. 4. The Test System responds accordingly.
+Tool validations
+* Step 2:
+Message ChangeAvailabilityResponse
+- status Accepted
+* Step 3:
+Message: StatusNotificationRequest
+- connectorStatus Available
+- evseId <Configured evseId>
+- connectorId <Configured connectorId>
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Available"
+- eventData[0].component.name "Connector"
+- eventData[0].component.evse.id <Configured evseId>
+- eventData[0].component.evse.connectorId <Configured connectorId>
+- eventData[0].variable.name "AvailabilityState"
+Post scenario validations:
+- A message to report the state of the connector has been received.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 262/914 Part 6 - Test Cases

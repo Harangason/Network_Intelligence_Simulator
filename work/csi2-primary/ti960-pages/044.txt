@@ -1,0 +1,45 @@
+7.4.19 CSI-2 Transmitter Frequency
+The CSI-2 Transmitters may operate at 400 Mbps, 800 Mbps, 1.2 Gbps or 1.6 Gbps per data lane. This 
+operation is controlled through the CSI_PLL_CTL 0x1F register.
+Table 7-15. CSI-2 Transmitter Data Rate vs CSI_PLL_CTL
+CSI_PLL_CTL[1:0] CSI-2 TX Data Rate REFCLK Frequency
+00
+1.664 Gbps 26 MHz
+1.6 Gbps 25 MHz
+1.472 Gbps 23 MHz
+01 1.2 Gbps 25 MHz
+10 800 Mbps 25 MHz
+11 400 Mbps 25 MHz
+When configuring to 800 Mbps or 1.6 Gbps, the CSI-2 timing parameters are automatically set based on the 
+CSI_PLL_CTL 0x1F register. In the case of 400 Mbps, the respective CSI-2 timing parameters registers must be 
+programmed, and the appropriate override bit must be set. To enable CSI-2 400 Mbps mode, set the following 
+registers:
+# Set CSI-2 Timing parameters
+WriteI2C(0xB0,0x2)    # set auto-increment, page 0
+WriteI2C(0xB1,0x40)   # CSI-2 Port 0
+WriteI2C(0xB2,0x83)   # TCK Prep
+WriteI2C(0xB2,0x8D)   # TCK Zero
+WriteI2C(0xB2,0x87)   # TCK Trail
+WriteI2C(0xB2,0x87)   # TCK Post
+WriteI2C(0xB2,0x83)   # THS Prep
+WriteI2C(0xB2,0x86)   # THS Zero
+WriteI2C(0xB2,0x84)   # THS Trail
+WriteI2C(0xB2,0x86)   # THS Exit
+WriteI2C(0xB2,0x84)   # TLPX
+# Set CSI-2 Timing parameters
+WriteI2C(0xB0,0x2)    # set auto-increment, page 0
+WriteI2C(0xB1,0x60)   # CSI-2 Port 1
+WriteI2C(0xB2,0x83)   # TCK Prep
+WriteI2C(0xB2,0x8D)   # TCK Zero
+WriteI2C(0xB2,0x87)   # TCK Trail
+WriteI2C(0xB2,0x87)   # TCK Post
+WriteI2C(0xB2,0x83)   # THS Prep
+WriteI2C(0xB2,0x86)   # THS Zero
+WriteI2C(0xB2,0x84)   # THS Trail
+WriteI2C(0xB2,0x86)   # THS Exit
+WriteI2C(0xB2,0x84)   # TLPX
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+44 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

@@ -1,0 +1,51 @@
+are not required to be stored persistently. If any of these purposes is stored persistently by the Charging Station,
+then it should report this fact in the configuration variable ChargingProfilePersistence.
+Table 95. operationMode for various ChargingProfilePurposes
+ChargingProfilePurpose operationMode
+Tx(Default)Profile ChargingOnly
+CentralSetpoint
+ExternalSetpoint
+ExternalLimits
+CentralFrequency
+LocalFrequency
+LocalLoadBalancing
+Idle
+PriorityCharging ChargingOnly
+ChargingStationMaxProfile ChargingOnly
+ChargingStationExternalConstraints ChargingOnly
+ExternalLimits
+ExternalSetpoint
+LocalGeneration ChargingOnly
+ExternalLimits
+3.3. Charging profile kind
+Updated in OCPP 2.1
+This section explains the different kinds of charging schedules that can be use in a charging profile, as defined by the value of the
+attribute chargingProfileKind:
+ChargingProfile
+Kind
+Description
+Absolute The charging schedule periods are relative to an absolute point in time defined in the schedule. This
+requires that startSchedule is set to a starting point in time. Use this, for example, to define a schedule
+that reduces charging between 17:00h and 21:00h, regardless of when charging session was started.
+Recurring The charging schedule restarts periodically at the first schedule period. To be most useful, this requires
+that startSchedule is set to a starting point in time. Use this in combination with recurrencyKind = Daily,
+for example, to define a schedule that reduces charging between 17:00h and 21:00h every day,
+regardless of when charging session was started.
+Relative Charging schedule periods start when the EVSE is ready to deliver energy. i.e. when the EV driver is
+authorized and the EV is connected (i.e. "PowerPathClosed"). When a ChargingProfile is received for a
+transaction that is already charging, then the charging schedule periods remain relative to the
+PowerPathClosed moment of the transaction.
+No value for startSchedule must be supplied.
+Dynamic The schedule consists of only one charging schedule period, in which the limits or setpoints are updated
+dynamically by CSMS or an external actor.
+NOTE: This is not related to the ISO 15118-20 dynamic control mode.
+3.4. Smart Charging Operation Modes
+New in OCPP 2.1
+New in OCPP 2.1 is the concept of a smart charging operation mode, that defines a specific mode of operation during a charging
+schedule period. This operation mode determines for example whether the setpoint of a period can be set dynamically by CSMS or
+an external system.
+This mode of operation is defined by the variable OperationMode that is part of a ChargingSchedulePeriodType.
+The following operation modes exist, of which only the first three operation modes apply to regular smart charging. The others are
+specific to bidirectional charging. See Introduction.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 320/803 Part 2 - Specification

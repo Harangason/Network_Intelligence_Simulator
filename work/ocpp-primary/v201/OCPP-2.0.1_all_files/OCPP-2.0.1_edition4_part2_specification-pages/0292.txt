@@ -1,0 +1,67 @@
+EV Charging Station CSMS
+loop [Charging in progress...]
+alt [if AC Charging]
+ChargingStatusReq()
+ChargingStatusRes()
+[if DC Charging]
+CurrentDemandReq()
+CurrentDemandRes()
+TransactionEventRequest(eventType = Updated,...)
+TransactionEventResponse(...)
+CSMS sets new schedule
+SetChargingProfileRequest(evseId, chargingProfile)
+SetChargingProfileResponse(Accepted)
+alt [if AC Charging]
+ChargingStatusReq()
+ChargingStatusRes(ReNegotiation)
+[if DC Charging]
+CurrentDemandReq()
+CurrentDemandRes(ReNegotiation)
+PowerDeliveryReq(ReNegotiate)
+PowerDeliveryRes(OK) Power delivery may be halted
+ChargeParameterDiscoveryReq(EnergyTransferMode, EVChargeParam)
+ChargeParameterDiscoveryRes(SAScheduleList) Charging Station supplies charging profile as SASchedule
+PowerDeliveryReq(Start, ChargingProfile, EVPowerDeliveryParam)
+PowerDeliveryRes(OK) Power delivery continues
+opt [If EV provides a charging schedule]
+NotifyEVChargingScheduleRequest(evseId, chargingSchedule)
+NotifyEVChargingScheduleResponse(Accepted)
+Figure 113. Renegotiation initiated by CSMS when using ISO 15118-2
+K16 - Renegotiation initiated by CSMS - Requirements
+ID Precondition Requirements NOTE
+K16.FR.01 CSMS sends a new
+SetChargingProfileReq
+uest
+Charging Station SHALL respond with a
+SetChargingProfileResponse with status =
+Accepted.
+K16.FR.02 When the composite
+schedule for the EVSE
+changes
+Charging Station SHALL initiate schedule
+renegotiation with EV.
+This can be caused by a
+Set/ClearChargingProfileRequest or a change
+in
+ChargingStationExternalConstraints/LocalGen
+eration charging profiles.
+In ISO 15118 this is done by replying with
+EVSENotification=ReNegotiation to a
+CurrentDemandReq (for DC) or
+ChargingStatusReq (for AC) message.
+K16.FR.03 K16.FR.02 Charging Station SHALL provide the
+composite schedule(s) to the EV.
+In ISO 15118 this is done in the
+ChargeParameterDiscoverRes message.
+K16.FR.04 EV returns a charging
+profile
+Charging Station SHALL verify that provided
+charging profile is within boundaries of the
+ChargingSchedule from CSMS.
+In ISO 15118 EV may provide this as part of
+the PowerDeliveryReq message.
+K16.FR.05 K16.FR.04 Charging Station SHALL send the EV charging
+profile in a NotifyEVChargingScheduleRequest
+message to CSMS.
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 282/491 Part 2 - Specification

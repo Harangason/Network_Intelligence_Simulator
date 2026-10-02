@@ -1,0 +1,38 @@
+RebootBeforeFirmwareActivation
+State RebootBeforeFirmwareActivation
+System under test Charging Station
+Description The Charging Station needs to reboot before firmware activation.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status InstallRebooting
+Note(s):
+- This step is optional. However it is recommended to notify the
+CSMS before rebooting the Charging Station to activate the new
+firmware.
+2. The Test System responds with a
+FirmwareStatusNotificationResponse
+3. The Charging Station sends a BootNotificationRequest
+4. The Test System responds with a BootNotificationResponse
+with status Accepted
+5. The Charging Station notifies the CSMS about the current
+state of all connectors. 6. The Test System responds accordingly.
+Tool validations
+* Step 1:
+Message FirmwareStatusNotificationRequest
+- status InstallRebooting
+* Step 3:
+Message BootNotificationRequest
+- reason FirmwareUpdate
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 941/1383 Part 6 - Test Cases

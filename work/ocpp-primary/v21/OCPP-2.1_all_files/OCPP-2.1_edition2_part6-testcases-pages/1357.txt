@@ -1,0 +1,53 @@
+TC_Q_124_CSMS: Local V2X control for load balancing - good flow
+Test case name Local V2X control for load balancing - good flow
+Test case Id TC_Q_124_CSMS
+Use case Id(s) Q09
+Requirement(s) …
+System under test CSMS
+Description To allow the EV to be utilized for locally controlled load balancing.
+Purpose To verify if the CSMS is able to configure a CS for locally controlled load balancing
+Prerequisite(s) - CSMS supports Bidirectional Power Transfer
+Before (Preparations)
+Configuration State:
+- CS reports V2XChargingCtrlr.SupportedOperationModes that contains LocalLoadBalancing
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual action: trigger CSMS to set local load-balancing thresholds:
+- UpperThreshold = 1000, LowerThreshold = -1000
+- UpperOffset = 200, LowerOffset = 0
+2. The Test System responds with a SetVariablesResponse with
+setVariableResult[0].component.name V2XChargingCtrlr
+setVariableResult[0].component.evse.id 1
+setVariableResult[0].variable.name V2XLocalLoadBalancing
+setVariableResult[0].variable.instance UpperThreshold
+setVariableResult[0].attributeStatus Accepted
+setVariableResult[1].component.name V2XChargingCtrlr
+setVariableResult[1].component.evse.id 1
+setVariableResult[1].variable.name V2XLocalLoadBalancing
+setVariableResult[1].variable.instance LowerThreshold
+setVariableResult[1].attributeStatus Accepted
+setVariableResult[2].component.name V2XChargingCtrlr
+setVariableResult[2].component.evse.id 1
+setVariableResult[2].variable.name V2XLocalLoadBalancing
+setVariableResult[2].variable.instance UpperOffset
+setVariableResult[2].attributeStatus Accepted
+setVariableResult[3].component.name V2XChargingCtrlr
+setVariableResult[3].component.evse.id 1
+setVariableResult[3].variable.name V2XLocalLoadBalancing
+setVariableResult[3].variable.instance LowerOffset
+setVariableResult[3].attributeStatus Accepted
+1. The CSMS sends a SetVariablesRequest
+Note: CSMS may send these variables in one or multiple requests
+CSMS sets a Charging Profile with LocalLoadBalancing
+Manual action: trigger CSMS to set a TxDefaultProfile Charging Profile with chargingSchedulePeriod with operationMode
+LocalLoadBalancing
+4. The Test System responds with a
+SetChargingProfileResponse with
+status Accepted
+3. The CSMS the sends a SetChargingProfileRequest
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1355/1383 Part 6 - Test Cases

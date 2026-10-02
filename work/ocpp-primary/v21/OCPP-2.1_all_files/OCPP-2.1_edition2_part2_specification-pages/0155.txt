@@ -1,0 +1,53 @@
+C23 - Incremental authorization - Requirements
+ID Precondition Requirements Note
+C23.FR.01 When configuration variable
+PaymentCtrlr.IncrementalAutho
+rizationAmount exists and has
+a value > 0
+Charging Station SHALL request payment terminal
+to increase the authorization amount when total
+transaction costs exceed the current authorization
+amount minus
+PaymentCtrlr.IncrementalAuthorizationThreshold.
+When
+PaymentCtrlr.IncrementalAutho
+rizationThreshold is absent this
+threshold is defined by the
+implementation.
+C23.FR.02 C23.FR.01 AND
+Increasing the authorization
+with
+PaymentCtrlr.IncrementalAutho
+rizationAmount was successful
+Charging Station SHALL send a
+TransactionEventRequest with triggerReason =
+LimitSet and a transactionLimit.maxCost that is
+increased by
+PaymentCtrlr.IncrementalAuthorizationAmount.
+C24 - Ad hoc payment via stand-alone payment terminal
+New in OCPP 2.1
+No. Type Description
+1 Name Ad hoc payment via stand-alone payment terminal
+2 ID C24
+3 Objective To facilitate payment with a credit/debit card via a stand-alone payment terminal/kiosk (i.e. not
+integrated into the charging station).
+4 Description A Charging Station (or a group of Charging Stations) has a central payment terminal/kiosk. An EV
+Driver uses a credit/debit card to pay for charging. The transaction is authorized by the PSP, the
+CSMS receives a message from the PSP, and remotely starts the transaction on the Charging
+Station.
+Actors EV Driver, Payment Kiosk, Payment Service Provider, CSMS, Charging Station
+Scenario description Authorizing payment card
+1. EV Driver presents payment card at payment kiosk/terminal (PK) to initiate a charging
+session.
+2. PK communicates with the Payment Service Provider (PSP).
+3. Upon approval PSP returns an approved status to PK and a unique reference for this
+payment in the PSP platform.
+a. This unique reference is called "pspRef" in OCPP.
+4. PK sends charging station/evse and payment details, such as pspRef, cardBin,
+cardLast4Digits, etc. to CSMS.
+5. CSMS sends a RequestStartTransactionRequest (optionally with evseId) to Charging
+Station with idToken having value <pspRef> and type = DirectPayment.
+6. Charging Station continues as per use cases F07 "Remote start with fixed cost".
+(User input may be required at Charging Station to select the EVSE to use.)
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 142/803 Part 2 - Specification

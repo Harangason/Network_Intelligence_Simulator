@@ -1,0 +1,32 @@
+S2 Scenario objective Stop a transaction when communication between the Charging Station and the EV is lost. (for
+example: cable unplugged)
+Postcondition(s) Successful postcondition:
+The transaction is ended and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is still ongoing. or
+The CSMS is not informed.
+EV Driver
+Charging Station CSMS
+A transaction is ongoing.
+unplug charging cable
+stop energy offer
+TransactionEventRequest(eventType = Ended, chargingState = idle,
+triggerReason = EVCommunicationLost, stoppedReason = EVDisconnected)
+TransactionEventResponse()
+Figure 49. Sequence Diagram: Stop Transaction options - EVConnected
+S3 Scenario objective Stop a transaction when the driver is no longer authorized.
+Scenario description 1. The Charging Station sends a TransactionEventRequest to the CSMS.
+2. An invalid IdToken is received in a TransactionEventResponse.
+3. The Charging Station sends a TransactionEventRequest (eventType = Ended) notifying the
+CSMS about a transaction that has ended.
+4. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+Prerequisite(s) A transaction is ongoing.
+Configuration Variable: TxStopPoint contains: Authorized
+Postcondition(s) Successful postcondition:
+The transaction is ended and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is still ongoing. or
+The CSMS is not informed.
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 146/491 Part 2 - Specification

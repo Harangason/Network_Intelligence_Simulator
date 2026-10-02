@@ -1,0 +1,57 @@
+Authorized15118
+State Authorized15118
+System under test Charging Station
+Description This state will prepare the Charging Station, so that the transaction is authorized, using plug and charge.
+Prerequisite State is EVConnectedPreSession
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends an AuthorizeRequest
+Note(s):
+-The test case should be robust enough to also handle a
+GetCertificateStatusRequest or Get15118EVCertificateRequest
+and then expect the AuthorizeRequest.
+2. The Test System responds with an AuthorizeResponse
+with idTokenInfo.status Accepted
+certificateStatus Accepted
+3. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step is executed with eventType Started if:
+TxStartPoint contains Authorized OR
+TxStartPoint contains PowerPathClosed (prerequisite state
+EVConnectedPreSession)
+OR
+- This step is executed with eventType Updated if:
+TxStartPoint contains ParkingBayOccupancy OR
+TxStartPoint contains EVConnected (prerequisite state
+EVConnectedPreSession)
+4. The Test System responds with a TransactionEventResponse
+Note(s):
+- The first TransactionEventRequest sent after authorization
+contains the idToken field.
+5. The Charging Station sends a
+NotifyEVChargingNeedsRequest 6. Test System responds with a
+NotifyEVChargingNeedsResponse with
+status Accepted
+Tool validations
+* Step 1:
+Message: AuthorizeRequest
+- idToken.type eMAID
+- iso15118CertificateHashData <Not omitted>
+If ISO15118Ctrlr.CentralContractValidationAllowed is true:
+- certificate <Not omitted>
+If ISO15118Ctrlr.CentralContractValidationAllowed is false:
+- certificate <Omitted>
+* Step 3:
+Message: TransactionEventRequest
+- triggerReason must be Authorized
+- idToken <Not omitted>
+- transactionInfo.transactionId must be <transactionId>
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 592/914 Part 6 - Test Cases

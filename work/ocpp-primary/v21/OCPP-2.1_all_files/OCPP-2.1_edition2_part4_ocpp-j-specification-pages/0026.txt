@@ -1,0 +1,20 @@
+7.4. Key Management
+This section does not prescribe specific keys to be used for digital signatures. The CSMS Certificate and Charging Station
+Certificate, used for setting up a secure TLS connection, MAY be used for signing. For many use cases, these will however not be
+the correct keys. For instance, if the use case is to provide non-repudiation of meter readings, the messages should be signed with
+a certificate stored in the calibrated measuring chip.
+To be able to verify the digital signature, one needs to know which key was used to sign it. JSON Web Signatures supports several
+ways to store a key identifier with the signed message. As the certificates that can be used for signing are not specified, hash
+values will be used to identify them. Within the OCPP, the Charging Station and CSMS SHOULD include the field x5t#S256 in the
+JWS Protected Header to identify the certificate. Following the JSON Web Signatures standard [RFC7515] the value of this field
+SHOULD be set to the SHA-256 hash of the DER encoding of the signing certificate. How stakeholders can look up the certificate
+based on the hash value is out of scope for this document.
+NOTE
+In the set up with a Local Controller, described in Local Controller, the TLS client key that would be signing
+messages to the CSMS will, in fact, not be the TLS client key that the TLS connection is using, since the key in the
+Local Controller is different from that in the Charging Station. Similarly, the TLS server key signing messages will
+be that of the CSMS, not that of the local controller. Therefore, implementation of the protocol MUST NOT regard
+this mismatch as invalidating the signatures; in fact, it is an expected and desired property to provide end-to-end
+authenticity.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 24/28 Part 4 - JSON over WebSockets implementation guide

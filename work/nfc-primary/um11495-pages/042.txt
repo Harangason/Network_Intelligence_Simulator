@@ -1,0 +1,45 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Payload Field(s) Length Value/Description
+• Length: 0x06
+• NDEF: 0x00000088
+• Supported power state: 0xC3
+• Persistent characteristics: 0x01
+Table 27. NFCEE_DISCOVER_NTF for the NDEF tag emulation...continued
+Once detected by the DH, the NDEF NFCEE does not require any negotiation, its capabilities are fixed.
+Then, after the DH has sent a NFCEE_MODE_SET command to enable the NDEF NFCEE, the NFCC will
+immediately send a NFCEE_DISCOVERY_REQ_NTF:
+Payload Field(s) Length Value/Description
+Number of entries 1 byte 0x02
+First information entry 5 bytes • Information Type: 0x00 if enabled, 0x01 if disabled
+• Length: 0x03
+• NFCEE ID: 0x10
+• RF Technology and Mode: 0x80 (NFC_A_PASSIVE_LISTEN_MODE)
+• RF Protocol: 0x04 (PROTOCOL_ISO_DEP)
+Second information entry 5 bytes • Information Type: 0x00 if enabled, 0x01 if disabled
+• Length: 0x03
+• NFCEE ID: 0x10
+• RF Technology and Mode: 0x81 (NFC_B_PASSIVE_LISTEN_MODE)
+• RF Protocol: 0x04 (PROTOCOL_ISO_DEP)
+Table 28. NFCEE_DISCOVER_REQ_NTF for the NDEF tag emulation
+5.6.2  NDEF NFCEE access from DH
+After the NDEF NFCEE has been discovered and enabled by the DH, the DH can activate a logical connection
+with the NDEF NFCEE:
+Payload Field(s) Length Value/Description
+Destination type 1 byte 0x03 (NFCEE)
+Number of parameters 1 byte 0x01
+Destination parameters 4 bytes • Destination Type: 0x01
+• Length: 0x02
+• NFCEE ID: 0x10
+• NFCEE Interface Protocol: 0x00 (ISO7816-4 APDU protocol)
+Table 29. CORE_CONN_CREATE_CMD for NDEF tag emulation
+Then NFCC answers with a CORE_CONN_CREATE_RSP with a status OK.
+Using the logical channel #5 and according to the Type 4 Tag Operation Technical Specification, the DH can
+exchange NCI data packets with the NDEF NFCEE in order to select the NDEF AID, read the Capability
+Container, read and write the content of the NDEF message.
+5.6.3  NDEF NFCEE access from RF End Point
+For read access from the RF End Point, the routing table shall contain an AID-based routing entry with the
+NDEF AID:
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+42 / 147

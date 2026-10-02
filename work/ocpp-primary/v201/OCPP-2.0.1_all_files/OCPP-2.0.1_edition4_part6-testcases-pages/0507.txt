@@ -1,0 +1,50 @@
+TC_N_36_CS: Retrieve Log Information - Second Request
+Test case name Retrieve Log Information - Second Request
+Test case Id TC_N_36_CS
+Use case Id(s) N01
+Requirement(s) N01.FR.01, N01.FR.02, N01.FR.03, N01.FR.07, N01.FR.08, N01.FR.09, N01.FR.12, N01.FR.13
+System under test Charging Station
+Description This test case covers the functionality of getting log information from a Charging Station. The CSMS can
+request a Charging Station to upload a file with log information to a given location (URL). The format of this
+log file is not prescribed. The Charging Station successfully uploads a log file and gives information about
+the status of the upload by sending status notifications to the CSMS.
+Purpose To verify if the Charging station is able to successfully start/cancel a upload on a second request as
+described at the OCPP specification.
+Prerequisite(s) The Charging Station supports cancelling an ongoing log file upload.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+Charging Station has log information available of <Configured logType>.
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a GetLogResponse
+1. The Test System sends a GetLogRequest
+with logType <Configured logType> and requestId <#1>
+Note(s):
+- Charging Station is uploading log file
+3. The Charging Station sends a LogStatusNotificationRequest
+4. The Test System responds with a
+LogStatusNotificationResponse .
+Note(s):
+- Charging Station cancels uploading the first log file
+6. The Charging Station responds with a GetLogResponse
+5. The Test System sends a GetLogRequest
+with logType <Configured logType> and requestId <#2>
+Step 7 is allowed to occur before step 6
+7. The Charging Station sends a LogStatusNotificationRequest 8. The Test System responds with a
+LogStatusNotificationResponse .
+Note(s):
+- Charging Station is uploading log file
+9. The Charging Station sends a LogStatusNotificationRequest
+10. The Test System responds with a
+LogStatusNotificationResponse .
+Note(s):
+- Log file is uploaded
+11. The Charging Station sends a LogStatusNotificationRequest
+12. The Test System responds with a
+LogStatusNotificationResponse .
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 505/914 Part 6 - Test Cases

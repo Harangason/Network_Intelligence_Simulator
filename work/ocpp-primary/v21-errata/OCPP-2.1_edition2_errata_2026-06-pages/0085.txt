@@ -1,0 +1,40 @@
+6.2.54. Page 814/815 - (2026-02) - TC_Q_102_CS - Made the testcase more
+flexible regarding the phases used and added step for
+NotifyEVChargingScheduleRequest
+Test case name V2X Authorisation - ISO15118-20 - Charging only (V2X control) before starting V2X -
+Allowed Energy Transfer modes omitted
+Test case Id TC_Q_102_CS
+…
+Before (Preparations)
+Configuration State:
+- ISO15118Ctrlr.Enabled is true
+- V2XChargingCtrlr.SupportedEnergyTransferMode contains [<AC_single_phase OR AC_two_phase OR AC_three_phase   >, AC_BPT]
+or [DC, DC_BPT]
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Communicate that default charging station energy transfer mode will be used
+1. Execute Reusable State Iso1511820V2xControlBpt with controlMode ScheduledControl
+2. Execute Reusable State EVConnectedPreSession
+3. Execute Reusable State [authorized15118] (for 15118-20)
+Note(s):
+- The Test System omits the allowedEnergyTransfer from the AuthorizeResponse.
+4. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+Note(s):
+- This step is captured by [authorized15118] (for 15118-20), but
+validated on testcase level.
+5. Test System responds with a
+NotifyEVChargingNeedsResponse with
+status Accepted
+6. Execute Reusable State [energytransferstarted]
+6.  The Charging station sends a     
+NotifyEVChargingScheduleRequest
+7.  The Test System responds with a      
+NotifyEVChargingScheduleResponse  with 
+ status   Accepted
+8.  Execute   Reusable State   [energytransferstarted]
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 81/116 Errata 2026-06

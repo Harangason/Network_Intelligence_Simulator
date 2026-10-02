@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+bit 0   U:1 towValid - - 1 = Valid GPS time of week (iTOW & fTOW, (see section
+Time validity in the integration manual for details)
+bit 1   U:1 weekValid - - 1 = Valid GPS week number (see section Time validity
+in the integration manual for details)
+bit 2   U:1 leapSValid - - 1 = Valid GPS leap seconds
+12 U4 tAcc - ns Time Accuracy Estimate
+3.15.24 UBX-NAV-TIMELS (0x01 0x26)
+3.15.24.1 Leap second event information
+Message UBX-NAV-TIMELS
+Leap second event information
+Type Periodic/polled
+Comment Information about the upcoming leap second event if one is scheduled.
+Note: Many sources of leap second information provide the week number of a leap second event as an 8-bit
+unsigned number. For the upcoming leap second events, this can be resolved and displayed in this message.
+However, for the previous leap second events decoded from these sources, there is an inherent ambiguity of
+256 weeks. Therefore, when the time since the previous event is more than 256 weeks, the dateOfLsGpsWn
+and timeToLsEvent parameters may provide incorrect information.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x26 24 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+4 U1 version - - Message version (0x00 for this version)
+5 U1[3] reserved0 - - Reserved
+8 U1 srcOfCurrLs - - Information source for the current number of leap
+seconds.
+• 0 = Default (hardcoded in the ﬁrmware, can be
+outdated)
+• 1 = Derived from time diﬀerence between GPS
+and GLONASS time
+• 2 = GPS
+• 3 = SBAS
+• 4 = BeiDou
+• 5 = Galileo
+• 6 = Aided data
+• 7 = Conﬁgured
+• 8 = NavIC
+• 255 = Unknown
+9 I1 currLs - s Current number of leap seconds since start of GPS
+time (Jan 6, 1980). It reﬂects how much GPS time is
+ahead of UTC time. Galileo number of leap seconds is
+the same as GPS. BeiDou number of leap seconds is 14
+less than GPS. GLONASS follows UTC time, so no leap
+seconds.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 113 of 224
+C1-Public

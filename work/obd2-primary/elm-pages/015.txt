@@ -1,0 +1,94 @@
+15 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+CF hhh [ set the CAN ID Filter to hhh ]
+The CAN Filter works in conjunction with the CAN
+Mask to determine what information is to be accepted
+by the receiver. As each message is received, the
+incoming CAN ID bits are compared to the CAN Filter
+bits (when the mask bit is a ‘1’). If all of the relevant
+bits match, the message will be accepted, and
+processed by the ELM327, otherwise it will be
+discarded. This three nibble version of the CAN Filter
+command makes it a little easier to set filters with 11
+bit ID CAN systems. Only the rightmost 11 bits of the
+provided nibbles are used, and the most significant bit
+is ignored. The data is actually stored as four bytes
+internally however, with this command adding leading
+zeros for the other bytes. See the CM command(s) for
+more details.
+CF hh hh hh hh [ set the CAN ID Filter to hhhhhhhh ]
+This command allows all four bytes (actually 29
+bits) of the CAN Filter to be set at once. The 3 most
+significant bits will always be ignored, and may be
+given any value. This command may be used to enter
+11 bit ID filters as well, since they are stored in the
+same locations internally (entering AT CF 00 00 0h hh
+is exactly the same as entering the shorter AT CF hhh
+command).
+CFC0 and CFC1 [ CAN Flow Control off or on ]
+The ISO 15765-4 CAN protocol expects a ‘Flow
+Control’ message to always be sent in response to a
+‘First Frame’ message, and the ELM327 automatically
+sends these without any intervention by the user. If
+experimenting with a non-OBD system, it may be
+desirable to turn this automatic response off, and the
+AT CFC0 command has been provided for that
+purpose.
+As of firmware version 2.0, these commands also
+enable or disable the sending of J1939 TP.CM_CTS
+messages in response to TP.CM_RTS requests.
+During monitoring (AT MA, MR, or MT), there are
+never any Flow Controls sent no matter what the CFC
+option is set to. The default setting is CFC1 - Flow
+Controls on.
+CM hhh [ set the CAN ID Mask to hhh ]
+There can be a great many messages being
+transmitted in a CAN system at any one time. In order
+to limit what the ELM327 views, there needs to be a
+system of filtering out the relevant ones from all the
+others. This is accomplished by the filter, which works
+in conjunction with the mask. A mask is a group of bits
+that show the ELM327 which bits in the filter are
+relevant, and which ones can be ignored. A ‘must
+match’ condition is signalled by setting a mask bit to
+'1', while a 'don't care' is signalled by setting a bit to '0'.
+This three digit variation of the CM command is used
+to provide mask values for 11 bit ID systems (the most
+significant bit is always ignored).
+Note that a common storage location is used
+internally for the 29 bit and 11 bit masks, so an 11 bit
+mask could conceivably be assigned with the next
+command (CM hh hh hh hh), should you wish to do the
+extra typing. The values are right justified, so you
+would need to provide five leading zeros followed by
+the three mask bytes.
+CM hh hh hh hh [ set the CAN ID Mask to hhhhhhhh ]
+This command is used to assign mask values for
+29 bit ID systems. See the discussion under the
+CM hhh command as it is essentially identical, except
+for the length. Note that the three most significant bits
+that you provide in the first digit will be ignored.
+CP hh [ set CAN Priority bits to hh ]
+This command is used to assign the five most
+significant bits of the 29 bit CAN ID that is used for
+sending messages (the other 24 bits are set with the
+AT SH command). Many systems use these bits to
+assign a priority value to messages, and to determine
+the protocol. Any bits provided in excess of the five
+required are ignored, and not stored by the ELM327 (it
+only uses the five least significant bits of this byte).
+The default value for these priority bits is hex 18,
+which can be restored at any time with the AT D
+command.
+CRA [ reset the CAN Rx Addr ]
+The AT CRA command is used to restore the CAN
+receive filters to their default values. Note that it does
+not have any arguments (ie no data).
+CRA hhh [ set the CAN Rx Addr to hhh ]
+Setting the CAN masks and filters can be difficult
+at times, so if you only want to receive information
+from one address (ie. one CAN ID), then this
+command may be very welcome. For example, if you
+AT Command Descriptions (continued)

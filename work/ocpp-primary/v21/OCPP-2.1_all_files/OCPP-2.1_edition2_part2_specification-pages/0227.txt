@@ -1,0 +1,52 @@
+2.3. Transactions with limits
+E16 - Transactions with fixed cost, energy, SoC or time
+New in OCPP 2.1
+No. Type Description
+1 Name Transactions with fixed cost, energy, SoC or time
+2 ID E16
+3 Objective(s) EV Driver or CSMS specifies a limit in cost, energy, state of charge or time for transaction
+4 Description An EV Driver or CSMS specifies a limit in cost, energy, SoC or time. The limit can be updated
+during a transaction.
+A cost limit is most likely to be used for a prepaid charging session, or for a direct payment in
+which case the cost limit is set to the pre-authorized amount for the direct payment.
+An energy or time limit can also be provided by EV Driver or CSMS. Note that it is the energy
+transfer that is limited. It is not possible to limit the duration of a transaction, because the end of
+a transaction is determined by the configured TxStopPoint.
+Actors Charging Station, CSMS, EV Driver
+Scenario description EV Driver specifies an energy limit
+1. EV Driver has input a maximum energy amount to charge via UI of Charging Station.
+2. Charging Station includes transactionInfo.transactionLimit.maxEnergy with the specified
+maximum once in the next TransactionEventRequests for this transaction.
+3. When the amount of energy imported by EV reaches
+transactionInfo.transactionLimit.maxEnergy, Charging Station stops the energy transfer
+and sends a TransactionEventRequest with chargingState = SuspendedEVSE and
+triggerReason = EnergyLimitReached.
+a. If the transactionLimit is increased when in this state, then Charging Station will
+resume the energy transfer.
+Scenario description #2 CSMS specifies a cost limit
+1. CSMS has a cost limit for the transaction on this Charging Station.
+(This can be a fixed setting, a reservation amount for an adhoc payment, or the balance of
+a prepaid card as in use case C17 - Authorization with prepaid card).
+2. In order to communicate this cost limit to the Charging Station, CSMS responds to a
+TransactionEventRequest with a TransactionEventResponse that has a
+transactionLimit.maxCost with the cost limit. This is only done once for every change in
+cost limit.
+3. Charging Station will take note of this cost limit, and add the transactionLimit.maxCost
+element to transactionInfo of the next TransactionEventRequest message for this
+transaction as a confirmation towards CSMS of the received limit.
+4. When the cost for energy transfer reaches transactionInfo.transactionLimit.maxCost,
+Charging Station stops the energy transfer and sends a TransactionEventRequest with
+chargingState = SuspendedEVSE and triggerReason = CostLimitReached.
+a. If the transactionLimit is increased when in this state, then Charging Station will
+resume the energy transfer.
+b. If Charging Station does not calculate the cost locally, then it stops the energy
+transfer as soon as totalCost in a TransactionEventResponse or
+CostUpdatedRequest reaches or is near the maximum cost.
+5 Prerequisite(s) Charging Station supports the limits maxEnergy and maxCost.
+6 Postcondition(s) Energy transfer in transaction is only allowed up to maximum cost, energy, state of charge or time
+limitation.
+7 Error handling Charging Station confirms a transaction limit from CSMS by returning the limit in the next
+TransactionEventRequest. If CSMS provides a transaction limit that Charging Station does not
+support, it will not be returned in the next TransactionEventRequest.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 214/803 Part 2 - Specification

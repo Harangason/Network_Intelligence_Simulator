@@ -1,0 +1,96 @@
+2.5. Generic smart charging rules for V2X
+ID Precondition Requirement definition Note
+V2X.01 All requirements from section K Smart
+Charging also apply to V2X
+V2X.02 A setpoint (or setpointReactive) in a charging
+profile is a value that EV is supposed to follow
+as closely as possible.
+In contrast to a limit which only specifies the
+maximum power that is allowed.
+V2X.03 If a
+ChargingSchedulePeri
+odType of the
+composite schedule
+contains a positive
+setpoint as well as a
+limit
+Charging Station SHALL cap (i.e. not exceed)
+the setpoint for power towards EV to the value
+of limit.
+E.g. if setpoint = 2000 W and limit = 1000 W,
+then the setpoint communicated to EV is 1000
+W.
+When chargingRateUnit = A then limit is about
+current instead of power.
+V2X.04 If a
+ChargingSchedulePeri
+odType of the
+composite schedule
+contains a negative
+setpoint as well as a
+dischargeLimit
+Charging Station SHALL cap (i.e. not go below)
+the setpoint for discharging power towards EV
+to the value of dischargeLimit.
+E.g. if setpoint = -2000 W and dischargeLimit =
+-1000 W, then the setpoint communicated to
+EV is -1000 W.
+This does not apply to setpointReactive.
+When chargingRateUnit = A then limit is about
+current instead of power.
+V2X.05 Upon receiving a
+SetChargingProfileReq
+uest with a
+ChargingSchedulePeri
+odType in which the
+value of setpoint lies
+outside the range from
+dischargeLimit to limit
+Charging Station SHALL respond with
+SetChargingProfileResponse with status =
+Rejected and reasonCode =
+InvalidSchedule
+E.g. Reject if setpoint = -750 W when limit =
+1000 W and dischargeLimit = -500 W.
+V2X.06 Any requirements for limit, dischargeLimit,
+setpoint and setpointReactive also apply to
+their equivalents with postfix _L2 and _L3
+V2X.07 The postfixed L2 and L3 variants of limit,
+dischargeLimit, setpoint and setpointReactive
+can only occur in combination with the
+associated field without the postfix.
+See K01.FR.145
+V2X.08 When
+v2xChargingParameter
+s of
+NotifyEVChargingNeed
+sRequest from
+Charging Station does
+not contain
+maxDischargePower_L
+2 and/or
+maxDischargePower_L
+3
+CSMS SHALL NOT provide values for
+dischargeLimit_L2, dischargeLimit_L3,
+setpoint(Reactive)_L2 or setpoint(Reactive)_L3
+fields in a charging profile.
+If EV does not report L2/L3 fields then do not
+provide separate limits for them. See
+K01.FR.142.
+V2X.09 When CSMS sends a
+SetChargingProfileReq
+uest for a
+chargingProfilePurpos
+e other than
+TxProfile
+CSMS SHALL NOT provide values for
+dischargeLimit_L2, dischargeLimit_L3,
+setpoint(Reactive)_L2 or setpoint(Reactive)_L3
+fields in chargingSchedulePeriods of the
+charging profile
+Only a TxProfile is submitted after receiving a
+NotifyEVChargingNeedsRequest. See
+K01.FR.143.
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 506/803 Part 2 - Specification

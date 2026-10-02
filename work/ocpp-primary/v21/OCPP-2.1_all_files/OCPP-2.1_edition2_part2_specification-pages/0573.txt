@@ -1,0 +1,102 @@
+R04.FR.07 Charging Station
+receives a
+SetDERControlRequest
+with a controlType that it
+supports AND
+an existing scheduled
+DER control of
+controlType is already
+active and has a higher
+value for priority
+Charging Station SHALL respond with
+SetDERControlResponse with status = Accepted
+and SHALL continue to execute the existing control
+until startTime of the new control, upon which the
+isSuperseded attribute of the existing control is set
+to true and the new control is executed for
+controlType.
+A lower priority value has preference.
+When the existing scheduled DER
+control is already active, it remains
+active until the startTime of the new
+control.
+R04.FR.08 Charging Station
+receives a
+SetDERControlRequest
+with a controlType that it
+supports AND
+an existing scheduled
+DER control of
+controlType is already
+active and has a lower
+value for priority
+Charging Station SHALL respond with
+SetDERControlResponse with status = Accepted,
+and supersededId = controlId, and SHALL set the
+isSuperseded attribute to true and continue to
+execute the existing setting for controlId.
+A lower priority value has preference.
+This new control is immediately
+superseded by the existing control
+which has lower priority value.
+CSMS should avoid sending a DER
+control that has a higher priority value
+than what is already configured.
+R04.FR.09 Charging Station SHALL NOT execute a control
+which has isSuperseded = true
+R04.FR.10 Charging Station SHALL delete a control after
+startTime + duration seconds has expired
+R04.FR.11 When there is no control
+active for controlType
+that has isDefault = false
+Charging Station SHALL execute the control for
+controlType that has isDefault = true and
+isSuperseded = false
+When there is no scheduled control
+active (after its startTime), then revert
+to the default control.
+R04.FR.12 CSMS SHALL not send a SetDERControlRequest
+that has isdefault = true for a control that has a
+startTime and/or duration field
+All controls except enterService and
+gradient have optional startTime,
+duration.
+R04.FR.13 Charging Station
+receives a
+SetDERControlRequest
+with isDefault = true AND
+a control that has a
+startTime and/or duration
+field
+Charging Station SHALL respond with
+SetDERControlResponse with status = Rejected
+Default controls cannot have a
+startTime or duration.
+R04.FR.14 CSMS SHALL not send SetDERControlRequest that
+has isdefault = false for controlType =
+EnterService or Gradients
+These only exist as default controls.
+R04.FR.15 Charging Station
+receives a
+SetDERControlRequest
+with isDefault = false
+AND
+controlType =
+EnterService or
+Gradients
+Charging Station SHALL respond with
+SetDERControlResponse with status = Rejected
+R04.FR.16 CSMS SHALL only provide in
+SetDERControlRequest the control field that is
+related to controlType, according to the following
+mapping:
+fixedPFAbsorb for FixedPFAbsorb,
+fixedPFInject for FixedPFInject,
+fixedVar for FixedVar,
+limitMaxDischarge for LimitMaxDischarge,
+freqDroop for FreqDroop,
+enterService for EnterService,
+gradient for Gradients,
+curve for all other controlTypes
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 560/803 Part 2 - Specification

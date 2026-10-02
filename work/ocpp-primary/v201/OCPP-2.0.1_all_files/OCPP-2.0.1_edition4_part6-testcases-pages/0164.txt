@@ -1,0 +1,50 @@
+TC_C_127_CS: Ad hoc payment via static or dynamic QR code - no URL parameters
+Test case name Ad hoc payment via static or dynamic QR code - no URL parameters
+Test case Id TC_C_127_CS
+Use case Id(s) C25
+Requirement(s) C25.FR.01, C25.FR.26, C25.FR.27, C25.FR.28
+System under test Charging Station
+Description To provide a static or dynamic QR code with a URL for ad hoc payment
+Purpose To verify if the Charging Station supports ad hoc payments with a url without URL parameters.
+Prerequisite(s) Charging Station supports QR code payment
+Before (Preparations)
+Configuration State:
+TariffCostCtrlr.Enabled[Tariff] true
+TariffCostCtrlr.Enabled[Cost] true
+TariffCostCtrlr.Currency is EUR
+AuthCtrlr.AuthorizeRemoteStart is true
+WebPaymentsCtrlr.Enabled is true
+WebPaymentsCtrlr.URLParameters is absent or empty
+WebPaymentsCtrlr.TOTPVersion is v1
+WebPaymentsCtrlr.ValidityTime is 120
+WebPaymentsCtrlr.SharedSecret is 12345678
+WebPaymentsCtrlr.Length is 8
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.fixedFee.taxRates[0].type MyTax
+tariff.fixedFee.taxRates[0].tax 21
+tariff.fixedFee.prices.priceFixed[0] 12.45
+Note(s):
+- The Charging Station displays a dynamic QR code according to configuration variables in WebPaymentsCtrlr
+Simulate starting a transaction with an QR code
+4. The Charging Station SHALL respond with a
+NotifyWebPaymentStartedResponse
+3. The Test System sends a NotifyWebPaymentStartedRequest
+with
+evseId <configured evseId>
+timeout 5
+5. Execute Reusable State AuthorizedPaymentTerminal (Remote)
+6. Execute Reusable State EVConnectedPreSession
+7. Execute Reusable State EnergyTransferStarted
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 162/914 Part 6 - Test Cases

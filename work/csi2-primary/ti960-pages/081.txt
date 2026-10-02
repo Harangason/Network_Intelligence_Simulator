@@ -1,0 +1,61 @@
+Table 7-32. I2C_CONTROL_2 Register Field Descriptions
+Bit Field Type Reset Description
+7:4 SDA_OUTPUT_SETUP R/W 0x1 Remote Ack SDA Output Setup
+When a Control Channel (remote) access is active, this field 
+configures setup time from the SDA output relative to the rising edge 
+of SCL during ACK cycles. Setting this value will increase setup time 
+in units of 640ns. The nominal output setup time value for SDA to 
+SCL when this field is 0 is 80ns.
+3:2 SDA_OUTPUT_DELAY R/W 0x0 SDA Output Delay
+This field configures additional delay on the SDA output relative to 
+the falling edge of SCL. Setting this value will increase output delay 
+in units of 40ns. Nominal output delay values for SCL to SDA are:
+00: 240ns
+01: 280ns
+10: 320ns
+11: 360ns
+1 I2C_BUS_TIMER_SPEED
+UP
+R/W 0x1 Speed up I2C Bus Watchdog Timer
+1: Watchdog Timer expires after approximately 50 microseconds
+0: Watchdog Timer expires after approximately 1 second.
+0 I2C_BUS_TIMER_DISAB
+LE
+R/W 0x0 Disable I2C Bus Watchdog Timer
+When the I2C Watchdog Timer may be used to detect when the 
+I2C bus is free or hung up following an invalid termination of a 
+transaction. If SDA is high and no signaling occurs for approximately 
+1 second, the I2C bus will assumed to be free. If SDA is low and no 
+signaling occurs, the device will attempt to clear the bus by driving 9 
+clocks on SCL
+7.6.1.11 SCL_HIGH_TIME Register (Address = 0xA) [Reset = 0x7A] 
+SCL_HIGH_TIME is shown in Table 7-33.
+Return to the Summary Table.
+The SCL High Time register field configures the high pulse width of the I2C SCL output when the Serializer is 
+the Controller on the local I2C bus. Units are 40 ns for the nominal oscillator clock frequency. The default value 
+is set to approximately 100 kHz with the internal oscillator clock running at nominal 25 MHz. Delay includes 4 
+additional oscillator clock periods. The internal oscillator has ±10% variation when REFCLK is not applied, which 
+must be taken into account when setting the SCL High and Low Time registers.
+Table 7-33. SCL_HIGH_TIME Register Field Descriptions
+Bit Field Type Reset Description
+7:0 SCL_HIGH_TIME R/W 0x7A I2C Controller SCL High Time
+This field configures the high pulse width of the SCL output when 
+the Serializer is the Controller on the local I2C bus. Units are 40 ns 
+for the nominal oscillator clock frequency. The default value is set to 
+provide a minimum 5us SCL high time with the reference clock at 
+25 MHz + 100ppm. The delay includes 5 additional oscillator clock 
+periods.
+Min_delay= 39.996ns * (SCL_HIGH_TIME + 5)
+7.6.1.12 SCL_LOW_TIME Register (Address = 0xB) [Reset = 0x7A] 
+SCL_LOW_TIME is shown in Table 7-34.
+Return to the Summary Table.
+The SCL Low Time register field configures the low pulse width of the SCL output when the serializer is the 
+controller on the local I2C bus. This value is also used as the SDA setup time by the I2C Target for providing 
+data prior to releasing SCL during accesses over the Bidirectional control channel. Units are 40 ns for the 
+nominal oscillator clock frequency. The default value is set to approximately 100 kHz with the internal oscillator 
+clock running at nominal 25 MHz. Delay includes 4 additional oscillator clock periods. The internal oscillator has 
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 81
+Product Folder Links: DS90UB960-Q1

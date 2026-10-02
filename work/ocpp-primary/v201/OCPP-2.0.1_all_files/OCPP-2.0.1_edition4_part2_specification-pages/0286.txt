@@ -1,0 +1,46 @@
+No. Type Description
+Scenario description 1. External control system sends a charging limit/schedule to Local Controller.
+2. Local Controller sends a NotifyChargingLimitRequest message to the CSMS.
+3. Local Controller calculates new Charging Profiles for all connected Charging Stations.
+4. Local Controller sends a SetChargingProfileRequest message to all Charging Stations for
+which the charging profile has changed.
+5. External control releases a charging limit/schedule to Local Controller.
+6. Local Controller sends a ClearedChargingLimitRequest message to the CSMS.
+7. Local Controller clears Charging Profiles for all connected Charging Stations.
+8. Local Controller sends a ClearChargingProfileRequest messages to all affected Charging
+Stations.
+5 Prerequisite(s) Ongoing transaction(s).
+An external system that can set/clear a charging limit/schedule on Local Controller via another
+connection than OCPP.
+Configuration variable ExternalControlSignalsEnabled = true.
+6 Postcondition(s) Successful postcondition:
+The ongoing transactions will be limited by the received charging limit from the external system.
+The CSMS is informed of the new limit/schedule imposed by the external system.
+Failure postcondition:
+The CSMS is not informed about the changed charging limit.
+The External Control System is not able to change the charging limit.
+7 Error handling n/a
+8 Remark(s) n/a
+External Control System Local Controller Charging Stations CSMS
+Set grid limit
+NotifyChargingLimitsRequest(chargingLimitSource, [chargingLimitGridCritical],...)
+NotifyChargingLimitsResponse()
+Recalculate Charging Schedules
+loop [All affected EVSEs]
+SetChargingProfileRequest(evseId, chargingProfile)
+SetChargingProfileResponse(status)
+Release grid limit
+ClearedChargingLimitRequest(chargingLimitSource,...)
+ClearedChargingLimitResponse()
+loop [All affected EVSE's]
+ClearChargingProfileRequest(...)
+ClearChargingProfileResponse(status)
+Figure 111. Sequence Diagram: External Charging Limit with Local Controller.
+K14 -  External Charging Limit with Local Controller - Requirements
+Table 107. K14 - Requirements
+ID Precondition Requirement definition
+K14.FR.01 When an external charging
+limit/schedule is received
+The total load of all Charging Stations SHALL NOT exceed this given limit.
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 276/491 Part 2 - Specification

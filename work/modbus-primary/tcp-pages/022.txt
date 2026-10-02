@@ -1,0 +1,37 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+ The sending of the MODBUS request ADU to the TCP management module which is
+in charge of finding the right TCP socket to wards the remote Server. In addition to 
+the MODBUS ADU the Destination IP address must also be passed. 
+The following activity diagram describes, more deeply than in Figure 11 MODBUS 
+Client Activity Diagram, the request building phase. 
+Instantiate a MB 
+transaction
+Initialize the 
+transaction
+Send MB 
+request to TCP 
+Mgt
+Send a 
+negative 
+confirmation to 
+the user 
+application
+Encode the MB 
+request PDU 
+Encode the 
+MBAP header
+[No Transaction available]
+[Transaction available]
+Figure 12: Request building activity diagram 
+The following example describes the MODBUS request ADU encoding for reading the 
+register # 5 in a remote server : 
+♦ MODBUS Request ADU encoding :
+Description Size Example 
+Transaction Identifier  Hi 1 0x15 
+Transaction Identifier  Lo 1 0x01 
+Protocol Identifier 2 0x0000 
+Length 2 0x0006
+MBAP Header  
+Unit Identifier 1 0xFF 
+October 24, 2006 http://www.Modbus.org 22/46
+Modbus Organization  

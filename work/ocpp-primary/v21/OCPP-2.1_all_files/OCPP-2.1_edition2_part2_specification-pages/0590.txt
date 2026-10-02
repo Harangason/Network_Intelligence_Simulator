@@ -1,0 +1,76 @@
+ID Precondition Requirement definition Note
+S04.FR.03 S04.FR.01 AND
+BatterySwapIdtoken is not set
+Charging Station SHALL send a
+TransactionEventRequest with eventType =
+Started and triggerReason = CablePluggedIn
+and chargingState = EVConnected and
+idToken.idToken = "" and idToken.type =
+NoAuthorization.
+S04.FR.04 Charging Station SHALL send
+TransactionEventRequest messages with
+eventType = Updated with periodic meter values
+for measurand = "SoC" to inform CSMS of the state
+of charge of the battery.
+This is to inform CSMS
+about progress of
+charging. See
+SampledDataTxUpdat
+edMeasurands.
+The triggerReason will be
+MeterValuePeriodic
+if there is no other
+reason to send a
+TransactionEventReques
+t.
+S04.FR.05 When a battery in a slot is charged to
+BatterySwapTargetSoc
+Charging Station SHALL make the battery in this
+slot eligible for swapping.
+S04.FR.06 When a battery in a slot is charged to
+BatterySwapMaxSoc
+Charging Station SHALL suspend energy transfer
+and send a TransactionEventRequest with
+eventType = Updated and triggerReason =
+EnergyLimitReached and chargingState =
+SuspendedEVSE.
+Transaction is kept alive
+to allow that energy
+transfer is started again
+(e.g. in case of V2X
+operations)
+S04.FR.07 When a battery is removed from a slot Charging Station SHALL send a
+TransactionEventRequest with eventType = Ended
+and triggerReason = EVCommunicationLost and
+chargingState = Idle and stoppedReason =
+EVDisconnected.
+S04.FR.08 Configuration key TxStartPoint SHALL be
+"EVConnected"
+The transaction is
+started when the battery
+is inserted.
+S04.FR.09 Configuration key TxStopPoint SHALL be
+"EVConnected"
+The transaction is ended
+when the battery is
+removed.
+S04.FR.10 BatterySwapMaxSoc SHALL be greater than or
+equal to BatterySwapTargetSoc.
+S04.FR.11 When Charging Station reboots Charging Station SHALL start new transactions for
+all EVSEs that have a battery in their slot.
+This includes the ones
+that have reached their
+maximum state of
+charge
+(BatterySwapMaxSoc).
+See also S04.FR.06.
+S04.FR.12 When a battery is present in a slot Charging Station SHALL be able to report the
+battery state of charge via component/variable
+BatteryCartridgeSoC
+E.g. via
+GetVariablesRequest or
+as a custom or
+predefined/hardwired
+monitor.
+Edition 2, 2025-12-03 S. Battery Swapping
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 577/803 Part 2 - Specification

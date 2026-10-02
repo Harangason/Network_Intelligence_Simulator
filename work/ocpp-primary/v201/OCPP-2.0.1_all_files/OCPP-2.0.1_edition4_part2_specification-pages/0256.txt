@@ -1,0 +1,61 @@
+Chapter 4. Smart Charging Signals to a Charging Station from
+Multiple Actors
+This section is normative.
+Within OCPP, multiple mechanism are supported for Smart Charging, i.e. multiple mechanisms are available that can add a limit
+when charging an EV:
+1. The CSMS can influence charging by sending a SetChargingProfile message to the Charging Station. See K01 -
+SetChargingProfile.
+2. The EV can influence charging based on the PlugAndCharge functionality: the ISO 15118 enables EV initiated Charging
+Limits. See Section 5.3. ISO 15118 based Smart Charging.
+3. Some local input, for example a Home Energy Management System (HEMS) or DSO, can influence the charging, for example
+via an External Smart Charging Control signal. See K11 - Set / Update External Charging Limit.
+4. A Charging Station can limit charging when it is load balancing when more than 1 EV is charging.
+The assumption is that all parties that might be involved in setting limits for charging an EV will use one of the above mechanisms
+directly or indirectly.
+To determine how a Charging Station should respond to simultaneous smart charging signals from multiple actors, the following
+rules should be followed:
+Table 93. Smart Charging rules for multiple actor situation
+ID Precondition Requirement definition Note
+SC.01 At any point in time, the charging limit, which is
+the result of merging the schedules from
+external sources and the OCPP charging
+profiles with the highest stackLevel from each
+of the purposes ChargingStationMaxProfile,
+ChargingStationExternalConstraints and
+TxDefaultProfile (or TxProfile), SHALL be less
+than or equal to the lowest value of available
+power or current in any of the merged
+schedules.
+For safety purposes.
+SC.02 When the
+ChargingProfile has
+changed
+The Charging Station SHALL always inform the
+CSMS.
+The message used for this varies depending
+on the which of the mechanisms mentioned at
+the start of this section is applicable:
+1. n/a
+2. NotifyEVChargingScheduleRequest
+3. NotifyChargingLimitRequest
+4. TransactionEventRequest
+SC.03 Reporting to the CSMS concerning a changed
+limit in the ChargingProfile for mechanisms 3
+and 4 as described in SC.02 MAY be skipped if
+the change in the limit is smaller than the
+percentage defined in the Configuration
+Variable: LimitChangeSignificance.
+This is to prevent the Charging Station to send
+a lot of messages for small fluctuations (e.g.
+due to HEMS / smart meter input at the
+Charging Station)
+SC.04 The GetCompositeScheduleResponse
+message SHALL always report the expected
+charging schedule, i.e. the lowest limit for
+charging. This means that when an EV has a
+charging limit X and indicates (e.g. using the
+ISO 15118 protocol) that it will use less energy
+than offered, amount Y, the Charging Station
+SHALL report limit Y.
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 246/491 Part 2 - Specification

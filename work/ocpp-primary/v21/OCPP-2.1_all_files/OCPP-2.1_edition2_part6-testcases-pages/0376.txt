@@ -1,0 +1,36 @@
+TC_H_07_CS: Reserve a specific EVSE - Reservation Ended / not used
+Test case name Reserve a specific EVSE - Reservation Ended / not used
+Test case Id TC_H_07_CS
+Use case Id(s) H01(S2), H04
+Requirement(s) H04.FR.01,H04.FR.02,H04.FR.03
+System under test Charging Station
+Description The CSMS is able to reserve a specific EVSE for a specific IdToken by sending a ReserveNowRequest
+containing an evseId.
+Purpose To verify if the Charging Station is able to end the reservation, when the EV Driver with the specified
+IdToken arrives, does not arrive before the set expiryDateTime is reached.
+Prerequisite(s) The configuration variable ReservationCtrlr.ReservationAvailable is implemented with value true
+Before (Preparations)
+Configuration State:
+ReservationCtrlr.ReservationEnabled is true (If implemented)
+Memory State:
+<Configured evseID> is Reserved
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station notifies the CSMS about the status
+change of the connector.
+Note(s):
+- The Test System expects that the Charging Station sets the
+availabilityState of the EVSE and corresponding connectors back
+to Available after the expiry time of 60 seconds is reached.
+2. The Test System responds accordingly.
+3. The Charging Station sends a
+ReservationStatusUpdateRequest. 4. The Test System responds with a
+ReservationStatusUpdateResponse.
+5. Execute Reusable State Authorized
+Note(s):
+- <Configured valid idtoken fields2> are used for the authorization.
+6. Execute Reusable State EnergyTransferStarted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 374/1383 Part 6 - Test Cases

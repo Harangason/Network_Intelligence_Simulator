@@ -1,0 +1,35 @@
+• ClockAlignedDataInterval
+• MeterValuesAlignedData
+• MeterValuesAlignedDataMaxLength
+• MeterValuesSampledData
+• MeterValuesSampledDataMaxLength
+• MeterValueSampleInterval
+• StopTxnAlignedData
+• StopTxnAlignedDataMaxLength
+• StopTxnSampledData
+• StopTxnSampledDataMaxLength
+New Chapter to be added to the specification:
+3.14: Metering Data
+This section is normative.
+Extensive metering data relating to charging sessions can be recorded and transmitted in different ways
+depending on its intended purpose. There are two obvious use cases (but the use of meter values is not limited
+to these two):
+• Charging Session Meter Values
+• Clock-Aligned Meter Values
+Both types of meter readings MAY be reported in standalone MeterValues.req messages (during a transaction)
+and/or as part of the transactionData element of the StopTransaction.req PDU.
+3.14.1 Charging Session Meter Values
+Frequent (e.g. 1-5 minute interval) meter readings taken and transmitted (usually in "real time") to the Central
+System, to allow it to provide information updates to the EV user (who is usually not at the charge point), via
+web, app, SMS, etc., as to the progress of the charging session. In OCPP , this is called "sampled meter data", as
+the exact frequency and time of readings is not very significant, as long as it is "frequent enough". "Sampled
+meter data" can be configured with the following configuration keys:
+• MeterValuesSampledData
+• MeterValuesSampledDataMaxLength
+• MeterValueSampleInterval
+• StopTxnSampledData
+• StopTxnSampledDataMaxLength
+MeterValueSampleInterval is the time (in seconds) between sampling of metering (or other) data, intended to
+be transmitted by "MeterValues" PDUs. Samples are acquired and transmitted periodically at this interval from
+the start of the charging transaction.
+6

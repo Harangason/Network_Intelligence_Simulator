@@ -1,0 +1,50 @@
+K01. There are no specific requirements for this use case.
+Q05 - External V2X setpoint control with a charging profile from CSMS
+New in OCPP 2.1
+No. Type Description
+1 Name External V2X setpoint control with a charging profile from CSMS
+2 ID Q05
+3 Objective(s) CSMS explicitly allows an External System to control the charge and discharge behaviour of an EV
+for a certain period of time.
+4 Description CSMS has disallowed that an external actor submits a
+ChargingStationExternalConstraints charging profile. Instead, CSMS defines a charging
+profile with a chargingSchedulePeriod that has operationMode = ExternalLimits or
+ExternalSetpoint. Only during this charging period CSMS lets the charging and discharging
+behaviour be controlled by an External System connected to the Charging Station, such as an
+EMS.
+Actors EV, Charging Station, CSMS, External System
+Scenario description External setpoint control granted by CSMS.
+1. CSMS has sent a SetChargingProfileRequest message with a chargingProfilePurpose
+TxProfile or TxDefaultProfile in which chargingProfileKind = Dynamic and with a
+chargingSchedulePeriod which has operationMode set to ExternalSetpoint (to allow
+controlling the setpoints) or ExternalLimits (to allow controlling charging/discharging
+limits).
+2. During this chargingSchedulePeriod the External System is allowed to control the desired
+active power the EV should import or export.
+3. If chargingSchedule.duration is set and the setpoint/limit/dischargeLimit is not updated by
+External System after duration seconds, then the chargingSchedule ends and Charging
+Station will fall back to the next valid charging profile.
+4. If chargingSchedule.duration has not been set, then the chargingSchedule is valid
+indefinitely, until the charging profile is cleared or replaced by CSMS.
+5 Prerequisites Profile purpose must be TxProfile or TxDefaultProfile for V2X operations.
+Configuration variable ExternalControlSignalsEnabled = true.
+Configuration variable ExternalConstraintsProfileDisallowed = true.
+6 Post conditions If chargingSchedule.duration is set, then the use case ends when the setpoint is not updated after
+duration seconds, i.e. the schedule ceases to be valid when duration + lastDynamicUpdate >
+current time.
+If chargingSchedule.duration is not set, then the chargingSchedule remains valid until the charging
+profile is cleared or replaced by CSMS.
+7 Error Handling The value of chargingSchedule.duration acts as a timeout for updates from the external system. If
+no updates are received in time, the charging profile will fall back to the next valid charging
+profile.
+8 Remarks The communication method by which the External System communicates desired power levels to
+the Charging Station is out of scope of this document.
+Together with configuration variable ExternalConstraintsProfileDisallowed = false this
+use case controls when an external system is allowed to dictate setpoint and limits.
+The power setpoint communicated towards EV may never exceed limit or go below
+dischargeLimit of the composite (merged) charging schedules. (See V2X.03/04)
+Q05 - External V2X setpoint control with a charging profile from CSMS -
+Requirements
+Table 155. Q05 - Requirements
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 520/803 Part 2 - Specification

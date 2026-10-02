@@ -1,0 +1,52 @@
+Main (Test scenario)
+5.  3. Execute Reusable State StopAuthorized
+6.  4. The Charging Station notifies the CSMS about the current
+state of the connectors of the configured evse. 7.  5. The Test System responds accordingly.
+8.  6. Execute Reusable State EVConnectedPostSession
+9.  7. The Charging Station notifies the CSMS about the current
+state of the connectors of the configured evse. 10.  8. The Test System responds accordingly.
+11.  9. Execute Reusable State EVDisconnected
+12.  10. The Charging Station notifies the CSMS about the current
+state of the connectors of the configured evse. 13.  11. The Test System responds accordingly.
+14.  12. Execute Reusable State ParkingBayUnoccupied
+15.  13. The Charging Station notifies the CSMS about the current
+state of the connectors of the configured evse. 16.  14. The Test System responds accordingly.
+Note(s): Steps 4, 5, 7, 8, 10, 11, 13, and 14         6, 7, 9, 10, 12, 13, 15, and 16 will only be executed if the previous step ended the
+transaction
+17.  The test system will wait the <configured max timeout period>          
+Note(s) :  If all connectors of the configured evse have not yet reported their status, the test system will wait for the configured max                     
+timeout period to receive them.    
+Tool validations
+* Step 2:
+Message ChangeAvailabilityResponse
+- status Scheduled
+* Step 3: 
+For all connectorId’s of the Configured evseId not in use:         
+Message:  StatusNotificationRequest
+-  connectorStatus   Unavailable
+-  evseId   <Configured evseId> 
+-  connectorId  Not   <Configured connectorId> 
+Message:  NotifyEventRequest
+-  eventData[0].trigger   Delta
+-  eventData[0].actualValue   "Unavailable"
+-  eventData[0].component.name   "Connector"
+-  eventData[0].variable.name   "AvailabilityState"
+-  eventData[0].component.evse.id   <Configured evseId> 
+-  eventData[0].component.evse.connectorId  Not   <Configured connectorId> 
+* Step 6, 9, 12, 15:     Step 4, 7, 10, 13:
+Message: StatusNotificationRequest
+- connectorStatus Unavailable
+- evseId <Configured evseId>
+- connectorId <Configured connectorId> 
+- when applicable this is also sent for other connectors of the same EVSE
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Unavailable"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+- eventData[0].component.evse.id <Configured evseId>
+- eventData[0].component.evse.connectorId <Configured connectorId>
+- when applicable this is also sent for other connectors of the same EVSE
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors of the configured EVSE   .
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2026 26/34 Errata 2026-06

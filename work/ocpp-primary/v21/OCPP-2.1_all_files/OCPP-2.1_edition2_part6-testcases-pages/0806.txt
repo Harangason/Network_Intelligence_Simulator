@@ -1,0 +1,56 @@
+TC_O_101_CS: Set Display Message - Language preference of the EV Driver
+Test case name Set Display Message - Language preference of the EV Driver
+Test case Id TC_O_101_CS
+Use case Id(s) O01
+Requirement(s) C01.FR.08, O01.FR.08, O01.FR.09
+System under test Charging Station
+Description This test case describes how the CSMS can be requested to send a SetDisplayMessageRequest to the
+charging station. Depending on the given parameters the message shall be displayed a certain way and at a
+certain moment on the Charging Station. These messages are displayed additionally on a Charging Station
+and are not part of the firmware.
+Purpose To verify if the Charging Station is able to display messages in the preferred language of the EV driver.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present idToken.
+1. The Charging Station sends an AuthorizeRequest
+Note 1: This step needs to be executed:
+- unless (AuthEnabled is implemented with mutability ReadOnly
+AND the value is set to false) OR
+- a start button as described at Use case C02 is used (This must
+be configured at the Test System) OR
+- the idToken is cached.
+Note 2: Alternatively, EV Driver may select <Configured
+language1> using button or display on charging station.
+2. The Test System responds with an AuthorizeResponse with
+idTokenInfo.status Accepted
+idTokenInfo.language1 <Configured language1>
+Note(s):
+- The Charging Station will use the language preference of the EV Driver to display messages.
+4. The Charging Station responds with a
+SetDisplayMessageResponse
+3. The Test System sends a SetDisplayMessageRequest with
+message.id <Generated displayMessageId>
+message.message[0].language <Configured supported
+languages>
+message.message[0].content contentSupported
+message.messageExtra[0].language <Configured language1>
+message.messageExtra[0].content
+ContentInCustomerLanguage1
+Tool validations
+* Step 1:
+Message: AuthorizeRequest
+- idToken.idToken <Configured valid_idtoken_idtoken>
+- idToken.type <Configured valid_idtoken_type>
+* Step 4: Visual inspection
+Message: SetDisplayMessageResponse
+- The Message ContentInCustomerLanguage1 is shown on display.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 804/1383 Part 6 - Test Cases

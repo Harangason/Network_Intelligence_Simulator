@@ -1,0 +1,56 @@
+No. Type Description
+2 ID N14
+3 Objective(s) To adjust the transmission rate of a periodic event stream
+4 Description CSMS updates the interval/values parameters of an event stream.
+Actors Charging Station, CSMS
+Scenario description #1 1. CSMS sends a AdjustPeriodicEventStreamRequest to Charging Station with new values
+for params.interval and/or params.values to change how often data for the stream is sent.
+5 Prerequisite(s) A periodic event stream exists.
+6 Postcondition(s) How often Charging Station sends data for the periodic event stream is adjusted accordingly.
+7 Error handling
+8 Remark(s)
+N14 - Adjust Periodic Event Streams - Requirements
+ID Precondition Requirement definition Note
+N14.FR.01 When CSMS wants to change the
+rate of sending data for a periodic
+event stream
+CSMS SHALL send a
+AdjustPeriodicEventStreamRequest message
+with the id of the event stream and a params
+object with new interval and/or values fields
+N14.FR.02 N14.FR.01 AND
+If Charging Station is unable to
+comply to the new parameters
+Charging Station SHALL respond with
+AdjustPeriodicEventStreamResponse with
+status = Rejected.
+N14.FR.03 N14.FR.01 AND
+If Charging Station is able to
+comply to the new parameters
+Charging Station SHALL respond with
+AdjustPeriodicEventStreamResponse with
+status = Accepted and change the rate of
+sending NotifyPeriodicEventStream messages
+according to params.
+N15 - Periodic Event Streams
+New in OCPP2.1
+No. Type Description
+1 Name Periodic Event Streams
+2 ID N15
+3 Objective(s) To explain how a frequent periodic monitor is sent.
+4 Description Charging Station can open a periodic event stream to report frequent periodic monitor values, as
+described in use case N11. This reduces data overhead, since static data is not repeated every
+time, and reduces time, because a periodic event stream message is not acknowledged by CSMS.
+This use case describes the use of the NotifyPeriodicEventStream message to send the data.
+Actors Charging Station, CSMS
+Scenario description #1 Charging Station sends values over event stream
+1. When a monitor that is associated with a periodic event stream, produces a value,
+Charging Station places this value in the event stream buffer together with a timestamp.
+2. The field params of PeriodicEventStreamParamsType that was used in
+OpenPeriodicEventStreamRequest determines when to flush the buffer.
+3. After more than params.interval seconds have passed since the last flush, or after the
+number of values equals or exceeds params.values, then Charging Station writes
+("flushes") the buffered values to CSMS as a list of streamData in a
+NotifyPeriodicEventStream message. This message is not confirmed by CSMS.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 476/803 Part 2 - Specification

@@ -1,0 +1,43 @@
+Table 8-1. Design Parameters (continued)
+DESIGN PARAMETERS EXAMPLE VALUE
+PANEL INFORMATION (continued)
+Horizontal Sync Pulse Polarity Negative
+Vertical Sync Pulse Polarity Negative
+Color Bit Depth (6 bpc or 8 bpc) 6-bit
+Number of LVDS Lanes 1 × [3 Data Lanes + 1 Clock Lane]
+DSI INFORMATION
+Number of DSI Lanes 1 × [4 Data Lanes + 1 Clock Lane]
+DSI Clock Frequency(MHz) 500 MHz
+Dual DSI Configuration(Odd/Even or Left/Right) N/A
+8.2.2 Detailed Design Procedure
+The video resolution parameters required by the panel need to be programmed into the SN65DSI83 device. For
+this example, the parameters programmed would be the following:
+ 
+Horizontal Active = 1280 or 0x500
+CHA_ACTIVE_LINE_LENGTH_LOW = 0x00
+CHA_ACTIVE_LINE_LENGTH_HIGH = 0x05
+ 
+Vertical Active = 800 or 0x320
+CHA_VERTICAL_DISPLAY_SIZE_LOW = 0x20
+CHA_VERTICAL_DISPLAY_SIZE_HIGH = 0x03
+ 
+Horizontal Pulse Width = 128 or 0x80
+CHA_HSYNC_PULSE_WIDTH_LOW = 0x80
+CHA_HSYNC_PULSE_WIDTH_HIGH = 0x00
+ 
+Vertical Pulse Width = 7
+CHA_VSYNC_PULSE_WIDTH_LOW = 0x07
+CHA_VSYNC_PULSE_WIDTH_HIGH = 0x00
+ 
+Horizontal Backporch = HorizontalBlanking – (HorizontalSyncOffset + HorizontalSyncPulseWidth)
+Horizontal Backporch = 384 – (64 + 128)
+Horizontal Backporch = 192 or 0xC0
+CHA_HORIZONTAL_BACK_PORCH = 0xC0
+ 
+Vertical Backporch = VerticalBlanking – (VerticalSyncOffset +VerticalSyncPulseWidth)
+Vertical Backporch = 30 – (3 + 7)
+Vertical Backporch = 20 or 0x14
+SN65DSI83
+SLLSEC1I – SEPTEMBER 2012 – REVISED OCTOBER 2020 www.ti.com
+32 Submit Document Feedback Copyright © 2020 Texas Instruments Incorporated
+Product Folder Links: SN65DSI83

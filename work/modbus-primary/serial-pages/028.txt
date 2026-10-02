@@ -1,0 +1,24 @@
+MODBUS over serial line specification and implementation guide V1.02 Modbus.org    
+Modbus.org http://www.modbus.org/ 28/44
+Dec 20, 2006 
+Each line termination must be connected between the two conductors of the balanced line : D0 and D1. 
+Line termination may be a 150 ohms value ( 0.5 W ) resistor. 
+A serial capacitor  ( 1 nF, 10 V minimum ) with a 120 Ohms ( 0.25 W ) resistor is a better choice when a polarization of the pa ir must 
+be implemented (see here after). 
+In a 4W-system, each pair must  be terminated at each end of the bus. 
+In an RS232 interconnections, no termination should  be wired. 
+3.4.6 Line Polarization 
+When there is no data activity on an RS-485 balanced pair, the lines are not driven and, thus susceptible to external noise or 
+interference. To insure that its receiver stays in a constant state, when no data signal is present, some devices need to bias the 
+network.   
+Each MODBUS device must be documented to say : 
+- if the device needs a line polarization,
+- if the device implements, or can implement, such a line polarization.
+If one or several devices need polarization, one pair of resistors must be connected on the RS-485 balanced pair :
+- a Pull-Up Resistor to a 5V Voltage on D1 circuit,
+- a Pull-Down Resistor to the common circuit on D0 circuit.
+The value of those resistors must  be between 450 Ohms and 650 Ohms. 650 Ohms resistors value may allow a higher number of 
+devices on the serial line bus. 
+In this case, a polarization of the pair must  be implemented at one location for the whole Serial Bus . Generally this point is to 
+choose on the master device or on its Tap. Other devices must not  implement any polarization. 
+The maximum number of devices authorized on such a MODBUS Serial Line is reduced by 4 from a MODBUS without polarization. 

@@ -1,0 +1,60 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  46 
+Port Type Description 
+axis_byte_tvalid_i Input AXI4-Stream byte valid input. Indicates availability of valid byte data on 
+axis_byte_tdata_i. Used for standard AXI4-Stream handshaking protocol.  
+axis_byte_tdata_i[TDATA_WIDT
+H-1:0] 
+Input AXI4-Stream byte data input containing raw MIPI byte data packed as 
+specified in MIPI specifications. Valid only when axis_byte_tvalid_i is asserted.  
+When PHY Mode == Soft D-PHY, TDATA_WIDTH is PHY Data Width × 4. 
+When PHY Mode == Hard D-PHY and Number of D-PHY Lanes == 4, 
+TDATA_WIDTH is PHY Data Width × 4, else TDATA_WIDTH is 32. 
+axis_byte_tuser_i[77:0] Input AXI4-Stream byte user sideband signals.  
+axis_byte_tuser_i[5:2] carries the virtual channel information of Header 1 
+when PHY Data Width is 8. 
+axis_byte_tuser_i[43:40] carries the virtual channel information of Header 2 
+when PHY Data Width is 16. 
+All remaining bits of axis_byte_tuser_i are reserved and must be driven to 0. 
+axis_byte_tlast_i Input AXI4-Stream byte signal indicating the last byte transfer of a long packet. This 
+signal coincides with the payload MSB footer (CRC[15:8]). 
+ 
+4.1.5. Miscellaneous  
+Table 4.5. Miscellaneous Ports 
+Port Type Description 
+tinit_done_o Output Indicates completion of the D-PHY LP-11 initialization period. When Enable 
+tINIT Counter is checked, this signal asserts after (tINIT counter value – 1) 
+byte-clock cycles, representing the programmed LP-11 duration. When the 
+Enable tINIT Counter is unchecked, the signal asserts automatically when the 
+internal soft PHY has entered and stabilized in LP-11 state, indicating that the 
+link is ready for HS entry. 
+horizontal_blanking_cnt_en_o Output Indicates that the additional horizontal line blanking is inserted in the LP-11 
+state between HS burst of consecutive long packets (Line Start and Line End is 
+disabled) or between HS burst of the current Line End to the next Line Start of 
+short packets (Line Start and Line End is enabled). The duration of the 
+assertion indicates the additional blanking duration period inserted in the LP-
+11 state. This signal is active only when the Number of Horizontal Blanking 
+Bytes in Byte Clock Domain is set to a non-zero value. 
+This port is available only when Blanking Enable is set. 
+vertical_blanking_cnt_en_o Output Indicates that the additional vertical frame blanking is inserted in the LP-11 
+state between HS burst of the current Frame End to the next Frame Start of 
+short packets. The duration of the assertion indicates the additional blanking 
+duration period inserted in the LP-11 state. This signal is active only when the 
+Number of Vertical Blanking Lines Per Frame is set to a non-zero value. 
+This port is available only when Blanking Enable is set. 
+ 
+4.1.6. AXI4-Lite Subordinate Interface 
+Table 4.6. AXI4-Lite Subordinate Interface Ports 
+Port Type Description 
+s_axi_awaddr_i[11:0] Input AXI4-Lite write address input 
+s_axi_awprot_i[2:0] Input AXI4-Lite write protection attributes 
+s_axi_awvalid_i Input AXI4-Lite write address valid 
+s_axi_awready_o Output AXI4-Lite write address ready 
+s_axi_wdata_i[31:0] Input AXI4-Lite write data input 
+s_axi_wstrb_i[3:0] Input AXI4-Lite write byte enable strobes 
+s_axi_wvalid_i Input AXI4-Lite write data valid 

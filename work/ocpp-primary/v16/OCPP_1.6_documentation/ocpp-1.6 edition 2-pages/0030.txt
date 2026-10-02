@@ -1,0 +1,59 @@
+Local group
+Local Controller
+CP00
+Local Controller limits
+power usage of total
+group to pre-configured
+maximum capacity.
+Charge Point
+CP01
+Charge Point
+CP02
+Charge Point
+CP03
+EV1
+EV2
+Central System
+OCPP charging profile
+OCPP charging profile
+Control Pilot signal
+Control Pilot signal
+OCPP ChargePointMaxProfile
+Figure 9. Local Smart Charging topology
+Local smart charging assumes the existence of a Local Controller to control a group of Charge Points. The Local
+Controller is a logical component. It may be implemented either as a separate physical component or as part of
+a ‘master’ Charge Point controlling a number of other Charge Points. The Local Control implements the OCPP
+protocol and is a proxy for the group members' OCPP messages, and may or may not have any connectors of its
+own.
+In the case of local smart charging the Local Controller imposes charging limits on a Charge Point. These limits
+may be changed dynamically during the charging process in order to keep the power consumption of the group
+of Charge Points within the group limits. The group limits may be pre-configured in the Local Controller or may
+have been configured by the Central System.
+The optional charging schedule field minChargingRate may be used by the Local Controller to optimize the
+power distribution between the connectors. The parameter informs the Local Controller that charging below
+minChargingRate is inefficient, giving the possibility to select another balancing strategy.
+The following diagram illustrates the sequence of messages to set charging limits on Charge Points in a Local
+Smart Charging group. These limits can either be pre-configured in the Local Controller in one way or another, or
+they can be set by the Central System. The Local Controller contains the logic to distribute this capacity among
+the connected connectors by adjusting their limits as needed.
+Charge Point Local Controller CSO Central System
+opt Set local group limits
+SetChargingProfile.req( connectorId: 0 ,
+chargingprofilePurpose: ChargepointMaxProfile ,
+chargingProfileKind: absolute , validFrom, validTo)
+Limits for local
+controller's group may
+be preconfigured in
+controller or set
+dynamically by CSO
+SetChargingProfile.conf(Accepted)
+SetChargingProfile.req( connectorId: 0 ,
+chargingprofilePurpose: ChargepointMaxProfile ,
+chargingProfileKind: absolute , validFrom, validTo)
+Local Controller assigns
+limits to Charge Point
+SetChargingProfile.conf(Accepted)
+Figure 10. Presetting Local Group Limits
+The next diagram describe the sequence of messages for a typical case of Local Smart Charging. For simplicity’s
+sake, this case only involves one connector.
+25

@@ -1,0 +1,51 @@
+Tool validations
+* Step 2:
+Message ResetResponse
+- status Scheduled
+* Step 11:
+Message BootNotificationRequest
+- reason ScheduledReset
+* Step 13:
+Message: StatusNotificationRequest
+- If the transaction was stopped charging station reset   at step 3 7 , then
+ — for the connector involved in the transaction: connectorStatus Occupied
+ — for other connectors of this EVSE: connectorStatus Available or Unavailable
+- Else connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+- If the transaction was stopped charging station reset   at step 3 7 , then
+ — for the connector involved in the transaction: eventData[0].actualValue Occupied
+ — for other connectors of this EVSE: eventData[0].actualValue Available or Unavailable
+- Else eventData[0].actualValue "Available"
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors.
+6.2.4. Page 91 - (2026-02) - TC_B_100_CS - Use active securityProfile level
+Test case name Set new NetworkConnectionProfile - Identity and password
+Test case Id TC_B_100_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetNetworkProfileResponse
+1. The Test System sends a SetNetworkProfileRequest with:
+- configurationSlot is <Configured non-active configurationSlot>
+- connectionData.ocppVersion OCPP21
+- connectionData.ocppInterface Any
+- connectionData.ocppTransport JSON
+- connectionData.messageTimeout <Configured
+messageTimeout>
+- connectionData.ocppCsmsUrl <Configured ocppCsmsUrl>
+- connectionData.securityProfile <Active SecurityProfile> 
+- connectionData.identity <Configured identity>
+- connectionData.basicAuthPassword <Configured
+basicAuthPassword>
+…
+6.2.5. Page 1006 - 1112 - (2026-02) -
+TC_B_105_CS/TC_B_107_CS/TC_B_111_CS/TC_B_113_CS - Identity included in
+SetVariablesRequest on component *NetworkConfiguration
+The SetVariablesRequest on component NetworkConfiguration[<Configured non-active configurationSlot>] was updated to include
+the required field Identity.
+The note relating to the DeviceDataCtrlr.ItemsPerMessage was updated to be 10 or more items with the additional item for Identity
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 31/116 Errata 2026-06

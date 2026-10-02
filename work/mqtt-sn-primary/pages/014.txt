@@ -1,0 +1,32 @@
+Length MsgType TopicId MsgId TopicName
+(octet 0) (1) (2,3) (4:5) (6:n)
+Table 14: REGISTER Message
+5.4.10 REGISTER
+The REGISTER message is sent by a client to a GW for requesting a topic id value for the included topic name.
+It is also sent by a GW to inform a client about the topic id value it has assigned to the included topic name. Its
+format is illustrated in Table 14:
+• Length and MsgType: see Section 5.2.
+• TopicId: if sent by a client, it is coded 0x0000 and is not relevant; if sent by a GW, it contains the topic id
+value assigned to the topic name included in the TopicName ﬁeld;
+• MsgId: should be coded such that it can be used to identify the corresponding REGACK message.
+• TopicName: contains the topic name.
+5.4.11 REGACK
+Length MsgType TopicId MsgId ReturnCode
+(octet 0) (1) (2,3) (4,5) (6)
+Table 15: REGACK Message
+The REGACK message is sent by a client or by a GW as an acknowledgment to the receipt and processing of
+a REGISTER message. Its format is illustrated in Table 15:
+• Length and MsgType: see Section 5.2.
+• TopicId: the value that shall be used as topic id in the PUBLISH messages;
+• MsgId: same value as the one contained in the corresponding REGISTER message.
+• ReturnCode: “accepted”, or rejection reason.
+5.4.12 PUBLISH
+Length MsgType Flags TopicId MsgId Data
+(octet 0) (1) (2) (3-4) (5-6) (7:n)
+Table 16: PUBLISH Message
+This message is used by both clients and gateways to publish data for a certain topic. Its format is illustrated
+in Table 16:
+• Length and MsgType: see Section 5.2.
+• Flags:
+– DUP: same as MQTT, indicates whether message is sent for the ﬁrst time or not.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 13

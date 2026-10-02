@@ -1,0 +1,38 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 34
+OS81050
+In accordance with the MediaLB Specification [3], the OS81050 does not acknowledge
+synchronous data transmissions (RxStatus default response of ReceiverReady).
+When the OS81050 is the receiving Device for a logical channel and recognizes a reception error, it
+responds with an RxStatus of ReceiverProtocolError in the next physical channel of that logical channel. The fol-
+lowing conditions cause INIC to generate ReceiverProtocolError, when receiving control messages and asyn-
+chronous packets:
+/square6 Inappropriate MediaLB Command for a particular channel
+(e.g. a logical channel is setup for control messages when a Synchronous Command is received).
+/square6 ControlStart, AsyncStart, ControlEnd, or AsyncEnd is received while in the middle of a packet reception.
+/square6 ControlEnd or AsyncEnd is not received when the end of the buffer is expected, based on 
+Port Message Length (PML).
+/square6 Port Message Header Length  (PMHL) + 3 bytes is not divisible by 4 (applies to packet messages only)
+Following an end Command on an asynchronous or control RX channel ( AsyncEnd or
+ControlEnd), the OS81050 w ill respond with an RxStatus of ReceiverProtocolError if it receives a
+start Command ( AsyncStart or ControlStart) in one of the next two physical channels belonging
+to the same ChannelAddress. (Applicable to OS81050 Rev D only).
+Figure 6-4 illustrates the MediaLB interface, as various Devices drive the bus ( MLBSIG/MLBDAT) during a
+given network frame. This figure depicts the 256 ×Fs MediaLB speed; however, the logic also applies to the
+512×Fs and 1024×Fs speeds (with more PCn channels).
+The Controller drives the ChannelAddresses ( ChannelAddress B through H in this example), granting the corre-
+sponding Devices bus access. The transmitting Device for the ChannelAddress drives the Command and Data,
+and the receiving Device responds with reception status (RxStatus). In the second to last physical channel
+of the frame (PC6 at 256 ×Fs), the Controller drives the FRAMESYNC pattern onto the signal information line
+(MLBSIG) in place of a ChannelAddress, for synchronization to the network frame. The Command and Data asso-
+ciated with the FRAMESYNC (also known as the SystemChannel) is sent by the Controller one quadlet follow-
+ing the FRAMESYNC pattern, in the first physical channel of the frame (PC0).
+Depending on the number of physical channels grouped into logical channels, fewer unique ChannelAddresses
+may be seen in the frame. In Figure 6-4, each logical channel is one quadlet (one physical channel), map-
+ping to seven ChannelAddresses (B through H). If one logical channel consisted of two quadlets and another
+consisted of three quadlets, then only four unique ChannelAddresses would be seen on the bus (B through E).
+The OS81050 opens default communication channels (0004h and 0002h) when the MediaLB Port is
+enabled at power-up. The OS81050 listens to ChannelAddress 0004h for configuration information from the
+EHC, and responds to the EHC on ChannelAddress 0002h. This ChannelAddress pair is used for communicating
+ICM and MCM messages between the EHC and INIC, and can be used to open other channels on
+MediaLB. A separate channel pair must be opened for MDP communications.

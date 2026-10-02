@@ -1,0 +1,50 @@
+TC_E_39_CS: Stop transaction options - Deauthorized - timeout
+Test case name Stop transaction options - Deauthorized - timeout
+Test case Id TC_E_39_CS
+Use case Id(s) E06(S3)
+Requirement(s) E06.FR.04, E06.FR.15
+System under test Charging Station
+Description OCPP 2.x.x has a flexible transaction mechanism that allows the transaction start and stop points to be
+configured differently. This test covers one of the start options.
+Purpose To verify if the Charging Station stops a transaction when the transaction gets deauthorized because the
+cable was not plugged in within the Configured durationout and it has been configured to do so.
+Prerequisite(s) - The Charging Station does NOT have the following configuration; The mutability of TxStopPoint is
+ReadOnly AND the value Authorized is NOT set.
+- If the mutability of TxStopPoint is ReadWrite, then the value Authorized must be supported.
+Before (Preparations)
+Configuration State:
+If the mutability of TxStopPoint is ReadWrite then TxStopPoint contains Authorized
+- TxCtrlr.EVConnectionTimeOut is <Configured ev_connection_timeout>
+- AuthCtrlr.AuthEnabled is true (If implemented AND ReadWrite)
+AuthCtrlr.DisableRemoteAuthorization is false (If implemented)
+Memory State:
+N/a
+Reusable State(s):
+State is Authorized
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed after the <Configured
+ev_connection_timeout> expires, if the transaction has been
+started. So in the case TxStartPoint contains
+ParkingBayOccupancy OR Authorized
+2. The Test System responds with a TransactionEventResponse
+Note(s): Step 1 and 2 are optional and will only be expected when the TxStartPoint is set to ParkingBayOccupancy or Authorized.
+Optionally the Charging Station can send a StatusNotificationRequest or NotifyEventRequest with status Available.
+Manual Action: Connect the EV and EVSE on EV side.
+Manual Action: Connect the EV and EVSE on EVSE side.
+3. The Charging Station notifies the CSMS about the status
+change of the connector. 4. The Test System responds accordingly.
+5. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed after the <Configured
+ev_connection_timeout> expires, if the transaction has been
+started. So in the case TxStartPoint contains
+ParkingBayOccupancy OR Authorized
+6. The Test System responds with a TransactionEventResponse
+Note(s):
+Charging Station is allowed to sent a TransactionEventRequest for the cableplugin event when this is applicable, but should not start
+charging.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 245/1383 Part 6 - Test Cases

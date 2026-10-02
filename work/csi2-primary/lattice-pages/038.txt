@@ -1,0 +1,63 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  38 
+Attribute Selectable Values Description 
+speed packet signals (header and byte data) to AXI4-Stream (TVALID, 
+TREADY, TDATA, TUSER, TLAST). Refer to the MIPI Byte Streaming 
+Interface (MBSI) section for details. 
+Passthrough Mode checked Not editable. For information only when MIPI Byte Streaming 
+Interface == checked. 
+ 
+PHY Direction == TX: Externally formatted MIPI packets (byte format) 
+are received via MBSI. TDATA carries short packets, header for long 
+packets, payload, and footer while TUSER provides VCX and VC fields. 
+ 
+PHY Direction == RX: Bytes are forwarded in the same order defined 
+by the MIPI specification. TDATA carries header for long packets, 
+payload, and footer while TUSER provides VCX and VC fields. 
+Video Format 
+Line Start and Line End checked, unchecked Checked: Activates LS and LE short‑packet generation. When enabled, 
+the video timing FSM issues Line Start and Line End short packet 
+markers at each line boundary to indicate the beginning and end of 
+active video lines. 
+ 
+Unchecked: Disables LS and LE short‑packet generation. The video 
+timing FSM suppresses line‑boundary markers and does not emit LS 
+or LE short packets. 
+ 
+This setting is available only when PHY Direction is set to TX. 
+Line Number Insertion checked, unchecked Checked: The module inserts the line number into the Line Start (LS) 
+and Line End (LE) short packets.  
+ 
+Unchecked: The line number field in both LS and LE packets is forced 
+to 0. 
+ 
+This setting is available only when PHY Direction is set to TX and Line 
+Start and Line End is checked. 
+Blanking Enable checked, unchecked Checked: Inserts additional horizontal line or vertical frame blanking 
+period duration for the LP11 state after the end of long packet 
+transmission. When enabled, the video timing FSM inserts additional 
+blanking period duration as follows:  
+For horizontal line blanking period: 
+Line Start and Line End enabled:  
+The horizontal line blanking period is inserted in the LP11 state 
+between the LE packet to the next LS packet. 
+ 
+Line Start and Line End disabled:  
+The horizontal line blanking period is inserted in the LP11 state 
+between the end of a long packet to the beginning of the next long 
+packet. 
+ 
+For vertical frame blanking period: 
+The vertical frame blanking period is inserted in the LP11 state 
+between the current FE packet to the subsequent FS packet. 
+ 
+Unchecked: Only minimal duration for LP11 state after the end of a 
+long packet transmission or the LP to HS transition.  
+Refer to the MIPI CSI/DSI Transmitter Blanking Insertion section. 
+This setting is available only when PHY Direction is set to TX. 
+Number of Horizontal 1–65535,2400 Indicates the number of horizontal active bytes of the video frame 

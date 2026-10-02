@@ -1,0 +1,42 @@
+Main (Test scenario)
+7. The Charging Station notifies the CSMS about the current
+state of all connectors. 8. The Test System responds accordingly.
+9 The Charging Station sends a
+SecurityEventNotificationRequest
+10 The Test System responds with a
+SecurityEventNotificationResponse
+Tool validations
+* Step 2:
+Message: ResetResponse
+- status Accepted
+* Step 3:  
+Message:  StatusNotificationRequest
+-  connectorStatus   Unavailable
+-  evseId  not   0
+-  connectorId  not   0
+Message:  NotifyEventRequest
+-  eventData[0].trigger   Delta
+-  eventData[0].actualValue   "Unavailable"
+-  eventData[0].component.name   "Connector"
+-  eventData[0].variable.name   "AvailabilityState"
+* Step 7:
+Message: StatusNotificationRequest
+- connectorStatus Available
+- evseId not 0
+- connectorId not 0
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Available"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+* Step 9:
+Message: SecurityEventNotificationRequest
+- type must be StartupOfTheDevice OR ResetOrReboot
+Post scenario validations:
+State is Booted
+6.2.65. Page 949/952 - (2026-02) -
+EVConnectedPreSessionBatterySwapping/EVDisconnectedBatterySwapping -
+Updated tool validations
+Tool validations for batteryData required fields removed (validated at schema level). Validations added to ensure the array length
+matches the number of batteries inserted.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 96/116 Errata 2026-06

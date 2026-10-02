@@ -1,0 +1,40 @@
+MODBUS over serial line specification and implementation guide V1.02  Modbus.org    
+Modbus.org http://www.modbus.org/ 19/44
+Dec 20, 2006 
+2.6 Error Checking Methods 
+The security of standard MODBUS Serial Line is based on two kinds of error checking : 
+/square4 Parity checking (even or odd) should be applied to each character. 
+/square4 Frame checking (LRC or CRC) must be applied to the entire message.   
+Both the character checking and message frame checking are generated in the device (master or slave) that emits and applied to the 
+message contents before transmission.  The device (slave or master) checks each character and the entire message frame during 
+receipt. 
+The master is configured by the user to wait for a predetermined timeout interval ( Response time-out) before aborting the tran saction. 
+This interval is set to be long enough for any slave to respond normally ( unicast request). If the slave detects a transmissio n error, the 
+message will not be acted upon. The slave will not construct a response to the master. Thus the timeout will expire and allow t he 
+master’s program to handle the error. Note that a message addressed to a nonexistent slave device will also cause a timeout. 
+2.6.1 Parity Checking 
+Users may configure devices for Even ( required) or Odd Parity checking, or for No Parity checking ( recommended). This will 
+determine how the parity bit will be set in each character. 
+If either Even or Odd Parity is specified, the quantity of 1 bits will be counted in the data portion of each character (seven data bits for 
+ASCII mode, or eight for RTU). The parity bit will then be set to a 0 or 1 to result in an Even or Odd total of 1 bits. 
+For example, these eight data bits are contained in an RTU character frame: 
+1100 0101 
+The total quantity of 1 bits in the frame is four. If Even Parity is used, the frame’s parity bit will be a 0, making the total quantity of 1 bits 
+still an even number (four). If Odd Parity is used, the parity bit will be a 1, making an odd quantity (five). 
+When the message is transmitted, the parity bit is calculated and applied to the frame of each character. The device that recei ves 
+counts the quantity of 1 bits and sets an error if they are not the same as configured for that device (all devices on the MODB US Serial 
+Line must be configured to use the same parity checking method). 
+Note that parity checking can only detect an error if an odd number of bits are picked up or dropped in a character frame durin g 
+transmission. For example, if Odd Parity checking is employed, and two 1 bits are dropped from a character containing three 1 b its, 
+the result is still an odd count of 1 bits. 
+If No Parity checking is specified, no parity bit is transmitted and no parity checking can be made. An additional stop bit is transmitted 
+to fill out the character frame. 
+2.6.2 Frame Checking 
+Two kinds of frame checking is used depending on the transmission mode, RTU or ASCII. 
+/square4 In RTU mode, messages include an error–checking field that is based on a Cyclical Redundancy Checking (CRC) method. The 
+CRC field checks the contents of the entire message. It is applied regardless of any parity checking method used for the indivi dual 
+characters of the message. 
+/square4 In ASCII mode, messages include an error–checking field that is based on a Longitudinal Redundancy Checking (LRC) method. 
+The LRC field checks the contents of the message, exclusive of the beginning ‘colon’ and ending CRLF pair. It is applied 
+regardless of any parity checking method used for the individual characters of the message. 
+The detailed information about error checking methods is contained in the previous sections. 

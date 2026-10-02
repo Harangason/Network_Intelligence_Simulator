@@ -1,0 +1,56 @@
+Table 7-78. CSI_TX_ISR Register Field Descriptions (continued)
+Bit Field Type Reset Description
+2 IS_CSI_SYNC RC 0x0 CSI-2 Synchronized interrupt
+CSI-2 Transmit Port assertion of CSI-2 Synchronized Status. Current 
+status for CSI-2 Sync can be read from the TX_PORT_SYNC flag in 
+the CSI_STS register.
+1 IS_CSI_PASS_ERROR RC 0x0 CSI-2 RX Pass Error interrupt
+A deassertion of CSI-2 Pass has been detected on one of the RX 
+Ports being forwarded to the CSI-2 Transmit Port
+0 IS_CSI_PASS RC 0x0 CSI-2 Pass interrupt
+CSI-2 Transmit Port assertion of CSI-2 Pass detected. Current status 
+for the CSI-2 Pass indication can be read from the TX_PORT_PASS 
+flag in the CSI_STS register
+7.6.1.57 SFILTER_CFG Register (Address = 0x41) [Reset = 0xA9] 
+SFILTER_CFG is shown in Table 7-79.
+Return to the Summary Table.
+Table 7-79. SFILTER_CFG Register Field Descriptions
+Bit Field Type Reset Description
+7:4 SFILTER_MAX R/W 0xA SFILTER Maximum setting
+This field controls the maximum SFILTER setting. Allowed values are 
+0-14 with 7 being the mid point. These values are used for both AEQ 
+adaption and dynamic SFILTER control. The maximum setting must 
+be greater than of equal to the SFILTER_MIN.
+3:0 SFILTER_MIN R/W 0x9 SFILTER Minimum setting
+This field controls the minimum SFILTER setting. Allowed values are 
+0-14, where 7 is the mid point. These values are used for both AEQ 
+adaption and dynamic SFILTER control. The minimum setting must 
+be less than or equal to the SFILTER_MAX.
+7.6.1.58 AEQ_CTL Register (Address = 0x42) [Reset = 0x71] 
+AEQ_CTL is shown in Table 7-80.
+Return to the Summary Table.
+Table 7-80. AEQ_CTL Register Field Descriptions
+Bit Field Type Reset Description
+7 RESERVED R 0x0 Reserved
+6:4 AEQ_ERR_CTL R/W 0x7 AEQ Error Control
+Setting any of these bits will enable FPD3 error checking during the 
+Adaptive Equalization process. Errors are accumulated over 1/2 of 
+the period of the timer set by the ADAPTIVE_EQ_RELOCK_TIME 
+filed in the AEQ_TEST register. If the number of errors is greater 
+than the programmed threshold (AEQ_ERR_THOLD), the AEQ will 
+attempt to increase the EQ setting. The errors may also be checked 
+as part of EQ setting validation if AEQ_2STEP_EN is set. The 
+following errors are checked based on this three bit field:
+[2] FPD3 clk1/clk0 errors
+[1] DCA sequence errors
+[0] Parity errors
+3 AEQ_SFIL_ORDER R/W 0x0 AEQ SFILTER Adapt order
+This bit controls the order of adaption for SFILTER values during 
+Adaptive Equalization.
+0: Default order, start at largest clock delay
+1: Start at midpoint, no additional clock or data delay
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 105
+Product Folder Links: DS90UB960-Q1

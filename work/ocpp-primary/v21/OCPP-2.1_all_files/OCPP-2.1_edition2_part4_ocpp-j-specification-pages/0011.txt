@@ -1,0 +1,35 @@
+Chapter 4. RPC framework
+4.1. Introduction
+A websocket is a full-duplex connection, simply put a pipe where data goes in and data can come out and without a clear relation
+between in and out. The WebSocket protocol by itself provides no way to relate messages as requests and responses. To encode
+these request/response relations we need a small protocol on top of WebSocket. This problem occurs in more use cases of
+WebSocket so there are existing schemes to solve it. The most widely-used is WAMP (see [WAMP]) but with the current version of
+that framework handling RPCs symmetrically is not WAMP compliant. Since the required framework is very simple we decided to
+define our own framework, inspired by WAMP, leaving out what we do not need and adding what we find missing.
+Basically what we need is very simple: we need to send a message (CALL) and receive a reply (CALLRESULT) or an explanation why
+the message could not be handled properly (CALLERROR). Many CALLRESULT message have a simple content with a status
+describing whether the CALL was accepted or not, but for those cases where a CALLRESULT contains complex data elements that
+the receiver might not be able to process, a receiver can respond to the CALLRESULT with a CALLRESULTERROR message to notify
+the sender that its response could not be processed.
+Besides the request-response pair of CALL-CALLRESULT the framework also offers a SEND message, which only sends a message
+and does not expect a response.
+Our actual OCPP message will be put into a wrapper that at least contains the type of message, a unique message ID and the
+payload, the OCPP message itself.
+4.1.1. Synchronicity
+A Charging Station or CSMS SHALL NOT send a CALL message to the other party unless the CALL message it sent before has been
+responded to or has timed out. This does not mean that the CSMS cannot send a message to another Charging Station, while
+waiting for a response of a first Charging Station, this rule is per OCPP-J connection. A CALL message has been responded to when
+a CALLERROR or CALLRESULT message has been received with the message ID of the CALL message.
+A CALL message has timed out when:
+• it has not been responded to, and
+• an implementation-dependent timeout interval has elapsed since the message was sent.
+Implementations are free to choose this timeout interval. It is RECOMMENDED that they take into account the kind of network used
+to communicate with the other party. Mobile networks typically have much longer worst-case round-trip times than fixed lines.
+NOTE
+The above requirements do not rule out that a Charging Station or CSMS will receive a CALL message from the
+other party while it is waiting for a CALLERROR or CALLRESULT. Such a situation is difficult to prevent because
+CALL messages from both sides can always cross each other.
+NOTE A Charging Station or CSMS is allowed to send a SEND message to the other party before the CALL message it
+has sent has been responded to or has timed out.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 9/28 Part 4 - JSON over WebSockets implementation guide

@@ -1,0 +1,58 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  45 
+Port Type Description 
+Available if Edge Clock Mode == Internal3. 
+eclk_reset_o Output Drives the reset port of DDR modules. 
+Connects to eclk_reset_i of sink instance with Edge Clock Mode == External. 
+Available if Edge Clock Mode == Internal3. 
+eclk_ready_o Output Indicates the clock synchronization status of source instance. 
+Connects to eclk_ready_i of sink instance with Edge Clock Mode == External. 
+Available if Edge Clock Mode == Internal3. 
+Notes: 
+1. Refer to the Unified Video Streaming Interface (UVSI) section for details. 
+2. The maximum supported clock frequency depends on the family, package, and performance grade of the device. Check the 
+device data sheet for more information. 
+3. Refer to the MIPI CSI/DSI Transmitter Edge Clock Sharing section for details. 
+4.1.2. D-PHY Interface 
+Table 4.2. D-PHY Interface Ports 
+Port Type Description 
+clk_p_io Inout Positive differential clock I/O pad for D-PHY implementations. 
+clk_n_io Inout Negative differential clock I/O pad for D-PHY implementations. 
+d_p_io[NUMLANE1-1:0] Inout Positive differential data I/O pad for D-PHY implementations. 
+d_n_io[NUMLANE1-1:0] Inout Negative differential data I/O pad for D-PHY implementations. 
+Note: 
+1. Corresponds to the Number of D-PHY Lanes attribute. 
+4.1.3. Unified Video Streaming Interface 
+Table 4.3. Unified Video Streaming Interface Ports 
+Port Type Description 
+axis_vid_tready_o Output AXI4-Stream ready signal from the TX module. Indicates that the module is 
+ready to accept new pixel data. When this signal is low, upstream video logic 
+must pause data transmission. 
+axis_vid_tvalid_i Input AXI4-Stream valid signal from upstream video logic. Indicates that 
+axis_vid_tdata_i contains valid pixel data for transmission. 
+axis_vid_tdata_i[TDATA_WIDTH
+-1:0] 
+Input AXI4-Stream pixel data bus carrying incoming formatted pixel data. Pixel 
+values are packed LSB-first. Multiple pixels may be concatenated when PPC > 
+1. Data is accepted only when axis_vid_tvalid_i and axis_vid_tready_o are 
+both high. Refer to the TDATA Mapping and Unified Video Streaming Interface 
+(UVSI) sections for details. 
+axis_vid_tuser_i[1:0] Input AXI4-Stream video user sideband signals. Provides frame and line timing 
+information. 
+Bit [0]: Start of Frame (SOF) – Asserts for first pixel of each frame. 
+Bit [1]: Interlaced F1 – Currently unused and is tied to low. 
+axis_vid_tlast_i Input AXI4-Stream End-of-Line indicator. Asserts with the last pixel of each video 
+line and marks completion of a line transfer. 
+ 
+4.1.4. MIPI Byte Streaming Interface 
+Table 4.4. MIPI Byte Streaming Interface Ports 
+Port Type Description 
+axis_byte_tready_o Output AXI4-Stream byte ready output to upstream video processing logic. When 
+asserted, the IP is ready to accept byte data. When deasserted, the IP applies 
+backpressure to the upstream source, indicating insufficient internal buffering 
+or flow control conditions. 

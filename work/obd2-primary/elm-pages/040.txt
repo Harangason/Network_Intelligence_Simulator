@@ -1,0 +1,88 @@
+Setting the Headers 
+The emissions related diagnostic trouble codes
+that most people are familiar with are described in the
+SAE J1979 standard (ISO15031-5). They represent
+only a portion of the data that a vehicle may have
+available – much more can be obtained if you are able
+to direct the requests elsewhere.
+Accessing most OBDII diagnostics information
+requires that requests be made to what is known as a
+a ‘functional address.’ Any processor that supports the
+function will respond to the request (and theoretically,
+many different processors can respond to a single
+functional request). In addition, every processor (or
+ECU) will also respond to what is known as their
+physical address. It is the physical address that
+uniquely identifies each module in a vehicle, and
+permits you to direct more specific queries to only one
+particular module.
+To retrieve information beyond that of the OBDII
+requirements then, it will be necessary to direct your
+requests to either a different functional address, or to
+an ECU’s physical address. This is done by changing
+the data bytes in the message header.
+As an example of functional addressing, let us
+assume that you want to request that the processor
+responsible for Engine Coolant provide the current
+Fluid Temperature. You do not know its address, so
+you consult the SAE J2178 standard and determine
+that Engine Coolant is functional address 48. SAE
+standard J2178 also tells you that for your J1850 VPW
+vehicle, a priority byte of A8 is appropriate. Finally,
+knowing that a scan tool is normally address F1, you
+have enough information to specify the three header
+bytes (A8 48 and F1). To tell the ELM327 to use these
+new header bytes, all you need is the Set Header
+command:
+>AT SH A8 48 F1
+OK
+The three header bytes assigned in this manner
+will stay in effect until changed by the next AT SH
+command, a reset, or an AT D.
+Having set the header bytes, you now need only
+send the secondary ID for fluid temperature (10) at the
+prompt. If the display of headers is turned off, the
+conversation could look like this:
+>10
+10 2E
+The first byte in the response echoes the request,
+as usual, while the data that we requested is the 2E
+byte. You may find that some requests, being of a low
+priority, may not be answered immediately, possibly
+40 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+encapsulated within a message, with ‘header’ bytes at
+the beginning, and a ‘checksum’ at the end. The
+J1850, ISO 9141-2, and ISO 14230-4 protocols all use
+essentially the same structure, with three header
+bytes, a maximum of seven data bytes and one
+checksum byte.
+The ISO 15765-4 (CAN) protocol uses a very
+similar structure (see Figure 4), the main difference
+really only relating to the structure of the header. CAN
+header bytes are not referred to as header bytes –
+they are called ‘ID bits’ instead. The initial CAN
+standard defined the ID bits as being 11 in number,
+while the more recent CAN standard now allows for
+either 11 or 29 bit IDs.
+The ELM327 does not normally show any of these
+extra bytes unless you turn that feature on with the
+Headers On command (AT H1). Issuing that allows
+you to see the header bytes and the checksum byte
+(for the J1850, ISO 9141 and ISO 14230 protocols).
+For the CAN protocols, you will see the ID bits, and
+other items which are normally hidden such as the PCI
+byte for ISO 15765, or the data length codes (if they
+are enabled with PP 29, or AT D1). Note that the
+ELM327 does not display the checksum information
+for CAN systems, or the IFR bytes for J1850 systems.
+It is not necessary to ever have to set these
+header byes, or to perform a checksum calculation, as
+the ELM327 will always do this for you. The header
+bytes are adjustable however, should you wish to
+experiment with advanced messages such as those
+for physical addressing. The next section provides a
+discussion on how to do this…
+OBD Message Formats (continued)

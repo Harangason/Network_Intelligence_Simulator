@@ -1,0 +1,44 @@
+u-blox 20 HPG 2.00 - Interface description
+24 U4 entryCount - - Number of entries in the log.
+Note: for circular logs this value will decrease when a
+group of entries is deleted to make space for new ones.
+28 U2 oldestYear - - Oldest entry UTC year (1-65635) or zero if there are no
+entries with known time
+30 U1 oldestMonth - - Oldest month (1-12)
+31 U1 oldestDay - - Oldest day (1-31)
+32 U1 oldestHour - - Oldest hour (0-23)
+33 U1 oldestMinute - - Oldest minute (0-59)
+34 U1 oldestSecond - - Oldest second (0-60)
+35 U1 reserved2 - - Reserved
+36 U2 newestYear - - Newest year (1-65635) or zero if there are no entries
+with known time
+38 U1 newestMonth - - Newest month (1-12)
+39 U1 newestDay - - Newest day (1-31)
+40 U1 newestHour - - Newest hour (0-23)
+41 U1 newestMinute - - Newest minute (0-59)
+42 U1 newestSecond - - Newest second (0-60)
+43 U1 reserved3 - - Reserved
+44 X1 status - - Log status ﬂags
+bit 3   U:1 recording - - Log entry recording is currently turned on
+bit 4   U:1 inactive - - Logging system not active - no log present
+bit 5   U:1 circular - - The current log is circular
+45 U1[3] reserved4 - - Reserved
+3.12.5 UBX-LOG-RETRIEVE (0x21 0x09)
+3.12.5.1 Request log data
+Message UBX-LOG-RETRIEVE
+Request log data
+Type Command
+Comment This message is used to request logged data (log recording must ﬁrst be disabled), see CFG-LOGFILTER: Data
+logger conﬁguration.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x21 0x09 12 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 startNumber - - Index of ﬁrst log entry to be transferred. If it is larger
+than the index of the last available log entry, then the
+ﬁrst log entry to be transferred is the last available log
+entry. The indexing of log entries is zero-based.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 60 of 224
+C1-Public

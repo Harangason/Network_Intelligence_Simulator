@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+3.12.2.1 Erase logged data
+Message UBX-LOG-ERASE
+Erase logged data
+Type Command
+Comment This message deactivates the logging system and erases all logged data.
+UBX-ACK-ACK or UBX-ACK-NAK are returned to indicate success or failure.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x21 0x03 0 see below CK_A CK_B
+Payload This message has no payload.
+3.12.3 UBX-LOG-FINDTIME (0x21 0x0e)
+3.12.3.1 Find index of a log entry based on a given time
+Message UBX-LOG-FINDTIME
+Find index of a log entry based on a given time
+Type Input
+Comment This message can be used for a time-based search of a log. It can ﬁnd the index of the ﬁrst log entry with time
+equal to the given time, otherwise the index of the most recent entry with time less than the given time. This
+index can then be used with the UBX-LOG-RETRIEVE message to provide time-based retrieval of log entries.
+Searching a log is eﬀective for a given time later than the base date (January 1st, 2004). Searching a log for
+a given time earlier than the base date will result in an 'entry not found' response. (Searching a log for a given
+time earlier than the base date will result in a UBX-ACK-NAK message for protocol versions less than 18.00).
+Searching a log for a given time greater than the last recorded entry's time will return the index of the last
+recorded entry. (If the logging has stopped due to lack of ﬁle space, such a search will result in a UBX-ACK-
+NAK message for protocol versions less than 18.00).
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x21 0x0e 10 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 U1 type - - Message type, 0 for request
+2 U2 year - - Year (1-65635) of UTC time
+4 U1 month - - Month (1-12) of UTC time
+5 U1 day - - Day (1-31) of UTC time
+6 U1 hour - - Hour (0-23) of UTC time
+7 U1 minute - - Minute (0-59) of UTC time
+8 U1 second - - Second (0-60) of UTC time
+9 U1 reserved0 - - Reserved
+3.12.3.2 Response to FINDTIME request
+Message UBX-LOG-FINDTIME
+Response to FINDTIME request
+Type Output
+Comment
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x21 0x0e 8 see below CK_A CK_B
+Payload description:
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 58 of 224
+C1-Public

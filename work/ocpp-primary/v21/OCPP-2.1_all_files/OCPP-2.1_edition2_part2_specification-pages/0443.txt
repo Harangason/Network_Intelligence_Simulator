@@ -1,0 +1,74 @@
+EV Charging Station CSMS
+Starting with Plug-and-Charge.
+In this diagram:
+TxStartPoint = Authorized,
+TxStopPoint = EVConnected
+User connects cable
+15118-20 Identification, Authentication
+SessionSetupReq()
+SessionSetupRes()
+AuthorizationSetupReq()
+AuthorizationSetupRes()
+opt 15118 Certificate Installation
+CertificateInstallationReq()
+Get15118EVCertificateRequest(15118SchemaVersion, install,
+exiRequest)
+Get15118EVCertificateResponse(status, exiResponse)
+CertificateInstallationRes()
+AuthorizationReq()
+AuthorizeRequest(idToken, iso15118CertificateHashData)
+AuthorizeResponse(idTokenInfo, certificateStatus,
+allowedEnergyTransfer)
+AuthorizationRes()
+TransactionEventRequest(eventType = Started,
+triggerReason = Authorized,
+chargingState = EVConnected, ...)
+TransactionEventResponse(...)
+seq 15118 Target Setting and charge Scheduling
+ServiceDiscoveryReq()
+ServiceDiscoveryRes( allowedEnergyTransfer, ... )
+ServiceDetailReq()
+ServiceDetailRes()
+ServiceSelectionReq( requestedEnergyTransfer, ... )
+ServiceSelectionRes()
+AC_ChargeParameterDiscoveryReq( evChargingParameters, ... )
+AC_ChargeParameterDiscoveryRes( evseChargingParameters, ... )
+ScheduleExchangeReq( DepartureTime, EVTargetEnergyRequest,
+EVEnergyOffer, ... )
+NotifyEVChargingNeedsRequest(DepartureTime,
+EVTargetEnergyRequest, requestedEnergyTransfer, ... )
+NotifyEVChargingNeedsResponse( Accepted )
+SetChargingProfileRequest( ChargingSchedule(s), PriceSchedule(s) )
+SetChargingProfileRequest( Accepted )
+ScheduleExchangeRes(Dynamic/Scheduled_SEResControlMode)
+PowerDeliveryReq(ChargeProgress=Start, EVPowerProfile)
+Contactor Close
+PowerDeliveryRes()
+TransactionEventRequest(eventType = Updated,
+triggerReason = ChargingStateChanged,
+chargingState = Charging, ...)
+TransactionEventResponse(...)
+NotifyEVChargingScheduleRequest(timeBase, evseId, chargingSchedule)
+NotifyEVChargingScheduleResponse(status)
+EV is charging...
+loop [while charging]
+AC_ChargeLoopReq()
+AC_ChargeLoopRes()
+User terminates charging
+Stopping Transaction
+PowerDeliveryReq(ChargeProgress=Stop)
+Contactor Open
+PowerDeliveryRes()
+TransactionEventRequest(eventType = Updated,
+triggerReason = ChargingStateChanged,
+chargingState = EVConnected, ...)
+TransactionEventResponse(...)
+SessionStopReq(ChargingSession=Terminate)
+SessionStopRes()
+User disconnects cable
+TransactionEventRequest(eventType = Ended,
+triggerReason = EVCommunicationLost)
+TransactionEventResponse(...)
+Figure 154. Sequence for authorization and scheduling with ISO 15118-20
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 430/803 Part 2 - Specification

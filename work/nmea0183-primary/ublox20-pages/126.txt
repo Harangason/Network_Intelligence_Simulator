@@ -1,0 +1,52 @@
+u-blox 20 HPG 2.00 - Interface description
+• If the receiver has one (1) active key (current), the transferred key shall be stored as 'current'. If the
+message contains a second key, that key shall be stored as 'next'.
+• If the receiver has two (2) active keys (current and next), the transferred key(s) shall be stored as
+'current' and 'next'.
+To query the receiver's keys state (including the keys themselves), send a UBX-RXM-SPARTNKEY poll request.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x02 0x36 4 + numKeys·8 + [0..n] see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x01 for this version)
+1 U1 numKeys - - Number of keys the message contains (can be 0, 1
+or 2). In case of 0 the remaining ﬁelds will not be
+transmitted.
+2 U1[2] reserved0 - - Reserved
+Start of repeated group (numKeys times)
+4 + n·8 U1 reserved1 - - Reserved
+5 + n·8 U1 keyLengthBytes - - Key length in bytes
+6 + n·8 U2 validFromWno - week GPS week number the key is valid from
+8 + n·8 U4 validFromTow - sec GPS time of week the key is valid from
+End of repeated group (numKeys times)
+Start of repeated group (N times)
+4 +
+numKeys·8 +
+n
+U1 key - - Key(s) payload. This is a concatenation of all keys as
+raw bytes. The number of keys is deﬁned in 'numKeys'
+ﬁeld. Each key length is deﬁned in its 'keyLengthBytes'
+ﬁeld.
+End of repeated group (N times)
+3.17 UBX-SEC (0x27)
+The messages in the UBX-SEC class are used for security features of the receiver.
+3.17.1 UBX-SEC-OSNMA (0x27 0x0a)
+3.17.1.1 Galileo Open Service Navigation Message Authentication (OSNMA) security
+information
+Message UBX-SEC-OSNMA
+Galileo Open Service Navigation Message Authentication (OSNMA) security information
+Type Periodic/polled
+Comment Information related to the execution of OSNMA protocol. Reports periodically the total number of satellites
+transmitting OSNMA data, the latest authenticated service status and conﬁguration and the authentication
+results per satellite.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x27 0x0a 28 + authSVs·4 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x03 for this version)
+1 X1 nmaHeader - - NMA header (status of the OSNMA service: NMA
+status, chain in force and CPKS)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 126 of 224
+C1-Public

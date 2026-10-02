@@ -1,0 +1,75 @@
+SDA
+SCL
+S P
+START condition, or
+START repeat condition
+STOP condition
+Figure 7-23. START and STOP Conditions
+To communicate with a remote device, the host controller sends the target address and listens for a response 
+from the target. This response is referred to as an acknowledge bit (ACK). If a target on the bus is addressed 
+correctly, it acknowledges (ACKs) the controller by driving the SDA bus low. If the address does not match one 
+of the target addresses of the device, it not-acknowledges (NACKs) the controller by letting SDA be pulled High. 
+ACKs can also occur on the bus when data transmissions are in process. When the controller is writing data, 
+the target ACKs after every data byte is successfully received. When the controller is reading data, the controller 
+ACKs after every data byte is received to let the target know it wants to receive another data byte. When the 
+controller wants to stop reading, it NACKs after the last data byte and creates a stop condition on the bus. All 
+communication on the bus begins with either a Start condition or a Repeated Start condition. All communication 
+on the bus ends with a Stop condition. A READ is shown in Figure 7-24 and a WRITE is shown in Figure 7-25.
+Bus Activity:
+Controller
+SDA 
+Line
+Bus Activity: 
+Target
+Start Target 
+Address
+A
+C
+K
+S
+Address
+A
+C
+K
+S Start Target 
+Address
+A
+C
+K
+N
+A
+C
+K
+P Stop
+Data
+0 1
+Register
+7-bit Address 7-bit Address
+Figure 7-24. Serial Control Bus — READ
+A
+C
+K
+A
+C
+K
+A
+C
+K
+S P Stop
+Bus Activity: 
+Target
+SDA Line
+Bus Activity:
+Controller
+Target 
+Address Address Data
+Start
+0
+Register
+7-bit Address
+Figure 7-25. Serial Control Bus — WRITE
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+58 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

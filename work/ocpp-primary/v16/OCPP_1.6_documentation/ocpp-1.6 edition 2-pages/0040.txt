@@ -1,0 +1,33 @@
+Charge Point Central System
+FirmwareStatusNotification.req(status)
+FirmwareStatusNotification.conf()
+Figure 16. Sequence Diagram: Firmware Status Notification
+A Charge Point sends notifications to inform the Central System about the progress of the firmware update. The
+Charge Point SHALL send a FirmwareStatusNotification.req PDU for informing the Central System about the
+progress of the downloading and installation of a firmware update. The Charge Point SHALL only send the status
+Idle after receipt of a TriggerMessage for a Firmware Status Notification, when it is not busy
+downloading/installing firmware.
+Upon receipt of a FirmwareStatusNotification.req PDU, the Central System SHALL respond with a
+FirmwareStatusNotification.conf.
+The FirmwareStatusNotification.req PDUs SHALL be sent to keep the Central System updated with the status of
+the update process, started by the Central System with a FirmwareUpdate.req PDU.
+4.6. Heartbeat
+Charge Point Central System
+Heartbeat.req()
+Heartbeat.conf(currentTime)
+Figure 17. Sequence Diagram: Heartbeat
+To let the Central System know that a Charge Point is still connected, a Charge Point sends a heartbeat after a
+configurable time interval.
+The Charge Point SHALL send a Heartbeat.req PDU for ensuring that the Central System knows that a Charge
+Point is still alive.
+Upon receipt of a Heartbeat.req PDU, the Central System SHALL respond with a Heartbeat.conf. The response
+PDU SHALL contain the current time of the Central System, which is RECOMMENDED to be used by the Charge
+Point to synchronize its internal clock.
+The Charge Point MAY skip sending a Heartbeat.req PDU when another PDU has been sent to the Central
+System within the configured heartbeat interval. This implies that a Central System SHOULD assume availability
+of a Charge Point whenever a PDU has been received, the same way as it would have, when it received a
+Heartbeat.req PDU.
+ With JSON over WebSocket, sending heartbeats is not mandatory. However, for time
+synchronization it is advised to at least send one heartbeat per 24 hour.
+4.7. Meter Values
+35

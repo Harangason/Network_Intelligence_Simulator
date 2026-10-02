@@ -1,0 +1,47 @@
+u-blox 20 HPG 2.00 - Interface description
+NMEA Message GLL, RMC GGA GLL, VTG RMC, GNS
+Field status6 quality7 posMode8 posMode8
+GNSS ﬁx, but user limits exceeded V 0 N N
+Dead reckoning ﬁx, but user limits exceeded V 6 E E
+Dead reckoning ﬁx A 6 E E
+RTK ﬂoat A 5 D F
+RTK ﬁxed A 4 D R
+2D GNSS ﬁx A 1 / 2 A / D A / D
+3D GNSS ﬁx A 1 / 2 A / D A / D
+Combined GNSS/dead reckoning ﬁx A 1 / 2 A / D A / D
+In high precision GNSS (HPG) products it is recommended to select NMEA version 4.10 or above.
+Earlier versions do not support the ﬂoat RTK (F) and real time kinematic (R) mode indicator ﬂags
+in all messages.
+The following ﬂags are used in NMEA 2.3 - 4.0.    
+NMEA Message GLL, RMC GGA GSA GLL, VTG,
+RMC, GNS
+Field status9 quality10 navMode11 posMode12
+No position ﬁx (at power-up, after losing satellite lock) V 0 1 N
+GNSS ﬁx, but user limits exceeded V 0 1 N
+Dead reckoning ﬁx, but user limits exceeded V 6 2 E
+Dead reckoning ﬁx A 6 2 E
+2D GNSS ﬁx A 1 / 2 2 A / D
+3D GNSS ﬁx A 1 / 2 3 A / D
+Combined GNSS/dead reckoning ﬁx A 1 / 2 3 A / D
+The ﬂags in NMEA 2.1 and earlier are the same as NMEA 2.3 but with the following diﬀerences:
+• The posMode ﬁeld is not output for GLL, RMC and VTG messages (each message has one ﬁeld
+less).
+• The GGA quality ﬁeld is set to 1 (instead of 6) for both types of dead reckoning ﬁx.
+2.5.6 NMEA output of invalid or unknown data
+By default the receiver will not output invalid data. In such cases, it will output empty ﬁelds. See
+NMEA protocol conﬁguration for options to adjust this behavior.
+A valid position ﬁx is reported as follows:
+$GPGLL,4717.11634,N,00833.91297,E,124923.00,A,A*6E
+An invalid position ﬁx (but valid time) is reported as follows:
+$GPGLL,,,,,124924.00,V,N*42
+9 Possible values for status: V = data invalid, A = data valid
+10 Possible values for quality: 0 = no ﬁx, 1 = autonomous GNSS ﬁx, 2 = diﬀerential GNSS ﬁx, 4 = RTK ﬁxed, 5 = RTK ﬂoat, 6 =
+estimated/dead reckoning ﬁx
+11 Possible values for navMode: 1 = No ﬁx, 2 = 2D ﬁx, 3 = 3D ﬁx
+12 Possible values for posMode: N = No ﬁx, E = estimated/dead reckoning ﬁx, A = autonomous GNSS ﬁx, D = diﬀerential
+GNSS ﬁx. In NMEA GNS, u-blox uses a non-standard implementation where same single status is reported for all enabled
+and not ﬁltered out constellations.
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 23 of 224
+C1-Public

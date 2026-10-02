@@ -1,0 +1,45 @@
+u-blox 20 HPG 2.00 - Interface description
+13 U1[9] reserved0 - - Reserved
+Start of repeated group (nPins times)
+22 + n·6 U1 reserved1 - - Reserved
+23 + n·6 U1 pinId - - Identiﬁer for the pin, including both external and
+internal pins
+24 + n·6 X2 pinMask - - Pin mask
+bit 0   U:1 periphPIO - - Pin is set to peripheral or PIO? 0=Peripheral 1=PIO
+bits 3…1   U:3 pinBank - - Bank the pin belongs to, where 0=A 1=B 2=C 3=D 4=E
+5=F 6=G 7=H
+bit 4   U:1 direction - - Pin direction? 0=Input 1=Output
+bit 5   U:1 value - - Pin value? 0=Low 1=High
+bit 6   U:1 vpManager - - Used by virtual pin manager? 0=No 1=Yes
+bit 7   U:1 pioIrq - - Interrupt enabled? 0=No 1=Yes
+bit 8   U:1 pioPullHigh - - Using pull high resistor? 0=No 1=Yes
+bit 9   U:1 pioPullLow - - Using pull low resistor 0=No 1=Yes
+26 + n·6 U1 VP - - Virtual pin mapping
+27 + n·6 U1 reserved2 - - Reserved
+End of repeated group (nPins times)
+3.14.4 UBX-MON-PATCH (0x0a 0x27)
+3.14.4.1 Poll request for installed patches
+Message UBX-MON-PATCH
+Poll request for installed patches
+Type Poll request
+Comment
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0a 0x27 0 see below CK_A CK_B
+Payload This message has no payload.
+3.14.4.2 Installed patches
+Message UBX-MON-PATCH
+Installed patches
+Type Polled
+Comment This message reports information about patches installed and currently enabled on the receiver. It does
+not report on patches installed and then disabled. An enabled patch is considered active when the receiver
+executes from the code space where the patch resides on. For example, a ROM patch is reported active only
+when the system runs from ROM.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0a 0x27 4 + nEntries·16 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U2 version - - Message version (0x0001 for this version)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 85 of 224
+C1-Public

@@ -1,0 +1,41 @@
+TC_C_34_CS: Store Authorization Data in the Authorization Cache - Update on
+TransactionResponse
+Test case name Store Authorization Data in the Authorization Cache - Update on TransactionResponse
+Test case Id TC_C_34_CS
+Use case Id(s) C10
+Requirement(s) C10_FR_05, C12.FR.06
+System under test Charging Station
+Description This test case covers how the Charging Station autonomously stores a record of previously presented
+identifiers that have been successfully authorized by the CSMS in the Authorization Cache. (Successfully
+meaning: a response received on a message containing an IdToken)
+Purpose To verify if the Charging Station is able to store the identifiers correctly upon an TransactionResponse
+according to the mechanism as described in the OCPP specification.
+Prerequisite(s) The Charging Station has an authorization cache AND
+the Charging Station supports at least one of the following local start authorization options: C-30, C-31, C-
+32, C-34 OR supports at least one of the following remote start authorization options: C-36, C-37
+Before (Preparations)
+Configuration State:
+AuthCacheEnabled is true (If implemented)
+LocalPreAuthorize is true
+LocalAuthListEnabled is true
+StopTxOnInvalidId is true
+MaxEnergyOnInvalidId is 0
+Memory State:
+IdTokenCached for <Configured valid IdToken fields>
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State Authorized (Cached idToken, idTokenInfo.status invalid)
+2. Execute Reusable State Deauthorized
+3. Execute Reusable State EVDisconnected
+4. Execute Reusable State ParkingBayUnoccupied
+5. Execute Reusable State ParkingBayOccupied
+6. Execute Reusable State Authorized (idTokenInfo.status invalid)
+Tool validations
+N/a
+Post scenario validations:
+- N/a
+NOTE If the Charging Station supports ISO15118, this testcase needs to be executed using EIM.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 144/1383 Part 6 - Test Cases

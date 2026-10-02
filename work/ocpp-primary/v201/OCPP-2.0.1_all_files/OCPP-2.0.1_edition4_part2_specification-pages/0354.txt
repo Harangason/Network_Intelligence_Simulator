@@ -1,0 +1,57 @@
+Chapter 2. Use cases & Requirements
+O01 - Set DisplayMessage
+No. Type Description
+1 Name Set DisplayMessage
+2 ID O01
+3 Objective(s) To enable a CSO to display additional messages on a Charging Station that are not part of the
+firmware.
+4 Description This use case describes how a CSO can set a message to be displayed on a Charging Station.
+Depending on the given parameters the message shall be displayed a certain way and at a certain
+moment on the Charging Station.
+Actors CSO, CSMS, Charging Station
+Scenario description 1. The CSO configures the CSMS to send a request to set a new message.
+2. The CSMS sends a SetDisplayMessageRequest message to the Charging Station.
+3. The Charging Station accepts the request by sending a SetDisplayMessageResponse message
+to the CSMS.
+4. The Charging Station shows the new message on the display at the configured moment.
+Alternative scenario(s) O02 - Set DisplayMessage for Transaction 
+O06 - Replace DisplayMessage
+5 Prerequisites No messages configured with the same IDs.
+6 Postcondition(s) The new message will be displayed on the Charging Station (time, duration and position
+depending on configuration)
+7 Error Handling n/a
+8 Remarks The maximum number of messages that can be stored in a Charging Station can be read by the
+CSMS in the Configuration Variable:NumberOfDisplayMessages.maxLimit.
+CSO
+CSMS Charging Station
+Set new messages()
+SetDisplayMessagesRequest(...)
+SetDisplayMessagesResponse(Accepted)
+opt
+notification
+Figure 139. Set DisplayMessage sequence diagram
+O01 - Set DisplayMessage - Requirements
+Table 132. O01 - Requirements
+ID Precondition Requirement definition
+O01.FR.01 When the Charging Station receives a
+MessageInfoType object via a
+SetDisplayMessageRequest and the priority of
+the message is not supported by the Charging
+Station
+The Charging Station SHALL send a
+SetDisplayMessageResponse with status:
+NotSupportedPriority.
+(See configuration variable DisplayMessageSupportedPriorities
+for supported priorities).
+O01.FR.02 When the Charging Station receives a
+MessageInfoType object via a
+SetDisplayMessageRequest and the state of the
+message is not supported by the Charging
+Station
+The Charging Station SHALL send a
+SetDisplayMessageResponse with status:
+NotSupportedState.
+(See configuration variable DisplayMessageSupportedStates for
+supported states).
+Edition 4, 2025-12-03 O. Display Message
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 344/491 Part 2 - Specification

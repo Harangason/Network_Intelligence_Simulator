@@ -1,0 +1,52 @@
+Tool validations
+* Step 2:
+Message: NotifyEVChargingNeedsResponse
+- status must be Accepted or Processing
+* Step 3:
+Message: SetChargingProfileRequest
+- evseId must be <Configured evseId>
+- chargingProfile.transactionId must be <transactionId>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].operationMode must be ChargingOnly | <omitted>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].Limit  must NOT be     <omitted>  |   <empty>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].dischargeLimit must be <omitted> | <empty>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].dischargeLimit_L2 must be <omitted> | <empty>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].dischargeLimit_L3 must be <omitted> | <empty>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].setpoint must be <omitted> | <empty>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].setpoint_L2 must be <omitted> | <empty>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].setpoint_L3 must be <omitted> | <empty>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].setPointReactive must be <omitted> | <empty>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].setPointReactive_L2 must be <omitted> | <empty>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].setPointReactive_L3 must be <omitted> | <empty>
+* Step 5:
+Message: NotifyAllowedEnergyTransferRequest
+- transactionId must be <transactionId>
+- allowedEnergyTransfer must contain one of [DC_BPT, AC_BPT, AC_BPT_DER]
+* Step 7:  
+Message:  NotifyEVChargingNeedsResponse
+-  status  must be    Accepted  or   Processing
+* Step 9:  
+Message:  SetChargingProfileRequest
+-  evseId  must be    <Configured evseId> 
+-  chargingProfile.transactionId  must be    <transactionId>
+-  chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].operationMode  must NOT be     ChargingOnly  |   <empty>
+Post scenario validations:
+N/a
+6.3.20. Page 1359 - (2026-02) - TC_R_107_CSMS - Removed
+NotifyDERStartStopRequest and added ReportDERControlRequest
+Test case name Configure DER control settings at CS
+Test case Id TC_R_107_CSMS
+…
+Main (Test scenario)
+Charging Station CSMS
+…
+Manual action: trigger CSMS to send a GetDERControlRequest with controlType VoltVar
+20. The Test System responds with a GetDERControlResponse
+with
+status NotFound
+19. The CSMS sends a GetDERControlRequest
+Manual action: trigger CSMS to send a GetDERControlRequest with controlId from step 7   
+22. The Test System responds with a GetDERControlResponse
+with
+status Accepted
+21. The CSMS sends a GetDERControlRequest
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 112/116 Errata 2026-06

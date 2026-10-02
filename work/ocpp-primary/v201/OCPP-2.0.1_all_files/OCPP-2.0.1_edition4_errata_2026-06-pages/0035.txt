@@ -1,0 +1,35 @@
+Main (Test scenario)
+9 The Charging Station sends a
+SecurityEventNotificationRequest
+10 The Test System responds with a
+SecurityEventNotificationResponse
+Tool validations
+* Step 2:
+Message: ResetResponse
+- status Accepted
+* Step 3:  
+Message:  StatusNotificationRequest
+-  connectorStatus   Unavailable
+-  evseId  not   0
+-  connectorId  not   0
+Message:  NotifyEventRequest
+-  eventData[0].trigger   Delta
+-  eventData[0].actualValue   "Unavailable"
+-  eventData[0].component.name   "Connector"
+-  eventData[0].variable.name   "AvailabilityState"
+* Step 7:
+Message: StatusNotificationRequest
+- connectorStatus Available
+- evseId not 0
+- connectorId not 0
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Available"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+* Step 9:
+Message: SecurityEventNotificationRequest
+- type must be StartupOfTheDevice OR ResetOrReboot
+Post scenario validations:
+State is Booted
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2026 32/34 Errata 2026-06

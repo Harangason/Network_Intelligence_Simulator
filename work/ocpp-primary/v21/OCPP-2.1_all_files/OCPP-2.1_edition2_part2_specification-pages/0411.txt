@@ -1,0 +1,52 @@
+EV Charging Station CSMS
+Transaction is in progress.
+Departure time or energy needs have changed
+alt [15118-20 Scheduled mode]
+ScheduleExchangeReq( NewDepartureTime,
+NewEVTargetEnergyRequest, ... )
+NotifyEVChargingNeedsRequest(
+NewDepartureTime, NewEVTargetEnergyRequest, ... )
+NotifyEVChargingNeedsResponse( Accepted )
+calculate updated
+charging profile
+SetChargingProfileRequest( v2xSchedule )
+SetChargingProfileResponse( Accepted )
+ScheduleExchangeRes( Schedule )
+PowerDeliveryReq( SelectedScheduleTupleID, EVPowerProfile )
+PowerDeliveryRes()
+NotifyEVChargingScheduleRequest( EVChargingSchedule )
+NotifyEVChargingScheduleResponse ( Accepted )
+EV follows schedule
+[15118-20 Dynamic mode]
+opt [Departure time and/or energy need changed by EV]
+EV sends new time/energy
+AC/DC_ChargeLoopReq( NewDepartureTime,
+NewEVTargetEnergyRequest, ... )
+AC/DC_ChargeLoopRes( EVSETargetActivePower, ... )
+[Departure time and/or energy need changed by charging station]
+Change of time/energy by user at charging station
+AC/DC_ChargeLoopReq( ... )
+AC/DC_ChargeLoopRes( NewDepartureTime,
+NewEVTargetEnergyRequest, ... )
+EV confirms new time/energy
+AC/DC_ChargeLoopReq( NewDepartureTime,
+NewEVTargetEnergyRequest, ... )
+AC/DC_ChargeLoopRes( EVSETargetActivePower, ... )
+NotifyEVChargingNeedsRequest(
+DepartureTime, EVTargetEnergyRequest, ... )
+NotifyEVChargingNeedsResponse( Accepted )
+Charge loop continues
+calculate updated
+charging profile
+SetChargingProfileRequest( v2xSchedule )
+SetChargingProfileResponse( Accepted )
+Adjust power to setpoint in period
+AC/DC_ChargeLoopReq()
+AC/DC_ChargeLoopRes( EVSETargetActivePower, ... )
+[CHAdeMO]
+Charging needs are not communicated by CHAdeMO
+K20 - ISO 15118-20 Adjusting charging schedule when energy needs change -
+Requirements
+Table 116. K20 - Requirements
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 398/803 Part 2 - Specification

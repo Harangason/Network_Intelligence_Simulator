@@ -1,0 +1,37 @@
+TC_E_52_CS: Local start transaction - Authorization first -
+DisableRemoteAuthorization
+Test case name Local start transaction - Authorization first - DisableRemoteAuthorization
+Test case Id TC_E_52_CS
+Use case Id(s) E03 AND C01
+Requirement(s) C01.FR.02, C01.FR.05,
+System under test Charging Station
+Description When DisableRemoteAuthorization is set to true, the Charging Station will only try to look up an IdToken in
+Authorization Cache or Local Authorization List, and not do an AuthorizeRequest for IdTokens. This
+overrules requirement C01.FR.02 and C01.FR.05.
+Purpose To verify that the Charging Station will not send an AuthorizeRequest when DisableRemoteAuthorization is
+set to true.
+Prerequisite(s) - The Charging Station supports Authorization Cache or the Local Authorization List
+- The Charging Station supports one of the following local authorization methods; RFID ISO14443 / RFID
+ISO15693 / KeyCode / MacAddress
+- AuthCtrlr.DisableRemoteAuthorization is implemented.
+Before (Preparations)
+Configuration State:
+AuthCtrlr.Enabled is true (If implemented)
+AuthCtrlr.DisableRemoteAuthorization is true 
+Memory State:
+None of the configured valid IdTokens is present in Authorization Cache or Local Authorization List.
+Reusable State(s):
+State is ParkingBayOccupied (Optional state)
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present an idToken which is not configured in the Local Authorization List nor present in Authorization Cache.
+1. The Charging Station does NOT send a AuthorizeRequest
+2. Execute Reusable State EVConnectedPreSession
+3. The Charging Station does NOT start charging.
+Tool validations
+* Step 1:
+Check that Charging Station does NOT send an AuthorizeRequest and authorization is refused.
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 251/1383 Part 6 - Test Cases

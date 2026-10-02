@@ -1,0 +1,98 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 65
+OS81092
+16.0 APPLICATION INFORMATION
+The OS81092 Evaluation Board provides a platform for co mprehensive understanding of a MOST50 Network device
+and implements various application concepts discussed in this chapter. Refer to OS81092 Evaluation Board User’s
+Guide [11] for more information.
+16.1 Power
+The OS81092 requires 3.3 V power for the VDDA33, VDDEn, and VDDPn pins, and 1.8 V power for the VDDA18 and
+VDDCn pins. In addition, for INIC to maintain critical network parameters while in a low power mode, a continuous 3.3 V
+power supply should be connected to VDDU to power a small block of persistent memory. See Section 16.5 “Persistent
+Memory” for more information.
+The voltage on VDDA18 and VDDCn must never be more than 0.5 V above the VDDA33, VDDEn, VDDPn, and VDDU
+pins. Furthermore, digital input pins must never be driv en to more than the VDDPn supply. These requirements are
+applicable to power-up and power-down, as well as normal operating conditions.
+Figure 16-1 illustrates a typical power supply and decoupling arch itecture for the OS81092 required to minimize jitter
+effects. More information on system-wide INIC power management architectures can be found in the MOST INIC Hard-
+ware Concepts Specification [8]. Although Figure 16-1 illustrates connections to other parts, only logical connections are
+shown and the respective data sheet should be consulted fo r complete information on external components (such as
+proper decoupling).
+FIGURE 16-1: TYPICAL POWER SUPPLY CONNECTION DIAGRAM
+VDDCn
+OS81092
+(to EHC)
++12 V
+GND
+Schottky DiodeApplication Specific
+Load Dump Filter
+Power 
+Supplies
+Power Manager
+(e.g. MPM85000)
+ENABLE
+VDDPn
+VDDEn
+VDDA18
+VDDU
+0.01 F
+0.01 F
+3.3Vs
+22 F
+1.8Vs
+22 F
+0.01 F
+0.01 F
+GNDn
+GNDAn
+GNDE
+GNDU
+PS0
+PS1
+PWROFF
+47 k
+3.3Vs
+POR 
+Circuit
+10 k
+3.3Vs3.3Vs
+Continuous
+Supply
+VPRO
+Activity 
+Detector
+0.01 F
+NOACTIVITY
+100 k
+3.3Vs
+ETXP
+ETXN
+ERXP
+ERXN
+ERXCM
+RST
+RSOUT (to EHC)
+10 k
+3.3Vs
+ERR/BOOT
+100 k
+3.3Vs
+Ferrite Bead 
+(optional)
+VDDA33
+Ferrite Bead 
+(optional)
+(optional)
+0.01 F
+3.3VcontSchottky Diodes 
+(Optional)
+1.8Vs 3.3Vs
+ 
+ 
+MOST50
+Network
+Receiver
+Front End Circuitry
+Transmitter
+Front End Circuitry ePAD
+(Figure 14-2)
+(Figure 14-1)

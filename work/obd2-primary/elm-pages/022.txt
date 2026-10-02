@@ -1,0 +1,98 @@
+22 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+AT Command Descriptions (continued)
+useful for when you wish to monitor for a specific byte
+in the header of a typical OBD message. For the SAE
+J1939 Protocol, however, it is often desirable to
+monitor for the multi-byte Parameter Group Numbers
+(or PGNs), which can appear in either the header, or
+the data bytes. The MP command is a special J1939
+only command that is used to look for responses to a
+particular PGN request.
+Note that this MP command provides no means to
+set the first two digits of the requested PGN, and they
+are always assumed to be 00. For example, the DM2
+PGN has an assigned  value of 00FECB (see SAE
+J1939-73). To monitor for DM2 messages, you would
+issue AT MP FECB, eliminating the 00, since the
+MP hhhh command always assumes that the PGN is
+preceded by two zeros.
+This command is only available when a CAN
+Protocol (A, B, or C) has been selected for SAE J1939
+formatting. It returns an error if attempted under any
+other conditions. Note also that this version of the
+ELM327 only displays responses that match the
+criteria, not the requests that are asking for the PGN
+information.
+MP hhhh n [ Monitor for PGN, get n messages ]
+This is very similar to the above command, but
+adds the ability to set the number of messages that
+should be fetched before the ELM327 automatically
+stops monitoring and prints a prompt character. The
+value ‘n’ may be any single hex digit.
+MP hhhhhh [ Monitor for PGN hhhhhh ]
+This command is very similar to the MP hhhh
+command, but it extends the number of bytes provided
+by one, so that there is complete control over the PGN
+definition (it does not make the assumption that the
+Data Page bit is 0, as the MP hhhh command does).
+This allows for future expansion, should additional
+PGNs be defined with the Data Page bit set. Note that
+only the Data Page bit is relevant in the extra byte -
+the other bits are ignored.
+MP hhhhhh n [ Monitor for PGN, get n messages ]
+This is very similar to the previous command, but it
+adds the ability to set the number of messages that
+should be fetched before the ELM327 automatically
+stops monitoring and prints a prompt character. The
+value ‘n’ may be any single hex digit.
+MR hh [ Monitor for Receiver hh ]
+This command is very similar to the AT MA
+command except that it will only display messages that
+were sent to the hex address given by hh. These are
+messages which are found to have the value hh in the
+second byte of a traditional three byte OBD header, in
+bits 8 to 15 of a 29 bit CAN ID, or in bits 8 to 10 of an
+11 bit CAN ID. Any single RS232 character aborts the
+monitoring, as with the MA command.
+Note that if this command is used with CAN
+protocols, and if the CAN filter and/or mask were
+previously set (with CF, CM or CRA), then the MR
+command will over-write the previous values  for these
+bits only - the others will remain unchanged. As an
+example, if the receive address has been set with
+CRA 4B0, and then you send MR 02, the 02 will
+replace the 4, and the CAN masks/filters will only allow
+IDs that are equal to 2B0. This is often not what is
+desired - you may want to reset the masks and filters
+(with AT AR) first.
+As with the AT MA command, this command
+begins by performing an internal Protocol Close.
+Subsequent OBD requests may show ‘SEARCHING’
+or ‘BUS INIT’, etc. messages when the protocol is
+reactivated.
+MT hh [ Monitor for Transmitter hh ]
+This command is also very similar to the AT MA
+command, except that it will only display messages
+that were sent by the transmitter with the hex address
+given by hh. These are messages which are found to
+have that value in the third byte of a traditional three
+byte OBD header, or in bits 0 to 7 for CAN IDs. As with
+the MA and MR monitoring modes, any RS232 activity
+(single character) aborts the monitoring.
+Note that if this command is used with CAN
+protocols, and if the CAN filter and/or mask were
+previously set (with CF, CM or CRA), then the MT
+command will over-write the previous values for these
+bits only - the others will remain unchanged. As an
+example, if the receive address has been set with
+CRA 4B0, and then you send MT 20, the 20 will
+replace the B0, and the CAN masks/filters will only
+allow IDs that are equal to 420. This is often not what
+is desired - you may want to reset the masks and
+filters (with AT AR) first.
+As with the AT MA command, this command
+begins by performing an internal Protocol Close.
+Subsequent OBD requests may show ‘SEARCHING’

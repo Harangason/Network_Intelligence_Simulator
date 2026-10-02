@@ -1,0 +1,92 @@
+Talking to the Vehicle
+The standards require that each OBD command or
+request that is sent to the vehicle must adhere to a set
+format. The first byte sent (known as the ‘mode’)
+describes the type of data being requested, while the
+second byte (and possibly a third or more) specifies
+the actual information that is required. The bytes which
+follow after the mode byte are known as the
+‘parameter identification’ or PID number bytes. The
+modes and PIDs are described in detail in documents
+such as the SAE J1979, or ISO 15031-5 standards,
+and may also be defined by the vehicle manufacturers.
+The SAE J1979 standard currently defines ten
+possible diagnostic test modes, which are:
+01 - show current data
+02 - show freeze frame data
+03 - show diagnostic trouble codes
+04 - clear trouble codes and stored values
+05 - test results, oxygen sensors
+06 - test results, non-continuously monitored
+07 - show ‘pending’ trouble codes
+08 - special control mode
+09 - request vehicle information
+0A - request permanent trouble codes
+Vehicles are not required to support all of the
+modes, and within modes, they are not required to
+support all possible PIDs (some of the first OBDII
+vehicles only supported a very small number of them).
+Within each mode, PID 00 is reserved to show which
+PIDs are supported by that mode. Mode 01, PID 00
+must be supported by all vehicles, and can be
+accessed as follows…
+Ensure that your ELM327 interface is properly
+connected to the vehicle, and powered. Most vehicles
+will not respond without the ignition key in the ON
+position, so turn the ignition to on, but do not start the
+engine. If you have been experimenting, the state of
+your interface may be unknown, so reset it by sending:
+>AT Z
+You will see the interface leds flash, and then the
+IC should respond with ‘ELM327 v2.2’, followed by a
+prompt character. Now, you may choose a protocol
+that the ELM327 should connect with, but it is usually
+easier to simply select protocol ‘0’ which tells the IC to
+search for one:
+>AT SP 0
+That’s all that you need to do to prepare the
+ELM327 for communicating with a vehicle. At the
+prompt, issue the mode 01 PID 00 command:
+>01 00
+The ELM327 should say that it is ‘SEARCHING...’
+for a protocol, then it should print a series of numbers,
+similar to these:
+41 00 BE 1F B8 10
+The 41 in the above signifies a response from a
+mode 01 request (01 + 40 = 41), while the second
+number (00) repeats the PID number requested. A
+mode 02, request is answered with a 42, a mode 03
+with a 43, etc. The next four bytes (BE, 1F, B8, and
+10) represent the requested data, in this case a bit
+pattern showing the PIDs that are supported by this
+mode (1=supported, 0=not). Although this information
+is not very useful for the casual user, it does prove that
+the connection is working.
+Another example requests the current engine
+coolant temperature (ECT). Coolant temperature is
+PID 05 of mode 01, and can be requested as follows:
+>01 05
+The response will be of the form:
+41 05 7B
+The 41 05 shows that this is a response to a
+mode 1 request for PID 05, while the 7B is the desired
+data. Converting the hexadecimal 7B to decimal, one
+gets 7 x 16 + 11 = 123. This represents the current
+temperature in degrees Celsius, but with the zero
+offset to allow for subzero temperatures. To convert to
+the actual coolant temperature, you need to subtract
+40 from the value obtained. In this case, then, the
+coolant temperature is 123 - 40 or 83°C.
+A final example shows a request for the engine
+rpm. This is PID 0C of mode 01, so at the prompt type:
+>01 0C
+If the engine is running, the response might be:
+41 0C 1A F8
+The returned value (1A F8) is actually a two byte
+hex number that must be converted to a decimal value
+to be useful. Converting it, we get a value of 6904,
+which seems like a very high value for engine rpm.
+32 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com

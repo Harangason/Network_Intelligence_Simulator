@@ -1,0 +1,42 @@
+TC_M_29_CS: Certificate Update EV - Failed
+Test case name Certificate Update EV - Failed
+Test case Id TC_M_29_CS
+Use case Id(s) M02
+Requirement(s) M02.FR.01
+System under test Charging Station
+Description The EV initiates updating the existing certificate. The Charging Station forwards the update request to the
+CSMS.
+Purpose To verify if the Charging Station is able to forward the request to the CSMS.
+Prerequisite(s) The Charging Station supports ISO 15118-2.
+Before (Preparations)
+Configuration State:
+ISO15118Ctrlr.ContractCertificateInstallationEnabled is true
+-The test case calls SendISO15118AuthorizationMethod method with parameter PnC in order to inform the EV emulator about the
+expected authorization method.
+-The test case calls SendInstallISO15118CertificateMethod method in order to trigger the EV emulator to initiate installing a new
+certificate.
+Memory State:
+CertificateInstalled from certificateType V2GRootCertificate
+CertificateInstalled from certificateType MORootCertificate
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a Get15118EVCertificateRequest
+2. The Test System responds with a
+Get15118EVCertificateResponse
+with status Failed
+exiResponse is omitted.
+3. If an AuthorizeRequest is received, the testcase will FAIL and
+the Test System reports why it failed.
+Tool validations
+* Step 1:
+Message: Get15118EVCertificateRequest
+- action must be Update
+If iso15118SchemaVersion contains ":15118:2:" then
+- maximumContractCertificateChains must be <omitted>
+- prioritizedEMAIDs must be <omitted>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 663/1383 Part 6 - Test Cases

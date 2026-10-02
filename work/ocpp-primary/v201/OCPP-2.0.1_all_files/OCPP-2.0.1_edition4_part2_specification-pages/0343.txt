@@ -1,0 +1,57 @@
+No. Type Description
+6 Postcondition(s) The Charging Station cleared / removed the requested monitoring settings.
+7 Error handling n/a
+8 Remark(s) n/a
+CSO
+CSMS Charging Station
+request to clear/remove a variable monitoring
+ClearVariableMonitoringRequest(id)
+ClearVariableMonitoringResponse(status)
+Figure 134. Sequence Diagram: Clear / Remove Monitoring
+N06 - Clear / Remove Monitoring - Requirements
+Table 127. N06 - Requirements
+ID Precondition Requirement definition
+N06.FR.01 When the Charging Station accepts a
+ClearVariableMonitoringRequest
+The Charging Station SHALL send a
+ClearVariableMonitoringResponse with Accepted.
+N06.FR.02 When the Charging Station receives a
+ClearVariableMonitoringRequest with a non-
+existing id
+The Charging Station SHALL send a
+ClearVariableMonitoringResponse with NotFound.
+N06.FR.03 When the Charging Station receives a
+ClearVariableMonitoringRequest for an id
+referring to a monitor that cannot be cleared (for
+example because it is hardcoded).
+The Charging Station SHALL send a
+ClearVariableMonitoringResponse with Rejected.
+N06.FR.04 The CSMS SHALL NOT put more id elements in a
+ClearVariableMonitoringRequest than reported by the Charging
+Station via: ItemsPerMessageClearVariableMonitoring
+and BytesPerMessageClearVariableMonitoring.
+N06.FR.05 For every id in a ClearVariableMonitoringRequest the Charging
+Station SHALL add a clearMonitoringResult element to the
+ClearVariableMonitoringResponse sent to the CSMS.
+N06.FR.06 Charging Station receives a
+ClearVariableMonitoringRequest with more id
+elements than allowed by
+ItemsPerMessageClearVariableMonitor
+ing
+The Charging Station MAY respond with a
+CALLERROR(OccurenceConstraintViolation)
+N06.FR.07 Charging Station receives a
+ClearVariableMonitoringRequest with a length of
+more bytes than allowed by
+BytesPerMessageClearVariableMonitor
+ing
+The Charging Station MAY respond with a
+CALLERROR(FormatViolation)
+2.3. Monitoring Events
+N07 - Alert Event
+No. Type Description
+1 Name Alert Event
+2 ID N07
+3 Objective(s) To give the Charging Station the ability to notify the CSMS about monitoring events.
+Edition 4, 2025-12-03 N. Diagnostics
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 333/491 Part 2 - Specification

@@ -1,0 +1,27 @@
+Short topic names are topic names that have a ﬁxed length of two octets. They are short enough for being
+carried together with the data within PUBLISH messages. As for pre-deﬁned topic ids, there is also no need
+for a registration for short topic names.
+4. A discovery procedure helps clients without a pre-conﬁgured server/gateway’s address to discover the actual
+network address of an operating server/gateway. Multiple gateways may be present at the same time within
+a single wireless network and can co-operate in a load-sharing or stand-by mode.
+5. The semantic of a “clean session” is extended to the Will feature, i.e. not only client’s subscriptions are
+persistent, but also Will topic and Will message. A client can also modify its Will topic and Will message
+during a session.
+6. A new ofﬂine keep-alive procedure is deﬁned for the support of sleeping clients. With this procedure,
+battery-operated devices can go to a sleeping state during which all messages destined to them are buffered
+at the server/gateway and delivered later to them when they wake up.
+4 MQTT-SN Architecture
+Figure 1: MQTT-SN Architecture
+The architecture of MQTT-SN is shown in Fig. 1. There are three kinds of MQTT-SN components, MQTT-SN
+clients, MQTT-SNgateways (GW), and MQTT-SNforwarders. MQTT-SN clients connect themselves to a MQTT
+server via a MQTT-SN GW using the MQTT-SN protocol. A MQTT-SN GW may or may not be integrated with
+a MQTT server. In case of a stand-alone GW the MQTT protocol is used between the MQTT server and the
+MQTT-SN GW. Its main function is the translation between MQTT and MQTT-SN.
+MQTT-SN clients can also access a GW via a forwarder in case the GW is not directly attached to their
+network. The forwarder simply encapsulates the MQTT-SN frames it receives on the wireless side and forwards
+them unchanged to the GW; in the opposite direction, it decapsulates the frames it receives from the gateway and
+sends them to the clients, unchanged too.
+Depending on how a GW performs the protocol translation between MQTT and MQTT-SN, we can differen-
+tiate between two types of GWs, namely transparent and aggregating GWs, see Fig. 2. They are explained in the
+following sections.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 5

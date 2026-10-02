@@ -1,0 +1,100 @@
+OBD Commands
+If the bytes that you send to the ELM327 do not
+begin with the letters ‘A’ and ‘T’, they are assumed to
+be OBD commands for the vehicle. Each pair of ASCII
+bytes will be tested to ensure that they are valid
+hexadecimal digits, and will then be combined into
+data bytes for transmitting to the vehicle.
+OBD commands are actually sent to the vehicle
+embedded in a data packet. Most standards require
+that three header bytes and an error checksum byte
+be included with every OBD message, and the
+ELM327 adds these extra bytes to your command
+bytes for you. The initial (default) values for these
+extra bytes are usually appropriate for most requests,
+but if you wish to change them, there is a mechanism
+to do so (see the ‘Setting the Headers’ section).
+Most OBD commands are only one or two bytes in
+length, but some can be longer. The ELM327 will limit
+the number of bytes that can be sent to the maximum
+number allowed by the standards (usually seven bytes
+or 14 hexadecimal digits). Attempts to send more
+bytes will result in an error – the entire command is
+then ignored and a single question mark printed.
+Hexadecimal digits are used for all of the data
+exchange with the ELM327 because it is the data
+format used most often in the OBD standards. Most
+mode request listings use hexadecimal notation, and it
+is the format most frequently used when results are
+shown. With a little practice, it should not be very
+difficult to deal in hex numbers, but some people may
+want to use a table such as Figure 1, or keep a
+calculator nearby. Dealing with the hex digits can not
+be avoided - eventually all users need to manipulate
+the results in some way (combining bytes and dividing
+by 4 to obtain rpm, dividing by 2 to obtain degrees of
+advance, converting temperatures, etc.).
+As an example of sending a command to the
+vehicle, assume that A6 (or decimal 166) is the
+command that is required to be sent. In this case, the
+user would type the letter A, then the number 6, then
+would press the return key. These three characters
+would be sent to the ELM327 by way of the RS232
+port. The ELM327 would store the characters as they
+are received, and when the third character (the
+carriage return) was received, would begin to assess
+the other two. It would see that they are both valid hex
+digits, and would convert them to a one byte value (the
+decimal value is 166). The header bytes and a
+checksum byte would then be added, and a total of
+five bytes would typically be sent to the vehicle. Note
+that the carriage return character is only a signal to the
+ELM327, and is not sent to the vehicle.
+After sending the command, the ELM327 listens
+on the OBD bus for replies, looking for ones that are
+directed to it. If a message address matches, the
+received bytes will be sent on the RS232 port to the
+user, while messages received that do not have
+matching addresses will be ignored (but are often still
+available for viewing with the AT BD command).
+The ELM327 will continue to wait for messages
+addressed to it until there are none found in the time
+that was set by the AT ST command. As long as
+messages continue to be received, the ELM327 will
+continue to reset this timer, and look for more. Note
+that the IC will always respond to a request with some
+reply, even if it is to say ‘NO DATA’ (meaning that
+there were no messages found, or that some were
+found but they did not match the receive criteria).
+31 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Figure 1. Hex to Decimal Conversion
+Hexadecimal
+Number
+Decimal
+Equivalent
+0
+1
+3
+2
+4
+5
+6
+0
+1
+3
+2
+4
+5
+6
+7 7
+8 8
+9 9
+A 10
+B 11
+C 12
+D 13
+E 14
+F 15

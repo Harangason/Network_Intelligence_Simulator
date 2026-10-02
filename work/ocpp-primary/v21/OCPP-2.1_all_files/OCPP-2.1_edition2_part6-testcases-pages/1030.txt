@@ -1,0 +1,42 @@
+TC_C_103_CSMS: Authorization with prepaid card - success
+Test case name Authorization with prepaid card - success
+Test case Id TC_C_103_CSMS
+Use case Id(s) C17
+Requirement(s) C17.FR.01, C17.FR.03
+System under test CSMS
+Description This test case verifies if the CSMS is able to authorize a prepaid card for a transaction.
+Purpose To verify if the CSMS is able to authorize a prepaid card for a transaction.
+Prerequisite(s) - CSMS supports prepaid cards.
+- Prepaid card with positive amount is available.
+Before
+(Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main
+(Test scenario)
+Charging Station CSMS
+1. The Test System sends a AuthorizeRequest with
+idToken.idToken <prepaid card id>
+idToken.type = <prepaid card id type>
+2. The CSMS responds a AuthorizeResponse
+3. The Test System sends a TransactionEventRequest with
+- eventType Started
+- idToken.idToken <prepaid card id>
+- idToken.type = <prepaid card id type>
+4. The CSMS responds with a TransactionEventResponse
+Tool validations
+* Step 2:
+Message AuthorizeResponse
+- idTokenInfo.status Accepted
+- idTokenInfo.cacheExpiryDateTime <current date/time>
+* Step 4:
+Message TransactionEventResponse
+- idTokenInfo.status Accepted
+- idTokenInfo.cacheExpiryDateTime <cacheExpiryDateTime from step 2>
+- transactionLimit.maxCost = <not omitted>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1028/1383 Part 6 - Test Cases

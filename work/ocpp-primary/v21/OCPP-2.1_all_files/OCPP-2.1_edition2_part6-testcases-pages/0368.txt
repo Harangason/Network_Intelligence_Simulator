@@ -1,0 +1,45 @@
+TC_G_19_CS: Change Availability Connector - state persists across reboot
+Test case name Change Availability Connector - state persists across reboot
+Test case Id TC_G_19_CS
+Use case Id(s) G03
+Requirement(s) G03.FR.08
+System under test Charging Station
+Description This test case covers how the CSMS requests the Charging Station to change the availability of one of the
+Connectors of one EVSE from Operative to Inoperative. A Connector is considered Operative in any status
+other than Faulted and Unavailable.
+Purpose To verify if the Charging Station sets the availability persistent across reboot/power loss as described at
+the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+state is Unavailable
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State Booting
+2. The Charging Station sends a BootNotificationRequest 3. The Test System responds with a BootNotificationResponse.
+4. The Charging Station reports the status of all its connectors.
+5. The Test System responds accordingly.
+6. The Charging Station sends a
+SecurityEventNotificationRequest 7. The Test System responds with a
+SecurityEventNotificationResponse
+Tool validations
+* Step 4:
+Message: StatusNotificationRequest
+- evseId not 0
+- connectorId not 0
+- connectorStatus Unavailable for evseId <Configured evseId> and for connectorId <Configured ConnectorId>
+- connectorStatus Available for evseId not <Configured evseId> and for connectorId <Configured ConnectorId>
+Message: NotifyEventRequest
+- eventData[0].actualValue Unavailable for evseId <Configured evseId> and for connectorId <Configured ConnectorId>
+- eventData[0].actualValue Available for evseId not <Configured evseId> and for connectorId <Configured ConnectorId>
+* Step 6:
+Message: SecurityEventNotificationRequest
+- type "StartupOfTheDevice" or type "ResetOrReboot"
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 366/1383 Part 6 - Test Cases

@@ -1,0 +1,63 @@
+Utility CSMS Charging Station AC EV
+Utility sends 2 VoltWatt controls
+from different DER Programs
+and a scheduled power limit.
+(Pseudo IEEE 2030.5 messages)
+DERCurve(#1, "Volt-Watt 1", ... )
+DERCurve(#2, "Volt-Watt 2", ... )
+DefaultDERControl(opModVoltWatt, #1, primacy=1)
+DERControl(opModMaxLimW, 10000W,
+startTime=1675206000, duration=3600)
+DefaultDERControl(opModVoltWatt, #2, primacy=0)
+CSMS only sends highest prio default to CS
+SetDERControlRequest(default=true,
+controlType=VoltWatt, curve=#2)
+SetDERControlResponse(Accepted)
+SetChargingProfile(ChargingStationMaxProfile, 10000W,
+startTime=1675206000, duration=3600)
+SetChargingProfileResponse(Accepted)
+EV starts charging
+ISO 15118-20 authorization
+AuthorizeRequest(...)
+AuthorizeResponse(Accepted)
+ServiceSelection(AC_BPT)
+ChargeParameterDiscovery(power, current, voltage)
+ScheduleExchangeReq(energyRequest, departureTime)
+NotifyEVChargingNeedsRequest(...)
+NotifyEVChargingNeedsResponse(Accepted)
+SetChargingProfileResponse(schedule max=10000W)
+SetChargingProfileResponse(Accepted)
+ScheduleExchangeRes()
+loop [while charging]
+AC_ChargeLoopReq()
+AC_ChargeLoopRes()
+Charging Station detects overvoltage situation
+triggering VoltWatt curve.
+NotifyDERAlarmRequest(true, VoltWatt, timestamp)
+NotifyDERAlarmResponse()
+AC_ChargeLoop(Reduce discharging power
+according to curve)
+When overvoltage situation ends
+AC_ChargeLoop(Resume discharging power
+according to schedule)
+NotifyDERAlarmRequest(false, VoltWatt, timestamp)
+NotifyDERAlarmResponse()
+Figure 210. Sequence diagram showing VoltWatt curve and charging limit from utility
+R05 - Charging station reporting a DER event - Requirements
+Table 166. R05 - Requirements
+ID. Precondition Requirements Note
+R05.FR.01 When Charging Station needs to
+deviate from charging profile or
+nominal charging rate in case of no
+charging profile, because of a DER
+control setting or curve
+Charging Station SHALL report this
+once per occurrence by sending a
+NotifyDERAlarmRequest with
+timestamp with current time and
+controlType that matches the DER
+control that causes this and
+gridEventFault for the fault that
+caused this.
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 565/803 Part 2 - Specification

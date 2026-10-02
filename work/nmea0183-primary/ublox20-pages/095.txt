@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+25 I1 latHp 1e-9 deg High precision component of latitude. Must be in the
+range -99..+99. Precise latitude in deg * 1e-7 = lat +
+(latHp * 1e-2).
+26 I1 heightHp 0.1 mm High precision component of height above ellipsoid.
+Must be in the range -9..+9. Precise height in mm =
+height + (heightHp * 0.1).
+27 I1 hMSLHp 0.1 mm High precision component of height above mean sea
+level. Must be in range -9..+9. Precise height in mm =
+hMSL + (hMSLHp * 0.1)
+28 U4 hAcc 0.1 mm Horizontal accuracy estimate
+32 U4 vAcc 0.1 mm Vertical accuracy estimate
+3.15.8 UBX-NAV-ODO (0x01 0x09)
+3.15.8.1 Odometer solution
+Message UBX-NAV-ODO
+Odometer solution
+Type Periodic/polled
+Comment This message outputs the traveled distance since last reset (see UBX-NAV-RESETODO) together with an
+associated estimated accuracy and the total cumulated ground distance (can only be reset by a cold start
+of the receiver).
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x09 20 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 U1[3] reserved0 - - Reserved
+4 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+8 U4 distance - m Ground distance since last reset
+12 U4 totalDistance - m Total cumulative ground distance
+16 U4 distanceStd - m Ground distance accuracy (1-sigma)
+3.15.9 UBX-NAV-ORB (0x01 0x34)
+3.15.9.1 GNSS orbit database info
+Message UBX-NAV-ORB
+GNSS orbit database info
+Type Periodic/polled
+Comment Status of the GNSS orbit database knowledge.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x34 8 + numSv·6 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 95 of 224
+C1-Public

@@ -1,0 +1,29 @@
+Tool validations
+* Step 2:
+Message GetLogResponse
+- status Accepted
+* Step 3:
+Must be sent exactly 1 or 4 times
+Message LogStatusNotificationRequest
+- status Uploading
+- requestId Same Id as the GetLogRequest
+* Step 5:
+Must be sent exactly 1 or 4 times
+Message LogStatusNotificationRequest
+- status UploadFailure
+- requestId Same Id as the GetLogRequest
+OR Message LogStatusNotificationRequest
+- status BadMessage
+- requestId Same Id as the GetLogRequest
+OR Message LogStatusNotificationRequest
+- status PermissionDenied
+- requestId Same Id as the GetLogRequest
+OR Message LogStatusNotificationRequest
+- status NotSupportedOperation
+- requestId Same Id as the GetLogRequest
+* The time between the first LogStatusNotificationRequest Uploading and the last LogStatusNotificationRequest
+UploadFailure/BadMessage/PermissionDenied/NotSupportedOperation equals (3 * <Configured retryInterval>)
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 703/1383 Part 6 - Test Cases

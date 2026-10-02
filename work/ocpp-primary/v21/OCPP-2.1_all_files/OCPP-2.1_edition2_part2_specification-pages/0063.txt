@@ -1,0 +1,52 @@
+Chapter 2. Use cases & Requirements
+2.1. Booting a Charging Station
+B01 - Cold Boot Charging Station
+No. Type Description
+1 Name Cold Boot Charging Station
+2 ID B01
+3 Objective(s) The objective of this use case is to enable a Charging Station that is powering up to register itself
+at a CSMS and provide the right state information.
+4 Description This use case describes how the CSMS can control which Charging Stations access it. To be able
+to control Charging Stations connecting to a CSMS, Charging Stations are required to send
+BootNotificationRequest. This request contains some general information about the Charging
+Station.
+Actors Charging Station, CSMS
+Scenario description 1. The Charging Station is powered up.
+2. The Charging Station sends BootNotificationRequest to the CSMS.
+3. The CSMS returns with BootNotificationResponse with the status Accepted.
+4. Optional: The Charging Station sends NotifyEventRequest with component.name Connector,
+variable.name AvailabilityState and actualValue Unavailable to the CSMS for each Connector.
+5. The Charging Station sends NotifyEventRequest with component.name Connector,
+variable.name AvailabilityState to the CSMS for each Connector. If the AvailabilityState was set to
+Unavailable or Reserved from the CSMS prior to the (re)boot, the Connector should return to this
+AvailabilityState, otherwise the AvailabilityState should be Available or, when it resumes a
+transaction that was ongoing, the AvailabilityState should be Occupied.
+6. Normal operation is resumed.
+7. The Charging Station sends HeartbeatRequest to the CSMS.
+Alternative scenario(s) B02 - Cold Boot Charging Station - Pending
+B03 - Cold Boot Charging Station - Rejected
+5 Prerequisite(s) The Charging Station is powered down.
+6 Postcondition(s) Successful postcondition:
+The Charging Station is in Idle status, and Accepted.
+Failure postcondition:
+The Charging Station received the status Rejected, B03 - Cold Boot Charging Station -Rejected
+applies.
+The Charging Station received the status Pending, B02 - Cold Boot Charging Station - Pending
+applies.
+7 Error handling 1. No initial establishment of connection of communication between the CSMS and Charging
+Station: Retry Connection with the CSMS.
+2. No response / time-out from the CSMS: The Charging Station resends BootNotificationRequest
+after a waiting interval. The Charging Station chooses this interval on its own (since it dit not get a
+BootNotificationResponse containing this interval), in a way that avoids flooding the CSMS with
+requests.
+8 Remark(s) Multiple options for a self check are possible: some Charging Stations boot and send status
+notifications with Unavailable, then perform a check of all the hardware and send new
+NotifyEvents with AvailabilityState Available when the Charging Station is up and running.
+However, there is no required order for a self check and sending a BootNotificationRequest. A
+Charging Stations can also do the self check before sending a BootNotificationRequest and
+determine the status before a (mobile) network connection is established and a
+BootNotificationRequest is sent.
+When something is wrong with the Charging Station or EVSE, the status SHALL be set to Faulted.
+Reserved and Unavailable states persist after a reboot.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 50/803 Part 2 - Specification

@@ -1,0 +1,57 @@
+EV Driver
+Charging Station
+The Charging Station is Offline.
+present IdToken
+opt [If enabled]
+check Local Authorization List
+opt [If implemented & enabled]
+check Authorization Cache
+IdToken unknown
+alt [OfflineTxForUnknownIdEnabled() = True]
+accept identifier
+opt
+notification
+[OfflineTxForUnknownIdEnabled() = False]
+reject identifier
+opt
+notification
+Figure 36. Sequence Diagram: Start Transaction - Unknown Offline Authorization
+C15 - Offline Authorization of unknown Id - Requirements
+Table 57. C15 - Requirements
+ID Precondition Requirement definition Note
+C15.FR.01 If the identifier is authorized via
+OfflineTxForUnknownIdEnabled
+The Charging Station SHALL NOT add the token to
+Authorization Cache
+C15.FR.02 When connection to the CSMS is
+restored
+The Charging Station SHALL send a
+TransactionEventRequest for any transaction that
+was authorized offline.
+As explained in
+transaction-related
+message handling
+C15.FR.03
+(2.1)
+C15.FR.02 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is true AND
+TxStopPoint does NOT contain:
+(Authorized OR PowerPathClosed OR
+EnergyTransfer)
+The Charging Station SHALL stop the energy
+transfer and send TransactionEventRequest
+(eventType = Updated) with triggerReason set to
+Deauthorized and chargingState set to
+EVConnected.
+The use of chargingState
+SuspendedEVSE
+instead of EVConnected
+in this situation has been
+deprecated as of OCPP
+2.1.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 121/803 Part 2 - Specification

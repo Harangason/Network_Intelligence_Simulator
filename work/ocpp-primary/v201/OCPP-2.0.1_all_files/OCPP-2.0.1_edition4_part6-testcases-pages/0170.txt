@@ -1,0 +1,41 @@
+TC_D_05_CS: Send Local Authorization List - Differential with empty list
+Test case name Send Local Authorization List - Differential with empty list
+Test case Id TC_D_05_CS
+Use case Id(s) D01
+Requirement(s) D01_FR_02, D01_FR_05
+System under test Charging Station
+Description The CSMS sends a Local Authorization List which a Charging Station can use for the authorization of
+idTokens. The list MAY be either a full list to replace the current list in the Charging Station or it MAY be a
+differential list with updates to be applied to the current list in the Charging Station.
+Purpose To verify if the Charging Station is able to correctly respond on a Local Authorization List when send in
+differential type with no data according to the mechanism as described in the OCPP specification.
+Prerequisite(s) The Charging Station supports the Local Authorization List feature
+Before (Preparations)
+Configuration State:
+LocalAuthListEnabled is true (If implemented) *Configured versionNumber > 0
+Memory State:
+IdTokenLocalAuthList for <Configured valid idtoken fields>
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SendLocalListResponse
+1. The Test System sends a SendLocalListRequest with
+- updateType Differential
+- versionNumber <Configured versionNumber + 1>
+- localAuthorizationList <Empty>
+4. The Charging Station responds with a
+GetLocalListVersionResponse
+3. The Test System sends a GetLocalListVersionRequest
+Tool validations
+* Step 2:
+Message SendLocalListResponse
+- status Accepted
+* Step 4:
+Message GetLocalListVersionResponse
+- versionNumber <Equal to the version send in step 1>
+Post scenario validations:
+- N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 168/914 Part 6 - Test Cases

@@ -1,0 +1,46 @@
+K23 - Smart Charging with EMS connected to Charging Stations
+New in OCPP 2.1
+No. Type Description
+1 Name Smart Charging with EMS connected to Charging Stations
+2 ID K23 (see also K11, K12)
+3 Objective(s) To describe how smart charging can be performed by an EMS that has a direct connection to a
+Charging Station.
+The setting of the charging limits is described in detail in use cases K11 and K12 for any External
+Control System. This use case describes the specific situation where the External Control System
+is an EMS in a building.
+4 Description EMS is managing the load within a site. It regularly updates current or power limitations for the
+Charging Stations based on other loads within the site, such that the local grid connection is not
+overloaded.
+Site
+Other loadsLocal Generation
+Charging
+Station 1
+Charging
+Station 2
+EMS
+Grid_connection
+DSO
+CSMS
+control
+NotifyChargingLimit NotifyChargingLimit
+Actors EMS, Charging Station, CSMS
+Scenario description 1. EMS measures power consumption from other loads in the building
+2. EMS determines available power for Charging Stations based on the capacity of the local
+grid connection, other loads and the amount of locally generated energy (e.g. PV panels)
+3. EMS sets power (or current) limit to Charging Stations via a direct connection. (The
+protocol between EMS and Charging Station is not relevant for the use case).
+4. Charging Station internally represents the given limitation as a charging profile with
+chargingProfilePurpose = ChargingStationExternalConstraints. (Depending on
+EMS this can be a single limit value or a schedule of limits over time).
+5. Charging Station notifies CSMS of the received limit if it changed by more than the
+configured threshold: LimitChangeSignificance, by sending a
+NotifyChargingLimitRequest message with chargingLimitSource = EMS and (optionally) a
+chargingSchedule that represents the limit(s).
+6. If a transaction is ongoing, Charging Station will send a TransactionEventRequest
+message with trigger = ChargingRateChanged to record that a power limitation
+occurred during the transaction.
+5 Prerequisites EMS is able to control power level of Charging Stations.
+Configuration variable ExternalControlSignalsEnabled = true.
+6 Post conditions Charging power is reduced when needed to avoid overloading local grid connection.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 365/803 Part 2 - Specification

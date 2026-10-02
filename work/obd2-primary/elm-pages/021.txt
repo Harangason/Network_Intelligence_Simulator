@@ -1,0 +1,99 @@
+21 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+AT Command Descriptions (continued)
+setting is determined by the voltage at pin 7 during
+power on (or reset). If the level is high, then linefeeds
+are on by default; otherwise they will be off.
+LP [ go to the Low Power mode ]
+This command causes the ELM327 to shut off all
+but ‘essential services’ in order to reduce the power
+consumption to a minimum. The ELM327 will respond
+with an ‘OK’ (but no carriage return) and then, one
+second later, will change the state of the PwrCtrl
+output (pin 16) and will enter the low power (standby)
+mode. The IC can be brought back to normal operation
+through a character received at the RS232 input or a
+rising edge at the IgnMon (pin 15) input, in addition to
+the usual methods of resetting the IC (power off then
+on, a low on pin 1, or a brownout). See the Power
+Control section (page 65) for more information.
+M0 and M1 [ Memory off or on ]
+The ELM327 has internal ‘non-volatile’ memory
+that is capable of remembering the last protocol used,
+even after the power is turned off. This can be
+convenient if the IC is often used for one particular
+protocol, as that will be the first one attempted when
+next powered on. To enable this memory function, it is
+necessary to either use an AT command to select the
+M1 option, or to have chosen ‘memory on’ as the
+default power on mode (by connecting pin 5 of the
+ELM327 to a high logic level).
+When the memory function is enabled, each time
+that the ELM327 finds a valid OBD protocol, that
+protocol will be memorized (stored) and will become
+the new default. If the memory function is not enabled,
+protocols found during a session will not be
+memorized, and the ELM327 will always start at power
+up using the same (last saved) protocol.
+If the ELM327 is to be used in an environment
+where the protocol is constantly changing, it would
+likely be best to turn the memory function off, and
+issue an AT SP 0 command once. The SP 0 command
+tells the ELM327 to start in an 'Automatic' protocol
+search mode, which is the most useful for an unknown
+environment. ICs come from the factory set to this
+mode. If, however, you have only one vehicle that you
+regularly connect to, storing that vehicle’s protocol as
+the default would make the most sense.
+The default setting for the memory function is
+determined by the voltage level at pin 5 during power
+up (or system reset). If it is connected to a high level
+(VDD), then the memory function will be on by default.
+If pin 5 is connected to a low level, the memory saving
+will be off by default.
+MA [ Monitor All messages ]
+This command places the ELM327 into a bus
+monitoring mode, in which it continually monitors for
+(and displays) all messages that it sees on the OBD
+bus. It is a quiet monitor, not sending In Frame
+Responses for J1850 systems, Acknowledges for CAN
+systems (unless you turn silent mode off with CSM0),
+or Wakeup (‘keep-alive’) messages for the ISO 9141
+and ISO 14230 protocols. Monitoring will continue until
+you stop it with activity on the RS232 input, or the RTS
+pin.
+To stop monitoring, simply send any single
+character to the ELM327, then wait for it to respond
+with a prompt character (‘>’), or a low level output on
+the Busy pin. (Setting the RTS input to a low level will
+interrupt the device as well.) Waiting for the prompt is
+necessary as the response time varies depending on
+what the IC was doing when it was interrupted. If for
+instance it was in the middle of printing a line, it will
+first complete that line and then print ‘STOPPED’,
+before returning to the command state and sending a
+prompt character. If it were simply waiting for input, it
+would return much quicker. Note that the character
+which stops the monitoring will always be discarded,
+and will not affect subsequent commands.
+If this command is used with CAN protocols, and if
+the CAN filter and/or mask were previously set (with
+CF, CM or CRA), then the MA command will be
+affected by those settings. For example, if the receive
+address had been set previously with CRA 4B0, then
+the AT MA command would only be able to ‘see’
+messages with an ID of 4B0. This may not be what is
+desired - you may want to reset the masks and filters
+(with AT AR or AT CRA) first.
+All of the monitoring commands (MA, MR and MT)
+operate by closing the current protocol (an AT PC is
+executed internally), before configuring the IC for
+monitoring the data. When the next OBD command is
+to be transmitted, the protocol will again be initialized,
+and you may see messages stating this.
+‘SEARCHING...’ may also be seen, depending on
+what changes were made while monitoring.
+MP hhhh [ Monitor for PGN hhhh ]
+The AT MA, MR and MT commands are quite

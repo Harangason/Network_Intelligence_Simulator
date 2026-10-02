@@ -1,0 +1,58 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 21
+3 INIC Processor
+The OS81050 is a valid network node even without an EHC, due to the on-chip INIC Processor. The INIC
+Software Stack, running on the INIC Processor, provides a message-based interface that is easily imple-
+mented in a high-level language. This message-based interface not only simplifies the interface between
+the application and the network, but allows the EHC software to be completely driven by message events.
+Using the INIC API, as described in the OS8105x/6x INIC API User’s Manual [2], the EHC has access to the
+same functionality that would be available on a register-based interface, but the programmer is spared the
+effort of making software align with the chip architecture. Much of the INIC Software Stack is common across
+INIC chips, minimizing the effort of upgrading the software for different application platforms. The power-up
+default settings of the INIC Processor, such as timing-master/timing-slave functionality and other configu-
+ration options, can be changed through the Customer Configuration Interface  (see Section 13.5). 
+Partitioning the node architecture between INIC and the EHC results in an efficient implementation, allow-
+ing INIC to respond to many network events without intervention by the EHC. Network initialization is opti-
+mized, not requiring the network transceiver at each node to wait for the Application Layer to respond.
+Application software runs efficiently since the number of interrupts to the EHC is minimized. Interaction
+between the EHC and INIC can be further reduced if the EHC implements notification for INIC properties.
+Figure 3-1 illustrates the OS81050 INIC Software Stack. 
+MOST NetServices MiniKernel
+INIC Message Interface
+FBlocks on chip
+INIC API (Port Message Protocol)
+Socket
+Connection
+Manager
+(SCM)
+MOST
+Processor
+Control
+Service
+(MCS)
+MOST
+Supervisor
+(MSV)
+INIC
+Minimum
+NetBlock
+(NBMIN)
+MOST Network
+INIC
+Segmen-
+tation
+Service
+(ISS)
+Control Message Service
+(CMS)
+Asyn-
+chronous
+Data
+Services
+(ADS)
+MDP FIFOs
+RX TX
+MCM FIFOsICM FIFOs
+RX TX RX TX
+Figure 3-1: INIC Software Stack

@@ -1,0 +1,52 @@
+TotalUsageType is used by: Common:CostDetailsType
+Field Name Field Type Card. Description
+energy decimal 1..1 Required.
+chargingTime integer 1..1 Required. Total duration of the charging session
+(including the duration of charging and not charging), in
+seconds.
+idleTime integer 1..1 Required. Total duration of the charging session where
+the EV was not charging (no energy was transferred
+between EVSE and EV), in seconds.
+reservationTime integer 0..1 Optional. Total time of reservation in seconds.
+2.110. TransactionLimitType
+Class
+Cost, energy, time or SoC limit for a transaction.
+TransactionLimitType is used by: Common:TransactionType , TransactionEventResponse
+Field Name Field Type Card. Description
+maxCost decimal 0..1 Optional. Maximum allowed cost of transaction in
+currency of tariff.
+maxEnergy decimal 0..1 Optional. Maximum allowed energy in Wh to charge in
+transaction.
+maxTime integer 0..1 Optional. Maximum duration of transaction in seconds
+from start to end.
+maxSoC integer, 0 <= val <= 100 0..1 Optional. Maximum State of Charge of EV in percentage.
+2.111. TransactionType
+Class
+TransactionType is used by: TransactionEventRequest
+Field Name Field Type Card. Description
+transactionId identifierString[0..36] 1..1 Required. This contains the Id of the transaction.
+chargingState ChargingStateEnumType 0..1 Optional. Current charging state, is required when state
+has changed. Omitted when there is no communication
+between EVSE and EV, because no cable is plugged in.
+timeSpentCharging integer 0..1 Optional. Contains the total time that energy flowed from
+EVSE to EV during the transaction (in seconds). Note that
+timeSpentCharging is smaller or equal to the duration of
+the transaction.
+stoppedReason ReasonEnumType 0..1 Optional. The stoppedReason is the reason/event that
+initiated the process of stopping the transaction. It will
+normally be the user stopping authorization via card
+(Local or MasterPass) or app (Remote), but it can also be
+CSMS revoking authorization (DeAuthorized), or
+disconnecting the EV when TxStopPoint = EVConnected
+(EVDisconnected). Most other reasons are related to
+technical faults or energy limitations.
+MAY only be omitted when stoppedReason is "Local"
+remoteStartId integer 0..1 Optional. The ID given to remote start request
+(RequestStartTransactionRequest. This enables to CSMS
+to match the started transaction to the given start
+request.
+operationMode OperationModeEnumType 0..1 Optional. (2.1) The operationMode that is currently in
+effect for the transaction.
+tariffId string[0..60] 0..1 Optional. (2.1) Id of tariff in use for transaction
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 673/803 Part 2 - Specification

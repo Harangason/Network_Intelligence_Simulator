@@ -1,0 +1,48 @@
+Some devices provide separate power and ground pins for different portions of the circuit. This is done to isolate 
+switching noise effects between different sections of the circuit. Separate planes on the PCB are typically not 
+required. Pin Description tables typically provide guidance on which circuit blocks are connected to which power 
+pin pairs. In some cases, an external filter may be used to provide clean power to sensitive circuits such as 
+PLLs.
+Use at least a four-layer board with a power and ground plane. Locate LVCMOS signals away from the 
+differential lines to prevent coupling from the LVCMOS lines to the differential lines. Differential impedance 
+of 100 Ω are typically recommended for STP interconnect and single-ended impedance of 50 Ω for coaxial 
+interconnect. The closely coupled lines help to ensure that coupled noise appears as common-mode and thus is 
+rejected by the receivers. The tightly coupled lines also radiate less.
+8.5.1.1 Ground
+TI recommends that a consistent ground plane reference for the high-speed signals in the PCB design to 
+provide the best image plane for signal traces running parallel to the plane. Connect the thermal pad of the 
+DS90UB960-Q1 to this plane with vias.
+8.5.1.2 Routing FPD-Link III Signal Traces and PoC Filter
+Routing the FPD-Link III signal traces between the R IN pins and the connector as well as connecting the PoC 
+filter to these traces are the most critical pieces of a successful DS90UB960-Q1 PCB layout. Figure 8-21 shows 
+an example PCB layout of the DS90UB960-Q1 configured for interface to remote sensor modules over coaxial 
+cables. The layout example also uses a footprint of an edge-mount Quad Mini-FAKRA connector provided by 
+Rosenberger. For additional PCB layout details of the example, refer to the DS90UB960-Q1EVM User's Guide 
+(SNLU226).
+The following list provides essential recommendations for routing the FPD-Link III signal traces between the 
+DS90UB960-Q1 receiver input pins (RIN) and the FAKRA connector, and connecting the PoC filter.
+• The routing of the FPD-Link III traces may be all on the top layer (as shown in the example) or partially 
+embedded in middle layers if EMI is a concern.
+• The AC-coupling capacitors should be on the top layer and very close to the DS90UB960-Q1 receiver input 
+pins to minimize the length of coupled differential trace pair between the pins and the capacitors.
+• Route the RIN+ trace between the AC-coupling capacitor and the FAKRA connector as a 50-Ω single-ended 
+micro-strip with tight impedance control (±10%). Calculate the proper width of the trace for a 50-Ω impedance 
+based on the PCB stack-up. Ensure that the trace can carry the PoC current for the maximum load presented 
+by the remote sensor module.
+• The PoC filter should be connected to the RIN+ trace through the first ferrite bead (FB1). The FB1 should be 
+touching the high-speed trace to minimize the stub length seen by the transmission line. Create an anti-pad 
+or a moat under the FB1 pad that touches the trace. The anti-pad should be a plane cutout of the ground 
+plane directly underneath the top layer without cutting out the ground reference under the trace. The purpose 
+of the anti-pad is to maintain the impedance as close to 50 Ω as possible.
+• Route the RIN– trace with minimum coupling to the RIN+ trace (S > 3W).
+• Consult with connector manufacturer for optimized connector footprint. If the connector is mounted on the 
+same side as the IC, minimize the impact of the thru-hole connector stubs by routing the high-speed signal 
+traces on the opposite side of the connector mounting side.
+When configured for STP and routing differential signals to the DS90UB960-Q1 receiver inputs, the traces 
+should maintain a 100-Ω differential impedance routed to the connector. When choosing to implement a common 
+mode choke for common mode noise reduction, take care to minimize the effect of any mismatch.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 177
+Product Folder Links: DS90UB960-Q1

@@ -1,0 +1,30 @@
+message before sending it.
+A SEND always consists of the same 4 elements as a CALL message: The standard elements MessageTypeId and MessageId, a
+specific Action that is required on the other side and a payload, the arguments to the Action. The syntax of a SEND looks like this:
+[<MessageTypeId>, "<MessageId>", "<Action>", {<Payload>}]
+Table 8. SEND Fields
+Field Datatype Meaning
+MessageTypeI
+d
+integer This is a Message Type Number which is used to identify the type of the message.
+MessageId string[36] This is a unique identifier that will be used to match request and result.
+Action string The name of the remote procedure or action. This field SHALL contain a case-sensitive string.
+The field SHALL contain the OCPP Message name. For example: For a
+"NotifyPeriodicEventStream", this field shall be set to "NotifyPeriodicEventStream".
+Payload JSON JSON Payload of the action, see: JSON Payload for more information.
+For example, a NotifyPeriodicEventStream could look like this:
+[6,
+ "19223201",
+ "NotifyPeriodicEventStream",
+ {
+  "id": 123,
+  "pending": 0,
+  "data": [ {"t": "2024-08-27T12:30:40Z", "v": "230.4"}, {"t": "2024-08-
+27T12:30:45Z", "v": "230.2"} ]
+ }
+]
+4.2.5. Diagram showing message types
+(Updated in OCPP 2.1)
+The following sequence diagram is an illustration of the use of the message type described above.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 14/28 Part 4 - JSON over WebSockets implementation guide

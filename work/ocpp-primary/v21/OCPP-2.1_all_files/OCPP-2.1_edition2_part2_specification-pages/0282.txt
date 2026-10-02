@@ -1,0 +1,49 @@
+Chapter 1. Introduction
+Updated in OCPP 2.1
+This Functional Block specifies how to provide tariff and cost information to an EV Driver, when a Charging Station is capable of
+showing this on a display.
+Earlier versions of OCPP only allowed for central cost calculation to be performed by CSMS. OCPP 2.1 adds the possibility to
+provide a tariff plan to the Charging Station to enable it do local cost calculation. Local cost calculation adds complexity to the
+Charging Station, but it offers the advantage that it is easy to provide a real-time running cost display, and it lets you stop the
+charge at a preset amount (e.g. for prepaid charging).
+The OCPP tariff structure that describes the price structure to use for local cost calculation, is a list of components, like energy and
+time, with restrictions describing when they apply, like time of day, power, etc. A similar format is used in the common roaming
+protocols, OCPI (peer-to-peer, Gireve), OCHP (e-clearing.net) and OICP (Hubject). OCPI and OCHP both use tariff elements with
+components and restrictions. OICP uses pricing products with product availability times and a maximum charging power. All three
+formats can be mapped straightforwardly onto the OCPP tariff format.
+1.1. Configuration Settings
+Support for local cost calculation is controlled via the TariffCostCtrlr component. Local cost calculation is enabled by setting
+TariffCostCtrlr.Enabled[Tariff] to true (see TariffEnabled). The frequency by which variations in current, power and energy need
+to be monitored for tariff calculation is determined by TariffCostCtrlr.Interval[Tariff] (see TariffInterval). The maximum
+supported complexity of a tariff can be limited by TariffCostCtrlr.MaxElements[Tariff] (see TariffMaxElements).
+The sending of intermediate running cost updates is enabled by setting TariffCostCtrlr.Enabled[Cost] to true (see CostEnabled).
+How frequent running cost updates must be sent, is determined by TariffCostCtrlr.Interval[Cost] (see CostInterval).
+NOTE
+Charging Station stores a driver-specific tariff, that is received in an AuthorizeResponse, in the Authorization
+Cache. A CSO is recommended to either disable the use of an Authorization Cache or clear the authorization
+cache whenever new tariffs become available.
+WARNING
+A Local Authorization List cannot be used in conjunction with local cost calculation, because an
+AuthorizeRequest is needed to get the driver-specific tariff. Only when the default tariff applies to all drivers
+can a Local Authorization List be used.
+1.2. Tariff Structures
+A tariff is described by the TariffType, which consists of fields with prices for:
+• energy,
+• charging time,
+• idle time,
+• fixed fee.
+Each of these fields may have (optional) conditions that specify when a price is applicable. A reservation is billed as a fixed fee or
+based on time.
+The energy field is of type TariffEnergyType which has a TariffEnergyPriceType with a price per kWh for the energy and an optional
+TariffConditionsType (date, time of day, power, current, energy) that describes under which conditions this TariffEnergyPriceType is
+to be applied.
+The charging time and idle time fields are of type TariffTimeType which has a TariffTimePriceType with a price per minute for the
+time and an optional TariffConditionsType.
+Similarly, a fixed fee is described by a TariffFixedType with an optional TariffConditionsFixedType, which does not contain
+conditions for energy, power, current or time, since it is applied at the start of a transaction.
+A Tariff{Energy/Time/Fixed}PriceType without a TariffConditions(Fixed)Type is always applicable. In case multiple prices are
+applicable, then only the first applicable element in the list is applied.
+A Charging Station implementation can opt to not support the TariffConditions(Fixed)Type element. If this is the case, then it must
+report TariffCostCtrlr.ConditionsSupported[Tariff] as false, so that CSMS is aware that it cannot use conditions in tariff plans.
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 269/803 Part 2 - Specification

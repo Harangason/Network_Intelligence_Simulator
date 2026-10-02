@@ -1,0 +1,113 @@
+ID. Precondition Requirements Notes
+I12.FR.02 I12.FR.01 AND
+TariffCostCtrlr.Enabled[RunningCost] =
+true
+Charging Station SHALL provide a
+costDetails field of type CostDetailsType
+without a chargingPeriods field in
+TransactionEventRequest with eventType =
+Started and every
+TariffCostCtrlr.Interval[Cost] seconds
+during the transaction for eventType =
+Updated.
+Providing running cost updates
+needs to be enabled via
+TariffCostCtrlr.Enabled[Running
+Cost]. See
+RunningCostEnabled and
+CostInterval.
+I12.FR.03 I12.FR.02 AND
+If a TransactionEventRequest is sent only
+to report a running cost update
+The TransactionEventRequest SHALL
+contain a triggerReason = RunningCost.
+A running cost update is sent
+every CostInterval seconds,
+which can be part of a
+TransactionEventRequest that
+is sent for another
+triggerReason.
+I12.FR.04 I12.FR.01 Each chargingPeriods element in
+costDetails SHALL contain a reference in
+the field tariffId to the tariff that was used.
+I12.FR.05 When costs are calculated from a
+TariffFixedPriceType
+The total of these costs SHALL be in
+totalCost.fixed element
+I12.FR.06 If the transaction was authorized by an
+idToken or groupIdToken that was related
+to a reservation, as defined in Introduction
+Charging Station SHALL evaluate
+TariffType.reservationTime and TariffType
+.reservationFixed elements, once at start of
+the transaction.
+Reservation cost are applied
+once at start of transaction. See
+H03.FR.09.
+I12.FR.07 I12.FR.06 AND
+Costs are calculated from TariffType
+.reservationTime
+The total amount of reservation time,
+calculated as the duration from the time
+the ReserveNowRequest was received
+until start of the transaction, SHALL be in
+the totalUsage.reservationTime field and
+total of these costs SHALL be in
+totalCost.reservationTime element
+This is a time-based reservation
+cost
+I12.FR.08 I12.FR.06 AND
+Costs are calculated from a TariffType
+.reservationFixed
+The total of these costs SHALL be in
+totalCost.reservationFixed element
+This is a fixed reservation cost.
+I12.FR.09 When costs are calculated from
+TariffEnergyPriceType
+The total amount of energy SHALL be in
+the totalUsage.energy field and total of
+these costs SHALL be in totalCost.energy
+element
+I12.FR.10 When costs are calculated from
+TariffType.chargingTime
+The total amount of charging time SHALL
+be in the totalUsage.chargingTime field
+and total of these costs SHALL be in
+totalCost.chargingTime element
+I12.FR.11 When costs are calculated from
+TariffType.idleTime
+The total amount of idle time SHALL be in
+the totalUsage.idleTime field and total of
+these costs SHALL be in totalCost.idleTime
+element
+I12.FR.12 PriceType SHALL have the cost excluding
+tax in the exclTax field.
+I12.FR.13 When a PriceType has one or more
+associated TaxRateType
+The inclTax field in PriceType SHALL be
+calculated as exclTax * taxRates.tax for the
+taxRates element with stack = 0 (or
+absent), and then the taxRates element(s)
+with stack = 1 is/are applied to the result
+for stack = 0, and then the element(s)
+taxRates with stack = 2 is/are applied to
+the result for stack = 1, etc.
+For example, an "energy tax"
+(stack 0) is applied to the net
+price, and a "VAT" (stack 1) is
+applied on top of the net price
+including "energy tax".
+There can be multiple taxRates
+elements with the same stack
+value.
+I12.FR.14 When Charging Station is not able to
+calculate the CostDetailsType (partly or
+entirely)
+Charging Station SHALL set the field
+failureToCalculate to true and optionally
+add a failureReason with a human-
+readable text about the reason. Charging
+Station MAY include any values that it was
+able to calculate.
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 299/803 Part 2 - Specification

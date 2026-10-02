@@ -1,0 +1,49 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  26/50 
+Field Name  (Hex)  Field Name  (Hex)  
+Function  0B Function  0B 
+  Status Hi  FF 
+  Status Lo  FF 
+  Event Count Hi  01 
+  Event Count Lo  08 
+ 
+In this example, the status word is FF FF  hex, indicating that a program function is still in 
+progress in the remote device. The event count shows that 264 (01 08 hex) events have been 
+counted by the device.  
+ 
+MB Server Sends mb_exception_rsp EXIT
+ExceptionCode = 04
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+NO
+YES
+ENTRY
+GetCommEventCounter == OK
+MB Server Sends mb_rsp
+NO
+YES
+Function code
+supported
+Request Processing
+ 
+Figure 19: Get Comm Event Counter st ate diagram  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+6.10  12 (0x0C) Get Comm Event Log (Serial Line only)  
+This function code is used to get a status word, event count, message count, and a field of 
+event bytes from the remote device.  
+The status word and event counts are identical to that returned by the Get Communications 
+Event Counter function (11, 0B hex).  
+The message counter contains the quantity of messages processed by the remote device 
+since its last restart, clear counters operation, or power –up. This count is identical to that 
+retu rned by the Diagnostic function (code 08), sub -function Return Bus Message Count (code 
+11, 0B hex).  
+The event bytes field contains 0 -64 bytes, with each byte corresponding to the status of one 
+MODBUS send or receive operation for the remote device. The rem ote device enters the 
+events into the field in chronological order. Byte 0 is the most recent event. Each new byte 
+flushes the oldest byte from the field.  

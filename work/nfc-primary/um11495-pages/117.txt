@@ -1,0 +1,37 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Figure 68. Secure write frame description
+3 Types of frames will be sent during a sFWu sequence:
+• First frame: first command of the firmware download process must contain the firmware version number, a
+hash value, and a signature (firmware version’s upper byte is the major version and lower byte is the minor
+version). They are not written directly as for other frames but handled internally.
+DH ---> PN7160 : [0x00 0xE4 0xC0 0x00 {VERS} {HASH} {SIGN} CRC1 CRC2]
+DH <--- PN7160 : [0x00 0x04 STAT 0x00 0x00 0x00 CRC1 CRC2] 
+VERS is the 2 bytes version of the firmware to be uploaded (major and minor FW version).
+HASH is the 32 bytes digest of the 2nd frame.
+SIGN is the 192 bytes digital signature of the first frame.
+STAT is the return status.
+• Middle frames: commands following the first frame command type shall contain firmware data and a hash
+value.
+DH ---> PN7160 : [{LEN} 0xC0 {ADDR} {SIZE} {DATA} {HASH} CRC1 CRC2]
+DH <--- PN7160 : [0x00 0x04 STAT 0x00 0x00 0x00 CRC1 CRC2] 
+LEN is the 2 bytes length of the play load.
+ADDR is the 3 bytes address of the data to write to flash or EEPROM memory.
+DATA is the data to write.
+HASH is the 32 bytes digest of the next frame.
+STAT is the return status.
+• Last frame: last command of a firmware download process shall only contain firmware data. Additionally to
+data written in EEPROM some extra processing is handled internally.
+DH ---> PN7160 : [{LEN} 0xC0 {ADDR} {SIZE} {DATA} CRC1 CRC2]
+DH <--- PN7160 : [0x00 0x04 STAT 0x00 0x00 0x00 CRC1 CRC2] 
+LEN is the 2 bytes length of the play load.
+ADDR is the 3 bytes address of the data to write to flash or EEPROM memory.
+DATA is the data to write.
+STAT is the return status.
+13.4  Download command fragmentation
+Whenever the platform puts restriction on the low-level frame size transmission, fragmentation can be used
+to split secure write command into several frames. This is the purpose of the chunk bit of the download mode
+protocol header.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+117 / 147

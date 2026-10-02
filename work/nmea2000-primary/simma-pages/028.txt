@@ -1,0 +1,24 @@
+Chapter 6  Examples 
+ssNMEA2000 User’s Manual   - 28 - 
+6.4 Periodically Request NMEA 2000 Parameters Example: 
+ 
+The below example shows how to transmit requests, for PGNs 65253, 65244, and 65257, 
+periodically using the built-in example function n2000app_tx_request().  The requests are 
+sent every 5 seconds with a 1 second spacing.  The below routine assumes the protocol 
+stack’s update function is called every 1 millisecond. 
+ 
+ 
+void 
+n2000app_update ( void ) 
+{ 
+static uint16_t time = 0;  
+    
+/* transmit requests every 5 seconds on network 0 */ 
+switch( time++ ) { 
+    case 1000: n2000app_tx_request( 0,65253, 255); break; 
+    case 2000: n2000app_tx_request( 0, 65244, 255); break; 
+    case 3000: n2000app_tx_request( 0, 65257, 255); break; 
+    case 5000: time = 0; 
+} 
+} 
+ 

@@ -1,0 +1,61 @@
+7.6.1.112 PORT_PASS_CTL Register (Address = 0x7D) [Reset = 0x00] 
+PORT_PASS_CTL is shown in Table 7-134.
+Return to the Summary Table.
+RX port-specific register. The FPD-Link III Port Select register 0x4C configures which unique Rx port registers 
+can be accessed by I2C read and write commands.
+Table 7-134. PORT_PASS_CTL Register Field Descriptions
+Bit Field Type Reset Description
+7 PASS_DISCARD_EN R/W 0x0 Pass Discard Enable
+Discard packets if PASS is not indicated.
+0: Ignore PASS for forwarding packets
+1: Discard packets when PASS is not true
+6 PASS_CLEAR_CNT R/W 0x0 Pass Clear Count Control
+This bit controls the values read back from the LINE_COUNT_1, 
+LINE_COUNT_0, LINE_LEN_1, and LINE_LEN_0 registers.
+0: Registers read back the counter vaues regardless of the state of 
+the PASS flag
+1: Registers read back zero when the PASS flag is de-asserted and 
+the count values when PASS is asserted
+5 PASS_LINE_CNT R/W 0x0 Pass Line Count Control
+This register controls whether the device will include line count in 
+qualification of the Pass indication:
+0: Don't check line count
+1: Check line count
+When checking line count, Pass is deasserted upon detection of a 
+change in the number of video lines per frame. Pass will not be 
+reasserted until the PASS_THRESHOLD setting is met.
+4 PASS_LINE_SIZE R/W 0x0 Pass Line Size Control
+This register controls whether the device will include line size in 
+qualification of the Pass indication:
+0: Don't check line size
+1: Check line size
+When checking line size, Pass is deasserted upon detection of a 
+change in video line size. Pass will not be reasserted until the 
+PASS_THRESHOLD setting is met.
+3 PASS_PARITY_ERR R/W 0x0 Parity Error Mode
+If this bit is set to 0, the port Pass indication is deasserted for every 
+parity error detected on the FPD3 Receive interface. If this bit is 
+set to a 1, the port Pass indication is cleared on a parity error and 
+remain clear until the PASS_THRESHOLD is met.
+2 PASS_WDOG_DIS R/W 0x0 RX Port Pass Watchdog disable
+When enabled, if the FPD Receiver does not detect a valid frame 
+end condition within two video frame periods, the Pass indication 
+is deasserted. The watchdog timer will not have any effect if the 
+PASS_THRESHOLD is set to 0.
+0: Enable watchdog timer for RX Pass
+1: Disable watchdog timer for RX Pass
+1:0 PASS_THRESHOLD R/W 0x0 Pass Threshold Register
+This register controls the number of valid frames before asserting 
+the port Pass indication. If set to 0, PASS is asserted after Receiver 
+Lock detect. If non-zero, PASS is asserted following reception of the 
+programmed number of valid frames.
+7.6.1.113 SEN_INT_RISE_CTL Register (Address = 0x7E) [Reset = 0x00] 
+SEN_INT_RISE_CTL is shown in Table 7-135.
+Return to the Summary Table.
+RX port-specific register. The FPD-Link III Port Select register 0x4C configures which unique Rx port registers 
+can be accessed by I2C read and write commands.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 129
+Product Folder Links: DS90UB960-Q1

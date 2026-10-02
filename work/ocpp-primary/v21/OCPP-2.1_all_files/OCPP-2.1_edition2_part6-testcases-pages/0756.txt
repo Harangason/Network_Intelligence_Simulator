@@ -1,0 +1,33 @@
+Tool validations
+* Step 2:
+Message: SetVariableMonitoringResponse
+- setMonitoringResult[0].id must be <not omitted>
+- setMonitoringResult[0].status must be Accepted
+- setMonitoringResult[0].type must be Periodic
+- setMonitoringResult[0].severity must be <Configured severity>
+- setMonitoringResult[0].component.name must be <Configured threshold monitor component variable>
+- setMonitoringResult[0].component.evse.id must be <Configured evseId>
+- setMonitoringResult[0].variable.name must be <Configured threshold monitor component variable>
+No message of type NotifyPeriodicEventStream shall be sent with
+- id set to <SetVariableMonitoringResponse.setMonitoringResult[0].id>
+* Step 3:
+Message: OpenPeriodicEventStreamRequest
+- constantStreamData.id must be <not omitted>
+- constantStreamData.variableMonitoringId must be <SetVariableMonitoringResponse.setMonitoringResult[0].id of step 2>
+- constantStreamData.params.interval must be 10
+- constantStreamData.params.values must be 30
+* Step 5:
+Message: NotifyEventRequest
+- generatedAt must be <not omitted>
+- eventData[0].trigger must be Periodic
+- eventData[0].actualValue must be <not omitted>
+- eventData[0].variableMonitoringId must be <SetVariableMonitoringResponse.setMonitoringResult[0].id of step 2>
+- eventData[0].severity must be <Configured severity>
+- eventData[0].component.name must be <Configured threshold monitor component variable>
+- eventData[0].component.evse.id must be <Configured evseId>
+- eventData[0].variable.name must be <Configured threshold monitor component variable>
+Post scenario validations:
+No message of type NotifyPeriodicEventStream shall be sent with
+- id set to <SetVariableMonitoringResponse.setMonitoringResult[0].id of step 2>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 754/1383 Part 6 - Test Cases

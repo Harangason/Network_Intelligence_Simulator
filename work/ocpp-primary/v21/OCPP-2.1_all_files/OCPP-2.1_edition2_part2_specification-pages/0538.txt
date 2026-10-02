@@ -1,0 +1,84 @@
+ID Precondition Requirements Note
+Q06.FR.30 When chargingSchedulePeriod has
+operationMode = ExternalLimits
+AND
+evseId = 0
+Charging station SHALL keep the total active power
+of the charging station within limit and
+dischargeLimit.
+Q06.FR.31 When chargingSchedulePeriod has
+operationMode =
+ExternalSetpoint AND
+evseId = 0
+Charging station SHALL try to match the total
+active power of the charging station with the value
+of setpoint and reactive power with
+setpointReactive.
+It may not be possible to
+achieve this, as this
+highly depends on the
+value of the setpoints
+and the active sessions
+on the EVSEs.
+Dynamic duration
+Q06.FR.40 When a ChargingProfileType has
+chargingProfileKind = Dynamic AND
+chargingSchedule.duration is set AND
+current time >
+(chargingSchedule.duration +
+dynUpdateTime)
+Charging Station SHALL consider the charging
+profile invalid and switch to using the next valid
+charging profile.
+This is a fallback when
+External System is no
+longer responding within
+time set by duration.
+(Same as K29.FR.07)
+Q06.FR.41 Q06.FR.40 AND
+Charging Station receives an update
+for limit, dischargeLimit or setpoint
+from External System
+Charging Station SHALL consider the charging
+profile eligible again as a valid profile.
+This means the charging
+profile is valid again
+when a new update is
+received, assuming there
+is no other charging
+profile of higher stack
+level.
+Q07 - Central V2X control for frequency support
+New in OCPP 2.1
+No. Type Description
+1 Name Central V2X control for frequency support
+2 ID Q07
+3 Objective(s) To allow an EV to be used for frequency support, with control at the CSMS.
+4 Description The EV’s charging and discharging behaviour is controlled by the CSMS for frequency support.
+This use case is intended for when calibrated frequency readings are required, and it is not
+economically viable to do these measurements locally. The Central system will constantly update
+the power setpoint (probably of an aggregated group of EV’s) depending on the centrally
+measured frequency.
+Actors EV, Charging Station, CSMS
+Scenario description 1. The CSMS has sent a SetChargingProfileRequest message with a chargingProfilePurpose
+TxProfile or TxDefaultProfile and a chargingProfileKind = Dynamic.
+The chargingProfile contains 1 chargingSchedule with 1 chargingSchedulePeriod which
+has operationMode set to CentralFrequency and setpoint to the desired active power
+the EV should import or export.
+2. If chargingSchedule.duration is set on a Dynamic charging profile, then this specifies how
+long the chargingSchedule remains valid after SetChargingProfileRequest or
+UpdateDynamicScheduleRequest.
+3. The Charging Station will obey the values of the (one and only) chargingSchedulePeriod,
+e.g. it will set the charge or discharge rate of the EV to setpoint.
+4. CSMS updates the chargingSchedulePeriod periodically by sending a
+UpdateDynamicScheduleRequest.
+Scenario description #2 When the Charging Station does not receive a UpdateDynamicScheduleRequest message with a
+new schedule before the configured duration expires, then Charging Station shall continue with
+the next valid charging profile.
+If the Charging Station supports local frequency control, then this can be a LocalFrequency
+charging profile at a lower stack level. So, if no update from CSMS is received on time, then the
+Charging Station will switch from CentralFrequency to use case Q08 for local frequency
+control until a new UpdateDynamicScheduleRequest is received for the CentralFrequency
+charging profile.
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 525/803 Part 2 - Specification

@@ -1,0 +1,48 @@
+RenegotiateChargingLimits
+State RenegotiateChargingLimits
+System under test Charging Station
+Description
+Prerequisite
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Renegotiate EV Charging Limits
+1. The Charging Station sends a
+NotifyEVChargingNeedsRequest with
+evseId <Configured evseId>
+2. The Test System responds with a
+NotifyEVChargingNeedsResponse with
+status Accepted
+4. The Charging Station responds with a
+SetChargingProfileResponse with
+status Accepted
+3. The Test System sends a SetChargingProfileRequest with
+chargingProfile:
+.chargingProfilePurpose TxProfile
+.transactionId <Provided transactionId from before>
+chargingProfile.chargingSchedule[0]:
+.duration 300
+.chargingRateUnit <Configured chargingRateUnit>
+Note: If <Configured chargingRateUnit> is W, then the limit field
+will be multiplied by 1000.
+.chargingSchedulePeriod[0].startPeriod 0
+If <Configured chargingRateUnit> is W:
+.chargingSchedulePeriod[0].limit 10000
+else:
+.chargingSchedulePeriod[0].limit 10
+5. The Charging Station sends a
+NotifyEVChargingScheduleRequest with
+evseId <Configured evseId>
+6. The Test System responds with a
+NotifyEVChargingScheduleResponse with
+status Accepted
+Note: Steps 5 and 6 are optional. The Charging Station will only send a NotifyEVChargingScheduleRequest when the EV returns a
+charging profile.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 603/914 Part 6 - Test Cases

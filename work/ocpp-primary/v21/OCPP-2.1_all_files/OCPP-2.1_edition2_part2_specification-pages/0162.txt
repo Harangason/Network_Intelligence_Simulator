@@ -1,0 +1,47 @@
+URL pointing to CSMS
+In the situation as described in the use case the URL will point to the CSMS. CSMS will use a PSP to handle the payment, but CSMS
+is responsible for coordination and initiating the transaction. In the URL template the Charging Station will replace the variables:
+• chargingstationid with its Charging Station identity,
+• evse with the evse for which the payment is requested.
+• totp with the calculated time-based one-time password,
+• version with the version of the time-based one-time password algorithm,
+A URL may contain additional query parameters that are filled in by the Charging Station based upon user input. This would allow an
+EV driver to specify, for example, a maximum amount of energy to charge. The following variables are defined, and when supported
+by the Charging Station, are reported in the variable named WebPaymentsCtrlr.URLParameters.
+• maxenergy for maximum energy (in Wh) to be charged
+• maxtime for maximum charging time (in seconds)
+• maxcost for the maximum cost (in currency of charging station)
+Example URL for EVSE #1 of CS1000 with maximum energy of 20 kWh
+https://qr.example.com/CS1000/1/aHicux89/v1/?maxenergy=20000
+The only purpose of this is to communicate a maximum energy/time/cost request to CSMS before the authorization takes place.
+Once the transaction is started, this data will be communicated to CSMS as part of the transactionLimit field in the
+TransactionEventRequest.
+URL pointing to external party
+In the case that the URL points to an external party, such as an EMSP, the external party is responsible for coordination and
+initiating the start of a transaction. The external party will decode the URL.
+Instead of a Charging Station identity, this URL will have to contain the roaming EVSE ID for the EVSE of the Charging Station. CSMS
+has to set the variable RoamingEvseId in WebPaymentsCtrlr to the roaming EVSE ID.
+In the URL template the Charging Station will replace the variables:
+• roamingevseid with the roaming EVSE id,
+• totp with the calculated time-based one-time password,
+• version with the version of the time-based one-time password algorithm,
+Example URL template using a roaming ID of charging station
+https://qr.example.com/{roamingevseid}/{totp}/{version}
+This requires a WebPaymentsCtrlr at the EVSE tier of the device model, i.e. each EVSE has its own WebPaymentsCtrlr such that
+CSMS can configure the roaming EVSE ID in WebPaymentCtrlr.RoamingEvseId for each EVSE.
+The roaming EVSE ID needs to have been agreed upon by and communicated to the external party. A common standard is the
+format of eMI3/ISO15118 [ref-ISOIEC15118-2].
+C25 - Ad hoc payment via static or dynamic QR code - Requirements
+NOTE For a static QR code any requirements related to a one-time password (TOTP) are not applicable.
+ID Precondition Requirements Note
+URL validation for dynamic QR code
+C25.FR.01 When component WebPaymentsCtrlr
+exists and has "Enabled" = true
+Charging Station SHALL display a dynamic
+QR code according to configuration variables
+in WebPaymentsCtrlr.
+See URL definition for
+dynamic QR code for
+description of URL template.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 149/803 Part 2 - Specification

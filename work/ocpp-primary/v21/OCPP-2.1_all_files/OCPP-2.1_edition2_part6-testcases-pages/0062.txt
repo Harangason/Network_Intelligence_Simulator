@@ -1,0 +1,37 @@
+Tool validations
+* Step 2:
+Message ResetResponse
+- status Accepted
+* Step 3:
+Message TransactionEventRequest
+- eventType Ended
+- triggerReason ResetCommand
+- transactionInfo.chargingState EVConnected
+- transactionInfo.stoppedReason ImmediateReset
+- idToken must be omitted
+* Step 5:
+Message BootNotificationRequest
+- reason RemoteReset
+* Step 7:
+For <Configured connectorId>:
+Message: StatusNotificationRequest
+- for the connector involved in the transaction: connectorStatus Occupied
+- for other connectors of the same EVSE: connectorStatus Available or Unavailable
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- for the connector involved in the transaction: eventData[0].actualValue Occupied
+- for other connectors of the same EVSE: eventData[0].actualValue Available or Unavailable
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+For <Other connector(s)>:
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Available"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 60/1383 Part 6 - Test Cases

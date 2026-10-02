@@ -1,0 +1,76 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 47
+OS81092
+14.0 ELECTRICAL PHYSICAL  (ePHY) INTERFACE
+The OS81092 Electrical Physical (ePHY) interface supports electrical transmission of the network bit-stream between
+network devices, at a data rate up to 50 Mbps. An electrical MOST Network running at this data rate is referred to as a
+MOST50 Network. The ePHY interface is provided as an alternative to the traditional optical physical interface found in
+other MOST Network transceivers.
+The ePHY interface consists of:
+• ETXP - positive transmitter output
+• ETXN - negative transmitter output
+• ERXP - positive receiver input
+• ERXN - negative receiver input
+• ERXCM - common-mode set voltage
+The ePHY system is a method of serial data communication between two or more compatible nodes using an electrical
+cable, rather than the traditional optical fiber. The OS81092 ePHY interface and the external ePHY Front End Circuitry
+described in this data sheet are optimized for use with unshielded twisted pair (UTP) wire.
+Figure 14-1 illustrates the connection between the OS81092 ePHY interface and UTP MOST Network. A large portion
+of the Transmitter and Receiver Front End Circuitry is used to reduce electromagnetic emissions and increase the over-
+all system immunity to EMI. 
+FIGURE 14-1: ePHY INTERFACE - BLOCK DIAGRAM
+When transmitting data onto the network, the Network Port accepts data bytes from the INIC Processor, scrambles the
+data to reduce data-dependent jitter, conditions the signal for transmission over UTP , and transmits the encoded bit-
+stream onto ETXP/ETXN. These pins are driven by an internal DAC, which outputs a low-pass filtered version of the
+bit-stream by sourcing a total of 40 mA into external load resistors (R2 and R3 in Figure 14-2). The ETXP/ETXN outputs
+interface with the Transmitter Front End Circuitry, which provides an analog low-pass filter and a 1:1.5 isolation trans-
+former that drives the UTP cable. The UTP cable has a nominal impedance of 130  (+10 /-30 ).
+Network data at the receiver end is applied to a 1:1 isolation transformer (see the ePHY Receiver Front End Circuitry in
+Figure 14-2). The transformer increases the noise immunity by providing a high level of common-mode noise rejection.
+The transformer output feeds low-pass analog filters, which drive the ERXP and ERXN differential inputs. Resistors at
+these inputs are used to terminate the line with the cable’s characteristic impedance (R201 and R202 in Figure 14-2).
+The ERXCM pin supplies a DC voltage (approximately 1.2 V) to the center of the resistors, in order to provide the dif-
+ferential input signal with the required common-mode voltage for data recovery.
+When the OS81092 receives the serial network bit-stream at ERXP/ERXN, it converts the differential input to a single-
+ended signal. The Network Port detects the preamble in the received bit-stream, detects transmission errors, and works
+in conjunction with the Clock Manager to recover the clo ck from the bit-stream. The Network Port then decodes and
+unscrambles the bit-stream, and sends the network data to the INIC Processor as data bytes.
+When the OS81092 is configured as a timing-slave, the Network Port is synchronized to the bit-stream recovered clock.
+When configured as the timing-master, the Network Port controls network timing, based on the external clock input. The
+transmitted network frames are aligned to this clock.
+ETXP
+Streaming
+Port
+Clock 
+Manager
+Network Port
+MediaLB
+Port
+ETXN
+ERXP
+ERXCM
+ERXN
+encodescramble
+decodeunscramble
+preamble 
+& error 
+detection
+ePHY Transmitter
+Front End Circuitry:
+Filtering &
+Isolation Transformer
+ePHY Receiver
+Front End Circuitry:
+Isolation Transformer
+& Filtering
+signal 
+conditoner DAC
+single-
+ended input 
+convertion
+INIC 
+Processor
+MOST50
+Network (UTP)
+OS81092
+Figure 14-2
+Figure 14-2

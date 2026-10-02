@@ -1,0 +1,39 @@
+Charge Point Central System
+UpdateFirmware.req(location, retrieveDate, [retries], [retryInterval])
+UpdateFirmware.conf()
+Waiting for retrieveDate...
+FirmwareStatusNotification.req( status: Downloading )
+FirmwareStatusNotification.conf()
+Downloading...
+FirmwareStatusNotification.req( status: Downloaded )
+FirmwareStatusNotification.conf()
+Waiting for transactions to finish...
+FirmwareStatusNotification.req( status: Installing )
+FirmwareStatusNotification.conf()
+Installing...
+alt [automatic reboot after firmware update]
+Reboot
+BootNotification.req(chargePointModel, chargePointVendor, [chargeBoxSerialNumber],
+[chargePointSerialNumber], [firmwareVersion], [iccid], [imsi], [meterSerialNumber],
+[meterType])
+BootNotification.conf(currentTime, heartbeatInterval, status)
+FirmwareStatusNotification.req( status: Installed )
+FirmwareStatusNotification.conf()
+[manual reboot after firmware update]
+FirmwareStatusNotification.req( status: Installed )
+FirmwareStatusNotification.conf()
+Reset.req(Hard)
+Reset.conf()
+Reboot
+BootNotification.req(chargePointModel, chargePointVendor, [chargeBoxSerialNumber],
+[chargePointSerialNumber], [firmwareVersion], [iccid], [imsi], [meterSerialNumber],
+[meterType])
+BootNotification.conf(currentTime, heartbeatInterval, status)
+Figure 2. Sequence Diagram: firmware update
+Additional text During downloading and installation of the firmware, the Charge Point MUST send FirmwareStatusNotification.req PDUs to
+keep the Central System updated with the status of the update process.
+The sequence diagram above is an example. It is good practice to first reboot the Charge Point to check the new firmware is
+booting and able to connect to the Central System, before sending the status: Installed. It is not a requirement.
+3.48. Page 61, section: 5.19: No description new firmware should be installed.
+There is no requirement on the installation of new firmware.
+19

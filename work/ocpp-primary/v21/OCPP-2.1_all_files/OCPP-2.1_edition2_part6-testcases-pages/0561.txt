@@ -1,0 +1,58 @@
+TC_K_112_CS: Get Composite Schedule - randomizedDelay
+Test case name Get Composite Schedule - randomizedDelay
+Test case Id TC_K_112_CS
+Use case Id(s) K08
+Requirement(s) K08.FR.06
+System under test Charging Station
+Description The CSMS requests a composite schedule which is a combination of local limits and the prevailing
+Charging Profiles of the different chargingProfilePurposes and stack levels.
+Purpose To verify if the Charging station doesn’t use the randomizedDelay when calculating a composite
+charging schedule while no transaction is running.
+Prerequisite(s) Charging Station has SmartChargingCtrlr.SupportsFeature[RandomizedDelay] = true
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.id <Configured chargingProfileId>
+chargingProfile.stackLevel 0
+chargingProfile.chargingProfilePurpose TxDefaultProfile
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.startSchedule <Current
+dateTime>
+chargingProfile.chargingSchedule.randomizedDelay 1000
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].s
+tartPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].li
+mit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].n
+umberPhases <Configured numberPhases>
+chargingProfile.chargingSchedule.chargingSchedulePeriod[1].s
+tartPeriod 3600
+chargingProfile.chargingSchedule.chargingSchedulePeriod[1].li
+mit 7 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule.chargingSchedulePeriod[1].n
+umberPhases <Configured numberPhases>
+chargingProfile.chargingSchedule.chargingSchedulePeriod[2].s
+tartPeriod 7200
+chargingProfile.chargingSchedule.chargingSchedulePeriod[2].li
+mit 8 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule.chargingSchedulePeriod[2].n
+umberPhases <Configured numberPhases>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 559/1383 Part 6 - Test Cases

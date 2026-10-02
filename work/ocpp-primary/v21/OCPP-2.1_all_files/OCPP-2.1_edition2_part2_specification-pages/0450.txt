@@ -1,0 +1,37 @@
+Chapter 4. Use cases & Requirements
+M01 - Certificate installation EV
+Updated in OCPP 2.1
+No. Type Description
+1 Name Certificate Installation
+2 ID M01
+Reference ISO15118-1 C2
+3 Objective(s) To install a new certificate from the CSMS in the EV.
+4 Description The EV initiates installing a new certificate. The Charging Station forwards the request for a new
+certificate to the CSMS.
+See also ISO15118-1, use case Description C2, page 22.
+Actors EV, Charging Station, CSMS
+Scenario description 15118:
+See ISO15118-1, use case Description C2, Scenario Description, first 3 bullets, page 22.
+OCPP:
+- The Charging Station sends Get15118EVCertificateRequest message with action = Install to
+the CSMS.
+- The CSMS responds with Get15118EVCertificateResponse to the Charging Station.
+Alternative scenario(s) n/a
+5 Prerequisites - Communication between EV and EVSE SHALL be established successfully.
+- Online connection between Charging Station and CSMS SHALL be possible.
+- CSMS should be able to communicate with a third party that can process the
+CertificateInstallationRequest, for example a contract certificate pool.
+6 Postcondition(s) See ISO15118-1, use case End conditions C2, page 23.
+7 Error handling In case the CSMS is not able to respond within the specified time, the Charging Station SHALL
+indicate failure to the EV.
+8 Remark(s) The message timeout in ISO15118-2 for CertificateInstallationReq is 5 seconds.
+There may be alternative communication paths for doing a certificate installation. However, these
+are outside the scope of this standard.
+CSMS Charging Station EV
+CertificateInstallationReq()
+Get15118EVCertificateRequest(15118SchemaVersion, install, exiRequest)
+Get15118EVCertificateResponse(status, exiResponse)
+CertificateInstallationRes()
+Figure 157. Certificate installation with ISO 15118-2
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 437/803 Part 2 - Specification

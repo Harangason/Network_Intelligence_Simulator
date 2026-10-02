@@ -1,0 +1,61 @@
+Packet Header, PH
+Packet Footer, PF
+FS3
+FE0
+Frame Blanking
+KEY:
+PH – Packet Header PF – Packet Footer + Filler (if applicable)
+FS – Frame Start FE – Frame End
+LS – Line Start LE – Line End
+Frame Blanking
+Line Blanking
+Sensor 0
+VC-ID = 0
+Sensor 1
+VC-ID = 1
+Sensor 2
+VC-ID = 2
+Sensor 3
+VC-ID = 3
+FS2FS0 FS1
+FE1 FE2 FE3
+Frame 1
+Image Data
+{Sensor 0}
+{Sensor 1}
+{Sensor 2}
+{Sensor 3}    
+S0L1
+S1L1
+S2L1
+S3L1
+.
+.
+.
+.
+.
+.
+S0LN
+S1LN
+S2LN
+S3LN
+*Blanking intervals do not provide accurate synchronization timing
+Figure 7-19. Basic Synchronized Format
+7.4.25.4 Line-Interleaved CSI-2 Forwarding
+In synchronized forwarding, the forwarding engine may be programmed to send only one of each 
+synchronization packet. For example, if forwarding from all four input ports, only one FS, FE packet is sent 
+for each video frame. The synchronization packets for the other 3 ports are dropped. The video line packets for 
+each video stream are sent as individual packets. This effectively merges the frames from N video sources into a 
+single frame that has N times the number of video lines.
+In this mode, all video streams must also have the same VC, although this is not checked by the forwarding 
+engine. This is useful when connected to a controller that does not support multiple VCs. The receiving 
+processor must process the image based on order of video line reception.
+Example Synchronized traffic to CSI-2 Transmit port at start of frame:
+FS0 – S0L1 – S1L1 – S2L1 – S3L1 – S0L2 – S1L2 – S2L2 – S3L2 – S0L3 …
+Example Synchronized traffic to CSI-2 Transmit port at end of frame:
+... S0LN – S1LN – S2LN – S3LN – FE0
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+52 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

@@ -1,0 +1,54 @@
+7.5.5 Remote Target Addressing
+Various system use cases require multiple sensor devices with the same fixed I2C target address to be remotely 
+accessible from the same I2C bus at the deserializer. The DS90UB960-Q1 provides TargetID virtual addressing 
+to differentiate target addresses when connecting two or more remote devices. Eight pairs of TargetAlias 
+and TargetID registers are allocated for each FPD-Link III Receive port in registers 0x5D through 0x6C. The 
+TargetAlias register allows programming a virtual address which the host controller uses to access the remote 
+device. The TargetID register provides the actual target address for the device on the remote I2C bus. The write 
+enable bit in register 0x4C must be set before configuring the TargetAlias and TargetID for each selected RX 
+Port. Eight pairs of registers are available for each port (total of 32 pairs), so multiple devices may be directly 
+accessible remotely without the need for reprogramming. Multiple TargetAlias can be assigned to the same 
+TargetID as well.
+7.5.6 Broadcast Write to Remote Devices
+The DS90UB960-Q1 provides a mechanism to broadcast I2C writes to remote devices (either remote targets 
+or serializers). For each Receive port, the TargetID/Alias register pairs would be programmed with the same 
+TargetAlias value so they would each respond to the same local I2C command. The TargetID value would match 
+the intended remote device address. The SER_ALIAS_ID at each receive port can also be set with the same 
+Alias value, in order to send a broadcast write to each connected remote serializer. Before setting the register 
+values for the TargetID/Alias or SER_ID/SER_ALIAS_ID, RX_WRITE_PORT_x in register 0x4C must be set in 
+order to select the receive ports(s) that will be configured for the ID/Alias values. When performing broadcast 
+writes, the ACK and other return data from the I2C transaction will come from only one of the Target devices 
+included in the broadcast write. The receive port selected in RX_READ_PORT in register 0x4C will determine 
+the source of the return I2C transaction on the local bus.
+7.5.6.1 Code Example for Broadcast Write
+#  "FPD3_PORT_SEL Broadcast RX0/1/2/3"
+WriteI2C(0x4c,0x0f) # RX_PORT0 read; RX0/1/2/3 write
+#  "Enable I2C Pass Through"
+WriteI2C(0x58,0x58) # enable I2C pass through
+WriteI2C(0x5c,0x18) # "SER_ALIAS_ID"
+WriteI2C(0x5d,0x60) # "TargetID[0]"
+WriteI2C(0x65,0x60) # "TargetAlias[0]"
+7.5.7 I2C Controller Proxy
+The DS90UB960-Q1 implements an I2C controller that acts as a proxy controller to regenerate I2C accesses 
+originating from a remote serializer. By default, the I2C Controller Enable bit (I2C_CONTROLLER_EN) is 
+set to 0 in register 0x02[5] to block Controller access to local deserializer I2C from remote serializers. Set 
+I2C_CONTROLLER_EN = 1 if there is a remote controller device located on the I2C bus of any of the connected 
+serializers that will send remote I2C commands to the deserializer. The proxy controller is an I2C-compatible 
+controller capable of operating with Standard-mode, Fast-mode, or Fast-mode Plus I2C timing. It is also capable 
+of arbitration with other controllers, allowing multiple controllers and targets to exist on the I2C bus. A separate 
+I2C proxy controller is implemented for each Receive port. This allows independent operation for all sources 
+to the I2C interface. Arbitration between multiple sources is handled automatically using I2C multi-controller 
+arbitration.
+7.5.8 I2C Controller Proxy Timing
+The proxy controller timing parameters are based on the REFCLK timing. Timing accuracy for the I2C proxy 
+controller based on the REFCLK clock source attached to the DS90UB960-Q1 deserializer. The I2C Controller 
+regenerates the I2C read or write access using timing controls in the registers 0xA and 0xB to regenerate the 
+clock and data signals to meet the desired I2C timing in Standard, Fast, or Fast-mode Plus modes of operation.
+I2C Controller SCL High Time is set in register 0xA[7:0]. This field configures the high pulse width of the SCL 
+output when the Serializer is the Controller on the local deserializer I2C bus. The default value is set to provide 
+a minimum 5-µs SCL high time with the reference clock at 25 MHz + 100 ppm including four additional oscillator 
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+60 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

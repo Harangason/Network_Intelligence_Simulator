@@ -1,0 +1,31 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+• REQ (requests): these are commands from the DH to the NFCC
+• RSP (responses): these are responses from the NFCC to the DH.
+The diagram below details how the Payload is modified to insert a header, which carries the REQ ID or the RSP
+ID and some parameters, if required.
+Figure 43. Data message payload for the TAG-CMD Interface
+REQs and RSPs do not share exactly the same structure:
+• REQs: Although illustrated with 2 parameters on the figure above, REQs may have no parameters or only
+one. Some REQuests might also need parameters bigger than 1 Byte. Parsing The REQ ID is the way to
+know how many parameters follow and how long they are.
+• RSPs: there are no parameters in ReSPonses. A Byte is added at the end of the payload (after the DATA
+field) to inform the DH on the RF status (to report RF errors if they were some). The Status codes used are
+the following:
+Value Description
+0x00 STATUS_OK
+0x03 STATUS_FAILED
+0xB0 RF_TRANSMISSION_ERROR
+0xB1 RF_PROTOCOL_ERROR
+0xB2 RF_TIMEOUT_ERROR
+Others RFU
+Table 47. TAG-CMD RF Status code
+7.1.5  [PN7160-NCI] extension: REQs and RSPs rules
+A REQ command is always going from DH to RF, through the NFCC.
+An RSP response is always going from the RF to the DH, through the NFCC.
+The DH SHALL wait until it has received an RSP associated to a REQ before it can send a new REQ.
+7.1.6  [PN7160-NCI] extension: List of REQs and RSPs
+In this section, the following acronyms are used:
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+58 / 147

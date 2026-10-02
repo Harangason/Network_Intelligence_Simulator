@@ -1,0 +1,43 @@
+No. Type Description
+Scenario description 1. CSMS sends ResetRequest with type = ImmediateAndResume to Charging Station.
+2. Charging Station responds with ResetResponse with status = Accepted.
+3. Charging Station sends a TransactionEventRequest with eventType = Updated and
+triggerReason = ResetCommand to signal that a reset will be performed.
+4. Charging Station remembers the charging state of ongoing transactions, stops energy
+transfer, and unlocks the connectors in case of detachable cables.
+5. Charging Station will not end the ongoing transaction(s), but resume them after the reset.
+6. Charging Station resets the entire Charging Station or EVSE
+a. Only when no evseId was supplied, the Charging Station reboots and returns to a
+state as just having been booted, B01 - Cold Boot Charging Station applies.
+7. Charging Station locks the connectors again in case of detachable cables.
+8. Charging Station resumes connectivity with the EVs and resumes the transactions in the
+charging state they had before the reset.
+a. If TxAllowEnergyTransferResumption = true, the energy transfer on the
+transaction will be resumed.
+b. If TxAllowEnergyTransferResumption = false, the energy transfer on the
+transaction will not be resumed.
+9. Charging Station sends a TransactionEventRequest with eventType = Updated and
+triggerReason = TxResumed to signal that the transaction has been resumed.
+Alternative scenario(s) B11 - Reset Without Ongoing Transaction
+B12 - Reset With Ongoing Transaction.
+5 Prerequisite(s) A transaction is ongoing.
+6 Postcondition(s) Successful postcondition:
+The Charging Station was able to reset itself or EVSE.
+The transaction continues and energy transfer only continues when
+TxAllowEnergyTransferResumption = true.
+Failure postcondition:
+• The Charging Station was not able to reset itself or its EVSE,
+• The Charging Station was not able to resume the transaction,
+• The EV was not able to resume the energy transfer.
+7 Error handling After having accepted the ResetRequest, any TransactionEventRequest messages that cannot be
+delivered to the CSMS MUST be queued.
+8 Remark(s) The EVSE of the Charging Station will have to resume the charging session towards the EV.
+Depending on the type of connector and protocol (Mode 3, ISO 15118, CHAdeMO, etc.) this will
+involve different actions, which are not described in this specification.
+Only when the configuration variable TxResumptionTimeout exists and has a value greater
+than zero, a ResetRequest with type = ImmediateAndResume is supported. After the reset all
+transactions are resumed, regardless of the value of TxResumptionTimeout.
+Charging Station may reject the reset request when it is unable to perform it, for example when it
+is busy with a firmware update process.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 83/803 Part 2 - Specification

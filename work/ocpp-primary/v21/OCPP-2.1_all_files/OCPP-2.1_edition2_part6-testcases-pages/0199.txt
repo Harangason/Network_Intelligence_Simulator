@@ -1,0 +1,18 @@
+Tool validations
+* Step 1: (First TransactionEventRequest with idToken)
+Message TransactionEventRequest
+- transactionInfo.transactionLimit.maxCost must be 50.00
+* Step 2:
+A message TransactionEventRequest
+- eventType is Ended
+- triggerReason is EVConnectionTimeOut
+* Step 4:
+Message NotifySettlementRequest
+- transactionId must be <transactionId>
+- pspRef must be <Equal to idToken from TransactionEventRequest with triggerReason Authorized or RemoteStart>
+- status must be Canceled
+- settlementTime must be <near current time>
+Post scenario validations:
+- The authorization amount of 50.00 EUR is released and the payment is cancelled.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 197/1383 Part 6 - Test Cases

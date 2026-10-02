@@ -1,0 +1,29 @@
+MODBUS over serial line specification and implementation guide V1.02  Modbus.org    
+Modbus.org http://www.modbus.org/ 7/44
+Dec 20, 2006 
+2 MODBUS Data Link Layer 
+2.1 MODBUS Master / Slaves protocol principle  
+T
+he MODBUS Serial Line protocol is a Master-Slaves protocol.  Only one master (at the same time) is connected to the bus, and o ne 
+or several (247 maximum number) slaves nodes are also connected to the same serial bus.   A MODBUS communication is always 
+initiated by the master.  The slave nodes will never transmit data without receiving a request from the master node.  The slave  nodes 
+will never communicate with each other.  The master node initiates only one MODBUS transaction at the same time. 
+The master node issues a MODBUS request to the slave nodes in two modes : 
+/barb4right  I n  unicast mode , the master addresses an individual slave.  After receiving and processing the request, the slave returns a 
+message (a 'reply') to the master . 
+In that mode, a MODBUS transaction consists of 2 messages : a request from the master, and a reply from the slave. 
+Each slave must have an unique address (from 1 to 247) so that it can be addressed independently from other nodes. 
+/barb4right  In broadcast mode, the master can send a request to all slaves. 
+No response is returned to broadcast requests sent by the master.  The broadcast requests are necessarily writing commands.  All 
+devices must accept the broadcast for writing function.  The address 0 is reserved to identify a broadcast exchange. 
+slave slave slave
+master
+request
+reply
+Figure 3: 
+Unicast mode 
+slave slave slave
+master
+request
+Figure 4: 
+Broadcast mode 

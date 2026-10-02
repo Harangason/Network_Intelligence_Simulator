@@ -1,0 +1,100 @@
+ID Precondition Requirement definition Note
+K01.FR.19 The CSMS SHALL NOT set phaseToUse in a
+SetChargingProfileRequest when numberPhases is other
+than 1.
+K01.FR.20 The CSMS SHALL NOT set phaseToUse in a
+SetChargingProfileRequest when the EVSE does not have
+ACPhaseSwitchingSupported defined and set to true.
+K01.FR.21 The optional ChargingSchedule field minChargingRate
+MAY be used by the Charging Station to optimize the
+power distribution between the EVSEs.
+The parameter informs the
+Local Controller that
+charging below
+minChargingRate is
+inefficient, giving the
+possibility to select another
+balancing strategy.
+K01.FR.22 The CSMS SHALL NOT set chargingProfilePurpose to
+ChargingStationExternalConstraints in a
+SetChargingProfileRequest.
+This purpose is only used
+when an external system
+has set a charging
+limit/schedule.
+K01.FR.26 When a
+SetChargingProfileRequest
+is received with a value for
+chargingRateUnit, that is not
+configured in the
+configuration variable
+ChargingScheduleChar
+gingRateUnit.
+Charging Station SHALL respond with
+SetChargingProfileResponse with status Rejected.
+It is recommended to
+include reasonCode =
+"UnsupportedRateUnit".
+K01.FR.27 ChargingProfiles set via SetChargingProfileRequest
+SHALL be persistent across reboots/power cycles.
+K01.FR.28 When a
+SetChargingProfileRequest
+is received for an evseId
+that does not exist.
+Charging Station SHALL respond with
+SetChargingProfileResponse with status Rejected
+It is recommended to
+include reasonCode =
+"UnknownEVSE".
+K01.FR.29 When Charging Station does
+not support smart charging.
+Charging Station SHALL respond with RPC Framework
+CALLERROR: NotSupported or NotImplemented.
+K01.FR.30 chargingProfile has a
+chargingSchedule with
+startSchedule set to a time
+in the future
+The Charging Station SHALL only start imposing the
+limitation of this schedule as of point in time set by
+startSchedule
+K01.FR.31 The startPeriod of the first chargingSchedulePeriod in a
+chargingSchedule SHALL always be 0.
+K01.FR.32 (K01.FR.14 OR K01.FR.15)
+AND a transaction is active
+on the specified EVSE(s)
+(evseId = 0 refers to all
+EVSEs.)
+The Charging Station SHALL continue the transaction on
+the specified EVSE(s), but switch to using the
+new/updated TxDefaultProfile.
+K01.FR.33 K01.FR.03 AND
+the given transactionId is
+not known
+The Charging Station SHALL reject the
+SetChargingProfileRequest.
+K01.FR.34 The CSMS has not received
+a
+NotifyEVChargingNeedsReq
+uest for the current
+transaction, i.e. charging
+session is not using ISO
+15118
+The ChargingProfile in the SetChargingProfileRequest
+SHALL contain only one ChargingScheduleType.
+See use cases K15-K17 for
+ISO 15118 smart charging.
+K01.FR.35 The list of ChargingSchedulePeriod elements in a
+chargingSchedule SHALL be ordered by increasing values
+of ChargingSchedulePeriod.startPeriod.
+This means the list is in
+chronological order
+K01.FR.36 When validFrom of a
+ChargingProfile is set
+The Charging Station SHALL consider the ChargingProfile
+to be valid when current time >= validFrom.
+K01.FR.37 When validTo of a
+ChargingProfile is set
+The Charging Station SHALL consider the ChargingProfile
+to be valid when current time < validTo.
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 249/491 Part 2 - Specification

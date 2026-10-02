@@ -1,0 +1,72 @@
+Chapter 5. Reason Codes
+The table below provides a list of standardized reason codes that can be used in the optional statusInfo element (of type
+StatusInfoType) of a response.
+For each reason code, some messages that might typically return them are shown. This is not an exhaustive list and only indicative.
+StatusInfo is optional. Any implementation should be able to function properly without statusInfo, because every message has the
+response code values that are essential to perform the function. The reasonCode and additionalInfo in StatusInfoType are meant to
+provide more insight on what is happening and maybe allow for some automatic recovery.
+The grouping of the reasonCodes in the table below is only to make it easier to look-up codes for certain situations. The grouping
+does not affect the meaning of the reasonCode.
+IMPORTANT The existence of a reason code in this table does not imply a requirement to use it nor does it imply a
+requirement to any of the mentioned messages.
+(Updated in v2.0)
+Group Reason code Description Typically used for
+Charging Profiles
+DuplicateProfile A charging profile with same stackLevel -
+chargingProfilePurpose combination already
+exists on the Charging Station and has an
+overlapping validity period.
+SetChargingProfile
+InvalidProfile Provided chargingProfile contains invalid
+elements.
+SetChargingProfile,
+RequestStartTransaction
+InvalidProfileId Provided chargingProfile has an id that is within
+an invalid range.
+SetChargingProfile,
+RequestStartTransaction
+InvalidSchedule Provided chargingSchedule contains invalid
+elements.
+SetChargingProfile,
+RequestStartTransaction
+InvalidStackLevel Provided value for stackLevel is invalid. SetChargingProfile
+InvalidOperationMode Provided operationMode is invalid for this
+chargingProfilePurpose
+SetChargingProfile
+NoFreqWattCurve A frequency-watt curve is missing in a charging
+schedule period with operation mode =
+LocalFrequency.
+SetChargingProfile
+NoPhaseForDC Phase selection for a DC EVSE is not supported SetChargingProfile
+PhaseConflict Phase conflict between applicable charging
+profiles
+SetChargingProfile
+NoSignalWattCurve A signal-watt curve is missing in a charging
+schedule period when an AFRRSignalRequest is
+received.
+AFRRSignal
+RateLimitExceeded A charging profile of the same purpose is
+submitted too frequently
+SetChargingProfile
+UnsupportedKind The requested charging profile kind is not
+supported
+SetChargingProfile
+UnsupportedPurpose The requested charging profile purpose is not
+supported
+SetChargingProfile
+UnsupportedRateUnit A chargingRateUnit is provided that is not
+supported.
+SetChargingProfile
+Charging Station
+CSNotAccepted BootNotification of Charging Station has not (yet)
+been accepted by CSMS.
+RequestStartTransaction,
+RequestStopTransaction
+FixedCable The connector has its own fixed cable that cannot
+be unlocked.
+UnlockConnector
+NoCable No cable is connected at this time. UnlockConnector
+UnknownConnectorId Connector Id is not known on EVSE ChangeAvailability,
+UnlockConnector
+v2.1, 2025-12-03 Chapter 5. Reason Codes
+OCPP 2.1 - © Open Charge Alliance 2025 45/52 Part 2 - Appendices

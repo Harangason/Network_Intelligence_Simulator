@@ -1,0 +1,110 @@
+ID Precondition Requirement definition Note
+K01.FR.105
+(2.1)
+CSMS SHALL support sending a
+SetChargingProfileRequest with a chargingSchedule with
+a limitAtSoC element.
+OperationMode
+K01.FR.110
+(2.1)
+When a new
+ChargingSchedulePeriodTyp
+e starts in a
+ChargingProfileType that
+applies to this transaction,
+and the (optional)
+operationMode differs from
+that of the previous
+ChargingSchedulePeriodTyp
+e
+Charging Station SHALL send a TransactionEventRequest
+with triggerReason = OperationModeChanged and a
+transactionInfo element containing the new
+operationMode.
+The default value (when
+absent) of operationMode is
+ChargingOnly.
+K01.FR.111
+(2.1)
+When a charging profile has
+chargingProfilePurpose =
+PriorityCharging or
+ChargingStationMaxPr
+ofile
+The charging profile SHALL only contain
+chargingSchedulePeriods with operationMode =
+ChargingOnly or without operationMode.
+K01.FR.112
+(2.1)
+When a charging profile has
+chargingProfilePurpose =
+ChargingStationExter
+nalLimits
+The charging profile SHALL only contain
+chargingSchedulePeriods with operationMode =
+ChargingOnly, ExternalLimits,
+ExternalSetpoint or without operationMode.
+K01.FR.113
+(2.1)
+When a charging profile has
+chargingProfilePurpose =
+LocalGeneration
+The charging profile SHALL only contain
+chargingSchedulePeriods with operationMode =
+ChargingOnly, ExternalLimits or without
+operationMode.
+K01.FR.114
+(2.1)
+When Charging Station
+receives a
+SetChargingProfileRequest
+with a charging profile that
+does not obey to
+K01.FR.111, K01.FR.112,
+K01.FR.113
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and statusInfo with reasonCode = "InvalidOperationMode"
+K01.FR.115
+(2.1)
+When Charging Station
+receives a
+SetChargingProfileRequest
+with a charging profile that
+contains a
+ChargingSchedulePeriodTyp
+e with a value for
+operationMode that is not
+ChargingOnly and not
+part of the attributeValue of
+V2XSupportedOperatio
+nModes
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and statusInfo with reasonCode = "InvalidOperationMode"
+K01.FR.116
+(2.1)
+When Charging Station
+receives a
+SetChargingProfileRequest
+with a charging profile that
+contains a
+ChargingSchedulePeriodTyp
+e with a value for
+operationMode that is
+CentralSetpoint,
+CentralFrequency,
+LocalFrequency,
+LocalLoadBalancing or
+Idle AND
+The related transaction is
+not supporting bidirectional
+charging (BPT)
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and statusInfo with reasonCode = "InvalidOperationMode"
+See also K 3.4 Smart
+Charging Operation Modes.
+Checking optional support
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 337/803 Part 2 - Specification

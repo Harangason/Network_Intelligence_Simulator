@@ -1,0 +1,44 @@
+ChargingProfileKindEnumType is used by: Common:ChargingProfileType
+Value Description
+Absolute Schedule periods are relative to a fixed point in time defined in the schedule. This requires that startSchedule
+is set to a starting point in time.
+Recurring The schedule restarts periodically at the first schedule period. To be most useful, this requires that
+startSchedule is set to a starting point in time.
+Relative Charging schedule periods should start when the EVSE is ready to deliver energy. i.e. when the EV driver is
+authorized and the EV is connected. When a ChargingProfile is received for a transaction that is already
+charging, then the charging schedule periods should remain relative to the PowerPathClosed moment.
+No value for startSchedule should be supplied.
+3.13. ChargingProfilePurposeEnumType
+Enumeration
+Purpose of the charging profile.
+ChargingProfilePurposeEnumType is used by: Common:ChargingProfileType ,
+clearChargingProfile:ClearChargingProfileRequest.ClearChargingProfileType ,
+getChargingProfiles:GetChargingProfilesRequest.ChargingProfileCriterionType
+Value Description
+ChargingStationExte
+rnalConstraints
+Additional constraints that will be incorporated into a local power schedule. Only valid for a Charging Station.
+Therefore evse.Id MUST be 0 in the SetChargingProfileRequest message.
+ChargingStationMax
+Profile
+Configuration for the maximum power or current available for an entire Charging Station.
+TxDefaultProfile Default profile that can be configured in the Charging Station. When a new transaction is started, this profile
+SHALL be used, unless it was a transaction that was started by a RequestStartTransactionRequest with a
+ChargingProfile that is accepted by the Charging Station.
+TxProfile Profile with constraints to be imposed by the Charging Station on the current transaction, or on a new
+transaction when this is started via a RequestStartTransactionRequest with a ChargingProfile. A profile with
+this purpose SHALL cease to be valid when the transaction terminates.
+3.14. ChargingProfileStatusEnumType
+Enumeration
+Status returned in response to SetChargingProfileRequest.
+ChargingProfileStatusEnumType is used by: setChargingProfile:SetChargingProfileResponse
+Value Description
+Accepted Request has been accepted and will be executed.
+Rejected Request has not been accepted and will not be executed.
+3.15. ChargingRateUnitEnumType
+Enumeration
+Unit in which a charging schedule is defined.
+ChargingRateUnitEnumType is used by: Common:ChargingScheduleType , Common:CompositeScheduleType ,
+getCompositeSchedule:GetCompositeScheduleRequest
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 419/491 Part 2 - Specification

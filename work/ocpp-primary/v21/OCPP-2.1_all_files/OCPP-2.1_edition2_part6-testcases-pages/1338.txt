@@ -1,0 +1,49 @@
+Q Bidirectional Power Transfer
+TC_Q_102_CSMS: V2X Authorisation - ISO15118-20 - Charging only (V2X control)
+before starting V2X - Allowed Energy Transfer modes omitted
+Test case name V2X Authorisation - ISO15118-20 - Charging only (V2X control) before starting V2X - Allowed Energy
+Transfer modes omitted
+Test case Id TC_Q_102_CSMS
+Use case Id(s) Q01
+Requirement(s) Q01.FR.08
+System under test CSMS
+Description Authorization of an EV by the CSMS to start a V2X power transfer loop.
+Purpose To check if the CSMS is able to provide an empty allowedEnergyTranfer list if it’s not able to determine a
+list for allowedEnergyTranfer.
+Prerequisite(s) CSMS supports ISO15118-20
+CSMS can be configured of influenced so it is not able to determine a list of allowedEnergyTranfer.
+Before (Preparations)
+Configuration State:
+- Configure the CSMS so that it is unable to determine a list of allowedEnergyTranfer.
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Prepare CSMS with needed meta data from device model
+Manual action: trigger CSMS to get the base report
+2. The Test System responds with a GetBaseReportResponse
+with
+status Accepted
+1. The CSMS sends a GetBaseReportRequest
+3. The Test System sends a NotifyReportRequest with
+requestId <GetBaseReportRequest.requestId of step 1>
+reportData[0].component.name V2XChargingCtrlr
+reportData[0].component.evse.id 1
+reportData[0].variable.name V2XEnabled
+reportData[0].variableAttribute.value true
+4. The CSMS responds with a NotifyReportResponse
+Start transaction
+5. The Test System sends an AuthorizeRequest
+6. The CSMS responds with an AuthorizeResponse
+Tool validations
+* Step 2:
+Message: GetBaseReportRequest
+- reportBase must be FullInventory
+* Step 6:
+Message: AuthorizeResponse
+- idTokenInfo.status must be Accepted
+- allowedEnergyTransfer must be <omitted>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1336/1383 Part 6 - Test Cases

@@ -1,0 +1,41 @@
+ID Precondition Requirement definition
+N08.FR.03 N08.FR.06 OR N08.FR.07
+AND
+The severity number of the monitor is equal to
+or lower than the severity number set in the
+Configuration Variable
+OfflineMonitoringEventQueueingSever
+ity 
+AND
+The Charging Station is offline
+The Charging Station SHALL queue this NotifyEventRequest and
+deliver it when it is back online.
+N08.FR.04 N08.FR.06 OR N08.FR.07 AND
+This NotifyEventRequest is the first or only
+report part.
+The Charging Station SHALL set seqNo to 0.
+N08.FR.05 N08.FR.06 OR N08.FR.07 AND
+When the variableMonitoring setting which
+triggered the event is either of type Periodic or
+PeriodicClockAligned
+The Charging Station SHALL set trigger to Periodic.
+N08.FR.06 When there is a monitor with type Periodic on a
+Component/Variable combination AND
+the number of seconds specified in value have
+passed (starting from the time that this monitor
+was set or triggered)
+The Charging Station SHALL send a NotifyEventRequest with
+trigger Periodic for the triggered monitor.
+N08.FR.07 When there is a monitor with type
+PeriodicClockAligned on a Component/Variable
+combination AND
+the number of seconds specified by value,
+starting from the nearest clock-aligned interval
+after this monitor was set, have passed (For
+example, a value of 900 will trigger event notices
+at 0, 15, 30 and 45 minutes after the hour, every
+hour)
+The Charging Station SHALL send a NotifyEventRequest with
+trigger Periodic for the triggered monitor.
+Edition 4, 2025-12-03 N. Diagnostics
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 337/491 Part 2 - Specification

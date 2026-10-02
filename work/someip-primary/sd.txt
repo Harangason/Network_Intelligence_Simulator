@@ -1,0 +1,4233 @@
+PDF_PAGE1
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Document Title
+SOME/IP Service Discovery
+Protocol Specification
+Document Owner AUTOSAR
+Document Responsibility AUTOSAR
+Document Identification No 802
+Document Status published
+Part of AUTOSAR Standard Foundation
+Part of Standard Release R25-11
+Document Change History
+Date Release Changed by Description
+2025-11-27 R25-11
+AUTOSAR
+Release
+Management
+• Clarified parallel subscription
+requirements
+• Clarified the requirement regarding
+sending duplicate events/fields
+• Clarified the requirement regarding
+trigerring of Subscribe entries based on
+Offer entries
+• Editorial changes and bug fixes
+2024-11-27 R24-11
+AUTOSAR
+Release
+Management
+• Editorial changes and bug fixes
+2023-11-23 R23-11
+AUTOSAR
+Release
+Management
+• Adaptions in IPv4/6 SD endpoint options
+handling for AP compatibility
+• Editorial changes
+2022-11-24 R22-11
+AUTOSAR
+Release
+Management
+• Contradicting requirements improved
+• Editorial changes
+▽
+1 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE2
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+△
+2021-11-25 R21-11
+AUTOSAR
+Release
+Management
+• Removal of Explicit Initial Data Control
+Flag and Initial Data Requested Flag
+• Introduced optional functionality to
+subscribe to a multicast address
+pre-defined by a ClientService
+• Consideration of the connection status of
+a security associations for clients and
+servers was added
+• Moved specification item from CP SWS
+ServiceDiscovery to FO PRS
+SOMEIPServiceDiscoveryProtocol
+based on harmonization activities of
+both documents
+2020-11-30 R20-11
+AUTOSAR
+Release
+Management
+• Contradicting requirements improved
+• Editorial changes
+2019-11-28 R19-11
+AUTOSAR
+Release
+Management
+• Clarify:
+– Startup Behavior (random value)
+– Service Versioning in VLAN
+– Load Balancing option behavior
+– Re-boot Detection
+• Introduce retry max counter for
+subscription of Eventgroup
+• Contradicting requirements improved
+• Editorial changes
+• Changed Document Status from Final to
+published
+2019-03-29 1.5.1
+AUTOSAR
+Release
+Management
+• Editorial changes
+2018-10-31 1.5.0
+AUTOSAR
+Release
+Management
+• Clarify load balancing option usage
+• Contradicting requirements improved
+• Redundant requirements removed
+2018-03-29 1.4.0
+AUTOSAR
+Release
+Management
+• No content changes
+▽
+2 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE3
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+△
+2017-12-08 1.3.0
+AUTOSAR
+Release
+Management
+• minor changes
+2017-10-27 1.2.0
+AUTOSAR
+Release
+Management
+• Editorial changes
+2017-03-31 1.1.0
+AUTOSAR
+Release
+Management
+• Configuration Parameters SD_PORT
+and SD_MUL TICAST_IP are added and
+defined
+• Rules relating to Options are reordered
+2016-11-30 1.0.0
+AUTOSAR
+Release
+Management
+• Initial Release
+3 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE4
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Disclaimer
+This work (specification and/or software implementation) and the material contained in
+it, as released by AUTOSAR, is for the purpose of information only . AUTOSAR and the
+companies that have contributed to it shall not be liable for any use of the work.
+The material contained in this work is protected by copyright and other types of intel-
+lectual property rights. The commercial exploitation of the material contained in this
+work requires a license to such intellectual property rights.
+This work may be utilized or reproduced without any modification, in any form or by
+any means, for informational purposes only . For any other purpose, no part of the work
+may be utilized or reproduced, in any form or by any means, without permission in
+writing from the publisher.
+The work has been developed for automotive applications only . It has neither been
+developed, nor tested for non-automotive applications.
+The word AUTOSAR and the AUTOSAR logo are registered trademarks.
+4 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE5
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Table of Contents
+1 Introduction and overview 7
+1.1 Protocol purpose and objectives . . . . . . . . . . . . . . . . . . . . . . . 7
+1.2 Applicability of the protocol . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.2.1 Constraints and assumptions . . . . . . . . . . . . . . . . . . . . . . 7
+1.3 Dependencies . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 7
+1.3.1 Dependencies to other protocol layers . . . . . . . . . . . . . . . . . 7
+2 Use Cases 9
+3 Protocol Requirements 10
+3.1 Requirements T raceability . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+4 Acronyms and Abbreviations 18
+5 Protocol specification 20
+5.1 SOME/IP Service Discovery (SOME/IP-SD) . . . . . . . . . . . . . . . . 20
+5.1.1 General . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+5.1.1.1 T erms and Definitions . . . . . . . . . . . . . . . . . . . . . . . 20
+5.1.2 SOME/IP-SD Message Format . . . . . . . . . . . . . . . . . . . . . 20
+5.1.2.1 General Requirements . . . . . . . . . . . . . . . . . . . . . . . 20
+5.1.2.2 SOME/IP-SD Header . . . . . . . . . . . . . . . . . . . . . . . . 24
+5.1.2.3 Entry Format . . . . . . . . . . . . . . . . . . . . . . . . . . . . 27
+5.1.2.4 Options Format . . . . . . . . . . . . . . . . . . . . . . . . . . . 31
+5.1.2.5 Service Entries . . . . . . . . . . . . . . . . . . . . . . . . . . . 48
+5.1.2.6 Endpoint Handling for Services and Events . . . . . . . . . . . 52
+5.1.3 Service Discovery Messages . . . . . . . . . . . . . . . . . . . . . . 55
+5.1.3.1 Eventgroup Entry . . . . . . . . . . . . . . . . . . . . . . . . . . 56
+5.1.4 Service Discovery Communication Behavior . . . . . . . . . . . . . 61
+5.1.4.1 Startup Behavior . . . . . . . . . . . . . . . . . . . . . . . . . . 61
+5.1.4.2 Server Answer Behavior . . . . . . . . . . . . . . . . . . . . . . 65
+5.1.4.3 Shutdown Behavior . . . . . . . . . . . . . . . . . . . . . . . . . 66
+5.1.4.4 State Machines . . . . . . . . . . . . . . . . . . . . . . . . . . . 67
+5.1.4.5 SOME/IP-SD Mechanisms and Errors . . . . . . . . . . . . . . 77
+5.1.4.6 Error Handling . . . . . . . . . . . . . . . . . . . . . . . . . . . . 78
+5.1.5 Non-SOME/IP protocols with SOME/IP-SD . . . . . . . . . . . . . . 82
+5.1.6 Publish/Subscribe with SOME/IP and SOME/IP-SD . . . . . . . . . 85
+5.1.7 Reserved and special identifiers for SOME/IP and SOME/IP-SD. . . 106
+6 Configuration Parameters 108
+5 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE6
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+7 Protocol Usage 109
+7.1 Mandatory Feature Set and Basic Behavior . . . . . . . . . . . . . . . . 109
+7.2 Migration and Compatibility . . . . . . . . . . . . . . . . . . . . . . . . . . 112
+7.2.1 Supporting multiple versions of the same service. . . . . . . . . . . 112
+8 References 114
+A Change history of AUTOSAR traceable items 115
+A.1 Specification Item Changes between AUTOSAR Release R24-11 and
+R25-11 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 115
+A.1.1 Added Specification Items in R25-11 . . . . . . . . . . . . . . . . . . 115
+A.1.2 Changed Specification Items in R25-11 . . . . . . . . . . . . . . . . 115
+A.1.3 Deleted Specification Items in R25-11 . . . . . . . . . . . . . . . . . 115
+A.2 Specification Item Changes between AUTOSAR Release R23-11 and
+R24-11 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 116
+A.2.1 Added Specification Items in R24-11 . . . . . . . . . . . . . . . . . . 116
+A.2.2 Changed Specification Items in R24-11 . . . . . . . . . . . . . . . . 116
+A.2.3 Deleted Specification Items in R24-11 . . . . . . . . . . . . . . . . . 117
+A.3 T raceable item history of this document according to AUTOSAR Release
+R23-11 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 117
+A.3.1 Added Specification Items in R23-11 . . . . . . . . . . . . . . . . . . 117
+A.3.2 Changed Specification Items in R23-11 . . . . . . . . . . . . . . . . 117
+A.3.3 Deleted Specification Items in R23-11 . . . . . . . . . . . . . . . . . 118
+6 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE7
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+1 Introduction and overview
+This protocol specification specifies the format, message sequences, and semantics
+of the Protocol SOME/IP Service Discovery (SOME/IP-SD).
+The main tasks of the Service Discovery Protocol are communicating the availability
+of functional entities called service instances in the in-vehicle communication as well
+as controlling the send behavior of event messages. This allows sending only event
+messages to receivers requiring them (Publish/Subscribe). The solution described
+here is also known as SOME/IP-SD (Scalable service-Oriented MiddlewarE over IP -
+Service Discovery).
+1.1 Protocol purpose and objectives
+SOME/IP-SD is used to
+• Locate service instances.
+• Detect when service instances are available.
+• Implement the Publish/Subscribe handling.
+1.2 Applicability of the protocol
+SOME/IP-SD can be used for service discovery in vehicle networks.
+1.2.1 Constraints and assumptions
+The SOME/IP-SD has the following constraints:
+• SOME/IP-SD supports only IP-based communication.
+• The network communication design has to consider the following limitations, if a
+subscription is handled via multicast communication:
+– Initial events should be transported via unicast.
+1.3 Dependencies
+1.3.1 Dependencies to other protocol layers
+SOME/IP-SD depends on SOME/IP . SOME/IP itself supports both TCP and UDP com-
+munications but SOME/IP-SD uses only UDP (See [PRS_SOMEIPSD_00220]).
+7 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE8
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Figure 1.1: SOME/IP-SD Dependencies to other protocol layers
+8 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE9
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+2 Use Cases
+ID Name Description
+UC_001 Service
+Offering
+A server is offering a service instance to the network
+without the need to statically configure the endpoint of
+the service instance on the client side. This also includes
+the availability of the service instance.
+UC_002 Service
+Subscription
+A Client finds a desired service instance and subscribes
+to its eventgroups without knowing the server’s
+endpoint(s).
+UC_003 Flexible com-
+munication
+paths
+Clients can be dynamically connected to Service
+Instances at runtime; thus, avoiding static configuration.
+9 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE10
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+3 Protocol Requirements
+3.1 Requirements Traceability
+Requirement Description Satisfied by
+[RS_SOMEIPSD_
+00001]
+SOME/IP Service Discovery Protocol
+shall be used on top of SOME/IP
+Protocol
+[PRS_SOMEIPSD_00151]
+[PRS_SOMEIPSD_00152]
+[PRS_SOMEIPSD_00153]
+[PRS_SOMEIPSD_00154]
+[PRS_SOMEIPSD_00157]
+[PRS_SOMEIPSD_00158]
+[PRS_SOMEIPSD_00159]
+[PRS_SOMEIPSD_00160]
+[PRS_SOMEIPSD_00161]
+[PRS_SOMEIPSD_00162]
+[PRS_SOMEIPSD_00163]
+[PRS_SOMEIPSD_00164]
+[PRS_SOMEIPSD_00250]
+[PRS_SOMEIPSD_00251]
+[PRS_SOMEIPSD_00252]
+[PRS_SOMEIPSD_00600]
+[PRS_SOMEIPSD_00853]
+[RS_SOMEIPSD_
+00002]
+SOME/IP Service Discovery Protocol
+shall support unicast messages
+[PRS_SOMEIPSD_00256]
+[PRS_SOMEIPSD_00259]
+[PRS_SOMEIPSD_00540]
+[PRS_SOMEIPSD_00601]
+[PRS_SOMEIPSD_00602]
+[PRS_SOMEIPSD_00631]
+[PRS_SOMEIPSD_00702]
+[RS_SOMEIPSD_
+00003]
+SOME/IP Service Discovery Protocol
+shall support multicast messages
+[PRS_SOMEIPSD_00238]
+[PRS_SOMEIPSD_00239]
+[PRS_SOMEIPSD_00256]
+[PRS_SOMEIPSD_00323]
+[PRS_SOMEIPSD_00324]
+[PRS_SOMEIPSD_00325]
+[PRS_SOMEIPSD_00326]
+[PRS_SOMEIPSD_00331]
+[PRS_SOMEIPSD_00332]
+[PRS_SOMEIPSD_00333]
+[PRS_SOMEIPSD_00545]
+[PRS_SOMEIPSD_00601]
+[PRS_SOMEIPSD_00603]
+[PRS_SOMEIPSD_00631]
+[PRS_SOMEIPSD_00847]
+[PRS_SOMEIPSD_00848]
+[PRS_SOMEIPSD_00849]
+[PRS_SOMEIPSD_00850]
+[RS_SOMEIPSD_
+00004]
+SOME/IP Service Discovery Protocol
+shall support SOME/IP and
+non-SOME/IP services
+[PRS_SOMEIPSD_00437]
+[PRS_SOMEIPSD_00438]
+[PRS_SOMEIPSD_00439]
+[PRS_SOMEIPSD_00440]
+[RS_SOMEIPSD_
+00005]
+SOME/IP Service Discovery Protocol
+shall support different versions of the
+same service
+[PRS_SOMEIPSD_00512]
+[PRS_SOMEIPSD_00806]
+▽
+10 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE11
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+△
+Requirement Description Satisfied by
+[RS_SOMEIPSD_
+00006]
+SOME/IP Service Discovery Protocol
+shall define the format of the Service
+Discovery message
+[PRS_SOMEIPSD_00253]
+[PRS_SOMEIPSD_00254]
+[PRS_SOMEIPSD_00255]
+[PRS_SOMEIPSD_00258]
+[PRS_SOMEIPSD_00261]
+[PRS_SOMEIPSD_00262]
+[PRS_SOMEIPSD_00263]
+[PRS_SOMEIPSD_00264]
+[PRS_SOMEIPSD_00265]
+[PRS_SOMEIPSD_00266]
+[PRS_SOMEIPSD_00267]
+[PRS_SOMEIPSD_00268]
+[PRS_SOMEIPSD_00270]
+[PRS_SOMEIPSD_00273]
+[PRS_SOMEIPSD_00275]
+[PRS_SOMEIPSD_00276]
+[PRS_SOMEIPSD_00277]
+[PRS_SOMEIPSD_00278]
+[PRS_SOMEIPSD_00279]
+[PRS_SOMEIPSD_00280]
+[PRS_SOMEIPSD_00281]
+[PRS_SOMEIPSD_00282]
+[PRS_SOMEIPSD_00283]
+[PRS_SOMEIPSD_00284]
+[PRS_SOMEIPSD_00285]
+[PRS_SOMEIPSD_00286]
+[PRS_SOMEIPSD_00287]
+[PRS_SOMEIPSD_00305]
+[PRS_SOMEIPSD_00306]
+[PRS_SOMEIPSD_00307]
+[PRS_SOMEIPSD_00310]
+[PRS_SOMEIPSD_00314]
+[PRS_SOMEIPSD_00315]
+[PRS_SOMEIPSD_00319]
+[PRS_SOMEIPSD_00320]
+[PRS_SOMEIPSD_00321]
+[PRS_SOMEIPSD_00380]
+[PRS_SOMEIPSD_00547]
+[PRS_SOMEIPSD_00548]
+[PRS_SOMEIPSD_00549]
+[PRS_SOMEIPSD_00550]
+[PRS_SOMEIPSD_00551]
+[PRS_SOMEIPSD_00552]
+[PRS_SOMEIPSD_00554]
+[PRS_SOMEIPSD_00555]
+[PRS_SOMEIPSD_00556]
+[PRS_SOMEIPSD_00557]
+[PRS_SOMEIPSD_00558]
+[PRS_SOMEIPSD_00559]
+[PRS_SOMEIPSD_00650]
+[PRS_SOMEIPSD_00651]
+[PRS_SOMEIPSD_00654]
+[PRS_SOMEIPSD_00807]
+[PRS_SOMEIPSD_00835]
+[PRS_SOMEIPSD_00836]
+[PRS_SOMEIPSD_00837]
+[PRS_SOMEIPSD_00845]
+[PRS_SOMEIPSD_00854]
+[PRS_SOMEIPSD_00855]
+[PRS_SOMEIPSD_00856]
+[PRS_SOMEIPSD_00857]
+[PRS_SOMEIPSD_00859]
+[PRS_SOMEIPSD_00860]
+▽
+11 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE12
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+△
+Requirement Description Satisfied by
+[RS_SOMEIPSD_
+00007]
+SOME/IP Service Discovery Protocol
+shall define ordered feature sets for
+compliance of implementations
+[PRS_SOMEIPSD_00496]
+[PRS_SOMEIPSD_00497]
+[PRS_SOMEIPSD_00498]
+[PRS_SOMEIPSD_00500]
+[PRS_SOMEIPSD_00501]
+[PRS_SOMEIPSD_00502]
+[PRS_SOMEIPSD_00503]
+[PRS_SOMEIPSD_00504]
+[PRS_SOMEIPSD_00821]
+[RS_SOMEIPSD_
+00008]
+SOME/IP Service Discovery Protocol
+shall support to find the location of
+service instances
+[PRS_SOMEIPSD_00350]
+[PRS_SOMEIPSD_00351]
+[PRS_SOMEIPSD_00496]
+[PRS_SOMEIPSD_00500]
+[PRS_SOMEIPSD_00501]
+[PRS_SOMEIPSD_00512]
+[PRS_SOMEIPSD_00528]
+[PRS_SOMEIPSD_00583]
+[PRS_SOMEIPSD_00806]
+[PRS_SOMEIPSD_00825]
+[PRS_SOMEIPSD_00839]
+[RS_SOMEIPSD_
+00009]
+SOME/IP Service Discovery Protocol
+shall support to transport text-based
+names of services
+[PRS_SOMEIPSD_00277]
+[RS_SOMEIPSD_
+00010]
+SOME/IP Service Discovery Protocol
+shall provide support to transport
+optional data
+[PRS_SOMEIPSD_00220]
+[PRS_SOMEIPSD_00305]
+[PRS_SOMEIPSD_00306]
+[PRS_SOMEIPSD_00307]
+[PRS_SOMEIPSD_00310]
+[PRS_SOMEIPSD_00314]
+[PRS_SOMEIPSD_00315]
+[PRS_SOMEIPSD_00319]
+[PRS_SOMEIPSD_00320]
+[PRS_SOMEIPSD_00321]
+[PRS_SOMEIPSD_00380]
+[PRS_SOMEIPSD_00547]
+[PRS_SOMEIPSD_00548]
+[PRS_SOMEIPSD_00549]
+[PRS_SOMEIPSD_00550]
+[PRS_SOMEIPSD_00551]
+[PRS_SOMEIPSD_00552]
+[PRS_SOMEIPSD_00554]
+[PRS_SOMEIPSD_00555]
+[PRS_SOMEIPSD_00556]
+[PRS_SOMEIPSD_00557]
+[PRS_SOMEIPSD_00558]
+[PRS_SOMEIPSD_00559]
+[PRS_SOMEIPSD_00650]
+[PRS_SOMEIPSD_00651]
+[PRS_SOMEIPSD_00654]
+[PRS_SOMEIPSD_00807]
+[PRS_SOMEIPSD_00835]
+[PRS_SOMEIPSD_00836]
+[PRS_SOMEIPSD_00837]
+[PRS_SOMEIPSD_00854]
+[PRS_SOMEIPSD_00855]
+[PRS_SOMEIPSD_00856]
+[PRS_SOMEIPSD_00857]
+[PRS_SOMEIPSD_00859]
+[PRS_SOMEIPSD_00860]
+▽
+12 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE13
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+△
+Requirement Description Satisfied by
+[RS_SOMEIPSD_
+00011]
+SOME/IP Service Discovery Protocol
+shall provide support for load
+balancing
+[PRS_SOMEIPSD_00542]
+[PRS_SOMEIPSD_00544]
+[PRS_SOMEIPSD_00711]
+[PRS_SOMEIPSD_00712]
+[PRS_SOMEIPSD_00713]
+[PRS_SOMEIPSD_00714]
+[RS_SOMEIPSD_
+00012]
+SOME/IP Service Discovery Protocol
+shall support to detect whether
+service instances are active
+[PRS_SOMEIPSD_00133]
+[PRS_SOMEIPSD_00397]
+[PRS_SOMEIPSD_00427]
+[PRS_SOMEIPSD_00826]
+[PRS_SOMEIPSD_00827]
+[RS_SOMEIPSD_
+00013]
+SOME/IP Service Discovery Protocol
+shall support to offer published
+services
+[PRS_SOMEIPSD_00355]
+[PRS_SOMEIPSD_00356]
+[PRS_SOMEIPSD_00357]
+[PRS_SOMEIPSD_00358]
+[PRS_SOMEIPSD_00359]
+[PRS_SOMEIPSD_00360]
+[PRS_SOMEIPSD_00361]
+[PRS_SOMEIPSD_00362]
+[PRS_SOMEIPSD_00443]
+[PRS_SOMEIPSD_00446]
+[PRS_SOMEIPSD_00457]
+[PRS_SOMEIPSD_00480]
+[PRS_SOMEIPSD_00481]
+[PRS_SOMEIPSD_00496]
+[PRS_SOMEIPSD_00500]
+[PRS_SOMEIPSD_00504]
+[PRS_SOMEIPSD_00512]
+[PRS_SOMEIPSD_00529]
+[PRS_SOMEIPSD_00530]
+[PRS_SOMEIPSD_00583]
+[PRS_SOMEIPSD_00801]
+[PRS_SOMEIPSD_00802]
+[PRS_SOMEIPSD_00806]
+[PRS_SOMEIPSD_00821]
+[PRS_SOMEIPSD_00825]
+[PRS_SOMEIPSD_00826]
+[PRS_SOMEIPSD_00827]
+[PRS_SOMEIPSD_00839]
+[PRS_SOMEIPSD_00841]
+[RS_SOMEIPSD_
+00014]
+SOME/IP Service Discovery Protocol
+shall support to stop offering services
+[PRS_SOMEIPSD_00363]
+[PRS_SOMEIPSD_00364]
+[PRS_SOMEIPSD_00443]
+[PRS_SOMEIPSD_00446]
+[PRS_SOMEIPSD_00496]
+[PRS_SOMEIPSD_00500]
+[PRS_SOMEIPSD_00583]
+[PRS_SOMEIPSD_00840]
+▽
+13 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE14
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+△
+Requirement Description Satisfied by
+[RS_SOMEIPSD_
+00015]
+SOME/IP Service Discovery Protocol
+shall support to subscribe to events
+[PRS_SOMEIPSD_00120]
+[PRS_SOMEIPSD_00121]
+[PRS_SOMEIPSD_00122]
+[PRS_SOMEIPSD_00308]
+[PRS_SOMEIPSD_00385]
+[PRS_SOMEIPSD_00386]
+[PRS_SOMEIPSD_00387]
+[PRS_SOMEIPSD_00390]
+[PRS_SOMEIPSD_00391]
+[PRS_SOMEIPSD_00392]
+[PRS_SOMEIPSD_00393]
+[PRS_SOMEIPSD_00394]
+[PRS_SOMEIPSD_00443]
+[PRS_SOMEIPSD_00446]
+[PRS_SOMEIPSD_00449]
+[PRS_SOMEIPSD_00450]
+[PRS_SOMEIPSD_00453]
+[PRS_SOMEIPSD_00457]
+[PRS_SOMEIPSD_00461]
+[PRS_SOMEIPSD_00462]
+[PRS_SOMEIPSD_00463]
+[PRS_SOMEIPSD_00464]
+[PRS_SOMEIPSD_00465]
+[PRS_SOMEIPSD_00466]
+[PRS_SOMEIPSD_00467]
+[PRS_SOMEIPSD_00468]
+[PRS_SOMEIPSD_00470]
+[PRS_SOMEIPSD_00472]
+[PRS_SOMEIPSD_00484]
+[PRS_SOMEIPSD_00486]
+[PRS_SOMEIPSD_00487]
+[PRS_SOMEIPSD_00488]
+[PRS_SOMEIPSD_00489]
+[PRS_SOMEIPSD_00490]
+[PRS_SOMEIPSD_00496]
+[PRS_SOMEIPSD_00500]
+[PRS_SOMEIPSD_00501]
+[PRS_SOMEIPSD_00504]
+[PRS_SOMEIPSD_00512]
+[PRS_SOMEIPSD_00527]
+[PRS_SOMEIPSD_00566]
+[PRS_SOMEIPSD_00570]
+[PRS_SOMEIPSD_00571]
+[PRS_SOMEIPSD_00572]
+[PRS_SOMEIPSD_00577]
+[PRS_SOMEIPSD_00583]
+[PRS_SOMEIPSD_00806]
+[PRS_SOMEIPSD_00808]
+[PRS_SOMEIPSD_00809]
+[PRS_SOMEIPSD_00810]
+[PRS_SOMEIPSD_00821]
+[PRS_SOMEIPSD_00828]
+[PRS_SOMEIPSD_00829]
+[PRS_SOMEIPSD_00830]
+[PRS_SOMEIPSD_00842]
+[PRS_SOMEIPSD_00846]
+[PRS_SOMEIPSD_00851]
+[PRS_SOMEIPSD_00861]
+[PRS_SOMEIPSD_00862]
+▽
+14 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE15
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+△
+Requirement Description Satisfied by
+[RS_SOMEIPSD_
+00016]
+SOME/IP Service Discovery Protocol
+shall support to deny subscriptions
+[PRS_SOMEIPSD_00134]
+[PRS_SOMEIPSD_00443]
+[PRS_SOMEIPSD_00446]
+[PRS_SOMEIPSD_00466]
+[PRS_SOMEIPSD_00467]
+[PRS_SOMEIPSD_00468]
+[PRS_SOMEIPSD_00583]
+[RS_SOMEIPSD_
+00017]
+SOME/IP Service Discovery Protocol
+shall support to stop subscriptions to
+events
+[PRS_SOMEIPSD_00388]
+[PRS_SOMEIPSD_00389]
+[PRS_SOMEIPSD_00427]
+[PRS_SOMEIPSD_00428]
+[PRS_SOMEIPSD_00429]
+[PRS_SOMEIPSD_00430]
+[PRS_SOMEIPSD_00431]
+[PRS_SOMEIPSD_00432]
+[PRS_SOMEIPSD_00452]
+[PRS_SOMEIPSD_00453]
+[PRS_SOMEIPSD_00454]
+[PRS_SOMEIPSD_00496]
+[PRS_SOMEIPSD_00500]
+[PRS_SOMEIPSD_00574]
+[PRS_SOMEIPSD_00751]
+[PRS_SOMEIPSD_00752]
+[RS_SOMEIPSD_
+00018]
+SOME/IP Service Discovery Protocol
+shall support reboot detection of
+service providers
+[PRS_SOMEIPSD_00503]
+[RS_SOMEIPSD_
+00019]
+SOME/IP Service Discovery Protocol
+shall standardize error handling
+[PRS_SOMEIPSD_00125]
+[PRS_SOMEIPSD_00126]
+[PRS_SOMEIPSD_00127]
+[PRS_SOMEIPSD_00128]
+[PRS_SOMEIPSD_00129]
+[PRS_SOMEIPSD_00130]
+[PRS_SOMEIPSD_00131]
+[PRS_SOMEIPSD_00132]
+[PRS_SOMEIPSD_00231]
+[PRS_SOMEIPSD_00232]
+[PRS_SOMEIPSD_00233]
+[PRS_SOMEIPSD_00234]
+[PRS_SOMEIPSD_00235]
+[PRS_SOMEIPSD_00454]
+[PRS_SOMEIPSD_00803]
+[PRS_SOMEIPSD_00832]
+[PRS_SOMEIPSD_00844]
+[PRS_SOMEIPSD_00852]
+[RS_SOMEIPSD_
+00020]
+SOME/IP Service Discovery Protocol
+shall support TTL
+[PRS_SOMEIPSD_00452]
+[PRS_SOMEIPSD_00502]
+[RS_SOMEIPSD_
+00021]
+SOME/IP Service Discovery protocol
+shall provide functionality to discover
+services
+[PRS_SOMEIPSD_00350]
+[PRS_SOMEIPSD_00351]
+[RS_SOMEIPSD_
+00022]
+SOME/IP Service Discovery shall
+operate in a distributed manner
+[PRS_SOMEIPSD_00603]
+[RS_SOMEIPSD_
+00024]
+SOME/IP Service Discovery shall
+support configurable timings
+[PRS_SOMEIPSD_00502]
+▽
+15 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE16
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+△
+Requirement Description Satisfied by
+[RS_SOMEIPSD_
+00025]
+SOME/IP Service Discovery
+messages shall contain information
+how to contact the communication
+partner
+[PRS_SOMEIPSD_00133]
+[PRS_SOMEIPSD_00134]
+[PRS_SOMEIPSD_00341]
+[PRS_SOMEIPSD_00342]
+[PRS_SOMEIPSD_00343]
+[PRS_SOMEIPSD_00356]
+[PRS_SOMEIPSD_00357]
+[PRS_SOMEIPSD_00358]
+[PRS_SOMEIPSD_00359]
+[PRS_SOMEIPSD_00360]
+[PRS_SOMEIPSD_00361]
+[PRS_SOMEIPSD_00362]
+[PRS_SOMEIPSD_00387]
+[PRS_SOMEIPSD_00395]
+[PRS_SOMEIPSD_00397]
+[PRS_SOMEIPSD_00399]
+[PRS_SOMEIPSD_00400]
+[PRS_SOMEIPSD_00401]
+[PRS_SOMEIPSD_00404]
+[PRS_SOMEIPSD_00405]
+[PRS_SOMEIPSD_00406]
+[PRS_SOMEIPSD_00407]
+[PRS_SOMEIPSD_00408]
+[PRS_SOMEIPSD_00409]
+[PRS_SOMEIPSD_00410]
+[PRS_SOMEIPSD_00411]
+[PRS_SOMEIPSD_00412]
+[PRS_SOMEIPSD_00413]
+[PRS_SOMEIPSD_00415]
+[PRS_SOMEIPSD_00416]
+[PRS_SOMEIPSD_00417]
+[PRS_SOMEIPSD_00419]
+[PRS_SOMEIPSD_00420]
+[PRS_SOMEIPSD_00421]
+[PRS_SOMEIPSD_00422]
+[PRS_SOMEIPSD_00423]
+[PRS_SOMEIPSD_00433]
+[PRS_SOMEIPSD_00434]
+[PRS_SOMEIPSD_00435]
+[PRS_SOMEIPSD_00470]
+[PRS_SOMEIPSD_00476]
+[PRS_SOMEIPSD_00480]
+[PRS_SOMEIPSD_00481]
+[PRS_SOMEIPSD_00484]
+[PRS_SOMEIPSD_00486]
+[PRS_SOMEIPSD_00487]
+[PRS_SOMEIPSD_00488]
+[PRS_SOMEIPSD_00489]
+[PRS_SOMEIPSD_00490]
+[PRS_SOMEIPSD_00497]
+[PRS_SOMEIPSD_00498]
+[PRS_SOMEIPSD_00500]
+[PRS_SOMEIPSD_00501]
+[PRS_SOMEIPSD_00502]
+[PRS_SOMEIPSD_00504]
+[PRS_SOMEIPSD_00512]
+[PRS_SOMEIPSD_00515]
+[PRS_SOMEIPSD_00516]
+[PRS_SOMEIPSD_00517]
+[PRS_SOMEIPSD_00519]
+[PRS_SOMEIPSD_00520]
+[PRS_SOMEIPSD_00528]
+[PRS_SOMEIPSD_00529]
+▽
+▽
+16 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE17
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+△
+Requirement Description Satisfied by
+△
+[PRS_SOMEIPSD_00530]
+[PRS_SOMEIPSD_00531]
+[PRS_SOMEIPSD_00582]
+[PRS_SOMEIPSD_00583]
+[PRS_SOMEIPSD_00800]
+[PRS_SOMEIPSD_00801]
+[PRS_SOMEIPSD_00802]
+[PRS_SOMEIPSD_00804]
+[PRS_SOMEIPSD_00805]
+[PRS_SOMEIPSD_00806]
+[PRS_SOMEIPSD_00810]
+[PRS_SOMEIPSD_00821]
+[PRS_SOMEIPSD_00826]
+[PRS_SOMEIPSD_00827]
+[PRS_SOMEIPSD_00828]
+[PRS_SOMEIPSD_00833]
+[PRS_SOMEIPSD_00834]
+[PRS_SOMEIPSD_00841]
+[PRS_SOMEIPSD_00843]
+[PRS_SOMEIPSD_00846]
+Table 3.1: Requirements Tracing
+17 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE18
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+4 Acronyms and Abbreviations
+The glossary below includes acronyms and abbreviations relevant to the SOME/IP
+specification that are not included in the [1, AUTOSAR glossary].
+Abbreviation / Acronym: Description:
+Method a method, procedure, function, or subroutine that is called/in-
+voked.
+Parameters input, output, or input/output arguments of a method or an event
+Remote Procedure Call (RPC) a method call from one ECU to another that is transmitted using
+messages
+Request a message of the client to the server invoking a method
+Response a message of the server to the client transporting results of a
+method invocation
+Request/Response communica-
+tion a RPC that consists of request and response
+Fire&Forget communication a RPC call that consists only of a request message
+Event
+A uni-directional data transmission that is only invoked on
+changes or cyclically and is sent from the producer of data to
+the consumers. One event could even be both sent cyclically and
+spontaneously on change. This is completely in the responsibility
+of the sending application because the receiver has no means at
+all to distinguish between those two.
+Field a field does represent a status and thus has a valid value at all
+times on which getter, setter and notifier act upon.
+Notification Event
+an event message the notifier of a field sends. The message of
+such a notifier cannot be distinguished from the event message;
+therefore, when referring to the message of an event, this shall
+also be true for the messages of notifiers of fields.
+Getter a Request/Response call that allows read access to a field.
+Setter a Request/Response call that allows write access to a field.
+Notifier sends out event message with a new value on change of the
+value of the field.
+Service
+a logical combination of zero or more methods, zero or more
+events, and zero or more fields (empty service is allowed, e.g.
+for announcing non-SOME/IP services in SOME/IP-SD)
+Eventgroup a logical grouping of events and notification events of fields inside
+a service in order to allow subscription
+Service Interface the formal specification of the service including its methods,
+events, and fields
+Service Instance software implementation of the service interface, which can exist
+more than once in the vehicle and more than once on an ECU
+Server The ECU offering a service instance shall be called server in the
+context of this service instance.
+Client The ECU using the service instance of a server shall be called
+client in the context of this service instance.
+Union or Variant a data structure that dynamically assumes different data types.
+Offering a service instance that one ECU implements an instance of a service and tells other
+ECUs using SOME/IP-SD that they may use it.
+Finding a service instance to send a SOME/IP-SD message in order to find a needed ser-
+vice instance.
+Publishing an eventgroup
+eventgroups are implicitly published by offering a service (in-
+stance) they are part of. Based on this, a client can subscribe
+to an eventgroup.
+18 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE19
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Abbreviation / Acronym: Description:
+Subscribing to an eventgroup a client requests a server to send the content of an eventgroup of
+a service instance using a SOME/IP-SD message.
+unicast event
+Events and Field notifiers, which are transmitted via unicast. The
+IP and Port Numbers of the sender are defined by the endpoint
+options of the offered service instance. The IP and Port Numbers
+are defined by the endpoint options of the subscribe eventgroup
+by the client.
+multicast event
+Events and field notifiers which are transmitted via multicast. The
+IP and Port Number of the sender are defined by the endpoint
+option of the offered service instance. The IP and Port Numbers
+are defined by the multicast endpoint option.
+server multicast endpoint
+Multicast endpoint (including IP multicast address, port, and pro-
+tocol) provided by the server to announce where the server ser-
+vice transmits multicast events to. This is SOME/IP feature since
+the beginning and is supported by all SOME/IP implementations..
+client unicast endpoint
+Unicast endpoint (including IP multicast address, port, and pro-
+tocol) provided by the client service to announce where the client
+service expects to receive unicast events from the corresponding
+server service.
+client multicast endpoint
+Multicast endpoint (including IP multicast address, port, and pro-
+tocol) provided by the client service to announce where the client
+service expects to receive events from the corresponding server
+service. This could be used alternatively to a client unicast end-
+point. Note: This is currently an AUTOSAR proprietary extension
+to SOME/IP . Other SOME/IP standards may only allow Servers
+to sent Multicast Endpoints.
+Security Association
+The protected connection or association based on a security pro-
+tocol, like IPsec or MACsec. This also includes the state of the
+security protocol. Note: While this only somewhat also applies
+to TLS and DTLS, in the following TLS and DTLS are included,
+when the term is used.
+Secured Port A TCP or UDP Port that is protected by a security protocol based
+on a Security Association.
+Table 4.1: Acronyms and Abbreviations
+19 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE20
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5 Protocol specification
+5.1 SOME/IP Service Discovery (SOME/IP-SD)
+5.1.1 General
+SOME/IP-SD is used to
+• Locate service instances.
+• Detect if service instances are running.
+• Implement the Publish/Subscribe handling.
+Inside the vehicular network service instance locations are commonly known; there-
+fore, the state of the service instance is of primary concern. The location of the service
+(i.e. IP-Address, transport protocol, and port number) are of secondary concern.
+5.1.1.1 Terms and Definitions
+[PRS_SOMEIPSD_00238]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈A separate server service instance shall be used per network interface if a service
+needs to be offered on multiple network interfaces. ⌋
+[PRS_SOMEIPSD_00239]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈A separate client service instance shall be used per network interface if a service
+needs to be configured to be accessed using multiple different network interfaces. ⌋
+5.1.2 SOME/IP-SD Message Format
+5.1.2.1 General Requirements
+[PRS_SOMEIPSD_00220]
+Upstream requirements: RS_SOMEIPSD_00010
+⌈SOME/IP-SD messages shall be sent over UDP .⌋
+[PRS_SOMEIPSD_00251]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈The SOME/IP-SD Message shall be as follows:
+• Message ID (Service ID/Method ID) [32 bit]: 0xFFFF 8100
+20 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE21
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• Length [32 bit]
+• Request ID (Client ID/Session ID) [32 bit]
+• Protocol Version [8 bit]: 0x01
+• Interface Version [8 bit]: 0x01
+• Message T ype [8 bit]: 0x02
+• Return Code [8 bit]: 0x00
+• Flags [8 bit]
+• Reserved [24 bit]
+• Length of Entries Array [32 bit]
+• Entries Array [variable size]
+• Length of Options Array [32 bit]
+• Options Array [variable size]
+⌋
+The SOME/IP-SD Header Format is shown in Figure 5.1.
+Protocol Version [8 bit]
+=0x01 
+Interface Version [8 bit]
+=0x01 
+Message Type [8 bit]
+=0x02 
+Return Code [8 bit]
+=0x00 
+Request ID (Client ID / Session ID) [32 bit]
+Length [32 bit]
+Message ID (Service ID / Method ID) [32 bit]
+(= 0xFFFF 8100)
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 bit offset
+Covered by Length
+Flags[8 bit] Reserved [24bit]
+Length of Entries Array [32bit]
+Entries Array 
+Length of Options Array [32bit]
+Options Array
+Covered by LengthCovered by Length
+SOME/IPSOME/IP SD
+Figure 5.1: SOME/IP-SD Header Format
+21 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE22
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00250]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈Service Discovery Messages shall start with a SOME/IP header. ⌋
+[PRS_SOMEIPSD_00250] can be seen in Figure 5.1.
+[PRS_SOMEIPSD_00151]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈Service Discovery messages shall use the Service-ID (16 Bits) of 0xFFFF . ⌋
+[PRS_SOMEIPSD_00152]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈Service Discovery messages shall use the Method-ID (16 Bits) of 0x8100. ⌋
+[PRS_SOMEIPSD_00153]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈Service Discovery messages shall use a uint32 length field as specified by SOME/IP .
+That means that the length is measured in bytes and starts with the first byte after the
+length field and ends with the last byte of the SOME/IP-SD message. ⌋
+[PRS_SOMEIPSD_00154]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈Service Discovery messages shall have a Client-ID (16 Bits) set to 0x0000, since
+there exists only a single SOME/IP-SD instance. ⌋
+[PRS_SOMEIPSD_00157]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈The Session-ID (SOME/IP header) shall be incremented for every SOME/IP-SD mes-
+sage sent.⌋
+[PRS_SOMEIPSD_00158]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈The Session-ID (SOME/IP header) shall start with 1 and be 1 even after wrapping. ⌋
+[PRS_SOMEIPSD_00159]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈The Session-ID (SOME/IP header) shall not be set to 0. ⌋
+[PRS_SOMEIPSD_00160]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈SOME/IP-SD Session ID handling is done per "communication relation", i.e. multicast
+as well as unicast per peer (see [PRS_SOMEIPSD_00255]). ⌋
+22 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE23
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00161]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈Service Discovery messages shall have a Protocol-Version (8 Bits) of 0x01. ⌋
+[PRS_SOMEIPSD_00162]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈Service Discovery messages shall have a Interface-Version (8 Bits) of 0x01. ⌋
+[PRS_SOMEIPSD_00163]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈Service Discovery messages shall have a Message T ype (8 bits) of 0x02 (Notifica-
+tion).⌋
+[PRS_SOMEIPSD_00164]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈Service Discovery messages shall have a Return Code (8 bits) of 0x00 (E_OK). ⌋
+[PRS_SOMEIPSD_00853]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈All fields in the Service Discovery messages shall be in Network Byte Order (i.e. Big
+Endian Byte Order). ⌋
+23 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE24
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+An example of a SOME/IP-SD message is as shown below
+Figure 5.2: SOME/IP-SD Example Message
+5.1.2.2 SOME/IP-SD Header
+[PRS_SOMEIPSD_00252]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈SOME/IP-SD shall be transported using SOME/IP .⌋
+[PRS_SOMEIPSD_00252] can be seen in Figure 5.2.
+24 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE25
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00253]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The SOME/IP-SD Header shall start with an 8 Bit field called flags.⌋
+See a representation of Flags in Figure 5.3.
+Figure 5.3: Flags in SOME/IP-SD
+[PRS_SOMEIPSD_00254]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The first flag of the SOME/IP-SD Flags field (highest order bit) shall be called Reboot
+Flag.⌋
+For flags see Figure 5.3.
+[PRS_SOMEIPSD_00255]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The Reboot Flag of the SOME/IP-SD Header shall be set to one for all messages
+after reboot until the Session-ID in the SOME/IP-Header wraps around and thus starts
+with 1 again. After this wrap around the Reboot Flag is set to 0. ⌋
+[PRS_SOMEIPSD_00256]
+Upstream requirements: RS_SOMEIPSD_00002, RS_SOMEIPSD_00003
+⌈The information for the reboot flag and the Session ID shall be kept for multicast and
+unicast separately .⌋
+[PRS_SOMEIPSD_00631]
+Upstream requirements: RS_SOMEIPSD_00002, RS_SOMEIPSD_00003
+⌈The information for the reboot flag and the Session ID shall be kept for every sender-
+receiver relation (i.e. source address and destination address) separately . ⌋
+25 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE26
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Note:
+This means there shall be separate counters for sending and receiving.
+Sending
+• There shall be a counter for multicast.
+• There shall be a separate counter for each peer for unicast.
+Receiving
+• There shall be a counter for each peer for multicast.
+• There shall be a counter for each peer for unicast.
+[PRS_SOMEIPSD_00258]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The detection of a reboot shall be done as follows (with the new values of the current
+packet from the communication partner and old the last value received before):
+if old.reboot==0 and new.reboot==1 then Reboot detected
+OR
+if old.reboot==1 and new.reboot==1 and old.session_id>=new.session_id then Reboot
+detected
+⌋
+[PRS_SOMEIPSD_00259]
+Upstream requirements: RS_SOMEIPSD_00002
+⌈The second flag of the SOME/IP-SD Flags (second highest order bit) shall be called
+Unicast Flag.⌋
+For flags see Figure 5.3.
+[PRS_SOMEIPSD_00540]
+Upstream requirements: RS_SOMEIPSD_00002
+⌈The Unicast Flag of the SOME/IP-SD Header shall be set to Unicast (that means 1)
+for all SD Messages since this means that receiving using unicast is supported. ⌋
+Note:
+The Unicast Flag is left over from historical SOME/IP versions and is only kept for
+compatibility reasons. Its use besides this is very limited.
+For flags see Figure 5.3.
+[PRS_SOMEIPSD_00702]
+Upstream requirements: RS_SOMEIPSD_00002
+⌈Undefined bits within the Flag field shall be set to ’0’ when sending and ignored on
+receiving.⌋
+26 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE27
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00261]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈After the Flags the SOME/IP-SD Header shall have a field of 24 bits called Reserved. ⌋
+[PRS_SOMEIPSD_00262]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈After the SOME/IP-SD Header the Entries Array shall follow. ⌋
+[PRS_SOMEIPSD_00263]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The entries shall be processed exactly in the order they arrive. ⌋
+[PRS_SOMEIPSD_00264]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈After the Entries Array in the SOME/IP-SD Header an Option Array shall follow. ⌋
+[PRS_SOMEIPSD_00265]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The Entries Array and the Options Array of the SOME/IP-SD message shall start with
+a length field as uint32 that counts the number of bytes of the following data; i.e. the
+entries or the options. ⌋
+5.1.2.3 Entry Format
+[PRS_SOMEIPSD_00266]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The service discovery shall support multiple entries that are combined in one service
+discovery message.⌋
+Note:
+The entries are used to synchronize the state of services instances and the Publish/-
+Subscribe handling.
+[PRS_SOMEIPSD_00267]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈T wo types of entries exist: A Service Entry T ype for Services and an Eventgroup Entry
+T ype for Eventgroups.⌋
+27 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE28
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00268]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈A Service Entry T ype shall be 16 Bytes of size and include the following fields in this
+order:
+• T ype Field [uint8]: encodes FindService (0x00), OfferService (0x01) and StopOf-
+ferService (0x01)
+• Index First Option Run [uint8]: Index of this runs first option in the option array .
+• Index Second Option Run [uint8]: Index of this runs second option in the option
+array .
+• Number of Options 1 [uint4]: Describes the number of options the first option run
+uses.
+• Number of Options 2 [uint4]: Describes the number of options the second option
+run uses.
+• Service ID [uint16]: Describes the Service ID of the Service or Service Instance
+this entry is concerned with.
+• Instance ID [uint16]: Describes the Service Instance ID of the Service Instance
+this entry is concerned with or is set to 0xFFFF if all service instances of a service
+are meant.
+• Major Version [uint8]: Encodes the major version of the service (instance).
+• TTL [uint24]: Describes the lifetime of the entry in seconds.
+• Minor Version [uint32]: Encodes the minor version of the service.
+⌋
+[PRS_SOMEIPSD_00268] is shown in Figure 5.4.
+Type 
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 bit offset 
+Index 1st options Index 2nd options # of opt 1 # of opt 2
+Service ID Instance ID
+Major Version TTL
+Minor Version
+Figure 5.4: SOME/IP-SD Service Entry Type
+[PRS_SOMEIPSD_00270]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈An Eventgroup Entry (T ype 2) shall be 16 Bytes of size and include the following fields
+in this order:
+28 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE29
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• T ype Field [uint8]: encodes Subscribe (0x06), StopSubscribeEventgroup (0x06),
+SubscribeAck (0x07) and SubscribeEventgroupNack (0x07).
+• Index of first option run [uint8]: Index of this runs first option in the option array .
+• Index of second option run [uint8]: Index of this runs second option in the option
+array .
+• Number of Options 1 [uint4]: Describes the number of options the first option run
+uses.
+• Number of Options 2 [uint4]: Describes the number of options the second option
+run uses.
+• Service-ID [uint16]: Describes the Service ID of the Service or Service Instance
+this entry is concerned with.
+• Instance ID [uint16]: Describes the Service Instance ID of the Service Instance
+this entry is concerned with. The Service Instance ID shall not be set to 0xFFFF
+for any Instance.
+• Major Version [uint8]: Encodes the major version of the service instance this
+eventgroup is part of.
+• TTL [uint24]: Describes the lifetime of the entry in seconds.
+• Reserved [uint12]: Shall be set to 0x000.
+• Counter [uint4]: Is used to differentiate identical Subscribe Eventgroups of the
+same subscriber. Set to 0x0 if not used.
+• Eventgroup ID [uint16]: T ransports the ID of an Eventgroup.
+⌋
+SOME/IP-SD Eventgroup Entry T ype is shown in Figure 5.5.
+Figure 5.5: SOME/IP-SD Eventgroup Entry Type
+[PRS_SOMEIPSD_00845]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The Major Version of an entry (according to [PRS_SOMEIPSD_00268] and
+[PRS_SOMEIPSD_00270]) shall match the version of the corresponding Service In-
+terface⌋
+29 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE30
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Note: While SOME/IP-SD defines the Major and Minor version of a service interface,
+SOME/IP messages themselves only use the major version in the interface version
+field of the SOME/IP header.
+5.1.2.3.1 Referencing Options from Entries
+[PRS_SOMEIPSD_00833]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈Using the following fields of the entries, options are referenced by the entries:
+• Index First Option Run: Index into array of options for first option run. Index 0
+means first option of this SOME/IP-SD message.
+• Index Second Option Run: Index into array of options for second option run. Index
+0 means first option of this SOME/IP-SD message.
+• Number of Options 1: Length of first option run. Length 0 means no option in
+option run.
+• Number of Options 2: Length of second option run. Length 0 means no option in
+option run.
+⌋
+T wo different option runs exist: First Option Run and Second Option Run.
+Rationale for the support of two option runs: T wo different types of options are ex-
+pected: options common between multiple SOME/IP-SD entries and options different
+for each SOME/IP-SD entry . Supporting two different options runs is the most efficient
+way to support these two types of options, while keeping the wire format highly efficient.
+[PRS_SOMEIPSD_00341]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈Each option run shall reference the first option and the number of options for this run. ⌋
+[PRS_SOMEIPSD_00342]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈If the number of options is set to zero, the option run is considered empty . ⌋
+[PRS_SOMEIPSD_00343]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈For empty runs the Index (i.e. Index First Option Run and/or Index Second Option
+Run) shall be set to zero. ⌋
+30 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE31
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00834]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈Implementations shall accept and process incoming SD messages with option run
+length set to zero and option index not set to zero by ignoring this option run. ⌋
+5.1.2.4 Options Format
+Options are used to transport additional information to the entries. This includes for
+instance the information how a service instance is reachable (IP-Address, T ransport
+Protocol, Port Number).
+[PRS_SOMEIPSD_00273]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈In order to identify the option type every option shall start with:
+• Length [uint16]: Specifies the length of the option in Bytes.
+• T ype [uint8]: Specifying the type of the option.
+• Discardable Flag [1 bit]: Specifies, if this option can be discarded.
+• Bit 1 to bit 7 are reserved and shall be 0.
+⌋
+[PRS_SOMEIPSD_00275]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The discardable flag shall be set to 1 if the option can be discarded by a receiving
+ECU that does not support this option. ⌋
+5.1.2.4.1 Configuration Option
+The configuration option is used to transport arbitrary configuration strings. This allows
+to encode additional information like the name of a service or its configuration. In ad-
+ditional, the configuration option allows to offer non-SOME/IP services with SOME/IP-
+SD.
+[PRS_SOMEIPSD_00276]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The format of the Configuration Option shall be as follows:
+• Length [uint16]: Shall be set to the total number of bytes occupied by the config-
+uration option, excluding the 16 bit length field and the 8 bit type flag.
+• T ype [uint8]: Shall be set to 0x01.
+31 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE32
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• Discardable Flag [1 bit]: Shall be set to 1 if the Option can be discarded by the
+receiver.
+• Bit 1 to bit 7 are reserved and shall be 0.
+• ConfigurationString [dynamic length]: Shall carry the configuration string.
+⌋
+[PRS_SOMEIPSD_00277]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00009
+⌈The Configuration Option shall specify a set of name-value-pairs based on the DNS
+TXT and DNS-SD format. [2] [3] ⌋
+[PRS_SOMEIPSD_00278]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The format of the configuration string shall start with a single byte length field that de-
+scribes the number of bytes following this length field. After the length field a character
+sequence with the specified length shall follow. ⌋
+[PRS_SOMEIPSD_00279]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈After each character sequence another length field and a following character se-
+quence are expected until a length field shall be set to 0x00. ⌋
+[PRS_SOMEIPSD_00280]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈After a length field is set to 0x00 no characters shall follow. ⌋
+[PRS_SOMEIPSD_00281]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈A character sequence shall encode a key and optionally a value. ⌋
+[PRS_SOMEIPSD_00282]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The character sequences shall contain an equal character ("=", 0x3D) to divide key
+and value.⌋
+[PRS_SOMEIPSD_00283]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The key shall not include an equal character and shall be at least one non-whitespace
+character. The characters of "Key" shall be printable US-ASCII values (0x20-0x7E),
+excluding ’=’ (0x3D). ⌋
+32 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE33
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00284]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈The "=" shall not be the first character of the sequence. ⌋
+[PRS_SOMEIPSD_00285]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈For a character sequence without an ’=’ that key shall be interpreted as present. ⌋
+[PRS_SOMEIPSD_00286]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈For a character sequence ending on an ’=’ that key shall be interpreted as present
+with empty value. ⌋
+[PRS_SOMEIPSD_00287]
+Upstream requirements: RS_SOMEIPSD_00006
+⌈Multiple entries with the same key in a single Configuration Option shall be sup-
+ported.⌋
+The format of the Configuration Option is shown in Figure 5.6.
+Figure 5.6: SOME/IP-SD Configuration Option
+Example for SOME/IP-SD Configuration Option
+Figure 5.7: SOME/IP-SD Configuration Option Example
+33 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE34
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5.1.2.4.2 Load Balancing Option
+The Load Balancing option is used to prioritize different instances of the same ser-
+vice, so that a client can choose the service instance dynamically . This option will be
+referenced by Offer Service entries.
+[PRS_SOMEIPSD_00542]
+Upstream requirements: RS_SOMEIPSD_00011
+⌈The Load Balancing Option shall carry a Priority and Weight like the DNS-SRV
+records, which shall be used for load balancing different service instances. [4] ⌋
+[PRS_SOMEIPSD_00711]
+Upstream requirements: RS_SOMEIPSD_00011
+⌈When looking for all service instances of a service (Service Instance set to 0xFFFF),
+the client shall choose the service instance with highest priority that also matches client
+specific criteria. ⌋
+Note: Client specific criteria may be applied by the client application when choosing
+one of the offered service instances. They are not defined in this specification, and
+could e.g. restrict the range of appropriate instance IDs.
+[PRS_SOMEIPSD_00712]
+Upstream requirements: RS_SOMEIPSD_00011
+⌈When having more than one service instance with highest priority (lowest value in
+Priority field) the service instance shall be chosen randomly based on the weights
+of the service instances. The probability of choosing a service instance shall be the
+weight of a service instance divided by the sum of the weights of all considered service
+instances.⌋
+[PRS_SOMEIPSD_00713]
+Upstream requirements: RS_SOMEIPSD_00011
+⌈If an Offer Service entry references no Load Balancing option and several service
+instances are offered, the client shall handle the service instances without Load Bal-
+ancing option as though they had the lowest priority . ⌋
+[PRS_SOMEIPSD_00714]
+Upstream requirements: RS_SOMEIPSD_00011
+⌈When looking for a specific service instances of a service (Service Instance set to
+any value other than 0xFFFF), the evaluation of the Load Balancing Option does not
+apply .⌋
+[PRS_SOMEIPSD_00544]
+Upstream requirements: RS_SOMEIPSD_00011
+⌈The Format of the Load Balancing Option shall be as follows:
+34 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE35
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• Length [uint16]: Shall be set to 0x0005.
+• T ype [uint8]: Shall be set to 0x02.
+• Discardable Flag [1 bit]: Shall be set to 1 if the Option can be discarded by the
+receiver.
+• Bit 1 to bit 7 are reserved and shall be 0.
+• Priority [uint16]: Carries the Priority of this instance. Lower value means higher
+priority .
+• Weight [uint16]: Carries the Weight of this instance. Large value means higher
+probability to be chosen.
+⌋
+The format of the Load Balancing Option is shown in Figure 5.8.
+Figure 5.8: SOME/IP-SD Load Balancing Option
+5.1.2.4.3 IPv4 Endpoint Option
+The IPv4 Endpoint Option is used by a SOME/IP-SD instance to signal the relevant
+endpoint(s). Endpoints include the local IP address, the transport layer protocol (e.g.
+UDP or TCP), and the port number of the sender. These ports are used for the events
+and notification events as well.
+[PRS_SOMEIPSD_00305]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv4 Endpoint Option shall use the T ype 0x04. ⌋
+[PRS_SOMEIPSD_00306]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv4 Endpoint Option shall specify the IPv4-Address, the transport layer protocol
+(ISO/OSI layer 4) used, and its Port Number. ⌋
+[PRS_SOMEIPSD_00307]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The Format of the IPv4 Endpoint Option shall be as follows:
+• Length [uint16]: Shall be set to 0x0009.
+35 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE36
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• T ype [uint8]: Shall be set to 0x04.
+• Discardable Flag [1 bit]: Shall be set to 0.
+• Bit 1 to bit 7 are reserved and shall be 0.
+• IPv4-Address [uint32]: Shall transport the unicast IP-Address as four Bytes.
+• Reserved [uint8]: Shall be set to 0x00.
+• T ransport Protocol (L4-Proto) [uint8]: Shall be set to the transport layer protocol
+(ISO/OSI layer 4) based on the IANA/IETF types (0x06: TCP , 0x11: UDP).
+• T ransport Protocol Port Number (L4-Port) [uint16]: Shall be set to the port of the
+layer 4 protocol.
+⌋
+SOME/IP-SD IPv4 Endpoint Option is shown in Figure 5.9.
+Figure 5.9: SOME/IP-SD IPv4 Endpoint Option
+[PRS_SOMEIPSD_00310]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The server shall use the IPv4 Endpoint Option with Offer Service entries to signal the
+endpoints it serves the service instance on. That is up to one UDP endpoint and up to
+one TCP endpoint. ⌋
+[PRS_SOMEIPSD_00380]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The endpoints the server referenced with an Offer Service entry shall also be used as
+source of events. That is source IP address and source port numbers for the transport
+protocols in the endpoint option. ⌋
+[PRS_SOMEIPSD_00807]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The client shall use the IPv4 Endpoint Option with Subscribe Eventgroup entries to
+signal the IP address and the UDP and/or TCP port numbers, on which it is ready to
+receive the events.⌋
+36 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE37
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Note: The client is ready to receive the events, if sockets are already opened, and any
+security associations required by the network security protocols (IPsec, MACsec, or
+other security protocols) are already established and fully operational.
+[PRS_SOMEIPSD_00835]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈Different provided service instances of the same service on the same ECU shall use
+different endpoints, so that they can be differentiated by the endpoints. Different ser-
+vices may share the same endpoints. ⌋
+5.1.2.4.4 IPv6 Endpoint Option
+The IPv6 Endpoint Option is used by a SOME/IP-SD instance to signal the relevant
+endpoint(s). Endpoints include the local IP address, the transport layer protocol (e.g.
+UDP or TCP), and the port number of the sender. These ports are used for the events
+and notification events as well.
+[PRS_SOMEIPSD_00314]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv6 Endpoint Option shall use the T ype 0x06. ⌋
+[PRS_SOMEIPSD_00315]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The Format of the IPv6 Endpoint Option shall be as follows:
+• Length [uint16]: Shall be set to 0x0015.
+• T ype [uint8]: Shall be set to 0x06.
+• Discardable Flag [1 bit]: Shall be set to 0.
+• Bit 1 to bit 7 are reserved and shall be 0.
+• IPv6-Address [uint128]: Shall transport the unicast IP-Address as 16 Bytes.
+• Reserved [uint8]: Shall be set to 0x00.
+• T ransport Protocol (L4-Proto) [uint8]: Shall be set to the transport layer protocol
+(ISO/OSI layer 4) based on the IANA/IETF types (0x06: TCP , 0x11: UDP).
+• T ransport Protocol Port Number (L4-Port) [uint16]: Shall be set to the transport
+layer port(e.g. 30490).
+⌋
+SOME/IP-SD IPv6 Endpoint Option shall be as shown in Figure 5.10
+37 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE38
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Figure 5.10: SOME/IP-SD IPv6 Endpoint Option
+[PRS_SOMEIPSD_00319]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The server shall use the IPv6 Endpoint Option with Offer Service entries to signal the
+endpoints the services is available on. That is upto one UDP endpoint and upto one
+TCP endpoint.⌋
+[PRS_SOMEIPSD_00320]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The endpoints the server referenced with an Offer Service entry shall also be used as
+source of events. That is source IP address and source port numbers for the transport
+protocols in the endpoint option. ⌋
+[PRS_SOMEIPSD_00321]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The client shall use the IPv6 Endpoint Option with Subscribe Eventgroup entries to
+signal the IP address and the UDP and/or TCP port numbers, on which it is ready to
+receive the events.⌋
+Note:
+• The client is ready to receive the events, if sockets are already opened, and any
+security associations required by the network security protocols (IPsec, MACsec
+or other security protocols) are already established and fully operational
+• Security association status monitoring and its implications towards Service dis-
+covery shall apply for all Service Instances using secured ports.
+[PRS_SOMEIPSD_00836]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈Different service instances of the same service on the same ECU shall use different
+endpoints, so that they can be distinguished by the endpoints. Different services may
+share the same endpoints. ⌋
+38 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE39
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5.1.2.4.5 IPv4 Multicast Option
+The IPv4 Multicast Option is either transmitted by the server (server multicast endpoint)
+or by the client (client multicast endpoint):
+• If it is transmitted by the server, then a server announces the IPv4 multicast ad-
+dress, the transport layer protocol, and the port number, to where the multicast
+events are transmitted to.
+• If it is transmitted by the client, then a client indicates the IPv4 multicast address,
+the transport layer protocol, and the port number, where a client expects to re-
+ceive multicast events.
+[PRS_SOMEIPSD_00323]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈
+IPv4 Multicast Options shall be referenced by SubscribeEventgroup or by StopSub-
+scribeEventgroup or by SubscribeEventgroupAck entries:
+• If it is referenced by a SubscribeEventgroup entry , it describes the client service
+multicast endpoint (i.e. destination IP address and destination port), where the
+multicast events shall be received by the client.
+• If it is referenced by a StopSubscribeEventgroup entry , it reflects the intent to
+stop the subscription of a client which has subscribed before via a client service
+multicast endpoint (i.e. destination IP address and destination port) to the given
+event group.
+• If it is referenced by a SubscribeEventgroupAck entry , it describes the server
+multicast endpoint (i.e. destination IP address and destination port), where a
+server shall transmit the multicast events to.
+⌋
+[PRS_SOMEIPSD_00324]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈The IPv4 Multicast Option shall use the T ype 0x14. ⌋
+[PRS_SOMEIPSD_00325]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈The IPv4 Multicast Option shall specify the IPv4-Address, the transport layer protocol
+(ISO/OSI layer 4) used, and its Port Number. ⌋
+[PRS_SOMEIPSD_00326]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈The Format of the IPv4 Endpoint Option shall be as follows:
+39 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE40
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• Length [uint16]: Shall be set to 0x0009.
+• T ype [uint8]: Shall be set to 0x14.
+• Discardable Flag [1 bit]: Shall be set to 0.
+• Bit 1 to bit 7 are reserved and shall be 0.
+• IPv4-Address [uint32]: Shall transport the multicast IP-Address as four Bytes.
+• Reserved [uint8]: Shall be set to 0x00.
+• T ransport Protocol (L4-Proto) [uint8]: Shall be set to the transport layer protocol
+(ISO/OSI layer 4) based on the IANA/IETF types (0x11: UDP).
+• T ransport Protocol Port Number (L4-Port) [uint16]: Shall be set to the port of the
+layer 4 protocol.
+⌋
+SOME/IP-SD IPv4 Multicast Option shall be as shown in Figure 5.11
+Figure 5.11: SOME/IP-SD IPv4 Multicast Option
+[PRS_SOMEIPSD_00847]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈
+The IPv4-Address field [32 bits] of the IPv4 Multicast Option shall be set according the
+following rules:
+• If a server service transmits a SubscribeEventgroupAck then the field shall be set
+to the configured multicast IP address of the corresponding provided Eventgroup
+(server multicast endpoint).
+• If a client service transmit a SubscribeEventgroup or StopSubscribeEventgroup,
+then the field shall be set to the configured multicast IP address of the corre-
+sponding consumed Eventgroup (client service multicast endpoint).
+⌋
+[PRS_SOMEIPSD_00848]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈
+40 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE41
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+The Port Number field [16 bits] of the IPv4 Multicast Option shall be set according the
+following rules:
+• If a server service transmits a SubscribeEventgroupAck then the field shall be set
+to the configured port of the corresponding provided Eventgroup (server multicast
+endpoint).
+• If a client service transmits a SubscribeEventgroup or StopSubscribeEventgroup,
+then the field shall be set to the configured port of the corresponding consumed
+Eventgroup (client service multicast endpoint).
+⌋
+5.1.2.4.6 IPv6 Multicast Option
+The IPv6 Multicast Option is either transmitted by the server service (server multicast
+endpoint) or by the client service (client service multicast endpoint):
+• If it is transmitted by the server service, then a server announces the IPv6 multi-
+cast address, the transport layer protocol (ISO/OSI layer 4), and the port number,
+to where the multicast events and multicast-notification-events are transmitted to.
+• If it is transmitted by the client service, then a client indicates the IPv6 multi-
+cast address, the transport layer protocol (ISO/OSI layer 4), and the port num-
+ber, where a client expects to receive multicast events and multicast-notification-
+events.
+[PRS_SOMEIPSD_00331]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈The IPv6 Multicast Option shall use the T ype 0x16. ⌋
+[PRS_SOMEIPSD_00332]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈The IPv6 Multicast Option shall specify the IPv6-Address, the transport layer protocol
+(ISO/OSI layer 4) used, and its Port Number. ⌋
+[PRS_SOMEIPSD_00333]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈The Format of the IPv6 Multicast Option shall be as follows:
+• Length [uint16]: Shall be set to 0x0015.
+• T ype [uint8]: Shall be set to 0x16.
+• Discardable Flag [1 bit]: Shall be set to 0.
+• Bit 1 to bit 7 are reserved and shall be 0.
+41 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE42
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• IPv6-Address [uint128]: Shall transport the multicast IP-Address as 16 Bytes.
+• Reserved [uint8]: Shall be set to 0x00.
+• T ransport Protocol (L4-Proto) [uint8]: Shall be set to the transport layer protocol
+(ISO/OSI layer 4) based on the IANA/IETF types (0x11: UDP).
+• T ransport Protocol Port Number (L4-Port) [uint16]: Shall be set to the port of the
+layer 4 protocol.
+⌋
+SOME/IP-SD IPv6 Multicast Option shall be as shown in Figure 5.12.
+Figure 5.12: SOME/IP-SD IPv6 Multicast Option
+[PRS_SOMEIPSD_00849]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈The IPv6-Address field [128 bits] of the IPv6 Multicast option shall be set according
+the following rules:
+• If a server service transmits a SubscribeEventgroupAck then the field shall be set
+to the configured multicast IP address of the corresponding provided Eventgroup
+(server multicast endpoint).
+• If a client service transmits a SubscribeEventgroup or StopSubscribeEventgroup,
+then the field shall be set to the configured IP multicast address of the corre-
+sponding consumed Eventgroup (client service multicast endpoint).
+⌋
+[PRS_SOMEIPSD_00850]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈The Port Number field [16 bits] of the IPv6 Multicast Option shall be set according the
+following rules:
+• If a server service transmits a SubscribeEventgroupAck then the field shall be set
+to the configured port of the corresponding provided Eventgroup (server multicast
+endpoint).
+42 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE43
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• If a client service transmits a SubscribeEventGroup or StopSubscribeEvent-
+Group, then the field shall be set to the configured port of the corresponding
+consumed Eventgroup (client service multicast endpoint).
+⌋
+[PRS_SOMEIPSD_00545]
+Upstream requirements: RS_SOMEIPSD_00003
+⌈IPv6 Multicast Options shall be referenced by SubscribeEventgroup or by StopSub-
+scribeEventgroup or by SubscribeEventgroupAck entries:
+• If it is referenced by a SubscribeEventgroup entry , it describes the client service
+multicast endpoint (i.e. destination IP address and destination port), where the
+multicast events shall be received by the client.
+• If it is referenced by a StopSubscribeEventgroup entry , it reflects the intent to
+stop the subscription of a client which has subscribed before via a client service
+multicast multicast endpoint (i.e. destination IP address and destination port) to
+the given event group.
+• If it is referenced by a SubscribeEventgroupAck entry , it describes the server
+multicast endpoint (i.e. destination IP address and destination port), where a
+server shall transmit the multicast events to.
+⌋
+5.1.2.4.7 IPv4 SD Endpoint Option
+The IPv4 SD Endpoint Option is used to transport the endpoint (i.e. IP-Address and
+Port) of the senders SD implementation. This is used to identify the SOME/IP-SD
+Instance even in cases in which the IP-Address and/or Port Number cannot be used.
+Note:
+This is used to identify the SOME/IP-SD Instance even in cases in which the IP-
+Address and/or Port Number cannot be used. A use case would be a proxy service
+discovery on one ECU which handles the multicast traffic for another ECU.
+SOME/IP-SD IPv4 SD Endpoint Option is shown in Figure 5.13
+Figure 5.13: SOME/IP-SD IPv4 SD Endpoint Option
+43 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE44
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00547]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv4 SD Endpoint Option may be included in any SD message up to 1 time. ⌋
+[PRS_SOMEIPSD_00650]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv4 SD Endpoint Option shall only be included if the SOME/IP-SD message is
+transported over IPv4. ⌋
+[PRS_SOMEIPSD_00856]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈o A receiver shall ignore all IPv4 SD Endpoint Options received over IPv6. ⌋
+[PRS_SOMEIPSD_00651]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv4 SD Endpoint Option shall be the first option in the options array , if existing. ⌋
+[PRS_SOMEIPSD_00854]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈A receiver shall ignore all IPv4 SD Endpoint Options that are located after the first
+position of the options array .⌋
+[PRS_SOMEIPSD_00548]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv4 SD Endpoint Option shall not be referenced by any SD Entry . ⌋
+[PRS_SOMEIPSD_00857]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈A receiver shall ignore all references to the IPv4 SD Endpoint Option by Entries. ⌋
+[PRS_SOMEIPSD_00549]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈If the IPv4 SD Endpoint Option is included in the SD message, the receiving SD
+Service Instance shall use the content of this option instead of the Source IP Address
+and Source Port for answering this SD message and for identifying the sender-receiver
+relation for reboot detection according to [PRS_SOMEIPSD_00631]. ⌋
+Note:
+This is important for answering the received SD message (e.g. Offer after Find or
+Subscribe after Offer or Subscribe Ack after Subscribe) as well as the reboot detection
+(channel based on SD Endpoint Option and not out addresses).
+44 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE45
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00550]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv4 SD Endpoint Option shall use the T ype 0x24. ⌋
+[PRS_SOMEIPSD_00551]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv4 SD Endpoint Option shall specify the IPv4-Address, the transport layer pro-
+tocol (ISO/OSI layer 4) and Port Number of the sender used for Service Discovery . ⌋
+[PRS_SOMEIPSD_00552]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The Format of the IPv4 SD Endpoint Option shall be as follows:
+• Length [uint16]: Shall be set to 0x0009.
+• T ype [uint8]: Shall be set to 0x24.
+• Discardable Flag [1 bit]: Shall be set to 0.
+• Bit 1 to bit 7 are reserved and shall be 0.
+• IPv4-Address [uint32]: Shall transport the unicast IP-Address of SOME/IP-SD as
+four Bytes.
+• Reserved [uint8]: Shall be set to 0x00.
+• T ransport Protocol (L4-Proto) [uint8]: Shall be set to the transport layer protocol
+of SOME/IP-SD (currently: 0x11 UDP).
+• T ransport Protocol Port Number (L4-Port) [uint16]: Shall be set to the transport
+layer port of SOME/IP-SD (currently: 30490).
+⌋
+5.1.2.4.8 IPv6 SD Endpoint Option
+The Ipv6 SD Endpoint Option is used to transport the endpoint (i.e. IP-Address and
+Port) of the senders SD implementation. This is used to identify the SOME/IP-SD
+Instance even in cases in which the IP-Address and/or Port Number cannot be used.
+SOME/IP-SD IPv6 SD Endpoint Option is shown in Figure 5.14
+Note:
+A use case would be a proxy service discovery on one ECU which handles the multi-
+cast traffic for another ECU.
+45 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE46
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Figure 5.14: SOME/IP-SD IPv6 SD Endpoint Option
+[PRS_SOMEIPSD_00554]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv6 SD Endpoint Option may be included in any SD message up to 1 time. ⌋
+[PRS_SOMEIPSD_00654]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv6 SD Endpoint Option shall be the first option in the options array , if existing. ⌋
+[PRS_SOMEIPSD_00855]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈A receiver shall ignore all IPv6 SD Endpoint Options that are located after the first
+position of the options array .⌋
+[PRS_SOMEIPSD_00555]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv6 SD Endpoint Option shall not be referenced by any SD Entry . ⌋
+[PRS_SOMEIPSD_00859]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈A receiver shall ignore all references to the IPv6 SD Endpoint Option by Entries. ⌋
+[PRS_SOMEIPSD_00556]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈If the IPv6 SD Endpoint Option is included in the SD message, the receiving SD Ser-
+vice Instance shall use the content of this option instead of the Source IP Address and
+Source Port for answering this SD messages and for identifying the sender-receiver
+relation for reboot detection according to [PRS_SOMEIPSD_00631].
+⌋
+46 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE47
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00557]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv6 SD Endpoint Option shall use the T ype 0x26. ⌋
+[PRS_SOMEIPSD_00558]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv6 SD Endpoint Option shall specify the IPv6-Address, the transport layer pro-
+tocol (ISO/OSI layer 4) and Port Number of the sender used for Service Discovery . ⌋
+[PRS_SOMEIPSD_00559]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The Format of the IPv6 SD Endpoint Option shall be as follows:
+• Length [uint16]: Shall be set to 0x0015.
+• T ype [uint8]: Shall be set to 0x26.
+• Discardable Flag [1 bit]: Shall be set to 0.
+• Bit 1 to bit 7 are reserved and shall be 0.
+• IPv6-Address [uint128]: Shall transport the unicast IP-Address of SOME/IP-SD
+as 16 Bytes.
+• Reserved [uint8]: Shall be set to 0x00.
+• T ransport Protocol (L4-Proto) [uint8]: Shall be set to the transport layer protocol
+of SOME/IP-SD (currently: 0x11 UDP).
+• T ransport Protocol Port Number (L4-Port) [uint16]: Shall be set to the transport
+layer port of SOME/IP-SD (currently: 30490).
+⌋
+[PRS_SOMEIPSD_00837]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈The IPv6 SD Endpoint Option shall only be included if the SOME/IP-SD message is
+transported over IPv6. ⌋
+[PRS_SOMEIPSD_00860]
+Upstream requirements: RS_SOMEIPSD_00006, RS_SOMEIPSD_00010
+⌈A receiver shall ignore all IPv6 SD Endpoint Options received over IPv4. ⌋
+47 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE48
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5.1.2.5 Service Entries
+5.1.2.5.1 Find Service Entry
+[PRS_SOMEIPSD_00350]
+Upstream requirements: RS_SOMEIPSD_00008, RS_SOMEIPSD_00021
+⌈The Find Service entry type shall be used for finding service instances and shall
+only be sent if the current state of a service is unknown (no current Service Offer was
+received and is still valid). ⌋
+[PRS_SOMEIPSD_00351]
+Upstream requirements: RS_SOMEIPSD_00008, RS_SOMEIPSD_00021
+⌈Find Service entries shall set the entry fields in the following way:
+• T ype shall be set to 0x00 (FindService).
+• Service ID shall be set to the Service ID of the service that shall be found.
+• Instance ID shall be set to 0xFFFF , if all service instances shall be returned. It
+shall be set to the Instance ID of a specific service instance, if just a single service
+instance shall be returned.
+• Major Version shall be set to 0xFF , that means that services with any version shall
+be returned. If set to value different than 0xFF , services with this specific major
+version shall be returned only .
+• Minor Version shall be set to 0xFFFF FFFF , that means that services with any
+version shall be returned. If set to a value different to 0xFFFF FFFF , services
+with this specific minor version shall be returned only .
+• TTL is not used for FindService entries and can be set to an arbitrary value.The
+field is only defined for backward compatibility , and the value shall be ignored by
+the receiver of the message.
+⌋
+Note: It is expected that the Major Version on client side is configured to a specific
+value in normal operation since the client should look for an specific interface version.
+Different Major Versions are not compatible to each other.
+[PRS_SOMEIPSD_00528]
+Upstream requirements: RS_SOMEIPSD_00008, RS_SOMEIPSD_00025
+⌈A sender shall not reference Endpoint Options nor Multicast Options in a Find Service
+Entry .⌋
+48 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE49
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00529]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈A receiver shall ignore Endpoint Options and Multicast Options in a Find Service
+Entry .⌋
+[PRS_SOMEIPSD_00530]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈Other Options (neither Endpoint nor Multicast Options), shall still be allowed to be
+used in a Find Service Entry . ⌋
+[PRS_SOMEIPSD_00825]
+Upstream requirements: RS_SOMEIPSD_00008, RS_SOMEIPSD_00013
+⌈When receiving a FindService Entry the Service ID, Instance ID, Major Version, and
+Minor Version shall match exactly to the configured values to identify a Service In-
+stance, except if "any values" are in the Entry (i.e. 0xFFFF for Service ID, 0xFFFF for
+Instance ID, 0xFF for Major Version, and 0xFFFFFFFF for Minor Version.) ⌋
+[PRS_SOMEIPSD_00839]
+Upstream requirements: RS_SOMEIPSD_00008, RS_SOMEIPSD_00013
+⌈If a FindService Entry is received within the Initial Wait Phase for this Server Service
+Instance, it shall be ignored. ⌋
+5.1.2.5.2 Offer Service Entry
+[PRS_SOMEIPSD_00355]
+Upstream requirements: RS_SOMEIPSD_00013
+⌈The Offer Service entry type shall be used to offer a service to other communication
+partners.⌋
+[PRS_SOMEIPSD_00356]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈Offer Service entries shall set the entry fields in the following way:
+• T ype shall be set to 0x01 (OfferService).
+• Service ID shall be set to the Service ID of the service instance offered.
+• Instance ID shall be set to the Instance ID of the service instance that is offered.
+• Major Version shall be set to the Major Version of the service instance that is
+offered.
+• Minor Version shall be set to the Minor Version of the service instance that is
+offered.
+49 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE50
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• TTL shall be set to the lifetime of the service instance. After this lifetime the
+service instance shall considered not been offered.
+• If TTL is set to 0xFFFFFF , the Offer Service entry shall be considered valid until
+the next reboot.
+• If CYCLIC_OFFER_DELA Y is defined, TTL shall be greater or equal to the value
+for CYCLIC_OFFER_DELA Y .
+• TTL shall not be set to 0x000000 since this is considered to be the Stop Offer
+Service Entry .
+⌋
+[PRS_SOMEIPSD_00357]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈Offer Service entries shall always reference either an IPv4 or IPv6 Endpoint Option to
+signal how the service is reachable. ⌋
+[PRS_SOMEIPSD_00358]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈For each T ransport Layer Protocol needed for the service (i.e. UDP and/or TCP) an
+IPv4 Endpoint option shall be added if IPv4 is supported. ⌋
+[PRS_SOMEIPSD_00359]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈For each T ransport Layer Protocol needed for the service (i.e. UDP and/or TCP) an
+IPv6 Endpoint option shall be added if IPv6 is supported. ⌋
+[PRS_SOMEIPSD_00826]
+Upstream requirements: RS_SOMEIPSD_00012, RS_SOMEIPSD_00013, RS_SOMEIPSD_
+00025
+⌈When receiving the initial OfferService Entry the Service ID, Instance ID, Major Ver-
+sion and Minor Version shall match exactly to the configured values to identify a Ser-
+vice Instance, except if "any values" are in the service configuration (i.e. 0xFFFF for
+Instance ID and 0xFFFFFFFF for Minor Version.) ⌋
+[PRS_SOMEIPSD_00827]
+Upstream requirements: RS_SOMEIPSD_00012, RS_SOMEIPSD_00013, RS_SOMEIPSD_
+00025
+⌈When receiving a subsequent OfferService Entry or a StopOfferService Entry the
+Service ID, Instance ID, Major Version shall match exactly to the values in the initial
+OfferService entry to identify a Service Instance. ⌋
+50 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE51
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5.1.2.5.3 Stop Offer Service Entry
+[PRS_SOMEIPSD_00363]
+Upstream requirements: RS_SOMEIPSD_00014
+⌈The Stop Offer Service entry type shall be used to stop offering service instances. ⌋
+[PRS_SOMEIPSD_00364]
+Upstream requirements: RS_SOMEIPSD_00014
+⌈Stop Offer Service entries shall set the entry fields exactly like the Offer Service entry
+they are stopping, except:
+• TTL shall be set to 0x000000.
+⌋
+[PRS_SOMEIPSD_00840]
+Upstream requirements: RS_SOMEIPSD_00014
+⌈A StopOfferService (type 0x01), shall carry , i.e. reference, the same options as the
+entries trying to stop. ⌋
+5.1.2.5.4 Usage of Options in Entries
+[PRS_SOMEIPSD_00583] Allowed Option Types for Entry Types
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00008, RS_SOMEIPSD_
+00013, RS_SOMEIPSD_00014, RS_SOMEIPSD_00015, RS_-
+SOMEIPSD_00016
+⌈
+Endpoint Multicast Configuration Load Balanc-
+ing
+FindService 0 0 0-1 0
+OfferService 1-2 0 0-1 0-1
+StopOffer Service 1-2 0 0-1 0-1
+Subscribe Event-
+group
+0-2 0-1 0-1 0
+StopSubscribe
+Eventgroup
+0-2 0-1 0-1 0
+Subscribe Event-
+groupAck
+0 0-1 0-1 0
+Subscribe Event-
+groupNack
+0 0 0-1 0
+⌋
+51 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE52
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5.1.2.6 Endpoint Handling for Services and Events
+[PRS_SOMEIPSD_00476]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈The Service Discovery shall overwrite IP Addresses and Port Numbers with those
+transported in Endpoint and Multicast Options if the statically configured values are
+different from those in these options. ⌋
+Note: In other words if a mix of a static and dynamic configuration exists (static config-
+uration that defines the communication endpoints exists and at the same time endpoint
+options are exchanged via SD messages at runtime) and the endpoint options in the
+static configuration are different from the endpoint options received via SD then the
+endpoints options received over SD take precedence over the preconfigured endpoint
+options.
+[PRS_SOMEIPSD_00360]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈The IP addresses and port numbers of the Endpoint Options shall also be used for
+transporting events and notification events. ⌋
+[PRS_SOMEIPSD_00361]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈In case of UDP the endpoint option shall be used for the source address and the
+source port of the events and notification events, it is also the address the client can
+send method requests to. ⌋
+[PRS_SOMEIPSD_00362]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈In case of TCP the endpoint option shall be used for the IP address and port the client
+needs to open a TCP connection in order to receive events using TCP . ⌋
+[PRS_SOMEIPSD_00801]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈SOME/IP shall allow services to use UDP and TCP at the same time. ⌋
+[PRS_SOMEIPSD_00802]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈Which message is sent by which underlying transport protocol shall be determined by
+configuration: A Service can use UDP and TCP endpoints at the same time. But per
+element of the service it shall to be configured whether TCP or UDP is used. ⌋
+Note: It needs to be restricted in the configuration which methods and which events
+are provided over TCP/UDP . This also means that the same event can not be provided
+over TCP and UDP .
+52 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE53
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5.1.2.6.1 Service Endpoints
+The referenced Endpoint Options of the Offer Service entries denotes the
+• IP Address and Port Numbers the service instance is reachable at the server.
+• IP Address and Port Numbers the service instance sends the events from.
+[PRS_SOMEIPSD_00480]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈Events of this service instance shall not be sent from any other Endpoints than those
+given in the Endpoint Options of the Offer Service entries. ⌋
+[PRS_SOMEIPSD_00481]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈If an ECU offers multiple service instances, SOME/IP messages of these service
+instances shall be differentiated by the information transported in the Endpoint Options
+referenced by the Offer Service entries. ⌋
+5.1.2.6.2 Eventgroup Endpoints
+[PRS_SOMEIPSD_00484]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00025
+⌈The Endpoint Options referenced in the Subscribe Eventgroup entries shall also be
+used to send unicast UDP or TCP SOME/IP events for this Service Instance. ⌋
+Thus the Endpoint Options referenced in the Subscribe Eventgroup entries are the IP
+Address and the Port Numbers on the client side.
+[PRS_SOMEIPSD_00486]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00025
+⌈TCP events are transported using the TCP connection the client has opened to the
+server before sending the Subscribe Eventgroup entry . ⌋
+[PRS_SOMEIPSD_00487]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00025
+⌈The initial value of field notifiers (i.e., fields and not pure events) shall be transported
+using unicast from Server to Client. ⌋
+[PRS_SOMEIPSD_00488]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00025
+⌈Subscribe Eventgroup Ack entries shall reference up to 1 Multicast Option for the
+Internet Protocol used (IPv4 or IPv6). ⌋
+53 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE54
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00489]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00025
+⌈The Multicast Option shall be set to UDP as transport protocol. ⌋
+[PRS_SOMEIPSD_00490]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00025
+⌈The client shall open the Endpoint specified in the Multicast Option referenced by the
+Subscribe Eventgroup Ack entry as fast as possible to not miss multicast events. ⌋
+Example: Figure 5.15 shows an example with the different Endpoint and a Multicast
+Option:
+• The Server offers the Service Instance on Server UDP-Endpoint SU and Server
+TCP-Endpoint ST
+• The Client opens a TCP connection
+• The Client sends a Subscribe Eventgroup entry with Client UDP-Endpoint CU
+(unicast) and a Client TCP-Endpoint CT .
+• The Server answers with a Subscribe Eventgroup Ack entry with Multicast MU
+Then the following operations happen:
+• The Client calls a method on the Server
+• Request is sent from CU to SU and Response from SU to CU
+• For TCP this would be: Request dyn to ST and RESPONSE from ST to CT
+• The Server sends a Unicast UDP Event: SU to CU
+• The Server sends a Unicast TCP Event: ST to CT
+• The Server sends a Multicast UDP Event: SU to MU
+Keep in mind that Multicast Endpoints use a Multicast IP Address on the receiver side,
+i.e. the client, and TCP cannot be used for Multicast communication.
+54 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE55
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Figure 5.15: Publish/Subscribe Example for Endpoint Options and the usage of ports
+5.1.3 Service Discovery Messages
+[PRS_SOMEIPSD_00600]
+Upstream requirements: RS_SOMEIPSD_00001
+⌈All SD Messages shall be sent to SD_PORT . ⌋
+[PRS_SOMEIPSD_00601]
+Upstream requirements: RS_SOMEIPSD_00002, RS_SOMEIPSD_00003
+⌈SD_PORT shall be used as the source port for SD Unicast/Multicast Messages. ⌋
+[PRS_SOMEIPSD_00602]
+Upstream requirements: RS_SOMEIPSD_00002
+⌈All unicast SD messages should have SD_PORT as destination port unless the SD
+Endpoint Option defines a different port. ⌋
+55 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE56
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00603]
+Upstream requirements: RS_SOMEIPSD_00003, RS_SOMEIPSD_00022
+⌈All SD multicast messages shall be sent using the SD_MUL TICAST_IP .⌋
+[PRS_SOMEIPSD_00841]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00025
+⌈When receiving Service Discovery messages, the receiver shall ignore Entries of un-
+known type.⌋
+Using the previously specified header format, different entries and messages consist-
+ing of one or more entries can be built. The specific entries and their header layouts
+are explained in the following sections.
+5.1.3.1 Eventgroup Entry
+5.1.3.1.1 Subscribe Eventgroup Entry
+[PRS_SOMEIPSD_00385]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The Subscribe Eventgroup entry type shall be used to subscribe to an eventgroup. ⌋
+[PRS_SOMEIPSD_00386]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈Subscribe Eventgroup entries shall set the entry fields in the following way:
+• T ype shall be set to 0x06 (SubscribeEventgroup).
+• Service ID shall be set to the Service ID of the service instance that includes the
+eventgroup subscribed to.
+• Instance ID shall be set to the Instance ID of the service instance that includes
+the eventgroup subscribed to.
+• Major Version shall be set to the Major Version of the service instance of the
+eventgroup subscribed to.
+• Eventgroup ID shall be set to the Eventgroup ID of the eventgroup subscribed to.
+• TTL shall be set to the lifetime of the subscription.
+– If set to 0xFFFFFF , the Subscribe Eventgroup entry shall be considered valid
+until the next reboot.
+– TTL shall not be set to 0x000000 since this is considered to be the Stop
+Offer Service Entry .
+• Reserved shall be set to 0x000 until further notice.
+56 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE57
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• Counter shall be used to differentiate between parallel subscribes to the same
+eventgroup of the same service (only difference in endpoint). If not used, set to
+0x0.
+⌋
+[PRS_SOMEIPSD_00846]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00025
+⌈A SubscribeEventgroup entry reference the endpoints (IP address, port, and protocol)
+where the client wishes to receive the events. A client service could subscribe to
+the same Eventgroup either with a client unicast endpoint or with a client multicast
+endpoint:
+• If a client subscribes with a client unicast endpoint via an Endpoint Option, the
+client announces its desire to receive the events as unicast events transmitted to
+the given unicast endpoint.
+• If a client subscribes with a client multicast endpoint via an Endpoint Option, the
+client announces its desire to receive the events as multicast events transmitted
+to the given multicast endpoint.
+⌋
+[PRS_SOMEIPSD_00387]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00025
+⌈SubscribeEventgroup entries shall reference options according to the following rules:
+• either up to two IPv4 or up to two IPv6 Endpoint Options (one for UDP , one for
+TCP)
+• either up to one IPv4 Multicast Option or up to one IPv6 Multicast Option (only
+UDP supported)
+⌋
+Note:
+This explicitly rules out that a single service instance is offered via IPv4 and IPv6 at the
+same time.
+[PRS_SOMEIPSD_00828]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00025
+⌈When receiving a SubscribeEventgroup or StopSubscribeEventgroup the Service ID,
+Instance ID, Eventgroup ID, and Major Version shall match exactly to the configured
+values to identify an Eventgroup of a Service Instance. ⌋
+57 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE58
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00810]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00025
+⌈If the server receives a Subscribe Eventgroup entry without a UDP Endpoint Option
+(see [PRS_SOMEIPSD_00387]) and the MUL TICAST_THRESHOLD for the Event-
+group is not configured with value 1 then SubscribeEventGroupNack shall be sent
+back to the client. ⌋
+5.1.3.1.2 Stop Subscribe Eventgroup Entry
+[PRS_SOMEIPSD_00388]
+Upstream requirements: RS_SOMEIPSD_00017
+⌈The Stop Subscribe Eventgroup entry type shall be used to stop subscribing to event-
+groups.⌋
+[PRS_SOMEIPSD_00389]
+Upstream requirements: RS_SOMEIPSD_00017
+⌈Stop Subscribe Eventgroup entries shall set the entry fields exactly like the Subscribe
+Eventgroup entry they are stopping, except:
+• TTL shall be set to 0x000000.
+⌋
+[PRS_SOMEIPSD_00574]
+Upstream requirements: RS_SOMEIPSD_00017
+⌈A Stop Subscribe Eventgroup Entry shall reference the same options the Subscribe
+Eventgroup Entry referenced. This includes but is not limited to Endpoint and Configu-
+ration options.⌋
+5.1.3.1.3 Subscribe Eventgroup Acknowledgement (Subscribe Eventgroup
+Ack) Entry
+[PRS_SOMEIPSD_00390]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The Subscribe Eventgroup Acknowledgment entry type shall be used to indicate that
+Subscribe Eventgroup entry was accepted. ⌋
+[PRS_SOMEIPSD_00391]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈Subscribe Eventgroup Acknowledgment entries shall set the entry fields in the follow-
+ing way:
+58 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE59
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• T ype shall be set to 0x07 (SubscribeEventgroupAck).
+• Service ID, Instance ID, Major Version, Eventgroup ID, TTL, Reserved and
+Counter shall be the same value as in the Subscribe Eventgroup that is being
+answered.
+⌋
+[PRS_SOMEIPSD_00392]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈Subscribe Eventgroup Ack entries referencing events and notification events that are
+transported via multicast shall reference an IPv4 Multicast Option and/or and IPv6
+Multicast Option. The Multicast Options state to which Multicast address and port the
+events and notification events will be sent to. ⌋
+[PRS_SOMEIPSD_00829]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈When receiving a SubscribeEventgroupAck or SubscribeEventgroupNack the Service
+ID, Instance ID, Eventgroup ID, and Major Version shall match exactly to the corre-
+sponding SubscribeEventgroup Entry to identify an Eventgroup of a Service Instance. ⌋
+5.1.3.1.4 Subscribe Eventgroup Negative Acknowledgement (Subscribe Event-
+group Nack) Entry
+[PRS_SOMEIPSD_00393]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The Subscribe Eventgroup Negative Acknowledgment entry type shall be used to
+indicate that Subscribe Eventgroup entry was NOT accepted. ⌋
+[PRS_SOMEIPSD_00394]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈Subscribe Eventgroup Negative Acknowledgment entries shall set the entry fields in
+the following way:
+• T ype shall be set to 0x07 (SubscribeEventgroupAck).
+• Service ID, Instance ID, Major Version, Eventgroup ID, Counter, and Reserved
+shall be the same value as in the Subscribe that is being answered.
+• The TTL shall be set to 0x000000.
+⌋
+59 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE60
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00566]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈Reasons to not accept a Subscribe Eventgroup include (but are not limited to):
+• Combination of Service ID, Instance ID, Eventgroup ID, and Major Version is un-
+known
+• Required TCP-connection was not opened by client
+• Problems with the references options occurred
+• Resource problems at the Server
+• Security association not yet established
+⌋
+[PRS_SOMEIPSD_00527]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈When the client receives a SubscribeEventgroupNack as answer on a Sub-
+scribeEventgroup for which a TCP connection is required, the client shall check the
+TCP connection and shall restart the TCP connection if needed. ⌋
+Note: [PRS_SOMEIPSD_00527] involves checking the state of the network security
+protocol
+Rational:
+The server might have lost the TCP connection and the client has not.
+Checking the TCP connection might include the following:
+• Checking whether data is received for e.g. other Eventgroups.
+• Sending out a Magic Cookie message and waiting for the TCP ACK.
+• Reestablishing the TCP connection.
+[PRS_SOMEIPSD_00842] Overview of currently supported Entry Types
+Upstream requirements: RS_SOMEIPSD_00015
+⌈
+TTL > 0 TTL = 0
+Type 0x00 0x04 0x00 0x04
+0x00 FindService
+0x01 OfferService StopOfferService
+0x02 SubscribeEventgroup StopSubscribeEventgroup
+0x03 SubscribeEventgroupAck SubscribeEventgroupNack
+⌋
+60 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE61
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5.1.4 Service Discovery Communication Behavior
+[PRS_SOMEIPSD_00800]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈SOME/IP Service Discovery shall reduce the number of Service Discovery messages
+by packing entries together, if they can be sent at the same time:
+• Multiple entries of different service instances (e.g., all Offer Service entries)
+• Multiple entries of different types. E.g.:
+– Offer Service entries and Find Service entries
+– Subscribe Eventgroup Ack Entries and Subscribe Eventgroup Nack entries
+⌋
+5.1.4.1 Startup Behavior
+[PRS_SOMEIPSD_00395]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈For each Service Instance the Service Discovery shall have at least these three
+phases in regard to sending entries:
+• Initial Wait Phase
+• Repetition Phase
+• Main Phase
+⌋
+Note:
+An actual implemented state machine will need more than just states for these three
+phases. E.g. local services can be still down and remote services can be already
+known (no finds needed anymore).
+[PRS_SOMEIPSD_00397]
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00012
+⌈The service discovery shall enter the Initial Wait Phase for a client service instance
+when the link on the interface needed for this service instance is up and the client
+service is requested by the application. ⌋
+61 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE62
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00133]
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00012
+⌈The service discovery shall enter the Initial Wait Phase for a server service instance
+when the link on the interface needed for this service instance is up and the server
+service is available. ⌋
+Note:
+It is possible that the link is up but the service instance is not yet available on server
+side.
+Service instances require the availability of the needed applications and possible ex-
+ternal sensors and actuators as well. Basically the functionality needed by this service
+instance has to be ready to offer a service and finding a service is applicable after
+some application requires it.
+[PRS_SOMEIPSD_00399]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈The Service Discovery shall wait based on the INITIAL_DELA Y after entering the
+Initial Wait Phase and before sending the first messages for the Service Instance. ⌋
+[PRS_SOMEIPSD_00400]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈INITIAL_DELA Y shall be defined as a minimum and a maximum delay . ⌋
+[PRS_SOMEIPSD_00401]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈The wait time shall be determined by choosing a random value between the minimum
+and maximum of INITIAL_DELA Y .⌋
+[PRS_SOMEIPSD_00804]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈The Service Discovery shall use the same random value, if ClientService and Ser-
+verService reference the same ClientServiceTimer and ServerServiceTimer, respec-
+tively , and if it its ensured that the referencing ClientService and ServerService, re-
+spectively , are requested and released in the same point in time. ⌋
+[PRS_SOMEIPSD_00805]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈The Service Discovery shall use different random values per ClientService and Ser-
+verService, if the ClientServices and ServerService referencing their own ClientSer-
+viceTimer and ServerServiceTimer, respectively . Thus, if a ClientService or ServerSer-
+vice enters the Initial Wait Phase, they shall use an individual calculated random value
+within the Initial Wait Phase. ⌋
+62 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE63
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00404]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈After sending the first message the Repetition Phase of this Service Instance/these
+Service Instances is entered. ⌋
+[PRS_SOMEIPSD_00405]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈The Service Discovery shall wait in the Repetitions Phase based on REPETI-
+TIONS_BASE_DELA Y .⌋
+[PRS_SOMEIPSD_00406]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈After each message sent in the Repetition Phase the delay is doubled. ⌋
+[PRS_SOMEIPSD_00407]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈The Service Discovery shall send out only up to REPETITIONS_MAX entries during
+the Repetition Phase. ⌋
+[PRS_SOMEIPSD_00408]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈Sending Find entries shall be stopped after receiving the corresponding Offer entries
+by jumping to the Main Phase in which no Find entries are sent. ⌋
+[PRS_SOMEIPSD_00409]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈If REPETITIONS_MAX is set to 0, the Repetition Phase shall be skipped and the Main
+Phase is entered for the Service Instance after the Initial Wait Phase. ⌋
+[PRS_SOMEIPSD_00410]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈After the Repetition Phase the Main Phase is being entered for a Service Instance. ⌋
+[PRS_SOMEIPSD_00411]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈After entering the Main Phase, the provider shall wait 1*CYCLIC_OFFER_DELA Y
+before sending the first offer entry message. ⌋
+[PRS_SOMEIPSD_00412]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈In the Main Phase Offer Messages shall be sent cyclically if a
+CYCLIC_OFFER_DELA Y is configured.⌋
+63 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE64
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00413]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈After a message for a specific Service Instance the Service Discovery waits for
+1*CYCLIC_OFFER_DELA Y before sending the next message for this Service In-
+stance.⌋
+[PRS_SOMEIPSD_00415]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈For Find entries (Find Service and Find Eventgroup) no cyclic messages are allowed
+in Main Phase. ⌋
+[PRS_SOMEIPSD_00582]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈Subscribe Eventgroup Entries shall be triggered by Offer Service entries, which are
+either sent cyclically or sent as a response to a received Find Service entry . ⌋
+[PRS_SOMEIPSD_00416]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈Example:
+Initial Wait Phase:
+• Wait for random_delay in Range(INITIAL_DELA Y_MIN, _MAX)
+• Send message (Find Service and Offer Service entries)
+Repetition Phase (REPETITIONS_BASE_DELA Y=100ms, REPETITIONS_MAX=2):
+• Wait 20∗ 100ms
+• Send message (Find Service and Offer Service entries)
+• Wait 21∗ 100ms
+• Send message (Find Service and Offer Service entries)
+Main Phase:
+• Server:
+– as long message is active and CYCLIC_OFFER_DELA Y is defined
+* Wait CYCLIC_OFFER_DELA Y
+* Send message (Offer Service entries)
+• Client:
+– as long as offer service messages are received, Subscribe Eventgroup mes-
+sage is sent
+⌋
+64 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE65
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5.1.4.2 Server Answer Behavior
+[PRS_SOMEIPSD_00417]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈The Service Discovery shall delay answers to entries that were received in multicast
+SOME/IP-SD messages using the configuration item REQUEST_RESPONSE_DELA Y .
+This is valid for the following two cases:
+• Offer entry (unicast or multicast) after received find entry (multicast)
+• Subscribe entry (unicast) after received offer entry (multicast)
+⌋
+[PRS_SOMEIPSD_00419]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈The REQUEST_RESPONSE_DELA Y shall not apply if unicast messages are an-
+swered with unicast messages. ⌋
+[PRS_SOMEIPSD_00420]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈REQUEST_RESPONSE_DELA Y shall be specified by a minimum and a maximum. ⌋
+[PRS_SOMEIPSD_00421]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈The actual delay shall be randomly chosen between minimum and maximum of RE-
+QUEST_RESPONSE_DELA Y .⌋
+[PRS_SOMEIPSD_00422]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈For basic implementations all Find Service entries shall be answered with Offer Ser-
+vice entries transported using unicast. ⌋
+[PRS_SOMEIPSD_00423]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈For optimization purpose the following behaviors shall be supported as option:
+• Find messages received with the Unicast Flag set to 1 in main phase, shall
+be answered with a unicast response if the latest offer was sent less than 1/2
+CYCLIC_OFFER_DELAY ago.
+• Find messages received with the Unicast Flag set to 1 in main phase, shall
+be answered with a multicast RESPONSE if the latest offer was sent 1/2
+CYCLIC_OFFER_DELAY or longer ago.
+⌋
+65 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE66
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00843]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈Entries received with the unicast flag set to 0, shall not be answered with unicast but
+ignored.⌋
+5.1.4.3 Shutdown Behavior
+[PRS_SOMEIPSD_00427]
+Upstream requirements: RS_SOMEIPSD_00017, RS_SOMEIPSD_00012
+⌈When a server service instance of an ECU is in the Repetition and Main Phase and
+is being stopped, a Stop Offer Service entry shall be sent out. ⌋
+[PRS_SOMEIPSD_00751]
+Upstream requirements: RS_SOMEIPSD_00017
+⌈When the link goes down for a server service instance in the Initial Wait Phase, Rep-
+etition Phase or Main Phase, the service discovery shall enter the Down Phase and
+reenter into Initial Wait Phase when the link is up again and the service is still avail-
+able.⌋
+[PRS_SOMEIPSD_00752]
+Upstream requirements: RS_SOMEIPSD_00017
+⌈When the link goes down for a client service instance in the Initial Wait Phase, Rep-
+etition Phase or Main Phase, the service discovery shall enter the Down Phase and
+reenter into Initial Wait Phase when the link is up again and the service is still avail-
+able..⌋
+[PRS_SOMEIPSD_00428]
+Upstream requirements: RS_SOMEIPSD_00017
+⌈When a server sends out a Stop Offer Service entry all subscriptions for this service
+instance shall be deleted on the server side. ⌋
+[PRS_SOMEIPSD_00429]
+Upstream requirements: RS_SOMEIPSD_00017
+⌈When a client receives a Stop Offer Service entry all subscriptions for this service
+instance shall be deleted on the client side. ⌋
+[PRS_SOMEIPSD_00430]
+Upstream requirements: RS_SOMEIPSD_00017
+⌈When a client receives a Stop Offer Service entry , the client shall not send out Find
+Service entries but wait for Offer Service entry or change of status (application, network
+management, Ethernet link, or similar). ⌋
+66 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE67
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00431]
+Upstream requirements: RS_SOMEIPSD_00017
+⌈When a client service instance of an ECU is in the Main Phase and is being stopped
+(i.e. the service instance is released), the SD shall send out Stop Subscribe Event-
+group entries for all subscribed Eventgroups. ⌋
+[PRS_SOMEIPSD_00432]
+Upstream requirements: RS_SOMEIPSD_00017
+⌈When the whole ECUs is being shut down Stop Offer Service entries shall be sent
+out for all service entries and Stop Subscribe Eventgroup entries for Eventgroups. ⌋
+5.1.4.4 State Machines
+[PRS_SOMEIPSD_00433]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈In this section the state machines of the client and server are shown. ⌋
+[PRS_SOMEIPSD_00434]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈SOME/IP Service State Machine Server is described as follows:
+States inside SD Server State Machine(Service) are defined as follows:
+• SD Server State Machine(Service)
+– Not Ready
+– Ready
+* Initial Wait Phase
+· Timer Set
+* Repetition Phase
+· Timer Set
+* Main Phase
+· Timer Set
+Initial entry points of SD Server State Machine(Service) are inside the follow-
+ing states:
+• SD Server State Machine(Service)
+– Ready
+* Initial Wait Phase
+67 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE68
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+* Repetition Phase
+* Main Phase
+T ransitions insideSD Server State Machine(Service) are defined as follows:
+FROM entry point SD Server State Machine(Service)
+TO Not Ready
+WITH [ifstatus!=up_and_configured or service-status==down]
+FROM entry point SD Server State Machine(Service)
+TO Not Ready
+WITH [ifstatus==up_and_configured or service-status==up]
+FROM Not Ready
+TO Ready
+WITH if-status-changed() or service-status-changed() [ifsta-
+tus==up_and_configured and service-status==up]
+FROM Ready
+TO Not Ready
+WITH if-status-changed [ifstatus!=up_and_configured] /clearAll-
+Timers()
+FROM Ready
+TO Not Ready
+WITH service-status==down /clearAllTimers()
+send(StopOfferService)
+FROM TimerSet
+OF Initial Wait Phase
+TO Repetition Phase
+WITH Timer expired /send(OfferService)
+FROM TimerSet
+OF Repetition Phase
+TO TimerSet
+OF Repetition Phase
+WITH receive(FindService) /waitAndSend(OfferService) Reset-
+Timer()
+FROM TimerSet
+OF Repetition Phase
+TO TimerSet
+OF Repetition Phase
+WITH Timer expired [run<REPETITIONS_MAX] /send(OfferService)
+68 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE69
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+run++ setTimer((2 ˆrun)*REPETITIONS_BASE_DELAY
+FROM TimerSet
+OF Repetition Phase
+TO Main Phase
+WITH Timer expired [run==REPETITIONS_MAX]
+FROM entry point Ready
+TO Initial Wait Phase
+FROM entry point Initial Wait Phase
+TO Timer Set
+OF Initial Wait Phase
+WITH SetTimerInRange(INITIAL_DELAY_MIN,INITIAL_DELAY_MAX)
+FROM entry point Repetition Phase
+TO Timer Set
+OF Repetition Phase
+WITH [REPETITIONS_MAX>0] /run=0 setTimer((2 ˆrun)*REPETITIONS_BASE_DELAY)
+FROM entry point Repetition Phase
+TO Main Phase
+WITH [REPETITIONS_MAX==0]
+FROM entry point Main Phase
+TO Timer Set
+OF Main Phase
+WITH /setTimer(CYCLIC_ANNOUNCE_DELAY) send(OfferService)
+FROM Timer Set
+OF Main Phase
+TO Timer Set
+OF Main Phase
+WITH Timer expired /setTimer(CYCLIC_ANNOUNCE_DELAY)
+send(OfferService)
+FROM Timer Set
+OF Main Phase
+TO Timer Set
+OF Main Phase
+WITH receive(FindService) /waitAndSend(OfferService) reset-
+69 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE70
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Timer()
+⌋
+Note: Graphical information of the SOME/IP Service State Machine Server is shown in
+Figure 5.16
+70 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE71
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+ stm SD Serv er State Machine (Serv ices) 
+SD Serv er State Machine (Serv ices) 
+Initial 
+Not Ready 
+Ready 
+Initial Wait Phase 
+Repetition Phase 
+Main Phase 
+Initial 
+Initial T imer set 
+Initial 
+T imer set 
+Initial T imer set 
+Timer expired [run<REPETITIONS_MAX] 
+/send(OfferService) 
+run++ 
+setTimer((2^run)*REPETITIONS_BASE_DELAY) 
+[ifstatus==up_and_configured 
+and service-status==up] 
+if-status-changed() or service-status-changed() 
+[ifstatus==up_and_configured and 
+service-status==up] 
+SetTimerInRange(INITIAL_DELAY_MIN, 
+INITIAL_DELAY_MAX) 
+Timer expired 
+/send(OfferService) 
+[ifstatus!=up_and_configured 
+or service-status==down] 
+[REPETITIONS_MAX>0] 
+/run=0 
+setTimer((2^run)*REPETITIONS_BASE_DELAY) 
+service-status==down 
+/clearAllTimers() 
+send(StopOfferService) 
+Timer expired 
+[run==REPETITIONS_MAX] 
+receive(FindService) 
+/waitAndSend(OfferService) 
+resetTimer() 
+/setTimer(CYCLIC_ANNOUNCE_DELAY) 
+send(OfferService) 
+Timer expired 
+/setTimer(CYCLIC_ANNOUNCE_DELAY) 
+send(OfferService) 
+if-status-changed [ifstatus!=up_and_configured] 
+/clearAllTimers() 
+receive(FindService) 
+/waitAndSend(OfferService) 
+ResetTimer() 
+[REPETITIONS_MAX==0] 
+Figure 5.16: SOME/IP Service State Machine Server
+71 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE72
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00435]
+Upstream requirements: RS_SOMEIPSD_00025
+⌈SOME/IP Service State Machine Client is described as follows:
+States inside SD Client State Machine(Service) are defined as follows:
+• SD Client State Machine(Service)
+– Not Requested
+* Service Not Seen
+* Service Seen
+– Requested_but_not_ready
+– Main
+* Service Ready
+* Stopped
+– Searching for Service
+* Initial Wait Phase
+· Timer Set
+* Repetition Phase
+· Timer Set
+Initial entry points of SD Client State Machine(Service) are inside the follow-
+ing states:
+• SD Client State Machine(Service)
+– Not Requested
+• Searching for Service
+– Initial Wait Phase
+– Repetition Phase
+T ransitions insideSD Client State Machine(Service) are defined as follows:
+FROM entry point SD Client State Machine(Service)
+TO Not Requested
+WITH [Service Not Requested]
+FROM entry point SD Client State Machine(Service)
+TO Requested_but_not_ready
+72 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE73
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+WITH Service Not Requested and ifstatus!=up_and_configured
+FROM entry point SD Client State Machine(Service)
+TO Searching for Service
+WITH Service Requested and ifstatus==up_and_configured
+FROM entry point Not Requested TO Service Not Seen
+FROM Not Requested TO Requested_but_not_ready
+WITH InternalServiceRequest [ifstatus!=up_and_configured]
+FROM Service Not Seen
+TO Service Seen
+WITH receive(OfferService) /setTimer(TTL)
+FROM Repetition Phase
+TO Stopped
+WITH Repetition Expired
+FROM Repetition Phase
+TO Stopped
+WITH receive(StopOfferService)
+FROM Stopped
+TO Service Not Seen
+WITH [ServiceNotRequired]
+FROM Service Seen
+TO Service Not Seen
+WITH if-status-changed() [ifstatus!=up_and_configured]
+FROM Service Seen
+TO Service Not Seen
+WITH Timer expired (TTL)
+FROM Repetition Phase
+TO Stopped
+WITH Repetition Expired
+73 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE74
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+FROM Service Seen
+TO Service Not Seen
+WITH receive(StopServiceOffer)
+FROM Service Seen
+TO Service Seen
+FROM Service Seen
+TO Service Ready
+WITH InternalServiceRequest [ifstatus==up_and_configured]
+FROM Service Ready
+TO Service Seen
+WITH [ServiceNotRequest]
+FROM Service Ready
+TO Service Ready
+WITH receive(OfferService) /resetTimer(TTL)
+FROM Service Ready
+TO Stopped
+WITH receive(StopOfferService) / cancelTimer(TTL)
+FROM Stopped
+TO Service Ready
+WITH receive(OfferService) /resetTimer(TTL)
+FROM Service Ready
+TO Searching for Service
+WITH Timer expired (TTL)
+FROM Searching for Service
+TO Service Ready
+WITH receive(OfferService) /setTimer(TTL)
+FROM Searching for Service
+TO Requested_but_not_ready
+WITH if-status-changed() [ifstatus!=up_and_configured] /cancel-
+Timer(TTL)
+74 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE75
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+FROM Requested_but_not_ready
+TO Searching for Service
+WITH if-status-changed() [ifstatus!=up_and_configured]
+FROM entry point Searching for Service
+TO Initial Wait Phase
+FROM entry point Initial Wait Phase
+TO Timer Set
+OF Initial Wait Phase
+WITH /setTimerInRange(INITIAL_DELAY_MIN, INITIAL_DELAY_MAX)
+FROM Timer Set
+OF Initial Wait Phase
+TO Repetition Phase
+WITH TimerExpired /send(FindService)
+FROM entry point Repetition Phase
+TO Timer Set
+OF Repetition Phase
+WITH [REPETITONS_MAX>0] /run=0 setTimer((2 ˆrun)*REPETITIONS_BASE_DELAY)
+FROM Timer Set
+OF Repetition Phase
+TO Timer Set
+OF Repetition Phase
+FROM Not Requested
+TO Requested_but_not_ready
+WITH InternalServiceRequest [ifstatus!=up_and_configured]
+⌋
+Note: Graphical information of the SOME/IP Service State Machine Client is shown in
+Figure 5.17
+75 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE76
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Figure 5.17: SOME/IP Service State Machine Client
+Note: The most likely assumed cause for a TTL expiry while the client’s state ma-
+chine resides in state "Service Ready" is the temporary (duration in the order of the
+CYCLIC_OFFER_DELA Y or smaller) failure of an intermediate link (i.e., a link along
+the path from client to server which, however, is not directly connected to the client
+ECU and thus this link failure is not perceivable via a change in the ifstatus). Thus,
+the specified reaction - namely transition into "Searching for Service" state (and thus
+into the initial wait phase) - in case of a TTL expiry is deliberately different from the
+specified reactions in case of received StopOfferService entries and detected server
+reboots, where a transition into the "Stopped" state takes place. T ransiting back into
+the "Searching for Service" state in case of TTL expiries caused by temporary inter-
+76 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE77
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+mediate link failures speeds up recovery by approx. a factor of 10 (depending on
+the configuration of the INITIAL_DELA Y , the REQUEST_RESPONSE_DELA Y , and the
+CYCLIC_OFFER_DELA Y) through the explicit sending of FindService entries by the
+client which are answered by OfferService entries of the server (even if the server itself
+resides in the main phase).
+5.1.4.5 SOME/IP-SD Mechanisms and Errors
+In this section SOME/IP-SD in cases of errors (e.g. lost or corrupted packets) is dis-
+cussed. This is also be understood as rationale for the mechanisms used and the
+configuration possible.
+Soft State Protocol: SOME/IP-SD was designed as soft state protocol, that means that
+entries come with a lifetime and need to be refreshed to stay valid (setting the TTL to
+the maximum value shall turn this off).
+Initial Wait Phase:
+The Initial Wait Phase was introduced for two reasons: deskewing events of starting
+ECUs to avoid traffic bursts and allowing ECUs to collect multiple entries in SD mes-
+sages.
+Repetition Phase:
+The Repetition Phase was introduced to allow for fast synchronization of clients and
+servers. If the clients startup later, it will find the server very fast. And if the server
+starts up later, the client can be found very fast. The Repetition Phase increases the
+time between two messages exponentially to avoid that overload situations keep the
+system from synchronization.
+Main Phase:
+In the Main Phase the SD tries to stabilize the state and thus decreases the rate of
+packets by sending no Find Services anymore and only offers in the cyclic interval
+(e.g. every 1s).
+Request-Response-Delay:
+SOME/IP-SD shall be configured to delay the answer to entries in multicast messages
+by the Request-Response-Delay . This is useful in large systems with many ECUs.
+When sending a SD message with many entries in it, a lot of answers from different
+ECUs arrive at the same time and put large stress on the ECU receiving all these
+answers.
+77 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE78
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5.1.4.6 Error Handling
+Figure 5.18: - SOME/IP-SD Error Handling
+78 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE79
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Figure 5.18 shows a simplified process for the error handling of incoming SOME/IP-SD
+messages.
+[PRS_SOMEIPSD_00125]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈Check that at least enough bytes for an empty SOME/IP-SD message are present,
+i.e the message is at least 12 Bytes long. If the check fails, the message shall be
+discarded without further actions. ⌋
+[PRS_SOMEIPSD_00126]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈If the Service ID of a received entry is not known and not a Subscribe Eventgroup
+entry , the entry shall be ignored. Otherwise a Negative Acknowledgement shall be
+returned according to [PRS_SOMEIPSD_00393]. ⌋
+[PRS_SOMEIPSD_00127]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈If the Instance ID of a received entry is not known and not a Subscribe Eventgroup
+entry , the entry shall be ignored. Otherwise a Negative Acknowledgement shall be
+returned according to [PRS_SOMEIPSD_00393]. ⌋
+[PRS_SOMEIPSD_00128]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈If the Major Version of a received entry is not known and not a Subscribe Eventgroup
+entry , the entry shall be ignored. Otherwise a Negative Acknowledgement shall be
+returned according to [PRS_SOMEIPSD_00393]. ⌋
+[PRS_SOMEIPSD_00129]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈If the Eventgroup ID of a received entry is not known and not a Subscribe Eventgroup
+entry , the entry shall be ignored. Otherwise a Negative Acknowledgement shall be
+returned according to [PRS_SOMEIPSD_00393]. This is only applicable to eventgroup
+entries.⌋
+[PRS_SOMEIPSD_00803]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈If the length of the Entries Array has an invalid size (i.e. the entries array would exceed
+the message size), the message shall be discarded without further actions. ⌋
+[PRS_SOMEIPSD_00130]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈Check the referenced Options of each received entry:
+• The referenced options exist.
+79 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE80
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• The entry references all required options (e.g. a provided eventgroup that uses
+unicast requires a unicast endpoint option in a received Subscribe Eventgroup
+entry).
+• The entry only references supported options (e.g. a required eventgroup that
+does not support multicast data reception does not support multicast endpoint
+options in a Subscribe Eventgroup ACK entry).
+• There are no conflicts between the options referenced by an entry (i.e. two op-
+tions of same type with contradicting content).
+• The T ype of the referenced Option is known or the discardable flag is set to 1.
+• The T ype of the referenced Option is allowed for the entry
+[PRS_SOMEIPSD_00583] or discardable flag is set to 1.
+• The Length of the referenced Option is consistent to the T ype of the Option.
+• An Endpoint Option has a valid L4-Protocol and a valid L4-Port number field (i.e.,
+a port number different from 0).
+• The Option is valid (e.g. a multicast endpoint option shall use a multicast IP
+address).
+⌋
+Note:
+If an entry references an option that is known by the Service Discovery implementa-
+tion but not required by the service (e.g. an Offer references a TCP and UDP option
+and the client uses only UDP , or a Subscribe Eventgroup entry references a UDP end-
+point option but the server uses only multicast event transmission), the entry shall be
+processed.
+[PRS_SOMEIPSD_00131]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈Check if the TCP connection is already present (only applicable, if TCP is configured
+for Eventgroup and Subscribe Eventgroup entry was received) ⌋
+[PRS_SOMEIPSD_00852]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈Check if a security association is already established. ⌋
+[PRS_SOMEIPSD_00132]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈Check if enough resources are left (e.g. Socket Connections) ⌋
+80 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE81
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00232]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈
+If the checks in [PRS_SOMEIPSD_00130] fail for a received Find entry , the entry shall
+be ignored, except when Endpoint or Multicast Options are referenced, in which case
+only the Options shall be ignored according to [PRS_SOMEIPSD_00529].
+⌋
+[PRS_SOMEIPSD_00233]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈If the checks in [PRS_SOMEIPSD_00130] fail for a received Offer entry , the entry
+shall be ignored. ⌋
+[PRS_SOMEIPSD_00234]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈If the checks in [PRS_SOMEIPSD_00130], [PRS_SOMEIPSD_00131],
+[PRS_SOMEIPSD_00832], [PRS_SOMEIPSD_00852] or [PRS_SOMEIPSD_00132]
+fail for a received Subscribe Eventgroup entry , a Subscribe Eventgroup NACK entry
+shall be sent.
+⌋
+[PRS_SOMEIPSD_00235]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈If the checks in [PRS_SOMEIPSD_00130] or [PRS_SOMEIPSD_00132] fail for a re-
+ceived Subscribe Eventgroup ACK entry , the entry shall be processed, but the sub-
+scription shall not be considered as successful. ⌋
+[PRS_SOMEIPSD_00231]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈Options that are referenced by an entry shall be ignored if:
+• The Option T ype is not known (i.e. not yet specified, or not supported by the
+receiver) and the discardable flag is set to 1.
+• The option is redundant (i.e. another option of the same type and same content
+is referenced by this entry).
+• The option is not required (e.g. a provided eventgroup that uses only multicast
+does not require a unicast endpoint option in a received Subscribe Eventgroup
+entry , though it is still allowed).
+⌋
+81 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE82
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00844]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈If the two Configuration Options have conflicting items (same name), all items shall
+be handled. There shall be no attempt been made to merge duplicate items. ⌋
+[PRS_SOMEIPSD_00832]
+Upstream requirements: RS_SOMEIPSD_00019
+⌈Check for a provided service instance which requires a secure connection if on recep-
+tion of a subscribe the security association for the corresponding connection is already
+established.⌋
+5.1.5 Non-SOME/IP protocols with SOME/IP-SD
+Besides SOME/IP other communication protocols are used within the vehicle; e.g., for
+Network Management, Diagnostics, or Flash Updates. Such communication protocols
+might need to communicate a service instance or have eventgroups as well.
+[PRS_SOMEIPSD_00437]
+Upstream requirements: RS_SOMEIPSD_00004
+⌈For Non-SOME/IP protocols (the application protocol itself doesn’t use SOME/IP but
+it is published over SOME/IP SD) a special Service-ID shall be used and further infor-
+mation shall be added using the configuration option:
+• Service-ID shall be set to 0xFFFE (reserved)
+• Instance-ID shall be used as described for SOME/IP services and eventgroups.
+• The Configuration Option shall be added and shall contain exactly one entry with
+key "otherserv" and a configurable non-empty value that is determined by the
+system department.
+⌋
+[PRS_SOMEIPSD_00438]
+Upstream requirements: RS_SOMEIPSD_00004
+⌈SOME/IP services shall not use the otherserv-string in the Configuration Option. ⌋
+[PRS_SOMEIPSD_00439]
+Upstream requirements: RS_SOMEIPSD_00004
+⌈For Find Service/Offer Service/Request Service entries the otherserv-String shall be
+used when announcing non-SOME/IP service instances. ⌋
+82 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE83
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00440]
+Upstream requirements: RS_SOMEIPSD_00004
+⌈
+Example for valid otherserv-string: "otherserv=internaldiag".
+Example for an invalid otherserv-string: "otherserv".
+Example for an invalid otherserv-string: "otherserv=". ⌋
+83 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE84
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Example:
+Figure 5.19: SOME/IP-SD Example PDU for Non-SOME/IP-SD
+84 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE85
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5.1.6 Publish/Subscribe with SOME/IP and SOME/IP-SD
+Note: In contrast to the SOME/IP request/response mechanism there may be cases in
+which a client requires a set of parameters from a server, but does not want to request
+that information each time it is required. These are called notifications and concern
+events and fields.
+[PRS_SOMEIPSD_00443]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00014, RS_SOMEIPSD_
+00015, RS_SOMEIPSD_00016
+⌈All clients needing events and/or notification events shall register using the SOME/IP-
+SD at run-time with a server. ⌋
+The Notification Interaction sequence is as shown below.
+Client Server 
+SOME/IP-SD: SubscribeEventgroup () 
+SOME/IP: Event() 
+SOME/IP: Event() 
+SOME/IP: Event() 
+SOME/IP: Event()
+SOME/IP-SD: SubscribeEventgroupAck () 
+Figure 5.20: Notification interaction
+This feature is comparable but NOT identical to the MOST notification mechanism.
+[PRS_SOMEIPSD_00446]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00014, RS_SOMEIPSD_
+00015, RS_SOMEIPSD_00016
+⌈With the SOME/IP-SD entry Offer Service the server offers to push notifications to
+clients; thus, it shall be used as trigger for Subscriptions. ⌋
+[PRS_SOMEIPSD_00449]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈Each client shall respond to a SOME/IP-SD Offer Service entry from the server with
+a SOME/IP-SD Subscribe Eventgroup entry as long as the client is still interested in
+receiving the notifications/events of this eventgroup. If the client is able to reliably detect
+the reboot of the server using the SOME/IP-SD messages reboot flag, the client shall
+handle the reboot as if a StopOffer entry was received and proceed with the received
+entries after all actions upon a StopOffer have been finalized. ⌋
+85 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE86
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00862] Client based distinction between field notifiers and
+pure events
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The distinction between field notifiers and pure events shall be taken based on the
+configuration of the client. ⌋
+Reasons for the client to explicitly request initial values for field notifiers (see
+[PRS_SOMEIPSD_00463]) include but are not limited to:
+• The client is currently not subscribed to the Eventgroup.
+• The client has seen a link-down/link-up after the last Subscribe Eventgroup entry .
+• The client has not received a Subscribe Eventgroup Ack after the last regular
+Subscribe Eventgroup
+• The client has detected a Reboot of the Server of this Services
+[PRS_SOMEIPSD_00570]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈If the client subscribes to two or more eventgroups including one or more identical
+events or fields, the server shall not send duplicated events or notification events for the
+field notifiers, if the same client endpoint is used. This shall not affect initial events as
+they are always sent to a unicast endpoint, when the first subscribe for an eventgroup
+is received. (see [PRS_SOMEIPSD_00571]). ⌋
+[PRS_SOMEIPSD_00450]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈Publish/Subscribe with link loss at client side is described as follows:
+1. No prior registrations + Client subscribes
+(a) Server: OfferService()
+(b) Client: SubscribeEventgroup [Session ID=x, Reboot=0]
+(c) Server: updateRegistration()
+(d) Server: SubscribeEventgroupAck + Events()
+2. Link loss at client side
+(a) Client: linkDown()
+(b) Client: deleteEntries()
+(c) Client: linkUp()
+3. Client subscribes again, Client Reboot detected
+(a) Server: OfferService()
+86 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE87
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+(b) Client: SubscribeEventgroup [Session ID=1, Reboot=1]
+(c) Server: updateRegistration()
+(d) Server SubscribeEventgroupAck + Events()
+⌋
+Note: Description is also shown in Figure 5.21.
+Figure 5.21: Publish/Subscribe with link loss at client (figure ignoring timings)
+Note: The server sending Offer Service entries as implicit Publishes has to keep state
+of Subscribe Eventgroup messages for this eventgroup instance in order to know if
+notifications/events have to be sent.
+87 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE88
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00452]
+Upstream requirements: RS_SOMEIPSD_00017, RS_SOMEIPSD_00020
+⌈A client shall deregister from a server by sending a SOME/IP-SD Sub-
+scribe Eventgroup message with TTL=0 (Stop Subscribe Eventgroup see
+[PRS_SOMEIPSD_00389]).⌋
+[PRS_SOMEIPSD_00453]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00017
+⌈
+Publish/Subscribe Registration/Deregistration behavior is described as follows:
+1. Client 1 subscribes
+(a) Server: OfferService() to Client 1 and Client 2
+(b) Client 1: SubscribeEventgroup()
+(c) Server: updateRegistration()
+(d) Server: SubscribeEventgroupAck + Events() to Client 1
+2. Client 2 subscribes
+(a) Client 2: SubscribeEventgroup()
+(b) Server: updateRegistration()
+(c) Server: SubscribeEventgroupAck + Events() to Client 2
+3. Client 2 stops subscription
+(a) Client 2: StopSubscribeEventgroup()
+(b) Server: updateRegistration()
+4. Client 1 remains registered
+⌋
+Note: Description is also shown in Figure 5.22.
+88 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE89
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+ sd SEQ-Registration-Deregistration 
+Server Client 2 Client 1 
+OfferService() OfferService() 
+SubscribeEventgroup() 
+updateRegistration() 
+SubscribeEventgroupAck + Events() 
+Event() 
+SubscribeEventgroup() 
+updateRegistration() 
+SubscribeEventgroupAck + Events() 
+Event() Event() 
+Event() Event() 
+StopSubscribeEventgroup() 
+updateRegistration() 
+Event() 
+Figure 5.22: Publish/Subscribe Registration/Deregistration behavior (figure ignoring
+timings)
+[PRS_SOMEIPSD_00454]
+Upstream requirements: RS_SOMEIPSD_00017, RS_SOMEIPSD_00019
+⌈The SOME/IP-SD on the server shall delete the subscription, if a relevant SOME/IP
+error occurs after sending an event or notification event. ⌋
+The error includes but is not limited to not being able to reach the communication
+partner and errors of the TCP connection.
+[PRS_SOMEIPSD_00457]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00015
+⌈
+89 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE90
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Publish/Subscribe with link loss at server is described as follows:
+1. No prior registrations + Client subscribes
+(a) Server: OfferService()
+(b) Client: SubscribeEventgroup()
+(c) Server: updateRegistration()
+(d) Server: SubscribeEventgroupAck + Events()
+2. Link loss at server side
+(a) Server: linkDown()
+(b) Server: deleteRegistrations()
+(c) Server: linkUp()
+3. Server offers again, Server Reboot detected by client
+(a) Server: OfferService() [Session ID=1, Reboot=1]
+(b) Client: SubscribeEventgroup()
+(c) Server: updateRegistration()
+(d) Server SubscribeEventgroupAck + Events()
+⌋
+Note: Description is also shown in Figure 5.23
+90 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE91
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+ sd SEQ-LinkLossServ er 
+ClientServer
+No registration.
+Reboot 
+detected!
+OfferService()
+SubscribeEventgroup()
+updateRegistration()
+SubscribeEventgroupAck + Events()
+linkDown()
+deleteRegistrations()
+linkUp()
+OfferService() [Session ID=1, Reboot=1]
+SubscribeEventgroup()
+updateRegistration()
+SubscribeEventgroupAck + Events()
+Figure 5.23: Publish/Subscribe with link loss at server (figure ignoring timings)
+[PRS_SOMEIPSD_00461]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The client shall open a TCP connection to the server before sending the Subscribe
+Eventgroup entry if the Service is offered over TCP and the client requests an Event-
+group over TCP according to the configuration. ⌋
+[PRS_SOMEIPSD_00830]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈A client which wants to subscribe to an eventgroup of a service which demands a se-
+curity association shall start (if not already started) to establish the security and wait un-
+til the security association is established. The client shall send a SubscribeEventgroup
+entry for an eventgroup of this service after the security association is established. ⌋
+91 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE92
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Note: For security associations which demand that only one participant is allowed to
+start establishing the security association (like TLS/DTLS), each ECU shall use differ-
+ent endpoints for server services and client service to ensure that the ECU is acting for
+each secured connection either as a client (which shall start establishing the security
+association) or as a server.
+[PRS_SOMEIPSD_00462]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈After a client has sent a Subscribe Eventgroup entry the server shall send a Subscribe
+Eventgroup Ack entry .⌋
+[PRS_SOMEIPSD_00463]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The client shall wait for the Subscribe Eventgroup Ack entry acknowledging a Sub-
+scribe Eventgroup entry . If this Subscribe Eventgroup Ack entry does not arrive before
+the next Subscribe Eventgroup entry is sent, the client shall do the following:
+• Send a Stop Subscribe Eventgroup entry and a Subscribe Eventgroup entry in
+the same SOME/IP-SD message the Subscribe Eventgroup entry would have
+been sent with
+⌋
+Note:
+This behavior exists to cope with short durations of communication loss, so new Initial
+Events are triggered to lower the effects of the loss of messages.
+[PRS_SOMEIPSD_00577]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The requirement [PRS_SOMEIPSD_00463] shall not be applied to Offer Service en-
+tries that are a reaction to Find Service entries. This means that the Subscribe Event-
+group Ack entry of a Subscribe Eventgroup entry that was triggered by a unicast Offer
+Service entry is not monitored as well as upon a unicast Offer Service entry the Stop
+Subscribe Eventgroup entry/Subscribe Eventgroup entry is not sent. ⌋
+Rationale:
+If a client sends a Subscribe Eventgroup entry as a reaction to a unicast offer, and a
+multicast offer arrives immediately after that but before the the Subscribe Eventgroup
+Ack entry could be sent by the server and received, the client shall not complain (i.e.
+Stop Subscribe/Subscribe) about a not yet received acknowledgement.
+Note:
+This behavior exists to cope with short durations of communication loss. The receiver
+of a Stop Subscribe Eventgroup and Subscribe Eventgroup combination would send
+out initial values for field notifiers to lower the effects of the loss of messages (see
+[PRS_SOMEIPSD_00122]).
+92 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE93
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00464]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The server shall send the first notifications/events (i.e. initial values) according to
+[PRS_SOMEIPSD_00120] immediately after sending the Subscribe Eventgroup Ack. ⌋
+[PRS_SOMEIPSD_00465]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The server shall not send initial values of events (i.e., pure events and not fields) upon
+subscriptions.⌋
+[PRS_SOMEIPSD_00120]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The server shall send initial values of field notifiers (i.e., fields and not pure events)
+upon subscriptions.⌋
+[PRS_SOMEIPSD_00861] Server based distinction between field notifiers and
+pure events
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The distinction between field notifiers and pure events shall be taken based on the
+configuration of the server. ⌋
+[PRS_SOMEIPSD_00121]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈If a subscription was already valid and is updated by a Subscribe Eventgroup entry ,
+no initial values shall be sent. ⌋
+Note: [PRS_SOMEIPSD_00465], [PRS_SOMEIPSD_00120], and
+[PRS_SOMEIPSD_00861] imply that even if a client explicitly requests the
+sending of initial values and thus the trigger on the server side according to
+[PRS_SOMEIPSD_00122] is fullfilled, no initial values shall be sent by the server for
+members of the Eventgroup which (according to the server’s own configuration) are
+pure events (and not fields).
+[PRS_SOMEIPSD_00308] Parallel subscription with a different port number
+Upstream requirements: RS_SOMEIPSD_00015
+⌈If a server receives a Subscribe Eventgroup entry with an endpoint option with a
+transport protocol port number (L4-port) which is different from the port number of a
+previous subscription, in case the previous subscription is still active (i.e., TTL has not
+expired and subscription has not been explicitly terminated by a Stop Subscribe Event-
+group entry), then the server shall accept and process the latest Subscribe Eventgroup
+Entry and shall terminate the previous subscription in that case. ⌋
+93 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE94
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00122]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The reception of a Stop Subscribe Eventgroup entry and a Subscribe Eventgroup
+entry in the same SOME/IP-SD message shall trigger the server to send initial values
+of field notifiers. ⌋
+[PRS_SOMEIPSD_00466]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00016
+⌈Publish/Subscribe States (server behavior for unicast eventgroups) are defined as
+follows:
+• Eventgroup_PubSub (Unicast Eventgroup)
+– Service Down
+– Service Up
+* Not Subscribed
+* Subscribed
+Initial entry points of Eventgroup_PubSub (Unicast Eventgroup) are inside the
+following states:
+• Eventgroup_PubSub (Unicast Eventgroup)
+– Service Up
+T ransitions inside Eventgroup_PubSub (Unicast Eventgroup) are defined as
+follows:
+FROM entry point Eventgroup_PubSub (Unicast Eventgroup)
+TO Service Down
+WITH [Service==Down]
+FROM Service Down
+TO Service Up
+WITH ServiceUp
+FROM Service Up
+TO Service Down
+WITH ServiceDown
+FROM entry point Eventgroup_PubSub (Unicast Eventgroup)
+TO Service UP
+WITH [Service==Up]
+94 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE95
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+FROM entry point Service Up
+TO Not Subscribed
+FROM Not Subscribed
+TO Subscribed
+WITH receive(SubscribeEventgroup) /enableEvents()
+send(SubscribeEventgroupAck)
+FROM Subscribed
+TO Subscribed
+WITH receive(SubscribeEventgroup) /send(SubscribeEventgroupAck)
+FROM Subscribed
+TO Not Subscribed
+WITH receive(StopSubscribeEventgroup) /disableEvents()
+FROM Subscribed
+TO Not Subscribed
+WITH TTL_expired [SubscriptionCounter==1] /disableEvents()
+⌋
+95 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE96
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Note: Graphical information of the Publish/Subscribe States
+(server behavior for unicast eventgroups) is shown in Figure 5.24
+stm Serv ice Discov ery Ev entgroup Pub/Sub (Unicast) 
+Ev entgroup_PubSub (Unicast Ev entgroup) 
+Initial
+Serv ice Dow n 
+Serv ice Up 
+Subscribed Not Subscribed Initial
+OfferService is implicit 
+PublishEventgroup 
+AUTOSAR:
+• enableEvents = enableTxRoutingGroup 
+• disableEvents = disableTxRoutingGroup
+ServiceDown 
+ServiceUp 
+receive(SubscribeEventgroup)
+/enableEvents()
+send(SubscribeEventgroupAck)
+receive(StopSubscribeEventgroup)
+/disableEvents()
+TTL_expired [SubscriptionCounter==1]
+/disableEvents()
+receive(SubscribeEventgroup)
+/send(SubscribeEventgroupAck)
+[Service==Up]
+[Service==Down]
+Figure 5.24: Publish/Subscribe State Diagram (server behavior for unicast eventgroups)
+[PRS_SOMEIPSD_00571]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈If a client subscribes with different SOME/IP-SD messages to different eventgroups
+of the same Service Instance and all eventgroups include the same field, the server
+shall send out the initial values for this field notifier for every subscription separately . ⌋
+[PRS_SOMEIPSD_00572]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈If a client subscribes with one SOME/IP-SD message to different eventgroups of the
+same Service Instance and all eventgroups include the same field, the Server may
+choose to not send out the initial value for this field notifier more than once. ⌋
+Note:
+This means the server can optimize by sending the initial values for the field notifier
+only once, if supported by its architecture.
+96 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE97
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00467]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00016
+⌈Publish/Subscribe States (server behavior for multicast eventgroups) are defined as
+follows:
+• Eventgroup_PubSub (Multicast Eventgroup)
+– Service Down
+– Service Up
+* Not Subscribed
+* Subscribed
+Initial entry points of Eventgroup_PubSub (Multicast Eventgroup) are inside
+the following states:
+• Eventgroup_PubSub (Multicast Eventgroup)
+– Service Up
+T ransitions inside Eventgroup_PubSub (Multicast Eventgroup) are defined
+as follows:
+FROM entry point Eventgroup_PubSub (Multicast Eventgroup)
+TO Service Down
+WITH [Service==Down]
+FROM Service Down
+TO Service Up
+WITH ServiceUp
+FROM Service Up
+TO Service Down
+WITH ServiceDown
+FROM entry point Eventgroup_PubSub (Multicast Eventgroup)
+TO Service UP
+WITH [Service==Up]
+FROM entry point Service Up
+TO Not Subscribed
+FROM Not Subscribed
+TO Subscribed
+97 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE98
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+WITH receive(SubscribeEventgroup) /enableEvents() Subscription-
+Counter++ send(SubscribeEventgroupAck)
+FROM Subscribed
+TO Subscribed
+WITH receive(SubscribeEventgroup) /SubscriptionCounter++
+/send(SubscribeEventgroupAck)
+FROM Subscribed
+TO Not Subscribed
+WITH receive(StopSubscribeEventgroup) [SubscriptionCounter==1]
+/SubscriptionCounter- /disableEvents()
+FROM Subscribed
+TO Subscribed
+WITH receive(StopSubscribeEventgroup) [SubscriptionCounter>1]
+/SubscriptionCounter-
+FROM Subscribed
+TO Not Subscribed
+WITH TTL_expired [SubscriptionCounter==1] /SubscriptionCounter-
+disableEvents()
+FROM Subscribed
+TO Subscribed
+WITH TTL_expired [SubscriptionCounter>1] /SubscriptionCounter-
+⌋
+98 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE99
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Note: Graphical information of the Publish/Subscribe States (server
+behavior for multicast eventgroups) is shown in Figure 5.25
+stm Serv ice Discov ery Ev entgroup Pub/Sub (Multicast ) 
+Ev entgroup_PubSub (Multicast Ev entgroup) 
+Initial
+Serv ice Dow n 
+Serv ice Up 
+Subscribed Not Subscribed 
+Initial
+OfferService is implicit 
+PublishEventgroup 
+AUTOSAR:
+• enableEvents = enableTxRoutingGroup 
+• disableEvents = disableTxRoutingGroup
+ServiceDown 
+[Service==Up]
+ServiceUp 
+receive(StopSubscribeEventgroup) [SubscriptionCount er>1]
+/SubscriptionCounter--
+TTL_expired [SubscriptionCounter>1]
+/SubscriptionCounter--
+receive(SubscribeEventgroup)
+/SubscriptionCounter++ 
+send(SubscribeEventgroupAck)
+receive(StopSubscribeEventgroup) [SubscriptionCount er==1]
+/SubscriptionCounter--
+disableEvents()
+TTL_expired [SubscriptionCounter==1]
+/SubscriptionCounter--
+disableEvents()
+receive(SubscribeEventgroup)
+/enableEvents()
+SubscriptionCounter++ 
+send(SubscribeEventgroupAck)
+[Service==Down]
+Figure 5.25: Publish/Subscribe State Diagram (server behavior for multicast event-
+groups)
+[PRS_SOMEIPSD_00468]
+Upstream requirements: RS_SOMEIPSD_00015, RS_SOMEIPSD_00016
+⌈Publish/Subscribe States (server behavior for adaptive unicast/multicast eventgroups)
+are defined as follows:
+• Eventgroup_PubSub (Unicast-to-Multicast Eventgroup)
+– Service Down
+– Service Up
+* Not Subscribed
+* Subscribed (Unicast)
+99 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE100
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+* Subscribed (Multicast)
+Initial entry points of Eventgroup_PubSub (Unicast-to-Multicast Event-
+group) are inside the following states:
+• Eventgroup_PubSub (Unicast-to-Multicast Eventgroup)
+– Service Up
+T ransitions inside Eventgroup_PubSub (Unicast-to-Multicast Event-
+group) are defined as follows:
+FROM entry point Eventgroup_PubSub (Unicast-to-Multicast Event-
+group)
+TO Service Down
+WITH [Service==Down]
+FROM Service Down
+TO Service Up
+WITH ServiceUp
+FROM Service Up
+TO Service Down
+WITH ServiceDown
+FROM entry point Eventgroup_PubSub (Unicast-to-Multicast Event-
+group)
+TO Service UP
+WITH [Service==Up]
+FROM entry point Service Up
+TO Not Subscribed
+FROM Not Subscribed
+TO Subscribed (Unicast)
+WITH receive(SubscribeEventgroup) [UnicastLimit>0] /en-
+ableEvents() SubscriptionCounter++ send(SubscrieEventgroupAck)
+FROM Subscribed (Unicast)
+TO Subscribed (Unicast)
+WITH receive(SubscribeEventgroup) [UnicastLimit>Subscription-
+Counter] /SubscriptionCounter++ send(SubscribeEventgroupAck)
+FROM Subscribed (Unicast)
+TO Not Subscribed
+WITH receive(StopSubscribeEventgroup) [SubscriptionCounter==1]
+100 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE101
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+/SubscriptionCounter- disableEvents()
+FROM Subscribed (Unicast)
+TO Not Subscribed
+WITH TTL_expired [SubscriptionCounter==1] /SubscriptionCounter-
+disableEvents()
+FROM Not Subscribed
+TO Subscribed (Multicast)
+WITH receive(SubscribeEventgroup) [UnicasLimit==0]
+/enableMulticastEvents() SubscriptionCounter++
+send(SubscribeEventgroupAck)
+FROM Subscribed (Multicast)
+TO Not Subscribed
+WITH receive(StopSubscribeEventgroup) [SubscriptionCounter==1
+&& UnicasLimit==0] /SubscriptionCounter- disableMulticas-
+tEvents()
+FROM Subscribed (Multicast)
+TO Not Subscribed
+WITH TTL_expired [SubscriptionCounter==1 && UnicasLimit==0]
+/SubscriptionCounter- disableMulticastEvents()
+FROM Subscribed (Multicast)
+TO Subscribed (Multicast)
+WITH receive(SubscribeEventgroup) /SubscriptionCounter++
+FROM Subscribed (Multicast)
+TO Subscribed (Multicast)
+WITH receive(StopSubscribeEventgroup) [SubscriptionCounter>Uni-
+castLimit+1] /SubscriptionCounter-
+FROM Subscribed (Multicast)
+TO Subscribed (Multicast)
+WITH TTL_expired [SubscriptionCounter>UnicastLimit+1]
+/SubscriptionCounter-
+FROM Subscribed (Unicast)
+TO Subscribed (Unicast)
+WITH receive(StopSubscribeEventgroup) [SubscriptionCounter>1]
+101 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE102
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+/SubscriptionCounter-
+FROM Subscribed (Unicast)
+TO Subscribed (Unicast)
+WITH TTL_expired [SubscriptionCounter>1] /SubscriptionCounter-
+FROM Subscribed (Unicast)
+TO Subscribed (Multicast)
+WITH receive(SubscribeEventgroup) [SubscriptionCounter>=Uni-
+castLimit] /SubscriptionCounter++ send(SubscribeEventgroupAck)
+switchToMulticastEvents()
+FROM Subscribed (Multicast)
+TO Subscribed (Unicast)
+WITH receive(StopSubscribeEventgroup) [Subscrip-
+tionCounter==UnicasLimit+1] /switchToUnicastEvents()
+SubscriptionCounter-
+FROM Subscribed (Multicast)
+TO Subscribed (Unicast)
+WITH TTL_expired [SubscriptionCounter==UnicasLimit+1] /switch-
+ToUnicastEvents() SubscriptionCounter-
+⌋
+102 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE103
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+Note: Graphical information of the Publish/Subscribe States (server be-
+havior for adaptive unicast/multicast eventgroups) is shown in Figure 5.26
+ stm Service Discovery Eventgroup Pub/Sub (Unicast to Multicast)
+Eventgroup_PubSub (Unicast-to-Multicast Eventgroup)
+Initial Service Down 
+Subscribed 
+(Unicast)
+Not Subscribed 
+Initial 
+AUTOSAR: 
+• enableEvents = enableTxRoutingGroup 
+• disableEvents = disableTxRoutingGroup 
+Subscribed (Multicast)
+Receiving SubscribeEventgroup triggers sendInitialE vents 
+[Service==Up] 
+receive(SubscribeEventgroup) 
+[UnicastLimit>SubscriptionCounter] 
+/SubscriptionCounter++ 
+send(SubscribeEventgroupAck) 
+TTL_expired 
+[SubscriptionCounter>1] 
+/SubscriptionCounter-- 
+receive(StopSubscribeEventgroup) 
+[SubscriptionCounter>1] 
+/SubscriptionCounter-- 
+TTL_expired 
+[SubscriptionCounter==1] 
+/SubscriptionCounter-- 
+disableEvents() 
+receive(StopSubscribeEventgroup) 
+[SubscriptionCounter==1] 
+/SubscriptionCounter-- 
+disableEvents() 
+receive(SubscribeEventgroup) 
+[UnicastLimit>0] 
+/enableEvents() 
+SubscriptionCounter++ 
+send(SubscribeEventgroupAck) 
+[Service==Down] 
+ServiceDown 
+TTL_expired 
+[SubscriptionCounter>UnicastLimit+1] 
+/SubscriptionCounter-- 
+receive(SubscribeEventgroup) 
+[UnicastLimit==0] 
+/enableMulticastEvents() 
+SubscriptionCounter++ 
+send(SubscribeEventgroupAck) 
+TTL_expired 
+[SubscriptionCounter==UnicastLimit+1] 
+/switchToUnicastEvents() 
+SubscriptionCounter-- 
+receive(SubscribeEventgroup) 
+[SubscriptionCounter>=UnicastLimit] 
+/SubscriptionCounter++ 
+send(SubscribeEventgroupAck) 
+switchToMulticastEvents() 
+TTL_expired 
+[SubscriptionCounter==1 && 
+UnicastLimit==0] 
+/SubscriptionCounter-- 
+disableMulticastEvents() 
+receive(SubscribeEventgroup) 
+/SubscriptionCounter++ 
+receive(StopSubscribeEventgroup) 
+[SubscriptionCounter>UnicastLimit+1] 
+/SubscriptionCounter-- 
+ServiceUp 
+receive(StopSubscribeEventgroup) 
+[SubscriptionCounter==1 && 
+UnicastLimit==0] 
+/SubscriptionCounter-- 
+disableMulticastEvents() 
+receive(StopSubscribeEventgroup) 
+[SubscriptionCounter==UnicastLimit+1] 
+/switchToUnicastEvents() 
+SubscriptionCounter-- 
+Figure 5.26: Publish/Subscribe State Diagram (server behavior for adaptive unicast/mul-
+ticast eventgroups)
+[PRS_SOMEIPSD_00134] Unicast/Multicast switching for event and notification
+event transmission via UDP
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00016
+⌈For events and notification events which are configured to be transmitted via UDP
+(see [PRS_SOMEIPSD_00802]) SOME/IP-SD shall support automated switching from
+103 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE104
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+unicast to multicast communication if a configured threshold of the numbers of sub-
+scribers was reached. ⌋
+Note:
+Limiting the switching between unicast and multicast to UDP is motivated by the follow-
+ing rationale:
+• the use of TCP is limited to unicast communication
+• dynamically switching between TCP and UDP does not make sense from a se-
+mantic perspective since the choice for either TCP or UDP is motivated by re-
+quirements for
+– reliability (no message loss, no out-of-order delivery)
+– transmission of data which is larger than the MTU (when neither SOME/IP-
+TP or IP fragmentation is used)
+[PRS_SOMEIPSD_00470]
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00015
+⌈SOME/IP SD Protocol shall support implicit configuration of communication endpoints
+and registrations of subscribers. These shall be based on static configurations and not
+use any SD messages on the network. ⌋
+Note:
+Depending on the project the use case can exist to use services based on a static
+configuration where no Service Discovery takes place on the network at all. In such
+cases of implicit registrations, there are no find or subscribe messages exchanged
+but the services can be used out of the box. Such preconfigurations are not part of
+SOME/IP or SOME/IP SD. Hence, their configuration and implementation is project
+specific.
+[PRS_SOMEIPSD_00472]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The following entries shall be transported by unicast only:
+• Subscribe Eventgroup
+• Stop Subscribe Eventgroup
+• Subscribe Eventgroup Ack
+• Subscribe Eventgroup Nack
+If an entry of any of these types is received in a multicast SD message, this entry shall
+be ignored.
+⌋
+104 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE105
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00808]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The client shall retry to subscribe to a Eventgroup of a ServerService, if the SUB-
+SCRIBE_RETRY_MAX is configured greater than 0. The subscription to the Eventgroup
+shall be sent, if a SubscribeEventgroupAck/Nack entry of the requested Event-
+group was not received within a configurable timeout ( SUBSCRIBE_RETRY_DELAY).
+The retry shall be done as long as the Eventgroup is requested and the configured
+retry count ( SUBSCRIBE_RETRY_MAX) was not exceeded. ⌋
+[PRS_SOMEIPSD_00809]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈ServerService where the TTL of the received OfferService is set to 0xFFFFFF , could
+set SUBSCRIBE_RETRY_MAX to INF . In this case, the retry shall be done as long as
+the Eventgroup is requested and no SubscribeEventgroupAck/NAck entry of the
+requested Eventgroup was received. ⌋
+[PRS_SOMEIPSD_00851]
+Upstream requirements: RS_SOMEIPSD_00015
+⌈The automated switching from client service unicast/multicast endpoint to server mul-
+ticast endpoint has to consider configuration of MUL TICAST_THRESHOLD:
+• if MUL TICAST_THRESHOLD is configured to a value n with n=0, then automated
+switching between client service unicast/multicast endpoints and the server multi-
+cast endpoint is disabled. Only unicast/multicast communication to client service
+unicast/multicast endpoints is supported.
+• if MUL TICAST_THRESHOLD is configured to a value n with n=1, then automated
+switching between client service unicast/multicast endpoints and the server mul-
+ticast endpoint is disabled. Only multicast communication to the server multicast
+endpoint is supported.
+• if MUL TICAST_THRESHOLD is configured to a value n with n > 1 and the number
+of subscribed clients with different endpoint information is larger than the thresh-
+old or equal to the threshold, then server service shall use the server multicast
+endpoint to transmit the events.
+• if MUL TICAST_THRESHOLD is configured to a value n with n > 1 and the num-
+ber of subscribed clients with different endpoint information is smaller than the
+threshold, then the server service shall transmit the events to the endpoints which
+were provided by the client services either as client unicast endpoint or as client
+service multicast endpoint.
+⌋
+105 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE106
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+5.1.7 Reserved and special identifiers for SOME/IP and SOME/IP-SD.
+In this chapter an overview of reserved and special identifiers are shown.
+[PRS_SOMEIPSD_00515] Reserved and Special Service-IDs
+Upstream requirements: RS_SOMEIPSD_00025
+⌈
+Service-ID Description
+0x0000 Reserved
+0xFF00 - 0xFF1F Reserved for T esting at OEM
+0xFF20 - 0xFF3F Reserved for T esting at Tier-1
+0xFF40 - 0xFF5F Reserved for ECU Internal Communication (Tier-1 proprietary)
+0xFFFE Reserved for non-SOME/IP service instances.
+0xFFFF SOME/IP and SOME/IP-SD special service (Magic Cookie, SOME/IP-
+SD, ...).
+⌋
+[PRS_SOMEIPSD_00516] Reserved and Special Instance-IDs
+Upstream requirements: RS_SOMEIPSD_00025
+⌈
+Instance-ID Description
+0x0000 Reserved
+0xFFFF All Instances
+⌋
+[PRS_SOMEIPSD_00517] Reserved and Special Method-IDs
+Upstream requirements: RS_SOMEIPSD_00025
+⌈
+Method-ID Description
+0x0000 Reserved
+0x7FFF Reserved
+0x8000 Reserved
+0xFFFF Reserved
+⌋
+[PRS_SOMEIPSD_00531] Reserved Eventgroup-IDs
+Upstream requirements: RS_SOMEIPSD_00025
+⌈
+Eventgroup-ID Description
+0x0000 Reserved
+106 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE107
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+0xFFFF All Eventgroups
+⌋
+[PRS_SOMEIPSD_00519] Method-IDs of Service 0xFFFF
+Upstream requirements: RS_SOMEIPSD_00025
+⌈
+Method-ID/Event-
+ID
+Description
+0x0000 SOME/IP Magic Cookie Messages
+0x8000 SOME/IP Magic Cookie Messages
+0x8100 SOME/IP-SD messages (events)
+⌋
+[PRS_SOMEIPSD_00520] Reserved Names
+Upstream requirements: RS_SOMEIPSD_00025
+⌈
+Name Description
+hostname Used to name a host or ECU.
+instancename Used to name an instance of a service.
+servicename Used to name a service.
+otherserv Used for non-SOME/IP Services.
+⌋
+107 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE108
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+6 Configuration Parameters
+The Following chapter summarizes all the configuration parameters that are used.
+Name Description
+INITIAL_DELA Y_MIN Minimum duration to delay randomly the transmission of
+a message.
+INITIAL_DELA Y_MAX Maximum duration to delay randomly the transmission of
+a message.
+REPETITIONS_BASE_DELA Y Duration of delay for repetitions.
+REPETITIONS_MAX Configuration for the maximum number of repetitions.
+REQUEST_RESPONSE_DELA Y The Service Discovery shall delay answers using this
+configuration item.
+CYCLIC_OFFER_DELA Y Interval between cyclic offers in the main phase.
+SD_PORT is a UDP Port for SD Messages (30490 as default).
+SD_MUL TICAST_IP address which shall be used by the SD multicast mes-
+sages.
+SUBSCRIBE_RETRY_MAX Max count of retries for subscribe, as long as the Event-
+group is requested (0=no retry , INF= retry forever (as
+long as the Eventgroup is requested and no no Sub-
+scribeEventgroupAck/Nack entry was received)).
+SUBSCRIBE_RETRY_DELA Y Duration of delay to send a consecutive subscribe
+entries, if a Eventgroup is requested and no Sub-
+scribeEventgroupAck/Nack entry was received.
+MUL TICAST_THRESHOLD Specifies the number of subscribed clients with differ-
+ent endpoint information per Eventgroup that triggers the
+server to change the transmission of events to the server
+multicast endpoint. This multicast endpoint is config-
+ured by the server service and provided with the Sub-
+scribeEventgroupAck:
+• If configured to 0 only the client service unicast/-
+multicast endpoint will be used.
+• If configured to 1 the first client and all further sub-
+scribed clients will be served via the server multi-
+cast endpoint.
+• If configured to n up to n-1 clients with different
+endpoint information will be served via a client
+service unicast/multicast endpoint provided by the
+client within the SubscribeEventgroup. As soon
+as the number of subscribed clients with differ-
+ent endpoint information reaches n, then all sub-
+scribed clients are served via the server multicast
+endpoint.
+Table 6.1: Configuration Parameters
+108 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE109
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+7 Protocol Usage
+7.1 Mandatory Feature Set and Basic Behavior
+In this section the mandatory feature set of the Service Discovery and the relevant
+configuration constraints are discussed. This allow for bare minimum implementations
+without optional or informational features that might not be required for current use
+cases.
+The following information is defined as compliance check list(s). If a feature is not
+implemented, the implementation is considered not to comply to SOME/IP-SDs basic
+feature set.
+[PRS_SOMEIPSD_00496]
+Upstream requirements: RS_SOMEIPSD_00008, RS_SOMEIPSD_00013, RS_SOMEIPSD_
+00014, RS_SOMEIPSD_00015, RS_SOMEIPSD_00017, RS_-
+SOMEIPSD_00007
+⌈The following entry types shall be implemented:
+• Find Service
+• Offer Service
+• Stop Offer Service
+• Subscribe Eventgroup
+• Stop Subscribe Eventgroup
+• Subscribe Eventgroup Ack
+• Subscribe Eventgroup Nack
+⌋
+[PRS_SOMEIPSD_00497]
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00007
+⌈The following option types shall be implemented, when IPv4 is required:
+• IPv4 Endpoint Option
+• IPv4 Multicast Option
+• Configuration Option
+• IPv4 SD Endpoint Option (receiving at least)
+⌋
+109 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE110
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIPSD_00498]
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00007
+⌈The following option types shall be implemented, if IPv6 is required:
+• IPv6 Endpoint Option
+• IPv6 Multicast Option
+• Configuration Option
+• IPv6 SD Endpoint Option (receiving at least)
+⌋
+[PRS_SOMEIPSD_00500]
+Upstream requirements: RS_SOMEIPSD_00013, RS_SOMEIPSD_00008, RS_SOMEIPSD_
+00014, RS_SOMEIPSD_00015, RS_SOMEIPSD_00017, RS_-
+SOMEIPSD_00025, RS_SOMEIPSD_00007
+⌈The following behaviors/reactions shall be implemented on the Server side:
+• The Server shall offer services including the Initial Wait Phase, the Repetition
+Phase, and the Main Phase depending on the configuration.
+• The Server shall offer services using Multicast (Repetition Phase and Main
+Phase) on the multicast address defined by SD_MUL TICAST_IP .
+• The Server shall answer a Find Service in the Main Phase with an Offer Service
+using Unicast.
+• The Server shall send a Stop Offer Service when shutting down.
+• The Server shall receive a Subscribe Eventgroup as well as a Stop Subscribe
+Eventgroup and react according to this specification.
+• The Server shall send a Subscribe Eventgroup Ack and Subscribe Eventgroup
+Nack using unicast.
+• The Server shall support controlling the sending (i.e. fan out) of SOME/IP event
+messages based on the subscriptions of SOME/IP-SD. This might include send-
+ing events based on Multicast.
+• The Server shall support the triggering of SOME/IP Initial Events.
+⌋
+[PRS_SOMEIPSD_00501]
+Upstream requirements: RS_SOMEIPSD_00008, RS_SOMEIPSD_00015, RS_SOMEIPSD_
+00025, RS_SOMEIPSD_00007
+⌈The following behaviors/reactions shall be implemented on the Client side:
+• The Client shall find services using a Find Service entry and Multicast (on the
+multicast address defined by SD_MUL TICAST_IP) only in the repetition phase.
+110 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE111
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• The Client shall stop finding a service if the regular Offer Service arrives.
+• The Client shall react to the Servers Offer Service with a unicast SD message
+that includes all Subscribe Eventgroups of the offered Service Instances that the
+clients currently requires.
+• The Client shall interpret and react to the Subscribe Eventgroup Ack and Sub-
+scribe Eventgroup Nack as specified in this document.
+⌋
+[PRS_SOMEIPSD_00502]
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00020, RS_SOMEIPSD_
+00024, RS_SOMEIPSD_00007
+⌈The following behavior and configuration constraints shall be supported by the Client:
+• The Client shall be able handle Eventgroups if only the TTL of the SD Timings
+is specified. This means that of all the timings for the Initial Wait Phase, the
+Repetition Phase, and the Main Phase only TTL is configured. This means the
+client shall only react on the Offer Service by the Server.
+• The Client shall answer to an Offer Service with a Subscribe Eventgroup even
+without configuration of the Request-Response-Delay , meaning it should not wait
+but answer instantaneously .
+⌋
+[PRS_SOMEIPSD_00503]
+Upstream requirements: RS_SOMEIPSD_00018, RS_SOMEIPSD_00007
+⌈The Client and Server shall implement the Reboot Detection as specified in this doc-
+ument and react accordingly . This includes but is not limited to:
+• Setting Session ID and Reboot Flag according to this specification.
+• Keeping a Session ID counter only used for sending Multicast SD messages.
+• Keeping Session ID counters for every Unicast relation for sending Unicast SD
+messages.
+• Understanding Session ID and Reboot Flag according to this specification.
+• Keeping a Multicast Session ID counter per ECU that exchanges Multicast SD
+messages with this ECU.
+• Keeping a Unicast Session ID counter per ECU that exchanges Unicast SD mes-
+sages with this ECU.
+• Detecting reboot based on this specification and reaction accordingly .
+• Correctly interpreting the IPv4 and IPv6 SD Endpoint Options in regard to Reboot
+Detection.
+111 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE112
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+⌋
+[PRS_SOMEIPSD_00504]
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00013, RS_SOMEIPSD_
+00015, RS_SOMEIPSD_00007
+⌈The Client and Server shall implement the "Endpoint Handling for Service and
+Events". This includes but is not limited to:
+• Adding 1 Endpoint Option UDP to an Offer Service if UDP is needed.
+• Adding 1 Endpoint Option TCP to an Offer Service if TCP is needed.
+• Adding 1 Endpoint Option UDP to Subscribe Eventgroup if events over UDP are
+required.
+• Adding 1 Endpoint Option TCP to Subscribe Eventgroup if events over TCP are
+required.
+• Adding 1 Multicast Option UDP to Subscribe Eventgroup Ack if multicast events
+are required.
+• Understanding and acting according to the Endpoint and Multicast Options trans-
+ported as described above.
+• Overwriting preconfigured values (e.g. IP Addresses and Ports) with the informa-
+tion of these Endpoint and Multicast Options.
+• Interpreting incoming IPv4 and IPv6 Endpoint Options as SD endpoints instead
+of the Address and Port number in the outer layers.
+⌋
+[PRS_SOMEIPSD_00821]
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00013, RS_SOMEIPSD_
+00015, RS_SOMEIPSD_00007
+⌈The Client and Server shall implement the explicit requesting of initial values for field
+notifiers.⌋
+7.2 Migration and Compatibility
+7.2.1 Supporting multiple versions of the same service.
+In order to support migrations scenarios ECUs shall support serving as well as using
+different incompatible versions of the same service.
+[PRS_SOMEIPSD_00512]
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00008, RS_SOMEIPSD_
+00013, RS_SOMEIPSD_00015, RS_SOMEIPSD_00005
+⌈In order to support a Service with more than one version the following is required:
+112 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE113
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+• The server shall offer the service instance of this service once per major version.
+• The client shall find the service instances once per supported major version or
+shall use the Major Version as 0xFF (all versions).
+• The client shall subscribe to events of the service version it needs.
+• All SOME/IP-SD entries shall use the same Service-IDs and Instance-IDs but
+different Major Versions.
+• The server has to demultiplex messages based on the socket they arrive,
+Message-ID, Major Versions and relay it based on these conditions internally to
+the correct receiver.
+⌋
+[PRS_SOMEIPSD_00806]
+Upstream requirements: RS_SOMEIPSD_00025, RS_SOMEIPSD_00008, RS_SOMEIPSD_
+00013, RS_SOMEIPSD_00015, RS_SOMEIPSD_00005
+⌈In one VLAN there shall be at most one service instance with the same Service ID,
+Major Version, and Instance ID. This applies to the servers and to the clients. ⌋
+Note: Offering more than one Service Instance with the same Major Version but differ-
+ent Minor Versions is not supported.
+113 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE114
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+8 References
+[1] Glossary
+AUTOSAR_FO_TR_Glossary
+[2] DOMAIN NAMES - IMPLEMENT A TION AND SPECIFICA TION
+https://www.rfc-editor.org/rfc/rfc1035
+[3] DNS-Based Service Discovery
+https://www.rfc-editor.org/rfc/rfc6763
+[4] A DNS RR for specifying the location of services (DNS SRV)
+https://www.rfc-editor.org/rfc/rfc2782
+114 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE115
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+A Change history of AUTOSAR traceable items
+Please note that the lists in this chapter also include traceable items that have been
+removed from the specification in a later version. These items do not appear as hyper-
+links in the document.
+A.1 Specification Item Changes between AUTOSAR Release R24-
+11 and R25-11
+A.1.1 Added Specification Items in R25-11
+Number Heading
+[PRS_SOMEIPSD_
+00308] Parallel subscription with a different port number
+Table A.1: Added Specification Items in R25-11
+A.1.2 Changed Specification Items in R25-11
+Number Heading
+[PRS_SOMEIPSD_
+00130]
+[PRS_SOMEIPSD_
+00570]
+[PRS_SOMEIPSD_
+00582]
+Table A.2: Changed Specification Items in R25-11
+A.1.3 Deleted Specification Items in R25-11
+none
+115 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE116
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+A.2 Specification Item Changes between AUTOSAR Release R23-
+11 and R24-11
+A.2.1 Added Specification Items in R24-11
+Number Heading
+[PRS_SOMEIPSD_
+00861] Server based distinction between field notifiers and pure events
+[PRS_SOMEIPSD_
+00862] Client based distinction between field notifiers and pure events
+Table A.3: Added Specification Items in R24-11
+A.2.2 Changed Specification Items in R24-11
+Number Heading
+[PRS_SOMEIPSD_
+00120]
+[PRS_SOMEIPSD_
+00122]
+[PRS_SOMEIPSD_
+00435]
+[PRS_SOMEIPSD_
+00464]
+[PRS_SOMEIPSD_
+00465]
+[PRS_SOMEIPSD_
+00472]
+[PRS_SOMEIPSD_
+00487]
+[PRS_SOMEIPSD_
+00500]
+[PRS_SOMEIPSD_
+00570]
+[PRS_SOMEIPSD_
+00583] Allowed Option T ypes for Entry T ypes
+[PRS_SOMEIPSD_
+00800]
+[PRS_SOMEIPSD_
+00806]
+[PRS_SOMEIPSD_
+00830]
+[PRS_SOMEIPSD_
+00833]
+▽
+116 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE117
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+△
+Number Heading
+[PRS_SOMEIPSD_
+00834]
+Table A.4: Changed Specification Items in R24-11
+A.2.3 Deleted Specification Items in R24-11
+Number Heading
+[PRS_SOMEIPSD_
+00123]
+[PRS_SOMEIPSD_
+00156]
+[PRS_SOMEIPSD_
+00703]
+[PRS_SOMEIPSD_
+00704]
+[PRS_SOMEIPSD_
+00811]
+[PRS_SOMEIPSD_
+00831]
+Table A.5: Deleted Specification Items in R24-11
+A.3 Traceable item history of this document according to
+AUTOSAR Release R23-11
+A.3.1 Added Specification Items in R23-11
+[PRS_SOMEIPSD_00853] [PRS_SOMEIPSD_00854] [PRS_SOMEIPSD_00855]
+[PRS_SOMEIPSD_00856] [PRS_SOMEIPSD_00857] [PRS_SOMEIPSD_00859]
+[PRS_SOMEIPSD_00860]
+A.3.2 Changed Specification Items in R23-11
+[PRS_SOMEIPSD_00126] [PRS_SOMEIPSD_00127] [PRS_SOMEIPSD_00128]
+[PRS_SOMEIPSD_00129] [PRS_SOMEIPSD_00356] [PRS_SOMEIPSD_00449]
+[PRS_SOMEIPSD_00457] [PRS_SOMEIPSD_00547] [PRS_SOMEIPSD_00549]
+[PRS_SOMEIPSD_00556] [PRS_SOMEIPSD_00583] [PRS_SOMEIPSD_00842]
+117 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol
+PDF_PAGE118
+SOME/IP Service Discovery Protocol Specification
+AUTOSAR FO R25-11
+A.3.3 Deleted Specification Items in R23-11
+[PRS_SOMEIPSD_00838]
+118 of 118 Document ID 802: AUTOSAR_FO_PRS_SOMEIPServiceDiscoveryProtocol

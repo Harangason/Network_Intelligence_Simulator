@@ -1,0 +1,49 @@
+TC_C_15_CS: Authorization through authorization cache - StopTxOnInvalidId =
+false, MaxEnergyOnInvalidId > 0
+Test case name Authorization through authorization cache - StopTxOnInvalidId = false, MaxEnergyOnInvalidId > 0
+Test case Id TC_C_15_CS
+Use case Id(s) C12
+Requirement(s) C12_FR_02, C12_FR_04
+System under test Charging Station
+Description This test case describes how the EV Driver is authorized to start a transaction while the Charging Station
+uses Cached IdToken. This enables the EV Driver to Online start a transaction by using the Authorization
+Cache in which the Charging Station can respond faster, as no AuthorizeRequest is being sent.
+Purpose To verify if the Charging Station is able to respond correctly to an idToken which has status "Accepted" in
+its cache but is "Invalid" in the CSMS with certain values of StopTxOnInvalidId and MaxEnergyOnInvalidId
+according to the mechanism as described in the OCPP specification.
+Prerequisite(s) - AuthCacheCtrlr.Available is implemented with value true
+- The Charging Station has MaxEnergyOnInvalidId implemented
+- At least one of the following must be supported; Local auth list, auth cache, StartTxUnknownIds.
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+AuthCacheCtrlr.AuthCacheEnabled is true (If implemented)
+AuthCtrlr.LocalPreAuthorize is true (If implemented)
+AuthCtrlr.LocalAuthorizeOffline is true
+OfflineTxForUnknownIdEnabled is true (If implemented)
+StopTxOnInvalidId is false
+MaxEnergyOnInvalidId is 10.000
+OfflineThreshold is <Configured RetryBackOffWaitMinimum_duration> + 60.0
+RetryBackOffWaitMinimum is <Configured RetryBackOffWaitMinimum_duration>
+RetryBackOffRandomRange is 0
+Note:
+<Configured RetryBackOffWaitMinimum_duration should be long enough to execute manual tasks>
+Memory State:
+IdTokenCached for <Configured valid IdToken fields> (If implemented) A known valid idToken is configured in the Local auth list (if
+implemented) and auth cache (if implemented)
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does not accept a reconnect.
+Manual Action: Present valid idToken which is already configured in the Authorization Cache
+Note(s): The Test System will wait for _<Configured Transaction Duration> seconds_
+2. The Test System accepts reconnection attempt from the Charging Station.
+Note(s):
+- The Charging Station will empty its Transaction message queue. This will contain one or more TransactionEventRequest messages
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+with
+idTokenInfo.status Invalid (if idToken is not omitted)
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 103/914 Part 6 - Test Cases

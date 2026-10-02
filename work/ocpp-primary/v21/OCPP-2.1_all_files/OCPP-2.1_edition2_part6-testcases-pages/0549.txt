@@ -1,0 +1,57 @@
+TC_K_105_CS: Set Charging Profile - ChargingStationMaxProfile persistent over
+reboot
+Test case name Set Charging Profile - ChargingStationMaxProfile persistent over reboot
+Test case Id TC_K_105_CS
+Use case Id(s) K01
+Requirement(s) K01.FR.27
+System under test Charging Station
+Description To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the entire
+Charging Station over a period of time. The CSMS sends a SetChargingProfileRequest to the Charging
+Station to influence the power or current drawn by EVs. The CSMS calculates a ChargingSchedule to stay
+within certain limits, which MAY be imposed by any external system.
+Purpose To verify if the Charging station is able to save a chargingProfile of purpose
+ChargingStationMaxProfile persistent over reboot as described at the OCPP specification.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.id <Configured chargingProfileId>
+chargingProfile.chargingProfilePurpose
+ChargingStationMaxProfile
+chargingProfile.chargingSchedule.duration <Configured
+duration>
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.star
+tPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limi
+t 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.nu
+mberPhases <Configured numberPhases>
+3. Execute Reusable State Booted
+5. The Charging Station responds with a
+GetChargingProfilesResponse
+4. The Test System sends a GetChargingProfilesRequest with
+chargingProfile.chargingProfileId[0] <Configured
+chargingProfileId>
+chargingProfile.chargingProfileId[1] <Configured
+chargingProfileId2>
+6. The Charging Station sends a ReportChargingProfilesRequest
+7. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If tbc is True at Step 6 then step 6 and 7 will be repeated
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 547/1383 Part 6 - Test Cases

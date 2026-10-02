@@ -1,0 +1,107 @@
+ID Precondition Requirement definition Note
+K01.FR.82
+(2.1)
+When configuration variable
+MaxExternalConstrain
+tsId is set AND
+Charging Station creates a
+charging profile of
+chargingProfilePurpose =
+ChargingStationExter
+nalConstraints
+Charging Station SHALL use a value for chargingProfile.id
+that is less or equal to MaxExternalConstraintsId
+A Charging Station creates
+a charging profile
+ChargingStationExter
+nalConstraints to
+represent limits from an
+external source, e.g an EMS.
+Use Local Time / Randomized Delay
+K01.FR.90
+(2.1)
+When useLocalTime in
+ChargingScheduleType is
+true
+Charging Station SHALL treat the time in startSchedule as
+an unqualified local time, disregarding any time zone
+offset or "Z" postfix
+What local time is, is
+configured at Charging
+Station via TimeOffset or
+TimeZone. This allows the
+same Absolute or
+Recurring charging
+profile to be used in both
+summer and winter time.
+K01.FR.91
+(2.1)
+K01.FR.90 AND
+A ChargingScheduleType is
+active at the moment that
+the local time shifts as a
+result of beginning or
+ending of daylight saving
+time
+The execution of the ChargingScheduleType SHALL
+follow local time, i.e. part of the active
+chargingSchedulePeriod(s) will be skipped or repeated
+depending on the direction of the change.
+This may affect more than
+one
+chargingSchedulePeriod.
+K01.FR.92
+(2.1)
+When randomizedDelay > 0
+in ChargingScheduleType
+Charging Station SHALL postpone the start of each
+chargingSchedulePeriod, except the first one that has
+startPeriod = 0, by a randomly chosen number of seconds
+between 0 and randomizedDelay.
+In situations where all
+charging stations receive
+the same (recurring)
+charging profile, this avoids
+a peak in the grid that would
+occur when all charging
+stations change the power
+limit at exactly the same
+time.
+The first period is not
+delayed to avoid a gap
+between activation of the
+charging profile and the first
+schedule period becoming
+active.
+Since the start of the next
+period defines the end of
+the current period, this
+randomization also affects
+the end of the current
+period.
+K01.FR.93
+(2.1)
+K01.FR.92 Charging Station SHALL calculate random delays for
+chargingSchedulePeriods of the ChargingProfileType at
+the start of a transaction or when a new
+ChargingProfileType is submitted during a transaction.
+This is to fix the actual start
+of charging schedule
+periods during a
+transaction, such that a
+GetCompositeScheduleReq
+uest can calculate an
+accurate composite
+schedule.
+K01.FR.94
+(2.1)
+A randomizedDelay SHALL NOT affect the startSchedule
+and duration of a ChargingScheduleType.
+Only startPeriod values of
+ChargingSchedulePeriodTyp
+es are affected, with the
+exception of the first
+ChargingSchedulePeriodTyp
+e that has startPeriod = 0.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 335/803 Part 2 - Specification

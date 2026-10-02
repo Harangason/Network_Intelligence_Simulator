@@ -1,0 +1,47 @@
+u-blox 20 HPG 2.00 - Interface description
+2.7.1.1 Datum reference
+Message NMEA-Standard-DTM
+Datum reference
+Type Output
+Comment This message gives the diﬀerence between the current datum and the reference datum.
+The current datum is set to WGS84 by default.
+The reference datum cannot be changed and is always set to WGS84.
+Information Class/ID: 0xf0 0x0a Number of fields: 11
+Structure $xxDTM,datum,subDatum,lat,NS,lon,EW,alt,refDatum*cs\r\n
+Examples $GPDTM,W84,,0.0,N,0.0,E,0.0,W84*6F\r\n
+$GPDTM,999,,0.08,N,0.07,E,-47.7,W84*1C\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxDTM string - $GPDTM DTM Message ID (xx = current Talker ID, see NMEA
+Talker IDs table)
+1 datum string - W84 Local datum code: W84 = WGS84, P90 = PZ90, 999 =
+user-deﬁned
+2 subDatum string - - A null ﬁeld (or a string describing the currently selected
+datum for protocol versions less than 14.00)
+3 lat numeric min 0.08 Oﬀset in Latitude
+4 NS character - S North/South indicator
+5 lon numeric min 0.07 Oﬀset in Longitude
+6 EW character - E East/West indicator
+7 alt numeric m -2.8 Oﬀset in altitude
+8 refDatum string - W84 Reference datum code: W84 (WGS 84, ﬁxed ﬁeld)
+9 cs hexadecimal - *67 Checksum
+10 CRLF character - - Carriage return and line feed
+2.7.2 GAQ
+2.7.2.1 Poll a standard message (Talker ID GA)
+Message NMEA-Standard-GAQ
+Poll a standard message (Talker ID GA)
+Type Poll request
+Comment Polls a standard NMEA message if the current Talker ID is GA.
+Information Class/ID: 0xf0 0x45 Number of fields: 4
+Structure $xxGAQ,msgId*cs\r\n
+Example $EIGAQ,RMC*2B\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGAQ string - $EIGAQ GAQ Message ID (xx = Talker ID of the device requesting
+the poll)
+1 msgId string - RMC Message ID of the message to be polled
+2 cs hexadecimal - *2B Checksum
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 25 of 224
+C1-Public

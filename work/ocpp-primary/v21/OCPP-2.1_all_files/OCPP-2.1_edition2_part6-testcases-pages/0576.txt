@@ -1,0 +1,52 @@
+TC_K_120_CS: EMS Control - Smart Charging with EMS and LocalGeneration
+Test case name EMS Control - Smart Charging with EMS and LocalGeneration
+Test case Id TC_K_120_CS
+Use case Id(s) K27
+Requirement(s) K27.FR.01, K27.FR.02, K27.FR.03, K27.FR.04, K27.FR.05
+System under test Charging Station
+Description To show how locally available capacity can be taken into account.
+Purpose To verify if the Charging Station is able to inform the CSMS when it’s capacity is being throttled by a locally
+connected EMS.
+Prerequisite(s) - The Charging Station supports connecting locally a EMS.
+- EMS hasn’t set any limit on the charger.
+Before (Preparations)
+Configuration State:
+SmartChargingCtrlr.LimitChangeSignificance is 0
+SmartChargingCtrlr.NotifyChargingLimitWithSchedules is true
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+GetChargingProfilesResponse
+1. The Test System sends a GetChargingProfilesRequest with
+evseId <Configured evseId>
+chargingProfile.chargingProfilePurpose LocalGeneration
+Manual Action: Use EMS to report LocalGeneration to the charger with limit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+3. The Charging Station sends a NotifyChargingLimitRequest
+4. The Test System responds with a
+NotifyChargingLimitResponse
+6. The Charging Station responds with a
+GetChargingProfilesResponse
+5. The Test System sends a GetChargingProfilesRequest with
+evseId <Configured evseId>
+chargingProfile.chargingProfilePurpose LocalGeneration
+7. The Charging Station sends a ReportChargingProfilesRequest
+8. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If ReportChargingProfilesRequest.tbc is True in Step 7 then step 7 and 8 will be repeated
+Manual Action: Use EMS to report LocalGeneration to the charger with limit 7 * <limit multiplier>
+and use EMS to report ChargingStation-ExternalConstraints to the charger with limit 16 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+9. The Charging Station sends a NotifyChargingLimitRequest
+10. The Test System responds with a
+NotifyChargingLimitResponse
+11. The Charging Station sends a NotifyChargingLimitRequest
+12. The Test System responds with a
+NotifyChargingLimitResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 574/1383 Part 6 - Test Cases

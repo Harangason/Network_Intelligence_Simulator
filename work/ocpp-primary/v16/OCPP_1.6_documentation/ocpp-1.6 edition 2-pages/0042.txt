@@ -1,0 +1,35 @@
+NotApplicable, Unknown, RST, RTS, SRT, STR, TRS and TSR. see section Standard Configuration Key Names &
+Values for more information.
+The EXPERIMENTAL optional format field specifies whether the data is represented in the normal (default) form
+as a simple numeric value ("Raw"), or as “SignedData”, an opaque digitally signed binary data block,
+represented as hex data. This experimental field may be deprecated and subsequently removed in later
+versions, when a more mature solution alternative is provided.
+To retain backward compatibility, the default values of all of the optional fields on a sampledValue element are
+such that a value without any additional fields will be interpreted, as a register reading of active import energy
+in Wh (Watt-hour) units.
+Upon receipt of a MeterValues.req PDU, the Central System SHALL respond with a MeterValues.conf.
+It is likely that The Central System applies sanity checks to the data contained in a MeterValues.req it received.
+The outcome of such sanity checks SHOULD NOT ever cause the Central System to not respond with a
+MeterValues.conf. Failing to respond with a MeterValues.conf will only cause the Charge Point to try the same
+message again as specified in Error responses to transaction-related messages.
+4.8. Start Transaction
+Charge Point Central System
+StartTransaction.req(connectorId, idTag, meterStart, timestamp, [reservationId])
+StartTransaction.conf(idTagInfo, transactionId)
+Figure 19. Sequence Diagram: Start Transaction
+The Charge Point SHALL send a StartTransaction.req PDU to the Central System to inform about a transaction
+that has been started. If this transaction ends a reservation (see Reserve Now operation), then the
+StartTransaction.req MUST contain the reservationId.
+Upon receipt of a StartTransaction.req PDU, the Central System SHOULD respond with a StartTransaction.conf
+PDU. This response PDU MUST include a transaction id and an authorization status value.
+The Central System MUST verify validity of the identifier in the StartTransaction.req PDU, because the identifier
+might have been authorized locally by the Charge Point using outdated information. The identifier, for instance,
+may have been blocked since it was added to the Charge Point’s Authorization Cache.
+If Charge Point has implemented an Authorization Cache, then upon receipt of a StartTransaction.conf PDU the
+Charge Point SHALL update the cache entry, if the idTag is not in the Local Authorization List, with the IdTagInfo
+value from the response as described under Authorization Cache.
+It is likely that The Central System applies sanity checks to the data contained in a StartTransaction.req it
+received. The outcome of such sanity checks SHOULD NOT ever cause the Central System to not respond with a
+StartTransaction.conf. Failing to respond with a StartTransaction.conf will only cause the Charge Point to try the
+same message again as specified in Error responses to transaction-related messages.
+37

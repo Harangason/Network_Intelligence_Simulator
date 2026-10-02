@@ -1,0 +1,1873 @@
+PAGE 118
+Page 118
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+EXAMPLE:
+a = 6    for the request frame:
+TS/R  =  66 bit
+b = 59   for the response frame (50 octet DATA_UNIT):
+TA/R  =  649 bit
+4.2.3 System Reaction Times
+The message rate RSYS in the system equals the possible number of message cycles
+per second:
+RSYS = 1 / tMC ;t MC  =  TMC . tBIT (23)
+The maximum system reaction time T SR in a system with one master station and n
+slave stations (master slave system) in pure polling mode is calculated from the
+message cycle time and the number of slave stations. If message retries are al-
+lowed for, TSR is calculated as follows:
+TSR  =  np . TMC  +  mp . RET TMC (24)
+where:
+np number of slave stations
+mp number of message retry cycles per Poll Cycle
+RET TMC message retry cycle time
+The maximum System Reaction Time in a system with several master stations and
+slave stations equals the Target Rotation Time:
+TSR  =  TTR    (see subclause 4.1.1.4) (25)
+4.3 Error Control Procedures
+Line protocol errors, such as e.g. frame errors, overrun errors and parity er-
+rors, and transmission protocol errors, such as e.g. faulty start delimiters,
+frame check octets and end delimiters, invalid frame length, response times,
+etc., result in the following station reactions:
+An action frame (request, send/request or token) that has been received incor-
+rectly by a station shall not be processed, acknowledged or answered. The in-
+itiator shall retry the request after expiration of the Slot Time. The request
+shall also be retried if the acknowledgement or response was corrupted. The in-
+itiator shall complete a request only after having received a valid response or
+if the retry (retries) was not (were not) successful (see subclause 4.1.6,
+operating parameters). This means that a "Send/Request" shall be kept until the
+responder confirms
+its correct receipt by an acknowledgement or response or the retry (retries) was
+not (were not) successful. In the same way, a responder shall terminate a
+"Request" or "Send/Request" only if a new request with altered Frame Count Bit
+is received or another station is addressed (see subclause 4.7.3, FCB).
+If a station does not acknowledge or respond in cyclic or acyclic mode after re-
+try (retries), it is marked as "non operational". When processing the following
+PAGE 119
+Page 119
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+requests, the initiator transmits the request to this station without retry
+(retries), until the station acknowledges or responds correctly again. After
+positive acknowledgement the initiator marks again the addressed station as
+"operational". When processing the next request, the initiator continues the
+original mode of operation with this station.
+4.4 Timers and Counters
+In order to measure the token rotation time and to realize the supervisory times
+the following timers are necessary:
+Token Rotation Timer, Idle Timer, Slot Timer, Time-out Timer, Syn Interval Timer
+and GAP Update Timer.
+Token Rotation Timer:  When a master station receives the token, this timer is
+loaded with the Target Rotation Time TTR and decremented each bit time. When the
+station again receives the token, the timer value, the remaining time or Token
+Holding Time T TH, is read and the timer reloaded with T TR. The Real Rotation
+Time TRR results from the difference T TR - TTH. Low priority message cycles may
+be processed if at the instant of processing TRR < TTR.
+Idle Timer: This timer monitors the idle state (binary "1"), the Syn Time, imme-
+diately on the bus line. The Syn Time preceding each request is necessary for
+unambiguous receiver synchronization. The Idle Timer of slave stations and
+master stations "without token" is loaded with T SYN after the transmission or
+receipt of a frame's last bit and then decremented each bit time. The receiver
+shall be enabled immediately after the timer has expired. The timer of a master
+station "with token" is loaded according to the data transmission service with
+TID1 or T ID2 (see subclause 4.1.7). A new request or token frame may only be
+transmitted after expiration of the timer. When the signalling level is binary
+"0", the timer is always reloaded.
+Slot Timer: This timer in a master station monitors after a request or token
+pass whether the receiving station responds or becomes active within the prede-
+fined time T SL, the Slot Time. After transmission of a frame's last bit this
+timer is loaded with T SL and decremented each bit time as soon as the receiver
+is enabled. If the timer expires before a frame's first bit is received, an er-
+ror has occurred. Then a retry or a new message cycle is initiated.
+Time-out Timer: This timer monitors bus activity in master and slave stations.
+After the transmission or receipt of a frame's last bit the timer is loaded with
+a multiple of the Slot Time (see subclause 4.1.7) and decremented each bit time
+as long as no new frame is received. If the timer expires, a fatal error has
+occurred, which for the master station causes a (re)initialization. The FMA1/2
+User of the slave and master station receives a time-out notification (see
+Part 3, subclause 4.2.3.3).
+Syn Interval Timer:  Master and slave stations use this timer to monitor the
+transmission medium as to whether a receiver synchronizing (T SYN, idle state,
+idle = binary "1") occurs within T SYNI. Each time the receiver is synchronized,
+the timer is loaded with T SYNI (see subclause 4.1.7). From the beginning of a
+frame (first start bit) the timer is decremented each bit time as long as no new
+TSYN is detected. If the timer expires, an error has occurred on the
+transmission medium, e.g. stuck at "0" or permanent "0" / "1" edges. The FMA1/2
+User is notified accordingly (see Part 3, subclause 4.2.3.3).
+PAGE 120
+Page 120
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+GAP Update Timer: Only master stations need this timer. Its expiration indicates
+the moment for GAP maintenance. After a complete GAP check, which may last sev-
+eral token rotations (segmented; see subclause 4.1.1.2), the timer is loaded
+with a multiple of the Target Rotation Time TTR (see subclause 4.1.7).
+When a master station enters the "Listen_Token" state, the Idle Timer is loaded
+with TSYN, the Time-out Timer with T TO, the Syn Interval Timer with T SYNI and
+the other timers are cleared. When a slave station enters the "Passive_Idle"
+state, the Time-out Timer is loaded with T TO and the Syn Interval Timer with
+TSYNI.
+For installation and maintenance the following counters (FDL variables) are
+optionally defined in pairs:
+For master stations:
+- counter for transmitted frames (Frame_sent_count for Request frames) except
+for SDN service and FDL status
+- counter for transmitted frame retries (Retry_count)
+For slave and master stations:
+- counter for received valid start delimiters (SD_count)
+- counter for received invalid start delimiters (SD_error_count)
+When a station enters the "Listen_Token" or "Passive_Idle" state, the counters
+are cleared and enabled. If a counter reaches its maximum (see Part 3, subclause
+5.2.3.2, table "Additional FDL Variables"), counting of this counter as well as
+of the related comparative counter is stopped. When clearing a counter the
+related comparative counter is also cleared and they are enabled again. The
+FMA1/2 user may access these counters using the Set/Read Value FMA1/2 services
+(see Part 3, clause 4.2).
+In relation to stations multiple counters (statistics) are possible (optional,
+see part 8).
+PAGE 121
+Page 121
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+4.5 Frame Structure
+4.5.1 Frame Character (UART Character)
+Each frame consists of a number of frame characters, the UART characters. The
+UART character (UC) is a start-stop character for asynchronous transmission and
+is structured as follows:
+Transmitted
+Bit Sequence 1st 2   3   4   5   6   7   8   9  10  11th
+Information      20                          27
+sig. Bits       LSB                         MSB
+        ---+   +---+---+---+---+---+---+---+---+---+---+---
+           ! 0 ! b1! b2! b3! b4! b5! b6! b7! b8! P ! 1 !
+           +---+---+---+---+---+---+---+---+---+---+
+Start bit----! !                               ! !   !---Stop bit
+(ST)           !             Octet             ! !       (SP)
+               +<----------------------------->+ !
+                                                 !-----Parity bit
+                                                       even
+Figure 9. UART Character
+The presentation of UART characters is based on the following standards: ISO
+1177, ISO 2022.
+Transmission Rule
+Each UART character consists of 11 bits: a start bit (ST) which is always binary
+"0", 8 information bits (I) which may be binary "0" or binary "1", an even par-
+ity bit (P) which is binary "0" or binary "1" and a stop bit (SP) which is
+always binary "1".
+4.5.2 Bit Synchronizing
+The receiver's bit synchronizing always starts with the falling edge of the
+start bit, i.e. at the transition from binary "1" to binary "0". The start bit
+and all consecutive bits are scanned in the middle of the bit time. The start
+bit shall be binary "0" in the middle of the bit, otherwise the synchronizing
+fails and is stopped. The synchronizing of the UART character ends with the stop
+bit being binary "1". If a binary "0" bit is encountered instead of the stop
+bit, a synchronizing error or UART character error is assumed and reported and
+the next leading edge of a start bit is waited for.
+A maximum deviation of ± 0,3 % of the nominal signalling rate for transmission
+and receipt is allowed (see Part 2, subclause 4.1.1, Data Signalling Rate).
+4.6 Frame Formats
+The figures contained in the following clauses do not show sequences (request →
+acknowledgement or response), but frame formats of the same category (Hd = 4,
+fixed length without/with data field and variable length), i.e. the action
+frames may be followed by different acknowledgement or response frames (see
+clause 4.8).
+PAGE 122
+Page 122
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+4.6.1 Frames of fixed Length with no Data Field
+A) Format of the Request Frame:
++-/ /-+----+----+----+----+----+----+
+! SYN !SD1 ! DA ! SA ! FC !FCS ! ED !
++-/ /-+----+----+----+----+----+----+
+           !              !
+           !       L      !
+           +<------------>+
+B) Format of the Acknowledgement Frame:
+      +----+----+----+----+----+----+
+      !SD1 ! DA ! SA ! FC !FCS ! ED !
+      +----+----+----+----+----+----+
+           !              !
+           !       L      !
+           +<------------>+
+C) Format of the Short Acknowledgement Frame:
+      +----+
+      ! SC !
+      +----+
+where:
+SYN   Synchronization Period, a minimum of 33 line idle bits
+SD1   Start Delimiter, value: 10H
+DA    Destination Address
+SA    Source Address
+FC    Frame Control
+FCS   Frame Check Sequence
+ED    End Delimiter, value: 16H
+L     Information Field Length, fixed number of octets: L = 3
+SC    Single Character, value: E5H
+Figure 10. Frames of fixed Length with no Data Field
+Transmission Rules
+1. Line idle state corresponds to signalling level binary "1".
+2. Each action frame shall be preceded by at least 33 line idle bits (Syn Time).
+3. No idle states are allowed between a frame's UART characters.
+4. The receiver checks:
+per UART character: start bit, stop bit and parity bit (even), per frame:
+start delimiter, DA, SA, FCS and end delimiter and the SYN Time in the case
+of an action frame. If the check fails, the whole frame shall be discarded.
+SC and SD1 (as well as SD2 and SD3, see subclauses 4.6.2 and 4.6.3) have Hamming
+distance Hd=4 and are safe against being shifted (see IEC 870-5-1), i.e. the
+single character SC appears to be a frame with Hd=4.
+For requests to be acknowledged only (Send Data with Acknowledge), SC is a per-
+missible positive acknowledgement. For requests to be answered (Send and Request
+Data with Reply), SC is a permissible negative acknowledgement if no data is
+available (see table 3a, b7=0, Code-No 9).
+PAGE 123
+Page 123
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+4.6.2 Frames of fixed Length with Data Field
+A) Format of the Send/Request Frame:
+       +-/ /-+----+----+----+----+-----------+----+----+
+       ! SYN !SD3 ! DA ! SA ! FC ! DATA_UNIT !FCS ! ED !
+       +-/ /-+----+----+----+----+-----------+----+----+
+                  !                          !
+                  !             L            !
+                  +<------------------------>+
+B) Format of the Response Frame:
+             +----+----+----+----+-----------+----+----+
+             !SD3 ! DA ! SA ! FC ! DATA_UNIT !FCS ! ED !
+             +----+----+----+----+-----------+----+----+
+                  !                          !
+                  !             L            !
+                  +<------------------------>+
+where:
+SYN        Synchronization Period, a minimum of 33 line idle bits
+SD3        Start Delimiter, value: A2H
+DA         Destination Address
+SA         Source Address
+FC         Frame Control
+DATA_UNIT  Data Field, fixed Length (L-3) = 8 octets
+FCS        Frame Check Sequence
+ED         End Delimiter, value: 16H
+L          Information Field Length,
+           fixed number of octets: L = 11
+Figure 11. Frames of fixed Length with Data Field
+Transmission Rules
+The same transmission rules as for frames of fixed length with no data field are
+valid here (see subclause 4.6.1).
+PAGE 124
+Page 124
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+4.6.3 Frames with variable Data Field Length
+For a variable number of data octets the length shall also be transmitted in the
+frame. This length information is contained twice in a fixed frame header at the
+beginning of the frame. Thus it is protected with Hd = 4 and safe against slip.
+A) Format of the Send/Request Frame:
++-/ /-+----+----+----+----+----+----+----+----/ /----+----+----+
+! SYN !SD2 ! LE ! LEr!SD2 ! DA ! SA ! FC ! DATA_UNIT !FCS ! ED !
++-/ /-+----+----+----+----+----+----+----+----/ /----+----+----+
+                          !                          !
+                          !             L            !
+                          +<------------------------>+
+B) Format of the Response Frame:
+      +----+----+----+----+----+----+----+----/ /----+----+----+
+      !SD2 ! LE ! LEr!SD2 ! DA ! SA ! FC ! DATA_UNIT !FCS ! ED !
+      +----+----+----+----+----+----+----+----/ /----+----+----+
+                          !                          !
+                          !             L            !
+                          +<------------------------>+
+where:
+SYN        Synchronization Period, a minimum of 33 line idle bits
+SD2        Start Delimiter, value: 68H
+LE         Octet Length, allowed values: 4 to 249
+LEr        Octet Length repeated
+DA         Destination Address
+SA         Source Address
+FC         Frame Control
+DATA_UNIT  Data Field, variable Length (L-3), max. 246 octets
+FCS        Frame Check Sequence
+ED         End Delimiter, value: 16H
+L          Information Field Length,
+           variable number of octets: L = 4 to 249
+Figure 12. Frames with variable Data Field Length
+Transmission Rules
+The same transmission rules as for frames of fixed length with no data field are
+valid (see subclause 4.6.1).
+In addition to transmission rule 4, LE shall be identical to LEr, and the
+information octets shall be counted from the destination address (DA) up to the
+frame check sequence (FCS) and the result shall be compared with LE.
+PAGE 125
+Page 125
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+4.6.4 Token Frame
+     +-/ /-+----+----+----+
+     ! SYN !SD4 ! DA ! SA !
+     +-/ /-+----+----+----+
+where:
+SYN   Synchronization Period, a minimum of 33 line idle bits
+SD4   Start Delimiter, value: DCH
+DA    Destination Address
+SA    Source Address
+Figure 13. Token Frame
+Transmission Rules
+1. Line idle state corresponds to signalling level binary "1".
+2. Each token frame shall be preceded by at least 33 line idle bits (Syn Time).
+3. No idle states are permitted between a frame's UART characters.
+4. The receiver checks:
+per UART character: start bit, stop bit and parity bit (even),
+per frame: Syn Time, start delimiter and DA/SA. If the check fails, the whole
+frame shall be discarded.
+4.7 Length, Address, Control and Check Octet
+4.7.1 Length Octet (LE, LEr)
+The two length octets of identical value in the frame header of the variable
+format contain the number of information octets in the frame body. These com-
+prise: DA, SA, FC and the DATA_UNIT. The value covers the range from 4 to 249,
+so that a maximum of 246 octets may be transmitted in a frame's DATA_UNIT (see
+subclause 4.7.5). A value < 4 is not permitted, as a frame contains at least DA,
+SA, FC and one DATA octet. The longest frame contains a total of 255 octets.
+                 b8                          b1
+               +---+---+---+---+---+---+---+---+
+               ! 27!                       ! 20!
+               +---+---+---+---+---+---+---+---+
+               !                               !
+               !               L               !
+               +<----------------------------->+
+                         L = 4 to 249
+Figure 14. Length Octet Coding
+PAGE 126
+Page 126
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+4.7.2 Address Octet (DA/SA)
+The two address octets in the frame header (action, acknowledgement and response
+frames) contain the destination (DA) and source (SA) station address. The token
+frame consists only of these two address octets after the start delimiter.
+            b8                          b1
+           +---+---+---+---+---+---+---+---+
+           !EXT! 26!                   ! 20!
+           +---+---+---+---+---+---+---+---+
+               !                           !
+               !          Address          !
+               +<------------------------->+
+              DA = 0 to 127 ;  SA = 0 to 126
+Figure 15. Address Octet Coding
+Address 127 (b1 to b7 = 1) is reserved as global address for broadcast and mul-
+ticast messages (frame to all stations or a group of stations selected by means
+of a service access point; only permitted in Send Data with No Acknowledge,
+SDN).
+Thus, 127 station addresses (0 to 126) are available for slave and master sta-
+tions, of which preferably no more than 32 may be occupied by master stations.
+For non time-critical applications up to 127 master stations are optionally per-
+mitted. As at least one master station is required, a maximum of 126 addresses
+for slave stations is possible.
+The action frame's address octets shall be sent back mirrored in the acknow-
+ledgement or response frame, i.e. SA of the acknowledgement or response frame
+contains the destination station address and DA contains the source station ad-
+dress of the action frame.
+Address Extension (EXT):
+In frames with DATA_UNIT the EXT bit (extension) indicates a destination and/or
+source address extension (DAE, SAE), which immediately follows the FC octet in
+the DATA_UNIT. It may be distinguished between access address (Link Service Ac-
+cess Point, LSAP, see subclause 4.7.2.2) and region/segment address. Both ad-
+dress types may also occur simultaneously, as each address extension contains an
+EXT bit again (see bit b8 in Fig. 17).
+The address extensions of the action frame shall be sent back mirrored in the
+response frame.
+EXT = 0 : No address extension in the DATA_UNIT
+EXT = 1 : Address extension follows in the DATA_UNIT
+PAGE 127
+Page 127
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+      EXT=1
+           EXT=0
+-----+----+----+----+----+--------------/ /-------------+-----
+     ! DA ! SA ! FC !DAE !                              !
+-----+----+----+----+----+--------------/ /-------------+-----
+                    !                                   !
+                    !             DATA_UNIT             !
+                    +<--------------------------------->+
+      EXT=0
+           EXT=1
+-----+----+----+----+----+-------------/ /--------------+-----
+     ! DA ! SA ! FC !SAE !                              !
+-----+----+----+----+----+-------------/ /--------------+-----
+                    !                                   !
+                    !             DATA_UNIT             !
+                    +<--------------------------------->+
+      EXT=1
+           EXT=1
+-----+----+----+----+----+----+--------/ /--------------+-----
+     ! DA ! SA ! FC !DAE !SAE !                         !
+-----+----+----+----+----+----+--------/ /--------------+-----
+                    !                                   !
+                    !             DATA_UNIT             !
+                    +<--------------------------------->+
+Figure 16. DAE/SAE Octet in the Frame
+            b8  b7  b6                  b1
+           +---+----+---+---+---+---+---+---+
+           !EXT!Type! 25!               ! 20!
+           +---+----+---+---+---+---+---+---+
+                    !                       !
+                    !        Address        !
+                    +<--------------------->+
+b7 denote the Type:
+0    6 bit  Link Service Access Point (LSAP):
+     DAE = 0 to 63 ; SAE = 0 to 62
+1    6 bit Region/Segment Address for Realization of hierarchical Bus Systems with
+     Bridges, Range of Values is to be defined.
+b8 (EXT) denotes an additional address extension:
+0    No additional address extension octet
+1    One additional address extension octet follows immediately with the same
+     structure. The following order is valid:
+     First Octet :  Region/Segment Address with b7=1, b8=1
+     Second Octet:  LSAP with b7=0, b8=0
+Figure 17. Address Extension Octet
+PAGE 128
+Page 128
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+4.7.2.1 Address Check
+A receiver checks the destination address information in a frame addressed to
+itself by following rules with TS:
+- Is there no Region/Segment address in the frame existent (DA[b8=0] or
+DAE[b7=0]), it merely shall check the DA on equality.
+- Is there a Region/Segment address in the frame existent (DAE[b7=1]), it shall
+check the DA and the DAE on equality. Does TS of the receiver not contain a
+Region/Segment address then the frame count not addressed to the receiver.
+4.7.2.2 Link Service Access Point (LSAP)
+At the FDL user - FDL interface (see chapter 5) a data transmission service (or
+several thereof) is processed via a Link Service Access Point (LSAP). Several
+LSAPs at the same time are permitted in master and slave stations. In this case
+the related LSAP shall be transmitted together with the message.
+The address extensions DAE and SAE are available for the transmission of LSAPs.
+The Source Service Access Point (SSAP), which represents the access address of
+the local user to the FDL, is transmitted in the SAE octet. The Destination
+Service Access Point (DSAP), which represents one or all access addresses of the
+remote user to the FDL, is transmitted in the DAE octet. SSAP values from 0 to
+62 and DSAP values from 0 to 63 may be chosen. The DSAP value 63 (DAE b1 to
+b6 = 1) represents the global access address. This DSAP is only allowed for the
+send data services "SDA" and "SDN" (see Part 3, clause 4).
+If the transmission of LSAPs is omitted for reasons of frame efficiency, the
+data transmission services shall be processed via the Default LSAP. In this case
+all action frames are transmitted without SAE. All correctly received acknow-
+ledgement or response frames without DAE are assigned to this default LSAP. At
+the FDL user - FDL interface (see Part 3, clause 4.1) the default LSAP is manda-
+tory and is addressed with the value NIL.
+PAGE 129
+Page 129
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+4.7.3 Control Octet (FC)
+The control octet in the frame header indicates the frame type, such as action
+frame (request or send/request frame) and acknowledgement or response frame. In
+addition the control octet contains the function and the control information,
+which prevents loss and multiplication of messages, or the station type with the
+FDL state.
+         b8    b7    b6    b5    b4                b1
+       +-----+-----+-----+-----+-----+-----+-----+-----+
+       !     !  1  ! FCB ! FCV !  23                20 !
+       ! Res !Frame!-----+-----+--     Function      --!
+       !     !  0  !  Stn-Type !                       !
+       +-----+-----+-----+-----+-----+-----+-----+-----+
+Res: Reserved   (the sender shall be set binary "0",
+    the receiver does not have to interpret)
+Frame Type:  1    Request, Send/Request Frame
+             0    Acknowledgement, Response Frame
+b7 = 1:
+FCB     Frame Count Bit: 0/1, alternating
+FCV     Frame Count Bit valid:
+        0     alternating Function of FCB is invalid
+        1     alternating Function of FCB is valid
+b7 = 0:
+Stn-Type: Station Type and FDL Status
+b6 b5   <-- Bit Position
+0  0     Slave Station
+0  1     Master Station not ready to enter logical token ring
+1  0     Master Station ready to enter logical token ring
+1  1     Master Station in logical token ring
+Function: see Table 3a
+Figure 18. FC Octet Coding
+PAGE 130
+Page 130
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+Table 3a. Transmission Function Codes
++-------+--------------------------------+----------------------+
+! Code  !            Function            !         Format       !
+!  No   !                                !      in Clause       !
++-------+--------------------------------+----------------------+
+!       ! Frame Type  b7 = 1             !                      !
+!       !                                !                      !
+! 0,1,2 ! Reserved                       !                      !
+!  3    ! Send Data with Acknowledge low !       4.6.2/3A       !
+!  4    ! Send Data with No Acknow. low  !       -  "  -        !
+!  5    ! Send Data with Acknowledge high!       -  "  -        !
+!  6    ! Send Data with No Acknow. high !       -  "  -        !
+!  7    ! Reserved (Req. Diagnosis Data) !                      !
+!  8    ! Reserved                       !                      !
+!  9    ! Request FDL Status with Reply  !       4.6.1A         !
+! 10,11 ! Reserved                       !                      !
+! 12    ! Send and Request Data low      !     4.6.1/2/3A       !
+! 13    ! Send and Request Data high     !       -  "  -        !
+! 14    ! Request Ident with Reply       !       4.6.1A         !
+! 15    ! Request LSAP Status with Reply !     4.6.1/3A         !
+!       ! (Code No 14 and 15: FMA1/2)    !                      !
++-------+--------------------------------+----------------------+
+!       ! Frame Type  b7 = 0             !                      !
+!       !                                !                      !
+!  0    ! ACKnowledgement positive   (OK)!      4.6.1B*)        !
+!  1    ! ACK negative                   !                      !
+!       ! FDL/FMA1/2 User Error      (UE)!      4.6.1B          !
+!  2    ! ACK negative                   !                      !
+!       ! no Resource for Send Data      !                      !
+!       ! (& no Response FDL Data)   (RR)!     -  "  -          !
+!  3    ! ACK negative                   !                      !
+!       ! no Service activated       (RS)!     -  "  -          !
+!4 to  7! Reserved                       !                      !
+!  8    ! Response FDL/FMA1/2 Data low   !                      !
+!       ! (& Send Data ok)           (DL)!   4.6.2B, 4.6.3B     !
+!  9    ! ACK negative                   !                      !
+!       ! no Response FDL/FMA1/2 Data,   !                      !
+!       ! (& Send Data ok)           (NR)!      4.6.1B*)        !
+! 10    ! Response FDL Data high,        !                      !
+!       ! (& Send Data ok)           (DH)!   4.6.2B, 4.6.3B     !
+! 11    ! Reserved                       !                      !
+! 12    ! Response FDL Data low,         !                      !
+!       ! no Resource for Send Data (RDL)!   4.6.2B, 4.6.3B     !
+! 13    ! Response FDL Data high,        !                      !
+!       ! no Resource for Send Data (RDH)!     -  "  -          !
+! 14,15 ! Reserved                       !                      !
++-------+--------------------------------+----------------------+
+!             b4    b1                                          !
+! Code No  0 = 0 0 0 0                                          !
+! Code No 15 = 1 1 1 1                                          !
+!                                                               !
+! ( ) Value of the L/M_status Parameter of the Service          !
+!     Primitives (see Part 3, subclause 4.1.3 and 4.2.3)        !
+!                                                               !
+! *) Frames equivalent to Short Acknowledgement SC = E5H,       !
+!    exception: no SC if FDL Status Request                     !
++---------------------------------------------------------------+
+Frame Count Bit
+The Frame Count Bit FCB (b6) prevents the duplication of messages at the
+responder and the loss at the initiator. However, "Send Data with No Acknowl-
+edge" (SDN), "Request FDL Status", "Request Ident" and "Request LSAP Status" are
+excluded from this.
+PAGE 131
+Page 131
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+In order to manage the security sequence, the initiator shall carry a FCB for
+each responder. When an action frame (request or send/request frame) is trans-
+mitted to a responder for the first time or again to a responder currently
+marked as "non operational", the associated FCB shall be set definitely. The
+initiator achieves this by an action frame with FCV=0 and FCB=1. The responder
+shall classify such a frame as first message cycle and store FCB=1 together with
+the initiator's address (SA and optional SAE[b7=1]) (see table 3b). This message
+cycle is not repeated by the initiator.
+If a responder supports the Region/Segment addressing and the request frame con-
+tains a source Region/Segment address (SAE[b7=]) which is unequal to the own
+Region/Segment address (DAE[b7=1]), then the responder shall store the SAE[b7=1]
+together with the SA.
+In the following action frames to the same responder the initiator shall set
+FCV=1 and toggle FCB with each new action frame. The responder shall evaluate
+FCB when receiving an action frame addressed to itself with FCV=1. A FCB changed
+in comparison with the same initiator's (same SA and optional same SAE[b7=1])
+preceding action frame is considered as confirmation of the preceding message
+cycle's correct completion. If the action frame originates from a different
+initiator (different SA or optionaldifferent SAE[b7=1]), there is no evaluation
+of the FCB. In both cases the responder shall store the FCB with the source ad-
+dress (SA and optional SAE[b7=1]) until it receives a new frame addressed to it-
+self.
+If an acknowledgement or response frame is missing or corrupted, the FCB shall
+not be changed by the initiator in the retry; this indicates the faulty preced-
+ing message cycle. If a responder receives an action frame with FCV=1 and the
+same FCB as in the same initiator's (same SA and optional same SAE[b7=1]) imme-
+diately preceding action frame, a retry is being carried out. As a result the
+responder shall again transmit the acknowledgement or response frame kept in
+readiness.
+The responder shall keep ready the preceding acknowledgement or response frame
+for a potential retry, until it gets the above mentioned confirmation, or until
+it receives a Hd4-faultless frame with changed address (SA or DA or optional
+SAE[b7=1] or DAE[b7=1]), or a Send Data with No Acknowledge (SDN), or a token
+frame.
+For "Send Data with No Acknowledge", "Request FDL Status", "Request Ident" and
+"Request LSAP Status", FCV and FCB are = 0; the responder does not analyze FCB.
+PAGE 132
+Page 132
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+Table 3b. FCB, FCV in Responder
++---------------------------------------------------------------+
+! b6  b5 <-- Bit Position                                       !
+!                                                               !
+! FCB FCV! Condition  !       Meaning        !     Action       !
+!        !            !                      !                  !
++--------+------------+----------------------+------------------+
+!        !            !                      !                  !
+!  0   0 ! DA = TS/127! Request with No Ack  ! last Ack or      !
+!        !            ! Request FDL-Status/  ! delete Reply     !
+!        !            ! Ident/ LSAP-Status   !                  !
+!        !            !                      !                  !
+! 0/1 0/1! DA # TS    !  Request to other    !last Ack or Reply !
+!        !            !  Responder           ! may be deleted   !
+!        !            !                      !                  !
+!  1   0 ! DA = TS    !  First Request       ! FCBM := 1        !
+!        !            !                      ! SAM := SA*)      !
+!        !            !                      ! last Ack or      !
+!        !            !                      ! delete Reply     !
+!        !            !                      !                  !
+! 0/1  1 ! DA = TS    !  New Request         ! last Ack or      !
+!        ! SA = SAM   !                      ! delete Reply     !
+!        ! FCB # FCBM !                      ! FCBM := FCB      !
+!        !            !                      ! have Ack or      !
+!        !            !                      ! Reply ready for  !
+!        !            !                      ! Retry            !
+!        !            !                      !                  !
+! 0/1  1 ! DA = TS    !  Request Retry       ! FCBM := FCB      !
+!        ! SA = SAM   !                      ! repeat Ack or    !
+!        ! FCB = FCBM !                      ! Reply and keep   !
+!        !            !                      ! it ready         !
+!        !            !                      !                  !
+!        !            !                      !                  !
+! 0/1  1 ! DA = TS    !  New Initiator       ! FCBM := FCB      !
+!        ! SA # SAM   !                      ! SAM := SA*)      !
+!        !            !                      ! have Ack or      !
+!        !            !                      ! Reply ready for  !
+!        !            !                      ! Retry            !
+!        !            !                      !                  !
+! --  -- ! Token-     !        ---           !last Ack or Reply !
+!        ! Frame      !                      ! may be deleted   !
+!        !            !                      !                  !
+!        !            !                      !                  !
++--------+------------+----------------------+------------------+
+!                                                               !
+! FCBM   stored FCB                                             !
+! SAM    stored SA                                              !
+!                                                               !
++---------------------------------------------------------------+
+4.7.4 Check Octet (FCS)
+The check octet FCS which is required for Hamming distance 4 in a frame always
+immediately precedes the end delimiter. It is structured as follows:
+  b8                          b1
++---+---+---+---+---+---+---+---+
+! 27!                       ! 20!
++---+---+---+---+---+---+---+---+
+Figure 19. FCS Octet Coding
+In frames of fixed length with no data field (see subclause 4.6.1) the check
+octet shall be calculated from the arithmetic sum of DA, SA and FC without start
+and end delimiter and without taking the carry-overs into consideration.
+PAGE 133
+Page 133
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+In frames of fixed length with data field (see subclause 4.6.2) and in frames
+with variable data field length (see subclause 4.6.3) the check octet shall
+additionally include the DATA_UNIT.
+4.7.5 Data Field (DATA_UNIT)
+The data field consists of an address field and the user data of the FDL/FMA1/2
+user. The address field contains from 0 to at most 4 address extension octets
+(see subclause 4.7.2). The user data without address extension comprises a
+maximum of 246 octets. The definition and interpretation of the user data
+(L_sdu) for the data transmission services (see Part 3, clause 4.1) are
+described in Part 6 of this specification.
+                      Data Field (DATA_UNIT)
+         +<--------------------------------------------->+
+         !                                               !
+ --+-----+------//-------+--------------/ /--------------+-----
+   ! FC  I   DAE/SAE     I                               I
+ --+-----+------//-------+--------------/ /--------------+-----
+         !               !                               !
+         !    Address    !          User Data            !
+         +<------------->+<----------------------------->+
+Figure 20. Data Field
+The following user data are defined for the remote management services "Request
+Ident" and "Request LSAP Status" (see Part 3, clause 4.2):
+PAGE 134
+Page 134
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+Ident User Data:
+The Ident user data contains the station's Ident_List with vendor name
+(Vendor_name), PROFIBUS controller type (Controller_type) and hardware and soft-
+ware release (HW/SW_release). It comprises a maximum of 200 octets:
+----+-------+-------+-------+-------+---------------+//
+    ! LE_VN ! LE_CT ! LE_HR ! LE_SR !  Vendor_name  !
+----+-------+-------+-------+-------+---------------+//
+    !
+    !                     Ident Data
+    +<----------------------------------------------//
+//------------------+--------------+--------------+-----
+   Controller_type  !  HW_release  !  SW_release  !
+//------------------+--------------+--------------+-----
+                                                  !
+                                                  !
+//----------------------------------------------->+
+LE_VN, LE_CT, LE_HR, LE_SR:
+1 octet each. Length of corresponding Data Field in octets;
+dual coding, significance as in Fig. 19.
+Vendor_name, VN:
+Name of Manufacturer as ASCII String (ISO 7 Bit Code, b8=0).
+Controller_type, CT:
+Hardware Controller Type as ASCII String (ISO 7 Bit Code, b8=0).
+HW_release, HR:
+Hardware Release of Controller as ASCII String (ISO 7 Bit Code, b8=0).
+SW_release, SR:
+Software Release of Controller as ASCII String (ISO 7 Bit Code, b8=0).
+Figure 21. Ident User Data
+PAGE 135
+Page 135
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+LSAP Status User Data:
+The LSAP Status user data contains the configuration of a service access point
+at the remote station and has the following octets:
+                b8          b5  b4          b1
+               +---+---+---+---+---+---+---+---+
+Octet 1        !            Access             !
+               +---+---+---+---+---+---+---+---+
+               !       Address-Extension       !
+               +---+---+---+---+---+---+---+---+
+               !Role_in_service!  Service_type !
+               +---+---+---+---+---+---+---+---+
+               !                               !
+               +--           - " -           --+
+               !                               !
+               +---+---+---+---+---+---+---+---+
+Octet 6        !Role_in_service!  Service_type !
+               +---+---+---+---+---+---+---+---+
+Access:
+            b8            b1  <-- Bit Position
+             0 1 1 1 1 1 1 1  =  All
+           EXT 0 0 0 0 0 0 0 )
+                     to      >  0 to 126 (FDL Address,
+           EXT 1 1 1 1 1 1 0 )            Station Address)
+           EXT = 0: Address Extension invalid
+           EXT = 1: Address Extension valid
+Address Extension:
+             b8=0, b7=1, b1 to b6: Region/Segment Address
+             (Significance: see Fig. 17)
+Service_type:
+            b4    b1  <-- Bit Position
+             0 0 0 0     Send Data with Acknowledge (SDA)
+             0 0 0 1     Send Data with No Acknowledge (SDN)
+             0 0 1 1     Send and Request Data with Reply (SRD)
+             0 1 0 1     Cyclic Send and Request Data
+                         with Reply (CSRD)
+Role_in_service:
+            b8    b5  <-- Bit Position
+             0 0 0 0     Initiator
+             0 0 0 1     Responder
+             0 0 1 0     Both
+             0 0 1 1     Service not activated
+Note: For Service_type SRD and CSRD the Role_in_service is
+      identical for Responder
+Figure 22. LSAP Status User Data
+PAGE 136
+Page 136
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+4.8 Transmission Procedures
+Permissible frame sequences (message cycles) are described in the following. Er-
+ror sequences, broadcast/multicast messages and "Send Data with No Acknowledge"
+are excluded.
++--/ /--+----+----+----+----+----+----+
+!  SYN  !SD1 ! DA ! SA ! FC !FCS ! ED !
++--/ /--+----+----+----+----+----+----+
+                                      !
+                                      !
+                                      !
+______________________________________!
+!
+V
++----+
+! SC !    Short Acknowledgement (E5H) positive (ACK) or
++----+                                negative (no Response Data)
+or
++----+----+----+----+----+----+
+!SD1 ! DA ! SA ! FC !FCS ! ED !       Acknowledgement
++----+----+----+----+----+----+       (positive/negative)
+or Response Frame:
++----+----+----+----+-----------+----+----+
+!SD3 ! DA ! SA ! FC ! DATA_UNIT !FCS ! ED !    fixed length
++----+----+----+----+-----------+----+----+
+or
++----+----+----+----+----+----+----+-------/ /-----+----+----+
+!SD2 ! LE ! LEr!SD2 ! DA ! SA ! FC !   DATA_UNIT   !FCS ! ED !
++----+----+----+----+----+----+----+------/ /------+----+----+
+                                               variable length
+Figure 23. Send/Request Frame of fixed Length with no Data
+PAGE 137
+Page 137
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
++-/ /-+----+----+----+
+! SYN !SD4 ! DA ! SA !  Token
++-/ /-+----+----+----+
+                     !
+_____________________!
+!
+!
+V
++-/ /-+----+----+----+----+--------------+----+----+
+! SYN !SD3 ! DA ! SA ! FC !   DATA_UNIT  !FCS ! ED ! fixed length
++-/ /-+----+----+----+----+--------------+----+----+
+                                                   !
+                                                   !
+                                                   !
+___________________________________________________!
+!
+V
++-----+
+! SC  !  Short Acknowledgement (E5H) positive or negative
++-----+                              (no Response Data)
+or
++----+----+----+----+----+----+
+!SD1 ! DA ! SA ! FC !FCS ! ED !      Acknowledgement
++----+----+----+----+----+----+      (positive/negative)
+or Response Frame:
++----+----+----+----+--------------------+----+----+
+!SD3 ! DA ! SA ! FC !      DATA_UNIT     !FCS ! ED ! fixed length
++----+----+----+----+--------------------+----+----+
+or
++----+----+----+----+----+----+----+-----/ /-----+----+----+
+!SD2 ! LE ! LEr!SD2 ! DA ! SA ! FC !  DATA_UNIT  !FCS ! ED !
++----+----+----+----+----+----+----+-----/ /-----+----+----+
+                                           variable length
+                                                           !
+                                                           !
+___________________________________________________________!
+!
+!
+V
++-/ /-+----+----+----+
+! SYN !SD4 ! DA ! SA !  Token
++-/ /-+----+----+----+
+Figure 24. Token Frame and Send/Request Frame of fixed Length with Data
+including Address Extension
+PAGE 138
+Page 138
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
++-//-+----+----+----+----+----+----+----+-----/ /-----+----+----+
+!SYN !SD2 ! LE ! LEr!SD2 ! DA ! SA ! FC !  DATA_UNIT  !FCS ! ED !
++-//-+----+----+----+----+----+----+----+-----/ /-----+----+----+
+                                                                !
+                                                                !
+________________________________________________________________!
+!
+V
++-----+
+! SC  !  Short Acknowledgement (E5H) positive or negative
++-----+                              (no Response Data)
+or
++----+----+----+----+----+----+
+!SD1 ! DA ! SA ! FC !FCS ! ED !      Acknowledgement
++----+----+----+----+----+----+      (positive/negative)
+or Response Frame:
++----+----+----+----+-----------+----+----+
+!SD3 ! DA ! SA ! FC ! DATA_UNIT !FCS ! ED !    fixed length
++----+----+----+----+-----------+----+----+
+or
++----+----+----+----+----+----+----+-----/ /-----+----+----+
+!SD2 ! LE ! LEr!SD2 ! DA ! SA ! FC !  DATA_UNIT  !FCS ! ED !
++----+----+----+----+----+----+----+-----/ /-----+----+----+
+                                            variable length
+Figure 25. Send/Request Frame with variable Data Field Length
+PAGE 884
+Page 884
+PROFIBUS-Specification-Normative-Parts-8:1997
+ Copyright by PNO 1997 - all rights reserved
+Table 2-B.2. Default Bus Parameter for slave composite device in mixed operation
+with FMS- and DP-devices.
++-----------------+-------+-------+-------+-------+-------+-------+
+!Baud rate in     !   9.6 !  19.2 ! 93.75 ! 187.5 !   500 !  1500 !
+!kbit/s           !       !       !       !       !       !       !
++-----------------+-------+-------+-------+-------+-------+-------+
+!                 !       !       !       !       !       !       !
+!min TSDR (tBit)  !    30 !    60 !   125 !   250 !   255 !   255 !
+!                 !       !       !       !       !       !       !
++-----------------+-------+-------+-------+-------+-------+-------+
+For the calculation of the system reaction time in the mixed mode, the device
+specific features for the execution of layer 2 shall be noticed. All DP-Master -
+DP-Slave functions are executed with high priority.
+Therefore there are two alternatives to prioritize DP- and FMS-services:
+a) DP-functions should be preferred against FMS-services.
+- FMS-services should executed with low priority.
+- The choice of the Target Rotation Time should be made that way that at each
+token receipt a complete slave poll cycle can be executed, see section
+"Token Rotation Time".
+- At each token receipt only one FMS-Service should be executed.
+b) DP- and FMS-services shall have the same priority.
+- The choice of the Target Rotation Time should be made that way that at each
+token receipt a complete slave poll cycle and in addition several FMS-
+services should be executed.
+- The Target Rotation Time shall have the same value in all masters.
+PAGE 885
+Page 885
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+PROFIBUS Specification - Normative Parts
+Part 9
+Physical Layer and Data Link Layer for Process Automation
+PAGE 886
+Page 886
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+Contents
+Page
+1 Introduction .......................................................888
+2 Field of Application ...............................................889
+3 Normative References ...............................................889
+4 General ............................................................889
+4.1 Definitions ........................................................889
+4.2 Abbreviations ......................................................889
+4.3 Basic Properties ...................................................890
+5 Characteristic Features ............................................890
+6 Scope ..............................................................891
+7 Data Transmission (Physical Medium, Physical Layer) ................891
+7.1 Electrical Characteristics .........................................891
+7.2 Interface between Physical Layer (PhL) and Medium Access and
+Transmission Protocol (FDL) ........................................893
+7.3 Redundancy of Physical Layer and Medium (optional) .................894
+8 Medium Access Methods and Transmission Protocol (Data Link
+Layer, FDL) ........................................................894
+8.1 Transmission Procedures and FDL Controller .........................894
+8.1.1 Token Procedures ...................................................894
+8.1.1.1 Token Passing ......................................................894
+8.1.1.2 Addition and Removal of Stations ...................................894
+8.1.1.3 (Re)Initialization the Logical Token Ring ..........................894
+8.1.1.4 Token Rotation Time ................................................895
+8.1.1.5 Message Priorities .................................................895
+8.1.2 Acyclic Request or Send / Request Mode .............................895
+8.1.3 Cyclic Send / Request Mode .........................................895
+8.1.4 Request FDL Status of all Stations (Live List) .....................895
+8.1.5 Status of the FDL Controller .......................................895
+8.1.6 FDL Initialization .................................................895
+8.1.7 Timer Operation ....................................................895
+8.2 Cycle and System Reaction Times ....................................899
+8.2.1 Token Cycle Time ...................................................899
+8.2.2 Message Cycle Time .................................................900
+8.2.3 System Reaction Times ..............................................900
+8.3 Error Control Procedures ...........................................900
+8.4  Timers and Counters ...............................................900
+8.5 Frame Structure ....................................................901
+8.5.1 Frame Character ....................................................902
+8.6 Frame Formats ......................................................902
+8.6.1 Frames of fixed Length with no Data Field ..........................903
+9.6.2 Frames of fixed Length with Data Field .............................904
+8.6.3 Frames with variable Data Field Length .............................904
+8.7 Token Frame ........................................................905
+8.8 Length, Address, Control and Check Octet ...........................905
+8.8.1 Length Octet (LE) ..................................................905
+8.8.2 Address Octet (DA/SA) ..............................................905
+8.8.2.1 Link Service Access Point (LSAP) ...................................905
+8.8.3 Control Octet (FC) .................................................905
+PAGE 887
+Page 887
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+8.8.4 Check Octet (FCS).................................................. 905
+8.8.5 Data Field (DATA_UNIT)............................................. 907
+8.9 Transmission Procedures............................................ 907
+9 PROFIBUS Layer 2 Interface......................................... 907
+9.1 FDL User - FDL Interface........................................... 907
+9.2 FMA1/2 User - FMA1/2 Interface..................................... 907
+10 Management (FMA1/2)................................................ 907
+10.1 General Description of FMA1/2 Functions............................ 907
+10.2 FDL - FMA1/2 Interface............................................. 907
+10.2.1 Overview of Services............................................... 907
+10.2.2 Overview of Interactions........................................... 908
+10.2.3 Detailed Specification of Services and Interactions................ 908
+10.2.3.1 Reset FDL.......................................................... 908
+10.2.3.2 Set Value FDL, Read Value FDL...................................... 908
+10.2.3.3 Fault FDL.......................................................... 908
+10.3 PhL - FMA1/2 Interface............................................. 908
+10.3.1 Overview of Services............................................... 908
+10.3.2 Overview of Interactions........................................... 909
+10.3.3 Detailed Specification of Services and Interactions................ 910
+10.3.3.1 Reset PhL.......................................................... 910
+10.3.3.2 Set Value PhL, Get Value PhL....................................... 910
+10.3.3.3 Event PhL.......................................................... 912
+10.4 Coding of the FDL and PhL Variables................................ 912
+10.4.1 Coding of the FDL-Variables........................................ 912
+11.4.2 Coding of the Variables............................................ 912
+10.4.3 List of Object Attributes.......................................... 914
+Appendix A (informative) .................................................... 915
+Examples of Realizations .................................................... 915
+A.1 Repeater........................................................... 915
+A.2 Structures of PROFIBUS Controllers................................. 915
+A.3 System with several Bus Lines to one Control Station............... 915
+A.4 Redundant Control Station.......................................... 915
+A.5 Bus Analysis / Diagnostic Unit (Bus Monitor)....................... 915
+A.6 Intrinsically safe Fieldbus with Power Supply...................... 915
+A.7 Message Rate, System Reaction Time and Token Rotation Time......... 916
+PAGE 888
+Page 888
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+1 Introduction
+This part describes, as already announced in the PROFIBUS Specification, Part 2
+Data Transmission, a further data transmission technique, consisting of the
+transmission medium (Physical Medium) and the accompanying Physical Layer. The
+connecting Data Link Layer and the management of the Physical Layer comply to
+the PROFIBUS Specification, except for the changes and additions described in
+this part.
+FMS
+  (PROFIBUS Spec., Part 5 and 6)
+DP
+(PROFIBUS Spec., Part 8)
+Data-Link-Layer (FDL)
+References to PROFIBUS Specification Part 3 and 4
+FDL-Phy-Interface
+(PROFIBUS Spec., Part 2) FDL-PhL-Interface
+Phy - Layer
+RS 485
+(PROFIBUS Spec., Part 2)
+Phy - Layer
+References to IEC 1158-2
+FMS : Fieldbus Message Specification
+DP : Decentralized Periphery
+FDL : Fieldbus Data Link Layer
+Figure 1: Relationship of this part to the other parts
+The interfaces to the Application Layer (FDL and FMA1/2) are specified as in
+PROFIBUS Specification Layer 2 Interface.
+The logical interface used between PhL and FDL is as defined in PROFIBUS
+Specification "Data Transmission". The protocol for the bus line, access and
+transmission complies to PROFIBUS Specification "Medium Access Methods" and
+"Transmission Protocol".
+The data transmission is defined according to IEC 1158-2 which enables in
+addition the intrinsic safe variant in the protection class "Intrinsic Safe" and
+power supply over the bus.
+Regarding the Medium Attachment Unit (MAU), the following transmission rate
+defined in IEC 1158-2, clause 11, is used:
+- 31.25 kbit/s, voltage mode and wire medium.
+The management assigned to the Application Layer and described in Part 7 shall
+take the Physical Layer variables of IEC 1158-2 and their associated ranges of
+values into account (see subclause 10.4 of this part).
+Applications in process automation (e.g. process industries) require a simple
+transmission medium (2 wire cable) in different topologies, such as line and
+tree. Furthermore, low power and low cost bus connections with real time
+behavior, i.e. with guaranteed response time, are necessary. Severe
+electromagnetic interference and explosive atmospheres may have to be dealt
+with.
+PAGE 889
+Page 889
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+This specification shall contribute to the low cost interconnection of digital
+field devices from different vendors in a distributed fieldbus system as well as
+towards ensuring reliable communication.
+2 Field of Application
+This specification defines functional, electrical and mechanical features of a
+serial fieldbus system for applications in process automation (e.g. process
+industries). The data transmission defined in this specification is the Physical
+Layer ’version 1’ (31.25 kbit/s, voltage mode, wire medium) of IEC 1158-2.
+3 Normative References
+This specification makes dated and undated references to specifications in other
+publications. These normative references are located at the respective points in
+the text and the publications are named accordingly. In case of fixed
+references, later changes or revised versions of these publications only belong
+to this specification if they are worked in through changes or revised versions.
+For undated references the last edition is valid.
+ISO 7498 : 1984 Information processing systems; Open Systems Intercon-
+nection; Basic Reference Model
+IEC 1158-2 :1993 Fieldbus standard for use in industrial control systems
+- Part 2: Physical Layer specification and service
+definition
+DIN EN 50020 Electrical apparatus for potentially explosive atmos-
+pheres - intrinsic safety "i"
+4 General
+4.1 Definitions
+The definitions of the PROFIBUS Specification and of IEC 1158-2 apply.
+4.2 Abbreviations
+Note that the Physical Layer is no longer abbreviated as ”PHY”, but as ”PhL” in
+accordance with IEC 1158-2. ”Ph-” is used as the prefix for service primitives.
+Abbreviations used :
+CRC Cyclic Redundancy Check
+DCE Data Communication Equipment
+DTE Data Terminal Equipment
+MAU Medium Attachment Unit
+MDS Medium Dependent Sublayer
+PhICI Physical Layer Interface Control Information
+Ph- Physical-
+PhL Physical Layer
+PhID Physical Layer Interface Data
+PhIDU Physical Layer Interface Data Unit
+PAGE 890
+Page 890
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+PhPCI Physical Layer Protocol Control Information
+SDF Start Delimiter Data Link
+SDL 1 Start Delimiter 1 Data Link
+SDL 2 Start Delimiter 2 Data Link
+SDL 3 Start Delimiter 3 Data Link
+SDL 4 Start Delimiter 4 Data Link
+SDL 5 Start Delimiter 5 Data Link
+TPTG Post-transmission gap time
+Refer also to IEC 1158-2 clause 4 as well as PROFIBUS Specification, Part 2,
+subclause 3.1.2.
+4.3 Basic Properties
+The same basic features shall apply as described in PROFIBUS Specification,
+Part 2, subclause 3.2.
+5 Characteristic Features
+Beside the requirements of the application field explained in subclause 3.3 of
+PROFIBUS Specification, Part 2, this specification has to enable intrinsically
+safe data transmission and power supply over the bus. This results in the
+characteristic features described as follows:
+Network topology: Linear bus, terminated at both ends, with or 
+without stubs and branches (tree)
+Medium, distances,
+number of stations: according to IEC 1158-2, subclause 11.2.2, rules 1 
+to 3, the following values shall apply:
+- non-intrinsically safe fieldbus with and without
+power supply: 2 to 32 devices
+- intrinsically safe fieldbus with power supply:
+limitations on the number of stations is the
+result of the limited electrical power that
+intrinsically safe circuits are able to transfer.
+- The distance between two stations, when the
+maximum number of stations is connected, is at
+most 1.9 km including the stubs.
+Transmission speed: 31.25 kbit/s for distances up to 1,900 m
+Redundancy: with second medium
+Transmission
+characteristics: Half duplex, synchronous, self-clocking, 
+Manchester-Biphase-L-Coding
+Addressing, station types,
+bus access, data transfer
+services, frame length,
+data integrity: according to PROFIBUS Specification, Part 2, 
+subclause 3.3
+PAGE 891
+Page 891
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+6 Scope
+The part of the specification is based on the architectural model, the bus
+access protocol and the transmission procedures as described in the PROFIBUS
+Specification "Data Link Layer".
+The data transmission technique of Layer 1 (Physical Layer, PhL) is based on the
+rules defined in IEC 1158-2, clause 11.
+The frame format builds on the synchronous Protocol Data Unit (Ph-PDU) described
+in clause 9 of IEC 1158-2. It consist of a Preamble, a Start Delimiter and an
+End Delimiter as well as the Layer 2 data (FDL-PDU). The data are coded and
+decoded according to the Manchester-Biphase-L-Code.
+The transmission protocol of Layer 2 as well as the Layer 1 management (FMA1)
+are defined according to IEC 1158-2, clauses 5 and 6.
+Appendix A explains possible structures for repeaters, fieldbus interfaces and
+systems with several fieldbus lines connected to a single master station.
+Guidelines on a redundant central control unit and a bus analyzer/diagnostic
+unit are added, too. Finally, the number of connectable stations for intrinsic
+safe fieldbus with power supply over the bus as well as the data transfer rate
+and the system reaction time are calculated for an example under consideration
+of the frame formats that have been changed by the integration of IEC 1158-2.
+7 Data Transmission (Physical Medium, Physical Layer)
+7.1 Electrical Characteristics
+The Physical Layer described in IEC 1158-2 clause 11 shall be used.
+Version 1: 31.25 kbit/s, voltage mode and wire medium (intrinsically safe
+Physical Layer)
+Repeater
+An extension of line length and an increase in the number of stations may be
+achieved by means of bi-directional amplifiers (called repeaters, see clause A.1
+of this part). The maximum number of repeaters between two stations is four. The
+following maximum values shall apply for 31.25 kbit/s and if the bus segments
+are in series (linear bus topology):
+- 31.25 kbit/s:
+1 Repeater: 3.8 km and 62 stations
+2 Repeater: 5.7 km and 92 stations (see figure 2)
+3 Repeater: 7.6 km and 122 stations
+4 Repeater: 9.5 km and 127 stations
+PAGE 892
+Page 892
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+M/S M/S M/S
+REP
+M/S M/SM/S
+M/S M/SM/S
+REP
+Section 1 maximum 31 Stations + 1 Repeater
+Section 3 maximum 31 Stations + 1 Repeater
+Section 2 maximum 30 Stations + 2 Repeaters
+Rt
+Rt
+Rt
+Rt
+Rt
+Rt
+Rt
+M/S Master/Slave Station
+REP Repeater
+Bus Terminator
+Figure 2: Repeater in Linear Bus Topology (cf Fig. 2 of Part 2)
+For a tree topology of segments the following maximum values shall apply at
+31.25 kbit/s:
+e.g.. 5 Repeaters: 7.6 km and 127  stations
+M/S M/S
+M/S M/S
+M/S
+REP
+REP
+REP
+REP
+Section 1
+Section 3
+Section 4
+Section 2
+max. 31 Stn
+max. 31 Stn
+Section 5
+max. 30 Stn
+max. 28 Stn
+max. 31 Stn
+RtRt Rt
+Rt Rt
+RtRtRtRt
+Rt
+M/S
+REP
+Section 6
+max. 31 Stn
+Rt
+Rt
+M/S Master/Slave Station
+REP Repeater
+Rt Bus Terminator
+Stn Stations
+Total number of
+Stations on all 
+Sections: 127
+Figure 3: Repeater in Tree Topology (cf Fig. 3 of Part 2)
+PAGE 893
+Page 893
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+7.2 Interface between Physical Layer (PhL) and Medium Access and Transmission
+Protocol (FDL)
+This clause gives an abstract definition of the Ph-Data service that is provided
+to the FDL-Layer by the Physical Layer. The Ph-Data service is for the receipt
+and transmission of data (one octet at a time).
+The execution of the interface and the control within a station are not fixed or
+stipulated.
+The following service primitives have been taken unchanged from IEC 1158-2 and
+have been repeated for clarity.
+Ph-DATA request (class, data)
+Ph-DATA indication (class, data)
+Ph-DATA confirmation (status)
+The parameter class specifies the Physical Layer Interface Control Information
+(PhICI) of the  Physical Layer Interface Data Unit (PhIDU). The following values
+are possible for the Ph-Data request primitive:
+a) START-OF-ACTIVITY
+b) DATA
+c) END-OF-DATA-AND-ACTIVITY
+For the Ph-DATA indication primitive the parameter class contains the following
+values:
+a) START-OF-ACTIVITY
+b) DATA
+c) END-OF-DATA
+d) END-OF-ACTIVITY
+e) END-OF-DATA-AND-ACTIVITY
+They are available to the interface between physical medium and medium access
+control protocol and transmission protocol.
+The parameter data specifies the Physical Layer Interface Data (PhID) of the
+Physical Layer Interface Data Unit (PhIDU). It consists of an octet Physical
+Layer User Data which has to be sent (request) or received (indication).
+The parameter status marks either the success or a detected failure of the
+transmission.
+The Ph-DATA confirm primitive marks the end of a transmission. It is passed on
+to the FDL-controller after a transmission has been completed and it indicates
+thereby the Physical Layer’s readiness to receive the next Ph-Data request
+primitive.
+The Physical Layer Data service with primitives as well as the definition of the
+parameter values are described in IEC 1158-2, clause 5.
+PAGE 894
+Page 894
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+7.3 Redundancy of Physical Layer and Medium (optional)
+To increase the reliability, a redundant transmission line is allowed by
+PROFIBUS "Data Transmission". Its configuration shall conform to the specifica-
+tions stipulated in IEC 1158-2, subclause 11.2.2, rule 9.
+In principle, the telegrams have to be sent simultaneously by several
+transmitters (usually more than two). A receiver is selected upon each
+reception. The parameter setting of the transmitter channels and the receiver
+channels is carried out by means of the Ph-SETVALUE request via the Physical
+Management Interface.
+The selection of the appropriate receiver channel is carried out by Layer 2
+(FDL) by watching over activity on the transmission lines independently of other
+stations. As described in Part 2, subclause 4.3, the following main criteria
+apply for switching from a given receiver channel:
+- Two or more invalid frames are received in succession.
+Invalid means: invalid format and invalid CRC.
+- Time-out TTO expired, see subclause 8.1.7 of this part.
+- No Syn Time T SYN was notified during a Synchronization Interval Time T SYNI,
+see subclause 8.1.7 of this part.
+Dependent on the execution, further switch conditions may be selected.
+8 Medium Access Methods and Transmission Protocol (Data Link Layer, FDL)
+The medium access method and the transmission protocol (Data Link Layer, FDL),
+which are described in the PROFIBUS Specification "Medium Access Methods" and
+"Transmission Protocol", shall apply for this part, except for the deviations
+specified in the following corresponding subclauses. Due to the extensions to
+the frame formats (IEC 1158-2 synchronous transmission protocol), the timer
+calculations have to be modified in part as described in subclause 8.1.7 of this
+part.
+8.1 Transmission Procedures and FDL Controller
+8.1.1 Token Procedures
+The specifications of subclause 4.1.1 of Part 4 shall apply.
+8.1.1.1 Token Passing
+The specifications of subclause 4.1.1.1 of Part 4 shall apply .
+8.1.1.2 Addition and Removal of Stations
+The specifications of subclause 4.1.1.2 of Part 4 shall apply
+8.1.1.3 (Re)Initialization the Logical Token Ring
+The specifications of subclause 4.1.1.3 of Part 4 shall apply
+PAGE 895
+Page 895
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+8.1.1.4 Token Rotation Time
+The specifications of subclause 4.1.1.4 of Part 4 shall apply.
+8.1.1.5 Message Priorities
+The specifications of subclause 4.1.1.5 of Part 4 shall apply.
+8.1.2 Acyclic Request or Send / Request Mode
+The specifications of subclause 4.1.2 of Part 4 shall apply.
+8.1.3 Cyclic Send / Request Mode
+The specifications of subclause 4.1.3 of Part 4 shall apply.
+8.1.4 Request FDL Status of all Stations (Live List)
+The specifications of subclause 4.1.4 of Part 4 shall apply.
+8.1.5 Status of the FDL Controller
+The specifications of subclause 4.1.5 of Part 4 shall apply.
+8.1.6 FDL Initialization
+The specifications of subclause 4.1.6 of Part 4 shall apply for FDL
+initialization. Because of the different Ph Layer complying to IEC 1158-2, the
+operational parameter TQUI (Transmitter fall Time / Repeater switch time) shall
+be renamed post-transmission gap.
+8.1.7 Timer Operation
+The following times T are measured in bits as in the PROFIBUS Specification
+"Medium Access Methods" and "Transmission Protocol". A time t in seconds (s)
+shall therefore be divided by the Bit Time tBIT.
+Bit-Time tBIT:
+The Bit Time tbit is the time which elapses during the transmission of one bit.
+It is equivalent to the reciprocal value of the transmission rate:
+tBIT  =1 / Transmission Rate (bit/s) (1)
+Syn Time TSYN:
+The minimum time interval during which each station shall receive no activity
+from the transmission medium before it may accept the begin of a request
+(request or send/request) or token frame.
+The Syn Time corresponds to the post-transmission gap time that is defined in
+IEC 1158-2, clause 9. It is at least 4 bit and may be increased by FMA1/2 up to
+32 bit.
+PAGE 896
+Page 896
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+TSYN = TPTG = Post-transmission Gap Time = TQUI
+TSYN = 4 to 32 bit (2)
+      Ack./Res./Token             Send/Req./Token
++===============+---------->+===============+
+TSYN =
+TPTG =
+TQUI
+Figure 4: Syn-Time TSYN
+Syn Interval Time TSYNI:
+The Synchronization Interval Time T SYNI  serves to monitor the maximum allowed
+time interval between two consecutive receptions of Ph-DATA indication
+primitives of the classes: START-OF-ACTIVITY and END-OF-ACTIVITY (or END-OF-
+DATA-AND-ACTIVITY), in order to detect "permanent transmitters".
+This time comprises two complete message sequences, each of  which consists of
+two PDUs of maximum length and the associated maximum Physical Layer Control
+Information (PhPCI: Preamble, Start Delimiter, End Delimiter) and the maximum
+Syn Time (post-transmission gap).
+Three Ph-Data indications of class END-OF-ACTIVITY (or END-OF-DATA-AND-ACTIVITY)
+may fail thereby.
+TSYNI = 2 · ( 2 · (TSYN + PhPCI + TFDL)) +64*) (3)
+*) The constant 64 constitutes a safety margin.
+TFDL = maximum length of a FDL frame (see clauses 8.5 and 8.6 of this part)
+TSYNI = 2 · ( 2 · (32 + 80 + 255 · 8))+64 = 8 672 bit (4)
+Station Delay Time TSDx:
+The Station Delay Time TSDX  is the period of time which may elapse between a Ph-
+DATA request primitive (class: END-OF-DATA-AND-ACTIVITY) or Ph-DATA indication
+primitive (class: END-OF-ACTIVITY or END-OF-DATA-AND-ACTIVITY) until the
+following Ph-DATA request primitive (class: START-OF-ACTIVITY) or a Ph-DATA
+indication primitive (class: START-OF-ACTIVITY) (relative to the transmission
+medium, i.e. including the Physical Layer Entity).
+The following three station delays are defined:
+1) Station Delay of Initiator (station transmitting request or token frame)
+TSDI = tSDI / tBIT (5)
+2) Minimum Station Delay of Responders (station that acknowledges or responds)
+min TSDR = min tSDR / tBIT (6)
+PAGE 897
+Page 897
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+3) Maximum Station Delay of Responders
+max TSDR = max tSDR / tBIT (7)
+Quiet Time TQUI = TPTG:
+The Transmitter Fall Time or Repeater Switch Time corresponds to the Post-
+transmission Gap Time (TSYN). The following shall apply:
+TQUI = TPTG = TSYN (8)
+Ready Time TRDY:
+The Ready Time TRDY is the time within which a master station shall be ready to
+receive an acknowledgment or response after transmitting a request. The Ready
+Time is defined as follows:
+TRDY < min TSDR (9)
+In order to fulfill this condition it may be necessary to prolong TSDR.
+While disconnecting the transmitter the Quiet Time shall be considered. The
+readiness may start only after this time:
+TQUI = TPTG = TSYN < TRDY (10)
+In order to fulfill this condition the T SDR  shall be increased according to
+equation (9) if necessary.
+Safety Margin TSM:
+The following time interval is defined as Safety Margin TSM:
+TSM = 2 bit + 2 · TSET (11)
+TSET is the set-up time which expires from the occurrence of an event
+(e.g. Ph-Data confirm) until the execution of the necessary reaction:
+TSET = tSET / tBIT (12)
+Idle Time TID:
+The Idle Time T ID is the time which expires at the initiator after a Ph-DATA
+indication primitive (class: END-OF-ACTIVITY or END-OF-DATA-AND-ACTIVITY) until
+reception of a new frame with Ph-DATA request primitive (class: START-OF-
+ACTIVITY) or after passing a Ph-DATA request primitive (class: END-OF-DATA-AND-
+ACTIVITY) with a Ph-DATA confirm primitive to transmit a frame which is not to
+be acknowledged until passing a new Ph-DATA request primitive (class: START-OF-
+ACTIVITY) for transmitting the next frame. The Idle Time shall be at least the
+Syn Time plus the Safety Margin T SM  (see description of Idle Time in subclause
+4.1.7 of Part 4).
+After an acknowledgment, response or token frame the Idle Time is defined as
+follows:
+PAGE 898
+Page 898
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+           Ack./Res./Token
+Responder: +=============+
+                  !
+                   !
+                    !                           Send/Req./Token
+Initiator:  +=============+-------------------->+============+
+                       a) +-:-:->- - ->----->::::>
+                          min TSDR<TSDI<(TSYN+TSM)
+                    or b) +----->::::>-:-:->- - ->
+                          (TSYN+TSM)<min TSDR<TSDI
+                    or c) +----->::::>- - ->-:-:->
+                          (TSYN+TSM)<TSDI<min TSDR
+TID1 = max (TSYN + TSM, min TSDR, TSDI) (13)
+(The maximum value shall be used in each case)
+Figure 5: Idle Time TID1 (cf Fig. 3 of Part 4)
+After a request frame, which is not to be acknowledged, the following Idle Time
+shall apply (cf also Fig. 4 of Part 4):
+TID2 = max (TSYN + TSM, max TSDR) (14)
+(The maximum value shall be used in each case)
+Transmission Delay Time TTD:
+The Transmission Delay Time T TD is the maximum time which elapses on the
+transmission medium between transmitter and receiver when a frame is
+transmitted. Delay times of repeaters shall be considered if necessary. The
+Transmission Delay Time is defined as follows:
+TTD = tTD / tBIT (15)
+Compliant to IEC 1158-2, clause 11, rule 4, the value of 20 bit times shall not
+be surpassed.
+Slot Time TSL:
+The Slot Time T SL is the maximum time the initiator waits after passing a Ph-
+DATA request primitive (class: END-OF-DATA-AND-ACTIVITY) for transmitting a
+request frame from the Ph-DATA confirm primitive until receiving the first Ph-
+DATA indication primitive (class: DATA) as an indication of receiving the
+immediate acknowledgment or answer. Furthermore, T SL is the maximum time the
+initiator waits for a Ph-DATA indication primitive (class: DATA) after the token
+frame as reaction to receiving a frame from the token receiver. Theoretically
+two Slot Times are distinguished (see description of Slot Time in subclause
+4.1.7 of the Part 4, Fig. 5 and Fig. 6). After a request frame (request or
+send/request) the following Slot Time shall apply:
+PAGE 899
+Page 899
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+TSL1 = 2 · TTD + max TSDR  + TPRE + 16 bit + TSM (16)
+After a token frame the following Slot Time shall apply:
+TSL2 = 2 · TTD + max TID1  + TPRE + 16 bit + TSM (17)
+TPRE: Preamble period (see IEC 1158-2)
+Note: In order to simplify the realization, only the longer Slot Time is used in
+the system. This does not influence the system reaction time negatively,
+as the Slot Time is merely a monitoring time.
+TSL = max (TSL1, TSL2) (18)
+(The maximum value shall be used in each case)
+Time-out TTO:
+The time-out TTO  serves to monitor the master and slave stations’ line activity
+and Idle Time. Monitoring starts either immediately after the PON, in the
+"Listen_Token" or "Passive_Idle"  state or later after the reception of a Ph-
+DATA indication primitive (class: END-OF-ACTIVITY or END-OF-DATA-AND-ACTIVITY).
+It finishes upon receipt of a Ph-DATA indication primitive (class: START-OF-
+ACTIVITY) for reception of a following frame. If the Idle Time reaches the Time-
+out value, the bus is regarded as inactive (error case, e.g. due to lost token).
+The Time-out is defined as follows (cf also Part 4, subclause 4.1.7 "Time-out"):
+TTO = 6 · TSL + 2 · n · TSL (19)
+For master stations: n = station address (0 to 126)
+For slave stations: n = 130, independent of their station address
+GAP Update Time TGUD:
+The specifications of the subclause 4.1.7 of Part 4 shall apply.
+8.2 Cycle and System Reaction Times
+8.2.1 Token Cycle Time
+Similar to PROFIBUS Specification "Medium Access Methods" and "Transmission
+Protocol", the following shall apply for the Token Cycle Time TTC:
+TTC = TTF + TTD + TID (20)
+Due to the frame character (cf subclause 9.5.1 of this part) and the changed
+frame format (cf subclauses 8.6 and 8.7), the Token Frame Time T TF is 64 bit
+with a preamble of 8 bit.
+Furthermore, it shall be noted that only the transmission speed 31.25 kbit/s may
+be selected.
+PAGE 900
+Page 900
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+8.2.2 Message Cycle Time
+The following shall apply for the Message Cycle Time TMC :
+TMC = TS/R + TSDR + TA/R + TID + 2 · TTD (21)
+The specifications for the Message Cycle Time stipulated in the subclause 4.2.2
+of the Part 4 shall apply except for the following cases:
+The PDU transmission times (T S/R, T A/R) are determined by the number of PDU
+octets.
+It follows from this that:
+TS/R = a · 8 bit a = number of octets in Send/Request PDU
+TA/R = b · 8 bit b = number of octets in Ack/Response PDU
+Example:
+a = 9 for the Request PDU (1 octet Preamble):
+TS/R =72 bit
+b = 62 for the Response PDU ( 1 octet Preamble, 50 octet DATA_UNIT):
+TA/R = 496 bit
+8.2.3 System Reaction Times
+The specifications for the System Reaction Times stipulated in the subclause
+4.2.3 of Part 4, shall apply.
+8.3 Error Control Procedures
+As described in Part 4, subclause 4.3, errors in the line protocol (see IEC
+1158-2, clause 9) and in the medium access protocol, such as erroneous start
+octets and CRC octets, frame length, response times etc. may result in the
+specified station reactions.
+8.4 Timers and Counters
+As explained in subclause 4.4 of Part 4, the following timers are needed to
+measure the Token Rotation Time and to realize the monitor timers:
+Token Rotation Timer, Idle Timer, Slot Timer, Time-out Timer, Syn Interval Timer
+and GAP Update Timer.
+Token Rotation Timer: The functionality of this timer is as defined in PROFIBUS
+Specification "Medium Access Methods" and "Transmission Protocol".
+Idle Timer: This timer monitors the idle state T PTG = T SYN = T QUI on the bus
+line. The Idle Timer in the master station with the token is loaded with T ID1 or
+TID2 depending on the data transmission service (cf subclause 9.1.7 of this
+part). The timer is decremented every bit time, when after a Ph-DATA request
+primitive (class: END-OF-DATA-AND-ACTIVITY) either the Ph-DATA confirm primitive
+at the transmitter or the Ph-DATA indication primitive (class: END-OF-ACTIVITY
+or END-OF-DATA-AND-ACTIVITY) at the receiver is transferred. A new request or a
+new token frame may be transmitted only after expiration of the timer.
+Slot Timer: After a request from or a token transfer by a master station, this
+timer of the master station monitors whether the receiving station responds or
+becomes active within the defined Slot Time T SL. The timer is initialized with
+PAGE 901
+Page 901
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+TSL and is decremented every bit time after each transmission of a frame. This
+frame transmission is indicated by a Ph-DATA confirm primitive after transfer of
+a Ph-DATA request primitive (class: END-OF-DATA-AND-ACTIVITY). If the timer
+expires before a frame has been received, as indicated by a Ph-DATA indication
+primitive (class: START-OF-ACTIVITY), an error has occurred. As a result of that
+a retry or a new message cycle is initiated.
+Time-out Timer:  This timer serves to monitor the bus activity at master and
+slave stations. After transfer of a Ph-DATA request primitive (class: END-OF-
+DATA-AND-ACTIVITY) and return of a Ph-DATA confirm primitive or after receiving
+a Ph-DATA indication primitive (class: END-OF-ACTIVITY or END-OF-DATA-AND-
+ACTIVITY), the timer is loaded with a multiple of the Slot Time (cf subclause
+9.1.7 of this part) and is decremented every bit time as long as no Ph-DATA
+indication primitive (class: START-OF-ACTIVITY) has been received. If the timer
+expires, a fatal error has occurred, which for the master station causes a
+(re)initialization. The FMA1/2 User of the slave or master station respectively
+receives a time-out notification (cf subclause 5.2.3.3 of Part 3).
+Syn Interval Timer:  Master and slave stations use this timer to monitor the
+transmission medium for „permanent transmitters“. After every Ph-DATA indication
+primitive (class: START-OF-ACTIVITY) the timer is loaded with the value T SYNI
+(cf subclause 9.1.7 of this part) and decremented every bit time, as long as no
+Ph-DATA indication primitive (class: END-OF-ACTIVITY or END-OF-DATA-AND-
+ACTIVITY) has been received. If the timer expires, an error of the transmission
+medium has occurred. The FMA1/2 User receives a corresponding notification
+(cf subclause 5.2.3.3 of Part 3).
+GAP Update Timer: This timer operates in the same way as described in subclause
+4.4 of Part 4.
+The specifications stipulated in subclause 4.4 of Part 4 shall apply for the
+optional counters.
+8.5 Frame Structure
+Each FDL frame (FDL PDU) consists of a Start Delimiter Data Link, an Information
+Field and a Cyclic Redundancy Check (CRC). The Information Field is divided into
+an Address Field and a Control Field. Additionally, a Data Field may exist. The
+Information Field is Null in the Short-Acknowledgment.
+PAGE 902
+Page 902
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+SDF DA/SA FC DATA_UNIT CRC
+Information Field Length = L
+FDL Telegram
+ 1,4       0,2         0,1       0 bis 246            2  Octets
+Notation herein:
+SDF1 Start Delimiter Data Link, Length 1 or 4 octets
+DA Destination Address - Information Field
+SA Source Address - Information Field
+FC Frame Control - Information Field
+DATA_UNIT Data Field, Length (L-3), maximum 246 octets
+CRC Cyclic Redundancy Check, Length 2 octets
+Figure 6: FDL frame format
+8.5.1 Frame Character
+The Start Delimiter Data Link, the Information Field and the CRC consist of a
+number of octets of 8 bit each. Each FDL octet is structured as follows:
+b1 b2 b3 b4 b5 b6 b7 b8
+MSB LSB
+2 7
+2 0
+123 4567 8Transmitted
+Bit Sequence
+Information
+sig. Bit
+Figure 7: Octet Structure (cf Fig. 9 of Part 4, subclause 4.5.1)
+8.6 Frame Formats
+Based on the specifications of subclause 4.6 of Part 4 and its subclauses the
+different frame formats are described according to the frame format explained in
+subclause 9.5 of this part.
+The figures contained in the following clauses do not show any sequences
+(request --> acknowledgment or response) but frame formats of the same category
+(Hd = 4; fixed length with/without data field and variable length), i.e. request
+frames may be followed by different acknowledgment or response frames
+(cf subclause 8.9 of this part).
+                        
+1 The Start Delimiter Data Link may not be confused with the Start Delimiter SD
+of the Physical Layer.
+PAGE 903
+Page 903
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+8.6.1 Frames of fixed Length with no Data Field
+SDL1 Information Field CRC
+L
+A)Request Frame
+SDL1 Information Field CRC
+L
+B)Acknowledgement Frame
+C)Short Acknowledgement Frame
+SDL5 CRC
+Notation herein:
+SDL1 Start octet 1 (Start Delimiter 1 Data Link), Code: 10H
+SDL5 Start octet 5 (Start Delimiter 5 Data Link), Code: E5H
+CRC Cyclic Redundancy Check, 2 octets
+L Information Field Length, fixed number of octets: L = 3
+Information Field cf Part 4, subclause 4.6.1
+Figure 8: Frames of fixed Length with no Data Field (cf Fig. 10 of Part 4)
+Transmission Rules
+Beside the transmission rules of the Ph Layer stipulated in IEC 1158-2,
+clause 9, the receiver shall check the DA/SA- and CRC octets for each frame. If
+the check produces a negative result the whole frame shall be discarded.
+PAGE 904
+Page 904
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+9.6.2 Frames of fixed Length with Data Field
+L
+A)Send/Request Frame
+B)Response Frame
+SDL3 Information Field CRC
+L
+SDL3 Information Field CRC
+Notation herein:
+SDL3 Start Delimiter 3 Data Link, Code: A2H
+CRC Cyclic Redundancy Check, 2 octets
+L Information Field Length, fixed number of octets: L = 11
+Information Field cf Part 4, subclause 4.6.2
+Figure 9: Frames of fixed Length with Data Field (cf Fig. 11 of Part 4)
+Transmission Rules
+The same transmission rules shall apply as for frames of fixed length with no
+Data Field (cf subclause 9.6.1 of this part)
+8.6.3 Frames with variable Data Field Length
+A)Send/Request Frame
+B)Response Frame
+L
+SDL2 Information Field CRCLE LEr SDL2
+L
+SDL2 CRCLE LEr SDL2 Information Field
+Notation herein:
+SDL2 Start Delimiter 2 Data Link, Code: 68H
+LE Length, Value: 4 to 249
+LEr Length (repeated)
+CRC Cyclic Redundancy Check, 2 octets
+L Information Field Length, variable number of octets: L = 4 to 249
+Information Field cf Part 4, subclause 4.6.3
+Figure 10: Frames with variable Data Field Length (cf Fig. 12 of part 4)
+PAGE 905
+Page 905
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+Transmission Rules
+The same transmission rules as for frames of fixed length with no data field
+shall apply (cf subclause 9.6.1 of this part). In addition, the receiver shall
+verify if LE and Ler coincide. The information octets shall be counted from the
+Destination Address (DA) up to the Cycling Redundancy Check and shall be
+compared with LE.
+8.7 Token Frame
+SDL4 DA CRCSA
+Notation herein:
+SDL4 Start Delimiter 4 Data Link, Code: DCH
+DA Destination Address
+SA Source Address
+CRC Cyclic Redundancy Check, 2 octets
+Figure 11: Token Frame (cf Fig. 13 of Part 4)
+Transmission Rules
+The same transmission rules as for frames of fixed length with no data shall
+apply (cf subclause 9.6.1 of this part).
+8.8 Length, Address, Control and Check Octet
+8.8.1 Length Octet (LE)
+The length octet described in subclause 4.7.1 of Part 4 shall apply.
+8.8.2 Address Octet (DA/SA)
+The address octet described in subclause 4.7.2 of Part 4 shall apply.
+8.8.2.1 Link Service Access Point (LSAP)
+The Link Service Access Point (LSAP) described in subclause 4.7.2.2 of Part 4
+shall apply.
+8.8.3 Control Octet (FC)
+The control octet described in subclause 4.7.3 of Part 4 shall apply.
+8.8.4 Check Octet (FCS)
+In contrast to PROFIBUS Specification "Medium Access Methods" and "Transmission
+Protocol" a Cyclic Redundancy Check (CRC) is stipulated for the frames to be
+transmitted. The CRC is realized by calculating and appending a check field of
+16 bit (2 octets). The calculation and analysis of the check field is realized
+as follows:
+PAGE 906
+Page 906
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+on the transmitting side
+the message to be transmitted (without CRC), the polynomial necessary for
+calculating the CRC and the composite message (including CRC) shall be
+considered as vectors M(X), F(X) and D(X) of dimensions k, n-k and n
+respectively.
+The message vector M(X) shall be defined to be
+M(X) = m1Xk-1 + m2Xk-2 + ... + mk-1X1 + mk (22)
+and the check field F(X) shall be defined to be:
+F(X) = f n-k-1Xn-k-1 + ... + f0 (23)
+      = f15X15 + ... + f0
+The composite vector D(X) for the complete message shall be constructed
+from the message and the CRC vector and shall be defined to be:
+D(X) = M(X)X n-k + F(X) (24)
+     = m 1Xn-1+m2Xn-2+ ... +mkXn-k+fn-k-1Xn-k-1+ ... +f0
+     = m 1Xn-1 + m2Xn-2 + ... + mkX16+f15X15+ ... +f0
+The check field is the remainder upon division of F(X) by the generator
+polynomial G(X). The remainder is calculated as follows:
+F(X) = L(X)(Xk+1) + M(X)Xn-k (mod G(X)) (25)
+where G(X) is the generator polynomial defined as:
+G(X) = X n-k + gn-k-1Xn-k-1 + ... + 1 (26)
+= X16 + X12 + X11 + X10 + X8 + X7 + X6 + X3 + X2 + X + 1
+and L(X) is the maximal weight polynomial (all 1s) defined as:
+L(X) = 
+x
+x
+nk− +
++
+1
+1
+= Xn-k-1 + Xn-k-2 + ... + X + 1   (27)
+= X15 + X14 + X13 + X12 + ... + X2 + X + 1
+The Cyclic Redundancy Check defined by means of the generator polynomial
+G(X) enables a Hamming Distance Hd = 4 for message lengths shorter than
+344 octets and Hd = 5 for lengths shorter than 15 octets.
+on the receiver side:
+The received message consists of an octet sequence that is composed of the
+actual message and the check field. It shall be considered as a vector
+V(X) of dimension u :
+PAGE 907
+Page 907
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+V(X) = v1Xu-1 + v2Xu-2 + ... + vu-1X + vu (28)
+The remainder R(X) of V(X) is computed in the same way as for the
+transmission side:
+R(X) = L(X)X u + V(X)Xn-k (mod G(X))  (29)
+= rn-k-1Xn-k-1 + ... + r0
+If no error has occurred during message transmission, R(X) is equal to a
+constant remainder polynomial given by:
+Rok(X) = L(X)Xn-k (mod G(X)) (30)
+ = X15 + X14 + X13 + X9 + X8 + X7 + X4 + X2
+The initial value of the remainder that has to be computed at the receiver
+side shall be the hexadecimal value 0FFFF.
+8.8.5 Data Field (DATA_UNIT)
+The data field described in subclause 4.7.5 of Part 4 shall apply.
+8.9 Transmission Procedures
+The transmission procedures described in subclause 4.8 of Part 4 shall apply.
+9 PROFIBUS Layer 2 Interface
+9.1 FDL User - FDL Interface
+The FDL User - FDL Interface described in subclause 4.1 of Part 3 shall apply.
+9.2 FMA1/2 User - FMA1/2 Interface
+The FMA1/2 User - FMA1/2 Interface described in subclause 4.2 of Part 3 shall
+apply.
+10 Management (FMA1/2)
+10.1 General Description of FMA1/2 Functions
+The general description of FMA1/2 functions described in subclause 5.1 of Part 3
+shall apply.
+10.2 FDL - FMA1/2 Interface
+The FDL - FMA1/2 Interface described in subclause 5.2 of Part 3 shall apply.
+10.2.1 Overview of Services
+The services described in subclause 5.2.1 of Part 3 shall apply.
+PAGE 908
+Page 908
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+10.2.2 Overview of Interactions
+The interactions described in subclause 5.2.2 of Part 3 shall apply.
+10.2.3 Detailed Specification of Services and Interactions
+The specification of services and interactions described in subclause 5.2.3 of
+Part 3 shall apply.
+10.2.3.1 Reset FDL
+The service described in subclause 5.2.3.1 of Part 3 Reset FDL shall apply.
+10.2.3.2 Set Value FDL, Read Value FDL
+Due to the integration of IEC 1158-2, the specifications of the services Set
+Value FDL and Read Value FDL, which are defined in the subclause 5.2.3.2 of Part
+3, shall be extended with the following associated baud rate parameter
+(cf tables 28 and 29 of Part 3):
+- Baud_rate: 31.25 kbit/s
+10.2.3.3 Fault FDL
+The specifications of the service Fault FDL defined in subclause 5.2.3.3 of Part
+3 shall apply.
+10.3 PhL - FMA1/2 Interface
+The interface described in subclause 5.3 of Part 3 shall apply to describe the
+interface between PhL and FMA1/2.
+10.3.1 Overview of Services
+The Ph Layer, as described in IEC 1158-2, clause 6, provides the following
+services to FAM1/2
+- Reset PhL
+- Set Value PhL
+- Get Value PhL
+- Event PhL
+The services shall have the same meaning as described in subclause 5.3.1 of
+Part 3. The Read Value PHY corresponds to the Get Value PhL.
+PAGE 909
+Page 909
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+10.3.2 Overview of Interactions
+The following service primitives shall apply at the PhL - FMA1/2 Interface:
+Service Primitive permissible for the following 
+users
+Reset PhL Ph-RESET request Master and Slave
+Set Value PhL Ph-SETVALUE request Master and Slave
+Ph-SETVALUE confirm Master and Slave
+Get Value PhL Ph-GETVALUE request Master and Slave
+Ph-GETVALUE confirm Master and Slave
+Event PhL Ph-EVENT indication Master and Slave
+Temporal Relationships of Service Primitives:
+Master/Slave
+Station 1
+Master/Slave
+Station n
+FMA1/2 PhL
+Ph-RESET req
+Figure 12: Reset - PhL - Service
+Master/Slave
+Station 1
+Master/Slave
+Station n
+FMA1/2 PhL
+Ph-xxxxx req
+Ph-xxxxx con
+Figure 13: Set Value and Get Value PhL Service (cf Fig. 14 of Part 3)

@@ -1,0 +1,57 @@
+Modbus.org 
+MB-TCP-Security-v36_2021-07-30 
+                                                  17 
+ 
+ 
+R-34: mbaps devices MUST NOT negotiate down to TLS v1.1, TLS v1.0, or SSL V3.0. 410 
+ 411 
+R-35: mbaps devices MUST NOT negotiate the use SSL v2.0 and SSL v1.0 in conformance with 412 
+[RFC6176]. 413 
+ 414 
+10.2 TLS v1.2 Cryptography 415 
+10.2.1 General 416 
+R-36: mbaps Devices SHOULD provide a counter mode cipher suite. 417 
+ 418 
+Counter mode cipher suites include  419 
+ TLS_RSA_WITH_AES_128_GCM_SHA256, {0x00, 0x9C} 420 
+ TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256, {0xC0, 0x2B} 421 
+ 422 
+R-37: mbaps Devices MUST NOT negotiate the cipher suite, TLS_NULL_WITH_NULL_NULL 423 
+ 424 
+R-38: Any cipher suite used by mbaps Devices and negotiated in a TLS Handshake Protocol 425 
+exchange MUST be listed at IANA’s TLS Cipher Suite Registry in the [TLS-PARAMS]. 426 
+ 427 
+10.2.2 TLS Key Exchange 428 
+ 429 
+R-39: mbaps Devices MUST provide TLS Client-Server key exchange based-on RSA technology 430 
+as specified by the mandatory cipher suite and described in [RFC 5246]. 431 
+ 432 
+R-40: mbaps Devices SHOULD provide TLS Client-Server key exchange based on ECC 433 
+technology. 434 
+ 435 
+R-61: mbaps Devices using ECC technology MUST support at least P-256 NIST curve. 436 
+ 437 
+R-62: mbaps Devices using ECC technology MUST support at least the minimum cipher suite of 438 
+TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256 439 
+ 440 
+R-63: mbaps Devices using ECC technology MUST specify the curves used in their ClientHello 441 
+using the Supported Elliptic Curves extension in [RFC4492] 442 
+ 443 
+R-64: mbaps Devices using ECC technology MUST specify the point format used in their 444 
+ClientHello using the Supported Point Format extension in [RFC4492]  445 
+ 446 
+10.2.3 TLS Authentication 447 
+Authentication against trust anchors may be done using self signed device certificates. It is 448 
+recommended to use certificates signed by a Certificate Authority for authentication.  449 
+ 450 
+Session resumption using session tickets or resuming session IDs should be supported to reduce 451 
+the handshake time of a connection.Session resumption using session IDs is preferred. In 452 
+session resumption it is the responsibility of the server to cache and maintain session information 453 
+for later use. It is more well supported and places less demand on clients to manage session 454 
+information with their peer.  455 
+ 456 
+Session tickets place the burden of session information on the client. This information is 457 
+encrypted by the server and transmitted to the client. On new session, this information is 458 
+transmitted back to the server and used to re-establish a connection. Less server resources are 459 
+needed to accomplish this but network resources are wasted and due to the transmission of 460 
+information it takes longer to re-establish a connection. 461 

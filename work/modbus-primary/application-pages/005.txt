@@ -1,0 +1,40 @@
+MODBUS Application Protocol Specification V1.1b3 Modbus 
+April 26, 20 12 http://www.modbus.org  5/50 
+ Note : It is desirable to manage a time out in order not to indefinitely wait for an answer which will perhaps 
+never arrive. 
+The size of the MODBUS PDU is limited by the size constraint inherited from the first 
+MODBUS implementation on Serial Line network (max. RS485 ADU = 256 bytes).  
+Therefore: 
+MODBUS  PDU for serial line communication =  256 - Server address (1 byte) - CRC (2 
+bytes) =  253 bytes . 
+Consequently: 
+RS232 / RS485 ADU  = 253 bytes + Server address (1 byte) + CRC (2 bytes) = 256 bytes . 
+TCP MODBUS ADU = 253 bytes + MBAP (7 bytes) = 260 bytes . 
+The MODBUS protocol defines three PDUs. They are : 
+ MODBUS Request PDU, mb_req_pdu
+ MODBUS Response PDU, mb_rsp_pdu
+ MODBUS Exception Response PDU, mb_excep_rsp_pdu
+The mb_req_pdu is defined as: 
+mb_req_pdu = {function_code, request_data},      where 
+function_code = [1 byte] MODBUS function code, 
+request_data = [n bytes] This field is function code dependent and usually  
+ contains information such as variable references, 
+ variable counts, data offsets, sub-function codes etc. 
+The mb_rsp_pdu is defined as: 
+mb_rsp_pdu = {function_code, response_data},      where 
+function_code = [1 byte] MODBUS function code 
+response_data = [n bytes] This field is function code dependent and usually  
+ contains information such as variable references, 
+ variable counts, data offsets, sub-function codes, etc. 
+The mb_excep_rsp_pdu is defined as: 
+mb_excep_rsp_pdu = {exception-function_code, request_data},      where 
+exception-function_code = [1 byte] MODBUS function code + 0x80 
+exception_code = [1 byte] MODBUS Exception Code Defined in table 
+ "MODBUS Exception Codes" (see section 7 ). 
+4.2 Data Encoding 
+ MODBUS uses a ‘big -Endian’ representation fo r addresses and data items. This means
+that when a numerical quantity larger than a single byte is transmitted, the most significant
+byte is sent first. So for example
+Register size  value  
+16 - bits 0x1234  the first byte sent is  0x12 then 0x34 
+ Note : For more details, see [1] . 

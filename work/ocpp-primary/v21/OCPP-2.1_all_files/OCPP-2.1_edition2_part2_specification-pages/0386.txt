@@ -1,0 +1,51 @@
+K27 - Smart Charging with EMS and LocalGeneration
+New in OCPP 2.1
+No. Type Description
+1 Name Smart Charging with EMS and LocalGeneration
+2 ID K27
+3 Objective(s) To show how locally available capacity can be taken into account.
+4 Description In the situation where more power is available for the Charging Station due to the local power
+generation which is not known by CSMS, e.g. from solar panels, this extra capacity can be
+specified in a charging profile of type LocalGeneration.
+In this use case 2 kW is available from local solar panels on top of a 5 kW TxDefaultProfile.
+Site
+Local Generation
+Charging
+Station
+EV
+EMS
+Grid_connection
+CSMS
+LocalGeneration(2 kW)
+TxDefaultProfile( 5 kW)
+NotifyChargingLimit(2 kW,
+isLocalGeneration = true)
+7 kW
+Actors Charging Station, CSMS, EMS
+Scenario description Using a predicted local generation schedule
+1. Assume CSMS has set a ChargingProfile with chargingProfilePurpose =
+TxDefaultProfile, chargingProfileKind = Relative and a chargingSchedule with
+chargingRateUnit = W and 1 chargingSchedulePeriod that defines a limit = 5000.
+2. An external energy management system provides a schedule for the local generation by
+means of a protocol. The schedule contains two periods: first period for 2 kW, second
+period for 1 kW. (Duration of the periods is required, but not relevant to this example.)
+Charging Station represents this input internally as a ChargingProfile with
+chargingProfilePurpose = LocalGeneration, chargingProfileKind = Absolute and a
+chargingSchedule with chargingRateUnit = W and 2 chargingSchedulePeriods that define a
+limit = 2000 and a limit = 1000.
+3. First period:
+a. If the charging limit changed by more than: LimitChangeSignificance, the
+Charging Station sends a NotifyChargingLimitRequest message to CSMS with a
+chargingLimit that has chargingLimitSource = EMS and isLocalGeneration = true,
+and the local generation charging schedule from that moment onwards.
+b. Charging Station internally calculates a composite schedule that allows for a
+maximum power consumption of 7000 W.
+4. Second period, the local generation drops to 1 kW:
+a. If the charging limit changed by more than: LimitChangeSignificance, the
+Charging Station sends a NotifyChargingLimitRequest message to CSMS with a
+chargingLimit that has chargingLimitSource = EMS and isLocalGeneration = true,
+and the local generation charging schedule from that moment onwards.
+b. Charging Station internally calculates a composite schedule that allows for a
+maximum power consumption of 6000 W.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 373/803 Part 2 - Specification

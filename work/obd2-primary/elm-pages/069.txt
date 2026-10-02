@@ -1,0 +1,98 @@
+Programmable Parameters
+The ELM327 contains several memory locations
+that retain their data even after power is turned off.
+Every time the IC is reset, these locations are read
+and used to change the default settings for such things
+as whether to display the headers, or how often to
+send ‘wakeup’ messages. Because they define the
+operation of the ELM327, we refer to these memory
+locations as the Programmable Parameters.
+All of the Programmable Parameters are easily
+altered at any time using a few simple commands.
+These commands are standard AT Commands, with
+one exception: each one requires a two-step process
+to complete. This extra step provides some security
+against random inputs that might otherwise cause
+changes.
+As an example of how to change a Programmable
+Parameter, consider PP 01 (shown on page 70) which
+sets the default state for the AT H command. If you are
+constantly powering your ELM327 and then using
+AT H1 to turn the headers on, you may want to change
+the default setting, so that the headers are always on
+by default. To do this, simply set the value of PP 01 to
+00:
+>AT PP 01 SV 00
+OK
+This changes the value associated with PP 01, but
+does not yet enable it. To make the change effective,
+you must also type:
+>AT PP 01 ON
+OK
+At this point, you have changed the default setting
+for AT H1/H0, but you have not changed the current
+AT H1/H0 setting. From the ‘Type’ column in the table
+on page 70, you can see that PP 01 is a type ‘D’
+parameter, so the change only becomes effective the
+next time that defaults are restored. This could be from
+a reset, a power off/on, or possibly an AT D command.
+If you send the command AT D, then you should find
+that the headers are now displayed by default.
+As there are many Programmable Parameters that
+you can alter, it might occasionally be difficult to know
+what changes you have made to them. To help with
+that, the ELM327 provides a Programmable Parameter
+Summary (PPS) command. This command simply
+prints a list of the entire range of PPs (whether
+currently supported or not), their current value, and
+whether they are on/enabled (N), or off/disabled (F).
+For a version 2.2 ELM327, with only the headers
+enabled (PP 01, as discussed above), the summary
+table would look like:
+>AT PPS
+00:FF F  01:00 N  02:FF F  03:32 F
+04:01 F  05:FF F  06:F1 F  07:09 F
+08:FF F  09:00 F  0A:0A F  0B:FF F
+0C:68 F  0D:0D F  0E:9A F  0F:D5 F
+10:0D F  11:00 F  12:FF F  13:55 F
+14:50 F  15:0A F  16:FF F  17:6D F
+18:31 F  19:4F F  1A:FF F  1B:FF F
+1C:03 F  1D:0F F  1E:4A F  1F:FF F
+20:FF F  21:FF F  22:FF F  23:FF F
+24:00 F  25:00 F  26:00 F  27:FF F
+28:FF F  29:FF F  2A:3C F  2B:02 F
+2C:E0 F  2D:04 F  2E:80 F  2F:0A F
+You can see that PP 01 now shows a value of 00,
+and it is enabled (oN), while the others are all off.
+Another example shows how you might change
+the CAN filler byte. Some systems use ‘AA’ as the
+value to send for unused CAN data bytes, while the
+ELM327 uses ‘00’ by default. To change the ELM327
+in order to have it send AAs instead, simply change
+PP 26:
+>AT PP 26 SV AA
+OK
+>AT PP 26 ON
+OK
+ Again, PP 26 is of type ‘D’, so the above change
+will not actually take effect until the defaults are
+restored, whether it be by an AT D command, or by
+resetting the ELM327.
+The Programmable Parameters are a great way to
+customize your ELM327 for your own use, but you
+should do so with caution if using commercial
+software. Most software expects an ELM327 to
+respond in certain ways to commands, and may be
+confused if the carriage return character has been
+redefined, or if the CAN response shows a data length
+code digit, for example. If you make changes, it might
+be best to make small changes and then see the effect
+of each, so that it is easier to retrace your steps and
+‘undo’ what you have done, should you have to. If you
+get in too deeply, don’t forget the ‘all off’ command:
+>AT PP FF OFF
+No matter what software you use, you might get
+into more serious trouble, should you change the baud
+ELM327
+69 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com

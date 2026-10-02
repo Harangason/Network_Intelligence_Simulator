@@ -1,0 +1,103 @@
+ID Precondition Requirement definition Note
+F01.FR.02 Charging Station receives a
+RequestStartTransactionRequest AND
+( AuthorizeRemoteStart = false
+OR
+idToken.type is Central or
+NoAuthorization )
+The Charging Station SHALL allow energy transfer
+for the IdToken given in
+RequestStartTransactionRequest message without
+checking authorization.
+Charging Station will first
+respond to the request,
+and send a
+TransactionEventReques
+t with the idToken to the
+CSMS, and the CSMS will
+check the authorization
+status of the IdToken
+when processing this
+TransactionEventReques
+t.
+F01.FR.03 F01.FR.01 OR F01.FR.02 The Charging Station SHALL send a
+TransactionEventRequest to the CSMS, and the
+CSMS will check the authorization status of the
+IdToken when processing this
+TransactionEventRequest.
+If CSMS returns an
+authorization status that
+is not Accepted, then
+Charging Station must
+stop energy transfer as
+per use case E05.
+F01.FR.04 RequestStartTransactionRequest SHALL contain an
+IdToken, which Charging Station SHALL use, if it is
+able to start a transaction, in the
+TransactionEventRequest sent to the CSMS.
+F01.FR.05 The transaction SHALL be started in the same way
+as described in E02 - Start Transaction - Cable
+Plugin First.
+F01.FR.06 RequestStartTransactionRequest MAY contain an
+evseId if the transaction is to be started on a
+specific EVSE.
+When no evseId is
+provided, the Charging
+Station is in control of
+the EVSE selection.
+F01.FR.07 If the
+RequestStartTransactionRequest
+does not contain an evseId.
+The Charging Station MAY reject the
+RequestStartTransactionRequest.
+F01.FR.08 The CSMS MAY include a ChargingProfile in the
+RequestStartTransactionRequest.
+F01.FR.09 F01.FR.08 The purpose of this ChargingProfile SHALL be set
+to TxProfile.
+F01.FR.10 F01.FR.08 The Charging Station SHALL use this
+ChargingProfile for the transaction that is started
+by this RequestStartTransaction.
+F01.FR.11 F01.FR.08 The transactionId in the ChargingProfile SHALL
+NOT be set.
+F01.FR.12 If a Charging Station without support
+for Smart Charging receives a
+RequestStartTransactionRequest with
+a ChargingProfile.
+The Charging Station SHALL ignore the specified
+ChargingProfile.
+The device model
+variable
+SmartChargingCtrlr.Enabl
+ed tells CSMS whether
+smart charging is
+supported.
+F01.FR.13 When a transaction is created on the
+Charging Station, but has not been
+authorized.
+AND
+RequestStartTransactionRequest is
+received.
+The Charging Station SHALL return the
+transactionId in the
+RequestStartTransactionResponse.
+F01.FR.14 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Started), See: Meter
+Values - Configuration
+The Charging Station SHALL add the configured
+measurands to the optional meterValue field in the
+TransactionEventRequest(eventType = Started)
+sent to the CSMS to provide more details at the
+start of the transaction.
+F01.FR.15 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Updated), See: Meter
+Values - Configuration
+The Charging Station SHALL add the configured
+measurands to the optional meterValue field in the
+TransactionEventRequest(eventType = Updated)
+sent to the CSMS to provide more details during
+updates of the transaction.
+Same as J02.FR.11
+Edition 4, 2025-12-03 F. Remote Control
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 177/491 Part 2 - Specification

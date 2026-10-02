@@ -1,0 +1,51 @@
+TC_N_02_CS: Get Monitoring Report - with component/variable
+Test case name Get Monitoring Report - with component/variable
+Test case Id TC_N_02_CS
+Use case Id(s) N02
+Requirement(s) N02.FR.01, N02.FR.03,N02.FR.04, N02.FR.05, N02.FR.08, N02.FR.09
+System under test Charging Station
+Description CSMS requests a report of monitors that match the given list of components and
+variables.
+Purpose To test that Charging Station supports reporting of monitoring via for a given list of
+components and optionally with variables.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+N/a Note: these are required variables for which a monitor can be expected to exist or it can be configured.
+Memory State:
+The following monitors must be present as 'hard-wired' or 'preconfigured' or must have been configured by CSMS:
+- Component "ChargingStation", variable "AvailabilityState", monitor type Delta"
+- Component "EVSE", <Configured evseId>, variable "AvailabilityState", monitor type Delta
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with:
+GetMonitoringReportResponse
+1. Test System sends GetMonitoringReportRequest with:
+- requestId = <Generated requestId>
+- monitoringCriteria is omitted
+- componentVariable[0].component.name = "ChargingStation"
+- componentVariable[0].variable.name = "AvailabilityState"
+- componentVariable[1].component.name = "EVSE"
+- componentVariable[1].component.evse.id = <Configured
+evseId>
+_Note: requesting AvailabilityState from ChargingStation and all
+monitors from Configured EVSE
+3. Charging Station responds with:
+NotifyMonitoringReportRequest 4. Test System sends NotifyMonitoringReportResponse
+Step 3 and 4 are repeated as often as needed to report all configuration variables.
+Tool validations
+* Step 2:
+Message: GetMonitoringReportResponse
+- status = Accepted
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+* Step 3:
+Message: NotifyMonitoringReportRequest
+- requestId = <Generated requestId>
+- generatedAt = <timestamp at charging station>
+- seqNo = 0
+- if monitor.variable = "AvailabilityState" then monitor.variableMonitoring.type = Delta
+Note: fore EVSE #1 we request all monitors. There may be other monitors besides AvailabilityState.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 457/914 Part 6 - Test Cases

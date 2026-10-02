@@ -1,0 +1,53 @@
+u-blox 20 HPG 2.00 - Interface description
+3.10.1.1 Clear, save and load conﬁgurations
+Message UBX-CFG-CFG
+Clear, save and load conﬁgurations
+Type Command
+Comment See Receiver conﬁguration for a detailed description on how receiver conﬁguration should be used. The
+behavior of this message has changed for protocol versions greater than 23.01. Use UBX-CFG-VALSET and
+UBX-CFG-VALDEL with the appropriate layers instead. These new messages support selective saving and
+clearing to retain the behavior removed from this message. The three masks which were used to clear, save
+and load a subsection of conﬁguration have lost their meaning. It is no longer possible to save or clear a
+subsection of the conﬁguration using this message. The behavior of the masks is now:
+• if any bit is set in the clearMask: all conﬁguration in the selected non-volatile memory is deleted
+• if any bit is set in the saveMask: all current conﬁguration is stored (copied) to the selected layers
+• if any bit is set in the loadMask: The current conﬁguration is discarded and rebuilt from all the lower
+layers
+Note that commands can be combined. The sequence of execution is clear, save, then load. The receiver
+replies with a single UBX-ACK-ACK or UBX-ACK-NAK. A UBX-ACK-ACK indicates that all operations were
+successful. A UBX-ACK-NAK indicates that at least one of the conﬁgured operations was unsuccessful. It is
+recommended to send individual commands for a more comprehensive monitoring of the success or not of
+the individual operations.
+☞ Old functionality of this message is not available in protocol versions greater than 23.01. Use UBX-CFG-
+VALSET, UBX-CFG-VALGET, UBX-CFG-VALDEL instead.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x06 0x09 12 + [0,1] see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 X4 clearMask - - Mask for conﬁguration to clear
+bits 31…0   U:32 clearAll - - Clear all saved conﬁguration from the selected non-
+volatile memory if any bit is set
+4 X4 saveMask - - Mask for conﬁguration to save
+bits 31…0   U:32 saveAll - - Save all current conﬁguration to the selected non-
+volatile memory if any bit is set
+8 X4 loadMask - - Mask for conﬁguration to load
+bits 31…0   U:32 loadAll - - Discard current conﬁguration and rebuilt it from lower
+non-volatile memory layers if any bit is set
+Start of optional group
+12 X1 deviceMask - - Mask which selects the memory devices for saving
+and/or clearing operation
+Note that if a deviceMask is not provided, the receiver
+defaults the operation requested to battery-backed
+RAM (BBR) and Flash (if available)
+bit 0   U:1 devBBR - - Battery-backed RAM
+bit 1   U:1 devFlash - - Flash
+bit 2   U:1 devEEPROM - - EEPROM (only supported for protocol versions less
+than 14.00)
+bit 4   U:1 devSpiFlash - - SPI Flash (only supported for protocol versions less
+than 14.00)
+End of optional group
+3.10.2 UBX-CFG-OTP (0x06 0x41)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 53 of 224
+C1-Public

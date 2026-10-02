@@ -1,0 +1,50 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 46
+OS81050
+The INIC Configuration String  may set PMIConfig(), such that INIC only drives PWROFF active when in
+EHCI Protected Mode . In this case, the EHC is notified of a network shutdown during EHCI Attached Mode ,
+prepares itself for power-off, and sets the EHCIState() to EHCI_Protected when ready. INIC then
+drives PWROFF active and the node can be powered down. This example is applicable when the EHC
+does not utilize the PWRHOLD signal.
+INIC supports a low-power mode through the use of Device ShutDown, which utilizes the ShutDown() func-
+tion, in the FBlock NBMIN, to place the node in a low-power state. When the EHC receives this function it
+should minimize power consumption, if supported. The network can then re-start the node through the
+ShutDown() function, where INIC drives INT low to wake up the EHC.
+SMSC’s Automotive Power Management Device  (MPM85000) performs all power management functionality
+required of MOST Network nodes, including: wake-up detection, power supply monitoring ( PS[1:0]), reset
+generation, and Switch To Power (STP) pulse detection. The MPM85000 also supplies a 3.3 V continuous
+output for FOR power. Integrating both the OS81050 and MPM85000 on a MOST Network node minimizes
+application circuitry and software complexity allowing the application designer to focus on the application,
+rather than on MOST compliance. Contact SMSC for more information on the MPM85000.    
+INIC
+Power Monitor
+and Control
+Power Manager
+(e.g. MPM85000)
+Network
+Port
+PS[1:0]
+Battery 
+Power
+RESET
+EHC
+Switched Supply
+PWROFF RSOUT
+ENABLE
+PWRHOLD
+RST
+Continuous
+Supply
+Application Specific 
+Load Dump Filter
+STATUS
+MOST 
+Network
+Physical Layer
+Interface
+Figure 8-1: Typical Power Management Diagram
+RST
+VDD
+validPS[1:0]
+STATUS
+Figure 8-2: Power Management Startup

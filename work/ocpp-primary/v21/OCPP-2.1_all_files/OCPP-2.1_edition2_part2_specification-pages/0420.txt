@@ -1,0 +1,61 @@
+No. Type Description
+7 Error Handling
+8 Remarks When an EMS provides frequent updates to a power limit, instead of providing a schedule, then
+each update would result in Charging Station having to replace the existing
+ChargingStationExternalConstraints charging profile by a new one. When using a
+Dynamic charging profile Charging Station only has to update the value of limit or setpoint of the
+existing charging profile.
+It is advised to have a charging profile with a lower stack level present to fall back to, in case the
+dynamic charging profile is invalidated, because no update is provided within duration seconds.
+CSMS Charging Station EMS EV
+alt [Dynamic update from EMS in charging profile from CSMS]
+CSMS creates charging profile for transaction
+in which limit is given by EMS.
+SetChargingProfileRequest(evseId,
+chargingProfile( id = 123, TxProfile, Dynamic,
+chargingSchedule( chargingSchedulePeriod( limit = 15000,
+operationMode = ExternalLimit )))
+SetChargingProfileResponse(Accepted)
+apply limit to EV
+loop
+update limit directly
+via EMS interface
+apply received limit to charging profile 123
+apply limit to EV
+opt
+NotifyChargingLimitRequest( EMS, limit )
+NotifyChargingLimitResponse()
+[Dynamic update in charging profile from EMS]
+Charging Station creates ChargingStationExternalConstraints
+profile to hold limits from EMS.
+represent limit as charging profile (evseId,
+chargingProfile( id = 123,
+ChargingStationExternalConstraints, Dynamic,
+chargingSchedule( chargingSchedulePeriod( limit = 15000,
+operationMode = ExternalLimit )))
+apply limit to EV
+loop
+update limit directly
+via EMS interface
+apply received limit to charging profile 123
+apply limit to EV
+opt
+NotifyChargingLimitRequest( EMS, limit )
+NotifyChargingLimitResponse()
+Figure 147. Sequence Diagram: Dynamic charging profile
+K29 - Dynamic charging profiles by external system - Requirements
+Table 120. K29 - Requirements
+ID. Precondition Requirements Note
+K29.FR.01 A ChargingProfileType with
+chargingProfileKind = Dynamic SHALL
+consist of only 1 ChargingScheduleType with
+only 1 ChargingSchedulePeriodType
+(Same as K28.FR.01)
+K29.FR.02 The ChargingSchedulePeriodType in a
+ChargingProfileType with chargingProfileKind
+= Dynamic SHALL have a startPeriod = 0
+It becomes immediately active
+upon receipt of the message.
+(Same as K28.FR.02)
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 407/803 Part 2 - Specification

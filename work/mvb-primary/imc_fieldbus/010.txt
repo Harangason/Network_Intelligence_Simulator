@@ -1,0 +1,48 @@
+© 2026 imc Test & Measurement GmbH
+Errors and changes excepted
+Data Sheet Version 4.15 - 2026-02-27
+Page   10
+imc fieldbus interfaces
+Technical Data Sheet
+https://www.imc-tm.com
+XCPoE Master-Slave
+The "Extended Calibration Protocol" XCP is a transfer protocol with particular importance in the automotive
+industry, dedicated mainly to communication between control units (ECUs). This module provides and XCP
+interface for imc devices, using Ethernet as the transport layer (oE = over-Ethernet). Both Master and Slave are
+available. 
+Terminal connection:
+· 1 x RJ45 Ethernet 100 Mbit/s
+Slave:
+The imc measurement device operates as the Slave and can provide the data it captures to external applications
+via Ethernet. In this case, the imc device behaves as a control unit. This enables it to be integrated into other
+environments: the data are directly accessible for standard software packages from various manufacturers, such
+as Canape by Vector, or INCA by ETAS.
+The "Slave" mode causes the communication to be mainly governed by the external XCP-Master and not be the
+imc system. Slave mode does not actually determine in which direction (in/out) this communication flows. In
+principle, for an XCP-Slave, not only the output of variables is defined, but also the input (stimulus), even though
+this mode is not currently supported by the imc Slave module! 
+· Configuration of the XCPoE destination device is achieved by means of an A2L-file which is automatically
+composed when an imc system configuration is prepared.
+The following channel types can be used as the signal source:
+· analog/digital sampled input channels
+· analog/digital sampled Fieldbus input channels, but no fieldbus log channels
+· sampled virtual channels (imc Online FAMOS channels, but no FFTs and no histograms)
+· The channels must be triggered by the "BaseTrigger" (an "immediate trigger").
+This channel mapping concept is applicable as of the following software version:
+imc STUDIO 5.0 R1 in conjunction with imc DEVICES 2.8 R5 SP4 firmware and drivers 
+For full functionality (especially pv and sending functions) imc Online FAMOS Professional OFA Pro (additional
+license) is required.
+The XCPoE client requests the measured data after configuration of the device. High-speed synchronized data
+transfer up to 50 kHz per channel is achieved via Ethernet:
+· The channel data are propagated via XCP at their individual and original data rates.
+· This also applies to the virtual channels, which thus allows more than 2 data rates within the system. A
+maximum of 5 different output rates are supported: this limit is imposed by the XCP protocol itself! 
+· The XCP messages are assigned a time stamp which refers to the date of acquisition by the imc system. All
+channels in the XCP message are perfectly synchronous, because this is the case for the entire imc system,
+even across different types of modules and channel types.
+Master:
+The imc measurement device operates as the XCPoE Master and can capture data from an ECU via the XCP
+protocol.
+· Configuration of the XCP-Master (imc device) is achieved by means of an A2L-file which must be available
+for the ECU addressed.
+· The sampling rate for recording the XCP channels can be set up to max. 10 kHz.

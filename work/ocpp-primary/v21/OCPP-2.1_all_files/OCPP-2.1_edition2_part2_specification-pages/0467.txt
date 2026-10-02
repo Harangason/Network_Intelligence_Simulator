@@ -1,0 +1,103 @@
+ID Precondition Requirement definition Note
+N01.FR.21 N01.FR.18 AND
+the GetLogRequest
+log.remoteLocation string ends with a
+slash character ("/")
+The Charging Station SHALL append the filename
+that it returned in the GetLogResponse filename
+field to this string.
+N01.FR.22 N01.FR.18 AND
+the file to upload exceeds the
+threshold of 1MB (1024 * 1024 bytes)
+The Charging Station MAY include the "Expect: 100-
+continue" header in the HTTP PUT request.
+This gives the server a
+chance to deny the
+request before a lot of
+data is sent.
+N01.FR.23 N01.FR.18 The Charging Station MAY implement a mechanism
+to resume HTTP uploads, if it can identify whether
+the upload server supports the same mechanism.
+At the time of this
+writing, no official HTTP
+resume mechanism
+existed, only vendor-
+specific solutions and an
+IETF draft, which were
+not aligned.
+N01.FR.24
+(2.1)
+N01.FR.02 AND
+The GetLogRequest contained
+logType DataCollectorLog AND
+The Charging Station supports the
+DataCollector log functionality.
+The Charging Station SHALL upload its data
+collector log.
+See DataCollector
+component in device
+model.
+N01.FR.25
+(2.1)
+N01.FR.17 AND
+the GetLogRequest
+log.remoteLocation URL contains a
+userinfo component
+The Charging Station SHALL use the given userinfo
+for HTTP Basic Authentication.
+N01.FR.26
+(2.1)
+N01.FR.18 The CSMS SHALL NOT send a log upload URL that
+points to a server responding with a redirection.
+N01.FR.27
+(2.1)
+N01.FR.18 The CSMS SHALL NOT send a log upload URL
+containing a fragment component.
+The fragment
+component would not be
+part of the HTTP request,
+so it serves no purpose.
+N01.FR.28
+(2.1)
+N01.FR.18 AND
+the CSMS includes a query
+component in the log upload URL
+The CSMS SHALL NOT include a query component
+that ends with a slash character ("/").
+This is to simplify
+processing of the URL
+string in the Charging
+Station.
+N01.FR.29
+(2.1)
+N01.FR.18 AND
+the GetLogRequest
+log.remoteLocation string does not
+end with a slash character ("/")
+The Charging Station SHALL use it as received
+without modifications.
+N01.FR.30
+(2.1)
+N01.FR.18 The Charging Station SHALL NOT follow redirects
+received in response to the request AND SHALL
+send a LogStatusNotificationRequest with status =
+UploadFailure and optionally add reasonCode =
+"RedirectNotAllowed".
+Redirects bear the risk of
+changing the HTTP
+method and of
+redirection loops. This
+results in an upload
+failure as in N01.FR.10.
+2.2. Configure Monitoring
+NOTE For managing the monitoring of a Charging Station a basic understanding of Device Model concepts is essential.
+These concepts are explained in "OCPP 2.1: Part 1 - Architecture & Topology", chapter 4.
+N02 - Get Monitoring report
+Updated in OCPP 2.1
+No. Type Description
+1 Name Get Monitoring Report
+2 ID N02
+3 Objective(s) To give the CSMS the ability to retrieve a report about configured monitoring settings per
+component and variable.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 454/803 Part 2 - Specification

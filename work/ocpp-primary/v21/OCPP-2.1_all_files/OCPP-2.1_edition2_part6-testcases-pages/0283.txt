@@ -1,0 +1,46 @@
+TC_E_40_CS: Offline Behaviour - Connection loss during transaction
+Test case name Offline Behaviour - Connection loss during transaction
+Test case Id TC_E_40_CS
+Use case Id(s) E11
+Requirement(s) E11.FR.01,E11.FR.02,E11.FR.06
+System under test Charging Station
+Description The Charging Station queues TransactionEvent messages to inform the CSMS that a transaction occurred
+while the Charging Station was Offline.
+Purpose To verify if the Charging Station is able to queue TransactionEvent messages while it is offline.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+SampledDataTxUpdatedMeasurands is <Configured transaction_updated_metervalues_measurands>
+SampledDataTxUpdatedInterval is <Configured transaction_updated_metervalues_interval>
+SampledDataEnabled is true
+OfflineThreshold is <Configured RetryBackOffWaitMinimum_duration> + 60.0
+RetryBackOffWaitMinimum is <Configured RetryBackOffWaitMinimum_duration>
+RetryBackOffRandomRange is 0
+Note:
+<Configured RetryBackOffWaitMinimum_duration> must be greater than <Configured Transaction MeterValues interval>
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does
+not accept a reconnect.
+2. The Test System waits a number of seconds equal to
+<Configured RetryBackOffWaitMinimum_duration>, before
+accepting a reconnection attempt from the Charging Station.
+3. The Charging Stations sends a TransactionEventRequest
+Note(s):
+- The Charging Station will empty its Transaction message queue.
+This will contain one or more TransactionEventRequest messages
+4. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 3:
+All messages: TransactionEventRequest
+- eventType must be Updated
+- meterValues must be present.
+- offline must be true
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 281/1383 Part 6 - Test Cases

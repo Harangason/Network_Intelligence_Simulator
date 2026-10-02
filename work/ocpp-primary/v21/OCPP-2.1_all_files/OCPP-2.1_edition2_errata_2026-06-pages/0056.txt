@@ -1,0 +1,50 @@
+Main (Test scenario)
+2. The Charging Station responds with a
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Tariff1
+tariff.currency EUR
+tariff.chargingTime.taxRate[0].type MyTax1
+tariff.chargingTime.taxRate[0].tax 0
+tariff.chargingTime.prices[0].priceMinute 60
+tariff.idleTime.taxRate[0].type MyTax2
+tariff.idleTime.taxRate[0].tax 0
+tariff.idleTime.prices[0].priceMinute 60
+3. Execute Reusable State EnergyTransferStarted with:
+(At the first TransactionEventResponse)   
+-  transactionLimit.maxCost   120.00
+Manual Action: Enter cost limit 120.00 for transaction
+4. The Charging Station sends a TransactionEventRequest
+5. The Test System responds with a TransactionEventResponse
+with
+transactionLimit.maxCost 120.00
+6. The Charging Station sends a TransactionEventRequest
+7. The Test System responds with a TransactionEventResponse
+Note: Steps 6 and 7 may repeat
+8. The Charging Station sends a TransactionEventRequest
+9. The Test System responds with a TransactionEventResponse
+Note: Step 10 should trigger automatically after 120 seconds have been elapsed since start of transaction
+Note :  Step 8 should trigger automatically after 120.00 euro is charged.         
+Tool validations
+* Step 2:  
+Message  SetDefaultTariffResponse
+-  status  must be    Accepted
+…
+* Step 8:
+Message: TransactionEventRequest
+- eventType must be Updated (or Ended if TxStopPoint contains "EnergyTransfer")
+- triggerReason must be EnergyLimitReached CostLimitReached
+6.2.28. Page 301/302 - (2026-02) - TC_E_105_CS - Test case and tool validation
+corrections
+Reusable state EnergyTransferStarted used and maxTime reduced to 180. Step 10 triggerReason tool validation corrected.
+Test case name Transactions with fixed cost, energy or time - CSMS specifies time limit
+Test case Id TC_E_105_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+with
+transactionLimit.maxTime 3600
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 52/116 Errata 2026-06

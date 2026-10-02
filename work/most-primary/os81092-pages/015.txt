@@ -1,0 +1,46 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 15
+OS81092
+FIGURE 4-2: INIC-IOC APPLICATION EXAMPLE
+Contact Microchip for more information about the IOC family of devices, including the OS85650.
+4.4 MOST NetServices
+The division of services between the OS81092 INIC and the EHC in MOST applications is illustrated in Figure 4-3. To
+accelerate development of MOST applications that use INIC, Microchip offers the MOST NetServices API, which pro-
+vides a seamless software interface between INIC and the EHC.  A software library is available to provide all services
+that are relevant for:
+• exchanging application data on the MOST Network,
+• managing hardware port data connections (e.g. sockets),
+• managing high-level system tasks, and
+• using control messages to access INIC for specific operations.
+The MOST NetServices code incorporated into the EHC is divided into two distinct components: Basic Services (Layer
+I) and Applications Socket (Layer II).
+The Basic Services component provides the facilities that enable direct communication with INIC, including: a low-level
+driver for message exchange, message management servic es, and data wrappers. When transmitting data from the
+EHC to INIC, the wrapper modules pass data to the messa ge management services. Formatted messages are then
+sent by the low-level driver across the interface between the EHC and INIC. When receiving data from INIC, the wrap-
+pers reformat the data for compatibility with the MOST NetServices code that resides on the EHC.
+The Applications Socket component resides on top of Basic Services and provides the FBlock NBEHC services required
+to implement the full FBlock NetBlock on the node. This component also contains a command interpreter, which pro-
+vides a simple API for developing application FBlocks (e.g. FBlock AudioAmp).
+MOST NetServices code is modular, allowing it to be cust omized for a particular application. Implemented in ANSI C,
+the MOST NetServices API can be adapted for individual requirements through configuration files.
+MOST50 Network
+ePHY Front-End 
+Circuitry
+Network 
+Port
+MediaLB
+3-pin Port
+MediaLB 3-pin Port
+OS85650 IOC
+HBIStreaming Port
+EHCADC DAC
+Streaming Data
+Packet Data
+Control Data
+Application Data Streams:
+encrypted data
+decrypted data
+DTCP Coprocessor
+Internal uC
+Streaming 
+PortADC OS81092 INIC

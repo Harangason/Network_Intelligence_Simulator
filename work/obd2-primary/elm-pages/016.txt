@@ -1,0 +1,93 @@
+16 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+only want to see information from 7E8, simply send AT
+CRA 7E8, and the ELM327 will make the necessary
+adjustments to both the mask and the filter for you.
+If you wish to allow the reception of a range of
+values, you can use the letter X to signify a ‘don’t care’
+condition. That is, AT CRA 7EX would allow all IDs
+that start with 7E to pass (7E0, 7E1, etc.). For a more
+specific range of IDs, you may need to assign a mask
+and filter.
+To reverse the changes made by the CRA
+command, simply send AT CRA or AT AR.
+CRA hhhhhhhh [set the  CAN Rx Addr to hhhhhhhh]
+This command is identical to the previous one,
+except that it is used with 29 bit CAN IDs. Sending
+either AT CRA or AT AR will also reverse any changes
+made by this command.
+CS [ show the CAN Status counts ]
+The CAN protocol requires that statistics be kept
+regarding the number of transmit and receive errors
+detected. If there should be a significant number of
+errors (due to a hardware or software problem), the
+device will go off-line in order to not affect other data
+on the bus. The AT CS command lets you see both
+the transmitter (Tx) and the receiver (Rx) error counts,
+in hexadecimal. If the transmitter should be off (count
+>FF), you will see ‘OFF’ rather than a specific count.
+Beginning with firmware v2.2, the CS response will
+also show the frequency of the signal at the CAN
+input, at that time. A typical response might look like:
+>AT CS
+T:00 R:00 F:250
+The same module that determines the frequency
+during protocol searches is used, and is fairly basic in
+operation. It provides frequency in only certain ranges,
+so possible responses with the current version are
+limited to 500, 250, <250, and 0 (no signal).
+CSM0 and CSM1 [ CAN Silent Monitoring off or on ]
+The ELM327 was designed to be completely silent
+while monitoring a CAN bus. Because of this, it is able
+to report exactly what it sees, without colouring the
+information in any way. Occasionally (when bench
+testing, or when connecting to a dedicated CAN port),
+it may be preferred that the ELM327 does not operate
+silently (ie generates ACK bits, etc.), and this is what
+the CSM command is for. CSM1 turns it on, CSM0
+turns it off, and the default value is determined by
+PP 21. Be careful when experimenting with this. If you
+should choose the wrong baud rate then monitor the
+CAN bus with the silent monitoring off, you will disturb
+the flow of data. Always keep the silent monitoring on
+until you are certain that you have chosen the correct
+baud rate.
+CTM1 [ set the Timer Multiplier to 1 ]
+This command causes all timeouts set by AT ST
+to be multiplied by a factor of 1. Note that this currently
+only affects the CAN protocols (6 to C). CTM1 is the
+default setting.
+CTM5 [ set the Timer Multiplier to 5 ]
+This command causes all timeouts set by AT ST
+to be multiplied by a factor of 5. Note that this currently
+only affects the CAN protocols (6 to C).
+This command was originally added (as JTM5) to
+assist with the retrieving of some J1939 messages.
+We have since had several requests to allow it to
+affect all CAN modes, and so have modified the JTM5
+code and added the new CTM1/CTM5 commands. If
+using CTM5, we caution that the Adaptive Timing code
+does not monitor changes in the setting, so we advise
+turning it off (with AT AT0).
+By default, this multiplier is off.
+CV dddd [ Calibrate the Voltage to dd.dd volts ]
+The voltage reading that the ELM327 shows for an
+AT RV request can be calibrated with this command.
+The argument (‘dddd’) must always be provided as 4
+digits, with no decimal point (it assumes that the
+decimal place is between the second and the third
+digits).
+To use this feature, simply use an accurate meter
+to read the actual input voltage, then use the CV
+command to change the internal calibration (scaling)
+factor. For example, if the ELM327 shows the voltage
+as 12.2V while you measure 11.99 volts, then send
+AT CV 1199 and the ELM327 will recalibrate itself for
+that voltage (it will actually read 12.0V due to digit
+roundoff). See page 30 for some more information on
+how to read voltages and perform the calibration.
+CV 0000 [ restore the factory Calibration Value ]
+If you are experimenting with the CV dddd
+AT Command Descriptions (continued)

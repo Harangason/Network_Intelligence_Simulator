@@ -1,0 +1,68 @@
+External Trigger
+CSMS Charging Station
+remote start()
+RequestStartTransactionRequest(idToken, chargingProfile, remoteStartId = 123)
+RequestStartTransactionResponse(status = Accepted)
+opt
+notification
+opt [AuthorizeRemoteStart = true]
+AuthorizeRequest(idToken)
+AuthorizeResponse(idTokenInfo)
+alt [within ConnectionTimeOut]
+Plugin cable
+StatusNotificationRequest(Occupied)
+StatusNotificationResponse()
+opt [if cable not permanently attached]
+lock connector
+Charging Station applies
+chargingProfile
+start energy offer
+TransactionEventRequest(eventType = Started, triggerReason = RemoteStart,
+chargingState = Charging, remoteStartId = 123, ...)
+TransactionEventResponse(...)
+Continue regular smart charging session
+Figure 102. Sequence Diagram: Remote Start Transaction with Charging Profile
+K05 - Remote Start Transaction with Charging Profile - Requirements
+Table 98. K05 - Requirements
+ID Precondition Requirement definition Note
+K05.FR.01 The CSMS MAY include a ChargingProfile in a
+RequestStartTransactionRequest.
+K05.FR.02 K05.FR.01 The Purpose of the ChargingProfile SHALL always be
+TxProfile.
+K05.FR.03 K05.FR.01 AND
+NOT K05.FR.04
+The Charging Station SHALL use the given profile to
+calculate its composite schedule.
+K05.FR.04 If a Charging Station
+without support for Smart
+Charging receives a
+RequestStartTransactionRe
+quest with a
+ChargingProfile.
+The Charging Station SHALL ignore the specified
+ChargingProfile.
+The device model variable
+SmartChargingCtrlr.Enabled
+tells CSMS whether smart
+charging is supported.
+Same as F01.FR.12
+K05.FR.05 If a Charging Station with
+support for Smart Charging
+receives a
+RequestStartTransactionRe
+quest with an invalid
+ChargingProfile.
+The Charging Station SHALL respond with
+RequestStartTransactionResponse with status =
+Rejected and optionally with reasonCode =
+"InvalidProfile" or "InvalidSchedule".
+The device model variable
+SmartChargingCtrlr.Enabled
+tells CSMS whether smart
+charging is supported.
+Same as F01.FR.26
+K06 - Offline Behavior Smart Charging During Transaction
+No. Type Description
+1 Name Offline Behavior Smart Charging During Transaction
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 262/491 Part 2 - Specification

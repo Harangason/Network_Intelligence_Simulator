@@ -1,0 +1,4043 @@
+PAGE 1
+für PROFIBUS-DP
+Manual
+Document-No. 26-860 │ Version ENG02 │ 2019-01-31
+PROFI® BUS
+
+PAGE 2
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Inhaltsverzeichnis
+Contents
+0-1
+0
+0. Table of contents
+0.1 Document history  .................................................................................. 0-3
+0.2 Trademarks  ........................................................................................... 0-3
+1. Characteristics and fundamentals
+1.1 Characteristics  ...................................................................................... 1-1
+1.2 Basic principles  ..................................................................................... 1-4
+1.2.1 ISO/OSI reference model  ...................................................................... 1-4
+1.2.2 PROFIBUS layer 1 (physical layer)  ....................................................... 1-5
+1.2.3 PROFIBUS layer 2 (data link layer)  ...................................................... 1-6
+1.2.4 PROFIBUS-DP   ...................................................................................... 1-9
+2. Modules for the PROFIBUS-DP network
+2.1 PROFIBUS-DP master module for PCD1/2.Mxxx  ................................. 2-1
+2.2 PROFIBUS-DP slave module for PCD1/2.Mxxx  ................................... 2-3
+2.2.1 PROFIBUS-DP PCD7.F77x slave card  ................................................. 2-3
+2.3 Ports 2 and 3 of PCD7.F77x slave modules  ......................................... 2-5
+2.3.1 Port 2  ..................................................................................................... 2-5
+2.3.2 Port 3  ..................................................................................................... 2-5
+2.4 Connection of PROFIBUS-DP modules   ............................................... 2-6
+2.4.1 PCD7.F7XX module  .............................................................................. 2-6
+2.4.2 Meaning of connections:  ....................................................................... 2-7
+2.4.3 PROFIBUS DP master, PCD7.F750 module ......................................... 2-8
+2.4.4 PROFIBUS DP slave, PCD7.F77x module  ........................................... 2-10
+2.5 PCD7.T160 termination box   ................................................................. 2-12
+2.5.1	 Differences	between	the	PCD7.T160,	 PCD7.T161	 
+and PCD7.T162 devices  ....................................................................... 2-12
+2.6 PCD7.T161 termination box  .................................................................. 2-13
+2.6.1 Functional description  ........................................................................... 2-13
+2.6.2 Block diagram/connection diagram  ....................................................... 2-13
+2.6.3 Technical data  ....................................................................................... 2-13
+2.7 PCD7.T162 termination box  .................................................................. 2-14
+2.3.1 Functional description  ........................................................................... 2-14
+2.7.2 Block diagram/connection diagram  ....................................................... 2-14
+2.7.3 Technical data  ....................................................................................... 2-14
+2.8 PROFIBUS-DP for PCD3.Mxxxx  ........................................................... 2-15
+2.9 PROFIBUS-DP for PCD2.M5_  .............................................................. 2-17
+2.9.1 PROFIBUS DP master, PCD7.F7500 module for PCD2.M5xxx   .......... 2-17
+3.  Planning and installation of a PROFIBUS-DP network
+3.1 Planning and installation of the physical layer  ...................................... 3-2
+3.1.1 Line parameters  .................................................................................... 3-2
+3.1.2	 Connection	of	network	stations	  ............................................................. 3-3
+3.1.3 Stub cables  ........................................................................................... 3-5
+3.1.4	 Network	layout	  ...................................................................................... 3-6
+PAGE 3
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Inhaltsverzeichnis
+Contents
+0-2
+0
+3.2	 Logical	network	structure	 ...................................................................... 3-8
+3.2.1	 Definition	of	bus	parameters	  ................................................................. 3-8
+3.2.2	 Configuration	of	slaves	  .......................................................................... 3-8
+3.2.3 Checking and assessing the performance values required  .................. 3-8
+4.	 The	PROFIBUS-DP 	configurator
+4.1 General  ................................................................................................. 4-1
+4.2	 Procedure	for	PROFIBUS-DP	configuration	 ......................................... 4-3
+4.3	 Description	of	the	PROFIBUS-DP	configurator	menus	 ......................... 4-4
+4.3.1 Main screen  ........................................................................................... 4-4
+4.3.2	 ‘Network’ 	submenu	 ................................................................................ 4-6
+4.3.3	 ‘Edit’ 	submenu	 ....................................................................................... 4-7
+4.3.4	 ‘View’ 	submenu	 ..................................................................................... 4-25
+4.3.5	 ‘Library’ 	submenu	 .................................................................................. 4-26
+4.3.6	 ‘Project’ 	submenu	 .................................................................................. 4-28
+4.3.6	 ‘Window’ 	submenu	 ................................................................................ 4-28
+4.3.8	 ‘Help’ 	submenu	 ...................................................................................... 4-29
+4.3.9	 Mouse-sensitive	elements	in	the	configurator		  ...................................... 4-29
+5. Programming
+5.1	 Access	to	slave	I/Os	and	registers	in	a	PCD	user	program	with	PROFIB-
+US-DP  ................................................................................................... 5-1
+5.2 Description of the PCD commands (SASI, SCON)  ............................... 5-4
+5.2.1 SASI: Assigning a channel  .................................................................... 5-4
+5.2.2	 SCON	commands	to	affect	data	exchange	  ........................................... 5-11
+5.2.3	 SCONI	commands	to	affect	data	exchange	  .......................................... 5-12
+5.2.4 History message log  .............................................................................. 5-27
+5.3	 Rules	for	writing	the	user	program	 ........................................................ 5-28
+5.4 Structure of the user program  ............................................................... 5-29
+5.4.1 Cold-start program in XOB 16  ............................................................... 5-29
+5.4.2 Main program in COB  ........................................................................... 5-29
+6. Commissioning a PROFIBUS-DP network
+6.1	 Checking	and	testing	the	hardware	installation	(physical	layer)	 ........... 6-1
+6.2 Checking and testing data exchange  .................................................... 6-2
+6.2.1 Checking data exchange  ....................................................................... 6-2
+6.2.2  Checking the mapped media  ................................................................ 6-4
+6.2.3 Use of bus monitors  .............................................................................. 6-5
+A Appendix
+A.1 Icons  ...................................................................................................... A-1
+A.2 Company address of Saia-Burgess Controls AG   ................................. A-2
+PAGE 4
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Document versions | Brands and trademarks
+Contents
+0-3
+0
+0.1 Document history
+Version Published Modified Comments
+pEN1 2009-01-07 Completely New	edition,	partly	taken	from	HB	26-765
+pEN1 2009-06-25 Completely Revision
+pEN01 2010-01-14 Completely Chapter numbering
+EN01 2013-06-26
+2013-08-07
+Ch. 2.5 
+Completely
+ - PCD7.T161 and PCD7.T162 added 
+ - Changed the Logo 
+ENG01 2019-01-31 Chapter A New	phone	number	(2015)
+0.2 Trademarks
+Saia PCD® is a registered trademark of Saia-Burgess Controls AG.
+Technical changes are subject to the state of technology.
+Saia-Burgess Controls AG, 2008. © All rights reserved.
+Published	in	Switzerland
+PAGE 5
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Characteristics
+Characteristics and fundamentals
+1-1
+1
+1. Characteristics and fundamentals
+PROFIBUS	is	the	successful,	open,	industrial	fieldbus	standard	for	a	broad	appli-
+cation spectrum.
+1.1 Characteristics
+ ● Open
+PROFIBUS	enables	the	exchange	of	data	between	devices	from	different	manu-
+facturers,	without	special	interface	adjustments.	PROFIBUS	has	been	standard-
+ised under the stable German standard DIN 19 245 and European standard pr 
+EN 50 170.
+ ● Vendor-independent
+PROFIBUS	devices	are	offered	by	many	qualified	manufacturers.	This	enables	
+the user to select the most suitable device from a preferred manufacturer for the 
+application in question.
+ ● Optimised	for	a	wide	field	of	use
+PROFIBUS	comprises	the	following	three	application-specific	versions:
+EN 50170 Volume 2
+Device Profiles
+Application Profiles
+Process
+Automation
+PROFIBUS-PA
+- Powering over the bus 
+- Intrinsic safety
+Factory
+Automation
+PROFIBUS-DP
+- Plug and play
+- Efficient an cost effective
+Fast
+General Purpose
+Automation
+PROFIBUS-FMS
+- Large variety of applications
+- Multi-master communication
+Universal Appication Oriented
+PROFIBUS has been standardised under European standard EN 50170 and the 
+earlier German standard DIN 19245 parts 1 - 4.
+PAGE 6
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Characteristics
+Characteristics and fundamentals
+1-2
+1
+PROFIBUS-FMS	(FMS	=	Fieldbus	Message	Specification)
+This	is	the	general	purpose	solution	for	communications	tasks	at	the	field	and	cell	
+levels	of	the	industrial	communications	hierarchy.	Powerful	FMS	services	open	up	
+a	wide	range	of	applications,	provide	great	flexibility	and	enable	comprehensive	
+communication	tasks	to	be	managed	with	cyclic	or	acyclic	data	communication	at	
+medium speed.
+PROFIBUS-DP	(DP	=	Decentralised	Peripherals)
+Optimised for high speed, this PROFIBUS version has been especially tailored for 
+communication	between	automation	systems	and	local	peripherals,	enabling	plug-
+and-play	for	field	devices
+PROFIBUS-FMS and PROFIBUS-DP use the same transmission technology and 
+the same bus access protocol. Both versions can therefore run simultaneously and 
+in combination on a single cable.
+PROFIBUS-PA	(PA	=	Process	Automation)
+PROFIBUS-PA is the PROFIBUS version for process automation applications. 
+PROFIBUS-PA	uses	the	intrinsically	safe	transmission	technology	defined	in	IEC	
+1158-2 and enables the remote supply of stations through the bus.
+The protocol functions of PROFIBUS-FMS, PROFIBUS-DP and PROFIBUS-PA 
+are	complemented	by	profiles	which	describe	how	PROFIBUS	is	used	in	special	
+fields	of	application,	such	as	process	automation,	building	control	technology	or	
+automated production.
+Device	profiles	define	device-specific	functions.	The	device	description	language	
+(DDL) and function blocks ensure that devices are fully interoperable.
+Transparent Communication from
+Sensor/Actuator up to Area
+CNC
+VME/PC
+PLC DCS
+Ethernet/TCP/IP TCP/IP/Ethernet
+Factory
+Level
+Field-
+Level
+Cell
+Level
+Bus Cycle
+Time
+< 1000 ms
+Bus Cycle
+Time
+< 100 ms
+Bus Cycle
+Time
+< 10 ms
+PROFIBUS-DP PROFIBUS-PA
+PROFIBUS-FMS
+PC/VME
+Area
+Controller
+PAGE 7
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Characteristics
+Characteristics and fundamentals
+1-3
+1
+● Proven
+PROFIBUS	is	a	complete,	proven	technology	which	has	already	stood	the	test	of	
+more	than	100,000	applications	in	the	fields	of	building	automation,	automated	
+production, process automation and drive technology.
+● Certificated
+Tests of conformity and interoperability performed in laboratories authorised by the 
+PROFIBUS	user	organisation	(PNO),	combined	with	PNO	device	certification,	give	
+the user an assurance of guaranteed quality and functionality, even in multi-vendor 
+installations.
+PAGE 8
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-4
+1
+1.2 Basic principles
+To	construct	a	PROFIBUS	network	and	exchange	data	over	it,	it	is	not	imperative	
+to	read	through	and	understand	the	following	chapter	in	full.	If	you	plan	PROFI-
+BUS	communication	with	Saia	PCD	devices	only,	this	in	itself	is	a	very	simple	
+undertaking	and	you	can	continue	directly	with	chapter	2.
+However,	if	you	would	also	like	to	improve	your	knowledge	and	understanding	of	
+PROFIBUS	theory,	you	will	certainly	find	the	following	chapter	useful.
+1.2.1 ISO/OSI reference model
+PA-Profiles
+FMS
+Device
+Profiles
+IEC Interface*
+FMS
+IEC 1158-2
+User
+Layer
+(3)-(6)
+Application
+(7)
+Data Link
+(2)
+Physical
+(1)
+not used
+PADP
+DP-Extensions
+Fieldbus Data Link (FDL)
+Fieldbus Message
+Specification (FMS)
+DP-Profiles
+RS-485 / Fiber Optic
+DP Basic Functions
+EN 50 170 PROFIBUS profiles
+PAGE 9
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-5
+1
+1.2.2	 PROFIBUS	layer	1	(physical	layer)
+PROFIBUS	protocol	architecture	follows	the	ISO/OSI	(Open	System	Interconnec-
+tion)	reference	model,	in	line	with	international	standard	ISO	7498.
+In	this	model	each	layer	takes	on	precisely	defined	tasks.	Layer	1	(physical	layer)	
+defines	the	physical	transmission	technology.	Layer	2	(data	link	layer)	defines	the	
+bus	access	procedure	Layer	7	(application	layer)	defines	the	user	level.
+A	fieldbus	system’s	field	of	use	is	essentially	determined	by	the	choice	of	trans-
+mission medium and the physical bus interface. Apart from the requirements of 
+transmission security, expenditure on purchasing and installing the bus cable is 
+crucially important. The PROFIBUS standard therefore provides for various forms 
+of	transmission	technology,	while	retaining	a	uniform	bus	protocol.
+Cable-based transmission:	This	version	complies	with	US	standard	EIA	RS-485	
+and	was	defined	as	the	basic	version	for	applications	in	the	field	of	production	
+engineering, building control technology and drive technology. It uses a shielded, 
+twisted-pair	copper	cable.
+Fibre-optic cable: For applications in very interference-prone environments, and 
+to	extend	working	range	at	high	transmission	speeds,	the	PNO	has	worked	out	a	
+specification	for	fibre-optic	based	transmission	technology.
+Intrinsically safe transmission: PROFIBUS-PA enables the intrinsically safe 
+transmission and supply of stations via the bus. The transmission technology is 
+described in international standard IEC 1158-2.
+PAGE 10
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-6
+1
+1.2.3	 PROFIBUS	layer	2	(data	link	layer)
+The second layer of the OSI reference model realises the functions of bus access 
+control, data protection and the transaction of transmission protocols and tele-
+grams.	In	PROFIBUS,	layer	2	is	called	the	fieldbus	data	link	(FDL).
+Bus	access	control	(medium	access	control,	MAC)	defines	the	procedure	for	when	
+a station on the bus can transmit data. The MAC must ensure that, at any one 
+time, only one station ever has authorisation to transmit.
+The PROFIBUS bus access method therefore includes a token passing proce-
+dure	for	communication	between	complex	stations	(masters)	and	an	underlying	
+master-slave	procedure	for	the	communication	of	complex	stations	with	low-ex-
+pense peripheral devices (slaves). This combined procedure is called a hybrid bus 
+access procedure.
+In	PROFIBUS,	the	token-passing	procedure	only	applies	between	complex	sta-
+tions (masters).
+The	master-slave	procedure	allows	the	master	(active	station)	currently	hold-
+ing transmission authorisation to speak to its assigned slave devices (passive 
+stations). This gives the master the opportunity of transmitting messages to the 
+slaves or uploading messages from them.
+With	this	hybrid	access	method	for	PROFIBUS,	the	following	system	configura-
+tions can be realised:
+●		Straight master-slave system
+●		Straight master-master system (token passing)
+●		A system combining both methods
+The	following	figure	shows	a	PROFIBUS	structure	with	three	active	stations	(mas-
+ters) and seven passive stations (slaves). The three master devices form a logical 
+token ring.
+If an active station receives the token telegram, it can exercise for a certain time 
+the	function	of	master	over	the	bus,	communicating	with	all	slave	stations	in	a	
+master-slave	relationship	and	with	all	master	stations	in	a	master-master	relation-
+ship.
+PAGE 11
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-7
+1
+PROFIBUS
+Passive Stationes, Slave Devices are polled
+Active Stationes, Master Devices
+PLC PLCPC
+The term «token ring» refers to the organisational stringing together of active sta-
+tions	which	form	a	logical	ring	based	on	their	bus	addresses.	In	this	ring,	the	token	
+(bus	access	authorisation)	is	passed	from	one	master	to	the	next	in	a	predefined	
+order (ascending addresses).
+The task of the bus access controller (MAC) of the active stations is to recognise 
+this	logical	assignment	in	the	bus	system’s	«run-up	phase»	and	establish	the	
+token	ring.	While	operating	in	«run»,	any	(active)	station	which	is	faulty	or	switched	
+off	is	disconnected	from	the	ring	and	any	newly	added	active	station	is	connected	
+to	it.	These	performance	characteristics,	together	with	the	recognition	of	faults	in	
+the transmission medium, line receiver and errors relating to station addressing 
+(e.g. multiple occupation) or token passing (e.g. multiple tokens or token loss), are 
+typical features of PROFIBUS access control.
+Another important task of layer 2 is data protection. The PROFIBUS layer 2 tele-
+gram formats enable high transmission security. All telegrams have a Hamming 
+distance of HD = 4. This is achieved by application of the rules under international 
+standard IEC 870-5-1, selecting special start and end characters for telegrams, 
+slip-free synchronisation, parity bits and control bytes.
+PROFIBUS-FMS	and	PROFIBUS-DP	both	use	their	own	specific	subset	of	layer	2	
+services	(see	table	below).	Services	are	called	from	higher-ranking	layers	via	the	
+service access points (SAPs) of level 2. With PROFIBUS-FMS these service ac-
+cess points are used for addressing the logical communication relationships. With 
+PROFIBUS-DP	a	precisely	defined	function	is	assigned	to	each	service	access	
+point used. For all active and passive stations, several service access points can 
+be	used	in	parallel.	A	difference	is	drawn	between	source	(SSAP)	and	receiving	
+service access points (RSAP).
+PAGE 12
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-8
+1
+Services of the PROFIBUS data protection layer (layer 2).
+Service Function Used with
+SDA Send	Data	with	Acknowledge FMS
+SRD Send	And	Request	Data	With	Acknowledge FMS→DP
+SDN Send	Data	With	No	Acknowledge FMS→DP
+CSRD Cyclic	Send	And	Request	Data	With	Acknowledge FMS
+The	following	SAPs	are	occupied	by	PROFIBUS-DP	and	cannot	be	used	for	FMS	
+in	a	mixed	FMS-DP	network:
+Function SSAP DSAP Service
+Data_Exchange Default Default SRD
+Chk_Cfg 62 62 SRD
+Set_Prm 62 61 SRD
+Slave_Diag 62 60 SRD
+Get_Cfg 62 59 SRD
+Global_Control 62 58 SDN
+RD_Outp 62 57 SRD
+RD_Inp 62 56 SRD
+Set_Slave_Add 62 55 SRD
+Reserved 54
+Reserved 53
+Reserved 52
+Reserved 51
+PAGE 13
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-9
+1
+1.2.4 PROFIBUS-DP
+PROFIBUS	layer	7	(application	layer)
+Layer 7 of the ISO/OSI reference model is not used in PROFIBUS-DP.
+PROFIBUS-DP characteristics
+ ● Replaces	costly	parallel	cabling	between	PLC/PC	and	I/Os
+ ● Fast: transmits 1 kbyte of input and output data in less than 2 ms
+ ● Powerful	tools	reduce	engineering	costs
+ ● Supported by all main PLC manufacturers
+ ●  Great diversity of products available,  
+e.g. PLCs/PCs, I/Os, drives, valves, encoders
+ ● Cyclic and acyclic data transmission possible
+ ● Monomaster	and	multimaster	networks	can	be	created
+ ● Up to 246 bytes of input and output data possible per station
+PROFIBUS-DP device types
+PROFIBUS-DP	defines	three	device	types:
+● DP	master	class	1	(DPM1)
+	 	Central	control	which	exchanges	data	with	the	local	I/Os	(DP	slaves)	Several	
+DPM1s	are	allowed,	typical	devices	are	PLCs,	PCs,	VMEs
+● DP	master	class	2	(DPM2)
+	 	Project	planning,	monitoring	or	engineering	tool	which	is	used	for	commission-
+ing or parameter setting/monitoring of DP slaves
+● DP slave
+	 	Local	device	with	direct	interface	to	input/output	signals;	typical	devices	are	I/
+Os, drives, valves, control units, etc.
+PAGE 14
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-10
+1
+PROFIBUS-DP systems
+PROFIBUS-DP can operate either as a monomaster or multimaster system:
+● Monomaster system
+DP - Slaves
+SPS
+Profibus DP
+PROFIBUS-DP Monomaster System
+Monomaster Systems reach the 
+shortest bus cycletime
+They consist of:
+- 1 DP-Master (Class 1)
+- 1 to max. 125 DP-Slaves
+- DP-Master (Class 2) - optional
+DP-Master (Class 1)
+Distributed inputs and outputs
+PROFIBUS-DP	usually	works	as	a	monomaster	system.	This	means	that	a	master	
+device,	e.g.	a	PLC,	is	networked	via	PROFIBUS-DP	with	distributed	peripheral	
+devices, e.g. inputs and outputs. PROFIBUS-DP replaces the parallel cabling be-
+tween	the	PLC	and	local	peripherals.
+A	PROFIBUS-DP	monomaster	system	consists	of	between	1	and	125	slaves,	a	
+class	1	master	(i.e.	the	PLC)	and	an	optional	class	2	master	(i.e.	a	configurator).
+Monomaster	systems	achieve	the	shortest	bus	cycle	times;	they	transmit	1	kbyte	
+of input and output data in less than 2 ms.
+PAGE 15
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-11
+1
+Multimaster system
+PROFIBUS - DP
+PC
+PROFIBUS-DP Multimaster System
+DP-Master
+(Class 2)
+DP-Master
+(Class 1)
+DP-Master
+(Class 1)
+PLCCNC
+Several DP-Masters may access a
+DP-Slave with read functions
+distributed inputs and outputs distributed inputs and outputs
+PROFIBUS-DP Multi-Master systems consist of:
+- multiple Masters (Class 1 or 2)
+- 1 to max. 124 DP-Slaves
+- max. 126 devices on the same bus
+  DP - Slaves  
+PROFIBUS-DP	can	also	be	used	in	a	multimaster	configuration.
+The	figure	shows	two	active	devices,	a	PLC	and	a	CNC.	Each	station	has	as-
+signed input and output devices.
+The advantage of PROFIBUS-DP is that active devices can access the data of 
+jointly	defined	devices.
+The DP class 2 master has the possibility of reading the diagnostic data of all de-
+vices on the bus.
+PROFIBUS-DP communication functions
+PROFIBUS-DP	communication	functions	are	differentiated	according	to	the	follow-
+ing communication relationships:
+● Class 1 master and DP slaves
+● Class 2 master and DP slaves
+● Class 2 master and class 1 master
+PAGE 16
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-12
+1
+Possible communication relationships:
+Function DPM1DP 
+slaves
+DPM2 DP 
+slaves
+DPM1 DPM2
+Parameter	setting/configuration ● ● -
+Transmission of slave diagnostic data ● ● -
+Transmission of master diagnostic data - - ●
+Cyclic data communications ● ● -
+Sync + freeze commands ● ● -
+Set slave address - ● -
+Acyclic read of input/output images - ● -
+Acyclic	read/write	of	data ●*) ●*) -
+Alarm handling functions ●*) ●*) -
+Upload/download	of	master	parameter	records - - ●
+*) These	extended	PROFIBUS-DP	functions	are	specified	in	technical	instruction	no.	2.082.
+PROFIBUS-DP	does	not	support	communication	between	several	DPM1s.	If	this	
+functionality is required, PROFIBUS-FMS should be used in addition.
+The	extended	DP	functions	are	mainly	used	for	intelligent	slaves	with	many	dif-
+ferent	parameters	which	have	to	be	modified	during	operation.	The	new	read	and	
+write	functions	were	defined	for	this	purpose.
+It	is	important	that	the	extended	DP	protocol	is	downward	compatible	with	basic	
+DP	functions.	That	means	that	devices	on	which	the	new	functions	have	been	
+implemented	are	fully	interoperable	with	devices	lacking	this	extended	function-
+ality.	The	only	restriction	is	that	devices	which	lack	the	extended	functions	cannot	
+execute	the	new	functions. 
+PAGE 17
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-13
+1
+PROFIBUS-DP data transmission
+Data	transmission	with	PROFIBUS-DP	is	based	on	a	highly	efficient	telegram	
+structure.
+SYN SD2 LE SD2 DA SA FC DU FCS EDLEr
+SD2 LE LEr DA SA FC DU FCS EDSD2
+Request Frame
+Frames
+SRD-Request, variable lenght of user data
+SRD-Response, variable lenght of user data
+DP-Slave
+DP-Master
+immediate
+response
+Syn = Synchronisation Time
+SD2 = Start Delimitter 2
+LE = Length
+DU = Data Unit
+FCS = Frame Check Sequence
+ED = End Delimitter
+LEr = repeated Length
+DA = Destination Address
+SA = Source Address
+FC = Function Code
+DP-Master
+Header Input-Data Trailer
+Trailer Header
+DP-SlaveSYN SD2 LE SD2 DA SA FC DU FCS EDLEr
+SD2 LE LEr DA SA FC DU FCS EDSD2
+Output-Data
+PROFIBUS-DP
+Principle of User Data Transfer
+Response Frame
+The input and output data of a device is transferred in a single bus cycle. The 
+master	sends	a	calling	telegram	which	contains	output	data	for	the	DP	slave.	In	its	
+reply telegram, the DP slave transmits its input data to the master. After receipt of 
+the	calling	telegram,	the	DP	slave	answers	directly.	Each	telegram	can	transmit	up	
+to 244 bytes of input or output data.
+If the calling or reply telegrams have been corrupted by electromagnetic interfer-
+ence, the master immediately repeats the message cycle. The number of repeti-
+tions	can	be	configured.
+All	PROFIBUS	telegrams	have	high	transmission	security	with	a	Hamming	dis-
+tance	of	HD	=	4.	The	Hamming	distance	is	a	measure	of	a	system’s	error	pro-
+tection. This means that the higher the Hamming distance, the better the system 
+security. HD = 4 meets the requirements for security-related applications.
+PAGE 18
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-14
+1
+PROFIBUS-DP bus cycle time
+The bus cycle time of a PROFIBUS-DP system depends mainly on the baud rate 
+used.	A	baud	rate	of	between	9.6	kbit/s	and	12	Mbit/s	can	be	selected	in	incre-
+ments.
+                  
+   
+Conditions: Each DP-Slave has 2 byte input and 2 byte output data
+ The minimum Slave Interval time is 200 micro seconds
+ Tsdi = 37 Bit times, Tsdr = 11 Bit times
+Typical Bus Cycle Time of a
+PROFIBUS-DP Monomaster System
+Bus cycle time
+[ms]
+DP-Slaves
+12 MBit/s
+1.5 MBit/s
+500 kBit/s
+Example:
+In	a	system	configuration	of	30	DP	slaves	working	at	12	Mbit/s,	and	in	which	each	
+slave has 2 bytes of input and output data, a bus cycle time of approx. 1 ms is 
+achieved.
+This	shows	that	PROFIBUS-DP	can	be	used	even	in	very	time-critical	applications.
+PAGE 19
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Basic principles
+Characteristics and fundamentals
+1-15
+1
+Project planning with PROFIBUS-DP bus cycle time
+PROFIBUS	not	only	describes	the	communication	of	devices	with	each	other;	it	
+also	provides	a	framework	for	open,	vendor-independent	project	planning.
+ 
+SPS
+PROFIBUS-DP
+Open Configuration permits Plug and Play
+PROFIBUS
+configuration tool
+System configuration
+Electronic Device Data Sheets (GSD-file)
+Project planning tools, e.g. SNET, use electronic data sheets for the devices. 
+These	electronic	data	sheets	are	called	device	database	files	or	GSD	(General	
+Station	Description)	files.	These	files	are	usually	supplied	on	a	diskette	with	the	
+device.	For	many	PROFIBUS	devices,	these	files	can	also	be	downloaded	from	
+the PROFIBUS homepage http://www.profibus.com.
+Manufacturers	describe	the	functionality	of	their	devices	with	the	help	of	a	GSD	
+file.	The	format	of	GSD	files	has	a	fixed	definition	within	the	PROFIBUS	standard.	
+The	project	planning	tool	reads	the	GSD	file	into	its	internal	database	and	takes	
+into consideration all the characteristics of the device in question.
+This	simplifies	project	planning	and	can	be	carried	out	with	a	vendor-independent	
+project planning tool. PROFIBUS-DP therefore permits genuine plug-and-play 
+solutions and reduces engineering costs.
+PAGE 20
+2. Modules for the PROFIBUS-DP network
+2.1 PROFIBUS-DP master module for PCD1/2.Mxxx
+PROFIBUS-DP PCD7.F750 master card
+ 
+ Dual port 
+RAM 
+ 
+ Opto  
+RS 
+485 Driver
+ DC  +5V 
+S+5V 
+RxD/TxD-P
+RxD/TxD-N
+ 
+ 
+ PCD 
+CPU
+ 
+PCD7.F750 
+ 
+ 
+Siemens 
+ASPC2 
+ 
+ 
+ µC
+ C165
+ 
+ 
+ RAM 
+ 
+ Flash 
+ 
+Quarz
+galvanic 
+isolation
+ 
+RTS 
+RUN 
+ERR
+OR 
+LED 
+Bootstrap
+loader Port 
+ 
+DP+5
+V 
+PGN
+D 
+DPGN
+D SGN
+D 
+PTC 
+ 
+µC - Bus  
+DC 
+PCD Databus
+Block diagram of PCD7.F750
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+PROFIBUS-DP master module for PCD1/2.Mxxx
+Modules for the PROFIBUS-DP network
+2-1
+2
+PAGE 21
+Technical data of PCD7.F750
+Function PROFIBUS-DP	master	class	1	E	(DPM1	with	extension)
+Maximum number of stations 32	per	segment/max.	126	per	system	(with	repeaters)
+PROFIBUS controller ASPC2
+Baud rate (kbit/s) 9.6...12,000
+Internal current consumption from 
+5 V bus
+Max. 400 mA
+Current output DP+5 V Max.	50	mA	short-circuit	protected	with	PTC
+Electrical isolation Between	PCD-GND	and	PROFIBUS	connection	GND
+Functions supported
+Function PROFIBUS-DP	master	class	1	E	(DPM1	with	extension)
+Request Response
+ Data_Exchange ×
+ Slave_Diag ×
+ Set_Prm ×
+ Chk_Cfg ×
+ Global Control ×
+ Get_Master_Diag ×
+Meaning of LEDs
+The	PCD7.F750	is	equipped	with	a	RUN	LED	and	an	ERROR	LED.	The	LEDs	on	
+the	PCD7.F750	card	are	switched	in	the	following	way:
+Function PCD7.F750 Run LED PCD7.F750 Error LED
+Power-up 1 sec. on 1 sec. on
+then flashing	~	10	Hz off
+DP SASI instruction flashing	~	1	Hz 0.1 sec. on
+then flashing	~	1	Hz	–0.01	Hz off
+Program running normally flashing	~	1	Hz	–0.01	Hz off
+Errors	are	indicated	as	follows:
+PCD7.F750 Run LED PCD7.F750 Error LED
+flashing	~	10	Hz off
+off on
+flashing	~	1	Hz flashing	~	1	Hz
+Possible causes of errors are:
+●	 PCD7.F750	firmware	does	not	match	the	firmware	of	the	PCD1/2/6 
+●	 Wiring	is	incorrect	(bad	cable,	wires	transposed,	no	termination) 
+● Too many I/O bytes used 
+●	 Wrong	configuration
+Errors	are	stored	in	the	PCD’s	history	log.	To	discover	the	precise	cause	of	an	
+error, the history log must be displayed.
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+PROFIBUS-DP master module for PCD1/2.Mxxx
+Modules for the PROFIBUS-DP network
+2-2
+2
+PAGE 22
+2.2 PROFIBUS-DP slave module for PCD1/2.Mxxx
+The	following	PROFIBUS-DP	slave	modules	are	available:
+Module Function
+PCD7.F770 DP slave module for PCD1/2.M300
+PCD7.F772 DP	slave	module	for	PCD2	with	Port	3,	RS-485
+PCD7.F774*) DP	slave	module	for	PCD1/2	with	Port	3,	RS-485	 
+and connection for PCD7.D160 terminal
+*) Only available as PCD7.D164 terminal set.
+This	set	includes	a	plug-on	D160	terminal	with	the	additional	RS-485	communica-
+tions ports (electrically isolated) on Port 3 and PROFIBUS-DP slave interface.
+With the PCD1, Port 3 is not supported and, for the terminal, the housing cover 
+with	a	recess	(order	number	4	104	7338	0)	must	also	be	used.
+2.2.1 PROFIBUS-DP PCD7.F77x slave card
+ 
+ 
+Siemens  
+SPC4.1 
+ 
+ 
+ RS 
+485
+ Driver
+ DC 
+ DC 
++5V  S+5V 
+RxD/TxD-P
+ RxD/TxD-N
+ 
+ 
+ 
+ PCD 
+CPU
+ 
+ 
+DUART 
+Port 2 to Display 
+PCD7.D160 
+Port 3   RS 
+485
+ Driver
+ 
+/TxD-/RxD 
+TxD-RxD 
+Oszil. 
+galvanic isolation 
+ Quarz
+ 
+RTS 
+DP+5V
+ DPGN
+ PGND  
+SGND PTC 
+ 
+ 
+galvanic isolation  
+PCD Data und 
+Adressbus  
+PCD7.F774 
+Opto
+Opto
+Block diagram of PCD7.F770/F772/F774
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+PROFIBUS-DP slave module for PCD1/2.Mxxx
+Modules for the PROFIBUS-DP network
+2-3
+2
+PAGE 23
+Technical data for PCD7.F770/F772/F774
+Function Profibus-DP	slave	E	
+Maximum number of stations 32	per	segment/max.	126	per	system	(with	repeaters)
+PROFIBUS controller SPC4.1
+Baud rate (kbit/s) 9.6...12,000
+Internal current consumption 
+from 5 V bus
+Max. 250 mA
+Current output DP + 5 V Max.	50	mA	short-circuit	protected	with	PTC
+Electrical isolation Between	PCD-GND	and	PROFIBUS	GND		
+Port 2 On PCD7.F774 for display D160 (TTL level)
+Port 3 On PCD7.F772 and PCD7.F774, RS-485 electrically isolated from 
+PCD-GND and PROFIBUS GND
+Functions supported
+Function PROFIBUS-DP	master	class	1	E	(DPM1	with	extension)
+Request Response
+Data_Exchange ×
+RD_Inp ×
+RD_Outp ×
+Slave_Diag ×
+Set_Prm ×
+Chk_Cfg ×
+Get_Cfg ×
+Global Control ×
+Supported PROFIBUS-DP diagnostics of PCD7.F77x slave modules 
+The PCD7.F77x slave modules support the 6 bytes of standard PROFIBUS-DP 
+diagnostics. (Base+0 to Base+5)
+In addition, byte 7 (Base+6) of the expanded PROFIBUS-DP diagnostics is sent in 
+the	following	cases:
+● CPU in STOP 
+● CPU in HALT
+Here,	byte	7	(Base+6)	stores	the	following	information:
+CPU status Transmission of byte 7 
+(Base+6)
+ASCII character in byte 7
+RUN No No character
+STOP Yes ‘S’
+HALT Yes ‘H’
+GSD	files	for	PROFIBUS-DP	SBC	slaves
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+PROFIBUS-DP slave module for PCD1/2.Mxxx
+Modules for the PROFIBUS-DP network
+2-4
+2
+PAGE 24
+2.3 Ports 2 and 3 of PCD7.F77x slave modules
+2.3.1 Port 2
+Port 2 is connected directly to the PCD7.D160 plug-on terminal. Further informa-
+tion can be found in the PCD7.D160 manual (document number 26-753).
+2.3.2 Port 3
+Port	3	can	be	employed	as	a	user-definable	RS-485	communications	port.	This	
+port can only be used on the PCD2. Connection is via the 10-pole connector:
+39
+37
+36
+–
+–
+34
+33
+32
+31
+38
+PCD2.Mxxx
+ 
+Rx-Tx
+ 
+ 
+/Rx-/Tx
+ RS-485 
+line 3 PGND
+/Rx-/Tx
+ Rx-Tx
+ 
+ 
+PGND
+ 
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Ports
+Modules for the PROFIBUS-DP network
+2-5
+2
+PAGE 25
+2.4 Connection of PROFIBUS-DP modules 
+2.4.1 PCD7.F7XX module
+Location of slot:
+Space B
+for function module
+F7..
+Space A
+for function
+module F1..
+Slot B on PCD1.Mxxx:
+Space B1
+for function module
+F5... or F7...
+Space B2
+for function 
+module F5... 
+or F7...
+Space A
+for module 
+F1...
+Slots B1 and B2 on PCD2.M170/480:
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Connection of PROFIBUS-DP modules 
+Modules for the PROFIBUS-DP network
+2-6
+2
+PAGE 26
+2.4.2 Meaning of connections:
+Signal Meaning PCD7.F7xx 
+connector
+Standard A-B 
+connector
+Standard cable 
+green/red
+CNTR-P/RTS Control signal for repeater 0
+PGND Shield/protective ground 1
+RxD/TxD-N Receive/transmit data, 
+minus 2 A Green
+RxD/TxD-P Receive/transmit data, plus 3 B Red
+DP GND Ground for DP +5 V 4
+DP +5 V 5 V supply for line termina-
+tion resistors 5
+CNTR-N Control signal for repeater
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Connection of PROFIBUS-DP modules 
+Modules for the PROFIBUS-DP network
+2-7
+2
+PAGE 27
+2.4.3 PROFIBUS DP master, PCD7.F750 module
+PCD1.M12x / M13x	and	PCD2.M120 / M150	The PROFIBUS should be connected 
+directly to the PCD7.F750 module.
+5 
+3 
+2 
+1 
+0 
+4 
+DP+5V 
+DP GND 
+RxD/TxD-P 
+PGND 
+RTS 
+RxD/TxD-N  
+PCD7.F750
+PCD2.M170 The PROFIBUS can be connected to the D-Sub connector. The pin 
+configuration	is	as	per	the	PROFIBUS	standard.	Alternatively,	the	PROFIBUS	can	
+be	connected	to	the	screw	terminal	block.
+Profibus DP Master
+PCD2.M170
+PCD7.F750 PCD7.F750
+B2B1
+B1 B2
+#0#8#9
+PGU
+39
+38
+37
+36
+35
+34
+33
+32
+31
+30
+39
+38
+37
+36
+34
+33
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+43
+44
+46
+47
+48
+49
+Port # 9
+Port # 8
+Slot B1;	Port	#9 B2;	Port	#8
+Connection type D-Sub 
+9-pole
+Screw	terminals	10-pole D-Sub 
+9-pole
+Screw	terminals	10-pole
+Signal Pin no. Terminal no. Pin no. Terminal no.
+RTS / CNTR-P 4 33 4 43
+PGND 1 35 1 45
+RxD / TxD-N 8 36 8 46
+RxD/TxD-P 3 37 3 47
+DP GND 5 38 5 48
+DP +5  V 6 39 6 49
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Connection of PROFIBUS-DP modules 
+Modules for the PROFIBUS-DP network
+2-8
+2
+PAGE 28
+PCD2.M480
+ Profibus DP Master 
+PCD2.M480 
+PCD7.F750 
+B1 
+Option 
+B1  S-Net 
+MPI 
+ COM 
+PGU 
+39 
+38 
+37 
+36 
+35 
+34 
+33 
+32 
+31 
+30 
+39 
+38 
+37 
+36 
+34 
+33 
+40 
+41 
+42 
+43 
+44 
+45 
+46 
+47 
+48 
+49 
+43 
+44 
+46 
+47 
+48 
+49 
+Port # 9 
+Port # 8 
+PCD7.F750 
+B2 
+#0 #10 #9 
+Slot B1;	Port	#9 B2;	Port	#8
+Connection type D-Sub 
+9-pole
+Screw	terminals	10-pole Screw	terminals	10-pole
+Signal Pin no. Terminal no. Terminal no.
+RTS / CNTR-P 4 33 43
+PGND 1 35 45
+RxD / TxD-N 8 36 46
+RxD/TxD-P 3 37 47
+DP GND 5 38 48
+DP +5  V 6 39 49
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Connection of PROFIBUS-DP modules 
+Modules for the PROFIBUS-DP network
+2-9
+2
+PAGE 29
+2.4.4 PROFIBUS DP slave, PCD7.F77x module
+PCD1.M12x / M13x	and	PCD2.M120 / M150	The bus should be connected directly 
+to the PCD7.F770 or PCD7.F772 module.
+5 
+3 
+2 
+1 
+0 
+4 
+DP+5V 
+DP GND 
+RxD/TxD-P 
+PGND 
+RTS 
+RxD/TxD-N  
+PCD7.F77x
+PCD7.F770 with PCD2.M170 The PROFIBUS can be connected to the D-Sub 
+connector.	The	pin	configuration	is	as	per	the	PROFIBUS	standard.	Alternatively,	
+the	PROFIBUS	can	be	connected	to	the	screw	terminal	block.
+Profibus DP Master 
+PCD2.M170 
+PCD7.F77x PCD7.F77x 
+B2 B1 
+B1 B2  
+#0#8#9
+PGU 
+39 
+38 
+37 
+36 
+35 
+34 
+33 
+32 
+31 
+30 
+39 
+38 
+37 
+36 
+34 
+33 
+40 
+41 
+42 
+43 
+44 
+45 
+46 
+47 
+48 
+49 
+43 
+44 
+46 
+47 
+48 
+49 
+Port #9
+Port #8
+Slot B1;	Port	#9 B2;	Port	#8
+Connection type D-Sub 
+9-pole
+Screw	terminals	10-pole D-Sub
+9-pole
+Screw	terminals	10-pole
+Signal Pin no. Terminal no. Pin no. Terminal no.
+RTS / CNTR-P 4 33 4 43
+PGND 1 35 1 45
+RxD / TxD-N 8 36 8 46
+RxD/TxD-P 3 37 3 47
+DP GND 5 38 5 48
+DP +5  V 6 39 6 49
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Connection of PROFIBUS-DP modules 
+Modules for the PROFIBUS-DP network
+2-10
+2
+PAGE 30
+PCD7.F772 with PCD2.M170
+Same as for PCD7.F770, but one serial RS-485 port per module in addition
+PCD2.M170
+PCD7.F772 PCD7.F772
+B2B1
+B1 B2
+#0#8#9
+PGU
+39
+38
+37
+36
+35
+34
+33
+32
+31
+30
+40
+41
+42
+43
+44
+45
+46
+47
+48
+49
+41
+42
+Port # 3
+Port # 5
+32
+31
+Slot B1;	Port	#3 B2;	Port	#5
+Connection type Screw	terminals Screw	terminals
+Signal Terminal no. Terminal no.
+ / RX- / TX 32 42
+RX-TX 31 41
+PGND 30 40
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Connection of PROFIBUS-DP modules 
+Modules for the PROFIBUS-DP network
+2-11
+2
+PAGE 31
+2.5 PCD7.T160 termination box 
+	 (This	product	has	been	discontinued;	please	use	PCD7.T161	or	PCD7.T162)
+For	confidence	and	ease	of	maintenance	when	using	an	RS-485	network	it	is	
+important to install the line termination resistors separately and accessibly. The 
+termination	box	serves	this	purpose	whereby,	depending	on	the	physical	charac-
+teristics of the line, a suitable line termination resistor can be selected by means of 
+2 jumpers. Signal lines D and /D are biased at the required equilibrium rest poten-
+tial	with	an	electrically	isolated	supply.
+The operating range of the PCD7.T160 termination box extends to a baud rate of 
+12 Mbaud.
+Detailed information can be found in the manual: “Installation components for 
+RS-485	networks”	(document	number	26-740).
+2.5.1	 Differences	between	the	PCD7.T160,	PCD7.T161	  
+and PCD7.T162 devices
+PCD7.T160 PCD7.T161 PCD7.T162 Comments
+Power	supply 24 VDC 230 VAC 24 VAC/DC
+Housing 45 × 75 × 105 mm 17.5 × 85 × 64 mm 17.5 × 85 × 64 mm PCD7.T161 and 
+PCD7.T162 comply 
+with	the	standards	for	
+switch	cabinets	
+Line termination 
+resistance
+335, 224, 149 or 
+122	Ω	selectable	
+using	DIL	switch	
+Fixed	120	Ω Fixed	120	Ω The default value for 
+PCD7.T160	is	122		Ω
+Display 2 LEDs for 24 and 
+5 VDC
+LED for 230 VAC LED for 24 V
+*PCD7.T160	was	phased	out	at	the	end	of	2011
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+PCD7.T160 termination box 
+Modules for the PROFIBUS-DP network
+2-12
+2
+PAGE 32
+2.6 PCD7.T161 termination box
+2.6.1 Functional description
+For	confidence	and	ease	of	maintenance	when	using	an	RS-485	network	it	is	
+important to install the line termination resistors separately and accessibly. The 
+RS-485 standard requires the bus to be terminated. The termination box serves 
+this purpose. 
+Signal	lines	D	and	/D	are	biased	at	the	required	equilibrium	rest	potential	with	an	
+electrically isolated supply.
+The	line	termination	resistance	has	a	fixed	value	of	120	Ω,	corresponding	to	the	
+default value (factory setting) of the old PCD7.T160 device. 
+2.6.2 Block diagram/connection diagram
+RS485
+3N
+4N
+1L
+2L
++5V
+0V
+1103
+120 Ω
+/D
+D
+L
+N
+PCD7.T161
+230 VAC, 50Hz
+230 VAC
+2.6.3 Technical data
+17.5 mm housing (same as for ALD)
+230	VAC	+15	%	/–20	%	
+Power	consumption	of	0.4	W
+Electrically	isolated	power	supply
+Fixed	line	termination	resistance	of	120	Ω
+LED operating indicator
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+PCD7.T161 termination box
+Modules for the PROFIBUS-DP network
+2-13
+2
+PAGE 33
+2.7 PCD7.T162 termination box
+2.3.1 Functional description
+For	confidence	and	ease	of	maintenance	when	using	an	RS-485	network	it	is	
+important to install the line termination resistors separately and accessibly. The 
+RS-485 standard requires the bus to be terminated. The termination box serves 
+this purpose. 
+Signal	lines	D	and	/D	are	biased	at	the	required	equilibrium	rest	potential	with	an	
+electrically isolated supply.
+The	line	termination	resistance	has	a	fixed	value	of	120	Ω,	corresponding	to	the	
+default value (factory setting) of the old PCD7.T160 device. 
+2.7.2 Block diagram/connection diagram
+RS485
+3N
+4N
+1L
+2L
++5V
+0V
+1103
+120 Ω
+/D
+D
+L/0VDC
+N/24VDC
+PCD7.T162
+24 VAC/DC, 50Hz
+24 VAC/DC
+2.7.3 Technical data
+17.5 mm housing (same as for ALD)
+24		VAC	/	DC	–15		%	/+	15	%	
+Power	consumption	of	0.4	W
+Electrically	isolated	power	supply
+Fixed	line	termination	resistance	of	120	Ω
+LED operating indicator
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+PCD7.T162 termination box
+Modules for the PROFIBUS-DP network
+2-14
+2
+PAGE 34
+2.8 PROFIBUS-DP for PCD3.Mxxxx
+The	PCD3	series	comprises	CPUs	in	which	PROFIBUS	is	already	integrated,	the	
+PCD3.M6440 and PCD3.M6540. No additional plug-in modules are required.
+PCD3.M6440/M6540
+Profibus DP 
+5
+4
+3
+2
+1
+9
+8
+7
+6
+PROFIBUS-DP master, port 10
+D-Sub 
+pin
+Signal PROFIBUS-DP
+1
+2 GND1) Protective earth
+3 B red RxD/
+TxD-P
+Receive/trans-
+mit-positive
+4 En
+5 GND_BUS For line termina-
+tion resistors
+6 +5 V_BUS For line termina-
+tion resistors
+7 24 V1)
+8 A green RxD/
+TxD-N
+Receive/trans-
+mit-negative
+9Port 0 Port 10
+1) not electrically isolated
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+PROFIBUS-DP for PCD3.Mxxxx
+Modules for the PROFIBUS-DP network
+2-15
+2
+PAGE 35
+Terminal	block	for	supply,	watchdog,	interrupt	inputs	and	Port	2 PROFIBUS 
+signal
+PROFIBUS 
+wiringPin Signal Explanation
+1 D Port	#	2;	RS-485 up to 115.2 kbit/s usable 
+as free user port or Profi-S-Bus up to 
+187.5 kbits/s 
+RxD/TxD-N A green
+2 /D RxD/TxD-P B red
+3 Int0 2 interrupt inputs 24 VDC or 1 rapid 
+counter 24 VDC 4 Int1
+5 WD Watchdog6 WD
+7 +24 V
+Supply voltage8 GND
+RS-485	terminator	switch
+Switch	
+position Designation Explanation
+Left O Without termination resistors
+Right C With termination resistors
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+PROFIBUS-DP for PCD3.Mxxxx
+Modules for the PROFIBUS-DP network
+2-16
+2
+PAGE 36
+2.9 PROFIBUS-DP for PCD2.M5_
+Slot C is intended to take the interface for PROFIBUS applications.
+A2
+A1
+C
+PCD2.M5540
+0 321
+7 456
+Slot input/output
+2.9.1 PROFIBUS DP master, PCD7.F7500 module for PCD2.M5xxx 
+The PROFIBUS should be connected directly to the PCD7.F7500 module.
+PCD2.M5xxx
+PCD7.F7500
+ PCD7.F7500 for connection as PROFIBUS-DP master 
+(12 Mbit/s).
+To	avoid	reflections,	each	segment	must	be	terminated	at	the	line	ends.	According	
+to the PROFIBUS standard, this cannot be done on the device. The PCD7.T16x 
+termination boxes or standard 9-pole PROFIBUS-DP D-Sub connectors are suita-
+ble for this.
+Details can be found in manual 26-765 «PROFIBUS DP».
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+PROFIBUS-DP for PCD2.M5_
+Modules for the PROFIBUS-DP network
+2-17
+2
+PAGE 37
+D-Sub 9-pole allocation
+Space C
+Connection type D-Sub 9-pole (female)
+Signal Pin no.
+RTS / CNTR-P 4
+PGND Threaded bolts
+RxD / TxD-N 8 A (green)
+RxD/TxD-P 3 B (red)
+DP GND 5
+DP +5  V 6
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+PROFIBUS-DP for PCD2.M5_
+Modules for the PROFIBUS-DP network
+2-18
+2
+PAGE 38
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+ 
+Planning and installation
+3-1
+3
+3.  Planning and installation of a PROFIBUS-DP network
+Creating	a	PROFIBUS-DP	network	can	be	roughly	divided	into	the	following	steps:
+a) 	 Planning	and	installation	of	the	network
+b) 	 Network	definition	and	configuration	with	the	configurator
+c)  Writing the user program
+d)  Commissioning
+This chapter does not describe any details. It is only intended as a guide and to 
+provide	ideas	for	the	procedure	to	follow	when	planning	and	installing	a	PROFIB-
+US-DP	network.	Detailed	technical	information	can	be	found	in	the	manual	«In-
+stallation	components	for	RS-485	networks»	(manual	no.	26-740)	and	in	the	later	
+chapters of this manual.
+PAGE 39
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Planning and installation of the physical layer
+Planning and installation
+3-2
+3
+3.1 Planning and installation of the physical layer
+●	 Construction	of	a	layout	diagram	
+●	 Defining	max.	network	distance
+●	 Defining	max.	segment	distance
+●	 Defining	cable	type
+●	 Defining	max.	baud	rate
+●	 Possible	provision	of	repeaters
+●	 Defining	the	first	and	last	stations
+	 →	 Provide	PCD7.T161	or	PCD7.T162	termination	boxes
+	→   For the correct installation of PROFIBUS, the instructions in the man-
+ual	«Installation	components	for	RS-485	networks»	(manual	no.	
+26-740_ENG) should be strictly adhered to.
+3.1.1 Line parameters
+The	PROFIBUS-DP	bus	line	is	specified	in	EN	50170	as	line	type	A.
+Parameter Line A
+Characteristic	impedance	(Ω) 135…165
+Capacitance per unit length 
+(pF/m)
+< 30
+Loop	resistance	(Ω/km) 110
+Wire diameter (mm) 0.64
+Wire cross section (mm2) > 0,34
+Possible cable supplier:
+Volland	AG,	Rümlang,	Switzerland,	offering	the	following	cable	types:
+●	 	Cable	for	static	installation:	 	 	Unitronic	bus	L2/F.I.P.	 
+Volland ref. 2170221
+●	 	Cable	for	highly	flexible	installation:	 	Unitronic	bus	FD	P	L2/F.I.P	 
+Volland ref. 2170222
+PAGE 40
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Planning and installation of the physical layer
+Planning and installation
+3-3
+3
+3.1.2 Connection of network stations
+To	prevent	reflections	at	the	ends	of	the	line,	each	segment	must	be	terminated	at	
+the physical extremities of its line. This means that lines are biased at the equilibri-
+um rest potential. According to the PROFIBUS-DP standard, this must not be done 
+directly on PROFIBUS-DP devices, but must be achieved by means of external 
+components. Both the PCD7.T161, PCD7.T162 termination box and commercially 
+available 9-pole PROFIBUS-DP D-Sub connectors are suitable for this purpose.
+Network	termination	must	therefore	be	done	as	shown	below:
+ 
+220
+Ω 
+390
+Ω 
+390
+Ω 
+1 
+2 
+3 
+4 
+5 
+6 
+7 
+8 
+9 
+6 DP +5V 
+5 DP GND 
+4 CNTR-P 
+ 
+3 RxD/TxD-P 
+1 Shield 
+8 RxD/TxD-N 
+ 
+9 CNTR-N 
+ 
+For	baud	rates	>	1.5	Mbaud	the	following	combination	of	plug	connectors	should	
+used	at	all	stations	in	the	network,	because	of	their	capacitive	load:
+ 
+1 
+2 
+3 
+4 
+5 
+6 
+7 
+8 
+9 
+1 
+2 
+3 
+4 
+5 
+6 
+7 
+8 
+9 
+390 Ω
+390 Ω
+220 Ω
+*
+*
+*
+*
+*
+*
+*= Series inductance of 110 nH
+PAGE 41
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Planning and installation of the physical layer
+Planning and installation
+3-4
+3
+Possible supplier for 9-pole PROFIBUS-DP D-Sub connectors to connect PCD 
+controllers	to	the	PROFIBUS-DP	network:
+ERNI	Elektrotechnik	AG,	Brüttisellen,	Switzerland:
+●  ERbic junction, horizontal grey: Erni ref. 103648  
+(junction	equipped	with	series	inductance	of	110	nH)
+●	 	ERbic	junction,	horizontal	grey:	 with	PG	connector:		  
+Erni	ref.	103663	 (junction	equipped	with	series	inductance	of	110	nH)
+●	 	ERbic	termination,	horizontal	yellow:		 Erni	ref.	103649	  
+(junction	equipped	with	series	inductance	of	110	nH	plus	termination	resistors	
+of 390 Ω and 220 Ω)
+If a 9-pole D-Sub connector is to be used to connect the PCD1 or PCD2 to PROFI-
+BUS-DP,	the	following	adapter	can	be	used	(D-Sub	9-pole	to	terminals):
+Possible supplier of D-Sub 9-pole to terminal adapter:
+Phoenix	Contact	AG,	8317	Tagelswangen,	Switzerland:
+●	 	VARIOFACE	module	with	spring	connection		 Phoenix	Contact	D-Sub,	
+9-pole, socket board:  ref. 2293666
+
+PAGE 42
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Planning and installation of the physical layer
+Planning and installation
+3-5
+3
+3.1.3 Stub cables
+The	stubs	are	those	cables	leading	from	the	PROFIBUS-DP	network	cable	to	
+PROFIBUS-DP devices.
+Meaning	of	the	symbols	in	the	following	drawings:
+PCD 
+R 
+R 
+R 
+T 
+ PROFIBUS-DP device
+Repeater with line termination resistor active on right 
+and passive on left
+Repeater with line termination resistors active left and right
+Termination box PCD7.T161 or PCD7.T162
+Repeater with line termination resistor active on left 
+and passive on right
+ 
+Admissible lengths for stub cable are described in the next section.
+If	a	network	in	which	stub	cables	are	not	allowed	should,	despite	this	fact,	still	
+require quite a long stub cable, repeaters must be used.
+PAGE 43
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Planning and installation of the physical layer
+Planning and installation
+3-6
+3
+3.1.4 Network layout
+A	maximum	of	126	stations	is	allowed	per	network.	A	segment	comprises	a	maxi-
+mum of 32 stations. (Repeaters count as stations.)
+The overall length of cable and overall stub cable length depend on the bit rate.
+Transmission speed in 
+kbit/s
+Linear extent per segment 
+in metres
+Length of stub cable Total 
+per segment in metres
+9.6 1,200 6.6
+19.2 1,200 6.6
+93.75 1,200 6.6
+187.5 1,000 6.6
+500 400 6.6
+1,500 200 6.6
+3,000 100 0
+6,000 100 0
+12,000 100 0
+Networks	must	not	be	branched	without	special	measures.	By	using	repeaters,	the	
+following	network	structures	are	possible:
+Linear structure
+ 
+T T 
+PCD 
+1. S egment 2. S egment 3. S egment 
+R R 
+PCD PCD PCD PCD PCD PCD PCD PCD 
+Star structure
+ 
+R 
+P C D P C D P C D P C D 
+T T 
+R 
+. . . 
+P C D 
+P C D 
+P C D 
+P C D 
+T 
+T 
+. . . 
+P C D P C D P C D P C D 
+T T 
+R 
+. . . 
+R 
+P C D 
+P C D 
+P C D 
+P C D 
+T 
+T 
+. . . 
+P C D 
+PAGE 44
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Planning and installation of the physical layer
+Planning and installation
+3-7
+3
+Tree structure
+ 
+T 
+1. S egment 
+R 
+T 
+P CD P CD PCD P CD P CD P CD . . . . . . 
+T 
+. . . P CD P CD P CD 
+T 
+R 
+. . . P CD . . . P CD P CD P CD 
+2. S egment 
+T T 
+R 
+R 
+P CD P CD P CD P CD P CD P CD . . . P CD 
+T T 
+T T 
+P CD P CD P CD 
+. . . P CD P CD P CD P CD P CD P CD . . . 
+3. S egment 
+4. S egment 
+5. S egment 
+PAGE 45
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Logical	network	structure
+Planning and installation
+3-8
+3
+3.2 Logical network structure
+3.2.1	 Definition	of	bus	parameters
+● Baud rate 
+● Possible formation of groups for Global Control Service functions
+Important:   Bus parameters must be identical for all stations on the bus 
+With mixed FMS/DP networks, the same baud rate must ap-
+ply to both protocols.
+3.2.2	 Configuration	of	slaves
+After	describing	its	physical	construction,	slave	controllers	must	now	be	integrated	
+into	the	network	and	configured.	Slave	inputs	and	outputs	must	then	be	assigned	
+to	the	master’s	media	(mapping).
+●	 Load	GSD	files	from	external	systems	into	the	configurator 
+●	 Definition	of	network	with	master	and	all	slaves 
+●	 Configuration	of	slaves 
+● Mapping of slave I/Os to master media 
+●  The maximum number of I/O bytes reserved in the master must not be exceeded 
+3.2.3 Checking and assessing the performance values required
+●	 Definition	of	reaction	time 
+●	 Definition	of	supply	system	loading
+PAGE 46
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+General
+The PROFIBUS-DP configurator
+4-1
+4
+4.	 The	PROFIBUS-DP 	configurator
+The	definition	and	configuration	(bus	parameters,	network	stations	and	variable	
+definition)	of	a	PROFIBUS-DP	network	can	be	very	extensive,	depending	on	the	
+size	of	the	project.	This	task	is	made	significantly	easier	for	the	user	by	the	PROFI-
+BUS-DP	configurator.
+Files	generated	by	the	PROFIBUS-DP	configurator	can	be	used	to	configure	SBC	
+devices (masters or slaves).
+4.1 General
+The	PROFIBUS-DP	configurator	consists	of	software	that	runs	under	MS-Windows	
+95/NT and higher. The operating system must have 32-bit data access. No special 
+hardware	is	required.	Windows	technology	is	used	throughout.	This	provides	a	
+good	overview	and	makes	parameter	entry	very	user-friendly.
+For	ease	of	use	only	the	most	important	parameters	appear	in	the	main	windows.	
+To	reach	the	advanced	parameters,	most	windows	have	an	«advanced	setup»	
+button.
+Default	values	are	offered	wherever	the	setting	of	parameters	allows	this.	These	
+default values can also be altered.
+A	value	range	is	specified	for	each	parameter.
+The	configurator	ultimately	creates	an	ASCII	text	file	containing	the	definition	texts	
+for	all	PROFIBUS-DP	connections	in	a	station.	This	text	file	is	used	in	the	SASI	
+command of the PROFIBUS channel.
+As	documentation,	a	list	is	generated	containing	all	the	parameters.	It	shows	the	
+precise	configuration	of	the	station	in	the	PROFIBUS-DP	network.	It	is	also	possi-
+ble to derive a list of all slave elements assigned in the master from this summary.
+Data	structure	generated	by	the	PROFIBUS-DP	configurator
+The	PROFIBUS-DP	configurator	will	set	up	a	‘*.def’	and	‘*.src’	file	for	each	SBC	
+master or SBC slave (applies only to PCD1, 2, 6) contained in the PROFIBUS-DP 
+network.
+These	files	are	then	automatically	linked	to	the	user	program	by	the	PG5	program-
+ming	software.
+It is then possible to use any of the PG5 editors (IL, GRAFTEC, FUPLA or KOPLA) 
+to	access	the	media	defined	in	the	configurator.	User	programs	written	with	earlier	
+programming	software	can	be	imported	into	the	PG5	project	for	further	processing	
+there.
+PAGE 47
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+General
+The PROFIBUS-DP configurator
+4-2
+4
+Overview of the project structure:
+Project /f_iles
+PROFIBUS-DP
+Master
+Project /f_ile (*.dp)
+PROFIBUS-DP
+Network
+Project /f_iles
+PROFIBUS-DP
+Slave Y (PCD1,2,3)
+Project /f_iles
+PROFIBUS-DP
+Slave X (PCD1,2,3)
+Overview of files generated:
+ 
+ 
+PG5
+1
+PCD2 Master
+2
+PCD1 Slave
+.src
+.src
+.def
+.def
+Assembler
+Assembler
+.pcd
+.pcd
+PROFIBUS-DP
+configurator
+PAGE 48
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Procedure	for	PROFIBUS-DP	configuration
+The PROFIBUS-DP configurator
+4-3
+4
+4.2	 Procedure	for	PROFIBUS-DP 	configuration
+The	procedure	can	be	divided	into	the	following	steps:
+1. Start PG5
+2. Open a PROFIBUS-DP project from the Project Manager
+3. Configure	the	network
+4. Define	bus	parameters
+5. Define	the	slave	hardware
+6. Assign slave I/Os to master media
+7. Save	the	configuration
+8. Generate SASI texts for the PCD stations (Build Project)
+9. Generate documentation
+PAGE 49
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-4
+4
+4.3	 Description	of	the	PROFIBUS-DP 	configurator	menus
+4.3.1 Main screen
+Screen description:
+On	the	left,	the	‘Device	List’	window	shows	PROFIBUS-DP	devices	that	are	pres-
+ent in the library.
+
+PAGE 50
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-5
+4
+On	the	right,	the	‘Description:’	window	gives	a	description	of	the	PROFIBUS-DP	
+network.
+The	PROFIBUS-DP	network	can	be	seen	in	the	bottom	right	of	the	window.	All	
+PROFIBUS-DP	devices	present	in	the	network	have	been	inserted	graphically	in	
+this	window.
+The	following	submenus	can	be	selected	in	the	top	toolbar:
+
+PAGE 51
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-6
+4
+4.3.2 ‘Network’ submenu
+New:	 	Opens	a	new	project.	It	is	possible	to	choose	here	between	a	PROFIB-
+US-DP,	SRIO	or	LON	network.	 
+Corresponds to this toolbar icon: 
+Open:  Opens an existing project.  
+Corresponds to this toolbar icon: 
+Close: Closes the active project.
+Save:  Saves the active project under its current name.  
+Corresponds to this toolbar icon:  
+Save	as...:	Saves	the	active	project	under	a	new	name.
+Description...:  Description of the project. This description can be seen on the 
+main	screen,	top	right	window.
+Print...:	 	 	Prints	the	configuration	parameters	of	the	project.	It	is	also	pos-
+sible	to	print	the	parameters	in	an	ASCII	file.
+Print	Preview:	 	Creates	an	on-screen	preview	of	the	printout.	This	displays	all	
+devices used, their settings and the appropriate media.
+Print Setup...: Settings for the printer type and paper format.
+1	...	4:	 Displays	a	list	of	the	4	most	recently	modified	projects	processed.
+Exit: Exits SNET.
+PAGE 52
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-7
+4
+4.3.3 ‘Edit’ submenu
+Cut:  Cuts out and saves a selected slave or master device to the clipboard. 
+This	copies	the	entire	device	configuration,	i.e.	installed	modules	and	
+assigned media are also copied.  
+Corresponds to this toolbar icon: 
+Copy:  Copies a selected slave or master device to the clipboard. This copies 
+the	entire	device	configuration,	i.e.	installed	modules	and	assigned	
+media are also copied.  
+Corresponds to this toolbar icon: 
+Paste:  Inserts a slave or master device currently stored in the clipboard into 
+the	active	project.	This	copies	the	entire	device	configuration,	i.e.	in-
+stalled modules and assigned media are also copied.  
+Corresponds to this toolbar icon: 
+Duplicate:  Creates a copy of a selected slave device. This copies the entire 
+device	configuration	of	the	selected	device,	i.e.	installed	modules	and	
+assigned media are also copied.
+Delete: Deletes a selected slave or master device.
+PAGE 53
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-8
+4
+Bus Parameters...:
+Definition	of	network	speed	and	bus	timeout.
+The	following	baud	rates	are	possible:
+ 9.6 kBd, 19.2 kBd, 93.75 kBd, 187.5 kBd, 500 kBd, 1.5 MBd, 3 MBd, 6 MBd or 
+12 MBd.
+	Note:	If	a	speed	is	selected	that	is	not	available	on	all	network	devices,	it	is	auto-
+matically changed to the highest possible speed supported by all devices.
+PAGE 54
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-9
+4
+Slot	Time:	 	Maximum	period	during	which	the	transmitter	of	a	data	or	token	tele-
+gram	awaits	the	response.	The	master	waits	for	a	calling	telegram	to	
+be	answered	or	acknowledged	until	the	‘Slot	Time’	has	run	out.	This	
+parameter	is	purely	a	monitoring	time	and	therefore	does	not	affect	
+data throughput.  
+Range of values: 52 ... 65535 bit periods
+Min.	Tsdr:	 	Minimum	waiting	time	for	a	slave	between	receiving	a	request	telegram	
+and sending the response to the master. This parameter is essentially 
+determined by the processing speed of the connection (interpreting 
+the	call,	putting	together	a	response/acknowledgement)	and	the	length	
+of the telegram. This parameter can be used to delay transmission of 
+the	response/acknowledgement	and	depends	on	the	slowest	master	
+(telegram initiator). Only after this time is the latter ready to receive an 
+acknowledgement.	 
+Range of values: 1 ... 65535 bit periods
+Max.	Tsdr:		Maximum	waiting	time	for	a	slave	between	receiving	a	request	tel-
+egram and sending the response to the master. This parameter is 
+essentially determined by the processing speed of the connection (in-
+terpreting	the	call,	putting	together	a	response/acknowledgement)	and	
+the length of the telegram.  
+Range of values: 1 ... 65535 bit periods 
+Quiet	Time:		 	Length	of	time	a	transmitter	waits	between	sending	the	end	of	
+a	telegram	and	switching	on	the	receiver.	This	parameter	can	
+be used to take into account repeater transit times or modulator 
+fade times.  
+Range of values: 0 ... 255 bit periods
+PAGE 55
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-10
+4
+Setup	Time:	 	This	parameter	defines	the	time	that	elapses	between	receipt	of	
+an event (e.g. last character of telegram sent) and execution of 
+the required reaction (e.g. enabling the receiver).  
+Range of values: 0 ... 255 bit periods
+Gap	Update		 	Number	of	token	passages	between	two	gap	update	cycles.	 
+Range of values: 1 ... 100
+High.	Station	 	Highest	station	address	present	in	the	network.Address:	  
+Range of values: 2 ... 126
+	Max.	Retry		 	Number	of	times	a	telegram	is	repeated	when	no	ACK	Limit	is	
+received before NAK is registered. In very interference-prone 
+environments, this parameter can be used to achieve safe oper-
+ation.  
+Range of values: 1 ... 8
+Slave	Default	 	Default	watchdog	time	when	a	slave	is	integrated	into	the net-
+work.Watchdog:  
+Range of values: 0 ... 65025 × 10 ms
+Set	Watchdog	 	Copies	the	time	defined	in	the	‘Slave	Default	Watchdog’	to all 
+slaves. This function serves to ensure that all slaves have the 
+same	watchdog	time.
+Set Defaults: Set baud rate-dependent default values.
+Default	values	are	as	follows:
+Baud rate 9.6 19.2 93.75 187.5 500 1500 3000 6000 12000
+Slot Time 100 100 100 100 200 300 400 600 1000
+Min. Tsdr 11 11 11 11 11 11 11 11 11
+Max. Tsdr 60 60 60 60 100 150 250 450 800
+Quiet Time 0 0 0 0 0 0 3 6 9
+Setup Time 1 1 1 1 1 1 4 8 16
+GAP 10 10 10 10 10 10 10 10 10
+Highest Station 126 126 126 126 126 126 126 126 126
+Max. Retry 1 1 1 1 1 1 2 3 4
+PAGE 56
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-11
+4
+Station Parameters:
+  For editing the station parameters of a chosen slave or master device. 
+Different	dialog	boxes	are	shown	according	to	the	device.
+	 The	following	are	possible:  
+	 	 ●		SBC	master  
+  ●		SBC slave 
+  ●		Other slaves
+The	following	layouts	are	possible:
+For SBC master devices:
+
+PAGE 57
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-12
+4
+For Saia PCD1, 2, 3 slave devices:
+Name:  Station name (max. 32 characters).
+Address:		 	 Network	address	of	device	(range:	 1-125).
+Project	File:		 	Enter	the	PG5	project	to	which	the	device	data	generated	by	the	
+PROFIBUS-DP	configurator	should	be	assigned.	For	SBC	devic-
+es only.
+Browse:		 	 Look	for	a	PG5	project.	For	SBC	devices	only.
+For non-SBC devices:
+Explanation of individual menu items:
+Station:	 	 Definition	of	device	name	and	PROFIBUS-DP 	address
+Name:  Station name (max. 32 characters).
+Address:		 	 Network	address	of	device	(range:	 1	...	125).
+Project	File:		 	Enter	the	PG5	project	to	which	the	device	data	generated	by	the	
+PROFIBUS-DP	configurator	should	be	assigned.	For	SBC	devic-
+es only.
+Browse:		 	 Look	for	a	PG5	project.	For	SBC	devices	only.
+Resources:  Only selectable for SBC master or slave devices. 
+PAGE 58
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-13
+4
+First	Diagn.		 	Base	address	and/or	symbolic	name	of	the	first	diagnostic	flag.	 
+8	flags	are	reserved.
+First	Diagn.		 	Base	address	and/or	symbolic	name	of	the	first	diagnostic	reg-
+ister. Up to 70 registers are reserved. This number depends on 
+the extended diagnostics of the slave devices used.
+SASI Text   Text address and/or symbolic name of the SASI text Number. If 
+the	network	address	of	an	Saia	PCD1,	2	or	3	device	has	been	
+changed,	the	option	to	adapt	symbolic	names	to	the	new	station	
+number	is	offered	when	exiting	this	window.	
+
+PAGE 59
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-14
+4
+Parameters:	 	Selectable	with	non-SBC	slave	devices.	The	user	parameters	of	
+the device can be edited from this menu option. The user param-
+eters	are	device-specific	and	have	a	different	meaning	for	each	
+device. The meaning of the user parameters should be taken 
+from the device descriptions.
+   Depending on the PROFIBUS-DP device, user parameters can 
+be represented in hexadecimal form or plain text. If no user pa-
+rameters	can	be	selected,	the	following	frame	appears:
+User parameters in hexadecimal form: 
+User parameters must be entered in the correct position and format.  
+See device description.
+PAGE 60
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-15
+4
+User parameters in plain text form:
+  User parameters can be selected from a list of choices. The user does 
+not	have	to	worry	about	the	position	and	correct	entry.
+Modules:	 	Shows	the	modules	possible	for	a	device	and	allows	these	modules	to	
+be	assigned	and	configured.	For	SBC	slaves,	the	messages	between	
+an	SBC	master	and	an	SBC	slave	are	defined	in	this	menu	option.
+Module	definition	for	non-SBC	slaves:
+
+PAGE 61
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-16
+4
+Module	definition	for	SBC	slaves:
+Modular:		 	 	This	indicates	whether	the	device	is	a	modular	or	compact	unit.	
+Modular	devices	can	be	expanded	with	modules.	Compact	de-
+vices cannot be expanded.
+Max. Number  This indicates the maximum number of modules of Modules:  
+that the device supports.
+Installed   List of modules installed in the device. modules: 
+Define	Mod.:	 	Inserts	or	deletes	modules	in	the	device.	Definition	of	media	
+in	the	master,	which	are	assigned	(mapped)	to	modules	of	the	
+device.
+Module	definition	for	non-SBC	slaves:
+
+PAGE 62
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-17
+4
+Module	definition	for	Saia	PCD1,	2,	3	slaves:
+Supported List of all modules that are supported by thedevice.modules:
+	 	Inserts	the	selected	module	from	the	module	list	into	the	device	config-
+uration.	Note:	For	each	newly	inserted	module,	configuration	data	must	
+be mapped to the master media.
+Installed  List of modules already installed in the device. modules:
+	 	Shifts	the	selected	module	up	or	down	in	the	sequence	of	installed	
+modules.
+PAGE 63
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-18
+4
+Remove:   Removes the selected module from the list of installed modules.
+Parameters:	 	Definition	of	module	parameters	for	the	module	selected	from	
+the list of installed modules.
+ 
+Installed   Display	of	module	configuration	for	slave	devices. Module 
+This display is dependent upon the device type:Configuration:
+For all non-SBC slaves:
+Length:  Data length  
+Format:	 	 Byte	or	word	  
+Consistency:	 Byte/word	or	over	the	entire	data	length	  
+Type:  Input, output or input/output  
+Mapping:  Assignment to master PCD media
+For	Saia	PCD1,	2,	3	slaves	when	an	SBC	master	is	configured:
+Description: Description of data transfer  
+Mapping:  Assignment to master PCD media
+
+PAGE 64
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-19
+4
+For	Saia	PCD1,	2,	3	slaves	when	no	master	is	configured:
+Length:  Data length  
+Format:	 	 Byte	or	word	  
+Consistency:	 Byte/word	or	over	the	entire	data	length	  
+Type:  Input, output or input/output  
+Mapping:  Assignment to master PCD media
+Media Map:   Assignment of selected modules to master PCD media. Map-
+ping enables the user to access remote I/Os or the registers 
+of	remote	devices	via	master	PCD	media	(flags	or	registers).	
+Depending on the slave device used, the media map frame is 
+structured	differently.
+   Media map for non-SBC slaves:
+Module:  Module description  
+Mapping:		 	Definition	of	master	PCD	media	with	which	this	module	is	ac-
+cessed.
+Media	Type:		 	Definition	of	master	PCD	media	type	(flag	or	register)	with	which	
+the module is accessed.
+Number of media  Number of media to be used for accessing the module from the 
+master. 
+By	default,	bytes	are	mapped	to	flags	and	words	to	registers	
+(2	words	per	register,	if	consistency	is	over	the	entire	length;	1	
+word	per	register,	if	consistency	is	over	one	word).	When	re-
+quired, the user can modify this default mapping in accordance 
+with	module	specifications.	For	example,	only	one	byte	per	
+register	might	be	mapped	(only	using	the	register’s	LSB),	or	4	
+bytes might be copied to one register, or 4 bytes might be stored 
+PAGE 65
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-20
+4
+in	two	registers.	If	bytes	are	mapped	to	registers,	by	default	4	
+bytes	per	register	are	used	when	there	is	consistency	over	the	
+entire	length	and	1	byte	per	register	when	there	is	consistency	
+over one byte. All unused bytes are set to 0.
+Example:
+1	byte	is	mapped	to	8	flags:	(1	bit	per	flag)
+Bit #0
+Bit #1
+Bit #2
+Bit #3
+Byte #0Bit #4
+Flag x
+Flag (x+1)
+Flag (x+2)
+Flag (x+3)
+Flag (x+4)
+Flag (x+5)
+Flag (x+6)
+Flag (x+7)
+Bit #5
+Bit #6
+Bit #7
+4 bytes are mapped to 4 registers (1 byte per register)
+Byte #0
+Byte #1
+Byte #2
+Byte #3
+Register x
+Register (x+1)
+Register (x+2)
+Register (x+3)
+Byte #0
+Byte #1
+Byte #2
+Byte #3
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+0
+MSB LSB
+6 bytes are mapped to 2 registers (4 bytes per register)
+Register x
+Register (x+1)
+Byte #0
+Byte #1
+Byte #2
+Byte #3
+Byte #3Byte #1 Byte #2Byte #0
+LSBMSB
+Byte #50 Byte #40
+Byte #4
+Byte #5
+4 bytes are mapped to 2 registers (2 bytes per register)
+Register x
+Register (x+1)
+Byte #0
+Byte #1
+Byte #2
+Byte #3
+Byte #1
+Byte #3Byte #2
+0
+0
+0
+0
+MSB LSB
+Byte #0
+Base Address:  Base address for the medium. This entry is not compulsory in 
+PG5,	since	media	can	be	assigned	with	a	symbolic	name.	If	the	
+base address is not entered, a symbolic name must be entered 
+for	each	medium.	Each	medium	will	have	a	name	that	starts	with	
+the	name	specified	in	the	base	address	and	ends	with	a	sequen-
+tial number.
+PAGE 66
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-21
+4
+Media	Definition:	Entry	of	symbolic	media	name.
+Media Number: Choice of media number
+Name:   Name belonging to the appropriate media number. These names 
+are then used in the master program.
+Set Defaults:  This sets default values for all media names. When the last char-
+acter of a default name is a number, this number is incremented 
+for the next media. If the last character of the default name is not 
+a number, a 0 is attached to the name and the names of subse-
+quent	media	are	incremented.	Caution:	To	use	the	‘Set	Defaults’	
+button,	the	‘Media	Number’	must	be	set	to	0.
+Media map for SBC slaves:
+In	contrast	to	non-SBC	slaves,	master	and	slave	media	are	defined	in	this	window.
+Module	 	 Description	of	module	configuration.
+Mapping:		 	Definition	of	master	PCD	media	with	which	this	module	will	be	
+accessed.
+Number of   Number of media to be used for accessing the module from the 
+master. 
+(1,	2,	4	or	8	media	for	register	transfer,	8	for	flag	transfer.)
+Master Media   Type of medium used in master PCD to access the slave device 
+media.
+Master Base Base address for the medium.  
+Address:   This entry is not obligatory in PG5, since media can be mapped 
+with	a	symbolic	name.	If	the	base	address	is	not	entered,	a	
+symbolic name must be entered for each medium in the media 
+definition.
+PAGE 67
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-22
+4
+Slave	Media		 Media	type	for	slave	PCD,	by	means	of	which	the	  
+Type:	 	 	module	configuration	(flags,	inputs,	outputs	or	registers)	of	the	
+actual slave is accessed.
+Slave	Base		 Slave	base	address	for	the	first	medium	to	be	mapped.  
+Address:   This entry is not obligatory in PG5, since media can be mapped 
+with	a	symbolic	name.	If	the	base	address	is	not	entered,	a	
+symbolic name must be entered for each medium in the media 
+definition.
+Media  Entry of the symbolic media name. This  
+Definition:		 name	will	be	the	same	for	master	and	slave	media.
+Media Number: Choice of media number.
+Name:   Name belonging to the related media number. These names are 
+then used in the master and slave programs.
+Set Defaults:  Sets default values for all media names. See description above.
+Device:	 	 	Displays	device-specific	data.	This	data	is	downloaded	from	the	
+GSD	file	and	does	not	refer	to	PROFIBUS-DP	devices	actually	
+installed.	The	parameters	cannot	be	modified.
+Vendor Name: Name of the device manufacturer
+Model Name: Name of the device
+Revision:  Last device update
+Ident Number:  Unique PROFIBUS-DP number. This number is checked every 
+time	a	connection	is	established	between	master	and		slave.	If	
+this number does not match the number present in the slave, no 
+exchange	of	data	takes	place	between	the	controllers.
+PAGE 68
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-23
+4
+Protocol Ident:
+Station Type:
+Hardware		 	 Hardware	version	of	the	device.	Release:
+Software	Release:	 Software	version	of	the	device.
+Freeze	Supported:		 	Indicates	whether	a	PROFIBUS-DP	device	supports	
+freeze mode.
+Sync	mode.	Supported:	 Indicates	whether	a	PROFIBUS-DP	device	supports	sync	
+Bus:	 	 	 	Displays	device-specific	bus	data.	This	data	is	down-
+loaded	from	the	GSD	file	and	does	not	refer	to	PROFIB-
+US-DP devices actually installed. The parameters cannot 
+be	modified.
+Supp. Baudrate Indicates the baud rates supported by a device.
+Max	Tsdr:		 	Indicates	maximum	‘Tsdr	Time’	(in	bit	periods)	for	each	baud	rate	
+supported by the module.
+Watchdog	Time:	 	A	watchdog	time	can	be	entered	in	this	field.	Each	slave	can	
+have	a	different	watchdog	time.	From	the	menu	option	‘Bus	
+parameters,	Advanced’	it	is	possible	to	execute	the	option	‘Set	
+Watchdog	to	slaves’,	so	that	the	time	defined	there	will	be	writ-
+ten	in	this	field.	If	the	PROFIBUS-DP	cable	is	removed	during	an	
+active	connection,	the	DATA_EXCH	diagnostic	flag	will	be	set	to	
+«L»	in	the	slave	after	the	watchdog	time	expires.
+PAGE 69
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-24
+4
+Groups:	 	 	Assignment	of	PROFIBUS-DP	devices	to	the	8	groups	defined	in	
+the standard. It is also possible to assign the supported «Global 
+Control Services» to the groups.
+ 
+Group	 	 Definition	of	the	‘Global	Control	Services’ 	‘Sync’	and	‘Freeze’
+Properties:		 	for	each	group.	Click	on	the	‘Freeze’	or	‘Sync’	fields	to	activate	
+or deactivate the service.
+Groups	Content:	 	Definition	of	which	PROFIBUS-DP	slave	devices	belong	to	
+which	group.	To	insert	a	slave	into	a	group,	the	slave	must	sup-
+port	the	‘Global	Control	Services’	of	that	group.
+PAGE 70
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-25
+4
+4.3.4 ‘View’ submenu
+Toolbar:	 	 	Shows	or	hides	the	toolbar	at	the	top	of	the	screen.
+Status	Bar:	 Shows	or	hides	the	status	bar	at	the	bottom	of	the	screen.
+Zoom	to	Fit:	 	With	this	option	all	devices	in	the	network	are	displayed	on	the	
+screen all the time.
+Zoom	In:	 	 	Magnification	of	network	screen	content.	 
+Corresponds to this toolbar icon: 
+Zoom	Out:	 	Reduces	size	of	network	screen	content.	 
+Corresponds to this toolbar icon: 
+
+PAGE 71
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-26
+4
+4.3.5 ‘Library’ submenu
+Add	Device:	 	Insert	new	PROFIBUS-DP	devices.	These	devices	must	have	a	
+file	with	the	extension	‘.gs?’.
+After	the	‘.gs?’	file	is	selected,	the	device	can	be	assigned	to	a	device	group.
+This	can	be	done	either	by	saving	the	device	in	an	existing	group,	or	in	a	new	one.	
+To	define	a	new	group,	the	new	group	name	is	simply	entered	in	the	entry	field.
+
+PAGE 72
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-27
+4
+his	new	group	is	then	automatically	inserted	in	the	device	list:
+Remove Device:  Deletes a PROFIBUS-DP device from the device list. A PROFIB-
+US-DP device can also be deleted from the device list by press-
+ing the <DEL> key.
+Rename Group:  Renames a device group. By clicking once on the device group 
+text	with	the	mouse	button,	the	group	name	can	also	be	edited.
+Caution:	If	the	PROFIBUS-DP	device	to	be	inserted	has	its	own	bitmap	draw-
+ing,	which	should	be	displayed	in	the	configurator	when	the	device	is	called,	this	
+‘*.bmp’	file	must	be	stored	in	the	directory	containing	the	configurator.	
+PAGE 73
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-28
+4
+4.3.6 ‘Project’ submenu
+Compile	File:	 	The	project	selected	is	compiled,	i.e.	‘.def’	and	‘.src’	files	are	
+created	for	all	slave	and	master	stations	defined	in	the	network.	 
+Corresponds to this toolbar icon:   
+Build:	 	 	The	SBC	device	selected	in	the	PROFIBUS-DP	network	is	as-
+sembled	and	linked	together	with	the	compiled	configurator	files.	 
+Corresponds to this toolbar icon:   
+Edit Project:  This calls the PG5 Project Manager for the SBC device selected 
+in	the	PROFIBUS-DP	network.	 
+Corresponds to this toolbar icon:   
+4.3.6 ‘Window’ submenu
+Cascade:   All open projects are displayed on the screen. The display takes 
+the form of an overlapping cascade, so that each project title is 
+visible.
+Tile:   All open projects are displayed on the screen. The display takes 
+the	form	of	windows,	without	any	overlapping	of	projects.
+Arrange Icons: Ordered display of all minimised projects.
+1…10  Selection list of all open projects. 
+PAGE 74
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-29
+4
+4.3.8 ‘Help’ submenu
+Help Topics: Summary of help topics. 
+Using	Help:	 Description	of	how	Help	should	be	 used.
+About Snet32:  Indicates the version number and the name of the licence holder.  
+Corresponds to this toolbar icon:   
+4.3.9	 Mouse-sensitive	elements	in	the	configurator	
+2 
+3 
+4 
+5 
+6 
+1 
+This	section	only	shows	which	elements	of	the	PROFIBUS-DP	configurator	can	
+also	be	edited	with	the	mouse.
+PAGE 75
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description	of	the	configurator	menus
+The PROFIBUS-DP configurator
+4-30
+4
+The meaning of individual items is described in the preceding chapters.
+1
+Left button: Double-click: Opens or closes the folder.
+Right button: 
+2
+Left button: Edits the device group name.
+Right button: 
+3
+Left button:	 	Double-click:	Inserts	the	selected	device	into	the	network.
+Right button: 
+4
+Left button:	 Double-click:	Opens	the	editor	for	the	network	description
+Right button: 
+5
+Left button:	 	Drags	and	drops	with	the	device	selected. 
+Double-click:	Opens	the	‘Parameter’	entry	window
+Right button: 
+6
+Left button:	 Double-click:	Opens	the	‘Bus	Parameters’ 	menu
+Right button: 
+
+PAGE 76
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Access
+Programming
+5-1
+5
+5. Programming
+5.1 Access to slave I/Os and registers in a PCD user program with 
+PROFIBUS-DP
+When	accessing	PCD	media,	it	is	necessary	to	point	out	an	important	difference	
+between	a	program	running	with	PROFIBUS-DP	and	one	which	is	running	directly,	
+i.e.	without	PROFIBUS-DP.
+Program without PROFIBUS-DP:
+If	the	input	or	output	of	a	conventional	user	program	without	PROFIBUS-DP	is	
+read	or	written,	the	status	of	the	actual	input	or	output	is	instantaneously	read	or	
+written.
+COB  0
+0
+STH  IO
+ANH  IO
+OUT  34
+ECOB
+I/O Status
+I/O Status
+I/O Status
+Reelle
+I/O:Programm:
+Program with PROFIBUS-DP slaves:
+If	the	input	or	output	of	a	PROFIBUS-DP	slave	is	read	or	written	in	a	user	program	
+with	PROFIBUS-DP,	the	status	of	the	actual	input	or	output	is	not	instantaneous-
+ly	read	or	written.	Instead	the	status	is	modified	in	the	process	image	memory	of	
+the PCD controller. Data from the process image memory of the PCD controller is 
+then	exchanged,	either	automatically	or	by	the	user	program,	between	the	PCD	
+controller’s	process	image	memory	and	the	memory	of	the	PROFIBUS-DP	card.	
+This	data	exchange	between	the	memory	on	the	PROFIBUS-DP	card	and	the	
+slave subsequently takes place automatically in a cyclical sequence and cannot be 
+influenced	by	the	user	program.
+PAGE 77
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Access
+Programming
+5-2
+5
+Process image memory of the PCD controller:
+The	PCD	controller’s	process	image	memory	stores	all	data	(I/Os	and	registers)	
+exchanged	between	the	master	and	any	slaves.	This	involves	differentiating	be-
+tween	an	input	and	an	output	image	memory.	The	PCD	controller’s	input	image	
+memory stores all inputs and registers that are read by slaves. This data is then 
+read	in	the	master	controller’s	user	program.	The	PCD	controller’s	output	image	
+memory	stores	all	outputs	and	registers	that	are	written	to	slaves.	This	data	is	
+described	in	the	master	controller’s	user	program.
+The	assignment	of	I/Os	and	registers	to	slave	devices	in	the	PCD	controller’s	
+image	memory	takes	place	via	the	«Mapping»	menu	in	the	PROFIBUS-DP	config-
+urator.	This	involves	mapping	the	I/Os	and	registers	of	the	slave	devices	to	flags	
+and registers in the master controller.
+PROFIBUS
+cable
+RS 485 
+ 
+ 
+. 
+XYZ  I 0 
+XYZ  I 1 
+. 
+. 
+. 
+XYZ   O 34  
+I/O Status 
+I/O Status
+I/O Status 
+’Slave‘ 
+’Programm‘ 
+Profibus-DP 
+Konfigurator    
+Mapping: 
+ SlaveX: 
+ Input 0      = F 0 
+ Input 1      = F 1 
+ .......... 
+Output 34  = F 34
+Reelle 
+I/Os 
+SlaveX
+Master
+To 
+the 
+slaves
+ 
+Profibus-
+DP Outputs
+ 
+Profibus-
+DP Inputs 
+Master Process 
+image 
+COB 
+ 
+5
+ 
+ 
+0
+ 
+. STH
+ 
+F 0
+ ANH
+ 
+F 1
+ 
+. SCON   9
+ 
+. OUT 
+ 
+F 34
+ 
+. SCON   9
+ 
+ ECOB 
+Process 
+Image 
+Outputs  
+Process 
+Image 
+Inputs  
+Profibus-
+DP Card 
+Profibus-
+DP Inputs 
+Profibus-
+DP Outputs
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Process 
+image 
+Profibus-
+DP Card 
+Process
+Image
+Inputs
+Process
+Image
+Outputs
+PAGE 78
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Access
+Programming
+5-3
+5
+Data exchange between the PCD controller’s process image memory and the 
+PROFIBUS-DP card
+The	data	exchange	between	the	PCD	controller’s	process	image	memory	and	the	
+PROFIBUS-DP	card’s	memory	can	take	place	in	two	different	ways.
+These are:
+1. Default model:
+The	data	exchange	between	the	PCD	controller’s	process	image	memory	and	the	
+PROFIBUS-DP	card’s	memory	takes	place	automatically.	This	involves	copying	all	
+input	data	from	the	PROFIBUS-DP	card’s	memory	to	the	input	image	memory	when	the	
+COB 0 command is processed. 
+At	the	end	of	COB	0,	when	the	ECOB	command	is	processed,	all	data	from	the	output	
+image	memory	is	copied	to	the	PROFIBUS-DP	card’s	output	data	memory.
+The	data	exchange	between	the	PCD	controller’s	process	image	memory	and	the	
+PROFIBUS-DP	card’s	memory	only	occurs	as	COB	0	is	processed.	No	data	exchange	
+takes place if COB 0 is not processed in the user program.
+Start of COB 0:
+All input data from the PROFIBUS-DP 
+card is copied to input image memory.
+End of COB 0:
+All data from the PCD 
+controller’s output image 
+memory is copied into the 
+output data of the PROFI-
+BUS-DP card
+Processing COB 0
+time
+2. Advanced model:
+For	this	model,	the	data	exchange	between	the	PCD	controller’s	process	image	memo-
+ry	and	the	PROFIBUS-DP	card’s	memory	takes	place	via	commands	in	the	user	pro-
+gram. 
+This	means	that	the	data	exchange	between	the	PCD	controller’s	process	image	mem-
+ory	and	the	PROFIBUS-DP	card’s	memory	can	be	forced	at	any	time	with	special	user	
+program commands.
+ COB 0  COB 1 COB 2 
+Exchange of data between the PCD controller’s 
+process image memory and the PROFIBUS-DP 
+card occurs with instructions in the user 
+program.
+time
+PAGE 79
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-4
+5
+5.2	 Description	of	the	PCD	commands	(SASI,	SCON)
+The	following	commands	are	supported	by	PROFIBUS-DP:
+SASI Assign serial interface
+SASII Like SASI but indirect
+SCON Serial connect Command to force the data exchange
+SCONI Like SCON but indirect
+5.2.1 SASI: Assigning a channel
+Description:	 	PROFIBUS-DP	assignment	takes	place,	as	with	most	PCD	
+communications modes, by the SASI command. SASI calls a 
+text	which	contains	the	necessary	information	for	initialising	
+a PROFIBUS-DP channel. If communication is to take place 
+across several PROFIBUS-DP channels, a separate SASI com-
+mand should be edited for each channel. Channel no. 9 is used 
+for PROFIBUS-DP. Channel 8 is already reserved for future 
+PCDs,	which	may	have	two	PROFIBUS-DP	interfaces.
+Structure: SASI  channel
+text
+   Channel 9 (or 8) 
+   Text Txt_DP  Symbolic name of the text containing the 
+assignment information. This text is gener-
+ated	by	the	PROFIBUS-DP	configurator.
+Example:		 SASI	 9	;		 	 Initialise	channel	9
+	 	 	 Txt_DP 		 	 Definition	text	for	PROFIBUS-DP
+Flags:	 	 	The	error	(E)	flag	is	set	if	the	definition	text	is	missing	or	invalid,	
+or if the FW does not support PROFIBUS-DP.
+SASI text:	 	The	SASI	text	is	generated	by	the	PROFIBUS-DP	configurator	
+and	has	the	following	format:
+   Master:
+	 	 	 “MODE:DPM;CONF:DBXxxxx;DIAG:Fyyyy,Rzzzz”
+   Slave:
+	 	 	 “MODE:DPS;CONF:DBXxxxx;DIAG:Fyyyy,Rzzzz”
+	 	 	 xxxx:		 	Specific	number	of	a	DBX	containing	all	PROFIBUS-DP	
+information.
+	 	 	 yyyy:		 	Specific	number	of	the	first	diagnostic	flag	or	diagnostic	
+output.
+	 	 	 zzzz:		 Specific	number	of	the	first	diagnostic	register.
+PAGE 80
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-5
+5
+Diagnosis:  Diagnosis of a PROFIBUS-DP communication takes place in the 
+usual	way	for	the	PCD,	i.e.	for	each	communications	channel,	8	
+flags	are	assigned	for	rough	diagnosis	and	up	to	a	maximum	of	
+70 registers for detailed diagnosis. These diagnostic resources 
+are	defined	in	the	configurator.
+Diagnostic	flags	with	PROFIBUS-DP
+Address Name Description
+xxxx SLAVE_ERR Slave	error;Error in the slave
+xxxx+1 GCS_BUSY Global Control Service is processing
+xxxx+2 SERV_BUSY Service function is processing
+xxxx+3 DATA_EXCH Data	exchange;	Exchange	of	data	between	master	and	slave
+xxxx+4 Not used
+xxxx+5 Not used
+xxxx+6 CONF_RCV Configuration	received;	Slave	has	received	a	configuration	tele-
+gram from the master
+xxxx+7 CONF_STAT Configuration	status;	Indicates	whether	configuration	data	is	OK
+Description	of	the	diagnostic	flags:
+  Slave_error	(SLAVE_ERR) 
+  Master:  H = Error in one or more slaves L = No errors in the slaves
+  Slave:   H = Error in the slave L = No error in the slave
+  Master:
+   The number of the slave that generated the error can be obtained from 
+diagnostic	registers	+3	to	+6.	This	flag	is	set	to	L	when,	after	completion	
+of a «Read slave diagnostic data» telegram, there are no longer any 
+errors present.
+  Global	Control	Service	(GCS_BUSY)
+  Master:  H = Global Control Service is busy L = Global Control 
+Service	has	finished
+  Slave:  Not used
+  Global Control Services are: 
+  Freeze, Unfreeze, Sync and Unsync.
+  Service	(SERV_BUSY)	
+  Master:  H = Service function is busy L = Service function has 
+finished
+  Slave:  Not used.
+  Service functions are:  
+	 	 ●	 	Stop	the	data	exchange	between	the	PCD	controller’s	process	
+image	memory	and	the	PROFIBUS-DP’s	card	memory	
+  ● Read the slave diagnostic data 
+		 ●  Activate or deactivate a slave.
+PAGE 81
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-6
+5
+  Data	Exchange	(DATA_EXCH)
+	 	 Master:	 	H	=	Data	exchange	on	the	PROFIBUS-DP	network	is	
+running. L = Data exchange on the PROFIBUS-DP net-
+work	has	stopped.
+	 	 Slave:		 	H	=	Connection	with	master	is	established	(executing	
+data exchange).
+	 	 	 	 	L	=	No	data	exchange	connection	with	master.	The	flag	
+does	not	become	=	L	until	the	watchdog	time	defined	in	
+the slave has elapsed.
+  Configuration	received	(CONF_RCV)
+  Master: Not used.
+	 	 Slave:		 	H	=	Slave	has	received	a	configuration	telegram	from	
+the	master.	L	=	Slave	has	not	received	a	configuration	
+telegram from the master.
+  Configuration	status	(CONF_STAT)
+  Master: Not used.
+	 	 Slave:		 	H	=	The	configuration	telegram	from	the	master	corres-
+ponds	to	the	slave	configuration.	L	=	The	configuration	
+telegram from the master does not correspond to the 
+slave	configuration.
+Diagnostic registers with PROFIBUS-DP
+Diagnostic	registers	are	grouped	by	the	following	areas:
+● Service area 
+● Station area 
+● Standard PROFIBUS-DP diagnostic area 
+● Expanded PROFIBUS-DP diagnostic area
+The	maximum	size	of	the	diagnostic	registers	is	defined	by	the	‘Max_Diag_Data_
+Len’	parameter	from	the	slave	device	GSD	file,	since	the	slave	diagnostic	data	is	
+stored	in	the	diagnostic	registers.	‘Max_Diag_Data_Len’	can	have	a	maximum	size	
+of	244	bytes.	If	there	is	more	than	one	slave,	the	largest	‘Max_Diag_Data_Len’	
+parameter	always	applies.	At	present,	the	diagnostic	registers	are	only	used	by	the	
+master.
+PAGE 82
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-7
+5
+Division of diagnostic registers:
+Areas Address Description 
+Service area Base +0 Result of Global Control Service GCS 
+Base +1 Result of IL command SCON(I) fct. 0,1,8,9
+Base +2 Result	of	IL	command	SCON(I)	function	#7
+Station area Base +3 Error status stations 0…31
+Base +4 Error status stations 32…63
+Base +5 Error status stations 64…95
+Base +6 Error status stations 96…126
+StandardPROFIB-
+US-DPdiagnostic
+Base +7 Length of PROFIBUS-DP diagnostic (bytes 6...243) 
+Base +8 Standard DP diagnostic (bytes 0 and 1)
+Base +9 Standard DP diagnostic (bytes 2 ... 5)
+Expanded PROFIB-
+US-DP diagnostic
+Base +10 Expanded DP diagnostic (bytes 6...9)
+Base +11 Expanded DP diagnostic (bytes 10...13)
+Base +12 Expanded DP diagnostic (bytes 14...17)
+Base +13 Expanded DP diagnostic (bytes 18...21)
+/ /
+/ /
+Base +69 Expanded DP diagnostic (bytes 242 and 243)
+   Description of diagnostic registers: GCS	result	(Base	+	0)
+   The result of the «Global Control Service» is stored in this register. The 
+«Global Control Service» is triggered by function codes 13...16 of the 
+SCON command. The result codes are the same as described under: 
+‘Result	of	IL	command	SCON(I)	Fct.	0,	1,	8,	9	(Base	+	1)’.
+  Result	of	IL	command	SCON(I)	Fct.	0,	1,	8,	9	(Base	+	1)
+	 	 	The	result	of	the	following	functions	is	stored	in	this	register:
+		 ● 	 Run/stop	data	exchange;	SCON	with	function	code	0  
+		 ● 	 Read	slave	diagnostics;	SCON	with 	function	code	1 
+  ●	 Activate	or	deactivate	a	slave.	SCON	with	function	code	8	or	9.	
+	 The	following	values	are	possible	here:
+Value Description 
+0 Command has been successfully completed
+1 Incorrect parameter (contact your local SBC agent)
+2 Not possible (contact your local SBC agent)
+3 No local resources (contact your local SBC agent)
+4 DP error (contact your local SBC agent)
+5 Slave is not OK
+6 Not	defined
+7 Status	conflict	(contact	your	local	SBC	agent)
+8 Error in acyclic master-slave data exchange (contact your local SBC agent)
+20 Timeout 
+21 Station number does not exist
+22 Command	executed	more	than	once.	(Diag	flag	Base+2	has	not	been	checked)
+23 Incorrect DP response 
+24 Incorrect parameter
+PAGE 83
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-8
+5
+Result	of	IL	command	SCON(I)	Fct.	7	(Base	+	2)
+The	result	of	the	following	function	is	stored	in	this	register:
+●	 Read	station	status.	 SCON	with	function	code	7.
+The	register	is	coded	here	as	follows:
+ 
+        
+7 6 5 4 3 2 1 0 Bit 
+0: Cyclical data exchange running
+1: Error in connection
+2: Connection broken
+3: Stopped
+4: Slave deactivated
+5: Slave not defined
+Data exchange flag
+System diagnostic flag (error)
+Reserved
+Error	status	stations	0…31	(Base	+	3)
+Each bit in this register corresponds to the station number of a slave device. As 
+soon as an error occurs in a slave device, the relevant bit is set to H. The bit is set 
+to	L	when,	after	completion	of	a	‘Read	slave	diagnostic	data’	telegram,	there	are	
+no longer any errors present.
+ 
+       
+31 30 29 3 2 1 0 
+Slave 3 
+Bit 
+Slave 2 
+Slave 1 
+Slave 0 
+Slave 29 
+Slave 3 Slave 30 
+Slave 31 
+Error	status	stations	32…63	(Base	+	4)
+Same	function	as	for	diagnostic	register	(Base	+	3)	with	errors	for	stations	32	to	63.
+Error	status	stations	64…95	(Base	+	5)
+Same	function	as	for	diagnostic	register	(Base	+	3)	with	errors	for	stations	64	to	95.
+Error	status	stations	96…125	(Base	+	6)
+Same	function	as	for	diagnostic	register	(Base	+	3)	with	errors	for	stations	96	to	125.
+PAGE 84
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-9
+5
+Length	of	PROFIBUS-DP	diagnostic	bytes	6...243	(Base	+7)
+In	this	register,	after	an	SCON	command	with	function	1,	the	total	length	of	diag-
+nostic data (standard PROFIBUS-DP + external PROFIBUS-DP diagnostic) is 
+stored	in	bytes.	The	length	of	diagnostic	data	differs	in	each	slave	device,	amount-
+ing to no less than 6 bytes and no more than 244 bytes.
+Standard	DP	diagnostic:	Bytes	0	and	1	(Base	+8)
+The	first	two	bytes	of	standard	PROFIBUS-DP	diagnostic	data	are	stored	in	this	
+register.	Division	into	diagnostic	registers	is	as	follows:
+ 
+ng ng 0 1 
+3 2 1 0 DP diag. bytes
+Not used
+Register# = Base +8
+DP diagnostic
+Bytes in register
+Meaning of PROFIBUS-DP diagnostic byte 0:
+ 
+Bit 7 6 5 4 3 2 1 0 
+DP diagnostic byte 0
+Diag.station does not exist
+(set master)
+Diag.station_not_ready: Slave is
+not ready for data exchange.
+Diag.not_supported: Requested Fct.
+is not supported in slave.
+Diag.ext_diag: Slave has external
+diagnostic data.
+Diag.invalid_slave_response: (set
+slave fixed to 0)
+Diag.master_lock: (set Master) Slave
+parameters set by another master
+Diag.prm_fault: Incorrect parameter
+set (Ident number etc.)
+Diag.cfg_Fault: Configuration data
+does not match.
+Meaning of PROFIBUS-DP diagnostic byte 1:
+ 
+Bit 7 6 5 4 3 2 1 0 
+DP diagnostic byte 1
+Diag.Prm_req: Slave parameters 
+must be reset
+Reserved
+Sync_mode:
+Sync command received
+Diag.freeze_mode:
+Freeze command received
+Diag.WD_ON:
+Response monitoring active
+Permanently at 1
+Diag.Stat_diag: Static diagnosis 
+(Byte Diag-Bits)
+Diag.deactivated: (set master)
+PAGE 85
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-10
+5
+Standard	DP	diagnostic:	Bytes	2	to	5	(Base	+9)
+Bytes 2 to 5 of the standard PROFIBUS-DP diagnostic data are stored in this reg-
+ister.
+The	division	is	as	follows:
+ 
+2 3 4 5 
+3 2 1 0 
+Register# = Base +9
+Bytes in register
+DP diag. bytes
+Meaning of PROFIBUS-DP diagnostic byte 2:
+ 
+Bit 7 6 5 4 3 2 1 0 
+DP diagnostic byte 2
+Diag.ext_overfL
+Reserved
+Meaning of PROFIBUS-DP diagnostic byte 3:
+ 
+Bit 7 6 5 4 3 2 1 0 
+DP diagnostic byte 3
+Diag.master_add: Master address
+after parameter setting
+(FF without parameter setting)
+Meaning of PROFIBUS-DP diagnostic byte 4:
+ 
+Bit 7 6 5 4 3 2 1 0 
+DP diagnostic byte 4
+Slave Ident number H byte
+Meaning of PROFIBUS-DP diagnostic byte 5:
+ 
+Bit 7 6 5 4 3 2 1 0 
+DP diagnostic byte 5
+Slave Ident number L byte
+Expanded	DP	diagnostic:	Bytes	6	to	9	(Base	+10)
+Bytes 6 to 9 of the expanded PROFIBUS-DP diagnostic data are stored in this 
+register.	The	division	is	as	follows:
+ 
+6 7 8 9 
+Register# = Base +10 
+DP-Diag. Byte 
+3 2 1 0 Byte im Register 
+Meaning of PROFIBUS-DP diagnostic byte 6:
+ 
+Bit 7 6 5 4 3 2 1 0 
+DP diagnostic byte 6
+Length of expanded diagnostic
+(in bytes)
+PAGE 86
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-11
+5
+Meaning of PROFIBUS-DP diagnostic byte 7 and above:
+ 
+7 6 5 4 3 2 1 0 
+DP diagnostic bytes 7 and above
+The meaning of individual bits must be 
+obtained from slave descriptions.
+Expanded	DP	diagnostic:	bytes	X0	to	X3	(Base	+Z)
+The expanded diagnostic information is stored in these registers. The division is 
+always	as	follows:
+ 
+X0 X1 X2 X3 
+3 2 1 0 
+Register# = Base +Z
+DP diag bytes
+Bytes in register
+5.2.2	 SCON	commands	to	affect	data	exchange
+Structure: Channel
+Fct code
+Parameter
+SCON
+  Channel  9, 8
+  Fct. code 0...16  Function code This function code triggers a spe-
+cific	function.
+	 	 Parameter	 0...255	Parameters	for	the	specific	function.
+Example: Request diagnostic data of slave 4
+  STH      SERV_BUSY ; If diagnostic flag xxxx+2 
+  JR    H  next  ; is not H, then SCON 
+  SCON     9   ; PROFIBUS-DP channel 9 
+           1   ; Fct. code 1 = read slave 
+           4   ; diagnostic data of slave 4
+  next:
+Flags:	 The	error	flag	is	set	if	the	channel	is	unassigned.
+PAGE 87
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-12
+5
+5.2.3	 SCONI	commands	to	affect	data	exchange
+Structure: Channel
+Fct code
+Parameter
+SCONI
+	 	 Channel	 R	0...4095	 Registers	with	channel	numbers	9,	8  
+	 	 Fct.	code	 R	0...4095	 Registers	with	function	codes	0...16  
+	 	 Parameter	 R	0...4095	 Registers	with	the	parameters	for	the	  
+	 	 	 	 	 	 specific	function	0...255
+Example:		All	data	is	to	be	exchanged	between	the	PCD	controller’s	process	im-
+age memory and that of the PROFIBUS-DP card, controlled by the user 
+program.
+  LD     R 2000  ; Load register 2000 
+           9   ; with channel 9  
+  LD     R 2001  ; Load register 2001  
+           3   ; with fct. code 3 =  
+      ; Force data exchange  
+  LD     R 2002  ; Load register 2002  
+           0   ; with parameter 0 =  
+      ; Input and output image  
+      ; memory  
+  SCONI  R 2000   ; SCONI command  
+         R 2001         R 2002
+Flags:	 The	error	flag	is	set	if	the	channel	is	unassigned.
+PAGE 88
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-13
+5
+Description	of	the	function	codes	and	parameters	for	the	SCON(I)	command
+Fct. code Parame-
+ter
+Description Diagnostic 
+affected
+Master Slave Flag Reg
+0 0 Stop	data	exchange	between	master	and	slaves 2, 3 1
+1 Slave no. 
+0...126
+Read slave diagnostic data 0, 2 3...6, 0, 
+7, 8, 9, 
+10...69
+2 2 012345 Start/stop default data exchange between image 
+memory and PROFIBUS-DP card Stop default 
+model	data	exchange	for	all	slaves	between	the	
+entire image memory and the PROFIBUS-DP card 
+(COB	0;	ECOB)	Start	default	model	data	exchange	
+for	all	slaves	between	the	entire	image	memory	
+and	PROFIBUS-DP	card	(COB	0;	ECOB)	Stop	data	
+exchange	for	all	slaves	between	input	image	mem-
+ory and PROFIBUS-DP card (start of COB 0) Start 
+data	exchange	for	all	slaves	between	input	image	
+memory and PROFIBUS-DP card (start of COB 0) 
+Stop	data	exchange	for	all	slaves	between	output	
+image memory and PROFIBUS-DP card (end of 
+COB	0)	Start	data	exchange	for	all	slaves	between	
+output image memory and PROFIBUS-DP card (end 
+of COB 0)
+3 3 012 Force	data	exchange	for	all	slaves	between	the	
+entire image memory and the PROFIBUS-DP 
+cardForce	data	exchange	for	all	slaves	between	
+the input image memory and the PROFIBUS-DP 
+cardForce	data	exchange	for	all	slaves	between	the	
+output image memory and the PROFIBUS-DP card
+4 Slave no. 
+0...126
+Force	data	exchange	for	a	slave	device	between	the	
+input image memory and the PROFIBUS-DP card
+5 Slave no. 
+0...126
+Force	data	exchange	for	a	slave	device	between	the	
+output image memory and the PROFIBUS-DP card
+6 Slave no. 
+0...126
+Force data	exchange	for	a	slave	device	between	the	
+entire image memory and the PROFIBUS-DP card
+7 Slave no. 
+0...126
+Read status of a slave 2
+8 Slave no. 
+0...126
+Deactivate slave 2 1
+9 Slave no. 
+0...126
+Activate slave 2 1
+10 Group no. 
+0...255
+Force	data	exchange	for	a	group	of	slaves	between	
+the input image memory and the PROFIBUS-DP 
+card
+11 Group no. 
+0...255
+Force	data	exchange	for	a	group	of	slaves	between	
+the output image memory and the PROFIBUS-DP 
+card
+12 Group no. 
+0...255
+Force	data	exchange	for	a	group	of	slaves	between	
+the entire image memory and the PROFIBUS-DP 
+card
+13 Group no. 
+0...255
+FREEZE 1 0
+14 Group no. 
+0...255
+UNFREEZE 1 0
+15 Group no. 
+0...255
+SYNC 1 0
+16 Group no. 
+0...255
+UNSYNC 1 0
+PAGE 89
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-14
+5
+SCON(I)	0:	Stop	data	exchange	between	master	and	slave
+This	command	can	be	used	to	stop	data	exchange	on	the	PROFIBUS-DP	network.	
+To	restart	data	exchange,	it	is	necessary	to	execute	a	‘Restart’	-	‘Cold’	command	
+on the PCD. With this command, all slave outputs are set to 0. This command 
+is	mainly	used	in	XOB	0,	so	that	slave	outputs	are	not	left	in	an	undefined	state	
+before	powering	off	the	master.	Diagnostic	flag	+2	is	set	to	H	as	soon	as	this	com-
+mand	is	executed.	When	the	command	is	finished,	the	flag	is	set	to	L.	This	com-
+mand	may	only	be	executed	when	diagnostic	flag	+2	has	the	status	L.
+When	the	command	has	been	executed	and	the	status	of	diagnostic	flag	+2	is	
+L,	the	result	of	the	operation	is	written	to	diagnostic	register	+1.	A	description	of	
+the	response	code	is	provided	in	the	chapter	‘Diagnostic	registers	with	PROFIB-
+US-DP’.	Diagnostic	flag	+3	shows	the	status	of	data	exchange	on	the	PROFIB-
+US-DP	network.
+Diagnostic	flag	+3:		 L 	=	 	Data	exchange	on	the	PROFIBUS-DP	network	
+has stopped.
+	 	 	 	 H	=	 	Data	exchange	on	the	PROFIBUS-DP	network	is	
+running.
+Structure: Channel
+Fct code
+Parameter
+SCON
+  Channel 9, 8 
+  Fct. code 0 
+	 	 Parameter	 0	 ;	Stop	data	exchange	on	the	;	PROFIBUS-DP 		
+	 	 	 	 	 ;	network.
+Flags:	 	The	error	flag	is	set	if	the	channel	is	unassigned	or	if	the		 	 	
+command	is	called	when	diagnostic	flag	+2	is	not	=	H.
+Example:	Stop	data	exchange	on	the	PROFIBUS-DP	network:
+  STH     SERV_BUSY ; If diagnostic flag +2 
+  JR    H NEXT  ; is not H, then SCON  
+  SCON    9   ; PROFIBUS-DP channel 9  
+          0   ; Fct. code 0  
+          0   ; Stop PROFIBUS-DP
+  NEXT:
+PAGE 90
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-15
+5
+SCON(I)	1:	Read	slave	diagnostic	data
+The	diagnostic	data	of	the	slaves	can	be	read	with	this	command.	Diagnostic	data	
+is	mostly	read	when	an	error	has	been	detected	in	the	slaves.	This	is	indicated	
+by	setting	diagnostic	flag	+0.	The	user	can	then	identify	the	faulty	slave	by	means	
+of diagnostic registers +3 to + 6 and read the diagnostic data of that slave. As 
+soon	as	this	command	is	executed,	diagnostic	flag	+2	is	set	to	H	and,	when	the	
+command	is	finished,	reset	to	L.	When	the	command	has	been	executed	and	the	
+status	of	diagnostic	flag	+2	is	L,	the	result	of	the	operation	is	written	to	diagnostic	
+register +1. A description of the response code is provided in the section ‘Diag-
+nostic	registers	with	PROFIBUS-DP’.	This	command	may	only	be	executed	when	
+diagnostic	flag	+2	has	the	status	L.	
+When	the	command	is	finished,	the	relevant	bit	for	the	slave	to	which	the	com-
+mand	was	addressed	is	set	to	L	in	diagnostic	registers	+3	to	+6	and	the	following	
+values are stored in the diagnostic registers:
+Diagnostic register +7: Length of expanded PROFIBUS-DP diagnostic  
+Diagnostic register +8: Standard PROFIBUS-DP diagnostic, bytes 0 and 1  
+Diagnostic register +9: Standard PROFIBUS-DP diagnostic, bytes 2 to 5  
+Diagnostic register +10: Expanded PROFIBUS-DP diagnostic, bytes 6 to 9, etc.
+A description of the response code is provided in the chapter ‘Diagnostic registers 
+with	PROFIBUS-DP’.
+Structure: Channel
+Fct code
+Parameter
+SCON
+  Channel 9, 8 
+  Fct. code 1 
+	 	 Parameter	 0...126		 ;	Station	number
+Flags:	 	The	error	flag	is	set	if	the	channel	is	unassigned	or	if	the	command	is	
+called	when	diagnostic	flag	+2	is	not	set	to	H.
+Example: Read slave diagnostic data from slave 5:
+  STH     SLAVE_ERR ; If diagnostic flag +0 
+  JR    H NEXT  ; is not H, then SCON  
+  SCON    9   ; PROFIBUS-DP channel 9  
+          1    ; Fct. code 1  
+          5   ; Slave no. 5
+  NEXT:
+PAGE 91
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-16
+5
+SCON(I)	2:	Start/stop	default	data	exchange	between	the	image	memory	and	
+the PROFIBUS-DP card 
+With	this	command,	default	data	exchange	between	the	image	memory	and	the	
+PROFIBUS-DP card can be started or stopped. Default data exchange refers to 
+the	data	exchange	that	is	executed	automatically	when	COB	0	starts	and	when	it	
+ends.	This	data	exchange	can	be	changed	to	the	following	functions:
+Parameters:
+0	 	Stop	default	model	data	exchange	for	all	slaves	between	the	entire	image	 
+memory	and	the	PROFIBUS-DP	card	(COB	0;	ECOB)
+1	 	Start	default	model	data	exchange	for	all	slaves	between	the	entire	image	 
+memory	and	the	PROFIBUS-DP	card	(COB	0;	ECOB)
+2	 	Stop	data	exchange	for	all	slaves	between	the	input	image	memory	and	the	
+PROFIBUS-DP card (start of COB 0)
+3	 	Start	data	exchange	for	all	slaves	between	the	input	image	memory	and	the	
+PROFIBUS-DP card (start of COB 0)
+4	 	Stop	data	exchange	for	all	slaves	between	the	output	image	memory	and	the	
+PROFIBUS-DP card (end of COB 0)
+5	 	Start	data	exchange	for	all	slaves	between	the	output	image	memory	and	the	
+PROFIBUS-DP card (end of COB 0)
+Structure: Channel
+Fct code
+Parameter
+SCON
+  Channel 9, 8 
+  Fct. code 2 
+	 	 Parameter	 0...5	 ;	Parameter
+Flags:	 The	error	flag	is	set	if	the	channel	is	unassigned.
+Example:		Stop	data	exchange	for	all	slaves	between	the	input	image	memory	and	
+the PROFIBUS-DP card (start of COB 0) 
+  SCON      9  ; PROFIBUS-DP channel 9  
+            2  ; Fct. code 2  
+            2  ; Parameter 2
+PAGE 92
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-17
+5
+SCON(I)	3:	Force	data	exchange	for	all	slaves	between	the	image	memory	
+and the PROFIBUS-DP card 
+With	this	command,	data	exchange	between	the	image	memory	of	all	slaves	and	
+the PROFIBUS-DP card can be forced in the user program at any time. This forc-
+ing	can	take	place	in	the	following	ways:
+Parameters:
+0	 	Force	data	exchange	for	all	slaves	between	the	entire	image	 
+memory and the PROFIBUS-DP card 
+1	 	Force	data	exchange	for	all	slaves	between	the	input	image	 
+memory and the PROFIBUS-DP card
+2	 	Force	data	exchange	for	all	slaves	between	the	output	image	 
+memory and the PROFIBUS-DP card
+Structure: Channel
+Fct code
+Parameter
+SCON
+  Channel 9, 8 
+  Fct. code 3 
+	 	 Parameter	 0...2	 ;	Parameter
+Flags:	 The	error	flag	is	set	if	the	channel	is	unassigned.
+Example:		Force	data	exchange	for	all	slaves	between	the	entire	image	memory	
+and the PROFIBUS-DP card
+  SCON      9  ; PROFIBUS-DP channel 9  
+            3  ; Fct. code 3  
+            0  ; Parameter 0 = input and  
+      ; output image memory
+PAGE 93
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-18
+5
+SCON(I)	4,	5,	6:	Force	data	exchange	for	a	slave	between	the	image	memory	
+and the PROFIBUS-DP card 
+With	these	commands,	data	exchange	between	the	image	memory	of	a	slave	and	
+the PROFIBUS-DP card can be forced in the user program at any time. This forc-
+ing	can	take	place	in	the	following	way:
+Fct. code:
+4	 	Force	data	exchange	for	a	slave	between	the	input	image	 
+memory and the PROFIBUS-DP card.
+5	 	Force	data	exchange	for	a	slave	between	the	output	image	 
+memory and the PROFIBUS-DP card.
+6	 	Force	data	exchange	for	a	slave	between	the	entire	image	 
+memory and the PROFIBUS-DP card
+Structure: Channel
+Fct code
+Parameter
+SCON
+  Channel 9, 8  
+	 	 Fct.	code	 4,	5,	6		 ;	Fct.	code	  
+	 	 Parameter	 0...126		 ;	Slave	number
+Flags:	 The	error	flag	is	set	if	the	channel	is	unassigned.
+Example:		Force	data	exchange	for	slave	12	between	the	output	image	memory	
+and the PROFIBUS-DP card.
+  SCON      9  ; PROFIBUS-DP channel 9  
+            5  ; Fct. code 5  
+            12  ; Slave 12
+PAGE 94
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-19
+5
+SCON(I)	7:	Read	status	of	a	slave	
+The	status	of	a	slave	can	be	read	with	this	command.	After	execution	of	the	com-
+mand,	the	slave’s	status	is	written	to	diagnostic	register	+2.	A	description	of	diag-
+nostic	register	+2	is	provided	in	section	5.1.1.2,	‘Diagnostic	registers	with	PROFIB-
+US-DP’.
+Structure: Channel
+Fct code
+Parameter
+SCON
+  Channel 9, 8  
+  Fct. code  7  
+	 	 Parameter	 0...126		 ;	Slave	number
+Flags:	 The	error	flag	is	set	if	the	channel	is	unassigned.
+Example: Read status of slave 34.
+  SCON     9  ; PROFIBUS-DP channel 9  
+           7  ; Fct. code 7  
+           34 ; Slave 34
+PAGE 95
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-20
+5
+SCON(I)	8,	9:	Deactivate/activate	slave
+A	slave	can	be	activated	or	deactivated	with	this	command.	As	soon	as	the	com-
+mand	is	executed,	diagnostic	flag	+2	is	set	to	H	and	when	the	command	finishes,	
+it is set to L. When the command has been executed and the status of diagnostic 
+flag	+2	is	L,	the	result	of	the	operation	is	written	to	diagnostic	register	+1.	A	de-
+scription of the response code is provided in section 5.1.1.2, ‘Diagnostic registers 
+with	PROFIBUS-DP’.	This	command	may	only	be	executed	when	diagnostic	flag	
++2 has the status 0. The deactivation or activation of a slave is triggered by the 
+following	fct.	codes:
+Fct. code:
+8 Deactivate slave  
+9 Activate slave
+Structure: Channel
+Fct code
+Parameter
+SCON
+  Channel 9, 8  
+	 	 Fct.	code	 8,	9	 	 ;	deactivate/activate	slave	  
+	 	 Parameter	 0...126		 ;	Slave	number
+Flags:	 	The	error	flag	is	set	if	the	channel	is	unassigned	or	if	the	command	is	
+called	when	diagnostic	flag	+2	is	set	to	H.
+Example: Deactivate slave 32.
+  STH     SERV_BUSY ; If diagnostic flag +2  
+  JR   H  NEXT  ; is not H, then SCON
+  SCON    9   ; PROFIBUS-DP channel 9  
+          8    ; Fct. code 8  
+          32   ; Slave 32
+  NEXT:
+PAGE 96
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-21
+5
+SCON(I)	10,	11,	12:	Force	data	exchange	for	a	group	of	slaves	between	the	
+image memory and the PROFIBUS-DP card 
+With	this	command,	data	exchange	between	the	image	memory	of	one	or	more	
+groups of slaves and the PROFIBUS-DP card can be forced in the user program 
+at	any	time.	Assigning	a	slave	to	a	group	takes	place	with	the	PROFIBUS-DP	
+configurator.
+PROFIBUS-DP supports the formation of a maximum of 8 groups. These groups 
+can be assigned as many slaves as required. The choice of group in the SCON 
+parameter	is	bit-oriented	according	to	the	following	pattern:
+Bit 7 6 5 4 3 2 1 0 
+Group 1
+Group 8
+Group 7
+Group 6
+Group 5
+Group 4
+Group 3
+Group 2
+SCON-Parameter
+Forcing can be applied here to more than one group at a time. This forcing can 
+take	place	in	the	following	way:
+Fct. code:
+10		Force	data	exchange	for	a	group	of	slaves	between	the	input	image	memory	
+and the PROFIBUS-DP card.
+11		Force	data	exchange	for	a	group	of	slaves	between	the	output	image	memory	
+and the PROFIBUS-DP card.
+12		Force	data	exchange	for	a	group	of	slaves	between	the	entire	image	memory	
+and the PROFIBUS-DP card.
+PAGE 97
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-22
+5
+Structure: Channel
+Fct code
+Parameter
+SCON
+  Channel 9, 8  
+	 	 Fct.	code	 10,	11,	12		 ;	Fct.	code	  
+	 	 Parameter	 0...255		 ;	Group	number
+Flags:	 The	error	flag	is	set	if	the	channel	is	unassigned.
+Example:		Force	data	exchange	for	groups	1	and	2	between	the	input	image	mem-
+ory and the PROFIBUS-DP card.
+  SCON    9  ; PROFIBUS-DP channel 9  
+          10  ; Fct. code 10  
+          3  ; Groups 1 and 2 (00000011)
+PAGE 98
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-23
+5
+SCON(I)	13,	14:	‘Freeze’,	‘Unfreeze’	Global	Control	Service	
+With	these	commands,	the	‘Freeze’	and	‘Unfreeze’	commands	can	be	triggered	for	
+one or more groups of slaves. The command is used for the purpose of input syn-
+chronisation.	With	the	‘Freeze’	command,	the	master	causes	a	slave	or	group	of	
+slaves simultaneously to freeze inputs in their present state. The slaves addressed 
+therefore stop their inputs at exactly the same time. In the next data cycle (Data_
+exch) the slaves transmit the frozen inputs to the master. Any changes at the in-
+puts are not recognised by the slaves and are not passed on to the master either. 
+After	the	conclusion	of	this	action,	the	master	sends	an	‘Unfreeze’	command	to	
+the	group.	Input	changes	are	now	sent	again	from	the	slave	to	the	master	in	the	
+normal	data	cycle.	It	is	permissible	for	the	master,	after	one	‘Freeze’	command,	to	
+send	further	‘Freeze’	commands	to	the	slaves.	In	this	case,	the	current	status	of	
+inputs is frozen each time and sent to the master in the next data cycle. 
+Diagnostic	flag	+1	is	set	to	H	as	soon	as	this	command	is	executed.	When	the	
+command	is	finished,	the	flag	is	set	to	L	and	the	result	of	the	operation	is	written	to	
+diagnostic register +0. A description of the response code in diagnostic register +0 
+is	provided	in	section	5.1.1.2,	‘Diagnostic	registers	with	PROFIBUS-DP’.
+This	command	may	only	be	executed	when	diagnostic	flag	+1	has	the	status	L.	
+Assigning	a	slave	to	a	group	takes	place	with	the	PROFIBUS-DP	configurator.	
+PROFIBUS-DP supports the formation of a maximum of 8 groups. These groups 
+can be assigned as many slaves as required. The choice of group in the SCON 
+parameter	is	bit-oriented	according	to	the	following	pattern:
+Bit 7 6 5 4 3 2 1 0 
+Group 1
+Group 8
+Group 7
+Group 6
+Group 5
+Group 4
+Group 3
+Group 2
+SCON-Parameter
+A	‘Freeze’	or	‘Unfreeze’	command	can	be	executed	here	on	several	groups	simul-
+taneously.	Function	code	to	trigger	‘Freeze’	or	‘Unfreeze’	commands:
+13	Start	‘Freeze’	command	14	 Start	‘Unfreeze’	command.
+PAGE 99
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-24
+5
+Structure: Channel
+Fct code
+Parameter
+SCON
+  Channel 9, 8  
+	 	 Fct.	code		 13,	14	;	Fct.	code	  
+	 	 Parameter	 0...255	;	Group	number
+Flags:	 	The	error	flag	is	set	if	the	channel	is	unassigned	or	if	the	command	is	
+called	when	diagnostic	flag	+1	is	set	to	H.
+Example:		Execute	‘Freeze’	and	‘Unfreeze’	sequence	for	the	slaves	of	group	5.
+  STL     GCS_BUSY ; If diagnostic flag +1 = L,  
+     ;   TR executed → continue
+  SCON    9  ; PROFIBUS-DP channel 9  
+          13  ;   Freeze  
+          16  ;   Group 5 (00010000)
+  STL     GCS_BUSY ; If diagnostic flag +1 = L,  
+     ;   TR executed → continue
+  LD    T 3  ; Load timer with  
+          100 ; value 100, delay so that  
+     ;   the slaves transmit their frozen  
+     ;   inputs to the 
+  STL   T 2   ;   master 
+  STL   F XX   ; Process the  
+  OUT   F ZZ   ; frozen I/Os of the slaves  
+  ANL   F YY   INC   C VW
+  SCON    9   ; PROFIBUS-DP channel 9 
+          14   ; Unfreeze          16  
+      ; Group 5 (00010000)
+  STL     GCS_BUSY  ; If diagnostic flag +1 = L,  
+    ; TR executed → continue
+ 
+PAGE 100
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-25
+5
+SCON(I)	15,	16:	‘Sync’,	‘Unsync’	Global	Control	Service	
+With	these	commands,	the	‘Sync’	and	‘Unsync’	commands	can	be	triggered	for	
+one or more groups of slaves. This command is used to synchronise the outputs.
+With	the	‘Sync’	command,	the	master	causes	a	slave	or	group	of	slaves	simulta-
+neously to freeze outputs in their present state. In the next data cycle (Data_exch) 
+the	master	transfers	the	output	image	to	the	slaves,	without	the	slaves	copying	
+this image to their outputs. After the conclusion of this action, the master sends 
+an	‘Unsync’	command	to	the	group.	All	slave	outputs	are	now	switched	on	or	off	at	
+precisely the same time and these outputs are again refreshed in the normal data 
+cycle.	It	is	permissible	for	the	master,	after	one	‘Sync’	command,	to	send	further	
+‘Sync’	commands	to	the	slaves.	In	each	case,	the	current	output	image	is	copied	
+to the outputs at exactly the same time.
+Diagnostic	flag	+1	is	set	to	H	as	soon	as	this	command	is	executed.	When	the	
+command	is	finished,	the	flag	is	set	to	L	and	the	result	of	the	operation	is	written	
+to diagnostic register +0. A description of the response code in diagnostic register 
++0	is	provided	in	section	5.1.1.2,	‘Diagnostic	registers	with	PROFIBUS-DP’.	This	
+command	may	only	be	executed	when	diagnostic	flag	+1	has	the	status	L.
+Assigning	a	slave	to	a	group	takes	place	with	the	PROFIBUS-DP	configurator.	
+PROFIBUS-DP supports the formation of a maximum of 8 groups. These groups 
+can be assigned as many slaves as required. The choice of group in the SCON 
+parameter	is	bit-oriented	according	to	the	following	pattern:
+Bit 7 6 5 4 3 2 1 0 
+Group 1
+Group 8
+Group 7
+Group 6
+Group 5
+Group 4
+Group 3
+Group 2
+SCON-Parameter
+A	‘Sync’	or	‘Unsync’	command	can	be	executed	here	on	several	groups	simultane-
+ously.
+Function	code	to	trigger	‘Sync’	or	‘Unsync’	commands:
+15	Start	‘Sync’	command	16	 Start	‘Unsync’ 	command.
+PAGE 101
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-26
+5
+Structure: Channel
+Fct code
+Parameter
+SCON
+  Channel  9, 8  
+	 	 Fct.	code		 	 15,	16		;	Fct.	code	  
+	 	 Parameter	 	 0...255	;	Group	number
+Flags:	 	The	error	flag	is	set	if	the	channel	is	unassigned	or	if	the	command	is	
+called	when	diagnostic	flag	+1	is	set	to	H.
+Example:		Execute	a	‘Sync’	and	‘Unsync’	sequence	for	the	slaves	of	group	3.
+  STL     GCS_BUSY ; If diagnostic flag +1 = L, 
+     ;   TR executed → continue
+  SCON    9  ; PROFIBUS-DP channel 9 
+          15  ;   Sync 
+          4   ;   Group 3 (00000100)
+  STL     GCS_BUSY ; If diagnostic flag +1 = L 
+     ;   TR executed → continue
+  OUT   F XX  ; Set outputs  
+     ; of slaves  
+  LD    T 5  ; Load timer 5  
+          400 ;   with value 400
+  STL   T 5  ; Wait until timer = 0
+  SCON    9  ; PROFIBUS-DP channel 9  
+          16  ; Unsync  
+          4  ; Group 3 (00000100)
+  STL     GCS_BUSY ; If diagnostic flag +1 = L  
+     ; TR executed → continue
+ 
+PAGE 102
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Description of the PCD commands
+Programming
+5-27
+5
+5.2.4 History message log
+In	the	event	of	problems	with	PROFIBUS-DP,	the	following	error	message	is	
+stored in the history log:
+  PROF DP FAIL xxx
+ERR# Description
+0 Key	word	MODE:	not	found
+0 Wrong	mode	specified
+0 Key	word	CONF:	not	found
+0 DBX	key	word	not	specified
+0 DBX number error
+0 DBX number too large
+0 DBX does not exist
+0 Key	word	DIAG:	not	found
+0 Flag	or	output	key	word	not	specified	in	DIAG
+0 Error	in	address	of	diag.	flag	or	output
+0 Range	error	diag.	flag	or	output	
+0 Register	key	word	not	specified	in	DIAG
+0 Range error diag. register 
+1 PROFIBUS-DP HW card not present
+2 Error in command 
+3 DBX structure error
+4 DBX type not for DP master (no PROFIBUS DBX)
+5 FW-DBX version not compatible
+6 No IN RING message after timeout on initialisation 
+7 Semaphore error for data exchange (info to PCD support)
+8 DBX error: data transfer function not implemented
+9 Incompatible	PCD7.F75xx	and	PCD	hardware
+PAGE 103
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Rules
+Programming
+5-28
+5
+5.3 Rules for writing the user program
+To	begin	with,	here	are	the	main	rules	for	the	PROFIBUS-DP	user	program	once	
+again:
+●	 	As	usual	with	Saia	PCDs,	each	communications	interface	must	be	initialised	
+with	a	SASI	command.	This	normally	occurs	in	XOB	16.
+●  In the master PCD, media are reserved for all I/Os and registers of PROFI-
+BUS-DP slaves. Access to these slave I/Os and registers takes place in the 
+master program via these master media. The master media are grouped in the 
+image	memory.	If	slave	I/Os	are	accessed	in	the	master	program,	it	is	always	
+this image memory that is accessed, not the actual I/Os.
+●	 	Data	exchange	between	the	image	memory	and	the	PROFIBUS-DP	card	(and	
+the slaves) can be automatic or controlled by the user program. Only after data 
+exchange	has	been	executed	between	the	image	memory	and	the	PROFIB-
+US-DP	card	(and	the	slaves)	will	slave	I/Os	be	read	or	written.
+●	 	To	enable	automatic	data	exchange	between	the	image	memory	and	the	
+PROFIBUS-DP	card’s	memory	(and	the	slaves),	the	beginning	of	COB	0	(COB	
+0) and end of COB 0 (ECOB) must be processed. At the beginning of COB 0, 
+slave	inputs	are	copied	from	the	PROFIBUS-DP	card’s	memory	to	the	master	
+PCD’s	input	image	memory.	At	the	end	of	COB	0,	the	master	PCD’s	output	
+image	memory	is	copied	to	the	PROFIBUS-DP	card’s	memory.
+●  By means of SCON commands, it is possible in the user program to force data 
+exchange	between	the	image	memory	and	the	PROFIBUS-DP	card’s	memory.
+PAGE 104
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Structure
+Programming
+5-29
+5
+5.4 Structure of the user program
+5.4.1 Cold-start program in XOB 16
+In	XOB	16	the	PROFIBUS-DP	interface	is	initialised	with	the	SASI	command.	The	
+SASI	texts	generated	by	the	PROFIBUS-DP	configurator	are	used	for	this	pur-
+pose.
+Example:
+ XOB  16  
+ SASI  9   ; Channel 9  
+   txt_1DP ; Text from configurator
+ EXOB
+5.4.2 Main program in COB
+To	enable	automatic	data	exchange	between	the	image	memory	and	the	PROFI-
+BUS-DP	card’s	memory	(and	the	slaves),	the	start	of	COB	0	(COB	0)	and	end	of	
+COB	0	(ECOB)	must	be	processed.	Data	exchange	between	the	image	memory	
+and	the	PROFIBUS-DP	card’s	memory	(and	the	slaves)	can,	if	required,	be	con-
+trolled by the user program or forced. This is mainly used in large user programs 
+when	reactions	are	needed	to	time-critical	I/O	signals	from	slaves.
+Example 1: 
+Automatic	data	exchange	between	the	image	memory	and	the	PROFIBUS-DP	
+card’s	memory	in	BLOCTEC	structure.
+COB     0 ; Copy slave inputs from 
+        0 ; PROFIBUS-DP card’s memory to master PCD’s 
+   ; input image memory.
+STH     XX 
+ANL     YY ; Code with which the slave media  
+OUT     ZZ ; are accessed
+ECOB  ; Data from output image memory 
+   ; is copied to the PROFIBUS-DP  
+   ; card’s memory
+PAGE 105
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Structure
+Programming
+5-30
+5
+Example 2:
+Automatic data exchange and data exchanged forced by the user program be-
+tween	the	image	memory	and	the	PROFIBUS-DP	card’s	memory	in	a	BLOCTEC	
+structure.
+COB  0 ; Copy slave inputs from the PROFIBUS-DP  
+  0 ; card’s memory to the master PCD’s 
+   ; input image memory.
+STH  F XX 
+ANL  F YY ; Code with which the slave media  
+OUT  F BZ ; are accessed
+CPB   2 ; Call PB with which the  
+   ; slave inputs from the PROFIBUS-DP  
+   ; card’s memory are to be copied to the 
+   ; master PCD’s input image memory
+STH  F XX  
+ANL  F YY 
+    ; Code with which the slave media  
+OUT  F AZ  ; are accessed
+ECOB   ; Data from the output image memory 
+    ; is copied to the PROFIBUS-DP  
+    ; card’s memory
+PB  2  ; PB to refresh the inputs 
+SCON  9  ; Channel 9  
+  3  ; Fct. code 3 with parameter 1 = 
+  1  ; Force data exchange for all  
+    ; slaves between the input image memory  
+    ; and PROFIBUS-DP card
+EPB
+PAGE 106
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Structure
+Programming
+5-31
+5
+Example 3:
+The	slave	I/Os	must	be	coherent	in	a	structured	program	with	several	COBs	within	
+a program cycle. In order to keep the same data status throughout the entire pro-
+gram, the I/Os are not accessed in COB 0. 
+COB  0 ; Copy slave inputs from PROFIBUS-DP  
+  0 ; card’s memory to the master PCD’s input  
+   ; image memory. 
+   ; COB 0 is only used for data exchange. 
+   ; The data provided is then processed 
+   ; by the other COBs.
+ECOB  ; Data from the output image memory 
+   ; is copied to the PROFIBUS-DP card’s memory 
+COB  1 ; Actual user program  
+  0 ; in which the slave media are accessed.
+STH  F XX 
+ANL  F YY ; Code with which the slave media  
+OUT  F AZ ; are accessed
+ECOB  ; End of COB 1
+COB  2  
+  0
+STH  F XX 
+ANL  F YY ; Code with which the slave media  
+ANL  F AZ ; are accessed OUT   F AY
+ECOB  ; End of COB 2
+PAGE 107
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Hardware	installation
+Commissioning
+6-1
+6
+6. Commissioning a PROFIBUS-DP network
+Commissioning	a	PROFIBUS-DP	network	is	completed	in	two	steps:
+a)	Checking	and	testing	the	hardware	installation	(physical	layer)
+b)	Checking	and	testing	layer	7	(configuration	and	data	exchange)
+6.1	 Checking	and	testing	the	hardware	installation	(physical	layer)
+Experience	shows	that	the	main	causes	of	communications	problems	lie	in	inade-
+quate	or	incorrect	hardware	installation.	For	this	reason,	great	importance	must	be	
+attached to this part of the commissioning process.
+The	following	checks	and	tests	should	be	carried	out	scrupulously:
+●	 	Connection	and	laying	of	bus	cable	(terminals	and	connectors,		shielding,	stub	
+cables,	laying	power	cables,	etc.)
+●  Check and adjust line termination resistors, repeaters, etc.
+●  Check the bus line for through transmission
+● Check the electrical signal level, etc.
+A detailed description of these checks and tests (also called static tests) 
+can	be	found	in	the	manual	«Installation	components	for	RS-485	networks»	
+(doc. no. 26-740).
+PAGE 108
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Data exchange
+Commissioning
+6-2
+6
+6.2 Checking and testing data exchange
+These	tests	are	to	check	data	exchange	between	the	master	and	slaves	and	the	
+correct mapping of slave I/Os to master media.
+6.2.1 Checking data exchange
+1.		Create	the	network	with	the	PROFIBUS-DP	configurator.	For	this,	all	stations	
+present	in	the	network	must	be	defined	with	all	I/Os.	The	correct	baud	rate	must	
+also be entered. 
+2.		Write	a	basic	program	in	PG5,	which	must	contain	the	following	program	in-
+structions:
+ XOB   16  ; Cold start routine  
+ SASI   9  ; Start PROFIBUS-DP  
+   txt_1DP
+ EXOB
+ COB   0  ; Update inputs from PROFIBUS-DP  
+   0
+ ECOB    ; Update outputs from PROFIBUS-DP
+3.		Assemble	and	link	the	basic	program	and	the	PROFIBUS-DP	configuration.
+4. Load the program into the master controller.
+5. Start the program
+6.		Check	diagnostic	flag	DATA_EXCH. 
+This	flag	signals	the	operating	status	of	data	exchange	on	the	PROFIBUS-DP	
+network.	‘H’	means	that	data	exchange	is	running	on	the	PROFIBUS-DP	
+network.	‘L’	means	that	data	exchange	is	not	running	on	the	PROFIBUS-DP	
+network.
+Possible errors:
+●		No	master	in	network 
+●		No PROFIBUS-DP card plugged into PCD 
+●		Incorrect FW or HW version 
+●		No SASI instruction 
+●		No COB 0, ECOB instruction.
+PAGE 109
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Data exchange
+Commissioning
+6-3
+6
+7.	 Check	diagnostic	flag	SLAVE_ERR. 
+	 	If	this	flag	=	L,	slave	stations	are	addressed	without	error.	If	this	flag	=	H,	one	or	
+more slave stations has an error.To discover the faulty station, diagnostic reg-
+isters	‘base+3’	to	‘base+6’	can	be	used.	The	diagnostic	data	of	the	faulty	slave	
+can	then	be	read	with	the	SCON	command	using	function	code	2.
+Possible errors:
+●  Station number in slave does not match the station number in the PROFIB-
+US-DP	configurator
+●  Several slaves have the same station number
+●  Wiring is incorrect.  
+(Short	circuit	between	A	and	B,	or	A	and	B	have	been	mixed	up)
+● Slave does not support the selected baud rate 
+●	 Slave	has	been	incorrectly	configured	
+●	 The	slave’s	GSD	file	does	not	match	the	slave	device.
+PAGE 110
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Data exchange
+Commissioning
+6-4
+6
+6.2.2  Checking the mapped media
+This test checks the correct addressing of slave I/Os. After data exchange be-
+tween	the	master	and	the	slaves	has	been	checked	according	to	section	6.2.1,	the	
+following	test	can	be	performed:
+1. The program described in section 6.2.1 is loaded into the master controller.
+2. Start the program
+3.  In PG5, the debugger is used to access individual media of the slave I/Os. For 
+this	purpose	the	slave	inputs	are	displayed	with	a	‘Display	Flag’	command	and	
+the	slave	outputs	are	described	with	a	‘Write	Flag’	command.
+4.		Check	that	the	right	I/Os	on	the	right	slaves	are	read	or	switched	on/off.
+Possible errors:
+● Station number in slave does not match the station number in the PROFIBUS- 
+	 DP 	configurator
+● Several slaves have the same station number
+● Several I/Os have been mapped to the same medium
+●	 Slave	has	been	incorrectly	configured.
+●	 The	slave’s	GSD	file	does	not	match	the	slave	device
+● PROFIBUS-DP media are already used in the user program.
+PAGE 111
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Data exchange
+Commissioning
+6-5
+6
+6.2.3 Use of bus monitors
+If the checks and tests described in the previous sections do not produce the de-
+sired results, a bus monitor must be used for further tests and analyses.
+A bus monitor is a testing tool for the commissioning, maintenance and diagnosis 
+of	PROFIBUS-DP	networks.	As	a	passive	tool,	it	does	not	affect	the	bus	in	any	
+way	and	does	not	require	a	station	address,	nor	does	it	have	to	be	considered	
+during project planning.
+In online operation, the bus monitor traces telegram communications and displays 
+either the «Live List» of stations connected to the bus, or certain bus characteris-
+tics.	In	offline	operation,	the	data	recorded	can	be	assessed	and	a	telegram	analy-
+sis can be carried out on layer 2 or 7 of the communication model.
+Bus	monitor	manufactured	by	Softing	(Germany)
+This	bus	monitor	consists	of	MS-WINDOWS	software,	a	PCMCIA	card	and	a	TAP	
+(Terminal	Access	Point)	adapter,	which	provides	the	physical	connection	between	
+the PCMCIA card and the PROFIBUS.
+This	monitor	can	be	used	with	a	portable	PC	to	trace	and	analyse	FMS	and	DP	
+telegrams	with	time	stamping	up	to	baud	rates	of	12	Mbps.	Extensive	adjustable	
+filter	functions	allow	detailed	troubleshooting	and	error	analysis.
+More information and addresses can be found in the electronic PROFIBUS prod-
+uct catalogue (available from the PROFIBUS user organisation).
+ 
+PAGE 112
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Data exchange
+Commissioning
+6-6
+6
+ 
+Working with the bus monitor
+Unfortunately, use of a bus monitor still requires the user to have very extensive 
+and	thorough	knowledge	of	PROFIBUS.	The	user	must	at	least	be	in	a	position	to	
+interpret and understand the DP telegrams traced in order to carry out an analysis 
+and troubleshooting. This means that the user must, for example, be able to inter-
+pret the coding of DP telegrams.
+PAGE 113
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Icons
+Appendix
+A-1
+A
+A Appendix
+A.1 Icons
+In manuals, this symbol refers the reader to further information in this manual or other 
+manuals or technical information documents. As a rule there is no direct link to such 
+documents.
+This	symbol	warns	the	reader	of	the	risk	to	components	from	electrostatic	discharges	
+caused by touch. 
+Recommendation:	Before	coming	into	contact	with	electrical	components,	you	should	
+at least touch the negative pole of the system (cabinet of PGU connector). It is better to 
+use	a	grounding	wrist	strap	with	its	cable	permanently	attached	to	the	negative	pole	of	
+the system.
+This	sign	accompanies	instructions	that	must	always	be	followed.
+PAGE 114
+Manual PROFIBUS DP │ Document-No. 26-860│ Version ENG 02│ 2019-01-31
+Saia-Burgess Controls AG
+Adressen
+Appendix
+A-2
+A
+A.2 Company address of Saia-Burgess Controls AG 
+Contact
+Saia-Burgess Controls AG 
+Bahnhofstrasse 18 
+3280 Murten, Switzerland 
+Telephone	switchboard ........... +41  26 580 30 00
+Telephone SBC Support .........  +41  26 580 31 00
+Fax .......................................... +41  26 580 34 99
+Support
+E-mail Support:  ...................... support@saia-pcd.com
+Support site:  ...........................  www.sbc-support.com
+SBC site:  ................................  www.saia-pcd.com
+International representations &  
+SBC sales companies:  ........... www.saia-pcd.com/contact
+Repair
+Postal	address	for	customers	to	return	products	in	Switzerland:
+Saia-Burgess Controls AG 
+After sales service 
+Bahnhofstrasse 18 
+3280 Murten, Switzerland

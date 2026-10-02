@@ -1,0 +1,41 @@
+C06 - Authorization using local id type
+This is an informative use case. Its purpose is to demonstrate the use of the idToken type Local.
+No. Type Description
+1 Name Authorization using local id type
+2 ID C06
+3 Objective(s) Enable the Charging Station to start charging with a locally generated IdToken.
+4 Description When a Charging Station needs to start a Transaction for a Driver that has no RFID, or the RFID is
+not known. For Example, the EV Driver uses a parking ticket to start charging.
+Actors EV Driver, Payment Terminal, CSMS, Charging Station
+Scenario description 1. An EV driver drives into a garage, takes a parking ticket at the barrier at the entrance.
+2. Parks his EV at a Charging Station.
+3. Plugs in the charging cable.
+4. Scans/inserts his parking ticket on the Charging Station to start Charging
+5. EV is charging, driver leaves.
+6. EV driver returns, inserts parking ticket into a payment kiosk
+7. Pays for parking and charging
+8. The Payment terminal/kiosk sends a stop command via the CSMS to the Charging Station.
+9. EV driver unplugs the charging cable and drives away.
+Alternative scenario(s) C01 - EV Driver Authorization using RFID
+C02 - Authorization using a start button
+C03 - Authorization using credit/debit card
+C04 - Authorization using PIN-code
+C05 - Authorization for CSMS initiated transactions
+C07 - Authorization using Contract Certificates
+C08 - Authorization at EVSE using ISO 15118 External Identification Means (EIM)
+C15 - Unknown Offline Authorization
+5 Prerequisites Integrated parking & charging payment system
+6 Postcondition(s) The transaction has completed at the Charging Station and Transaction information is available
+at the CSMS.
+7 Error Handling n/a
+8 Remarks This use case uses an Parking Ticket as example, but this is not a requirement.
+The communication between the Payment Terminal and the CSMS is outside of scope of OCPP.
+The scenario description and sequence diagram above are based on the Configuration Variable
+for start & stop transaction being configured as follows:
+TxStartPoint: EVConnected
+TxStopPoint: ParkingBayOccupancy, EVConnected
+This use-case is also valid for other configurations, but then the transaction might start/stop at
+another moment, which might change the sequence in which message are send. For more details
+see the use cases: E01 - Start Transaction options and E06 - Stop Transaction options.
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 91/491 Part 2 - Specification

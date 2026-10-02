@@ -7,6 +7,16 @@ export const technologyKey = (value: unknown) => String(value ?? '').toLowerCase
 const matchingProof = (proof: Parameters, technologyId: string) => ['technology', 'technology_id', 'protocol']
   .every(key => !proof[key] || technologyKey(proof[key]) === technologyKey(technologyId));
 
+/** The profile owns device requirements; a controller port is not a transaction. */
+export function localEvidenceFieldRequired(
+  field: NonNullable<Technology['local_timing_schema']>[number], values: Parameters,
+): boolean {
+  if (field.required_scopes) return field.required_scopes.includes(String(values.evidence_scope || 'TRANSACTION'));
+  if (field.required_when) return Object.entries(field.required_when).every(([key, value]) => values[key] === value);
+  if (field.key === 'arbitration_bound_us') return values.multi_master === true;
+  return !field.optional;
+}
+
 /** A device state with no default must remain unknown until explicitly selected. */
 export function booleanParameterValue(field: {default?: unknown}, raw: FormDataEntryValue | null): boolean | null {
   if (field.default !== undefined) return raw !== null; // Existing proposed checkbox.

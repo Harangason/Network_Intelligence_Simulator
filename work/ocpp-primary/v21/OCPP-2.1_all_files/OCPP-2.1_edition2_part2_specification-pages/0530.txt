@@ -1,0 +1,45 @@
+ID. Precondition Requirements Note
+OperationMode CentralSetpoint
+Q03.FR.01 When CSMS provides setpoints for
+charging/discharging
+CSMS SHALL send a SetChargingProfileRequest
+message with one or more
+chargingSchedulePeriod(s) that have
+operationMode = CentralSetpoint.
+Q03.FR.02 Q03.FR.01 CSMS SHALL provide a value for setpoint. This optionally includes
+the L2 and L3 variants of
+setpoint
+Q03.FR.03 Q03.FR.02 CSMS MAY include limit and/or dischargeLimit in
+the ChargingSchedulePeriodType to limit the range
+of setpoint and the allowed overshoot when
+approaching the setpoint.
+(See section Q 2.1 and Q
+2.2)
+Q04 - Central V2X control with dynamic CSMS setpoint
+New in OCPP 2.1
+No. Type Description
+1 Name Central V2X control with dynamic CSMS setpoint
+2 ID Q04
+3 Objective(s) To allow the CSMS to control the charge and discharge behaviour of an EV by dynamically
+changing a setpoint (instead of providing a schedule).
+4 Description The EV’s charging and discharging behaviour is controlled by the Central System. The CSMS
+sends a dynamic charging profile with a single period, which is updated frequently.
+Actors EV, Charging Station, CSMS, [secondary actor]
+Scenario description CSMS periodically updates the charging schedule:
+1. The CSMS has sent a SetChargingProfileRequest message with a chargingProfilePurpose
+TxProfile or TxDefaultProfile and a chargingProfileKind = Dynamic.
+The chargingProfile contains 1 chargingSchedule with 1 chargingSchedulePeriod which
+has operationMode set to CentralSetpoint and setpoint to the desired active power
+the EV should import or export.
+2. If chargingSchedule.duration has a value, then this specifies how long the
+chargingSchedule remains valid after the SetChargingProfileRequest or after the last
+update by UpdateDynamicScheduleRequest.
+3. The Charging Station will obey the values of the (one and only) chargingSchedulePeriod,
+e.g. it will set the charge or discharge rate of the EV to setpoint.
+4. CSMS updates the chargingSchedulePeriod periodically by sending a
+UpdateDynamicScheduleRequest.
+If chargingSchedule.duration is set and the chargingSchedulePeriod is not updated after duration
+seconds, then the chargingSchedule ends and Charging Station will fall back to the next valid
+charging profile.
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 517/803 Part 2 - Specification

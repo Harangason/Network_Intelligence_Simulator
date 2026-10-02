@@ -1,0 +1,52 @@
+TC_N_24_CS: Set Variable Monitoring - Periodic event
+Test case name Set Variable Monitoring - Periodic event
+Test case Id TC_N_24_CS
+Use case Id(s) N04, N08
+Requirement(s) N04.FR.01, N04.FR.08, N08.FR.05 and N08.FR.06
+System under test Charging Station
+Description Charging Station sends a periodic event .
+Purpose To test that Charging Station sends periodic events
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+Set MonitoringLevel to 8
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Set the monitor to generate a periodic event notification
+2. Charging Station responds with
+SetVariableMonitoringResponse
+1. Test System sends SetVariableMonitoringRequest with:
+- setMonitoringData[0].value = <Configured Clock Aligned
+MeterValues Interval>
+- setMonitoringData[0].type = Periodic
+- setMonitoringData[0].severity = 5
+- setMonitoringData[0].component = <Configured threshold
+monitor component variable>
+- setMonitoringData[0].variable = <Configured threshold monitor
+component variable>
+3. Charging Station sends a NotifyEventRequest
+4. Test System responds with a NotifyEventResponse
+Note(s): Step 3 and 4 will repeat every <Configured Clock Aligned MeterValues Interval> seconds
+Tool validations
+* Step 2:
+Message: SetVariableMonitoringResponse with:
+setMonitoringResult[0].status = Accepted
+setMonitoringResult[0].type = Periodic
+setMonitoringResult[0].severity = 5
+setMonitoringResult[0].component = <Configured threshold monitor component variable>
+setMonitoringResult[0].variable = <Configured threshold monitor component variable>
+setMonitoringResult[0].attributeStatusInfo is absent or attributeStatusInfo.reasonCode = "NoError"
+* Step 3:
+Message: NotifyEventRequest every <Configured Clock Aligned MeterValues Interval> seconds with:
+with an eventData element with:
+- trigger = Periodic
+- component = <Configured threshold monitor component variable>
+- variable = <Configured threshold monitor component variable>
+Post scenario validations:
+N/A
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 700/1383 Part 6 - Test Cases

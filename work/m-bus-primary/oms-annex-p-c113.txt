@@ -1,0 +1,867 @@
+PDF PAGE 1
+ 
+ 
+ 
+ 
+Open Metering System 
+Specification 
+ 
+Requirements for Wired M-Bus 
+ 
+ 
+Annex P to 
+Volume 2 Primary Communication 
+Issue 5.0.1 
+ 
+RELEASE C (2023-12) 
+ 
+ 
+ 
+© Open Metering System Group e.V., 2023 
+
+PDF PAGE 2
+Open Metering System Specification Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  2/24 
+Document History 
+Version Date Comment Editor 
+A 0.0.1 2019-09-04 Initial version derived from OMS TR-02 Achim Reissinger 
+A 0.0.2 2019-09-10 Changes in all chapters during meeting #28 AG4 
+A 0.0.3 2019-10-29 Changes in all chapters during meeting #29 AG4 
+A 0.0.4 2019-11-19 Changes in all chapters during meeting #30 AG4 
+A 1.0.0 2019-12-17 
+and 
+2020-01-08 
+Release candidate AG4, Achim Reissinger 
+A 1.0.1 2020-03-19 Comment review and integration AG4, Achim Reissinger 
+A 1.0.2 2020-05-13 Editing during meeting #35 
+Release candidate 
+AG4, Achim Reissinger 
+A 1.0.3 2020-06-30 Editing during meeting #36 AG4, Achim Reissinger 
+A 1.0.4 2020-10-05 Transfer of statement about mandatory 
+secondary addressing from OMS TR-02 
+Achim Reissinger 
+A 1.0.5 2020-10-22 Editorial changes: Numbering of tables and 
+figures 
+Achim Reissinger 
+A 1.0.6 2020-11-12 Editorial update of table format for all tables 
+ 
+and 
+ 
+Release A 
+Achim Reissinger 
+B.1.1.0 2022-09-28 
+ 
+and 
+ 
+2022-10-01 
+Copyright remark added to front page 
+Introduction of term “OMS end-device” 
+Editorial changes 
+ 
+P.2.2.2 changed 
+P.2.4.3 changed 
+ 
+Release Candidate 
+Achim Reissinger 
+ 
+ 
+ 
+ 
+AG4 
+B 1.1.1 2022-11-05 
+ 
+to  
+ 
+2022-11-17 
+Integration of review comments 
+ 
+ 
+ 
+Release 
+AG4 
+Thomas Banz 
+Achim Reissinger 
+C 1.1.2 2023-02-28 
+ 
+ 
+to 
+ 
+ 
+2023-10-13 
+P.3.3.1.1 changed 
+ 
+P.2.3.2 changed 
+Figure P.4 deleted 
+ 
+ 
+Release candidate 
+AG4 
+Michael Rac 
+Achim Reissinger 
+C 1.1.3 2023-10-04 
+to 
+2023-11-27 
+ 
+ 
+2023-11-30 
+P2.2.2 changed (MB-Command-Tags) 
+P2.4.2 changed (MB-Command-Tags) 
+P2.4.3 changed (MB-Data-Tags) 
+P2.2.2 changed (UC-04 Clock Management) 
+ 
+Consideration of review comments 
+ 
+Release 
+AG4 
+Andreas Papenheim 
+Achim Reissinger 
+ 
+ 
+ 
+PDF PAGE 3
+Open Metering System Specification Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  3/24 
+Contents 
+Document History ................................ ................................ ................................ .................. 2 
+Contents  ................................ ................................ ................................ ............................ 3 
+Tables  ................................ ................................ ................................ ............................ 5 
+Figures  ................................ ................................ ................................ ............................ 5 5 
+P.1 General ................................ ................................ ................................ ............... 6 
+P.1.1 Scope ................................ ................................ ................................ .................. 6 
+P.1.2 Reference ................................ ................................ ................................ ........... 6 
+P.2 Normative ................................ ................................ ................................ ............ 7 
+P.2.1 Physical Layer ................................ ................................ ................................ ..... 7 10 
+P.2.1.1 Wiring rules ................................ ................................ ................................ ......... 7 
+P.2.1.2 SC Charge / Discharge ................................ ................................ ....................... 7 
+P.2.1.3 Inrush Current ................................ ................................ ................................ ..... 7 
+P.2.1.4 Rise and Fall Times ................................ ................................ ............................ 7 
+P.2.1.5 Identification of the Unit Loads ................................ ................................ ............ 7 15 
+P.2.1.6 Switch-on Process ................................ ................................ ..............................  8 
+P.2.1.7 Upper Limit for Voltage Variation ................................ ................................ ......... 8 
+P.2.1.8 Break Detection ................................ ................................ ................................ ... 9 
+P.2.1.9 Logical Slave Disconnect ................................ ................................ .................... 9 
+P.2.2 Link layer ................................ ................................ ................................ ............10 20 
+P.2.2.1 Baud rates ................................ ................................ ................................ ..........10 
+P.2.2.2 Change of Primary and Secondary Address ................................ .......................10 
+P.2.2.3 Special Primary Addresses FEh and FFh ................................ ...........................10 
+P.2.2.4 Two or More Logical Wired M-Buses in One Hardware Environment .................11 
+P.2.2.5 Datagram Detection ................................ ................................ ...........................12 25 
+P.2.2.6 Repetitions ................................ ................................ ................................ .........14 
+P.2.2.6.1 Slave Behaviour ................................ ................................ ................................ .14 
+P.2.2.6.2 Master Behaviour ................................ ................................ ............................... 14 
+P.2.2.7 Secondary addressing ................................ ................................ ........................14 
+P.2.3 Networking Layer / Secondary Addressing ................................ .........................14 30 
+P.2.3.1 Enhanced Selection ................................ ................................ ...........................14 
+P.2.3.2 Determination of Addresses in Adapters ................................ ............................14 
+P.2.4 Application Layer ................................ ................................ ................................ 15 
+P.2.4.1 Selection of Application Data ................................ ................................ ..............15 
+P.2.4.2 Minimum Communication Capabilities for Slaves ................................ ...............15 35 
+P.2.4.3 Commands for Communication If Applicable ................................ ......................15 
+P.2.4.4 Table with CI-Fields ................................ ................................ ...........................15 
+PDF PAGE 4
+Open Metering System Specification Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  4/24 
+P.2.4.5 New Device Type for Wired Adapters ................................ ................................ .15 
+P.3 Informative ................................ ................................ ................................ .........16 
+P.3.1 Physical Layer ................................ ................................ ................................ ....16 
+P.3.1.1 Cabling ................................ ................................ ................................ ...............16 
+P.3.1.1.1 Cable Types ................................ ................................ ................................ .......16 5 
+P.3.1.1.2 Topology ................................ ................................ ................................ ............16 
+P.3.1.1.3 Minimum Slave M-Bus Voltage ................................ ................................ ..........17 
+P.3.1.1.4 Transmission of Remaining Energy in Battery for Communication .....................21 
+P.3.2 Link Layer ................................ ................................ ................................ ..........21 
+P.3.2.1 Baud Rates ................................ ................................ ................................ ........21 10 
+P.3.2.2 Functionality of SND-NKE ................................ ................................ ..................21 
+P.3.2.3 Preserving Communication Budget ................................ ................................ ....22 
+P.3.3 Networking Layer / Secondary Addressing ................................ .........................23 
+P.3.3.1 Repetitions ................................ ................................ ................................ .........23 
+P.3.3.1.1 Secondary Address Search (Slave Select) ................................ .........................23 15 
+P.3.3.1.2 Deselection ................................ ................................ ................................ ........23 
+ 
+ 
+PDF PAGE 5
+Open Metering System Specification Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  5/24 
+Tables 
+Table P.1 - UL ranges ................................ ................................ ................................ ........... 8 
+Table P.2 - Required baud rate support ................................ ................................ ................10 
+Table P.3 - Example for minimum requirements ................................ ................................ ...23 
+ 
+ 
+ 
+Figures 5 
+Figure P.1 – Voltage variation ................................ ................................ ...............................  9 
+Figure P.2 - Quiescent time requirements for correct decodable datagram ..........................12 
+Figure P.3 - Quiescent time requirements for disturbed messages ................................ .......13 
+Figure P.4 - Topology variants ................................ ................................ .............................. 17 
+Figure P.5 - M-Bus voltage ................................ ................................ ................................ ...18 10 
+Figure P.6 - M-Bus states ................................ ................................ ................................ .....20 
+Figure P.7 - Communication depot ................................ ................................ .......................22 
+ 
+ 
+PDF PAGE 6
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  6/24 
+P.1 General 
+P.1.1 Scope 
+This document describes the Open Metering System requirements for the wired M-Bus. The 
+wired M-Bus is normatively represented in the [EN 13757-2], [EN 13757-3] and [EN 13757-7] 
+standard. During application of the [EN 13757 ] standard, a certain amount of scope for 5 
+interpretation or design freedom is offered. Among other things, this factor applies to the coding 
+of the data within the application layer. 
+Therefore, a number of different M -Bus datagrams from different manufacturers exist, with 
+partially identical content. Because of this, problems often arise during the interpretation of 
+datagram data in processing by readout systems or readout programs. 10 
+The specifications and standardizations in this document should contribute to increase the 
+interoperability of wired M-Bus products and minimise or solve existing problems. 
+This annex contains a normative (P.2) and an informative (P.3) part. 
+P.1.2 Reference 
+References to other documents are marked with square brackets. They are defined in 15 
+[OMS-S1]. 
+  
+PDF PAGE 7
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  7/24 
+P.2 Normative 
+P.2.1 Physical Layer 
+P.2.1.1 Wiring rules 
+Shielding shall be only connected to the protective earth on the master side and not at any 
+slave. 5 
+The wired M-Bus lines shall not be coupled with ground / earth or any other voltage potential. 
+A ring structure topology is not allowed for wired M -Bus systems. The OMS end-device shall 
+not contain a termination resistor as well as the complete topology shall not contain any 
+termination resistors. 
+NOTE: The topologies are explained in P.3.1.1.2. 10 
+P.2.1.2 SC Charge / Discharge 
+As the master in the wired M-Bus system modulates the voltage, the slaves have to detect one 
+threshold voltage for determining between logic high and low state of the bus voltage. Because 
+of possible long-term changes of the bus voltages and a wide span of allowed bus voltages, 
+the threshold has to be determined dynamically. This can be done by storing the threshold 15 
+voltage in a capacitor as reference. 
+The capacitor shall be sized to meet the following conditions: 
+• Charge: Voltage shall increase at 25 to 500 V/s 
+• Discharge: Voltage shall decrease at 0,5 to 15 V/s 
+• Ratio between charge and discharge speeds shall be > 30 20 
+NOTE: On best practice solutions for the  usual slave transceiver devices has resulted in a 
+100 nF – 330 nF storage capacitor. 
+P.2.1.3 Inrush Current 
+The inrush current is the current flowing into a slave device within 1 µs after powering the bus 
+to any allowed voltage level and shall be <100 mA. 25 
+P.2.1.4 Rise and Fall Times 
+The following limits on rise and fall times of the voltage modulation apply: 
+• < 75 V/µs (test condition: no load) 
+• < half of a bit time (test condition: see [EN 13757-2:2018], 4.3.3.4) 
+P.2.1.5 Identification of the Unit Loads 30 
+The number of unit loads (UL) shall be listed in the data sheet. Additionally, it shall be printed 
+on the device. 
+  
+PDF PAGE 8
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  8/24 
+The identification is done in a total of 4 groups, where the maximum of 4 UL, is not exceeded 
+(see Table P.1). 
+Table P.1 - UL ranges 
+Current draw of device (I) Identification 
+I ≤ 1.5 mA 1 UL 
+1.5 mA < I ≤ 3.0 mA 2 UL 
+3.0 mA < I ≤ 4.5 mA 3 UL 
+4.5 mA < I ≤ 6.0 mA 4 UL 
+ 
+P.2.1.6 Switch-on Process 
+Conditions for the activation of the M -Bus voltage from 0  V ≤ U Bus < 12 V until reaching the 5 
+allowed mark state voltage: 
+• Strictly increasing 
+• Minimum slew rate: 168 V/s 
+NOTE: According to the electrical requirements for M -Bus slaves (P3.1.1.3, [EN 13757 -
+2:2018], 4.2.2.11 – start-up delay) a slave shall reach its full communication capabilities less 10 
+than 3 seconds after an M -Bus voltage start-up or drop-out. This 3 seconds start-up delay is 
+measured from the time the M -Bus voltage at slave terminals reaches the minimum mark 
+voltage level of 21 V. 
+P.2.1.7 Upper Limit for Voltage Variation 
+The voltage variation between mark and space state shall not exceed the following range: 15 
+12 V ≤ Udelta, mark-space ≤ 15 V, where upon UM-Bus, slave shall always be ≥ 12 V 
+where 
+• Udelta, mark-space: Voltage variation between mark and space state of the M-Bus voltage 
+• UM-Bus, slave: M-Bus voltage at the slave terminals for mark and space state. 
+NOTE 1: The dimensioning of the M-Bus cabling should ensure that in space state ≥ 12 V are 20 
+always guaranteed at all slave terminals. 
+The maximum allowable voltage variation between mark and space state is derived from the 
+requirement of [EN 13757-2:2018], 4.2.2.3. 
+  
+PDF PAGE 9
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  9/24 
+The maximum usable voltage variation between mark and space state for a specific M -Bus 
+mark voltage level is depicted in Figure P.1. 
+ 
+Figure P.1 – Voltage variation 
+ 
+NOTE 2: UBus mark is the voltage level at M -Bus slave terminals. UBus mark should consider the 5 
+max allowable voltage drop Ur (for explanation see [EN 13757-2:2018], 4.3.1.2). 
+P.2.1.8 Break Detection 
+All OMS end -devices shall implement the break detection functionality (see  
+[EN 13757-2:2018], 4.3.3.8 and 5.6). 
+P.2.1.9 Logical Slave Disconnect 10 
+[EN 13757-2] specifies that slaves shall permanently maintain a (logical) connection to the 
+wired M-Bus. This also applies for OMS unless otherwise declared by the manufacturer. 
+The manufacturer shall declare the communication capabilities of the device for maintaining a 
+permanent connection (e.g. battery budget for wired M-Bus communication and metrological 
+functionality) and – if a protection mechanism e.g. according to P.3.2.3 is implemented – shall 15 
+define the communication depot and regeneration time in the [MANDEC]. 
+  
+Udelta, upper limit mark space 
+12 V 
+24 V 
+0 V 
+ 42 V 
+27 V 
+15 V 
+UBus mark 
+PDF PAGE 10
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  10/24 
+P.2.2 Link layer 
+P.2.2.1 Baud rates 
+Master and slave devices shall support 300 Baud and 2400 Baud.  
+Master or slave devices may support 9600 Baud, 19200 Baud and 38400 Baud. 
+Slave devices shall support automatic baud rate detection for all supported baud rates. 5 
+If a device supports baud rates of 9600 Baud, 19200 Baud or 38400 Baud, it shall also support 
+the lower baud rates (see Table P.2). 
+Table P.2 - Required baud rate support 
+Maximum 
+supported 
+baud rate of 
+the device 
+Required baud rate support 
+300 Baud 2400 Baud 9600 Baud 19200 Baud 38400 Baud 
+2400 Baud X X    
+9600 Baud X X X   
+19200 Baud X X X X  
+38400 Baud X X X X X 
+ 
+Other baud rates may be supported additionally. 
+P.2.2.2 Change of Primary and Secondary Address 10 
+The change of the primary address shall be possible. The change of the primary address of a 
+device shall be done by using the MB-Command-Tag XID3! (according to [OMS -S2], Annex 
+B). Other data points shall not be used. The change of the primary address shall be possible 
+using primary as well as secondary addressing. 
+A change of the secondary address is not permitted. Excluded from this rule are adapters. 15 
+Adapters that are capable of setting the secondary address via wired M-Bus shall support this 
+function using the MB -Command-Tags setID2! or  XID2! (complete identification number) or 
+setID11! or XID11! (ID of identification number) . The manufacturer and version shall not be 
+changeable in the adapter. The device type may be changeable in adapters. 
+The secondary address shall be worldwide unique (according to [OMS-S2], 3.1.2.2). For wired 20 
+M-Bus devices, customer and vendor may agree to an exception to this rule. This exception 
+shall be declared in the [MANDEC]. 
+P.2.2.3 Special Primary Addresses FEh and FFh 
+A message sent with an A-field FEh or FFh for broadcast shall be handled as if it is addressed 
+to an M-Bus slave’s real primary address. 25 
+NOTE 1: Slaves with more than one logical address (see P.2.2.4) do not apply to this rule. 
+NOTE 2: A message sent with an A -field FFh is not answered by the OMS end -device 
+(according to [EN 13757-2:2018], 5.7.5). 
+  
+PDF PAGE 11
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  11/24 
+P.2.2.4 Two or More Logical Wired M-Buses in One Hardware Environment  
+Some slaves are addressable with more than one primary and/or secondary address (e.g. 
+distinguish different functional units within one physical device). 
+Slave search and selection 
+When searching for slaves or selecting a slave address, conflicts may appear for addresses 5 
+of a multi-address device. The device shall react with simulating a collision; either responding 
+with A5h or several concatenated E5h representing the number of devices that produced the 
+collision. 
+Baud rate change 
+A baud rate change command to a multi-address device shall always change the baud rate for 10 
+the physical device and not only for the logical address the baud rate change is sent to. 
+NOTE 1: This is supported by the mandatory automatic baud rate detection for devices (see 
+P.2.2.1) 
+Special primary addresses FEh and FFh 
+When a datagram with A = FEh is received by a multi-address device, it shall respond correctly 15 
+with one of its logical addresses. 
+NOTE 2: The master can identify which of the logical units has replied according to the A-field 
+of the respond. 
+A datagram sent with A = FFh shall be processed by every logical M-Bus unit (see [EN 13757-
+2:2018], 5.7.7). 20 
+FCB handling 
+In case the logical device supports multiple applications and/or blocks, each logical device 
+shall trace the last selected application and/or block independently. 
+In case the logical device supports multi datagram messages, there shall be a separate FCB 
+handling implemented for each logical device. 25 
+  
+PDF PAGE 12
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  12/24 
+P.2.2.5 Datagram Detection 
+For a stable communication on a wired M-Bus network, devices need to be compliant with 
+specific wait times between a received datagram and the next datagram that is sent. 
+There are two different scenarios: 
+1. Reception of a correct datagram 5 
+2. Reception of a disturbed datagram 
+After reception of a correct datagram the slave needs to wait at least 11 bit times and not more 
+than 330 bit times + 50 ms until the response is transmitted (see Figure P.2). 
+ 
+Figure P.2 - Quiescent time requirements for correct decodable datagram 
+ 
+  
+
+PDF PAGE 13
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  13/24 
+If a datagram is disturbed during transmission the receiving device may detect this after +P% 
+(see [EN 13757-2:2018], Table 1) and shall detect 22 bit idle time as the end of a frame. After 
+detection of the disturbance or the end of the frame,  the next datagram may be sent (see 
+Figure P.3). 
+ 
+Figure P.3 - Quiescent time requirements for disturbed messages 5 
+ 
+  
+
+PDF PAGE 14
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  14/24 
+P.2.2.6 Repetitions 
+P.2.2.6.1 Slave Behaviour 
+The slave shall be designed to respond at the first attempt. The slave shall not force repetitions 
+systematically in order to gain time for internal purposes. 
+P.2.2.6.2 Master Behaviour 5 
+For mitigating communication errors (no or erroneous response in link layer, response in 
+conflict with timing requirements) the master shall apply at least 2 repetitions (3 communication 
+attempts in total). 
+P.2.2.7 Secondary addressing 
+Secondary addressing is mandatory. 10 
+P.2.3 Networking Layer / Secondary Addressing 
+P.2.3.1 Enhanced Selection 
+For slaves the enhanced selection is optional. If a slave implements e nhanced selection, it 
+shall be implemented according to [EN 13757-7:2018], 8.5.  
+A master shall be able to process slaves with secondary address selection as well as with 15 
+enhanced selection. If a master cannot distinguish slaves using the secondary address 
+selection, it shall use the enhanced selection. 
+P.2.3.2 Determination of Addresses in Adapters 
+OMS end -devices should be labelled with the DIN address  (14-position identification ) 
+according to [OMS -S2], 3.2.  It is recommended to label mechanical and electronic OMS 20 
+end-devices without wired/wireless M-Bus that can be attached to an adaptor with the DIN 
+address. 
+If the labelling does not comply with [OMS -S2], 3.2, the rules to define the ALA including the 
+identification number of the adapter in [OMS-S2], 3.3 and figure 15 apply: 
+1. For numeric serial numbers, the following procedure shall be used: 25 
+• If the number of characters in the serial number equals eight, the serial number 
+shall be the identification number. 
+• If the number of characters in the serial number  is more than eight, the number of 
+digits shall be reduced to the length of eight by removing the characters starting 
+from the left (from leading numbers). 30 
+• If the number of characters in the serial number is less than eight, the identification 
+number shall be filled to eight places from the left with “0” (leading zeros). 
+2. For alphanumeric serial numbers, the following procedure shall be used: 
+• The letters and special characters shall be removed from the serial number . The 
+following steps are described under point 1 “Numeric serial numbers” depending on 35 
+the resulting length. 
+ 
+  
+PDF PAGE 15
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  15/24 
+P.2.4 Application Layer 
+P.2.4.1 Selection of Application Data 
+The selection of the application data shall only be done using the application select protocol  
+(see [OMS-S2], 8.10). The OMS-UC-14 provides a specific way of data selection (see [OMS-
+S2], Annex M, M.2.11). 5 
+P.2.4.2 Minimum Communication Capabilities for Slaves 
+A slave shall support the following minimum communication capabilities in addition to 
+[EN 13757-2:2018]: 
+• Set the primary address using XID3! (according to [OMS-S2], Annex B). 
+• Support application reset and application select with CI = 50h or 53h. 10 
+• Change of secondary address with the MB -Command-Tag setID2! / XID2! or 
+setID11! / XID11!  according to [OMS-S2], Annex B (for adapters with changeable 
+address only, see P.2.2.2). 
+NOTE: The [EN 13757-3:2018], 7.3 describes additional CI fields (54h, 55h, 66h and 68h) for 
+special cases. 15 
+P.2.4.3 Commands for Communication If Applicable  
+A slave shall support setting of the due date, if a calendar and due date function is present in 
+the device. The required procedure is defined in [OMS -S2], Annex M, M.2.10.2 UC -12a Due 
+Date Management. 
+A slave shall support setting the date and time if a clock is present in the device. The required 
+procedure is defined in [OMS-S2], Annex M, M.2.5 UC-04 Clock Management.  
+P.2.4.4 Table with CI-Fields 
+Several CI-fields shall not be used for wired M-Bus, especially 7Ah (see footnote e in [OMS-20 
+S2], 2.2, table 1). 
+P.2.4.5 New Device Type for Wired Adapters 
+Device type 38h is introduced for wired adapters (see [OMS-S2], Table 3). 
+  
+PDF PAGE 16
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  16/24 
+P.3 Informative 
+P.3.1 Physical Layer 
+P.3.1.1 Cabling 
+P.3.1.1.1 Cable Types 
+The OMS recommends using a separate, shielded cable with twisted pairs for protection 5 
+against EMC interferences in harsh environments. 
+The OMS reference cable for the wired M-Bus is defined as: 
+J-Y(St)Y 2  x 2 x 0,8 mm ( [EN 50441:2012 ] Cables for indoor residential 
+telecommunication installations) 
+This cable type has the following properties:  10 
+• N x 2 x 0,8 mm diameter copper (0,5 mm2 cross-section), resistance max. 75 Ohm/km 
+per wire loop, with N = number of pairs of wires, N=1 is enough) 
+• twisted copper pairs 
+• shielding 
+• operating capacity at 800 Hz max. 100 nF/km 15 
+• attenuation at 800 Hz max. 1,1 dB/km 
+Other cables with comparable characteristics can be used. All following explanations and 
+calculations in this document refer to the OMS reference cable type. 
+P.3.1.1.2 Topology 
+There are some basic physical configurations used for the cable connections between the 20 
+wired M-Bus master and the slaves. These topologies are star, line and tree wiring as shown 
+below in Figure P.4. In real installations, a combination of these topologies will be used. 
+  
+PDF PAGE 17
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  17/24 
+ 
+ 
+Figure P.4 - Topology variants 
+ 
+P.3.1.1.3 Minimum Slave M-Bus Voltage 
+According to [EN 13757-2:2018] the M-Bus voltage at M-Bus slave terminals shall be at least 5 
+21 V for mark and 12 V for the space state of the M-Bus voltage. 
+The slave requirement for a minimum allowable mark state voltage at M -Bus slave terminals 
+is 21 V (see [EN 13757-2:2018], 4.2.1). 
+The M -Bus voltage may fall below the typical mark state voltage of 24  V (at M -Bus slave 
+terminals) in following cases: 10 
+• another wired M-Bus slave responds 
+• there is a data collision of two or more wired M-Bus slaves 
+• at least one wired M-Bus slave has a fault (for current limitation requirements in case of 
+wired M-Bus slave faults see [EN 13757-2:2018], 4.2.2.6) 
+The following diagram  (Figure P.5) summarises the requirements from [EN  13757-2:2018] 15 
+concerning the M-Bus voltage for master and slave. 
+ 
+Master 
+Slave 1 
+Slave 2 
+ Slave 4 
+Slave 3 
+Master 
+Slave 1 
+ Slave 3 
+Slave 2 
+Master 
+Slave 1 
+Slave 2 
+Slave 4 
+Slave 3 
+Master 
+Slave 1 
+ Slave 2 
+ Slave 3 
+Ring 
+Line 
+Tree 
+Star 
+PDF PAGE 18
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  18/24 
+ 
+Figure P.5 - M-Bus voltage 
+ 
+Ur, max = (max. usable bus current)*(max. bus resistance) +  
+ (max. usable bus current)*(max. master source impedance)  
+> 0; with USpace-Bus@MBusSlave ≥ 12 V 5 
+The following chapters define the voltage requirements according to [EN 13757-2:2018]. 
+ 
+  
+ 
+UBus 
+42 V 
+24 V+Ur 
+Δ≥-12 V 
+12 V+Ur 
+12 V 
+0 V 
+Space 
+state 
+Master send Slave receive 
+UMark 
+UMark-Bus – 5,7 V Δ≥-8,2 V 
+21 V 
+UMark-Bus 
+Δ=Ur 
+Mark 
+state 
+Bus 
+Space 
+state 
+Mark range 
+Mark range 
+UMark-Bus – 8,2 V 
+PDF PAGE 19
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  19/24 
+Electrical requirements, master 
+- [EN 13757-2:2018], 4.3.3.1 
+For currents between 0 … IMax: UMark = (24 V + Ur) … 42 V. 
+- [EN 13757-2:2018], 4.3.3.2  
+USpace < UMark - 12 V, but ≥ 12 V + Ur. 5 
+- [EN 13757-2:2018], 4.3.1.2 Max. allowed voltage drop (Ur) 
+The maximum voltage drop Ur (> 0 V) is defined as the minimum space state voltage 
+minus 12 V. Ur divided by the maximum segment resistance between the master and 
+any terminal device ( OMS end-device) gives the maximum useable bus current for a 
+given combination of segment resistance and master. 10 
+Electrical requirements, slave: 
+- [EN 13757-2:2018], 4.2.1 master to slave bus voltage 
+“… 
+Voltage range for meeting all specifications: (12 V … 42 V). 
+The bus voltage at the slave terminals in mark (quiescent) state of master - slave 15 
+communication (= UMark) shall be (21 V … 42 V). 
+The mark voltage shall be stored by a voltage maximum detector with an asymmetric 
+time constant. The discharge time constant shall be greater than 30 × (charge constant) 
+but less than 1 s. 
+The stored voltage maximum U Mark may drop in 50  ms by not more than 0.2  V for all 20 
+voltages between 12 V and UMark.” 
+- [EN 13757-2:2018], 4.2.2.11 - Startup delay 
+In case of a bus voltage drop below 12  V for longer than 0,1 s the recovery time after 
+applying an allowed mark state voltage until reaching full communication capabilities 
+shall be less than 3 s. 25 
+The following diagram (Figure P.6) represents the requirements from [EN  13757-2:2018] for 
+state recognition and collision detection for the wired M -Bus slave to wired M-Bus master 
+communication. 
+  
+PDF PAGE 20
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  20/24 
+ 
+ 
+ 
+Figure P.6 - M-Bus states 
+ 
+ΔIMark state, max: maximum allowable variation of the mark state current at the M -Bus master 
+terminals to remain detecting mark state current. 
+ΔISpace state, min: Threshold where the master detects spa ce state of a wired M -Bus slave 5 
+response. 
+IBus: Master receive: Total of all slave currents; Slave send: Current of one slave 
+ 
+The following chapters define the voltage requirements according to [EN 13757-2:2018]. 
+-  [EN 13757-2:2018], 4.2.2.9 – space send current 
+“The bus current for a slave space state send shall be higher by (11 ... 20) mA than in 10 
+the mark state for all allowed bus voltages: 
+ISpace = IMark + (11 ... 20) mA.” 
+- [EN 13757-2:2018], 4.3.3.7 - Data detection current (reception of slave current pulses) 
+“Bus current ≤ Bus idle current + 6 mA: mark state receive. 
+Bus current ≥ Bus idle current + 9 mA: space state receive. 15 
+Measurement with current pulses of < 50 ms, duty cycle < 0,92.” 
+- [EN 13757-2:2018], 4.3.3.8 - Reaction at large data currents (collision) 
+“Current increases of > 25 mA may be considered, current increases of > 50 mA shall 
+be considered as a collision state.” 
+ 
+IBus 
+IMax 
+1..4 x 1,5 mA 
+0 mA 
+Space 
+state 
+Master receive Slave send 
+ΔImin = 11 mA 
+IBus 
+Bus 
+Space 
+state 
+Mark 
+ΔImin – ΔImax = 
+9 mA 
+Δ = 41 mA 
+ΔISpace state, 
+min = 9 mA 
+Bus-
+collision 
+ΔIMark state, 
+max = 6 mA 
+Mark 
+state 
+ΔImax =  
+20 mA 
+PDF PAGE 21
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  21/24 
+P.3.1.1.4 Transmission of Remaining Energy in Battery for Communication 
+For transmitting the remaining battery lifetime, the OMS end-device shall use the MB-Data-Tag 
+MM8! according to [OMS-S2], Annex B, B.2.2. 
+The number of remaining days/months should be continuously calculated depending on (or a 
+combination of): 5 
+• reading frequency 
+• number of total readouts 
+• bus traffic 
+• measurement cycle frequency 
+• etc. 10 
+Applicable implementation: 
+• Devices with non-replaceable battery: 
+• Battery-driven devices should transmit the remaining lifetime with every datagram. 
+• In case the number of days / remaining readouts decreased until the value zero is 
+reached, the value should remain zero. Only positive values including zero are allowed. 15 
+• In case the remaining lifetime is less than 15 months, the device should set ‘power low’ 
+in the status byte (see [OMS-S2], 7.2.3). 
+• Devices with replaceable battery: 
+• See ‘Devices with non-replaceable battery’. 
+• External powered devices without limitations in lifetime and/or readout: 20 
+• Such devices are not required to transmit the remaining lifetime or requests. The ‘power 
+low’ in the status byte is never set.  
+• Devices with mains power loss set ‘power low’ in the status byte upon detecting mains 
+power loss. Upon recovery of mains power the ‘power low’ in the status byte is reset. 
+• Devices with an empty backup battery  and/or regained external power  signal this 25 
+discharge state by ‘power low’ in the status byte. 
+P.3.2 Link Layer 
+P.3.2.1 Baud Rates 
+The following recommendations apply (see also P.3.1.1.2): 
+• use 300 Baud for “poor” line conditions and “long” distances.  30 
+• use 2400 Baud for standard applications and medium distances. 
+• use 9600 Baud or higher for “very good” line conditions and “short” distances. 
+NOTE: In order to have a good performance during the Slave search it is recommended to use 
+as few baud rates as possible in the wired M-Bus network. 
+P.3.2.2 Functionality of SND-NKE 35 
+The link layer command SND-NKE has an effect on the FCB (see [EN 13757-3:2018], 5.7.7) 
+and deselects a secondary selected slave if the SND-NKE datagram is applied with A -field 
+FDh. 
+PDF PAGE 22
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  22/24 
+SND-NKE does not trigger any other data or state changes in the slave like change of selected 
+application or block. 
+P.3.2.3 Preserving Communication Budget 
+The following is an example how to implement a protection mechanism for the communication: 
+The basic principle consists of a communication depot. Its capacity defines the number of bytes 5 
+to read without any limitations. This communication depot is constantly refilled with the 
+communication budget.  
+In case the requested bytes exceed the communication budget permanently the 
+communication depot is emptied. When the communication depot is exhausted the device is 
+henceforth only listening. 10 
+The communication depot is constantly refilled with the number of bytes defined by the 
+communication budget. When the threshold to support a readout of at least three datagrams 
+is reached, the communication is released again. The duration from pausing communication 
+until its release is the regeneration time. 
+ 
+ 
+Figure P.7 - Communication depot 15 
+NOTE 1: The device should send at least a n application error 09h according to 
+[EN 13757-3:2018], 10.3 before the communication is stopped due to an empty communication 
+depot. 
+NOTE 2: For a selection of the above given parameters, the following minimum values should 
+be applied: 20 
+0 bytes 
+Threshold: 
+e.g. 300 bytes 
+readout bytes per minute > 
+communication budget  for a 
+long period 
+No 
+communication or 
+readout is equal  
+communication 
+budget 
+readout bytes per minute 
+> communication budget 
+readout bytes per minute < 
+communication budget or no 
+communication 
+Regeneration time 
+Communication 
+depot 
+time 
+Communication  
+released 
+e.g. 30.000 bytes 
+PDF PAGE 23
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  23/24 
+Table P.3 - Example for minimum requirements 
+Minimum requirements for 
+communication budget 
+Value 
+Communication budget 50 bytes/minute 
+Regeneration time Maximum permitted value: 1080 seconds 
+Communication depot 30.000 bytes 
+ 
+P.3.3 Networking Layer / Secondary Addressing 
+P.3.3.1 Repetitions 
+P.3.3.1.1 Secondary Address Search (Slave Select) 
+The repetition of a secondary selection is not mandatory. 5 
+The slave select should be repeated twice in the following conditions: 
+• if there is no valid response at a search with secondary address with the defined timing 
+conditions 
+• if there are still collisions at a maximum restricted search area 
+P.3.3.1.2 Deselection 10 
+SND-NKE to primary address 253 or 254: 
+• A SND-NKE to address 254 does not change the status of the slave selection. 
+• Having received an ACK (E5h) as response to a SND-NKE to address 253 no repetition 
+is required. 
+• Having received no valid response to a SND-NKE to address 253 or 254 (no or erroneous 15 
+response in link layer, response in conflict with timing requirements) at least 2 repetitions 
+should be sent. 
+SND-NKE to primary address 255: 
+• A SND-NKE to address 255 does not change the status of the slave selection. 
+• The slave should apply the first received SND-NKE and resets the FCB. 20 
+• The master may apply SND-NKE several times. 
+  
+PDF PAGE 24
+Open Metering System Specification – Vol. 2 – Annex P 
+RELEASE C (2023-12) 
+ 
+OMS GROUP  24/24 
+By selection of a new slave: 
+• Having received an ACK (E5h) as response there should be no repetition. 
+• Having received no valid response to a slave select (no or erroneous re sponse in link 
+layer, response in conflict with timing requirements) at least 2 repetitions should be sent. 
+• A selected slave should deselect at the first selection command for another secondary 5 
+address. 
+NOTE: If an explicit deselection confirmation is required the following procedure can be 
+applied: 
+o Deselection of the selected slave with SND-NKE. 
+o The slave confirms the deselection with ACK. 10 
+o Selection of the required slave with the selection command. 
+• This procedure requires a communication overhead compared to the immediate 
+selection command but ensures that the previously selected slaves are really deselected. 
+Under “poor” M-Bus line conditions it is possible that a selected slave does not receive 
+the slave selection command of a new slave which leads to at least two selected slaves 15 
+on the bus. 
+ 

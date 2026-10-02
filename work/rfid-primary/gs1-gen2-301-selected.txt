@@ -1,0 +1,733 @@
+PDF_PAGE56
+EPC® Radio-Frequency Identity Generation-2 UHF RFID Standard 
+Release 3.0.1, Ratified, Feb 2026 © 2026 GS1 AISBL  Page 56 of 204 
+□ In all other states the maximum value for T2 shall be unrestricted. A Tag shall be allowed a 
+tolerance of 20.0Tpri < T2(max) < 32.0Tpri in determining whether T2 has expired. “Invalid 
+command” is defined in 6.3.2.12.  
+3. An Interrogator may transmit a new command prior to interval T2 (i.e. during a Tag response). 
+In this case the responding Tag may ignore the new command and, in environments with limited 
+power availability, may undergo a power-on reset.  
+4. FrT is the frequency tolerance specified in Table 6-9. 
+5. T1+T3 shall not be less than T4.  
+6. T8 starts after QueryX or QueryY if Init=02, otherwise T8 stops. 
+7. A Tag shall be allowed a tolerance of 4.0RTcal < T8(max) < 6.0RTcal in determining whether T8 
+has expired. 
+6.3.2 Logical interface 
+The logical interface between an Interrogator and a Tag may be viewed as the lowest level in the 
+data link layer of a layered network communication system. The logical interface defines Tag 
+memory, flags, states, selection, inventory, and access.  
+6.3.2.1 Tag memory 
+Tag memory shall be logically separated into the four distinct memory banks shown in Figure 6-19, 
+each of which may comprise zero or more memory words. The memory banks are: 
+■ Reserved memory shall contain the kill and and/or access passwords, if passwords are 
+implemented on the Tag. The kill password shall be stored at memory addresses 00h to 1Fh; the 
+access password shall be stored at memory addresses 20h to 3Fh. See 6.3.2.1.1. 
+■ EPC memory shall contain a StoredCRC at memory addresses 00h to 0Fh, a StoredPC at 
+addresses 10h to 1Fh, a code (such as an EPC, and hereafter referred to as an EPC) that 
+identifies the object to which the Tag is or will be attached beginning at address 20h, and if the 
+Tag implements Extended Protocol Control (XPC) then either one or two XPC word(s) beginning 
+at address 210h. See 6.3.2.1.2.  
+■ TID memory shall contain an 8-bit ISO/IEC 15963 allocation class identifier at memory 
+locations 00h to 07h. TID memory shall contain sufficient identifying information above 07h for 
+an Interrogator to uniquely identify the custom commands and/or optional features that a Tag 
+supports. See 6.3.2.1.3.  
+■ User memory is optional. If a Tag implements User memory then it may partition the User 
+memory into one or more files. If the Tag implements a single file then that file is File_0. See 
+6.3.2.1.4 and 6.3.2.11.3.  
+The logical addressing of all memory banks and User-memory files shall begin at 00h. The physical 
+memory map is Tag-manufacturer defined. When a Tag backscatters data from memory the order is 
+left-to-right and bottom-to-top in Figure 6-19. The backscatter shall fall on word boundaries (except 
+for a truncated reply – see 6.3.2.12.1.1, 6.3.2.12.2.2, and 6.3.2.12.2.3). 
+MemBank shall be defined as follows: 
+002 Reserved 
+012 EPC 
+102 TID 
+112 User 
+Operations that modify memory contents in one logical memory bank shall not modify memory 
+locations in another bank.  
+Memory writes involve the transfer of one or more 16-bit words from Interrogator to Tag. A Write 
+command writes 16 bits (i.e. one word) at a time, using link cover-coding to obscure the data 
+during R=>T transmission. The optional BlockWrite command writes one or more 16-bit words at a 
+time, without link cover-coding. The optional BlockErase command erases one or more 16-bit words 
+at a time. A Write, BlockWrite, or BlockErase shall not alter a Tag’s killed status regardless of the 
+PDF_PAGE57
+EPC® Radio-Frequency Identity Generation-2 UHF RFID Standard 
+Release 3.0.1, Ratified, Feb 2026 © 2026 GS1 AISBL  Page 57 of 204 
+memory address (whether valid or invalid) specified in the command.  
+Figure 6-19: Logical memory map 
+ 
+ 
+An Interrogator may issue a Lock command (see 6.3.2.12.3.6) to lock, permanently lock, unlock, or 
+permanently unlock the kill password, access password, EPC memory bank, TID memory bank, or 
+File_0 of User memory, thereby preventing or allowing subsequent changes (as appropriate). If the 
+passwords are locked or permanently locked then they are unwritable and unreadable by any 
+command and usable only by a Kill or Access command. If EPC memory, TID memory, or File_0 are 
+locked or permanently locked then they are unwritable but readable, except for the L and U bits in 
+EPC memory; an Interrogator with an asserted Untraceable privilege may alter the L and U bits 
+regardless of the lock or permalock status of EPC memory (see 6.3.2.12.3.17).  
+If a Tag implements User memory then it partitions each File_N, N>0 of User memory into one or 
+more equal-size blocks. A Tag shall use the same block size for file allocation (see 6.3.2.11.3) as it 
+does for the BlockPermalock command (see 6.3.2.12.3.10). A Tag may use different block sizes for 
+the BlockWrite and BlockErase commands. If a Tag supports the BlockPermalock command then an 
+Interrogator may issue a BlockPermalock to permanently lock one or more memory blocks. If blocks 
+within File_0 are permalocked then these blocks are permanently unwritable but readable. If blocks 
+within File_N, N>0 are permalocked then these blocks are permanently unwritable but readable by 
+an Interrogator with appropriate read privileges (see Table 6-25 and Table 6-26).  
+6.3.2.1.1 Reserved Memory 
+Reserved memory contains the kill (see 6.3.2.1.1.1) and/or access (see 6.3.2.1.1.2) passwords, if 
+passwords are implemented on a Tag. If a Tag does not implement the kill and/or access 
+password(s) then the Tag shall logically operate as though it has zero-valued password(s) that are 
+permanently read/write locked (see 6.3.2.12.3.6), and the corresponding physical memory locations 
+in Reserved memory need not exist.  
+6.3.2.1.1.1 Kill password  
+The kill password is a 32-bit value stored in Reserved memory 00h to 1Fh, MSB first. The default 
+(unprogrammed) value shall be zero. A Tag that does not implement a kill password shall behave as 
+though it has a zero-valued kill password that is permanently read/write locked. A Tag shall not 
+execute a password-based kill if its kill password is zero (see 6.3.2.12.3.5). An Interrogator may 
+use a nonzero kill password in a password-based Kill-command sequence to kill a Tag and render it 
+nonresponsive thereafter.  
+6.3.2.1.1.2 Access password  
+The access password is a 32-bit value stored in Reserved memory 20h to 3Fh, MSB first. The default 
+2Fh
+00h
+10h
+20h
+0Fh
+1Fh
+2Fh
+MSB LSB
+Bank 11
+Bank 10
+Bank 01
+Bank 00 RESERVED
+EPC
+TID
+USER
+StoredCRC [15:0]
+EPC [15:0]
+EPC [N–1:N–16]
+…
+20h
+0Fh
+1Fh
+MSB LSB
+30h 3Fh
+Access Passwd [31:16]
+…
+00h 0Fh
+MSB LSB
+…
+StoredPC [15:0]
+210h 21Fh
+…
+Optional XPC_W1 [15:0]
+…
+00h 0Fh
+MSB LSB
+…
+Word 0 of Block 0 of File 0
+00h
+10h Kill Passwd [15:0]
+Kill Passwd [31:16]
+220h 22FhOptional XPC_W2 [15:0]
+Access Passwd [15:0]
+Word 0
+File_0
+File_1
+File_N
+MemBank
+PDF_PAGE58
+EPC® Radio-Frequency Identity Generation-2 UHF RFID Standard 
+Release 3.0.1, Ratified, Feb 2026 © 2026 GS1 AISBL  Page 58 of 204 
+(unprogrammed) value shall be zero. A Tag that does not implement an access password shall 
+behave as though it has a zero-valued access password that is permanently read/write locked. A 
+Tag with a zero-valued access password transitions from the acknowledged state to the secured 
+state upon commencing access, without first entering the open state. A Tag with a nonzero-valued 
+access password transitions from the acknowledged state to the open state upon commencing 
+access; an Interrogator may then use the access password in an Access-command sequence to 
+transition the Tag from the open to the secured state.  
+6.3.2.1.2 EPC Memory 
+EPC memory contains a StoredCRC at addresses 00h to 0Fh, a StoredPC at 10h to 1Fh, an EPC 
+beginning at 20h, and optional first and second XPC words at 210h – 21Fh (XPC_W1) and 220h – 
+22Fh (XPC_W2), respectively. The StoredCRC, StoredPC, EPC, and XPC word(s) shall be stored MSB 
+first (i.e. the EPC’s MSB is at location 20h). 
+The StoredCRC and StoredPC are described in 6.3.2.1.2.1 and 6.3.2.1.2.2, respectively.  
+The EPC identifies the object to which the Tag is affixed. The EPC for GS1 EPCglobal Applications is 
+described in 6.3.2.1.2.3; the EPC for non-EPCglobal Applications is described in 6.3.2.1.2.4. An 
+Interrogator may issue a Select that includes all or part of the EPC in its Mask. An Interrogator may 
+issue an ACK to cause a Tag to backscatter its EPC. Under certain circumstances a Tag may truncate 
+its backscattered EPC (see 6.3.2.12.3.17, 6.3.2.12.1.1, 6.3.2.12.2.2, and 6.3.2.12.2.3). An 
+Interrogator may issue a Read to read all or part of the EPC.  
+The XPC_W1 and XPC_W2 are described in 6.3.2.1.2.5.  
+6.3.2.1.2.1 CRC-16 (StoredCRC and PacketCRC) 
+A Tag shall implement both a StoredCRC and a PacketCRC. The StoredCRC is stored in EPC memory, 
+is selectable by an Interrogator using a Select command, and is readable by an Interrogator using a 
+Read command. The PacketCRC is computed and sent by a Tag during backscatter, protects the 
+transmitted PC/XPC and EPC or TID, and is neither selectable nor directly readable by an 
+Interrogator.  
+A Tag shall compute and store its StoredCRC either (i) when an Interrogator writes or overwrites 
+bits in the EPC (including in the StoredPC), or (ii) every time the Tag powers up. The Tag 
+manufacturer shall choose whether the Tag implements (i) or (ii). A Tag shall perform its computing 
+and storing for these two cases as follows:  
+i. The Tag first writes or overwrites the bits, then computes and stores a new StoredCRC, 
+all within the reply times specified in Table 6-16 for the command (Write, BlockWrite, 
+BlockErase, or Untraceable) that wrote or overwrote the bits. A Tag shall delay 
+backscattering the success reply shown in Table 6-13 or Table 6-14 for the command 
+that wrote or overwrote the bits until it has stored the new StoredCRC. The Tag shall 
+store its StoredCRC in nonvolatile memory so that the StoredCRC persists through 
+subsequent Tag power cycles.  
+ii. The Tag computes and stores the StoredCRC before the end of interval Tcp in Figure 6-3. 
+The Tag may store its StoredCRC in volatile or nonvolatile memory. If an Interrogator 
+modifies a Tag’s StoredPC or EPC after Tag powerup then the StoredCRC may be 
+incorrect until the Interrogator power-cycles the Tag. 
+For both cases (i) and (ii) the Tag shall implement the StoredCRC by first calculating a CRC-16 (see 
+6.3.1.5) over the StoredPC and the EPC specified by the length (L) bits in the StoredPC, and then 
+storing the thus-computed StoredCRC into EPC memory 00h to 0Fh, MSB first. The Tag shall 
+calculate the StoredCRC on word boundaries, and before performing the calculation, the Tag shall: 
+■ assert or deassert RUM in the StoredPC (see Table 6-17); 
+■ deassert XI; 
+■ omit XPC_W1 and XPC_W2 from the calculation. 
+If the Tag subsequently changes RUM then the Tag’s StoredCRC may be incorrect until the 
+Interrogator power-cycles the Tag.  
+If an Interrogator attempts to write to EPC memory 00h – 0Fh then the Tag shall not execute the 
+write and instead treat the command’s parameters as unsupported (see Table C-34).  
+PDF_PAGE66
+EPC® Radio-Frequency Identity Generation-2 UHF RFID Standard 
+Release 3.0.1, Ratified, Feb 2026 © 2026 GS1 AISBL  Page 66 of 204 
+unique among all classes of Tags defined in ISO/IEC 15963, and TID memory is permalocked at the 
+time of manufacture.  
+As per ISO/IEC 15963, if the class identifier is E2h then TID memory above 07h shall be configured 
+as follows:  
+■ 08h: XTID (X) indicator (whether a Tag implements an XTID – see 5.1) 
+■ 09h: Security (S) indicator (whether a Tag supports the Authenticate and/or Challenge 
+commands) 
+■ 0Ah: File (F) indicator (whether a Tag supports the FileOpen command) 
+■ 0Bh to 13h: A 9-bit Tag mask-designer identifier (MDID – see 5.2) 
+■ 14h to 1Fh: A Tag-manufacturer-defined 12-bit Tag model number 
+■ Above 1Fh: As defined in the GS1 EPC Tag Data Standard 
+If the class identifier is E2h then TID memory locations 00h to 1Fh shall be permalocked at time of 
+manufacture. If the Tag implements an XTID then the entire XTID shall also be permalocked at time 
+of manufacture.  
+Tags shall support a serialized TID by using either: 
+■ class identifier E0h, or 
+■ class identifier E2h with X=12 and a unique serial number as defined in the GS1 EPC Tag Data 
+Standard. 
+6.3.2.1.4 User Memory 
+A Tag may support User memory, configured as one or more files. User memory allows user data 
+storage.  
+If File_0 of User memory exists then a Tag shall implement UWC (see 6.3.2.12.3.3). 
+If File_0 of User memory exists and has not yet been written then the Tag shall set the first byte 
+(i.e. File_0 memory addresses 00h to 07h) to the default value 00h as specified in ISO/IEC 15961. 
+6.3.2.1.4.1 User memory for a GS1 EPCglobal Application 
+If a Tag implements User memory then the file encoding shall be as defined in the GS1 EPC Tag 
+Data Standard.  
+6.3.2.1.4.2 User memory for a non-GS1 EPCglobal Application 
+If a Tag implements User memory then the file encoding shall be as defined in ISO/IEC 15961 and 
+15962. 
+6.3.2.2 Sessions and inventoried flags 
+Interrogators shall support and Tags shall provide 4 sessions (denoted S0, S1, S2, and S3). Tags 
+shall participate in one and only one session during an inventory round. Two or more Interrogators 
+can use sessions to independently inventory a common Tag population. The sessions concept is 
+illustrated in Figure 6-20. 
+A Tag shall maintain an independent inventoried flag for each of its four sessions. Each 
+inventoried flag has two values, denoted A and B. At the beginning of each and every inventory 
+round an Interrogator chooses to inventory either A or B Tags in one of the four sessions. Tags 
+participating in an inventory round in one session shall neither use nor modify an inventoried flag 
+for a different session. The inventoried flags are the only resource that a Tag provides separately 
+and independently to a session; all other Tag resources are shared among sessions.  
+After singulating a Tag an Interrogator may issue a command that causes the Tag to invert its 
+inventoried flag for that session (i.e. A→B or B→A).  
+The following example illustrates how two Interrogators can use sessions and inventoried flags to 
+independently and completely inventory a common Tag population, on a time-interleaved basis: 
+■ Interrogator #1 powers-on, then 
+PDF_PAGE67
+EPC® Radio-Frequency Identity Generation-2 UHF RFID Standard 
+Release 3.0.1, Ratified, Feb 2026 © 2026 GS1 AISBL  Page 67 of 204 
+□ It begins an inventory round during which it singulates A Tags in session S2 to B,  
+□ It powers off. 
+■ Interrogator #2 powers-on, then 
+□ It begins an inventory round during which it singulates B Tags in session S3 to A,  
+□ It powers off. 
+This process repeats until Interrogator #1 has placed all Tags in session S2 into B, after which it 
+inventories the Tags in session S2 from B back to A. Similarly, Interrogator #2 places all Tags in 
+session S3 into A, after which it inventories the Tags in session S3 from A back to B. By this multi-
+step procedure each Interrogator can independently inventory all Tags in its field, regardless of the 
+initial state of their inventoried flags.  
+A Tag’s inventoried flags shall have the set and persistence times shown in Table 6-21. A Tag shall 
+power-up with its inventoried flags set as follows: 
+■ The S0 inventoried flag shall be set to A.  
+■ The S1 inventoried flag shall be set to either A or B, depending on its stored value, unless the 
+flag was set longer in the past than its persistence time, in which case the Tag shall power-up 
+with its S1 inventoried flag set to A. Because the S1 inventoried flag is not automatically 
+refreshed, it may revert from B to A even when the Tag is powered.  
+■ The S2 inventoried flag shall be set to either A or B, depending on its stored value, unless the 
+Tag has lost power for a time greater than its persistence time, in which case the Tag shall 
+power-up with the S2 inventoried flag set to A.  
+■ The S3 inventoried flag shall be set to either A or B, depending on its stored value, unless the 
+Tag has lost power for a time greater than its persistence time, in which case the Tag shall 
+power-up with its S3 inventoried flag set to A.  
+A Tag shall refresh its S2 and S3 flags while powered, meaning that every time a Tag loses power 
+its S2 and S3 inventoried flags shall have the set and persistence times shown in Table 6-21.  
+A Tag shall not change the value of its S1 inventoried flag from B to A as the result of a 
+persistence timeout while the Tag is participating in an inventory round, or is in the midst of being 
+inventoried, or is in the midst of being accessed. If a Tag’s S1 flag persistence time expires during 
+an inventory round then the Tag shall change the flag to A only (i) as instructed by an Interrogator 
+(e.g. by a QueryAdjust or QueryRep with matching Session at the end of an inventory or access 
+operation), or (ii) at the end of the round (i.e. upon receiving a Select, Query, or QueryX). In case 
+(i), if the Tag’s S1 flag persistence time expires while the Tag is in the midst of being inventoried or 
+accessed then the Tag shall change the flag to A at the end of the inventory or access operation. In 
+case (ii), the Tag shall invert its S1 flag prior to evaluating the Select, Query, or QueryX.  
+6.3.2.3 Selected flag 
+A Tag shall implement a selected flag, SL, which an Interrogator may assert or deassert using a 
+Select command. The Sel parameter in the Query and QueryX commands allows an Interrogator to 
+inventory Tags that have SL either asserted or deasserted (i.e. SL or ~SL), or to ignore the flag and 
+inventory Tags regardless of their SL value. SL is not associated with any particular session; SL 
+may be used in any session and is common to all sessions.  
+A Tag’s SL flag shall have the set and persistence times shown in Table 6-21. A Tag shall power-up 
+with its SL flag either asserted or deasserted, depending on the stored value, unless the Tag has 
+lost power for a time greater than the SL persistence time, in which case the Tag shall power-up 
+with its SL flag deasserted (set to ~SL). A Tag shall refresh its SL flag when powered, meaning that 
+every time a Tag loses power its SL flag shall have the persistence times shown in Table 6-21.  
+6.3.2.4 C flag 
+A Tag’s C flag (see 6.3.2.1.2.5) shall have the set and persistence times shown in Table 6-21. A Tag 
+retains data in its ResponseBuffer (see 6.3.1.6.4) with the same persistence as its C flag. A Tag 
+shall refresh its C flag when powered, meaning that every time a Tag loses power its C flag shall 
+have the persistence shown in Table 6-21 (of course, if a Tag has a zero-second persistence time 
+then even if the Tag powers down momentarily its C flag will be deasserted). 
+PDF_PAGE68
+EPC® Radio-Frequency Identity Generation-2 UHF RFID Standard 
+Release 3.0.1, Ratified, Feb 2026 © 2026 GS1 AISBL  Page 68 of 204 
+6.3.2.5 Security timeout 
+A Tag may implement a security timeout after a failed Access-command sequence, authenticated 
+Kill, password-based Kill-command sequence, Challenge, Authenticate, SecureComm, AuthComm, 
+and/or KeyUpdate. During a security timeout a Tag may participate in an inventory round and 
+access, but until the end of the timeout the Tag does not execute those commands for which it 
+implements a security timeout and instead backscatters an error code (see Annex I). If a Tag 
+implements a security timeout then it shall use a single timeout timer, so a security timeout caused 
+by one command failure (such as a failed Challenge) shall cause a Tag to disallow all commands for 
+which the Tag implements a security timeout until the end of the timeout period. Although this 
+protocol gives Tag manufacturers the option of choosing which commands are subject to a security 
+timeout, it recommends that Tags implement a security timeout at least for the Access-command 
+sequence. This protocol further recommends that a Tag’s security timer have the set and 
+persistence times shown in Table 6-21.  
+6.3.2.6 Tag states and slot counter 
+A Tag shall implement the states and slot counter shown in Figure 6-21. Note that the states in 
+Figure 6-21 are metastates that characterize a Tag’s behavior and response to Interrogator 
+commands; an actual Tag realization is likely to have more internal states than the metastates 
+shown in the Figure 6-21. Annex B shows the associated state-transition tables; Annex C shows the 
+associated command-response tables. 
+6.3.2.6.1 Ready state 
+Tags shall implement a ready state. Ready can be viewed as a “holding state” for energized Tags 
+that are neither killed nor currently participating in an inventory round. Upon entering an energizing 
+RF field a Tag that is not killed shall enter ready. The Tag shall remain in ready until it receives a 
+Query command (see 6.3.2.12.2.1) or QueryX command (see 6.3.2.12.2.2) whose inventoried 
+parameter (for the Session specified in the Query or QueryX) and Sel parameter match its current 
+flag values. Matching Tags shall load a number into their slot counter and transition to the arbitrate 
+state if the number is nonzero, or to the reply state if the number is zero. If a Tag in any state 
+except killed loses power then it shall return to ready upon regaining power.  
+Figure 6-20: Session diagram 
+ 
+  
+Session S0
+Tags
+[A]
+A Tags 
+participate
+Tags
+[B]
+B Tags 
+participate
+Session S2
+Tags
+[A]
+A Tags 
+participate
+Tags
+[B]
+B Tags 
+participate
+Session S1
+Tags
+[A]
+A Tags 
+participate
+Tags
+[B]
+B Tags 
+participate
+Session S3
+Tags
+[A]
+A Tags 
+participate
+Tags
+[B]
+B Tags 
+participate
+PDF_PAGE69
+EPC® Radio-Frequency Identity Generation-2 UHF RFID Standard 
+Release 3.0.1, Ratified, Feb 2026 © 2026 GS1 AISBL  Page 69 of 204 
+Table 6-21: Tag flags and persistence values 
+Flag Time to Set5 Required persistence 
+S0 inventoried 
+flag 
+< 2ms regardless of initial or final 
+value3 
+Tag energized: indefinite  
+Tag not energized: none 
+S1 inventoried 
+flag1 
+< 2ms regardless of initial or final 
+value3 
+Tag energized:  
+nominal temperature range: 500ms < persistence < 5s 
+extended temperature range: not specified 
+Tag not energized: 
+nominal temperature range: 500ms < persistence < 5s 
+extended temperature range: not specified 
+S2 inventoried 
+flag1 
+< 2ms regardless of initial or final 
+value3 
+Tag energized: indefinite  
+Tag not energized:  
+nominal temperature range: 2s < persistence 
+extended temperature range: not specified 
+S3 inventoried 
+flag1 
+< 2ms regardless of initial or final 
+value3 
+Tag energized: indefinite  
+Tag not energized:  
+nominal temperature range: 2s < persistence 
+extended temperature range: not specified 
+Selected (SL) 
+flag1 
+< 2ms regardless of initial or final 
+value3 
+Tag energized: indefinite  
+Tag not energized:  
+nominal temperature range: 2s < persistence 
+extended temperature range: not specified 
+C flag1,2 
+Deassert: < 2ms3 
+Assert: < 0ms measured relative to 
+the first rising edge of the Tag’s 
+response indicating that the Tag has 
+finished its computation 
+Tag energized: indefinite  
+Tag not energized:  
+nominal temperature range: 0s < persistence < 5s 
+extended temperature range: not specified 
+Optional security 
+timeout 
+Prior to the first rising edge of the Tag 
+reply to the Interrogator command 
+that caused the security timeout. 
+Tag energized4:  
+nominal temperature range: 20ms < persistence < 
+200ms 
+extended temperature range: not specified 
+Tag not energized4:  
+nominal temperature range: 20ms < persistence < 
+200ms 
+extended temperature range: not specified 
+Note 1: For a randomly chosen and sufficiently large Tag population, 95% of the Tag persistence times shall meet the 
+persistence requirement, with a 90% confidence interval. 
+Note 2: A Tag retains data in its ResponseBuffer with the same persistence as its C flag (see 6.3.1.6.4).  
+Note 3: Measured from the last rising edge of the last bit of the Interrogator transmission that caused the change.  
+Note 4: The indicated persistence times are recommended but not required. 
+Note 5: While the (digital) value of a flag is immediately set according to the received command, a Tag may not properly 
+set the persistence of the flag if the Interrogator turns off the energizing RF field prematurely or if the Tag does not remain 
+in the Interrogator's energizing RF field. 
+6.3.2.6.2 Arbitrate state 
+Tags shall implement an arbitrate state. Arbitrate can be viewed as a “holding state” for Tags that 
+began or completed initialization of an inventory round (see 6.3.2.10) and the Tags’ slot counters 
+(see 6.3.2.6.8) hold nonzero values. A Tag in arbitrate, for example, shall decrement its slot 
+counter every time it receives a QueryRep command (see 6.3.2.12.2.5) whose Session parameter 
+matches the session for the inventory round currently in progress, and it shall transition to the 
+reply state and backscatter an RN16 when its slot counter reaches 0000h. If a Tag in arbitrate with 
+an active T8 timeout fails to receive a QueryY or other exempt command within T8(max), then the Tag 
+PDF_PAGE70
+EPC® Radio-Frequency Identity Generation-2 UHF RFID Standard 
+Release 3.0.1, Ratified, Feb 2026 © 2026 GS1 AISBL  Page 70 of 204 
+shall return to ready. Tags that return to arbitrate (for example, from the reply state) with a slot 
+value of 0000h shall decrement their slot counter from 0000h to 7FFFh at the next QueryRep (with 
+matching Session) and, because their slot value is now nonzero, shall remain in arbitrate.  
+6.3.2.6.3 Reply state 
+Tags shall implement a reply state. Upon entering reply a Tag shall backscatter an RN16 if a Query 
+or QueryX with ReplyCRC=02 began the inventory round or shall backscatter RN16||CRC-5 if a 
+QueryX with ReplyCRC=12 began the inventory round. If the Tag receives a valid acknowledgement 
+(ACK) then it shall transition to the acknowledged state, backscattering the reply shown in Table 
+6-18. If the Tag fails to receive an ACK within time T2(max), or receives an invalid ACK or an ACK with 
+an erroneous RN16 then it shall return to arbitrate. Tag and Interrogator shall meet all timing 
+requirements specified in Table 6-16.  
+6.3.2.6.4 Acknowledged state 
+Tags shall implement an acknowledged state. A Tag in acknowledged may transition to any state 
+except killed, depending on the received command (see Figure 6-21). If a Tag in the 
+acknowledged state receives a valid ACK containing the correct RN16 then it shall re-backscatter 
+the reply shown in Table 6-18. If a Tag in the acknowledged state fails to receive a valid command 
+within time T2(max) then it shall return to arbitrate. Tag and Interrogator shall meet all timing 
+requirements specified in Table 6-16.  
+6.3.2.6.5 Open state 
+Tags shall implement an open state. A Tag in the acknowledged state whose access password is 
+nonzero shall transition to open upon receiving a Req_RN command, backscattering a new RN16 
+(denoted handle) that the Interrogator shall use in subsequent commands and the Tag shall use in 
+subsequent replies. A Tag in the open state may execute some access commands – see Table 6-28. 
+A Tag in open may transition to any state except acknowledged, depending on the received 
+command (see Figure 6-21). If a Tag in the open state receives a valid ACK containing the correct 
+handle then it shall re-backscatter the reply shown in Table 6-18. Tag and Interrogator shall meet 
+all timing requirements specified in Table 6-16 except T2(max); in the open state the maximum delay 
+between Tag response and Interrogator transmission is unrestricted. 
+6.3.2.6.6 Secured state 
+Tags shall implement a secured state. A Tag in the acknowledged state whose access password is 
+zero shall transition to secured upon receiving a Req_RN command, backscattering a new RN16 
+(denoted handle) that the Interrogator shall use in subsequent commands and the Tag shall use in 
+subsequent replies. A Tag in the open state shall transition to secured following a successful 
+Access-command sequence or Interrogator authentication (where success in the latter case is 
+defined by the cryptographic suite specified in the Authenticate command that initiated the 
+authentication), maintaining the same handle that it previously backscattered when it transitioned 
+from the acknowledged state to the open state. A Tag in the secured state with the appropriate 
+Tag and file privileges (see 6.3.2.11.2 and 6.3.2.11.3) may execute all access commands. A Tag in 
+secured may transition to any state except acknowledged, depending on the received command 
+(see Figure 6-21). If a Tag in the secured state receives a valid ACK containing the correct handle 
+then it shall re-backscatter the reply shown in Table 6-18. Tag and Interrogator shall meet all timing 
+requirements specified in Table 6-16 except T2(max); in the secured state the maximum delay 
+between Tag response and Interrogator transmission is unrestricted. 
+6.3.2.6.7 Killed state 
+Tags shall implement a killed state. A Tag in either the open or secured state shall enter the 
+killed state upon receiving a successful password-based Kill-command sequence with a correct 
+nonzero kill password and handle. A Tag in the secured states shall enter the killed state upon a 
+successful authenticated Kill (see 6.3.2.12.3.5). Kill permanently disables a Tag. Upon entering the 
+killed state a Tag shall notify the Interrogator that the kill was successful and shall not respond to 
+an Interrogator thereafter. Killed Tags shall remain in the killed state under all circumstances, and 
+shall immediately enter killed upon subsequent power-ups. Killing a Tag is irreversible.  
+  
+PDF_PAGE71
+EPC® Radio-Frequency Identity Generation-2 UHF RFID Standard 
+Release 3.0.1, Ratified, Feb 2026 © 2026 GS1 AISBL  Page 71 of 204 
+6.3.2.6.8 Slot counter 
+Tags shall implement a 15-bit slot counter. Upon receiving a Query, QueryX with Init=12, QueryY 
+with Init=12 or QueryAdjust command a Tag shall load into its slot counter a value between 0 and 
+2Q–1, drawn from the Tag’s RNG (see 6.3.2.7). Q is an integer in the range (0, 15). A Query or 
+QueryX specifies Q; a QueryAdjust may modify Q from the prior Query or QueryX.  
+Tags in the arbitrate state decrement their slot counter every time they receive a QueryRep with 
+matching Session, transitioning to the reply state and backscattering an RN16 (or RN16||CRC-5) 
+when their slot counter reaches 0000h. Tags whose slot counter reached 0000h, who replied, and 
+who were not acknowledged (including Tags that responded to an original Query, QueryX or QueryY 
+and that were not acknowledged) shall return to arbitrate with a slot value of 0000h and shall 
+decrement this slot value from 0000h to 7FFFh at the next QueryRep. The slot counter shall be 
+capable of continuous counting, meaning that, after the slot counter rolls over to 7FFFh it begins 
+counting down again, thereby effectively preventing subsequent replies until the Tag loads a new 
+random value into its slot counter. See also Annex J.  
+PDF_PAGE72
+EPC® Radio-Frequency Identity Generation-2 UHF RFID Standard 
+Release 3.0.1, Ratified, Feb 2026 © 2026 GS1 AISBL  Page 72 of 204 
+Figure 6-21: Tag state diagram 
+Cmd: Select, Challenge, or not-
+          following QueryY, see Note 12
+  Transition: to ready
+  Reply: none, see Notes 1, 11
+Cmd: Query, QueryX
+  Transition: see NEW ROUND
+  Reply: see Notes 2, 4, 11
+Cmd: QueryRep, QueryAdjust, 
+          see Note 2
+  Transition: to ready
+  Reply: none
+Cmd: all other, see Note 3
+  Transition: to arbitrate
+  Reply: none, see Note 8
+arbitrate
+acknowledged
+open
+killed
+START: power-up AND ~killed
+reply
+ready
+secured
+START: power-up AND killed
+NEW ROUND
+Cmd: (Query, QueryX [Init=12], or following QueryY [Init=12] )
+          AND [not matching filtering criteria]
+  Transition: to ready
+  Reply: none
+Cmd: QueryX [Init=02] or following QueryY [Init=02]
+  Transition: see Note 13 
+  Reply: none
+Cmd: (Query, QueryX [Init=12], or following QueryY [Init=12] );
+          [matching filtering criteria]; AND slot ≠ 0
+  Transition: to arbitrate
+  Reply: none
+Cmd: (Query, QueryX [Init=12], or following QueryY [Init=12] );
+           [matching filtering criteria]; AND slot = 0 
+  Transition: to reply
+  Reply: new RN16, see Note 9
+Slot
+Counter
+Query
+QueryX
+QueryY
+QueryRep
+QueryAdjust
+slot
+Cmd: Select, Challenge, or not-
+          following QueryY, see Note 12
+  Transition: to ready
+  Reply: none, see Notes 1, 11
+Cmd: Query, QueryX, or 
+          following QueryY, see Note 12
+  Transition: see NEW ROUND
+  Reply: see Notes 4, 11
+Cmd: all other
+  Transition: to ready
+  Reply: none
+Cmd: (no command or not-exempt
+          command) within time T8(max), 
+          see Note 10
+  Transition: to ready
+  Reply: none
+Cmd: Select, Challenge, or not-
+          following QueryY, see Note 12
+  Transition: to ready
+  Reply: none, see Notes 1, 11
+Cmd: Query, QueryX, or 
+          following QueryY, see Note 12
+  Transition: see NEW ROUND
+  Reply: see Notes 4, 11
+Cmd: all other, see Note 3
+  Transition: to arbitrate
+  Reply: none
+Cmd: none within time T2(max)
+  Transition: to arbitrate
+  Reply: none
+Cmd: (no command or not-exempt
+          command) within time T8(max),
+          see Note 10
+  Transition: see Note 10
+  Reply: none
+Cmd: none within time T2(max)
+  Transition: to arbitrate
+  Reply: none
+TR1/TR2
+TR6/TR7
+BR1
+V2 Bugs
+Cmd: (QueryRep or QueryAdjust) AND slot = 0
+  Reply: new RN16, see Notes 3, 9
+Cmd: (QueryRep or QueryAdjust) AND slot ≠ 0 
+  Reply: none, see Note 3
+Cmd: QueryAdjust 
+          AND slot = 0
+  Reply: new RN16,
+              see Notes 3, 9
+Cmd: ACK [correct RN16]
+  Reply: see Table 6.18 
+Cmd: ACK [correct RN16]
+  Reply: see Table 6.18
+Cmd: Req_RN 
+         [incorrect RN16]
+  Reply: none
+Cmd: Req_RN [correct RN16] AND access password ≠ 0
+  Reply: handle
+Cmd: Req_RN [correct RN16]
+          AND access password = 0
+  Reply: handle
+Cmd: Access [correct handle] 
+          AND correct access password
+  Reply: handle when done
+Cmd: Authenticate, see Note 5
+  Reply: see state-transition tables
+Cmd: Kill [kill allowed] 
+  Reply: header when done, see Note 6
+Cmd: all 
+  Reply: none
+Cmd: Authenticate, 
+          faulty command
+  Reply: see Note 5 and 
+              state-transition tables
+Cmd: ACK, Req_RN, Read, ReadVar, Write, Lock,
+          BlockWrite/Erase/Permalock, ReadBuffer, Untraceable,
+          SecureComm. AuthComm, KeyUpdate, TagPrivilege, 
+          FileOpen/List/Setup/Privilege, see Note 7
+  Reply: See state-transition tables
+Cmd: Kill [kill disallowed], see Note 6 
+  Reply: error code 
+Cmd: Authenticate, see Note 5
+  Reply: see state-transition tables
+Cmd: faulty
+  Reply: see state-transition tables
+Cmd: ACK, Req_RN, Read, ReadVar,
+          Write, Lock,
+          BlockWrite/Erase/Permalock,
+          ReadBuffer, Untraceable, KeyUpdate,
+          TagPrivilege, 
+           FileSetup/Open/Privilege/List,
+           security timeout 
+  Reply: see state-transition tables
+Cmd: Kill [kill disallowed], see Note 6
+  Reply: error code 
+Cmd: Authenticate, SecureComm,
+          AuthComm, see Note 5
+  Reply: see state-transition tables
+Cmd: faulty
+  Reply: see state-transition tables
+ 
+PDF_PAGE73
+EPC® Radio-Frequency Identity Generation-2 UHF RFID Standard 
+Release 3.0.1, Ratified, Feb 2026 © 2026 GS1 AISBL  Page 73 of 204 
+Note 1: Select: assert/deassert SL or set inventoried to A or B. Challenge: perform action(s) indicated by Message, store 
+result, and assert C flag in XPC_W1. 
+Note 2: Query, QueryX: A->B or B->A if the new Session matches the prior Session; otherwise no change to the inventoried 
+flag. QueryRep/QueryAdjust: A->B or B->A if Session matches the Session of the current inventory round. 
+Note 3: If the command is a QueryRep or QueryAdj and Session does not match the inventory round then the Tag ignores 
+the command and remains in current state. If the Tag is in reply, acknowledged, open, or secured and the Tag receives 
+a QueryY with a Session that does not match the inventory round then the Tag ignores the command and remains in current 
+state. If the command is a Select and the parameters are incorrect, then the Tag ignores the command and remains in current 
+state.  
+Note 4: Query begins and completes initialization of an inventory round. QueryX begins initializing an inventory round, and 
+the (same) QueryX or a following QueryY completes initialization of an inventory round using Init=12. Query and QueryX may 
+change the Session. Tags may go to ready, arbitrate, or reply. 
+Note 5: See the state-transition tables and the cryptographic suite for conditions, message formatting, tag responses, and 
+state changes. 
+Note 6: Whether a kill is allowed or disallowed depends on the kill password, Tag privileges, and security timeout. See the 
+Kill command-response table. 
+Note 7: If the Interrogator is authenticated then certain commands require encapsulation in an AuthComm or a 
+SecureComm. See Table 6-28. 
+Note 8: A Tag that returns to arbitrate as a result of an unsuccessful access or kill, or a cryptographic error, may set a 
+security timeout. See 6.3.2.5. 
+Note 9: If the Interrogator initializes the inventory round with QueryX and ReplyCRC=12, then the Tag computes a CRC-5 
+over the new RN16 and appends the new RN16 with CRC-5. 
+Note 10: If T8 timeout expires while the Tag is in ready or arbitrate, then the Tag remains in or returns to ready; it T8 
+timeout expires when the Tag is in reply, then the Tag ignores the command and remains in current state. If the Tag 
+receives a not-exempt command (see 6.3.2.12) within T8(max), then the Tag ignores the command, stops the T8 timeout, 
+and remains in or returns to ready. 
+Note 11: If T8 timeout is active, then the Tag stops T8 timeout. If the command is a QueryX or is a following QueryY with 
+Init=02, then the Tag starts a (new) T8 timeout. 
+Note 12: A following QueryY is a QueryY received in ready or arbitrate if the QueryY: 1) is received within T8(max) 
+timeout; 2) has MemBank≠002 or has Flx=02; and 3) has Session that matches the inventory round started by a QueryX. A 
+not-following QueryY is a QueryY received in ready or arbitrate that 1) is received when T8 timeout is disabled; 2) has 
+MemBank=002; or 3) has a Session that does not match the inventory round started by a QueryX. In addition, a not-
+following QueryY is a QueryY with a Session that matches the inventory round if the Tag is in reply, acknowledged, 
+open, or secured. 
+Note 13: If filtering criteria matches, set slot=7FFFh and go to arbitrate; or if filtering criteria does not match, go to 
+ready. 
+6.3.2.7 Tag random or pseudo-random number generator 
+A Tag shall implement a random or pseudo-random number generator (RNG). The RNG shall meet 
+the following randomness criteria independent of the strength of the energizing RF field, the R=>T 
+link rate, and the data stored in the Tag (including but not limited to the StoredPC, XPC word or 
+words, EPC, and StoredCRC). Tags shall generate 16-bit random or pseudo-random numbers 
+(RN16) using the RNG, and shall have the ability to extract Q-bit subsets from its RNG to preload 
+the Tag’s slot counter (see 6.3.2.6.8). Tags shall have the ability to temporarily store at least two 
+RN16s while powered, to use, for example, as a handle and a 16-bit cover-code during password 
+transactions (see Figure 6-26 or Figure 6-28). 
+■ Probability of a single RN16: The probability that any RN16 drawn from the RNG has value 
+RN16 = j, for any j, shall be bounded by 0.8/216 < P(RN16 = j) < 1.25/216. 
+■ Probability of simultaneously identical sequences: For a Tag population of up to 10,000 
+Tags, the probability that any two or more Tags simultaneously generate the same sequence of 
+RN16s shall be less than 0.1%, regardless of when the Tags are energized. 
+■ Probability of predicting an RN16: An RN16 drawn from a Tag’s RNG 10 ms after the end of 
+Trp in Figure 6-3 shall not be predictable with a probability greater than 0.025% if the outcomes 
+of prior draws from the RNG, performed under identical conditions, are known.  
+This protocol recommends that Interrogators wait 10 ms after Trp in Figure 6-3 before issuing 
+passwords to Tags. 

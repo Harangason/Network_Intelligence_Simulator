@@ -1,0 +1,48 @@
+Tool validations
+* Step 14:
+Messages GetVariableResponse with:
+- getVariableResult[0].component = NetworkConfiguration
+- getVariableResult[0].variable = SecurityProfile
+- getVariableResult[0].attributeValue not <omitted>
+- getVariableResult[0].attributeStatus = Accepted
+* Step 16 17 : 
+Messages SetNetworkConfigurationResponse with:
+- status = Accepted
+* Step 20 22 :
+Messages GetVariableResponse with:
+- getVariableResult[0].component = OCPPCommCtrlr
+- getVariableResult[0].variable = ActiveNetworkProfile
+- getVariableResult[0].attributeValue = <the active configuration>
+- getVariableResult[0].attributeStatus = Accepted
+Post scenario validations:
+- N/a
+6.2.10. Page 130 - (2026-02) - TC_C_17_CS - Corrected wrong triggerReason
+[1113]
+Wrong mention of triggerReason in step 5 has been changed to chargingState. Tool validation steps clarified.
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does not accept a reconnect.
+Manual Action: Present valid idToken which is already configured in the Authorization Cache
+Note(s): The Test System will wait for 5 seconds
+2. The Test System accepts reconnection attempt from the Charging Station.
+Note(s):
+- The Charging Station will empty its Transaction message queue. This will contain one or more TransactionEventRequest messages
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+with
+idTokenInfo.status Invalid (if idToken is not omitted)
+3.  The Charging Stations empties its Transaction message       
+queue:  TransactionEventRequest
+Note(s) :
+ - This will contain one or more TransactionEventRequest       
+messages
+4.  The Test System responds with a        TransactionEventResponse
+Note(s) :  
+ - The Test System will respond to the TransactionEventRequest        
+containing the idToken, with     idtokenInfo.status  Invalid 
+5. The Charging Station sends a TransactionEventRequest with
+triggerReason SuspendedEVSE transactionInfo.chargingState 
+SuspendedEVSE 
+6. The Test System responds with a TransactionEventResponse
+Note(s): Steps 5 & 6 can occur before or during the sending of messages from the offline queue (steps 3 & 4).                    
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 37/116 Errata 2026-06

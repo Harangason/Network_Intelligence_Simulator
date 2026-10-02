@@ -1,0 +1,56 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  67 
+7.3.1.2. Sys PLL IP 
+The Sys PLL generates the following clock output: 
+• 150 MHz: Video clock input for the MIPI subsystem and pattern subsystem. 
+• 100 MHz: Reference clock input to the MIPI subsystem, system clock input to the I2C subsystem, and reference 
+clock input to the I2C PLL.  
+• 60 MHz: Soft D-PHY reference clock for MIPI TX and RX IPs in the MIPI subsystem. 
+• 50 MHz: AXI-Lite clock input to the MIPI subsystem and system clock input to the RISC-V subsystem. 
+7.3.1.3. I2C PLL IP 
+The I2C PLL generates 8 MHz clock output for the I2C bridge component that resides within the I2C subsystem. 
+7.3.1.4. Sensor PLL IP 
+The sensor PLL generates 27 MHz clock output for the sensor LMMI driver component that resides within the I2C 
+subsystem. 
+7.3.1.5. MIPI Subsystem  
+The MIPI subsystem consists of Lattice MIPI CSI IPs configured in transmitter and receiver modes and the TX PLL IP for 
+PHY clock generation. 
+MIPI Subsystem
+TX PLL
+Lattice MIPI 
+CSI TX IP
+UVSI TX Stream
+RX_D_P/N_IO, RX_CLK_P/N_IO
+TX_D_P/N_IO, TX_CLK_P/N_IO
+Camera
+Sensor
+Raspberry 
+Pi 5  
+Lattice MIPI 
+CSI RX IP
+456 MHz
+UVSI RX Stream
+AXI-Lite
+External Hardware
+Lattice Propel Software IP
+AXI-Lite Connection
+UVSI Connection
+MIPI PHY Serial Connection
+MUX
+ 
+Figure 7.2. MIPI Subsystem Diagram 
+Lattice MIPI CSI TX IP 
+The MIPI CSI TX IP is the MIPI CSI IP configured in transmitter mode. For detailed configuration, refer to the IP 
+Parameter Description and Signal Description sections. The AXI-Lite interface is connected to a RISC-V MC IP to allow 
+you to read and write IP registers through the RISC-V software provided with the example design. For the UVSI 
+interface input, this IP is selectable using DIP switches on the CertusPro-NX PCIe Vision Board for UVSI to retransmit 
+from the MIPI CSI RX IP or direct video pattern from the pattern subsystem. 
+Lattice MIPI CSI RX IP 
+The MIPI CSI RX IP is the MIPI CSI IP configured in receiver mode. For detailed configuration, refer to the IP Parameter 
+Description and Signal Description sections. The AXI-Lite interface is connected to a RISC-V MC IP to allow you to read 
+and write IP registers through the RISC-V software provided with the example design. 

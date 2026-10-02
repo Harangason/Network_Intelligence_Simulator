@@ -1,0 +1,36 @@
+Charging Station CSMS
+TxStopPoint
+contains "Authorized".
+User locally authorized by the Charging Station
+TransactionEventRequest(...)
+TransactionEventResponse(idTokenInfo.status != Accepted, ...)
+stop energy offer
+alt [If StopTxOnInvalidId is true]
+TransactionEventRequest(eventType = Ended,
+triggerReason = Deauthorized, stoppedReason = DeAuthorized, ...)
+TransactionEventResponse(...)
+[If StopTxOnInvalidId is false]
+TransactionEventRequest(eventType = Updated,
+triggerReason = ChargingStateChanged, ...)
+TransactionEventResponse(...)
+Figure 50. Sequence Diagram: Stop Transaction options - Deauthorized
+S5 Scenario objective Stop a transaction when the EV driver is no longer authorized and/or the EV is disconnected.
+Scenario description 1. The Charging Station is disconnected from EV and/or the EV driver is no longer authorized.
+2. The Charging Station sends a TransactionEventRequest (eventType = Ended) notifying the
+CSMS about a transaction that has ended.
+3. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+Prerequisite(s) A transaction is ongoing.
+Configuration Variable: TxStopPoint contains: PowerPathClosed
+Postcondition(s) Successful postcondition:
+The transaction is ended and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is still ongoing. or
+The CSMS is not informed.
+Charging Station CSMS
+A transaction is ongoing.
+TransactionEventRequest(eventType = Ended, chargingState = EVConnected, ...)
+TransactionEventResponse()
+Figure 51. Sequence Diagram: Stop Transaction options - PowerPathClosed
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 147/491 Part 2 - Specification

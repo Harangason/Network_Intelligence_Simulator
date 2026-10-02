@@ -1,0 +1,36 @@
+--- before/frontend/src/components/engineering-workbench.tsx
++++ after/frontend/src/components/engineering-workbench.tsx
+@@ -3,7 +3,7 @@
+ import { CommunicationWarningIndicator } from "@/components/communication-warning";
+ import { communicationWarnings, communicationWarningText, type CommunicationWarnings } from "@/lib/communication-warnings";
+ import { getCatalog } from "@/lib/api";
+-import { technologyKey } from "@/lib/technology-parameters";
++import { localEvidenceFieldRequired, technologyKey } from "@/lib/technology-parameters";
+ import type { Technology } from "@/lib/types";
+ import { listRoutes } from "@/lib/routing-api";
+ import { physicalBindingStatus } from "@/lib/interface-status";
+@@ -3488,7 +3488,7 @@
+         const source = String(form.get("edit_local_source") ?? "").trim();
+         if (confirmed && (!source || localFields.some(field =>
+           (values[field.key] === null || values[field.key] === "") &&
+-          (!field.optional || field.key === "arbitration_bound_us" && values.multi_master === true)))) {
++          localEvidenceFieldRequired(field, values)))) {
+           setFormError("Für die Bestätigung sind alle Gerätewerte und eine Nachweisquelle erforderlich.");
+           setSubmitting(false);
+           return;
+@@ -3663,9 +3663,14 @@
+             {field.boolean ? <select id={`edit_local_${field.key}`} name={`edit_local_${field.key}`}
+               defaultValue={String(previousLocal[field.key] ?? localCandidate(field.key) ?? "")}>
+               <option value="">Bitte wählen</option><option value="false">Nein</option><option value="true">Ja</option>
++            </select> : field.options ? <select id={`edit_local_${field.key}`} name={`edit_local_${field.key}`}
++              defaultValue={String(previousLocal[field.key] ?? localCandidate(field.key) ?? "")}>
++              <option value="">Bitte wählen</option>{field.options.map(value => <option key={value} value={value}>{value}</option>)}
+             </select> : <input id={`edit_local_${field.key}`} name={`edit_local_${field.key}`} type={field.numeric ? "number" : "text"}
+-              min={field.numeric ? "0" : undefined} step={field.numeric ? "any" : undefined}
++              min={field.numeric ? field.minimum ?? 0 : undefined} max={field.maximum}
++              step={field.numeric ? field.integer ? 1 : "any" : undefined}
+               defaultValue={String(previousLocal[field.key] ?? localCandidate(field.key) ?? "")} />}
++            {field.description && <small>{field.description}</small>}
+           </div>)}</div>
+           <div className="field"><label htmlFor="edit_local_source">Nachweisquelle</label><input id="edit_local_source" name="edit_local_source" type="text"
+             defaultValue={String(previousLocal.source ?? "")} /></div>

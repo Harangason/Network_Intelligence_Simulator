@@ -1,0 +1,37 @@
+For Line-Concatenated CSI-2 Forwarding, Equation 3 gives us the maximum bandwidth of about 3.03 Gbps (out 
+of 3.2 Gbps for 4 lanes) with continuous CSI-2 clock and about 2.84 Gbps without continuous CSI-2 clock.
+7.4.21 CSI-2 Transmitter Status
+The status of the CSI-2 Transmitter may be monitored by readback of the CSI_STS register 0x35, or brought 
+to one of the configurable GPIO pins as an output. The TX_PORT_PASS 0x35[0] indicates valid CSI-2 data 
+being presented on CSI-2 port. If no data is being forwarded or if error conditions have been detected on the 
+video data, the CSI-2 Pass signal will be cleared. The TX_PORT_SYNC 0x35[0] indicates the CSI-2 Tx port is 
+able to properly synchronize input data streams from multiple sources. TX_PORT_SYNC will always return 0 
+if Synchronized Forwarding is disabled. Interrupts may also be generated based on changes in the CSI-2 port 
+status.
+7.4.22 Video Buffers
+The DS90UB960-Q1 implements four video line buffer/FIFO, one for each RX channel. The video buffers 
+provide storage of data payload and forward requirements for sending multiple video streams on the CSI-2 
+transmit ports. The total line buffer memory size is a 16-kB block for each RX port.
+The CSI-2 transmitter waits for an entire packet to be available before pulling data from the video buffers.
+7.4.23 CSI-2 Line Count and Line Length
+The DS90UB960-Q1 counts the number of lines (long packets) to determine line count on LINE_COUNT_1/0 
+registers 0x73–74. For line length, DS90UB960-Q1 generates the word count field in the CSI-2 header on 
+LINE_LEN_1/0 registers 0x75 – 0x76.
+7.4.24 FrameSync Operation
+A frame synchronization signal (FrameSync) can be sent through the back channel using any of the back 
+channel GPIOs. The signal can be generated in two different methods. The first option offers sending the 
+external FrameSync using one of the available GPIO pins on the DS90UB960-Q1 and mapping that GPIO to a 
+back channel GPIO on one or more of the FPD-Link III ports.
+The second option is to have the DS90UB960-Q1 internally generate a FrameSync signal to send through GPIO 
+to one or more of the attached Serializers.
+FrameSync signaling on the four back channels is synchronous. Thus, the FrameSync signal arrives at each of 
+the four serializers with limited skew.
+7.4.24.1 External FrameSync Control
+In External FrameSync mode, an external signal is input to the DS90UB960-Q1 through one of the GPIO pins on 
+the device. The external FrameSync signal may be propagated to one or more of the attached FPD3 Serializers 
+through a GPIO signal in the back channel.
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+46 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

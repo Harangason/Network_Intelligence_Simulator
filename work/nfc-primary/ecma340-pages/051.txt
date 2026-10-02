@@ -1,0 +1,33 @@
+ 
+© Ecma International 2024  45 
+ 
+Annex A 
+(normative) 
+ 
+CRC calculation 
+A.1 CRC for active and passive communication mode at fc/128 
+The frame CRC shall be a function of k data bits, which consist of all the data bits in the frame, excluding parity 
+bits, S and E, and the CRC itself. Since data is encoded in bytes, the number of bits k shall be a multiple of 8. 
+For error checking, the two CRC bytes shall be sent in the Standard Frame, after the bytes and before the E.  
+The CRC shall be calculated by the following polynomial. The pre -set value shall be (6363) and the register 
+content shall not be inverted after calculation. 
+G(x) = x16 + x12 +x5 + 1 
+For an example of the CRC calculation for the active and the passive communication mode at fc/128 see A.2. 
+A.2 Example of CRC calculation at fc/128 
+This example is provided for explanatory purposes and indicates the bit patterns that will exist in the physical 
+layer. It is included for the purpose of checking the Passive communication mode implementation at fc/128 
+encoding. 
+The process of encoding and decoding may be conveniently carried out by a 16 -stage cyclic shift register with 
+appropriate feedback gates. The flip -flops of the register shall be numbered from FF1 to FF16 as specified in 
+ITU-T V.41:1988, Annex I, Figures I-1/V.41 and I-2/V.41. FF1 shall be the leftmost flip-flop where data is shifted 
+in. FF16 shall be the rightmost flip -flop where data is shifted out. Table A.1 defines the initial content of the 
+register. 
+Table A.1 — Initial content of 16-stage shift register according to value (6363) 
+FF1 FF2 FF3 FF4 FF5 FF6 FF7 FF8 FF9 FF10 FF11 FF12 FF13 FF14 FF15 FF16 
+0 1 1 0 0 0 1 1 0 1 1 0 0 0 1 1 
+ 
+Consequently, FF1 corresponds to the msb and FF16 to the lsb. 
+Examples of bit patterns that will be transmitted via Standard Frames. 
+EXAMPLE 1 Transmission of data, first byte = ‘00’, second byte = ‘00’, CRC appended, see Figure A.1. 
+Calculated CRC = (1EA0), see Table A.2. 
+First bit transmitted 

@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+2.7.11.1 Poll a standard message (Talker ID GQ)
+Message NMEA-Standard-GQQ
+Poll a standard message (Talker ID GQ)
+Type Poll request
+Comment Polls a standard NMEA message if the current Talker ID is GQ
+Information Class/ID: 0xf0 0x47 Number of fields: 4
+Structure $xxGQQ,msgId*cs\r\n
+Example $EIGQQ,RMC*3A\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGQQ string - $EIGQQ GQQ Message ID (xx = Talker ID of the device requesting
+the poll)
+1 msgId string - RMC Message ID of the message to be polled
+2 cs hexadecimal - *3A Checksum
+3 CRLF character - - Carriage return and line feed
+2.7.12 GRS
+2.7.12.1 GNSS range residuals
+Message NMEA-Standard-GRS
+GNSS range residuals
+Type Output
+Comment If less than 12 SVs are available, the remaining ﬁelds are output empty. If more than 12 SVs are used, only the
+residuals of the ﬁrst 12 SVs are output, in order to remain consistent with the NMEA standard.
+In a multi-GNSS system this message will be output multiple times, once for each GNSS.
+☞ This message relates to associated GGA and GSA messages.
+Information Class/ID: 0xf0 0x06 Number of fields: 19
+Structure $xxGRS,time,mode{,residual},systemId,signalId*cs\r\n
+Examples $GNGRS,104148.00,1,2.6,2.2,-1.6,-1.1,-1.7,-1.5,5.8,1.7,,,,,1,1*52\r\n
+$GNGRS,104148.00,1,,0.0,2.5,0.0,,2.8,,,,,,,1,5*52\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGRS string - $GPGRS GRS Message ID (xx = current Talker ID, see NMEA
+Talker IDs table)
+1 time hhmmss.ss - 082632.00 UTC time of associated position ﬁx. See section UTC
+representation in the integration manual for details.
+2 mode digit - 1 Computation method used:
+• 1 = Residuals were recomputed after the GGA
+position was computed (ﬁxed)
+Start of repeated group (12 times)
+3 + n residual numeric m 0.54 Range residuals for SVs used in navigation. The SV order
+matches the order from the GSA sentence
+End of repeated group (12 times)
+15 systemId hexadecimal - 1 NMEA-deﬁned GNSS system ID, see Signal Identiﬁers
+table (only available in NMEA 4.10 and later)
+16 signalId hexadecimal - - NMEA-deﬁned GNSS signal ID, see Signal Identiﬁers
+table (only available in NMEA 4.10 and later)
+17 cs hexadecimal - *70 Checksum
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 31 of 224
+C1-Public

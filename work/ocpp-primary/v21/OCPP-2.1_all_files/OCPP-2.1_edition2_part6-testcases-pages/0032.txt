@@ -1,0 +1,53 @@
+Main (Test scenario)
+12. The Charging Station responds with a
+RequestStartTransactionResponse
+11. The Test System sends a RequestStartTransactionRequest
+Note(s):
+- This step is executed after the Test System received all
+NotifyReport messages. This is indicated by the tbc and seqNo
+fields.
+14. The Charging Station responds with a
+TriggerMessageResponse
+13. The Test System sends a TriggerMessageRequest
+with requestedMessage BootNotification
+15. The Charging Station sends a BootNotificationRequest
+Note(s):
+- The Charging Station resends the BootNotificationRequest after
+having responded to the TriggerMessageRequest, so before the
+interval from the BootNotificationResponse has been passed.
+16. The Test System responds with a BootNotificationResponse
+with status Accepted
+interval <Configured heartbeatInterval>
+17. The Charging Station notifies the CSMS about the current
+state of all connectors. 18. The Test System responds accordingly.
+Tool validations
+* Step 4:
+Message: SetVariablesResponse
+- setVariableResult[0].attributeStatus Accepted
+* Step 6:
+Message: GetVariablesResponse
+- getVariableResult[0].attributeStatus Accepted
+* Step 8:
+Message: GetBaseReportResponse
+- status Accepted
+* Step 12:
+Message: RequestStartTransactionResponse
+- status Rejected
+* Step 14:
+Message: TriggerMessageResponse
+- status Accepted or NotImplemented
+* Step 15:
+Message: BootNotificationRequest
+- reason Triggered (If the status from the response from step 14 contained Accepted)
+* Step 17:
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Available"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 30/1383 Part 6 - Test Cases

@@ -1,0 +1,54 @@
+EV Driver
+Charging Station
+CS-001 CSMS PSP
+Enter maxCost = 12.34
+Scan QR code
+for URL
+Visit payment web page with URL (chargingstationid = CS-001, totp = aHicux89, version = v1, maxcost = 12.34)
+Decode URL parameters
+chargingstationid, totp, version,
+maxcost
+Validate time-based
+one-time password
+opt [Notify EV Driver]
+NotifyWebPaymentStartedRequest(evseId, timeout)
+NotifyWebPaymentStartedResponse()
+Forward EV Driver to PSP
+Display page to enter payment credentials
+Enter payment credentials
+Authorize payment
+PspRef = 4444, payment details
+EV Driver enters EVSE number
+and/or plugs cable in
+RequestStartTransactionRequest(idToken(id = 4444, type = DirectPayment, remoteStartId = 123))
+RequestStartTransactionResponse(Accepted)
+Transaction starts as in F07
+TransactionEventRequest(eventType = Started, remoteStartId = 123, ...)
+TransactionEventResponse(transactionLimit.maxCost = 12.34, ...)
+When transaction has finished
+alt [When cost calculated locally]
+TransactionEventRequest(eventtype = Ended,
+costDetails = ..., ...)
+TransactionEventResponse()
+[When cost calculated by CSMS]
+TransactionEventRequest(eventtype = Ended, ...)
+TransactionEventResponse(totalCost = ...)
+settle <total cost> for pspRef = 4444
+URL to receipt
+opt
+DisplayMessageRequest(<URL to receipt>)
+DisplayMessageResponse()
+Figure 46. Ad hoc payment via QR code
+URL definition for dynamic QR code
+The QR code contains the URL to the ad hoc payment web page for the CSMS. This web page can be provided by a third party, like a
+PSP, but it is responsibility of the CSO. The format of the URL is up to the CSO, as long as certain mandatory URL parameters exist
+that are needed to support the use case.
+The URL is a defined as a template that contains parts ("variables") that are filled in by the Charging Station. These variables are put
+between curly braces as path parameters in the URL template. For example:
+Example URL without EVSE ID
+https://qr.example.com/{totp}/{version}/{chargingstationid}/
+Example URL with EVSE
+https://qr.example.com/{chargingstationid}/{evse}/{totp}/{version}
+The URL template is defined in WebPaymentsCtrlr.URLTemplate.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 148/803 Part 2 - Specification

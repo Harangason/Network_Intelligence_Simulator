@@ -1,0 +1,68 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  69 
+from a target controller (for example, Raspberry Pi 5) to an I2C target (sensor camera) using the SCL clock stretching 
+mechanism which requires longer response time from the I2C target. In this example design, the I2C bridge is disabled 
+as the sensor camera initialization is handled by the sensor LMMI driver and the I2C Controller IP while the ACK 
+response comes from the I2C Target IP. 
+Sensor LMMI Driver 
+The sensor LMMI driver configures the I2C Controller IP to initiate the basic I2C transactions to initialize the sensor 
+camera. In this example design, the sensor LMMI driver configures the I2C Controller IP in sequence via the predefined 
+static ROM configuration setting. 
+I2C APB Driver 
+The I2C APB driver configures the I2C Target IP with the corresponding data (for example, CHIP_ID) in response to the 
+I2C controller on read transaction. In this example design, the I2C APB driver configures the CHIP_ID value for the ACK 
+response to the Raspberry Pi 5 OS during driver probing.  
+7.3.1.7. Pattern Subsystem 
+The pattern subsystem consists of the pattern generator which can generate color bar or checkerboard video pattern 
+with a fixed video resolution of 1920 x 1080 (FHD) to the MIPI CSI TX IP when RX to TX retransmit mode is disabled. 
+7.3.1.8. RISC-V Subsystem 
+RISC-V MC CPU
+C C
+IRQ
+UART
+T
+AHBL to APB Bridge
+C
+T
+APB Interconnect
+C C
+T
+AHBL Interconnect
+T C
+C
+APB CSR
+T
+Target CSR TX
+T
+System Memory
+T
+GPIO
+T
+C
+T C C
+C
+Target CSR RX
+T
+C
+Custom IP
+Lattice Propel Software IP
+C Controller
+T Target
+IRQ Connection
+Interconnect Connection
+Sideband Connection
+UART Connection
+IRQ Interrupt
+ 
+Figure 7.4. RISC-V Subsystem Diagram 
+RISC-V MC IP 
+The RISC-V MC CPU IP has advanced high-performance bus (AHB)-Lite based instruction and data ports. The instruction 
+port is connected to the system memory that contains the system application for the central processing unit (CPU) to 
+boot up when the FPGA is programmed. In this example design, the data port is connected to the system memory and 
+other peripherals for control and status read. The CPU also receives user input commands from the demo GUI 
+application via the universal asynchronous receiver/transmitter (UART) serial communication. 

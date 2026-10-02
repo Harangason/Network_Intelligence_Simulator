@@ -1,0 +1,55 @@
+Modbus.org 
+MB-TCP-Security-v36_2021-07-30 
+                                                  7 
+ 
+ 
+ 167 
+Figure 3 mbap ADU Encapsulated in TLS 168 
+The TLS Handshake Protocol s hown in Figure 4 169 
+Modbus/TCP Security Concept View :  170 
+• Negotiates cryptography for secure channel including 171 
+algorithms, keys, etc. between end points . 172 
+• Provides mutual client/server authentication  based on 173 
+x.509v3 certificates  174 
+• Extracts the client role OID from the certificate  175 
+• Establishes the TLS session.  176 
+ 177 
+After the TLS session is established normal modbus request 178 
+and response sequences  are transmitted in the secured TLS 179 
+Application Protocol channel . During the procesing of the 180 
+request, the mbaps protocol handler invokes a vendor 181 
+specific authorization function. This authorization function 182 
+evaluates a roles-to-rights algorithm using inputs from the 183 
+mbap ADU and the role extracted from the x.509 client 184 
+certificate  of the connection . The algorithm determines if the 185 
+ADU can be processed based on role of the peer .  If the 186 
+authorization function determines that the mbap ADU  code 187 
+cannot be processed, the mbap handler returns a  01 – IIlegal 188 
+Function Modbus exception code. This authorization process 189 
+occurs on every request, ensuring complete validation of the 190 
+request s tream.  191 
+ 192 
+Modbus/TCP 
+Security 
+ 
+• Mutual client/server 
+TLS Authentication.  
+• Certificate based 
+Identity and 
+Authentication with 
+TLS. 
+• Certificate  based 
+Authorization using role 
+information transferred 
+via certificate 
+extensions . 
+• Authorization is product 
+specific and invoked by 
+mbap function code 
+handler.  
+• Authorization roles to 
+rights rules are product 
+specific  and configured  
+in the Authorization 
+function.  
+ 

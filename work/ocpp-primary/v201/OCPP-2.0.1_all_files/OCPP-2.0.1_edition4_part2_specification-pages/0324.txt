@@ -1,0 +1,48 @@
+ID Precondition Requirement definition Note
+M01.FR.01 Upon receiving an ISO
+15118
+CertificateInstallationReq
+The Charging Station SHALL forward the request to
+the CSMS using the Get15118EVCertificateRequest
+message with action = Install.
+The CSMS is responsible for
+forwarding it to the secondary actor
+which will process the
+CertificateUpdateRequest. This could
+be a contract certificate pool as
+outlined in application guide VDE-AR-
+2802-100-1.
+M02 - Certificate Update EV
+No. Type Description
+1 Name Certificate Update
+2 ID M02
+Reference ISO15118-1 C1
+3 Objective(s) See ISO15118-1, use case Objective C1, page 20.
+4 Description See ISO15118-1, use case Description C1, page 21 up to and including the third "NOTE".
+Actors EV, Charging Station
+Scenario description 15118:
+See ISO15118-1, use case Objective C1, Scenario Description, first 3 bullets, page 21.
+OCPP:
+- The Charging Station sends a Get15118EVCertificateRequest message with action = Update to
+the CSMS.
+- The CSMS responds with Get15118EVCertificateResponse to the Charging Station.
+15118:
+See ISO15118-1, use case Description C1, Scenario Description, last 2 bullets, page 21.
+5 Prerequisites - Communication between EV and EVSE SHALL be established successfully.
+- Online connection between Charging Station and CSMS SHALL be possible.
+- CSMS should be able to communicate with a third party that can process the
+CertificateInstallationRequest, for example a contract certificate pool.
+6 Postcondition(s) See ISO15118-1, use case Objective C1 and C2, page 20/22.
+7 Error handling In case the CSMS is not able to respond within the specified time, the Charging Station SHALL
+indicate failure to the EV.
+8 Remark(s) See ISO15118-1, use case Requirements C1, trigger , page 21.
+The message timeout in ISO15118-2 for CertificateUpdateReq is 5 seconds.
+EV Charging Station CSMS
+CertificateUpdateReq()
+Get15118EVCertificateRequest(15118SchemaVersion, update, exiRequest)
+Get15118EVCertificateResponse(status, exiResponse)
+CertificateUpdateRes()
+Figure 124. Certificate Update
+Source: ISO15118-1
+Edition 4, 2025-12-03 M. Certificate Management
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 314/491 Part 2 - Specification

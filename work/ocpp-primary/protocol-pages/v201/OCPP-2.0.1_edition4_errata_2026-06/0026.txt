@@ -1,0 +1,52 @@
+6.2.9. Page 150/151 - (2026-02) - TC_C_26_CS - Clarification of main test and tool
+validation steps.
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station notifies the CSMS about the current
+state of all connectors. 2. The Test System responds accordingly.
+3. The Charging Stations sends a TransactionEventRequest The
+Charging Station empties its Transaction message queue:      
+TransactionEventRequest
+Note(s):
+- The Charging Station will empty its Transaction message queue.
+This will contain one or more TransactionEventRequest messages
+4. The Test System responds with a TransactionEventResponse
+Note(s):
+- The Test System will respond to the TransactionEventRequest
+containing the idToken, with idtokenInfo.status Invalid
+5.  The Charging Stations sends a       TransactionEventRequest
+ Note(s) :
+ - This will contain chargingState SuspendedEVSE     
+ 6.  The Test System responds with a        TransactionEventResponse
+Note(s) :  Steps 5 & 6 can occur before or during the sending of messages from the offline queue (steps 3 & 4).                    
+5. 7.  Execute Reusable State StopAuthorized
+6. 8.  Execute Reusable State EVConnectedPostSession
+7. 9.  Execute Reusable State EVDisconnected
+Tool validations
+* Step 1:
+Message: StatusNotificationRequest
+- connectorStatus must be Occupied
+Message: NotifyEventRequest
+- eventData[0].trigger must be Delta
+- eventData[0].actualValue must be Occupied
+- eventData[0].component.name must be Connector
+- eventData[0].variable.name must be AvailabilityState
+* Step 3:
+All Message(s): TransactionEventRequest
+- offline must be true
+One of the Message(s):     TransactionEventRequest
+-  chargingState  must be    Charging
+* Step 4:
+One of the Message(s): TransactionEventRequest
+- chargingState must be SuspendedEVSE
+* Step 5:  
+ TransactionEventRequest
+-  chargingState  must be    SuspendedEVSE
+Post scenario validations:
+N/a
+6.2.10. Page 159 - (2026-02) - TC_C_55_CS - Explicit mention of offline
+transactions only
+Test case name Authorization using Contract Certificates 15118 - Offline - ContractValidationOffline is false
+Test case Id TC_C_55_CS
+…
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2026 23/34 Errata 2026-06

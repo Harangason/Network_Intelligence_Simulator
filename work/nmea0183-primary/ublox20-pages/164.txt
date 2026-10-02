@@ -1,0 +1,47 @@
+u-blox 20 HPG 2.00 - Interface description
+See Secure Position Augmentation for Real-Time Navigation (SPARTN) Interface Control Document, Version
+1.8.0, January 2020 or Secure Position Augmentation for Real-Time Navigation (SPARTN) Interface Control
+Document, Version 2.0.2, February 2022 for a detailed message speciﬁcation.
+Information Class/ID: 0xf6 0x0d, Message Type: 1 (0x01), Sub-type: 3 (0x3), Message Size: 5 + nData + crcType
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 X1 spartnByte0 - - SPARTN frame byte 0
+bits 7…0   U:8 preamble - - Preamble (0x73, 's')
+1 X1 spartnByte1 - - SPARTN frame byte 1
+bit 0   U:1 nDataMSB - - Payload length (MSB)
+bits 7…1   U:7 msgType - - Message type
+2 X1 spartnByte2 - - SPARTN frame byte 2
+bits 7…0   U:8 nData - - Payload length (middle 8 bits)
+3 X1 spartnByte3 - - SPARTN frame byte 3
+bits 3…0   U:4 frameCrc - - Frame CRC
+bits 5…4   U:2 crcType - - Message CRC type
+bit 6   U:1 eaf - - Encryption and/or authentication ﬂag
+bit 7   U:1 nDataLSB - - Payload length (LSB)
+Start of repeated group (nData times)
+4 + n U1 data - - Message payload data. Payload data length deﬁned by
+combining nDataMSB, nData and nDataLSB to form a
+10-bit value.
+End of repeated group (nData times)
+4 + nData U1 crc0 - - Message CRC 1st byte
+Start of repeated group (crcType times)
+5 + nData + n U1 crcN - - Message CRC additional bytes
+End of repeated group (crcType times)
+5.4.9 Message type 2, sub-type 0
+5.4.9.1 Geographic area deﬁnition (GAD)
+Message SPARTN-1X-GAD
+Geographic area deﬁnition (GAD)
+Type Input
+Comment This message is used to deﬁne geographic areas of data usage. The use of this message can serve diﬀerent
+purposes, including atmospheric data availability and other types of geographical/geometrical aspects of
+usage of data.
+See Secure Position Augmentation for Real-Time Navigation (SPARTN) Interface Control Document, Version
+1.8.0, January 2020 or Secure Position Augmentation for Real-Time Navigation (SPARTN) Interface Control
+Document, Version 2.0.2, February 2022 for a detailed message speciﬁcation.
+Information Class/ID: 0xf6 0x13, Message Type: 2 (0x02), Sub-type: 0 (0x0), Message Size: 5 + nData + crcType
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 X1 spartnByte0 - - SPARTN frame byte 0
+UBXDOC-304424225-19888 - R01
+ 
+5 SPARTN protocol Page 164 of 224
+C1-Public

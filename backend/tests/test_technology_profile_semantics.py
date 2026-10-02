@@ -8,6 +8,12 @@ from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY, Tech
 
 
 REGISTRY = DEFAULT_TECHNOLOGY_REGISTRY
+LIN_CONTEXT = {**{'lin_'+key: 'synthetic-project-'+key for key in
+    ('revision','device_source','binding_source','physical_source','ldf_source','encoding_source',
+     'schedule_source','capacity_source','acceptance_source','commander_node_id')},
+    'lin_edition':'LIN_2_2A_2010', 'lin_physical_profile':'LIN_2_2A_SINGLE_WIRE',
+    'lin_node_role':'COMMANDER','lin_frame_kind':'UNCONDITIONAL','lin_bitrate_bps':19200}
+
 
 
 def codes(result: dict) -> set[str]:
@@ -15,10 +21,11 @@ def codes(result: dict) -> set[str]:
 
 
 def test_lin_rate_profile_accepts_real_rate_and_blocks_can_fd_rate() -> None:
-    assert REGISTRY.validate_parameters("LIN", {"bitrate_bps": 19_200})["status"] == "VALID"
-    invalid = REGISTRY.validate_parameters("LIN", {"bitrate_bps": 2_000_000})
+    assert REGISTRY.validate_parameters("LIN", LIN_CONTEXT)["status"] == "VALID"
+    assert REGISTRY.validate_parameters("LIN", {"bitrate_bps": 19_200})["status"] != "VALID"
+    invalid = REGISTRY.validate_parameters("LIN", {**LIN_CONTEXT,"lin_bitrate_bps": 2_000_000})
     assert invalid["status"] == "INVALID"
-    assert codes(invalid) == {"TECHNOLOGY_PARAMETER_OUT_OF_RANGE"}
+    assert codes(invalid) == {"TECHNOLOGY_PARAMETER_DEPENDENCY_MISMATCH"}
     assert invalid["findings"][0]["severity"] == "BLOCKER"
 
 
@@ -68,7 +75,8 @@ def test_missing_rate_http_response_is_unverified_not_valid():
     })
     assert response.status_code == 200
     assert response.get_json()['status'] == 'UNVERIFIED'
-    assert response.get_json()['findings'][0]['severity'] == 'BLOCKER'
+    assert any(item['severity']=='BLOCKER' and item['code']=='TECHNOLOGY_PARAMETER_MISSING'
+               for item in response.get_json()['findings'])
 
 
 def test_registered_profile_with_missing_stack_layer_is_not_silently_valid() -> None:
@@ -96,7 +104,7 @@ def test_audit_reports_legacy_invalid_lin_binding() -> None:
         "binding_id": "lin-legacy", "technology_id": "LIN", "parameters": {"bitrate_bps": 2_000_000},
     }])
     assert findings[0]["binding_id"] == "lin-legacy"
-    assert findings[0]["code"] == "TECHNOLOGY_PARAMETER_OUT_OF_RANGE"
+    assert findings[0]["code"] == "TECHNOLOGY_RATE_MODEL_MISMATCH"
 
 
 @pytest.mark.parametrize(("technology", "category", "mechanism"), [
@@ -117,8 +125,11 @@ def test_communication_mechanisms_are_profile_backed(technology: str, category: 
 
 def test_lin_calculation_refuses_invalid_rate() -> None:
     model = REGISTRY.resolve_stack(("lin",))["timing_model"]
-    with pytest.raises(ValueError, match="violates the lin profile"):
-        model.transmission_time_us(8, 2_000_000)
+    with pytest.raises(ValueError, match="contradicts lin"):
+        model.transmission_time_us(8, 2_000_000, technology_parameters={**LIN_CONTEXT,'lin_bitrate_bps':2_000_000})
+    with pytest.raises(ValueError, match="required"):
+        model.transmission_time_us(8, 19_200)
+    assert model.transmission_time_us(8,19_200,technology_parameters=LIN_CONTEXT) == pytest.approx(124/19_200*1e6)
 
 
 def test_simulation_preflight_blocks_invalid_lin_rate(tmp_path) -> None:
@@ -131,20 +142,20 @@ def test_catalog_exposes_dynamic_rate_fields() -> None:
     technologies = {item["id"]: item for domain in domains for item in domain["technologies"]}
     lin_fields = {item["key"] for item in technologies["lin"]["parameter_schema"]}
     can_fd_fields = {item["key"] for item in technologies["can_fd"]["parameter_schema"]}
-    assert "bitrate" in lin_fields and "data_bitrate" not in lin_fields
+    assert "lin_bitrate_bps" in lin_fields and not {"bitrate","data_bitrate"} & lin_fields
     assert {"arbitration_bitrate", "data_bitrate"} <= can_fd_fields
     assert "bitrate" not in can_fd_fields
 
 
-def test_someip_exposes_and_validates_inherited_ethernet_link_speed() -> None:
+def test_someip_requires_explicit_transport_binding_without_foreign_phy_default() -> None:
     domains = SimulationService().catalog()["domains"]
     technologies = {item["id"]: item for domain in domains for item in domain["technologies"]}
     someip = technologies["someip"]
-    link_speed = next(field for field in someip["parameter_schema"] if field["key"] == "bitrate")
-
-    assert link_speed["label"] == "Ethernet Link Speed"
-    assert link_speed["description"] == "Inherited physical link rate from the declared technology stack."
-    assert REGISTRY.validate_parameters("someip", {"bitrate_bps": 100_000_000})["status"] == "VALID"
+    fields = {field["key"]: field for field in someip["parameter_schema"]}
+    assert "bitrate" not in fields
+    assert fields["someip_transport"]["options"] == ["UDP", "TCP", "UDP_TP"]
+    assert fields["someip_transport_source"]["required"] is True
+    assert REGISTRY.validate_parameters("someip", {"bitrate_bps": 100_000_000})["status"] != "VALID"
     assert "ethernet" in technologies
 
 
@@ -172,7 +183,7 @@ def test_parameter_validation_and_audit_api() -> None:
         "technology": "LIN", "parameters": {"bitrate_bps": 2_000_000},
     })
     assert invalid.status_code == 422
-    assert invalid.get_json()["findings"][0]["code"] == "TECHNOLOGY_PARAMETER_OUT_OF_RANGE"
+    assert invalid.get_json()["findings"][0]["code"] == "TECHNOLOGY_RATE_MODEL_MISMATCH"
     audit = client.post("/api/technologies/audit", json={"bindings": [{
         "id": "legacy-lin", "technology": "LIN", "parameters": {"bitrate_bps": 2_000_000},
     }]})

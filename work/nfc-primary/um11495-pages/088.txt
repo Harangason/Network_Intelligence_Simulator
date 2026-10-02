@@ -1,0 +1,24 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+[NCI_DISCOVERY_TYPE_POLL_B_PASSIVE,1])
+In addition, PN7160 needs to be aware of the fact that it has to behave according to the EMVCo RF discovery,
+not according to the NFC Forum RF discovery based on [ACTIVITY].
+A specific configuration parameter is defined for that purpose. It allows selecting which profile is active
+during the RF discovery in Poll Mode. This parameter (POLL_PROFILE_SEL_CFG) is detailed in section
+Section 11.2.1.
+When this parameter is set to 0x01, PN7160 implements a specific discovery algorithm, compliant to the
+EMVCo standard. The target is to ensure that there is one single card in the field. So PN7160 has to detect
+any collision inside 1 technology (NFC-A or NFC-B) or to detect if there are multiple cards based on different
+technologies (i.e. 1 card in NFC-A and 1 card in NFC-B).
+Figure 56. EMVCo profile (when there is no card in the field)
+If there is a card detected in the field, then the polling sequence is modified by the PN7160, in order to look for
+another potential card in the field.
+This is illustrated by the 2 figures below:
+• On the 1st one, there is no card in the RF Field, so PN7160 keeps polling by alternating WUPA and WUPB
+commands.
+Figure 57. EMVCo polling without a card in the field
+• On the 2nd one, an NFC-A card is placed in the RF Field. The PN7160 detects it, activates it and puts it in
+HALT state and then looks for a potential NFC-B card in the field. Since there is no NFC-B card in the field,
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+88 / 147

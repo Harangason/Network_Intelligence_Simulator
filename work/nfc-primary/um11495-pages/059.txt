@@ -1,0 +1,61 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Acronym Description
+T1T NFC Forum Type 1 Tag (based on Topaz/Jewel)
+MF MIFARE family, not ISO-DEP compliant, including T2T, MIFARE Ultralight (std or C), MIFARE Classic and
+MIFARE Plus for Security Level 1 and 2.
+MFC MIFARE Classic and MIFARE Plus for Security Level 1 and 2.
+Table 48. Acronyms definition
+The added REQuests/ReSPonses pairs are listed in the following table:
+REQ/RSP Name ID Param 1 Param 2 Param 3 Data Description
+XCHG_DATA_REQ
+0x10
+None None None Yes MFC: DH sends Raw data to the NFCC, which
+encrypts them before sending them to MFC.
+T1T/T2T: DH sends Raw data to the NFCC,
+which forwards them in plain to the Tag.
+XCHG_DATA_RSP
+0x10
+N/A N/A N/A Yes MFC: DH gets Raw data once RF data from
+MFC are decrypted by the NFCC, if successful.
+T1T/T2T: DH gets Raw plain data once the
+NFCC receives RF data from the Tag, if
+successful.
+MF_SectorSel_REQ 0x32 Sector
+Address
+None None No T2T and MFU only: DH Sends the address of
+the Block to select.
+MF_SectorSel_RSP 0x32 N/A N/A N/A No T2T and MFU only: DH gets the “Sector Select”
+response status
+MFC_Authenticate_REQ 0x40 Sector
+Address
+Key
+Selector
+Key
+(optional)
+No DH asks NFCC to perform MFC Authenticate
+command.
+MFC_Authenticate_RSP 0x40 N/A N/A No DH gets the MFC Authenticate command status
+Table 49. List of REQuests and RESPonses
+All these REQs and RSPs are detailed in the next sections.
+7.1.7  [PN7160-NCI] extension: raw data exchange REQs and RSPs
+REQ_ID REQ Name Number of
+parameter(s)
+Presence
+of data Description
+0x10 XCHG_DATA_REQ 0 Yes MFC: DH sends Raw data to the NFCC, which
+encrypts them before sending them to MFC.
+T1T/T2T: DH sends Raw data to the NFCC, which
+forwards them in plain to the Tag.
+Table 50. XCHG_DATA_REQ
+RSP_ID RSP Name Presence
+of Data Description
+0x10 XCHG_DATA_RSP Yes MFC: DH gets Raw data once RF data from MFC are decrypted by the
+NFCC, if successful.
+T1T/T2T: DH gets Raw plain data once the NFCC receives RF data
+from the Tag, if successful. If the response from the MF tag in the field
+is an ACK or a NACK, the ACK/NACK is also sent back to the DH inside
+Table 51. XCHG_DATA_RSP
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+59 / 147

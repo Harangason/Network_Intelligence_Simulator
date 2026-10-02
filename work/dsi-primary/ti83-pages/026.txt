@@ -1,0 +1,81 @@
+Table 7-7. CSR Bit Field Definitions – LVDS Registers (continued)
+ADDRESS BIT DESCRIPTION DEFAULT ACCESS (1)
+5
+VS_NEG_POLARITY
+0 – VS is positive polarity driven 1 during corresponding sync conditions
+1 – VS is negative polarity driven 0 during corresponding sync (default)
+1 R/W
+4 Reserved. Do not write to this field. Must remain at default. 1 R/W
+3
+CHA_24BPP_MODE
+0 – Force 18 bpp; LVDS channel A lane 4 (A_Y3P or A_Y3N) is disabled
+(default)
+1 – Force 24 bpp; LVDS channel A lane 4 (A_Y3P or A_Y3N) is enabled
+0 R/W
+1
+CHA_24BPP_FORMAT1
+This field selects the 24 bpp data format
+0 – LVDS channel A lane A_Y3P or A_Y3N transmits the 2 MSB per color;
+format 2 (default)
+1 – LVDS channel A lane A_Y3P or A_Y3N transmits the 2 LSB per color;
+format 1
+Note1: This field must be 0 when 18bpp data is received from DSI.
+Note2: If this field is set to 1 and CHA_24BPP_MODE is 0, the SN65DSI83
+device will convert 24-bpp data to 18-bpp data for transmission to an 18-bpp
+panel. In this configuration, the SN65DSI83 device will not transmit the 2
+LSB per color on LVDS channel A, since LVDS channel A lane 4 is disabled.
+0 R/W
+0x19
+6
+CHA_LVDS_VOCM
+This field controls the common mode output voltage for LVDS channel A
+0 – 1.2 V (default)
+1 – 0.9 V (CSR 0x1B.5:4 CHA_LVDS_CM_ADJUST must be set to 01b)
+0 R/W
+3:2
+CHA_LVDS_VOD_SWING
+This field controls the differential output voltage for LVDS channel A. See the
+Electrical Characteristics table for |VOD| for each setting:
+00, 01 (default), 10, 11
+01 R/W
+0x1A
+5
+CHA_REVERSE_LVDS
+This bit controls the order of the LVDS pins for channel A.
+0 – Normal LVDS channel A pin order. LVDS channel A pin order is the same
+as listed in the Pin Assignments Section. (default)
+1 – Reversed LVDS channel A pin order. LVDS channel A pin order is
+remapped as follows:
+• A_Y0P → A_Y3P
+• A_Y0N → A_Y3N
+• A_Y1P → A_CLKP
+• A_Y1N → A_CLKN
+• A_Y2P → A_Y2P
+• A_Y2N → A_Y2N
+• A_CLKP → A_Y1P
+• A_CLKN → A_Y1N
+• A_Y3P → A_Y0P
+• A_Y3N → A_Y0N
+0 R/W
+1
+CHA_LVDS_TERM
+This bit controls the near end differential termination for LVDS channel A.
+This bit also affects the output voltage for LVDS Channel A.
+0 – 100-Ω differential termination
+1 – 200-Ω differential termination (default)
+1 R/W
+0x1B 5:4
+CHA_LVDS_CM_ADJUST
+This field can be used to adjust the common mode output voltage for LVDS
+channel A.
+00 – No change to common mode voltage (default)
+01 – Adjust common mode voltage down 3%
+10 – Adjust common mode voltage up 3%
+11 – Adjust common mode voltage up 6%
+00 R/W
+(1) R/O = Read only; R/W = Read/write; R/W1C = Read/write 1 to clear; W/O = Write only (reads return undetermined values)
+ 
+SN65DSI83
+SLLSEC1I – SEPTEMBER 2012 – REVISED OCTOBER 2020 www.ti.com
+26 Submit Document Feedback Copyright © 2020 Texas Instruments Incorporated
+Product Folder Links: SN65DSI83

@@ -1,0 +1,38 @@
+Figure 199. V2G-Split inverter architecture (ISO 15118-20)
+NOTE
+From an OCPP point of view the inverter architecture, V2G-AC or V2G-Split, is irrelevant. CSMS sends the DER
+controls to the Charging Station and does not need to know if the inverter is part of a DC Charging Station or AC
+Charging Station with V2G-AC or V2G-Split architecture.
+2.6. DER nameplate information
+The DER nameplate information is information about capabilities and make and model of the inverter. For a DC charging station
+this information can be provided by the CSO, who is aware of the station’s inverter capabilities. A CSO will either have this
+information based on the make and model of the charging station, or the CSO is able to request the data from the charging station
+by retrieving data about the AcDcConverter component of the EVSE in the charging station.
+When the ISO 15118-20 communication is established using the AC_BPT_DER service, the vehicle will send its inverter capabilities,
+including the manufacturer, model and version.
+The capabilities of the inverter of the EVSE do not have to match the capabilities of the vehicle. The combined capabilities of
+station and vehicle can only be given once the ISO 15118-20 ChargeParameterDiscovery process has completed. The results are
+sent to CSMS via the OCPP NotifyEVChargingNeedsRequest message.
+2.7. DER controls
+The behavior of a DER (i.e. charging station or EV inverter) can be controlled by so-called DER controls. These are settings with
+parameters to control active or reactive power, other settings, such as a specific power factor and ramp rates, and curves that
+control behavior.
+NOTE
+ISO 15118-20 sends a complete set of DER controls to the EV each time it requests to use the AC_BPT_DER
+service for AC bidirectional charging. This is because the EV is seen as a "new" DER resource that needs to be
+fully configured. Standards like IEEE 2030.5 and IEC 61850, however, allow a utility to submit or update individual
+controls. A utility might, for example, for the set of voltage trip curves that are installed on a DER, only update the
+overvoltage trip curve. This approach makes sense for static DER resources, such as solar panels and DC
+charging stations. OCPP messages are designed for controlling individual DER controls, because that is what
+utilities or aggregators are likely to provide. A charging station will group the set of active DER controls into a
+single message with voltage trip curves, frequency trip curves, reactive power support, etc. for sending to the EV.
+Power settings
+If a utility wishes to state (reactive) power setpoints or limits, this can be achieved via the CSO. Setting of active or reactive power
+setpoints via CSMS is already supported by OCPP charging profiles. No new messages towards charging station are needed to
+support this. Instead, a power setpoint or limit will be translated to an OCPP charging profile towards the stations.
+Parameter settings
+Other control settings, such as a fixed power factor, frequency droop, are transferred to the charging station via a
+SetDERControlRequest message. The settings can be scheduled with a start time and duration. The currently active settings can be
+retrieved with a GetDERControlRequest message.
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 543/803 Part 2 - Specification

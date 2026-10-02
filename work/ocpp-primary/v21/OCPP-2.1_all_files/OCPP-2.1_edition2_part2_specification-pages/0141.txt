@@ -1,0 +1,72 @@
+C17 - EV Driver Authorization using prepaid card - Requirements
+Table 59. C17 - Requirements
+ID Precondition Requirement definition Note
+C17.FR.01 CSMS receives an AuthorizeRequest
+for an idToken that is valid and
+associated with a prepaid account
+that has a positive balance
+CSMS SHALL respond with an AuthorizeResponse
+with idTokenInfo with status = Accepted and
+cacheExpiryDateTime set to current date/time.
+Prepaid token is not
+allowed to remain in the
+local authorization
+cache.
+C17.FR.02 CSMS receives an AuthorizeRequest
+for an idToken that is valid and
+associated with a prepaid account
+that does not have a positive balance
+CSMS SHALL respond with an AuthorizeResponse
+with idTokenInfo that has status = NoCredit and
+cacheExpiryDateTime set to current date/time.
+Prepaid token is not
+allowed to remain in the
+local authorization
+cache.
+C17.FR.03 CSMS receives an
+TransactionEventRequest with an
+idToken that is valid and associated
+with a prepaid account that has a
+positive balance
+CSMS SHALL include (only one time) the field
+transactionLimit.maxCost, set to the maximum
+amount that may be spent, in the
+TransactionEventResponse
+See also E16 -
+Transactions with fixed
+cost, energy, SoC or time.
+C17.FR.04 C17.FR.01 Charging Station SHALL offer energy Authorization status of
+idToken is Accepted.
+See also C01 - EV Driver
+Authorization using RFID.
+C17.FR.05 C17.FR.02 Charging Station SHALL NOT offer energy Authorization status of
+idToken is NOT
+Accepted. See also C01
+- EV Driver Authorization
+using RFID.
+NOTE Other requirements from C. Authorization also apply, notably C01 - EV Driver Authorization using RFID
+2.9. Ad hoc payments
+Ad hoc payment or direct payment refers to payment of a charging sesssion with a debit or credit card. This requires a built-in or
+stand-alone payment terminal or site from a payment service provider (PSP) that the user can access with a mobile device. The
+payment terminal is a secure, closed box, that has its own secure connection to a payment service provider (PSP).
+Integrated payment terminals
+Most use cases in this chapter are about an integrated payment terminal that is part of the Charging Station and provides
+authorization for a valid payment card to start a charging session. The payment terminal provides an API to communicate internally
+with the Charging Station. These are proprietary APIs that are not described in this document. The payment terminal requests
+authorization of the payment card via its own direct connection to the PSP.
+The use cases C18 - Authorization using locally connected payment terminal to C23 - Increasing authorization amount describe ad
+hoc payment via an integrated payment terminal.
+Stand-alone payment terminals
+The payment terminal can also be a separate unit that is serving several Charging Stations. The latter is called a stand-alone
+payment terminal or payment kiosk in this specification, because it has no direct connection with the Charging Station(s). Once a
+payment card has been authorized, the stand-alone payment terminal will instruct CSMS to remotely start a charging transaction on
+a specified Charging Station.
+This scenario is described in use case C24 - Ad hoc payment via stand-alone payment terminal. The interface between a stand-
+alone payment terminal and CSMS is not described in this specification, because it is not related to Charging Station
+communication.
+Ad hoc via QR code
+Charging Station that do not have an integrated or stand-alone payment terminal can still support ad hoc payment via a payment
+website. A common approach for this is to show a QR code on the Charging Station that provides the URL of the payment website,
+which the user can access using a mobile device. Once payment details are entered and validated, CSMS remotely starts a charging
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 128/803 Part 2 - Specification

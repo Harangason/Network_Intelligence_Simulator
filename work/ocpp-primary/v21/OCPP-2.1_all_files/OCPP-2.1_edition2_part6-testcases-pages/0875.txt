@@ -1,0 +1,55 @@
+TC_Q_128_CS: Going offline during V2X operation - invalidAfterOfflineDuration =
+true
+Test case name Going offline during V2X operation - invalidAfterOfflineDuration = true
+Test case Id TC_Q_128_CS
+Use case Id(s) Q11, K01
+Requirement(s) K01.FR.101, K01.FR.102, K01.FR.103
+System under test Charging Station
+Description To describe the amount of time that V2X operations may continue when the Charging Station is offline.
+Purpose To verify if the Charging station stops using the charging profile when Charging station is longer offline
+than specified in the charging profile’s maxOfflineDuration.
+Prerequisite(s) - EV and charging station support ISO15118-20 or CHAdeMO
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+IF <Configured EVProtocol> is CHAdeMO THEN
+State is Authorized
+State is EVConnectedPreSession
+ELSE IF <Configured EVProtocol> is ISO15118 THEN
+State is Iso1511820V2xControlBpt
+State is EVConnectedPreSession
+State is Authorized15118 (for 15118-20)
+END IF
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+Note(s):
+- This step is applicable if <Configured EVProtocol> is ISO15118
+and is captured by Authorized15118 (for 15118-20), but validated
+on testcase level.
+2. Test System responds with a
+NotifyEVChargingNeedsResponse with
+status Accepted
+4. The Charging Station responds with a
+SetChargingProfileResponse
+3. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.id <Configured chargingProfileId>
+chargingProfile.stackLevel 0
+chargingProfile.chargingProfilePurpose TxDefaultProfile
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].s
+tartPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].s
+etpoint -6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].n
+umberPhases <Configured numberPhases>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 873/1383 Part 6 - Test Cases

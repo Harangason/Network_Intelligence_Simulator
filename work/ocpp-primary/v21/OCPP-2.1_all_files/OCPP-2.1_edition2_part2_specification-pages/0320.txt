@@ -1,0 +1,36 @@
+Chapter 3. Use cases & Requirements
+3.1. MeterValues
+J01 - Sending Meter Values not related to a transaction
+No. Type Description
+1 Name Sending Meter Values not related to a transaction
+2 ID J01
+3 Objective(s) To sample the electrical meter or other sensor/transducer hardware to provide information about
+the Charging Stations' Meter Values.
+4 Description The Charging Station samples the electrical meter or other sensor/transducer hardware to
+provide information about its Meter Values. Depending on configuration settings, the Charging
+Station will send Meter Values.
+Actors Charging Station, CSMS
+Scenario description 1. The Charging Station sends a MeterValuesRequest message, for offloading Meter Values to
+the CSMS.
+2. Upon receipt of a MeterValuesRequest message, the CSMS responds with a
+MeterValuesResponse message.
+5 Prerequisite(s) The Charging Station is configured to send Meter values every XX seconds.
+No transaction is running.
+6 Postcondition(s) Successful postcondition:
+n/a
+Failure postcondition:
+n/a
+7 Error handling n/a
+8 Remark(s) The phase field is not applicable to all Measurands.
+The phase rotation of a Connector relative to the grid connection can be derived by querying the
+PhaseRotation Configuration Variables of all components in the chain from grid connection up
+to Connector.
+The nature of each sampledValue is determined by the optional Measurand, context, location, unit
+and phase fields.
+The optional SignedMeterValue field can contain digitally signed binary meter value data.
+Charging Station CSMS
+MeterValuesRequest(evseId, meterValue)
+MeterValuesResponse()
+Figure 113. Sequence Diagram: Sending Meter Values
+Edition 2, 2025-12-03 J. Meter Values
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 307/803 Part 2 - Specification

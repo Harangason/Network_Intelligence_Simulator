@@ -1,0 +1,54 @@
+TC_H_14_CS: Reserve an unspecified EVSE - Amount of EVSEs available equals the
+amount of reservations
+Test case name Reserve an unspecified EVSE - Amount of EVSEs available equals the amount of reservations
+Test case Id TC_H_14_CS
+Use case Id(s) H01(S1)
+Requirement(s) H01.FR.20
+System under test Charging Station
+Description The CSMS is able to reserve an unspecified EVSE for a specific IdToken by sending a ReserveNowRequest
+without an evseId.
+Purpose To verify if the Charging Station is able to set all available EVSE to reserved, when the amount of EVSEs
+available equals the amount of reservations.
+Prerequisite(s) - The configuration variable ReservationCtrlr.ReservationAvailable is implemented with value true
+- The Charging Station has the configuration variable ReservationNonEvseSpecific implemented with value
+true
+Before (Preparations)
+Configuration State:
+ReservationCtrlr.ReservationEnabled is true (If implemented)
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ReserveNowResponse
+1. The Test System sends a ReserveNowRequest
+with evseId is Omitted
+idToken is <A different idToken for every reservation being made>
+Note(s):
+- This step will be executed the amount of times equal to the
+amount of EVSE the Charging Station has.
+3. The Charging Station notifies the CSMS about the current
+state of all its connectors (and optionally also the state of all
+EVSE).
+4. The Test System responds accordingly.
+Tool validations
+* Step 2:
+Message: ReserveNowResponse
+- status must be Accepted
+* Step 3:
+Message: StatusNotificationRequest
+- connectorStatus must be Reserved
+Message: NotifyEventRequest
+- eventData[0].trigger must be Delta
+- eventData[0].actualValue must be Reserved
+- eventData[0].component.name must be Connector
+- eventData[0].variable.name must be AvailabilityState
+(Optional)
+Message: NotifyEventRequest
+- eventData[0].trigger must be Delta
+- eventData[0].actualValue must be Reserved
+- eventData[0].component.name must be EVSE
+- eventData[0].variable.name must be AvailabilityState
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 293/914 Part 6 - Test Cases

@@ -1,0 +1,49 @@
+TC_N_43_CS: Set Variable Monitoring - First SetMonitoringData and third
+SetMonitoringData are valid, but the second contains an out of range value
+Test case name Set Variable Monitoring - First SetMonitoringData and third SetMonitoringData are valid, but the second
+contains an out of range value
+Test case Id TC_N_43_CS
+Use case Id(s) N04
+Requirement(s) N/a
+System under test Charging Station
+Description This test case describes how the CSMS requests the Charging Station to set monitoring triggers on
+Variables. Multiple triggers can be set for upper or lower thresholds, delta changes or periodic reporting.
+Purpose To verify if the Charging station is able to correctly respond when one of requested variable monitor data is
+out of range replace as described at the OCPP specification.
+Prerequisite(s) Charging Station supports Monitoring
+This test case assumes the Charging Station has a numeric Component Variable <Configured numeric delta
+component variable> and numeric Component Variable <Configured threshold monitor component variable>.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetVariableMonitoringResponse
+1. The Test System sends a SetVariableMonitoringRequest with
+- setMonitoringData[0].component = <Configured threshold
+monitor component variable>
+- setMonitoringData[0].variable = <Configured threshold monitor
+component variable>
+- setMonitoringData[0].value = <Configured threshold monitor
+component variable UpperThreshold trigger value>
+- setMonitoringData[0].type = UpperThreshold
+- setMonitoringData[1].component = <Configured numeric delta
+component variable>
+- setMonitoringData[1].variable = <Configured numeric delta
+component variable>
+- setMonitoringData[1].value = -1.0
+- setMonitoringData[1].type = Delta
+- setMonitoringData[2].component = <Configured threshold
+monitor component variable>
+- setMonitoringData[2].variable = <Configured threshold monitor
+component variable>
+- setMonitoringData[2].value = <Configured threshold monitor
+component variable LowerThreshold trigger value>
+- setMonitoringData[2].type = LowerThreshold
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 727/1383 Part 6 - Test Cases

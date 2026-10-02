@@ -1,0 +1,51 @@
+TC_Q_125_CSMS: Idle operationMode - Idle, minimizing energy consumption - Idle
+with EvseSleep
+Test case name Idle operationMode - Idle, minimizing energy consumption - Idle with EvseSleep
+Test case Id TC_Q_150_CS
+Use case Id(s) Q10
+Requirement(s) Q10.FR.01
+System under test CSMS
+Description To request the EV to not perform any charging or discharging. Preconditioning of the vehicle is allowed.
+Purpose To verify that the CSMS is able to send a Charging Profile which Minimizes the energy consumption.
+Prerequisite(s) - CSMS supports ISO15118-20
+- CS supports V2XChargingCtrlr.V2XSupportedOperationModes containing Idle
+- CS supports SmartChargingCtrlr.SupportsFeature[EvseSleep] = true
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State ISO15118-20 transaction started in V2X AC_BPT energy transfer mode
+Without EVSE sleeping
+Manual action: trigger CSMS to set a TxProfile Charging Profile with chargingSchedulePeriod with operationMode Idle and evseSleep
+false
+3. The Test System responds with a
+SetChargingProfileResponse with
+status must be Accepted
+2. The CSMS the sends a SetChargingProfileRequest
+4. The Test System sends a TransactionEventRequest with
+eventType Updated
+triggerReason OperationModeChanged
+transactionInfo.transactionId <transactionId>
+transactionInfo.operationMode Idle
+evseSleep false
+5. The CSMS responds with a TransactionEventResponse
+With EVSE sleeping
+Manual action: trigger CSMS to set a TxProfile Charging Profile with chargingSchedulePeriod with operationMode Idle and evseSleep
+true
+7. The Test System responds with a
+SetChargingProfileResponse
+6. The CSMS the sends a SetChargingProfileRequest
+8. The Test System sends a TransactionEventRequest with
+eventType Updated
+triggerReason MeterValuePeriodic
+transactionInfo.transactionId <transactionId>
+transactionInfo.operationMode Idle
+evseSleep true
+9. The CSMS responds with a TransactionEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1357/1383 Part 6 - Test Cases

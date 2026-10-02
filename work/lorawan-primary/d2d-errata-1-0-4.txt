@@ -1,0 +1,130 @@
+PAGE1
+ 
+ERRATA Allow Downlink TransmissionsThe LoRa Alliance © 2021 1 
+ 
+ 
+CHANGE REQUEST 
+ 
+LoRaWAN Link Layer specification version 1.0.4 Reference 
+doc. ID 
+ 
+causeway doc nb 
+CR Title: • ERRATA Allow Downlink 
+Transmissions 
+• Revision 1 
+starts from 1 
+Source: Senet, Inc. (Dave Kjendal – dkjendal@senetco.com) 
+ 
+Topic or 
+Working Group: 
+TC Date: 2022-10-17 
+ 
+Category: E    
+ E (errata) 
+F (correction) 
+A (corresponds to a correction in an 
+earlier release) 
+B (feature addition) 
+C (functional modification of a feature) 
+D (editorial modification / clarification) 
+ 
+Reason for 
+change: 
+Remove the mistaken prohibition of end-devices from sending downlink frames 
+ 
+Summary of 
+change: 
+Removal of prohibition 
+ 
+Clauses 
+affected: 
+3.2 Downlink Frames 
+4.3.1.5 Frame Counter (FCnt) 
+9.3 Downlink Ping Frames 
+ 
+Affected clauses 
+with impact on 
+certification test: 
+None 
+ please note whether clause modification leads to (new) or (modified) test 
+
+PAGE2
+ 
+ERRATA Allow Downlink TransmissionsThe LoRa Alliance © 2021 2 
+ 
+Other 
+deliverables 
+affected: 
+ 
+ 
+ 
+ 
+1. Discussion 
+The description of downlink is overly restrictive, but not normative.  Clarify to remove the 
+restriction which imply that D2D is prohibited (same text as 1.2.0).  Relax other prohibitions. 
+2. Proposed changes (normative/informative) 
+ 
+ 
+************************ Start of proposed change for 3.2 ************************* 
+3.2 Downlink Messages 
+Downlink packets are sent to one or more end -devices, typically transmitted by a Network 
+Server through one or more gateways. 
+Each downlink message is sent by the Network Server to only one end-device and is relayed by a 
+single gateway.1 
+ 
+************************* End of proposed change for 3.2 **************************** 
+4.3.1.5 Frame counter (FCnt) 
+There are two frame counters for each end-device.  FCntUp is incremented by an end-device 
+when a data frame is transmitted to a Network Server (uplink).  FCntDown is incremented by 
+a Network Server when a data frame is transmitted to an end-device (downlink). The Network 
+Server tracks the uplink frame counter an d generates the downlink counter for each end -
+device.  
+Whenever an OTAA end -device successfully processes a Join -Accept frame, the frame 
+counters on the end-device (FCntUp) and the Network side (FCntDown) are reset to 0. 
+For ABP (activation by personalization) end-devices, the frame counters are initialized to 0 by 
+the manufacturer. ABP end -devices SHALL NOT reset the frame counters during the end -
+device’s lifetime. If the end -device is susceptible to losing power during its lifetime (battery 
+replacement, for example), the frame counters SHALL persist during such an event. 
+Subsequently, FCntUp is incremented with each uplink and FCntDown is incremented with 
+each downlink. At the receiver side, the corresponding counter is kept in sync with the received 
+value, provided the received value has been incremented compared to the current counter 
+value, and the frame MIC field matches the MIC value computed locally using the appropriate 
+network session key. FCntUp SHALL NOT be incremented in the case of multiple 
+transmissions of a confirmed or unconfirmed frame (see NbTrans parameter). Network 
+Servers SHALL drop the application payload of the retransmitted frames and only forward a 
+single instance to the appropriate Application Server. 
+A first uplink with FCntUp=0 sent by an ABP or an OTAA end-device after a successful Join 
+procedure SHALL be accepted by a Network Server, provided the MIC field is valid. 
+ 
+1 This specification does not describe the transmission of multicast messages from a network server to many 
+end-devices. 
+Commented [DK1]: Remove footnote, it is incorrect (says 
+we don’t describe multicast, but we do) 
+
+PAGE3
+ 
+ERRATA Allow Downlink TransmissionsThe LoRa Alliance © 2021 3 
+ 
+Analogously, a first downlink with FCntDown=0 sent by a Network Server to an ABP or an 
+OTAA end-device after a succe ssful Join procedure SHALL be accepted by the end -device, 
+provided the MIC field is valid. 
+Frame counters are 32 bits wide. The FCnt field SHALL correspond to the least-significant 16 
+bits of the 32-bit frame counter (i.e., FCntUp for data frames sent uplink and FCntDown for 
+data frames sent downlink). 
+The end -device SHALL NOT reuse the same FCntUp value with the same application or 
+network session keys, except for retransmission. 
+The end-device SHALL NOT process any retransmission of the same downlink frame. 
+Subsequent retransmissions SHALL be ignored without being processed. 
+ 
+************************ Start of proposed change for 9.3 ************************* 
+9.3 Downlink Ping Frames 
+A downlink ping frame uses the same format as a  Class A downlink frame but might follow a 
+different channel frequency or data rate plan. 
+ 
+Frames can be unicast or multicast. Unicast frames are sent to a single end -device, whereas 
+multicast frames are sent to multiple end-devices. All end-devices of a multicast group SHALL 
+share the same multicast address and associated encryption keys. A Cla ss B-capable end-
+device SHALL support at least one multicast  group and an end-device SHALL NOT transmit 
+using a multicast address. 
+************************* End of proposed change for 9.3  **************************** 
+ 

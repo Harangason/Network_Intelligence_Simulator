@@ -1,0 +1,45 @@
+ID. Precondition Requirements
+I06.FR.03 I06.FR.02 The Charging Station SHALL display the updated tariff
+information to the EV Driver.
+I07 - Local Cost Calculation - Set Default Tariff
+New in OCPP 2.1
+No. Type Description
+1 Name Local Cost Calculation - Set Default Tariff
+2 ID I07
+3 Objective(s) To set the default tariff on the charging station, for example for ad hoc charging, or when there is
+no driver-specific tariff.
+4 Description CSMS provides a tariff structure that Charging Station must use to calculate the cost.
+This use case assumes a Charging Station with 4 EVSEs.
+Actors Charging Station, CSMS, EV Driver
+Scenario description Same tariff for all 4 EVSEs
+1. CSMS sends SetDefaultTariffRequest to Charging Station with evseId = 0 (to install at all
+EVSEs) and a tariff with tariffId = "Tariff1" that describes the tariff structure Tariff1.
+2. Charging Station responds with SetDefaultTariffResponse to CSMS with status =
+Accepted.
+3. Charging Station displays tariff description, tariff.description on display for all 4 EVSEs.
+Scenario description #2 Same tariff for all EVSEs, except #4
+1. CSMS sends SetDefaultTariffRequest to Charging Station with evseId = 0 (to install at all
+EVSEs) and a tariff with tariffId = "Tariff1" that describes the Tariff1 structure for all
+EVSEs.
+2. Charging Station responds with SetDefaultTariffResponse to CSMS with status =
+Accepted.
+3. CSMS sends SetDefaultTariffRequest to Charging Station with evseId = 4 (install only at
+EVSE #4) and a tariff with tariffId = "Tariff2" that describes the Tariff2 structure that
+replaces the previously installed Tariff1.
+4. Charging Station responds with SetDefaultTariffResponse to CSMS with status =
+Accepted.
+5. Charging Station displays Tariff1 description on display for EVSE #1, #2 and #3.
+6. Charging Station displays Tariff2 description on display for EVSE #4.
+Scenario description #3 Update a default tariff
+1. CSMS sends SetDefaultTariffRequest to Charging Station for evseId = 0 with a tariff with
+tariffId = "Tariff3" and validFrom set to tomorrow 0:00h that describes the new tariff
+structure Tariff3 to become valid tomorrow.
+2. Charging Station responds with SetDefaultTariffResponse to CSMS with status =
+Accepted.
+3. At tomorrow 0:00h the new Tariff3 will become active and replace the existing default
+tariffs on all EVSEs.
+5 Prerequisites Charging Station supports local cost calculation
+6 Postcondition(s)
+7 Error Handling
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 283/803 Part 2 - Specification

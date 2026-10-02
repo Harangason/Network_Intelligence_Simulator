@@ -1,0 +1,36 @@
+TC_C_104_CS: Authorization with prepaid card - no credit
+Test case name Authorization with prepaid card - no credit
+Test case Id TC_C_104_CS
+Use case Id(s) C17
+Requirement(s) C17.FR.05
+System under test CS
+Description This test case verifies if the CS communicates the transaction limits correctly.
+Purpose To verify that the Charging Station is able to handle when a prepaid card has no credit.
+Prerequisite(s) - Prepaid card is available.
+- TxCtrlr.SupportedLimits contains MaxCost
+Before
+(Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main
+(Test scenario)
+Charging Station CSMS
+Manual Action: EV driver presents prepaid card
+1. The CS sends a AuthorizeRequest
+2. The Test System responds with an AuthorizeResponse with
+- idTokenInfo.status NoCredit
+- idTokenInfo.cacheExpiryDateTime <current date/time>
+Tool validations
+* Step 1:
+Message AuthorizeRequest
+idToken.idToken <prepaid card id>
+idToken.type = "ISO14443" or "ISO15693"
+Post scenario validations:
+- The Charging Station must not send a TransactionEventRequest, unless TxStartPoint contains ParkingBayOccupancy.
+- The Charging Station must not offer energy to the EV.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 186/1383 Part 6 - Test Cases

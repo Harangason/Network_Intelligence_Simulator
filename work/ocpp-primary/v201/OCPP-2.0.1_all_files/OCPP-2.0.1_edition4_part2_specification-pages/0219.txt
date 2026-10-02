@@ -1,0 +1,82 @@
+ID Precondition Requirement definition Note
+H01.FR.14 When receiving a ReserveNowRequest
+AND (all) targeted EVSEs have status
+Unavailable
+The Charging Station SHALL return Unavailable.
+H01.FR.15 If a transaction for the reserved
+IdTokenType is started.
+The Charging Station SHALL send the reservationId
+in a TransactionEventRequest.
+To notify the CSMS that
+the reservation is
+terminated. See E.
+Transactions.
+H01.FR.16 When the status of a targeted EVSE
+changes to Faulted
+The Charging Station SHALL cancel the reservation
+AND send a ReservationStatusUpdate with status
+Removed.
+H01.FR.17 When the status of a targeted EVSE
+changes to Unavailable
+The Charging Station SHALL cancel the reservation
+AND send a ReservationStatusUpdate with status
+Removed.
+H01.FR.18 If the Configuration Variable:
+ReservationNonEvseSpecific is
+set to true.
+The Charging Station SHALL accept reservations
+on an unspecified EVSE.
+H01.FR.19 If the Configuration Variable:
+ReservationNonEvseSpecific is
+not set or set to false.
+The Charging Station SHALL reject reservations on
+an unspecified EVSE.
+H01.FR.20 H01.FR.04
+AND
+amount of EVSEs available equals the
+amount of reservations
+The Charging Station SHALL send for all
+connectors of the EVSE:
+- a NotifyEventRequest with component =
+"Connector", variable = "AvailabilityState", trigger =
+"Delta", actualValue = "Reserved", OR
+- a StatusNotificationRequest with connectorStatus
+= Reserved.
+If an EVSE is reserved, all
+of its connectors are
+reported as reserved.
+H01.FR.23 If the Charging Station receives a
+ReserveNowRequest for evseId
+AND this EVSE is Available
+The Charging Station SHALL respond with a
+ReserveNowResponse with status Accepted AND
+SHALL send for all connectors of the EVSE:
+- a NotifyEventRequest with component =
+"Connector", variable = "AvailabilityState", trigger =
+"Delta", actualValue = "Reserved" OR
+- a StatusNotificationRequest with connectorStatus
+= Reserved.
+If an EVSE is reserved, all
+of its connectors are
+reported as reserved.
+H01.FR.24 H01.FR.06
+AND
+amount of reservations for a specific
+connectorType equals the amount of
+available EVSEs with that specific
+connectorType
+The Charging Station SHALL send for all
+connectors of the EVSEs that have the specific
+connectorType
+- a NotifyEventRequest with component =
+"Connector", variable = "AvailabilityState", trigger =
+"Delta", actualValue = "Reserved" OR
+- a StatusNotificationRequest with connectorStatus
+= Reserved.
+If an EVSE is reserved for
+a specific connectorType,
+all connectors on the
+EVSE are reported as
+reserved.
+Edition 4, 2025-12-03 H. Reservation
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 209/491 Part 2 - Specification

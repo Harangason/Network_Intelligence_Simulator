@@ -1,0 +1,28 @@
+Tool validations
+* Step 4:
+Configured EVSE/Connector:
+Message: StatusNotificationRequest
+- evseId <Configured evseId>
+- connectorId <Configured connectorId>
+- for the connector involved in the transaction: connectorStatus Occupied
+- for other connectors of the same EVSE: connectorStatus Available or Unavailable
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+- eventData[0].evse.id <Configured evseId>
+- eventData[0].connectorId <Configured connectorId>
+- for the connector involved in the transaction: eventData[0].actualValue Occupied
+- for other connectors of the same EVSE: eventData[0].actualValue Available or Unavailable
+All other EVSE/Connector(s):
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Available"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 84/1383 Part 6 - Test Cases

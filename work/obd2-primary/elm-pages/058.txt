@@ -1,0 +1,97 @@
+58 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+can directly request PGNs using numbers as they are
+written on the page (if they are written as hex digits),
+and the ELM327 will make it work for you. If you do not
+want the ELM327 to alter the byte order, the feature
+can be disabled (by sending an AT JS command).
+The ELM327 always assumes that when you start
+making requests of this type, you do not know what
+devices are connected to the J1939 bus. That is, by
+default the ELM327 sends all requests to the 'global
+address' (ie all devices), and then looks for replies.
+Often, this works well, but J1939 devices are not
+required to respond to such general inquiries, and may
+not if they are busy. For this reason, it is usually better
+to direct your queries to a specific address, once it is
+known.
+In order to determine the address to send to, you
+may have to monitor the information on the bus for a
+while. Make sure that the headers (ID bits) are being
+displayed, and note what is shown in the Source
+Address position, which is immediately before the data
+bytes. In the previous example, this would be 00
+(which J1939 defines as the address for engine #1).
+As an example, let us assume that it is engine #1 that
+you wish to direct your queries to. To do this, you will
+want to change the Destination Address from FF (the
+global address) to 00 (engine #1).
+By default, the ELM327 uses 6 0EAFF F9 for the
+ID bits of all requests (or 18 EA FF F9 if you prefer).
+That is, it uses a priority of 6, to make a request (EA)
+to the global address (FF) by the device at F9 (the
+scan tool). An EA request is often referred to as a
+request using PGN 59904 as the address EA00 in hex
+is 59904 in decimal.
+Since you only wish to alter the EAFF F9 portion
+of the ID bits and not the priority, you may do this with
+the three byte ‘set header’ command:
+>AT SH EA 00 F9
+The priority bits rarely need to be changed, but if
+you do need to change them, it may be done with the
+CAN Priority (AT CP) command.
+After making the above change, all data requests
+will be directed to address 00 (the engine), so don’t
+forget to change the headers if you wish to again make
+global requests.  Note that the AT SH command allows
+you to change the source (or tester) address at will, so
+be careful with this as addresses should really be
+negotiated using the method described in J1939-81
+and you might conceivably choose an address that is
+already in use. The current version of the ELM327
+does not support J1939-81 address negotiation, so
+can not obtain an address for you.
+Once the ELM327 has been configured to send all
+messages to address 00, repeat the request:
+>00FEEE
+6 0E8FF 00 01 FF FF FF FF EE FE 00
+This response is of the ‘acknowledgement’ type
+(E8), which is being broadcast to all (FF) by the device
+with address 00. The last three data bytes show the
+PGN requested, in reverse byte order, so we know this
+is a response to our request. Looking at the other data
+bytes, the first is not 00 (which we would expect for a
+positive acknowledgement), it is 01 which means
+negative acknowledgement. Since all requests to a
+specific address must be responded to, the device at
+address 00 is responding by saying that it is not able
+to respond. That is, retrieve the information using the
+MP command.
+If the ECU had been able to reply to the request,
+the format of the response would have been slightly
+different. For example, if a request for engine run time
+(PGN 00FEE5) had been made, the response might
+have been like this:
+>00FEE5
+6 0FEE5 00 80 84 1E 00 FF FF FF FF
+Notice that the PGN appears in the header for
+these types of replies, and the data bytes are those
+defined for the SPNs in the PGN.
+All responses to a request are printed by the
+ELM327, whether they are a single CAN message, or
+a multisegment transmission as defined by the
+transport protocol (J1939-21). If the responses are
+multisegment, the ELM327 handles all of the
+negotiation for you. As an example, a multisegment
+response to a DM2 request might look like this:
+>00FECB
+012
+7 0EBF9 00 01 04 FF 50 00 04 0B 54
+7 0EBF9 00 02 00 00 01 5F 05 02 31
+7 0EBF9 00 03 6D 05 03 03 FF FF FF
+if the headers are on, and would appear as:
+>00FECB
+012
+01: 04 FF 50 00 04 0B 54
+Using J1939 (continued)

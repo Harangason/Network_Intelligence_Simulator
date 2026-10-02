@@ -1,0 +1,37 @@
+TC_J_08_CS: Sampled Meter Values - Context Transaction.Begin - EVSE not known
+Test case name Sampled Meter Values - Context Transaction.Begin - EVSE not known
+Test case Id TC_J_08_CS
+Use case Id(s) J02 & (E01,E02,E03,E09,E04,E05)
+Requirement(s) J02.FR.01, J02.FR.02, J02.FR.03, J02.FR.04, J02.FR.10, E01.FR.16, E01.FR.17, E03.FR.11, E04.FR.11,
+E05.FR.08
+System under test Charging Station
+Description The Charging Station samples the electrical meter or other sensor/transducer hardware to provide
+information about its Meter Values. Depending on configuration settings, the Charging Station will send
+Meter Values.
+Purpose To verify if the Charging Station sends Meter Values for Transaction.Begin as soon as the EVSE to be used
+is known, for a transaction that starts before the cable is plugged in.
+Prerequisite(s) - The Charging Station has an energy meter.
+- The Charging Station does NOT have the following configuration; TxStartPoint does NOT contain
+ParkingBayOccupancy OR Authorized.
+Before (Preparations)
+Configuration State:
+TxStartPoint contains Authorized
+Note: TxStartPoint contains Authorized AND/OR ParkingBayOccupancy (At least one of these values must be set).
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State EnergyTransferStarted
+Tool validations
+N/a
+Post scenario validations:
+- The first TransactionEventRequest containing a value for evse, sent during the execution of reusable state
+EVConnectedPreSession contains the MeterValue field with:
+- sampledValue[0].context must be Transaction.Begin
+- sampledValue must contain <An element per configured measurand at the SampledDataTxStartedMeasurands. The measurand
+field may be omitted when the measurand is "Energy.Active.Import.Register">
+- None of the provided sampledValues shall have location = EV, except when measurand = SoC.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 322/914 Part 6 - Test Cases

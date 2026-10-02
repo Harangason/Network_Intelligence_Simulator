@@ -1,0 +1,120 @@
+ID Precondition Requirement definition Note
+K01.FR.57
+(2.1)
+K01.FR.56 Charging Station SHOULD report the duration after which
+a next update will be accepted, in field
+statusInfo.additionalInfo as "<xx> seconds before retry"
+<xx> is the number of
+seconds after which the
+next
+SetChargingProfileRequest
+is allowed.
+K01.FR.58
+(2.1)
+K01.FR.56 CSMS MAY retry the SetChargingProfileRequest if still
+applicable
+K01.FR.59
+(2.1)
+K01.FR.57 CSMS IS RECOMMENDED to use at least the number of
+seconds in statusInfo.additionalInfo as a delay before
+retrying
+This will avoid unnecessary
+rejections
+K01.FR.60 Only when
+chargingProfileKind of a
+ChargingProfile is
+Recurring
+A value for recurrencyKind SHALL be supplied in the
+ChargingProfile.
+K01.FR.61 A transaction is ongoing
+AND Charging rate changed
+by more than:
+LimitChangeSignificance
+The Charging Station MAY send a
+TransactionEventRequest message to the CSMS with
+triggerReason = ChargingRateChanged
+In the case of an External
+control system influencing
+the charging rate, the
+Charging Station SHALL
+send a
+TransactionEventRequest
+message to the CSMS with
+triggerReason =
+ChargingRateChanged (see
+K11.FR.04 and K13.FR.03)
+PriorityCharging
+K01.FR.70
+(2.1)
+Charging Station receives a
+SetChargingProfileRequest
+with chargingProfilePurpose
+= PriorityCharging and
+a chargingSchedule that has
+a value for duration
+Charging Station responds with
+SetChargingProfileResponse with status = Rejected
+and an optional reasonCode = "InvalidSchedule"
+A PriorityCharging
+profile cannot have a
+duration. It lasts until end of
+transaction, unless it is
+explicitly ended by EV Driver
+at the Charging Station or
+via a request to CSMS.
+K01.FR.71
+(2.1)
+Charging Station receives a
+SetChargingProfileRequest
+with chargingProfilePurpose
+= PriorityCharging and
+an operationMode that is
+not ChargingOnly
+Charging Station responds with
+SetChargingProfileResponse with status = Rejected
+and an optional reasonCode = "InvalidSchedule"
+A PriorityCharging
+profile must only support
+charging.
+K01.FR.72
+(2.1)
+CSMS SHALL support sending a
+SetChargingProfileRequest with chargingProfilePurpose =
+PriorityCharging.
+K01.FR.73
+(2.1)
+CSMS SHALL NOT add a duration to a chargingSchedule
+in a chargingProfile with chargingProfilePurpose =
+PriorityCharging.
+Max External Constraints Id
+K01.FR.80
+(2.1)
+When configuration variable
+MaxExternalConstrain
+tsId is set
+CSMS SHALL choose a value for the id of a
+ChargingProfileType that is higher than
+MaxExternalConstraintsId.
+This ensures there will not
+be a conflict with charging
+profile id’s generated at
+Charging Station to
+represent
+ChargingStationExter
+nalConstraints profiles.
+K01.FR.81
+(2.1)
+When configuration variable
+MaxExternalConstrain
+tsId is set AND
+Charging Station receives a
+SetChargingProfileRequest
+with a chargingProfile.id
+that is less or equal to
+MaxExternalConstrain
+tsId
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and add a statusInfo with reasonCode = "InvalidProfileId"
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 334/803 Part 2 - Specification

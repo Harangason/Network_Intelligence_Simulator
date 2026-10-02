@@ -1,0 +1,46 @@
+duration 86400 (= 24 hours)
+startSchedule 2013-01-01T00:00Z
+chargingRateUnit W
+chargingSchedulePeriod (List of 3 ChargingSchedulePeriod elements)
+ChargingSchedulePeriod
+startPeriod 0 (=00:00)
+limit 11000
+numberPhases 3
+ChargingSchedulePeriod
+startPeriod 28800 (=08:00)
+limit 6000
+numberPhases 3
+ChargingSchedulePeriod
+startPeriod 72000 (=20:00)
+limit 11000
+numberPhases 3
+IMPORTANT
+The amount of phases used during charging is limited by the capabilities of: The Charging Station, EV and
+Cable between CS and EV. If any of these three is not capable of 3 phase charging, the EV will be charged
+using the number of phases that is supported by all three.
+IMPORTANT
+Switching the number of used phases during a schedule or transaction should be done with care. Some
+EVs MAY not support this and changing the amount of phases MAY result in physical damage. With the
+Configuration Variable: Phases3to1 The Charging Station can tell if it supports switching the amount of
+phases during a transaction.
+TIP On days on which daylight saving goes into or out of effect, a special profile might be needed (e.g. for relative
+profiles).
+3.7.1. Example Using Stacked Charging Profiles
+A CSO wishes to limit charging to 2 kW during the peak hours of the day from 17:00h to 20:00h. This limit does not apply to
+Sundays and this limit does not apply to Christmas Day either.
+If this applies to a large number or charging stations, then it is not practical to delete the charging profile every Sunday and then
+add it again on Monday. A possible solution is to add profiles with higher stack level for the exceptions to the base profile. See the
+following JSON examples where stack levels #2 and #3 are used to define exceptions for Sunday and Christmas.
+(1) TxDefaultProfile, stack #1: time-of-day limitation to 2 kW, recurring every day from 17:00h to 20:00h.
+"chargingProfile": {
+  "id": 10, "stackLevel": 1, "chargingProfilePurpose": "TxDefaultProfile",
+  "chargingProfileKind": "Recurring", "recurrencyKind": "Daily",
+  "chargingSchedule": [ {
+    "id": 1, "startSchedule": "2020-01-09T17:00:00", "duration": 1080,
+    "chargingRateUnit": "W",
+    "chargingSchedulePeriod": [ { "startPeriod": 0, "limit": 2000 } ]
+  } ]
+}
+(2) TxDefaultProfile, stack #2: overruling Sundays to no limit, recurring every week starting 2020-01-05.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 323/803 Part 2 - Specification

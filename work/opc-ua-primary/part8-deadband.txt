@@ -1,0 +1,586 @@
+PercentDeadband – OPC Unified Architecture - Part 8: Data Access
+(function () {
+        try {
+            var w = parseInt(localStorage.getItem('opc.tocWidth'), 10);
+            if (w >= 180 && w <= 900) {
+                document.documentElement.style.setProperty('--toc-w', w + 'px');
+            }
+        } catch (e) { /* private mode / storage disabled — keep the CSS default */ }
+    })();
+{"@context":"https://schema.org","@type":"TechArticle","headline":"7.2 PercentDeadband","name":"7.2 PercentDeadband","description":"The DataChangeFilter in OPC 10000-4 defines the conditions under which a data change notification shall be reported. This filter contains a deadbandValue which…","url":"https://reference.opcfoundation.org/specs/OPC-10000-8/7.2","inLanguage":"en","isPartOf":{"@type":"TechArticle","name":"OPC Unified Architecture - Part 8: Data Access","url":"https://reference.opcfoundation.org/specs/OPC-10000-8"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"7 Data Access specific usage of Services","item":"https://reference.opcfoundation.org/specs/OPC-10000-8/7"},{"@type":"ListItem","position":2,"name":"7.2 PercentDeadband","item":"https://reference.opcfoundation.org/specs/OPC-10000-8/7.2"}]}}
+OPC Unified Architecture - Part 8: Data Access
+Go
+v1.05.07
+1
+Scope
+2
+Normative references
+3
+Terms, definitions and abbreviated terms
+3.1
+Terms and definitions
+3.1.1
+DataItem
+3.1.2
+AnalogItem
+3.1.3
+DiscreteItem
+3.1.4
+ArrayItem
+3.1.5
+EngineeringUnits
+3.2
+Abbreviated terms
+4
+Concepts
+5
+Model
+5.1
+General
+5.2
+SemanticsChanged
+5.3
+Variable Types
+5.3.1
+DataItemType
+5.3.2
+AnalogItem VariableTypes
+5.3.2.1
+General
+5.3.2.2
+BaseAnalogType
+5.3.2.3
+AnalogItemType
+5.3.2.4
+AnalogUnitType
+5.3.2.5
+AnalogUnitRangeType
+5.3.2.6
+AnalogNumberItemType
+5.3.2.7
+AnalogNumberUnitRangeType
+5.3.3
+DiscreteItemType
+5.3.3.1
+General
+5.3.3.2
+TwoStateDiscreteType
+5.3.3.3
+MultiStateDiscreteType
+5.3.3.4
+MultiStateValueDiscreteType
+5.3.4
+ArrayItemType
+5.3.4.1
+General
+5.3.4.2
+YArrayItemType
+5.3.4.3
+XYArrayItemType
+5.3.4.4
+ImageItemType
+5.3.4.5
+CubeItemType
+5.3.4.6
+NDimensionArrayItemType
+5.4
+Address Space model
+5.5
+Attributes of DataItems
+5.6
+DataTypes
+5.6.1
+Overview
+5.6.2
+Range
+5.6.3
+NumberRange
+5.6.4
+EUInformation
+5.6.4.1
+General
+5.6.4.2
+Extented Unit information and Quantity
+5.6.4.3
+Definition of EUInformation
+5.6.4.4
+Mapping of UN/CEFACT to EUInformation
+5.6.4.5
+Mapping of IEC 62720 to EUInformation
+5.6.5
+ComplexNumberType
+5.6.6
+DoubleComplexNumberType
+5.6.7
+AxisInformation
+5.6.8
+AxisScaleEnumeration
+5.6.9
+XVType
+6
+Quantities and Units model
+6.1
+General
+6.2
+Quantities entry point
+6.3
+Syntax References
+6.3.1
+General
+6.3.2
+Using Dictionary References
+6.3.3
+Syntax Reference Identifier
+6.4
+ObjectTypes
+6.4.1
+QuantityType ObjectType definition
+6.4.2
+UnitType and subtypes
+6.4.2.1
+General
+6.4.2.2
+UnitType ObjectType Definition
+6.4.2.3
+ServerUnitType ObjectType Definition
+6.4.2.4
+AlternativeUnitType ObjectType Definition
+6.4.3
+SyntaxReferenceEntryType ObjectType definition
+6.5
+References
+6.5.1
+HasEngineeringUnitDetails
+6.5.2
+HasQuantity
+6.6
+DataTypes
+6.6.1
+AnnotationDataType DataType definition
+6.6.2
+LinearConversionDataType DataType definition
+6.6.3
+ConversionLimitEnum
+6.6.4
+QuantityDimension
+7
+Data Access specific usage of Services
+7.1
+General
+7.2
+PercentDeadband
+7.3
+Data Access status codes
+7.3.1
+Overview
+7.3.2
+Operation level result codes
+7.3.3
+LimitBits
+Annex A
+OPC COM DA to UA mapping (Normative)
+A.1
+Introduction
+A.2
+Security Considerations
+A.3
+COM UA wrapper for OPC DA Server
+A.3.1
+Information Model mapping
+A.3.1.1
+General
+A.3.1.2
+Branch
+A.3.1.3
+Item
+A.3.1.4
+Property
+A.3.1.5
+BrowseName and DisplayName Mapping
+A.3.2
+Data and error mapping
+A.3.2.1
+General
+A.3.2.2
+Value
+A.3.2.3
+Quality
+A.3.2.4
+Timestamp
+A.3.3
+Read data
+A.3.4
+Write Data
+A.3.5
+Subscriptions
+A.4
+COM UA proxy for DA Client
+A.4.1
+Guidelines
+A.4.2
+Information Model and Address Space mapping
+A.4.2.1
+General
+A.4.2.2
+Object Nodes
+A.4.2.3
+Variable Nodes
+A.4.2.4
+Namespace Indices
+A.4.3
+Data and error mapping
+A.4.3.1
+General
+A.4.3.2
+Value
+A.4.3.3
+Quality
+A.4.3.4
+Timestamp
+A.4.4
+Read data
+A.4.5
+Write data
+A.4.6
+Subscriptions
+Annex B
+UCUM Symbols (Normative)
+B.1
+Introduction - License
+B.2
+Representation
+B.3
+Tables of terminal symbols
+B.3.1
+General
+B.3.2
+Prefixes
+B.3.3
+Base units
+B.3.4
+Derived unit atoms
+B.3.5
+Customary unit atoms
+B.3.6
+Other legacy units
+Annex C
+Outline of Syntax References (Informative)
+C.1
+UCUM syntax reference
+C.2
+QUDT syntax reference
+C.3
+UNECE syntax reference
+C.4
+IEC CDD syntax reference
+C.5
+LATEX_SIUNITX syntax reference
+Bibliography
+7.2
+PercentDeadband
+The
+DataChangeFilter
+in
+OPC 10000-4
+defines the conditions under which a data change notification shall be reported. This filter contains a
+deadbandValue
+which can be of type
+AbsoluteDeadband
+or
+PercentDeadband
+.
+OPC 10000-4
+already specifies the behaviour of the
+AbsoluteDeadband
+. The behaviour of the
+PercentDeadband
+type is specified as follows.
+DeadbandType = PercentDeadband
+For this type of deadband the
+deadbandValue
+is defined as the percentage of the
+EURange
+. That is, it applies only to
+AnalogItems
+with an
+EURange
+Property
+that defines the typical value range for the item. This range shall be multiplied with the
+deadbandValue
+and then compared to the actual value change to determine the need for a data change notification. The following pseudo code shows how the deadband is calculated:
+DataChange if (absolute value of (last cached value - current value) >              (deadbandValue/100.0) * ((high-low) of EURange)))
+The range of the
+deadbandValue
+is from 0,0 to 100,0 per cent. Specifying a
+deadbandValue
+outside of this range will be rejected and reported with the
+StatusCode
+Bad_DeadbandFilterInvalid (see
+Table 61
+).
+If the Value of the
+MonitoredItem
+is an array, then the deadband calculation logic shall be applied to each element of the array. If an element that requires a DataChange is found, then no further deadband checking is necessary and the entire array shall be returned.
+↑
+↓
+✕
+// ── ToC mobile drawer ────────────────────────────────────────────────────────
+    (function () {
+        var b = document.body;
+        function closeToc() {
+            b.classList.remove('toc-open');
+            var btn = document.querySelector('.toc-toggle');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.toc-toggle')) {
+                var open = b.classList.toggle('toc-open');
+                var btn = e.target.closest('.toc-toggle');
+                btn.setAttribute('aria-expanded', String(open));
+            } else if (e.target.closest('.toc-backdrop') || e.target.closest('.toc-list a')) {
+                closeToc();
+            }
+        });
+    })();
+
+    // ── ToC pane resizer ─────────────────────────────────────────────────────────
+    // Writes --toc-w on <html> and persists it; the <head> script above replays it on
+    // the next page, so the width survives normal server-rendered navigation.
+    (function () {
+        var DEFAULT = 300, MIN = 180, KEY = 'opc.tocWidth';
+        var handle = document.getElementById('toc-resizer');
+        var layout = document.querySelector('.spec-layout');
+        if (!handle || !layout) return;
+
+        // Never let the ToC squeeze the content pane below a readable width.
+        function maxWidth() { return Math.max(MIN, Math.min(900, window.innerWidth - 320)); }
+
+        function current() {
+            var v = parseInt(getComputedStyle(document.documentElement)
+                             .getPropertyValue('--toc-w'), 10);
+            return isNaN(v) ? DEFAULT : v;
+        }
+
+        // The width the user asked for, before clamping — kept so a temporarily narrow
+        // window does not permanently shrink their preference.
+        var desired = current();
+
+        function apply(px, persist) {
+            var w = Math.round(Math.max(MIN, Math.min(maxWidth(), px)));
+            document.documentElement.style.setProperty('--toc-w', w + 'px');
+            handle.setAttribute('aria-valuenow', String(w));
+            if (persist) {
+                desired = w;
+                try { localStorage.setItem(KEY, String(w)); } catch (e) { }
+            }
+            return w;
+        }
+
+        handle.setAttribute('aria-valuenow', String(desired));
+
+        handle.addEventListener('pointerdown', function (e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            handle.setPointerCapture(e.pointerId);
+            document.body.classList.add('toc-resizing');
+            var originX = layout.getBoundingClientRect().left;
+
+            function onMove(ev) { apply(ev.clientX - originX, false); }
+            function onUp(ev) {
+                handle.removeEventListener('pointermove', onMove);
+                handle.removeEventListener('pointerup', onUp);
+                handle.removeEventListener('pointercancel', onUp);
+                document.body.classList.remove('toc-resizing');
+                apply(ev.type === 'pointercancel' ? current() : ev.clientX - originX, true);
+            }
+            handle.addEventListener('pointermove', onMove);
+            handle.addEventListener('pointerup', onUp);
+            handle.addEventListener('pointercancel', onUp);
+        });
+
+        handle.addEventListener('dblclick', function () {
+            apply(DEFAULT, true);
+        });
+
+        handle.addEventListener('keydown', function (e) {
+            var step = e.shiftKey ? 50 : 10;
+            if (e.key === 'ArrowLeft')       { apply(current() - step, true); }
+            else if (e.key === 'ArrowRight') { apply(current() + step, true); }
+            else if (e.key === 'Home')       { apply(DEFAULT, true); }
+            else return;
+            e.preventDefault();
+        });
+
+        // A narrowed window can invalidate the stored width; re-clamp the *preference*
+        // (not the clamped value) so the chosen width returns when the window grows.
+        // Below the breakpoint the ToC is an overlay drawer sized by the stylesheet
+        // (min(--toc-w, 85vw)) — leave it alone rather than clamping against a viewport
+        // the drawer does not share with the content.
+        var narrow = window.matchMedia('(max-width: 768px)');
+        function sync() { if (!narrow.matches) { apply(desired, false); } }
+        window.addEventListener('resize', sync);
+        sync();
+    })();
+
+    // ── Scroll active ToC item into view on load ─────────────────────────────────
+    (function () {
+        var pane   = document.getElementById('toc-pane');
+        var active = pane && pane.querySelector('.toc-list a.active');
+        if (active) active.scrollIntoView({ block: 'center' });
+    })();
+
+    // ── In-page find bar (Ctrl/Cmd+F) ────────────────────────────────────────────
+    (function () {
+        var bar   = document.getElementById('find-bar');
+        var input = document.getElementById('find-input');
+        var count = document.getElementById('find-count');
+        var marks = [];
+        var cur   = -1;
+        var tocHits = [];   // ToC anchors holding a match — declipped while the find bar is open
+
+        // Content first, then the ToC: reading matches come before navigational ones.
+        function getPanes() {
+            var content = document.getElementById('content') ||
+                          document.querySelector('.content-pane') ||
+                          document.querySelector('main');
+            var toc = document.getElementById('toc-pane');
+            return [content, toc].filter(Boolean);
+        }
+
+        function clearMarks() {
+            marks.forEach(function (m) {
+                if (!m.parentNode) return;
+                m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+            });
+            getPanes().forEach(function (p) { p.normalize(); });
+            tocHits.forEach(function (a) { a.classList.remove('find-hit'); });
+            tocHits = [];
+            marks = [];
+            cur   = -1;
+        }
+
+        function highlightIn(pane, query) {
+            var lq = query.toLowerCase();
+            var walker = document.createTreeWalker(pane, NodeFilter.SHOW_TEXT, {
+                acceptNode: function (node) {
+                    var tag = node.parentElement && node.parentElement.tagName;
+                    return (tag === 'SCRIPT' || tag === 'STYLE')
+                        ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+                }
+            });
+            var nodes = [];
+            var node;
+            while ((node = walker.nextNode())) nodes.push(node);
+            nodes.forEach(function (textNode) {
+                var text = textNode.textContent;
+                var lt   = text.toLowerCase();
+                var pos  = 0;
+                var frags = [];
+                var found = false;
+                while (pos < text.length) {
+                    var idx = lt.indexOf(lq, pos);
+                    if (idx < 0) { frags.push(document.createTextNode(text.slice(pos))); break; }
+                    found = true;
+                    if (idx > pos) frags.push(document.createTextNode(text.slice(pos, idx)));
+                    var m = document.createElement('mark');
+                    m.textContent = text.slice(idx, idx + query.length);
+                    frags.push(m);
+                    marks.push(m);
+                    pos = idx + lq.length;
+                }
+                if (!found) return;
+                var parent = textNode.parentNode;
+                var ref    = textNode.nextSibling;
+                // ToC titles are ellipsised to one line, so a match in the middle of a long
+                // title would be invisible — declip the entry that holds it.
+                var anchor = parent.closest ? parent.closest('.toc-list a') : null;
+                if (anchor && !anchor.classList.contains('find-hit')) {
+                    anchor.classList.add('find-hit');
+                    tocHits.push(anchor);
+                }
+                parent.removeChild(textNode);
+                frags.forEach(function (f) { parent.insertBefore(f, ref); });
+            });
+        }
+
+        function highlight(query) {
+            clearMarks();
+            count.textContent = '';
+            if (!query) return;
+            getPanes().forEach(function (pane) { highlightIn(pane, query); });
+            if (marks.length > 0) { scrollToMark(0); }
+            else { count.textContent = 'No results'; }
+        }
+
+        function inToc(m) {
+            return !!(m.closest && m.closest('#toc-pane'));
+        }
+
+        var tocOpenedByFind = false;
+        function setDrawer(open) {
+            document.body.classList.toggle('toc-open', open);
+            var btn = document.querySelector('.toc-toggle');
+            if (btn) btn.setAttribute('aria-expanded', String(open));
+        }
+
+        function scrollToMark(idx) {
+            if (!marks.length) return;
+            marks.forEach(function (m, i) { m.className = i === idx ? 'find-current' : ''; });
+            var m = marks[idx];
+            // On mobile the ToC is an off-screen drawer — open it before scrolling into it,
+            // and put it back when the walk returns to the content pane.
+            if (window.matchMedia('(max-width: 768px)').matches) {
+                if (inToc(m)) { setDrawer(true); tocOpenedByFind = true; }
+                else if (tocOpenedByFind) { setDrawer(false); tocOpenedByFind = false; }
+            }
+            m.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            cur = idx;
+            count.textContent = (cur + 1) + ' of ' + marks.length + (inToc(m) ? ' · contents' : '');
+        }
+
+        function openBar() { bar.hidden = false; input.focus(); input.select(); }
+        function closeBar() {
+            clearMarks();
+            if (tocOpenedByFind) { setDrawer(false); tocOpenedByFind = false; }
+            bar.hidden = true; input.value = ''; count.textContent = '';
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); openBar(); }
+            if (e.key === 'Escape' && !bar.hidden) closeBar();
+        });
+        input.addEventListener('input', function () { highlight(input.value); });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (marks.length) scrollToMark(e.shiftKey
+                    ? (cur - 1 + marks.length) % marks.length
+                    : (cur + 1) % marks.length);
+            }
+        });
+        document.getElementById('find-prev').addEventListener('click', function () {
+            if (marks.length) scrollToMark((cur - 1 + marks.length) % marks.length);
+        });
+        document.getElementById('find-next').addEventListener('click', function () {
+            if (marks.length) scrollToMark((cur + 1) % marks.length);
+        });
+        document.getElementById('find-close').addEventListener('click', closeBar);
+    })();
+
+    // ── Term click → keyword search ───────────────────────────────────────────────
+    (function () {
+        document.addEventListener('click', function (e) {
+            var el = e.target.closest('em[data-term]');
+            if (!el) return;
+            e.preventDefault();
+            var term = el.getAttribute('data-term');
+            if (!term) return;
+            var form   = document.querySelector('.header-search');
+            var action = form ? form.getAttribute('action') : null;
+            if (!action) {
+                var m = window.location.pathname.match(/^\/specs\/([^/]+)/);
+                action = m ? '/specs/' + m[1] + '/search' : null;
+            }
+            if (action) window.location.href = action + '?q=' + encodeURIComponent(term) + '&tab=term';
+        });
+    })();

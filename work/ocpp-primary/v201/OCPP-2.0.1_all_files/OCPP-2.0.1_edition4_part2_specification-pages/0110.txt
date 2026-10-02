@@ -1,0 +1,43 @@
+2.4. Authorization Cache
+C10 - Store Authorization Data in the Authorization Cache
+No. Type Description
+1 Name Store Authorization Data in the Authorization Cache
+2 ID C10
+3 Objective(s) To store all the latest received IdTokens in the Authorization Cache.
+4 Description This use case covers how the Charging Station autonomously stores a record of previously
+presented identifiers that have been successfully authorized by the CSMS in the Authorization
+Cache. (Successfully meaning: a response received on a message containing an IdToken)
+Actors Charging Station, CSMS
+Scenario description 1. The Charging Station receives a AuthorizeResponse, ReserveNowRequest or
+TransactionEventResponse response message from the CSMS.
+2. The Cache is updated by the Charging Station using all received IdTokenInfo from the response
+message from the CSMS.
+Alternative scenario(s) n/a
+5 Prerequisite(s) An Authorization Cache is implemented and and the value of the AuthCacheEnabled
+Configuration Variable is set to 'true'.
+6 Postcondition(s) Successful postcondition:
+The Charging Station stored the newly received IdTokenInfo data in the Authorization Cache.
+Failure postcondition:
+The Charging Station was not able to store the Authorization Cache.
+7 Error handling n/a
+8 Remark(s) n/a
+Charging Station CSMS
+alt [for AuthorizeResponse]
+AuthorizeRequest(...)
+AuthorizeResponse(idTokenInfo,...)
+Store Authorization Data in
+Authorization Cache()
+[for TransactionEventResponse]
+TransactionEventRequest(...)
+TransactionEventResponse(idTokenInfo,...)
+Store Authorization Data in
+Authorization Cache()
+Figure 29. Sequence Diagram: Store Authorization Data in the Authorization Cache
+C10 - Store Authorization Data in the Authorization Cache - Requirements
+Table 51. C10 - Requirements
+ID Precondition Requirement definition Note
+C10.FR.01 The Authorization Cache SHALL contain all the
+latest received identifiers (regardless of their
+status).
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 100/491 Part 2 - Specification

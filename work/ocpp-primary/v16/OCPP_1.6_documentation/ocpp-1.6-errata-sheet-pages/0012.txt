@@ -1,0 +1,30 @@
+Old text a Charge Point MAY send a StatusNotification.req PDU to the Central System.
+New text a Charge Point SHALL send a StatusNotification.req PDU to the Central System, taking into account some minimum status duration.
+3.20. Page 41, section: 4.9: Status transition from Preparing to Finishing (B6) is
+possible
+Added in errata sheet v3.0
+The original 1.6 does not allow a transition from Preparing to Finishing (B6). But there is a use case where this is
+possible:
+A Charge Point with 2 connectors and 1 RFID reader. Driver 1 connects his charging cable. State goes to
+"Preparing" User does not authorize, times out. Then the Charge Point has to go to state: "Finishing". It should
+NOT go to "Available". Because if the charging cable remains plugged in and another EV driver swipes his RFID
+(before plugging in), that would start a transaction on the already plugged in cable. By going to "Finishing" this is
+prevented.
+Table top page 41 Add B6
+Table on page 42 B6: Timed out. Usage was initiated (e.g. insert plug, bay occupancy detection), but idTag not presented within timeout.
+3.21. Page 42, section: 4.9 (B1): Missing reference to configuration key:
+"ConnectionTimeOut"
+The configuration key: "ConnectionTimeOut" is never referenced in the specification, section: 4.9 needs a note
+explaining how the state: "Preparing" and the configuration key: "ConnectionTimeOut" work together.
+Old text Intended usage is ended (e.g. plug removed, bay no longer occupied, second presentation of idTag, time out on expected user action)
+New text Intended usage is ended (e.g. plug removed, bay no longer occupied, second presentation of idTag, time out (configured by the
+configuration key: ConnectionTimeOut) on expected user action)
+3.22. Page 43, section: 4.9: Not defined that StatusNotification should always be
+send after BootNotification accepted.
+Added in errata sheet v4.0
+OCPP 1.6 FINAL Page 45
+There is no description of behaviour that is expected and is implemented by every known implementation of
+OCPP: After being accepted via BootNotification.conf(Accepted) the Charge Point has to report its current status.
+Additional text After the Central System accept a Charge Point by sending a BootNotification.conf with a status Accepted, the Charge Point
+SHALL send a StatusNotification.req PDU for connectorId 0 and all connectors with the current status.
+11

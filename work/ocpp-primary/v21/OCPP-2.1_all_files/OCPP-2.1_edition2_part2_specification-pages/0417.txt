@@ -1,0 +1,65 @@
+CSMS Charging Station EV
+alt [Dynamic update from CSMS]
+SetChargingProfileRequest(evseId,
+chargingProfile( id = 123, TxProfile, Dynamic,
+chargingSchedule( chargingSchedulePeriod( limit = 15000 )))
+SetChargingProfileResponse(Accepted)
+apply limit
+loop
+some time later...
+UpdateDynamicScheduleRequest( id = 123, limit = 10000 )
+UpdateDynamicScheduleResponse(Accepted)
+apply limit
+[Dynamic update by CS]
+SetChargingProfileRequest(evseId,
+chargingProfile( id = 123, TxProfile, Dynamic, updateInterval = 60,
+chargingSchedule( chargingSchedulePeriod( limit = 15000 )))
+SetChargingProfileResponse(Accepted)
+apply limit
+loop
+60 seconds later...
+PullDynamicScheduleUpdateRequest( id = 123 )
+PullDynamicScheduleUpdateResponse(Accepted, limit = 10000 )
+apply limit
+Figure 146. Sequence Diagram: Dynamic charging profile
+K28 - Dynamic charging profiles from CSMS - Requirements
+Table 119. K28 - Requirements
+ID. Precondition Requirements Note
+K28.FR.01 A ChargingProfileType with chargingProfileKind =
+Dynamic SHALL consist of only 1
+ChargingScheduleType with only 1
+ChargingSchedulePeriodType
+K28.FR.02 The ChargingSchedulePeriodType in a
+ChargingProfileType with chargingProfileKind =
+Dynamic SHALL have a startPeriod = 0
+It becomes immediately active
+upon receipt of the message.
+K28.FR.03 When Charging Station receives
+a SetChargingProfileRequest in
+which chargingSchedule does
+not obey K28.FR.01 or
+K28.FR.02
+Charging Station SHALL respond with
+SetChargingProfileResponse with status =
+Rejected and optionally a statusInfo.reasonCode
+= "InvalidSchedule"
+K28.FR.04 When Charging Station receives
+a SetChargingProfileRequest
+with a chargingProfileKind that
+is not Dynamic and with a field
+dynUpdateInterval
+Charging Station SHALL respond with
+SetChargingProfileResponse with status =
+Rejected and optionally a statusInfo.reasonCode
+= "InvalidProfile".
+dynUpdateInterval only applies
+to Dynamic profiles.
+K28.FR.05 When Charging Station receives
+a SetChargingProfileRequest
+with chargingProfileKind =
+Dynamic AND
+dynUpdateTime is not set
+Charging Station SHALL set dynUpdateTime in
+ChargingProfileType to current time.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 404/803 Part 2 - Specification

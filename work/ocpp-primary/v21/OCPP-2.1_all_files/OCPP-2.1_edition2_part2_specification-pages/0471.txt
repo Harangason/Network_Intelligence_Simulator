@@ -1,0 +1,60 @@
+ID Precondition Requirement definition
+N03.FR.05 N03.FR.01 AND
+When the Charging Station received a
+setMonitoringBaseRequest with monitoringBase
+HardWiredOnly
+Then the Charging Station SHALL clear all custom and disable all
+pre-configured monitors. Only hard-wired monitors remain
+active.
+N04 - Set Variable Monitoring
+No. Type Description
+1 Name Set Variable Monitoring
+2 ID N04
+3 Objective(s) To give the CSMS the ability to request the Charging Station to set monitoring triggers on
+Variables.
+4 Description This use case describes how the CSMS requests the Charging Station to set monitoring triggers
+on Variables. Multiple triggers can be set for upper or lower thresholds, delta changes or periodic
+reporting.
+Actors Charging Station, CSMS, CSO
+Scenario description 1. The CSO triggers the CSMS to request a Charging Station to set a variable monitoring setting.
+2. The CSMS sends a SetVariableMonitoringRequest to the Charging Station.
+3. The Charging Station responds with a SetVariableMonitoringResponse.
+5 Prerequisite(s) Charging Station supports Monitoring
+The specific Variable supports Monitoring
+6 Postcondition(s) The Charging Station activated the set of monitoring triggers on the Variables.
+7 Error handling n/a
+8 Remark(s) All variableMonitoring settings are persistent across reboot.
+A variableMonitoring setting is persistent after a firmware update, if the monitored variable still
+exists and it is still monitor-able. Otherwise the variableMonitoring setting is removed.
+CSO
+CSMS Charging Station
+request to set a monitoring setting for a variable
+SetVariableMonitoringRequest(MonitoringData)
+SetVariableMonitoringResponse(setMonitoringResult)
+Figure 168. Sequence Diagram: Set Variable Monitoring
+N04 - Set Variable Monitoring - Requirements
+Table 137. N04 - Requirements
+ID Precondition Requirement definition Note
+N04.FR.01 When the Charging Station receives a
+SetVariableMonitoringRequest with an
+X number of SetMonitoringData
+elements
+The Charging Station SHALL respond with an
+SetVariableMonitoringResponse with an equal (X)
+number of SetMonitoringResult elements, one for
+every SetMonitoringData element in the
+SetVariableMonitoringRequest.
+N04.FR.02 N04.FR.01 Every SetMonitoringResult element in the
+SetVariableMonitoringResponse SHALL contain the
+same component and variable combination as one
+of the SetVariableMonitoringRequest elements in
+the SetVariableMonitoringRequest.
+N04.FR.03 When the Charging Station receives a
+SetVariableMonitoringRequest with an
+unknown Component in
+SetMonitoringData
+The Charging Station SHALL set the attributeStatus
+field in the corresponding SetMonitoringResult to:
+UnknownComponent.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 458/803 Part 2 - Specification

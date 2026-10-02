@@ -1,0 +1,52 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  24/50 
+The response data field returns the quantity of messages addressed to the remote device for 
+which it has returned no response (neither a normal response nor an exception response), 
+since its last restart, clear counters operation, or power –up.  
+Sub-function  Data Field (Request)  Data Field (Response)  
+00 0F  00 00  Server  No Response Count  
+ 
+16 (10 Hex) Return Serv er NAK Count  
+The response data field returns the quantity of messages addressed to the remote device for 
+which it returned a Negative Acknowledge (NAK) exception response, since its last restart, 
+clear counters operation, or power –up. Exception responses a re described and listed in 
+section 7 . 
+Sub-function  Data Field (Request)  Data Field (Response)  
+00 10  00 00  Server  NAK Count  
+ 
+17 (11 Hex) Return Server  Busy Count  
+The response data field returns the quantity of messages addressed to the remote device for 
+which it returned a Server  Device Busy exception response, since its last restart, clear 
+counters operation, or power –up.  
+Sub-function  Data Field (Request)  Data Field  (Response)  
+00 11  00 00  Server  Device Busy Count  
+ 
+18 (12 Hex) Return Bus Character Overrun Count  
+The response data field returns the quantity of messages addressed to the remote device that 
+it could not handle due to a character overrun condition, since it s last restart, clear counters 
+operation, or power –up. A character overrun is caused by data characters arriving at the port 
+faster than they can be stored, or by the loss of a character due to a hardware malfunction.  
+Sub-function  Data Field (Request)  Data  Field (Response)  
+00 12  00 00  Server  Character Overrun Count  
+ 
+20 (14 Hex) Clear Overrun Counter and Flag  
+Clears the overrun error counter and reset the error flag.  
+Sub-function  Data Field (Request)  Data Field (Response)  
+00 14  00 00  Echo Request Data  
+ 
+6.8.2  Example and state diagram  
+Here is an example of a request to remote device to Return Query Data. This uses a sub -
+function code of zero (00 00 hex in the two –byte field). The data to be returned is sent in the 
+two–byte data field (A5 37 hex).  
+ 
+Request  Resp onse  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  08 Function  08 
+Sub-function Hi  00 Sub-function Hi  00 
+Sub-function Lo  00 Sub-function Lo  00 
+Data Hi  A5 Data Hi  A5 
+Data Lo  37 Data Lo  37 
+ 
+The data fields in responses to other kinds of queries could contain error counts or other data  
+requested by the sub -function code.  
+ 

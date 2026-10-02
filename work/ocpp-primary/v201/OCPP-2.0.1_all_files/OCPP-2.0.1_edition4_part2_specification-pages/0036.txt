@@ -1,0 +1,59 @@
+ID Precondition Requirement definition
+A00.FR.429 If Charging Station certificate has
+been expired AND
+CSMS has been explicitly configured
+to accept a connection by this
+specific Charging Station with an
+expired certificate.
+CSMS MAY accept this Charging Station in a BootNotification - Pending
+state (use case B02) after which it SHALL immediately execute A02 -
+Update Charging Station Certificate by request of CSMS to renew the
+certificate.
+A00.FR.430 If the Charging Station certificate
+has expired
+The Charging Station SHOULD still attempt to establish a connection with
+the CSMS and leave the decision to accept the connection up to the
+CSMS.
+1.4. Keys used in OCPP
+This section is normative.
+OCPP uses a number of public private key pairs for its security, see below Table. To manage the keys on the Charging Station,
+messages have been added to OCPP. Updating keys on the CSMS or at the manufacturer is out of scope for OCPP. If TLS with
+Client Side certificates is used, the Charging Station requires a "Charging Station certificate" for authentication against the CSMS.
+Table 19. Certificates used in the OCPP security specification
+Certificate Private Key Stored At Description
+CSMS Certificate CSMS Key used to authenticate the CSMS.
+Charging Station Certificate Charging Station Key used to authenticate the Charging Station.
+Firmware Signing Certificate Manufacturer Key used to verify the firmware signature.
+SECC Certificate Charging Station Certificate used by ISO15118-2 to set up a TLS
+connection between the Charging Station and
+an Electric Vehicle.
+1.4.1. Certificate Properties
+This section is normative.
+Table 20. Certificate Properties requirements
+ID Precondition Requirement definition
+A00.FR.501 All certificates SHALL use a private key that provides security equivalent
+to a symmetric key of at least 112 bits according to Section 5.6.1 of [17].
+This is the key size that NIST recommends for the period 2011-2030.
+A00.FR.502 A00.FR.501
+AND
+RSA or DSA
+This translates into a key that SHALL be at least 2048 bits long.
+A00.FR.503 A00.FR.501
+AND
+elliptic curve cryptography
+This translates into a key that SHALL be at least 224 bits long.
+A00.FR.504 For all cryptographic operations, only the algorithms recommended by BSI
+in [12], which are suitable for use in future systems, SHALL be used. This
+restriction includes the signing of certificates in the certificate hierarchy
+A00.FR.505 For signing by the certificate authority RSA-PSS, or ECDSA SHOULD be
+used.
+A00.FR.506 For computing hash values the SHA256 algorithm SHOULD be used.
+A00.FR.507 The certificates SHALL be stored and transmitted in the X.509 format
+encoded in Privacy-Enhanced Mail (PEM) format.
+A00.FR.508 All certificates SHALL include a serial number.
+A00.FR.509 The subject field of the certificate SHALL contain the organization name
+of the certificate owner in the O (organizationName) RDN.
+A00.FR.510 For the CSMS certificate, the subject field SHALL match the FQDN of the
+endpoint of the server in the CN (commonName) RDN.
+Edition 4, 2025-12-03 A. Security
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 26/491 Part 2 - Specification

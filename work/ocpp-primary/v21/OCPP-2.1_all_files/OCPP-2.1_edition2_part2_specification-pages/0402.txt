@@ -1,0 +1,43 @@
+No. Type Description
+Scenario description 1. EV and Charging Station exchange charge parameters with an
+AC/DC_ChargeParameterDiscovery message.
+2. EV sends energy needs and departure time to Charging Station with a
+ScheduleExchangeReq message.
+3. Charging Station sends a NotifyEVChargingNeedsRequest message to CSMS with
+controlMode = ScheduledControl.
+4. CSMS responds with status = Accepted.
+5. CSMS sends a charging profile with one or more charging schedules and optional price
+information to Charging Station via a SetChargingProfileRequest.
+6. Charging station responds with status = Accepted.
+7. Charging Station returns offered charging schedule(s) to EV via the
+ScheduleExchangeRes response.
+8. EV selects a charging schedule to follow, and calculates its expected charging profile in
+EVPowerProfile.
+9. EV sends a PowerDeliveryReq with Id of the selected schedule to follow and its
+EVPowerProfile to Charging Station.
+10. Charging Station sends this Id an EVPowerProfile as a NotifyEVChargingScheduleRequest
+to CSMS.
+5 Prerequisites Both the Charging Station and the EV support ISO 15118-20 Scheduled Control Mode.
+6 Postcondition(s)
+7 Error handling Charging Station needs to use the information from the SetChargingProfileRequest message
+from CSMS to create the response to the ISO 15118-20 ScheduleExchangeReq message from EV.
+This message has a timeout of 60 seconds, which means the SetChargingProfileRequest has to
+be sent well within 60 seconds after receiving the NotifyEVChargingNeedsRequest.
+If the Charging Station does not receive the SetChargingProfileRequest in time or when the
+NotifyEVChargingNeedsResponse has status = Processing, then the Charging Station will return
+a schedule in ScheduleExchangeRes that matches charging profiles that are already active at
+EVSE, e.g. TxDefaultProfile or ChargingStationMaxProfile.
+When CSMS sends the SetChargingProfileRequest at a later time, then this will trigger a
+renegotiation according to use case K16 - Renegotiation initiated by CSMS.
+8 Remark(s) Signed PriceSchedules (ISO 15118-20) are supported in OCPP 2.1 via the signatureValue field in
+ChargingProfileType.
+When the Charging Station uses ISO 15118-20 "scheduled control mode", it sends charging
+schedules to the EV. The EV selects one and returns its calculated EVPowerProfile that fits in
+selected schedule to Charging Station in a PowerDeliveryReq message. Charging Station sends
+this to CSMS in a NotifyEVChargingScheduleRequest.
+NOTE: When NotifyEVChargingNeedsRequest has controlMode = ScheduledControl CSMS is
+not recommended to send a charging profile with chargingProfileKind = Dynamic for which it
+intends to send frequent updates, because every update of the limit in the charging schedule
+period will trigger a renegotiation with EV for a new schedule.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 389/803 Part 2 - Specification

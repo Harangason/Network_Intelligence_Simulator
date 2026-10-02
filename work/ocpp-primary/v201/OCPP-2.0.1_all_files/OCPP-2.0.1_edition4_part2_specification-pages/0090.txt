@@ -1,0 +1,84 @@
+EV Driver
+Charging Station CSMS
+present RFID(AA12345)
+AuthorizeRequest(idToken(id = AA12345, type = ISO14443))
+AuthorizeResponse(...)
+opt
+notification
+Figure 21. Sequence Diagram: EV Driver Authorization
+C01 - EV Driver Authorization using RFID - Requirements
+Table 42. C01 - Requirements
+ID Precondition Requirement definition Note
+C01.FR.01 Configuration setting AuthEnabled is
+true.
+The Charging Station SHALL only offer energy after
+authorization.
+C01.FR.02 If an idToken presented by the EV
+Driver is not present in the Local
+Authorization List or Authorization
+Cache
+The Charging Station SHALL send
+AuthorizeRequest to the CSMS to request
+authorization.
+C01.FR.03 When an idToken is presented during
+a transaction that has been authorized
+AND
+(a) the presented idToken is the same
+as the idToken that started the
+authorization
+OR
+(b) when the presented idToken is in
+the Local Authorization List or
+Authorization Cache AND is valid AND
+has the same GroupIdToken as the
+IdToken that started the authorization.
+The Charging Station SHALL end the authorization
+of the transaction, without first sending an
+AuthorizeRequest
+The idToken that started
+the authorization can
+always be used to end
+the authorization.
+Ending authorization will
+end delivery of energy.
+Depending on the
+TxStopPoint ending of
+the authorization may
+also end the transaction.
+C01.FR.04 AuthorizeRequest SHALL only be used for the
+authorization of an identifier.
+C01.FR.05 If an IdToken is present in the Local
+Authorization List or Authorization
+Cache.
+The Charging Station MAY send AuthorizeRequest
+to the CSMS.
+C01.FR.06 When CSMS receives an
+AuthorizeRequest for an idToken AND
+the idToken has an associated
+groupIdToken.
+AuthorizeResponse sent by the CSMS to a Charging
+Station SHALL include the associated
+groupIdToken.
+C01.FR.07 AuthorizeResponse SHALL include an authorization
+status value indicating acceptance or a reason for
+rejection.
+See
+AuthorizationStatusEnu
+mType for the possible
+reasons of rejection.
+C01.FR.08 If the field: language1 is set AND the
+Charging Station contains messages
+in that language.
+The Charging Station SHALL show messages to the
+user in language1.
+C01.FR.09 If the field: language1 is set AND the
+Charging Station does not contain
+messages in that language AND if the
+field: language2 is set AND the
+Charging Station contains messages
+in that language
+The Charging Station SHALL show messages to the
+user in language2.
+C01.FR.10 If the field: language1 is not set The field: language2 SHALL NOT be set.
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 80/491 Part 2 - Specification

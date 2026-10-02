@@ -1,0 +1,49 @@
+TC_C_57_CS: Authorization through authorization cache -
+AuthCacheDisablePostAuthorize
+Test case name Authorization through authorization cache - AuthCacheDisablePostAuthorize
+Test case Id TC_C_57_CS
+Use case Id(s) C12
+Requirement(s) C12.FR.05, C10.FR.03
+System under test Charging Station
+Description This test case describes how the EV Driver can be authorized to start a transaction by using Cached
+IdTokens. This enables the EV Driver to start a transaction while the Charging Station is online by using the
+Authorization Cache in which case the Charging Station can respond faster, since no AuthorizeRequest is
+being sent. For an IdToken that does not have status "Accepted" the Charging Station will still send an
+AuthorizeRequest to check against the most recent status from CSMS. However, when the setting
+AuthCacheDisablePostAuthorize is set to true, then the Charging Station will not do this.
+Purpose To verify that the Charging Station will not send an AutorizeRequest for an IdToken in the Authorization
+Cache that is not "Accepted", when AuthCacheDisablePostAuthorize is set to true.
+Prerequisite(s) AuthCacheCtrlr.DisablePostAuthorize is implemented AND
+The Charging Station has an authorization cache AND
+the Charging Station supports at least one of the following local start authorization options: C-30, C-31, C-
+32, C-34 OR supports at least one of the following remote start authorization options: C-36, C-37
+Before (Preparations)
+Configuration State:
+AuthCacheCtrlr.Enabled is true (If implemented)
+AuthCtrlr.LocalPreAuthorize is true (If implemented)
+AuthCacheCtrlr.DisablePostAuthorize is true
+Memory State:
+IdTokenCached for <Configured invalid IdToken fields>
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present Invalid idToken which is already configured in the Authorization Cache
+Note: This step is executed if configured scenario is Local
+2. The Charging Station responds with a
+RequestStartTransactionResponse
+1. The Test System sends a RequestStartTransactionRequest
+with idToken.idToken <Configured invalid_idtoken_idtoken>
+idToken.type <Configured invalid_idtoken_type>
+evseId <Configured evseId>
+Note: This step is executed if configured scenario is Remote
+3. The Charging Station does NOT send a AuthorizeRequest
+4. Execute Reusable State EVConnectedPreSession
+5. The Charging Station does NOT start charging.
+Tool validations
+* Step 3:
+Check that Charging Station does NOT send an AuthorizeRequest and authorization is refused.
+Post scenario validations:
+The Charging Station does NOT start charging.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 134/1383 Part 6 - Test Cases

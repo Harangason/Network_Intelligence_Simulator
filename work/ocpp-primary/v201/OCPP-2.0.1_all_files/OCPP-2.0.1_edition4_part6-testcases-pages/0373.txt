@@ -1,0 +1,50 @@
+TC_K_38_CS: Remote start transaction with charging profile - Ignore
+chargingProfile
+Test case name Remote start transaction with charging profile - Ignore chargingProfile
+Test case Id TC_K_38_CS
+Use case Id(s) F01
+Requirement(s) F01.FR.12,F01.FR.13
+System under test Charging Station
+Description The CSMS sets a TxProfile on a specific EVSE inside a RequestStartTransactionRequest message.
+Purpose To verify if the Charging Station is able to ignore a TxProfile on a specific EVSE when receiving one in a
+RequestStartTransactionRequest message, when it does not support Smart Charging.
+Prerequisite(s) The Charging Station does NOT support Smart Charging.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+RequestStartTransactionResponse
+1. The Test System sends a RequestStartTransactionRequest
+with idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+evseId <Configured evseId>
+chargingProfile.chargingProfilePurpose is TxProfile
+chargingProfile.transactionId is omitted.
+chargingProfile.chargingProfileKind is Relative
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].n
+umberPhases <Configured numberPhases>
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].s
+tartPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+3. The Charging Station sends an AuthorizeRequest
+Note(s):
+- This step needs to be executed when
+AuthCtrlr.AuthorizeRemoteStart is true, unless (AuthEnabled is
+implemented with mutability ReadOnly AND the value is set to
+false) OR
+the idToken is cached.
+In case the idToken is used for a reservation, sending the
+AuthorizeRequest message is optional.
+4. The Test System responds with an AuthorizeResponse
+with idTokenInfo.status Accepted
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 371/914 Part 6 - Test Cases

@@ -1,0 +1,54 @@
+charging time ("ChargingTime") and maximum power ("MaxPower").
+CostDetails example for tariff 12 (above) when charging 1 hour below 11 kW and half hour above 11 kW
+{
+  "chargingPeriods": [
+  {
+    "tariffId": "12",
+    "startPeriod": "2023-04-05T14:00:00Z",
+    "dimensions": [{
+      "type": "ChargingTime",
+      "volume": 3600
+    },{
+      "type": "MinPower",
+      "volume": 0
+    },{
+      "type": "MaxPower", -- determines price level
+      "volume": 10500
+    }],
+  },{
+    "tariffId": "12",
+    "startPeriod": "2023-04-05T15:00:00Z",
+    "dimensions": [{
+      "type": "ChargingTime",
+      "volume": 3600
+    },{
+      "type": "MinPower", -- determines price level
+      "volume": 11000
+    },{
+      "type": "MaxPower", -- recorded, but not relevant for price
+      "volume": 22000
+    }]
+  }],
+  "totalCost": {
+    "currency": "EUR",
+    "fixed": {
+      "exclTax": 2.50,
+      "inclTax": 2.875,
+      "taxRates": [ { "type": "vat", "tax": 15.0 } ]
+    },
+    "chargingTime": {
+      "exclTax": 2.00,
+      "inclTax": 2.40,
+      "taxRates": [ { "type": "vat", "tax": 20.0 } ]
+    },
+    "total": {
+      "exclTax": 4.50,
+      "inclTax": 5.275
+    }
+  },
+  "totalUsage": {
+    "chargingTime": 4800
+  }
+}
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 275/803 Part 2 - Specification

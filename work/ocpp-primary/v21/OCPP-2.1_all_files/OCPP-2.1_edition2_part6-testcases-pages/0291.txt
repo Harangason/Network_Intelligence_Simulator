@@ -1,0 +1,42 @@
+TC_E_46_CS: End of charging process 15118
+Test case name End of charging process 15118
+Test case Id TC_E_46_CS
+Use case Id(s) E15
+Requirement(s) E15.FR.04, E15.FR.05
+System under test Charging Station
+Description After receiving a SessionStopReq(Terminate) message from the EV, the Charging Station informs the
+CSMS that the authorization of the charging session has been stopped (by the EV).
+Depending on TxStopPoint this will also end the transaction.
+Purpose To verify whether the Charging Station is able to inform the CSMS that authorization of the charging
+session has been stopped (by the EV) and depending on TxStopPoint end the transaction.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+State is Authorized15118
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Note: The Charging Station receives a SessionStopReq(Terminate) message from the EV.
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+If <Configured TxStopPoint> contains "Authorized" or "PowerPathClosed" or "EnergyTransfer":
+- eventType is Ended
+- triggerReason is StopAuthorized
+- transactionInfo.stoppedReason is StoppedByEV
+- transactionInfo.chargingState is EVConnected
+If <Configured TxStopPoint> does not contain "Authorized" or "PowerPathClosed" or "EnergyTransfer":
+- eventType is Updated
+- triggerReason = StopAuthorized
+- transactionInfo.chargingState is EVConnected
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 289/1383 Part 6 - Test Cases

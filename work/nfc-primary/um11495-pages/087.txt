@@ -1,0 +1,34 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Figure 55. Illustration of the Low-Power Card detector and the subsequent Technology Detection cycles
+See Section 11.2.1 for the description of the configuration parameter called " TechDet_AFTER_LPCD_CFG "
+which contains the 2 parameters TechDet_PERIOD and TechDet_NBR_RETRIES.
+10.4.3  Notification when the Trace Mode is enabled
+The Low-Power Card Detector needs to be tuned in each application; it is therefore useful to get some
+information from PN7160 so that the Low-Power Card Detector can be appropriately configured.
+The Low-Power Card Detector can be configured to enable a Trace Mode, where the following Notification will
+be sent to the DH by PN7160:
+GID OID Numbers of
+parameter(s) Description
+1111b 0x13 2 PN7160 sends the actual measurement + the threshold
+Table 90. RF_LPCD_TRACE_NTF
+Payload Field(s) Length Value/Description
+Reference Value 2 bytes Reference Value used by Low-Power Card Detector function to compare with the
+measurement value. Coding is little Endian. Higher bit (bit 15) is RFU, its value
+shall not be considered.
+Measurement Value 2 bytes Value measured on the AGC. Coding is little Endian.
+Table 91. RF_LPCD_TRACE_NTF parameters
+10.5  [PN7160-NCI] extension: EMVCo Profile in Poll & Listen Modes
+The EMVCo profiles are introduced in PN7160 for EMVCo compliancy. Indeed there are incompatibilities
+between the RF Discovery activity as defined in the NFC Forum and the RF discovery defined in EMVCo
+standard.
+10.5.1  EMVCo profile in Poll Mode
+10.5.1.1  Configuring PN7160 to implement the EMVCo polling algorithm
+To be compliant to the EMVCo certification tests, the RF Discovery has to be configured so that only NFC-A and
+NFC-B are supported in Poll phase and so that there is no Listen phase. So the DH has to send the following
+command:
+RF_DISCOVER_CMD( 2,
+[NCI_DISCOVERY_TYPE_POLL_A_PASSIVE,1],
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+87 / 147

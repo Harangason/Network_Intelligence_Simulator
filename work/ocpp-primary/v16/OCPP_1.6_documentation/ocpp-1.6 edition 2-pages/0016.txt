@@ -1,0 +1,29 @@
+The following figures describe the general views of the operations between Charge Point and Central System for
+two cases:
+1. a Charge Point requesting authentication of a card and sending charge transaction status,
+2. Central System requesting a Charge Point to update its firmware.
+The arrow labels in the following figures indicate the PDUs exchanged during the invocations of the operations.
+These PDUs are defined in detail in the Messages section.
+Charge Point Central System
+Authorize.req(idTag)
+Authorize.conf(idTagInfo)
+Start Charging
+StartTransaction.req(connectorId, idTag, meterStart, timestamp, [reservationId])
+StartTransaction.conf(idTagInfo, transactionId)
+Charging...
+Authorize.req(idTag)
+Authorize.conf(idTagInfo)
+Stop Charging
+StopTransaction.req(meterStop, timestamp, transactionId, [reason], [idTag], [transactionData])
+StopTransaction.conf(idTagInfo)
+Figure 1. Sequence Diagram: Example of starting and stopping a transaction
+When a Charge Point needs to charge an electric vehicle, it needs to authenticate the user first before the
+charging can be started. If the user is authorized the Charge Point informs the Central System that it has started
+with charging.
+When a user wishes to unplug the electric vehicle from the Charge Point, the Charge Point needs to verify that
+the user is either the one that initiated the charging or that the user is in the same group and thus allowed to
+terminate the charging. Once authorized, the Charge Point informs the Central System that the charging has
+been stopped.
+ A Charge Point MUST NOT send an Authorize.req before stopping a transaction if the
+presented idTag is the same as the idTag presented to start the transaction.
+11

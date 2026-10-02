@@ -1,0 +1,56 @@
+1.83.2. StatusNotificationResponse
+This contains the field definition of StatusNotificationResponse sent by the CSMS to the Charging Station in response to a
+StatusNotificationRequest. This message might be removed in a future version of OCPP. It will be replaced by Device Management
+Monitoring events.
+No fields are defined.
+1.84. TransactionEvent
+1.84.1. TransactionEventRequest
+This section contains the field definition of the TransactionEventRequest PDU sent by the Charging Station to the CSMS. For each
+of the eventTypes; Started, Updated and Ended, the corresponding cardinality is specified.
+Class
+Field Name Field Type Card. Description
+eventType TransactionEventEnumType 1..1 Required. This contains the type of this event. The first
+TransactionEvent of a transaction SHALL contain:
+"Started" The last TransactionEvent of a transaction
+SHALL contain: "Ended" All others SHALL contain:
+"Updated"
+timestamp dateTime 1..1 Required. The date and time at which this transaction
+event occurred.
+triggerReason TriggerReasonEnumType 1..1 Required. Reason the Charging Station sends this
+message to the CSMS
+seqNo integer, 0 <= val 1..1 Required. Incremental sequence number, helps with
+determining if all messages of a transaction have been
+received.
+offline boolean 0..1 Optional. Indication that this transaction event happened
+when the Charging Station was offline. Default = false,
+meaning: the event occurred when the Charging Station
+was online.
+numberOfPhasesUsed integer, 0 <= val <= 3 0..1 Optional. If the Charging Station is able to report the
+number of phases used, then it SHALL provide it. When
+omitted the CSMS may be able to determine the number
+of phases used as follows:
+1: The numberPhases in the currently used
+ChargingSchedule.
+2: The number of phases provided via device
+management.
+cableMaxCurrent integer 0..1 Optional. The maximum current of the connected cable in
+Ampere (A).
+reservationId integer, 0 <= val 0..1 Optional. This contains the Id of the reservation that
+terminates as a result of this transaction.
+preconditioningStatus PreconditioningStatusEnumType 0..1 Optional. (2.1) The current preconditioning status of the
+BMS in the EV. Default value is Unknown.
+evseSleep boolean 0..1 Optional. (2.1) True when EVSE electronics are in sleep
+mode for this transaction. Default value (when absent) is
+false.
+meterValue MeterValueType 0..* Optional. This contains the meter values relevant to the
+transaction. Depending on the eventType of this
+TransactionEventRequest the following Configuration
+Variable is used to configure which measurands are
+used:
+Started: SampledDataTxStartedMeasurands
+Updated: SampledDataTxUpdatedMeasurands and
+AlignedDataMeasurands
+Ended: SampledDataTxEndedMeasurands and
+AlignedDataTxEndedMeasurands
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 618/803 Part 2 - Specification

@@ -1,0 +1,53 @@
+7.4.9.2 FPD-Link Decoder Status
+The FPD-Link III receiver also checks the decoded data for encoding or sequence errors in the received 
+FPD-Link III frame. If either of these error conditions are detected the FPD3_ENC_ERROR bit will be latched 
+in the RX_PORT_STS2 register 0x4E[5]. An interrupt may also be generated based on assertion of the 
+encoded error flag. To detect FPD-Link III Encoder errors, the LINK_ERROR_COUNT must be enabled with 
+a LINK_ERR_THRESH value greater than 1. Otherwise, the loss of Receiver Lock will prevent detection of the 
+Encoder error. The FPD3_ENC_ERROR flag is cleared on read.
+When partnered with a DS90UB953-Q1, the FPD3 Encoder may be configured to include a CRC check of the 
+FPD3 encoder sequence. The CRC check provides an extra layer of error checking on the encoder sequence. 
+This CRC checking adds protection to the encoder sequence used to send link information comprised of 
+Datapath Control registers 0x59 and 0x5A, Sensor Status registers 0x51 - 0x54, and Serializer ID register 0x5B. 
+TI recommends that designers enable CRC error checking on the FPD3 Encoder sequence to prevent any 
+updates of link information values from encoded packets that do not pass CRC check. The FPD3 Encoder CRC 
+is enabled by setting the FPD3_ENC_CRC_DIS register 0xBA[7] to 0. In addition, the FPD3_ENC_CRC_CAP 
+flag should be set in register 0x4A[4].
+7.4.9.3 RX Port Input Signal Detection
+The DS90UB960-Q1 can detect and measure the approximate input frequency and frequency stability of 
+each RX input port and indicate status in bits [2:1] of RX_PORT_STS2. Frequency measurement stable 
+FREQ_STABLE indicates the FPD-Link III input clock frequency is stable. When no FPD-Link III input clock 
+is detected at the RX input port, the NO_FPD3_CLK bit indicates that condition has occurred. The setting 
+of these error flags is dependent on the stability control settings in the FREQ_DET_CTL register 0x77. The 
+NO_FPD3_CLK bit will be set if the input frequency is below the setting programmed in the FREQ_LO_THR 
+setting in the FREQ_DET_CTL register. A change in frequency FREQ_STABLE = 0, is defined as any change 
+in MHz greater than the value programmed in the FREQ_HYST value. The frequency is continually monitored 
+and provided for readback through the I2C interface less than every 1 ms. A 16-bit value is used to provide the 
+frequency in registers 0x4F and 0x50. An interrupt can also be generated for any of the ports to indicate if a 
+change in frequency is detected on any port.
+7.4.9.4 Line Counter
+For each video frame received, the deserializer will count the number of video lines in the frame. In CSI-2 input 
+mode, any long packet will be counted as a video line. In RAW mode, any assertion of the Line Valid (LV) signal 
+will be interpreted as a video line. The LINE_COUNT_1 and LINE_COUNT_0 registers can be used to read the 
+line count for the most recent video frame. Line Length may not be consistent when receiving multiple CSI-2 
+video streams differentiated by VC-ID. An interrupt may be enabled based on a change in the LINE_COUNT 
+value. If interrupts are enabled, the LINE_COUNT registers will be latched at the interrupt and held until read 
+back by the processor through the I2C.
+7.4.9.5 Line Length
+For each video line, the length (in bytes) will be determined. The LINE_LEN_1 and LINE_LEN_0 registers can 
+be used to read the line count for the most recent video frame. If the line length is not stable throughout the 
+frame, the length of the last line of the frame will be reported. Line Count may not be consistent when receiving 
+multiple CSI-2 video streams differentiated by VC-ID. An interrupt may be enabled based on a change in the 
+LINE_LEN value. If interrupts are enabled, the LINE_LEN registers will be latched at the interrupt and held until 
+read by the processor through the I2C.
+7.4.10 Sensor Status
+When paired with the DS90UB953-Q1 serializer, the DS90UB960-Q1 is capable of receiving diagnostic 
+indicators from the serializer. The sensor alarm and status diagnostic information are reported in the 
+SENSOR_STS_X registers. The interrupt capability from detected status changes in sensor are described 
+in Section 7.5.9.4. This interrupt condition will be cleared by reading the SEN_INT_RISE_STS and 
+SEN_INT_FALL_STS registers.
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+36 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

@@ -1,0 +1,91 @@
+F06 - Trigger Message - Requirements
+Table 82. F06 - Requirements
+ID Precondition Requirement definition Note
+F06.FR.01 In the TriggerMessageRequest message, the CSMS
+SHALL indicate which message(s) it wishes to
+receive.
+F06.FR.02 F06.FR.01.
+For every such requested message.
+The CSMS MAY indicate to which EVSE this request
+applies.
+F06.FR.03 F06.FR.02 The requested message SHALL be leading. If the
+specified evseId is not relevant to the message, it
+SHALL be ignored. In such cases the requested
+message SHALL still be sent.
+F06.FR.04 If a Charging Station receives a
+TriggerMessageRequest.
+The Charging Station SHALL first send the
+TriggerMessage response, before sending the
+requested message.
+F06.FR.05 F06.FR.04 In the TriggerMessageResponse the Charging
+Station SHALL indicate whether it will send the
+requested message or not, by returning Accepted or
+Rejected.
+It is up to the Charging
+Station if it accepts or
+rejects the request to
+send.
+F06.FR.06 If a Charging Station accepts a
+TriggerMessageRequest with
+requestedMessage set to: MeterValues
+The Charging Station SHALL send a
+MeterValuesRequest to the CSMS with the most
+recent measurements for all measurands
+configured in Configuration Variable:
+AlignedDataMeasurands.
+F06.FR.07 If a Charging Station accepts a
+TriggerMessageRequest with
+requestedMessage set to:
+TransactionEvent
+The Charging Station SHALL send a
+TransactionEventRequest to the CSMS with
+triggerReason = Trigger, transactionInfo with at
+least the chargingState, and meterValue with the
+most recent measurements for all measurands
+configured in Configuration Variable:
+SampledDataTxUpdatedMeasurands.
+F06.FR.08 When the Charging Station receives a
+TriggerMessageRequest with a
+requestedMessage that it has not
+implemented
+The Charging Station SHALL respond with
+TriggerMessageResponse with status
+NotImplemented.
+F06.FR.09 The messages it triggers SHALL only give current
+information.
+F06.FR.10 Messages that the Charging Station marks as
+Accepted SHALL be sent.
+E.g. the situation could
+occur that, between
+accepting the request
+and actually sending the
+requested message, that
+same message gets sent
+because of normal
+operations. In such
+cases the message just
+sent MAY be considered
+as complying with the
+request.
+F06.FR.11 If the field evse is relevant but absent
+in the TriggerMessageRequest.
+The Charging Station SHALL interpret this as "for all
+allowed evse values".
+StatusNotifications can
+only be requested for a
+specific connector, see
+F06.FR.12/13
+F06.FR.12 If a Charging Station receives a
+TriggerMessageRequest with
+requestedMessage set to:
+StatusNotification AND
+( evse is omitted OR
+evse.connectorId is omitted )
+The Charging Station MAY respond with a
+TriggerMessageResponse with status Rejected.
+StatusNotification
+messages can only be
+requested at connector
+level.
+Edition 2, 2025-12-03 F. Remote Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 242/803 Part 2 - Specification

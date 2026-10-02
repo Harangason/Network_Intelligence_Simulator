@@ -1,0 +1,90 @@
+ID Precondition Requirement definition Note
+C15.FR.03 C15.FR.02 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is true AND
+TxStopPoint does NOT contain:
+(Authorized OR PowerPathClosed OR
+EnergyTransfer)
+The Charging Station SHALL stop the energy
+transfer and send TransactionEventRequest
+(eventType = Updated) with triggerReason set to
+Deauthorized and chargingState set to
+SuspendedEVSE or preferably to EVConnected.
+Since the effect of
+setting chargingState to
+SuspendedEVSE or
+EVConnected both have
+the same effect of not
+delivering any energy, the
+use of SuspendedEVSE
+is still allowed in this
+situation in order to avoid
+breaking existing
+implementations that
+adhere to the original
+requirement.
+Use of SuspendedEVSE
+in this situation will
+become deprecated in
+the next OCPP release.
+C15.FR.04 C15.FR.02 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is true AND
+TxStopPoint does contain:
+(Authorized OR PowerPathClosed OR
+EnergyTransfer)
+The Charging Station SHALL stop the transaction
+and send TransactionEventRequest (eventType =
+Ended) with triggerReason set to Deauthorized and
+stoppedReason set to DeAuthorized.
+C15.FR.05 C15.FR.04 AND
+If the Charging Station has the
+possibility to lock the Charging Cable
+The Charging Station SHOULD keep the Charging
+Cable locked until the owner presents his identifier.
+C15.FR.06 C15.FR.02 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is set to false
+AND
+MaxEnergyOnInvalidId is not
+implemented or has been exceeded.
+TxStopPoint does NOT contain:
+EnergyTransfer
+The Charging Station SHALL stop the energy
+delivery to the EV immediately and send
+TransactionEventRequest (eventType = Updated)
+with triggerReason set to ChargingStateChanged
+and chargingState set to SuspendedEVSE
+C15.FR.07 C15.FR.02 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is set to false
+AND
+MaxEnergyOnInvalidId is set and
+has NOT been exceeded.
+Energy delivery to the EV SHALL be allowed until
+the amount of energy specified in
+MaxEnergyOnInvalidId has been reached.
+C15.FR.08 When an unknown identifier is
+presented AND
+OfflineTxForUnknownIdEnabled is set
+to true
+The Charging Station SHALL accept the presented
+IdToken.
+2.7. Master Pass
+C16 - Stop Transaction with a Master Pass
+No. Type Description
+1 Name Stop Transaction with a Master Pass
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 110/491 Part 2 - Specification

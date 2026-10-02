@@ -1,0 +1,39 @@
+B12 - Reset - With Ongoing Transaction
+No. Type Description
+1 Name Reset - With Ongoing Transaction
+2 ID B12
+3 Objective(s) To enable the CSMS to request a Charging Station to reset itself or EVSE, while there is an
+ongoing transaction.
+4 Description This use case covers how the CSMS can request the Charging Station to reset itself or an EVSE by
+sending ResetRequest. (If ResetRequest contains an optional paramater evseId, then only a reset
+of the specific EVSE is requested.) This could for example be necessary if the Charging Station is
+not functioning correctly. The CSMS has the possibility to let the Charging Station end all
+transactions itself and reboot or wait until all ongoing transactions are ended normally (by an EV
+user) and then reboot.
+Actors Charging Station, CSMS, CSO
+Scenario description 1. The CSO requests the CSMS to reset the Charging Station or EVSE.
+2. The CSMS sends ResetRequest requesting the Charging Station to reset itself or EVSE.
+3a. On receipt of an OnIdle reset, the Charging Station responds with ResetResponse(Scheduled),
+indicating the Charging Station will try to reset itself or EVSE after all ongoing transactions have
+ended. The Charging Station continues charging and sets all EVSEs (or only the one provided in
+the request, if evseId was supplied) that are Available to status Unavailable, waits until all
+transactions are finished and all TransactionEventRequest (eventType = Ended) messages are
+sent.
+3b. On receipt of an Immediate reset, the Charging Station responds with
+ResetResponse(Accepted), indicating the Charging Station will try to reset itself or EVSE. The
+Charging Station attempts to terminate any transaction (or only those running on the EVSE
+provided in the request, if evseId was supplied) in progress, and sending a
+TransactionEventRequest (eventType = Ended) message.
+4. Only if no evseId was supplied the Charging Station reboots and returns to a state as just
+having been booted, B01 - Cold Boot Charging Station applies.
+Alternative scenario(s) B11 - Reset Without Ongoing Transaction
+5 Prerequisite(s) A transaction is ongoing.
+6 Postcondition(s) Successful postcondition:
+The Charging Station was able to reset itself or EVSE.
+Failure postcondition:
+The Charging Station not was able to reset itself or EVSE.
+7 Error handling After having accepted the ResetRequest, TransactionEventRequest messages that cannot be
+delivered to the CSMS MUST be queued.
+8 Remark(s) n/a
+Edition 4, 2025-12-03 B. Provisioning
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 71/491 Part 2 - Specification

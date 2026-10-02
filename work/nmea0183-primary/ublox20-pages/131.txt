@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+bits 9…0   U:10 IODE - - Issue of data, authenticated ephemeris
+bits 14…10   U:5 authNum - - Number of times that the same block of navigation
+data has been authenticated in last execution
+bit 15   U:1 authStatus - - Indicates the authentication result for current SV's
+orbits, clocks, ﬂags, group delays and ionospheric
+delay data:
+• 0: Navigation data authentication failed
+• 1: Navigation data successfully authenticated
+30 + n·4 U1 svId - - Satellite identiﬁer whose data gets authenticated (see
+Satellite Numbering)
+31 + n·4 U1 reserved2 - - Reserved
+End of repeated group (authSVs times)
+3.17.2 UBX-SEC-SIG (0x27 0x09)
+3.17.2.1 Signal security information
+Message UBX-SEC-SIG
+Signal security information
+Type Periodic/polled
+Comment Information related to the security, i.e. availability and integrity, of the signals.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x27 0x09 4 + jamNumCentFreqs·4 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x02 for this version)
+1 X1 sigSecFlags - - Signal security ﬂags, providing high-level jamming and
+spooﬁng detector information
+bit 0   U:1 jamDetEnabled - - Flag indicates whether jamming detection is enabled
+bits 2…1   U:2 jamState - - Jamming state
+• 0: Unknown
+• 1: No jamming indicated
+• 2: Warning; jamming indicated
+0: Unknown , denotes that the currently available
+information is not suﬃcient to judge whether the
+receiver is jammed or not. This may occur at receiver
+start up (or more generally when the receiver is
+in a mode, where jamming detection is hindered)
+or when the jamming indicator is disabled. 1: No
+jamming indicated : the jamming indicator is enabled
+and does not sense any signiﬁcant jamming. 2:
+Warning; jamming indicated : the jamming indicator
+is indicating jamming which has a signiﬁcant impact
+on the signal tracking. (The list jamPerCentFreq can
+be checked to ﬁnd out which frequency bands are
+jammed.)
+bit 3   U:1 spfDetEnabled - - Flag indicates whether spooﬁng detection is enabled
+bits 6…4   U:3 spfState - - Spooﬁng state
+• 0: Unknown
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 131 of 224
+C1-Public

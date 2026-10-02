@@ -1,0 +1,61 @@
+No. Type Description
+5 Prerequisites - Communication between EV and EVSE SHALL be established successfully.
+- Online connection between Charging Station and CSMS SHALL be possible.
+- CSMS should be able to communicate with a third party that can process the
+CertificateInstallationRequest, for example a contract certificate pool.
+6 Postcondition(s) See ISO15118-1, use case Objective C1 and C2, page 20/22.
+7 Error handling In case the CSMS is not able to respond within the specified time, the Charging Station SHALL
+indicate failure to the EV.
+8 Remark(s) See ISO15118-1, use case Requirements C1, trigger , page 21.
+The message timeout in ISO15118-2 for CertificateUpdateReq is 5 seconds.
+EV Charging Station CSMS
+alt [ISO 15118-2]
+CertificateUpdateReq()
+Get15118EVCertificateRequest(15118SchemaVersion, update, exiRequest)
+Get15118EVCertificateResponse(status, exiResponse)
+CertificateUpdateRes()
+[ISO 15118-20]
+CertificateInstallationReq()
+Get15118EVCertificateRequest(15118SchemaVersion, install, exiRequest)
+Get15118EVCertificateResponse(status, exiResponse)
+CertificateInstallationRes()
+Figure 159. Certificate Update
+Source: ISO15118-1
+M02 - Certificate Update - Requirements
+Table 128. M02 - Requirements
+ID Precondition Requirement definition Note
+M02.FR.01
+(2.1)
+Upon receiving an ISO
+15118
+CertificateUpdateReq
+AND
+EV uses ISO 15118-2
+Charging Station SHALL forward the request to the
+CSMS using the Get15118EVCertificateRequest
+message with action = Update.
+The CSMS is responsible for
+forwarding it to the secondary actor
+which will process the
+CertificateUpdateRequest. This could
+be a contract certificate pool as
+outlined in application guide VDE-AR-E
+2802-100-1.
+M02.FR.02
+(2.1)
+Upon receiving an ISO
+15118
+CertificateUpdateReq
+AND
+EV uses ISO 15118-20
+Charging Station SHALL act according to use case
+M01
+ISO 15118-20 does not differentiate
+between Install and Update anymore.
+M03 - Retrieve list of available certificates from a Charging Station
+No. Type Description
+1 Name Retrieve list of available certificates from a Charging Station
+2 ID M03
+3 Objective(s) To enable the CSMS to retrieve a list of available certificates from a Charging Station.
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 440/803 Part 2 - Specification

@@ -1,0 +1,71 @@
+7.2 Functional Block Diagram
+PDB
+DPHY Output
+MIPI CSI-2
+Port 0 
+CLOCK 
+MIPI CSI-2 
+Outputs
+Clock 
+GenCMLOUTP
+CMLOUTN
+Timing 
+and 
+ControlLane Management 
+/ Deskew / 
+Sync I
+/F 
+/ Memory
+I2C 
+Controller
+IDx
+I2C_SDA
+I2C_SCLGPIOs
+Serial to Parallel
+CDR
+Decoder
+Virtual Channel Buffers
+CSI-2 Protocol Interface
+MIPI CSI-2
+Port 1
+RIN0-
+RIN0+
+RIN1-
+RIN1+
+RIN2-
+RIN2+
+RIN3-
+RIN3+
+BCCCDRBCCCDRBCCCDRBCC
+MODE
+REFCLK
+INTB
+I2C_SDA2
+I2C_SCL2
+Figure 7-1. Functional Block Diagram
+7.3 Feature Description
+The DS90UB960-Q1 provides a 4:2 hub for sensor applications. The device includes four FPD-Link III inputs for 
+sensor data streams from up to four DS90UB953-Q1 serializers. The interfaces are also backward-compatible to 
+DS90UB933-Q1 or DS90UB913A-Q1 serializers. Data received from the four input ports is aggregated onto one 
+or two 4-lane CSI-2 interfaces.
+7.4 Device Functional Modes
+The DS90UB960-Q1 supports two main operating modes: 
+• CSI-2 Mode (DS90UB953-Q1 and DS90UB935-Q1 compatible)
+• RAW Mode (DS90UB933-Q1 and DS90UB913A-Q1 compatible)
+The two modes mainly control the FPD-Link III receiver operation of the device. In both cases, the output format 
+for the device is CSI-2 through one or two CSI-2 transmit ports.
+Each RX input port can be individually configured for CSI-2 or  RAW modes of operation. The input mode of 
+operation is controlled by the FPD3_MODE 0x6D[1:0] register bits in the PORT_CONFIG register. The input 
+mode may also be controlled by the MODE strap pin.
+The DS90UB960-Q1 includes forwarding control to allow multiple video streams from any of the received ports 
+to be mapped to either of the CSI-2 ports.
+7.4.1 CSI-2 Mode
+When operating in CSI-2 Mode, the receives CSI-2 formatted data on up to four FPD-Link III input ports 
+and forwards the data to one or two CSI-2 transmit  ports. The deserializer can operate in CSI-2 mode with 
+synchronous back channel reference or non-synchronous mode. The forward channel line rate is independent of 
+the CSI-2 rate in synchronous or non-synchronous with external clock mode. The mode supports the remapping 
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 27
+Product Folder Links: DS90UB960-Q1

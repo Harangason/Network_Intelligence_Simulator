@@ -1,0 +1,56 @@
+EV Driver
+Charging Station CSMS
+Plugin cable
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Occupied)
+NotifyEventResponse()
+TransactionEventRequest(eventType = Started, triggerReason = CablePluggeIn, ...)
+TransactionEventResponse(...)
+Present IdToken
+check authorization cache()
+opt
+notification
+opt [if cable not permanently attached]
+lock connector
+Start energy offer
+TransactionEventRequest(eventType = Updated, triggerReason = Authorized,
+chargingState = Charging,...)
+TransactionEventResponse(...)
+continue E01 - Start Transaction - Cable Plugin First
+Figure 33. Sequence Diagram: Start Transaction - Cached Id
+C12 - Start Transaction - Cached Id - Requirements
+Table 54. C12 - Requirements
+ID Precondition Requirement definition Note
+C12.FR.02 When an identifier is presented that is
+stored in the Authorization Cache as
+Accepted.
+The Charging Station SHALL send a
+TransactionEventRequest with idToken to the
+CSMS.
+C12.FR.03 C12.FR.02 The CSMS SHALL check the authorization status of
+the IdToken when processing this
+TransactionEventRequest.
+C12.FR.04 C12.FR.02 AND
+The cable is plugged in.
+The Charging Station SHALL start the energy offer.
+C12.FR.05 When an identifier is presented that is
+stored in the Authorization Cache with
+status other than Accepted, and the
+Charging Station is online.
+The Charging Station SHALL send an
+AuthorizeRequest to the CSMS.
+To check the current
+state of the identifier.
+C12.FR.06 When IdTokenInfo is received for an
+identifier in the Cache.
+The Authorization Cache SHALL be updated using
+the received IdTokenInfo.
+C12.FR.09 IdTokens that have a groupId equal to
+MasterPassGroupId
+SHALL NOT be allowed to start a transaction.
+2.5. Local Authorization list
+C13 - Offline Authorization through Local Authorization List
+No. Type Description
+1 Name Offline Authorization through Local Authorization List
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 116/803 Part 2 - Specification

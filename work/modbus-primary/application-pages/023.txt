@@ -1,0 +1,56 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  23/50 
+ 
+03 Change ASCII Input Delimiter  
+The character ‘CHAR’ passed in the request data field becomes the end of message delimiter 
+for future messages (replacing the default LF character). This function is useful in cases of a 
+Line Feed is not required at the end of ASCII messages.  
+Sub-function  Data Field (Request)  Data Field (Response)  
+00 03  CHAR 00  Echo Request Data  
+ 
+04 Force Listen Only Mode  
+Forces the addressed remote device to its Listen Only Mode for M ODBUS communications. 
+This isolates it from the other devices on the network, allowing them to continue 
+communicating without interruption from the addressed remote device. No response is 
+returned.  
+When the remote device enters its Listen Only Mode, all ac tive communication controls are 
+turned off. The Ready watchdog timer is allowed to expire, locking the controls off.  While the 
+device is in this mode, any MODBUS messages addressed to it or broadcast are monitored, 
+but no actions will be taken and no resp onses will be sent.  
+The only function that will be processed after the mode is entered will be the Restart 
+Communications Option function (function code 8, sub -function 1).  
+Sub-function  Data Field (Request)  Data Field (Response)  
+00 04  00 00  No Response Returned  
+ 
+10 (0A Hex) Clear Counters and Diagnostic Register  
+The goal is to clear all counters and the diagnostic register. Counters are also cleared upon 
+power –up. 
+Sub-function  Data Field (Request)  Data Field (Response)  
+00 0A  00 00  Echo Request Data  
+ 
+11 ( 0B Hex) Return Bus Message Count  
+The response data field returns the quantity of messages that the remote device has detected 
+on the communications system since its last restart, clear counters operation, or power –up. 
+Sub-function  Data Field (Request)  Data  Field (Response)  
+00 0B  00 00  Total Message Count  
+ 
+12 (0C Hex) Return Bus Communication Error Count  
+The response data field returns the quantity of CRC errors encountered by the remote device 
+since its last restart, clear counters operation, or power –up.  
+Sub-function  Data Field (Request)  Data Field (Response)  
+00 0C  00 00  CRC Error Count  
+ 
+13 (0D Hex) Return Bus Exception Error Count  
+The response data field returns the quantity of MODBUS exception responses returned by the 
+remote device since its last restart , clear counters operation, or power –up. 
+Exception responses are described and listed in section 7 . 
+Sub-function  Data Field (Request)  Data Field (Response)  
+00 0D  00 00 Exception Error Count  
+14 (0E Hex) Return Server  Message Count  
+The response data field returns the quantity of messages addressed to the remote device, or 
+broadcast, that the remote device has processed since its last restart, clear counters 
+operation, or power –up. 
+Sub-function  Data Field (Request)  Data Field (Response)  
+00 0E  00 00  Server  Message Count  
+ 
+15 (0F Hex) Return Server  No Response Count  

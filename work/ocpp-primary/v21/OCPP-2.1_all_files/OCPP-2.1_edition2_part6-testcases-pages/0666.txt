@@ -1,0 +1,50 @@
+TC_M_100_CS: Certificate Installation EV - ISO 15118-20 - Success
+Test case name Certificate Installation EV - ISO 15118-20 - Success
+Test case Id TC_M_100_CS
+Use case Id(s) M01
+Requirement(s) M01.FR.01, M01.FR.04
+System under test Charging Station
+Description The EV initiates installing a new certificates. The Charging Station forwards the request for a new
+certificate to the CSMS.
+Purpose To verify if the Charging Station is able to forward the request to the CSMS and accepts multiple contracts.
+Prerequisite(s) - The Charging Station supports ISO 15118-20.
+Before (Preparations)
+Configuration State:
+-The test case calls SendISO15118AuthorizationMethod method with parameter PnC in order to inform the EV emulator about the
+expected authorization method.
+-The test case calls SendInstallISO15118CertificateMethod method in order to trigger the EV emulator to initiate installing at most 5
+certificates.
+Memory State:
+CertificateInstalled from certificateType V2GRootCertificate
+CertificateInstalled from certificateType MORootCertificate
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+Note: EV emulator accepts at most 5 contracts.
+1. The Charging Station sends a Get15118EVCertificateRequest
+2. The Test System responds with a
+Get15118EVCertificateResponse with
+status Accepted
+exiResponse <Raw CertificateInstallationRes response for the EV,
+Base64 encoded.>
+remainingContracts <Configured
+numberOfSupportedEvCertificates> - 1
+3. The Charging Station sends a Get15118EVCertificateRequest
+4. The Test System responds with a
+Get15118EVCertificateResponse with
+status Accepted
+exiResponse <Raw CertificateInstallationRes response for the EV,
+Base64 encoded.>
+remainingContracts <Configured
+numberOfSupportedEvCertificates> - 2
+5. The Charging Station sends a Get15118EVCertificateRequest
+6. The Test System responds with a
+Get15118EVCertificateResponse with
+status Accepted
+exiResponse <Raw CertificateInstallationRes response for the EV,
+Base64 encoded.>
+remainingContracts <Configured
+numberOfSupportedEvCertificates> - 3
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 664/1383 Part 6 - Test Cases

@@ -1,0 +1,50 @@
+Chapter 3. Use Cases for DER control
+Following use cases describe how a power setting, a DER setting, a trip curve and a power curve can be configured and activated.
+R01 - Starting a V2X session with DER control in EVSE
+New in OCPP 2.1
+No. Type Description
+1 Name Starting a V2X session with DER control in EVSE
+2 ID R01
+3 Objective(s) To start a bidirectional charging session with DER control performed by inverter in the EVSE. This
+is always the case for DC EVSEs, but can also be used in case of AC charging if the Charging
+Station is capable of controlling (dis)charging behavior of EV such that it meets DER control
+settings.
+4 Description This use case illustrates how DER control can be executed in three different scenarios: ISO
+15118-20 DC_BPT, CHAdeMO and ISO 15118-20 AC_BPT.
+A utility has set specific grid parameters (DER controls) that are required to be applied to
+bidirectional charging sessions.
+CSMS configures the settings at the Charging Station.
+An EV starts a bidirectional charging session.
+No DER control settings need to be applied to the EV, since the EVSE of the Charging Station will
+handle these.
+For an ISO 15118-20 DC_BPT or CHAdeMO charging session, the inverter is part of (and
+controlled by) the Charging Station.
+For an ISO 15118-20 AC_BPT charging session, the inverter is in the EV and cannot be configured
+by the Charging Station. Instead, the Charging Station will control charging behavior via
+ChargeLoop message in a way that it adheres as much as possible to the DER control settings of
+the Charging Station.
+Actors Utility, CSMS, Charging Station, EV
+Scenario description #1 A DC bidirectional session using ISO 15118-20 DC_BPT
+1. EV and Charging Station start an ISO 15118-20 session.
+2. Upon successful authorization the EV starts service negotiation and selects the DC_BPT
+service.
+3. EV and Charging Station exchange charge parameters
+4. Charging Station sends NotifyEVChargingNeedsRequest with departureTime and
+v2xChargingParameters.
+5. CSMS calculates a TxProfile for this session, which may contain periods of discharging,
+and sends it as a SetChargingProfileRequest.
+6. Charging Station responds with ScheduleExchangeRes to EV.
+a. If controlMode = Scheduled is used, then ScheduleExchangeRes will contain the
+TxProfile schedule.
+b. If controlMode = Dynamic is used, then Charging Station will update
+charging/discharging levels via the ChargeLoop messages with EV to match the
+TxProfile schedule.
+7. EV requests start of charging with a PowerDeliveryReq.
+8. EV starts charging.
+9. EV will start discharging according to schedule periods in TxProfile schedule.
+10. DER control is executed by Charging Station.
+a. Discharging power of EVSE inverter will be limited to 50% of its rated capacity.
+b. Power will be adjusted according to grid voltage as defined by the configured
+VoltWatt curve.
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 548/803 Part 2 - Specification

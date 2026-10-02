@@ -1,0 +1,50 @@
+Tool validations
+* Step 2:
+Message: SetDERControlResponse
+- status must be Accepted
+* Step 3:
+Message: NotifyDERAlarmRequest
+- controlType must be HVMustTrip
+- gridEventFault must be OverVoltage
+- alarmEnded must be false or <absent>
+- timestamp must be <Current DateTime>
+* Step 6: 
+Message: ClearDERControlResponse
+- status must be Accepted
+* Step 7: 
+Message: NotifyDERAlarmRequest
+- controlType must be HVMustTrip
+- gridEventFault must be OverVoltage
+- alarmEnded must be true
+- timestamp must be <Current DateTime>
+* Step 10:
+Message: SetDERControlResponse
+- status must be Accepted
+* Step 11:
+Message: NotifyDERAlarmRequest
+- controlType must be LFMustTrip
+- gridEventFault must be UnderFrequency
+- alarmEnded must be false or <absent>
+- timestamp must be <Current DateTime>
+* Step 14:
+Message: ClearDERControlResponse
+- status must be Accepted
+* Step 15:
+Message: NotifyDERAlarmRequest
+- controlType must be LFMustTrip
+- gridEventFault must be UnderFrequency #
+- alarmEnded must be true
+- timestamp must be <Current DateTime>
+Post scenario validations:
+No other NotifyDERAlarmRequest shall be received, except those mentioned in the tool validation steps.
+6.2.62. Page 902/903 - (2026-02) - TC_S_104_CS - Resolved editorial issues
+Steps 7 to 14 were incorrectly swapped, and at the tool validations the elements incorrectly refer to Component for some of the
+entries. Like baseReportData[0].component .variable.name
+Test case name Battery Swap - Charging - Variables validation
+Test case Id TC_S_104_CS
+Use case Id(s) S04
+Requirement(s) S04.FR.08, S04.FR.09, S04.FR.10
+System under test Charging Station
+Description Charging station is able to support battery swapping.
+Purpose To verify whether the Charging Station is able to be configured correctly.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 92/116 Errata 2026-06

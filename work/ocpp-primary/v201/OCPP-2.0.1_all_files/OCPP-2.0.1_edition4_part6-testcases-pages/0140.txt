@@ -1,0 +1,33 @@
+TC_C_46_CS: Store Authorization Data in the Authorization Cache -
+AuthCacheLifeTime
+Test case name Store Authorization Data in the Authorization Cache - AuthCacheLifeTime
+Test case Id TC_C_46_CS
+Use case Id(s) C10
+Requirement(s) C10_FR_08
+System under test Charging Station
+Description This test case covers how the Charging Station autonomously stores a record of previously presented
+identifiers that have been successfully authorized by the CSMS in the Authorization Cache. (Successfully
+meaning: a response received on a message containing an IdToken)
+Purpose To verify if the Charging Station is able to correctly remove an idToken when this one is not reused again
+within the specified amount of time (AuthCacheLifeTime) according to the mechanism as described in the
+OCPP specification.
+Prerequisite(s) - AuthCacheCtrlr.Available is implemented with value true
+- Configuration variable AuthCacheLifeTime is implemented
+Before (Preparations)
+Configuration State:
+AuthCacheLifeTime is <Configured TransactionDuration>
+AuthCacheCtrlr.LocalPreAuthorize is true (If implemented)
+Memory State:
+IdTokenCached <Configured valid idtoken fields>
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. Wait for <Configured Transaction Duration> seconds
+2. Execute Reusable State Authorized
+Tool validations
+N/a
+Post scenario validations:
+- N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 138/914 Part 6 - Test Cases

@@ -1,0 +1,39 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  43 
+Notes: 
+1. The maximum data rate depends on the family, package, and performance grade of the device. Check the device data sheet for 
+more information. 
+2. Only one color format can be enabled at a time. 
+3. The duration of the timing parameter is equal to (byte clock period) × (attribute value). 
+4. The default value of this parameter is equal to floor((Minimum timing parameter value/ByteClk Period) + 1). 
+5. The timing parameters are in number of byte clock cycles. The IP automatically calculates the timing parameters (in byte-clock 
+cycles) to meet the required timing limits. You must verify that the selected values meet your overall system timing, as actual 
+D-PHY lane timing may vary because of internal serialization and register delays. 
+Attribute Selectable Values Description 
+Default value of t_CLK-ZERO = ceil(Minimum timing parameter 
+value/ByteClk Period). 
+t_CLK-PRE 2–255 Duration of the HS clock prior to the start of the LP-to-HS sequence of the 
+data lanes. 
+Default value of t_CLK-PRE = ceil((Minimum timing parameter value/ 
+ByteClk Period) + 1). 
+t_CLK-POST 2–2554 Duration of the HS clock after the last associated data lane has 
+transitioned to LP mode. 
+The interval is defined as the period from the end of tHS-TRAIL to the 
+beginning of tCLK-TRAIL.  
+t_CLK-TRAIL 2–255 Duration of the HS-0 state after the last clock bit of an HS transmission 
+burst. 
+Default value of t_CLK-TRAIL = floor((Minimum timing parameter 
+value/ByteClk Period) + 2). 
+t_CLK-EXIT 1–2554 Duration of the clock LP-11 state following an HS transmission burst to 
+the next HS transmission burst in non-continuous clock mode. 
+t_SKEWCAL-INITIAL 215–100 µs Duration of the initial skew calibration. Default value is close to 215 UI. 
+This setting is available only when Enable Initial Skew Calibration is 
+checked. 
+t_SKEWCAL-PERIODIC 210–10 µs Duration of the periodic skew calibration. Default value is close to 210 UI. 
+This setting is available only when Enable Periodic Skew Calibration is 
+checked. 

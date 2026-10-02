@@ -1,0 +1,3712 @@
+PDF_PAGE1
+—
+RELION® PROTECTION AND CONTROL
+GRID AUTOMATION REC615
+IEC 61850 Engineering Guide
+
+PDF_PAGE2
+
+PDF_PAGE3
+Document ID: 2NGA002470
+Issued: 2025-05-09
+Revision: A
+© Copyright 2025 ABB. All rights reserved
+PDF_PAGE4
+Copyright
+ABB is the owner of the copyright in this document. This document or any parts thereof must not be
+reproduced or copied without the written permission from ABB and the contents thereof must not be
+used to any unauthorized purpose.
+The software or hardware described in this document is furnished under a license and may be used,
+copied, or disclosed only in accordance with the terms of such license.
+Trademarks
+ABB and Relion are registered trademarks of the ABB Group. All other brand or product names
+mentioned in this document may be trademarks or registered trademarks of their respective holders.
+Open Source Software
+This product contains open source software. For license information refer to product documentation at
+www.abb.com.
+Warranty
+Please inquire about the terms of warranty from your nearest ABB representative.
+www.abb.com/mediumvoltage
+PDF_PAGE5
+Disclaimer
+The data, examples and diagrams in this manual are included solely for the concept or product
+description and are not to be deemed as a statement of guaranteed properties. All persons responsible
+for applying the equipment addressed in this manual must satisfy themselves that each intended
+application is suitable and acceptable, including that any applicable safety or other operational
+requirements are complied with. In particular, any risks in applications where a system failure and/or
+product failure would create a risk for harm to property or persons (including but not limited to
+personal injuries or death) shall be the sole responsibility of the person or entity applying the
+equipment, and those so responsible are hereby requested to ensure that all measures are taken to
+exclude or mitigate such risks.
+This product has been designed to be connected and communicate data and information via a network
+interface which should be connected to a secure network. It is the sole responsibility of the person
+or entity responsible for network administration to ensure a secure connection to the network and
+to take the necessary measures (such as, but not limited to, installation of firewalls, application of
+authentication measures, encryption of data, installation of antivirus programs, etc.) to protect the
+product and the network, its system and interface included, against any kind of security breaches,
+unauthorized access, interference, intrusion, leakage and/or theft of data or information. ABB is not
+liable for any such damages and/or losses.
+This document has been carefully checked by ABB but deviations cannot be completely ruled out. In
+case any errors are detected, the reader is kindly requested to notify the manufacturer. Other than
+under explicit contractual commitments, in no event shall ABB be responsible or liable for any loss or
+damage resulting from the use of this manual or the application of the equipment.
+In case of discrepancies between the English and any other language version, the wording of the
+English version shall prevail.
+PDF_PAGE6
+Conformity
+This product complies with following directive and regulations.
+Directives of the European parliament and of the council:
+• Electromagnetic compatibility (EMC) Directive 2014/30/EU
+• Low-voltage Directive 2014/35/EU
+• RoHS Directive 2011/65/EU
+• RoHS Directive (EU) 2015/863 amending Annex II
+UK legislations:
+• Electromagnetic Compatibility Regulations 2016
+• Electrical Equipment (Safety) Regulations 2016
+• The Restriction of the Use of Certain Hazardous Substances in Electrical and Electronic Equipment
+Regulations 2012
+These conformities are the result of tests conducted by the third-party testing in accordance with
+the product standard EN / BS EN 60255-26 for the EMC directive / regulation, and with the product
+standards EN / BS EN 60255-1 and EN / BS EN 60255-27 for the low voltage directive / safety regulation.
+The product is designed in accordance with the international standards of the IEC 60255 series.
+PDF_PAGE7
+Safety information
+Dangerous voltages can occur on the connectors, even though the auxiliary voltage has been
+disconnected.
+Non-observance can result in death, personal injury or substantial property damage.
+Only a competent electrician is allowed to carry out the electrical installation.
+National and local electrical safety regulations must always be followed.
+The frame of the protection relay has to be carefully earthed.
+The protection relay contains components which are sensitive to electrostatic discharge.
+Unnecessary touching of electronic components must therefore be avoided.
+Whenever changes are made in the protection relay, measures should be taken to avoid
+inadvertent tripping.
+PDF_PAGE8
+Contents
+1 Introduction............................................................................................. 12
+1.1 This manual.............................................................................................................................................12
+1.2 Intended audience................................................................................................................................. 12
+1.3 Product documentation....................................................................................................................... 13
+1.3.1 Product documentation set................................................................................................ 13
+1.3.2 Document revision history...................................................................................................13
+1.3.3 Related documentation........................................................................................................13
+1.4 Symbols and conventions.................................................................................................................... 13
+1.4.1 Symbols................................................................................................................................... 13
+1.4.2 Document conventions........................................................................................................ 14
+2 IEC 61850 overview................................................................................. 15
+3 PCM600.....................................................................................................18
+3.1 Connectivity packages......................................................................................................................... 18
+3.2 PCM600 and relay connectivity package version............................................................................18
+4 REC615 data model..................................................................................19
+4.1 REC615 implementation....................................................................................................................... 19
+4.2 Information model.................................................................................................................................19
+4.3 Vertical and horizontal communication............................................................................................ 21
+4.3.1 Predefined vertical communication data sets.................................................................22
+4.3.2 Predefined horizontal communication data sets........................................................... 23
+4.3.3 Vertical communication diagnostic counters..................................................................23
+4.4 Parameter setting and disturbance recorder ................................................................................. 24
+5 GOOSE.......................................................................................................25
+5.1 Horizontal communication..................................................................................................................25
+5.2 GOOSE publishing properties.............................................................................................................25
+5.3 GOOSE load estimations......................................................................................................................27
+5.4 Configuring GOOSE with Application Configuration.....................................................................28
+5.4.1 Connecting sender function block signal to GOOSE receiver block using
+Application Configuration tab...................................................................................... 29
+5.4.2 Connecting sender function block signal to GOOSE receiver block using SCL
+Configuration tab............................................................................................................ 30
+5.5 Configuring GOOSE with IEC 61850 Configuration........................................................................31
+5.5.1 Defining IEDs and starting IEC 61850 Configuration .................................................... 31
+Contents
+8 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE9
+5.5.2 Configuring a GOOSE publisher with IEC 61850 Configuration.................................. 32
+5.5.3 Configuring a GOOSE subscriber with IEC 61850 Configuration................................39
+5.6 Connecting GOOSE inputs to a relay application ...........................................................................41
+5.7 GOOSE simulation.................................................................................................................................43
+5.8 Received GOOSE message handling ................................................................................................ 44
+5.9 GOOSE supervision.............................................................................................................................. 46
+5.9.1 Background sending.............................................................................................................46
+5.9.2 Default value handling..........................................................................................................47
+5.9.3 Alarm supervision in application........................................................................................47
+5.9.4 Diagnostic counters..............................................................................................................47
+5.10 Forcing of GOOSE signals................................................................................................................... 49
+5.10.1 Forcing of GOOSE inputs.................................................................................................... 49
+5.10.2 Forcing of GOOSE outputs................................................................................................. 49
+6 Process bus and IEEE 1588 time synchronization...............................50
+6.1 Sampled measured values and IEEE 1588 v2 time synchronization............................................50
+6.2 System building.....................................................................................................................................50
+6.2.1 High-availability seamless redundancy HSR....................................................................50
+6.2.2 Parallel redundancy protocol PRP.......................................................................................51
+6.2.3 Interlink port.......................................................................................................................... 52
+6.2.4 Performance optimization...................................................................................................52
+6.2.5 Requirements for third-party devices...............................................................................53
+6.3 SMV system configuration.................................................................................................................. 53
+6.3.1 SMVSENDER ACT configuration......................................................................................... 53
+6.3.2 SMVRCVx ACT configuration.............................................................................................. 54
+6.3.3 Configuring SMV with IEC 61850 Configuration.............................................................54
+6.3.4 Configuring SMV receiver with Signal Matrix’s SMV tool..............................................56
+6.4 Bay level configuration.........................................................................................................................58
+6.4.1 Application configuration of SMV receiver...................................................................... 58
+6.4.2 SMV control block..................................................................................................................59
+6.4.3 Angle and amplitude corrections.......................................................................................62
+6.4.4 SMV delay................................................................................................................................62
+6.4.5 SMV additional settings and backward compatibility...................................................63
+6.4.6 IEEE 1588 v2 parameters and status information.......................................................... 64
+6.4.7 Quality bits in SMV frames..................................................................................................69
+6.4.8 SMV Simulation......................................................................................................................69
+6.5 Engineering verification.......................................................................................................................70
+7 Engineering of event reporting with PCM600..................................... 73
+7.1 IEC 61850 client management with IEC 61850 Configuration......................................................73
+7.1.1 Adding new IEC 61850 clients for IEC 61850 Configuration......................................... 73
+7.2 IEC 61850 Configuration user interface............................................................................................76
+7.3 Creating data sets with IEC 61850 Configuration.......................................................................... 78
+Contents
+REC615
+IEC 61850 Engineering Guide
+9
+PDF_PAGE10
+7.3.1 Defining data set entries with IEC 61850 Configuration .............................................80
+7.4 Creating report control blocks with IEC 61850 Configuration.....................................................82
+7.4.1 Report control block trigger options................................................................................84
+7.5 Configuring report control block clients with IEC 61850 Configuration................................... 85
+7.6 Substation section configuration in IEC 61850 Configuration....................................................86
+8 Flexible product naming.........................................................................87
+8.1 Flexible product naming concept.......................................................................................................87
+8.2 Mapping examples................................................................................................................................ 87
+ Mapping possibilities and requirements......................................................................................... 88
+8.3 Import scenarios................................................................................................................................... 89
+8.4 Network configuration........................................................................................................................ 90
+ SCL configuration checklist.................................................................................................................91
+8.4.1 Defining subnetwork............................................................................................................ 91
+8.4.2 Mapping access points........................................................................................................ 93
+8.5 Engineering............................................................................................................................................ 94
+8.5.1 IEC 61850 edition selection.................................................................................................94
+8.5.2 Parameter setting................................................................................................................. 95
+8.5.3 IED identification.................................................................................................................. 95
+8.5.4 Configuration size.................................................................................................................95
+8.5.5 Functional naming................................................................................................................ 95
+8.5.6 Name space definition files................................................................................................ 96
+8.6 Data model............................................................................................................................................. 96
+8.6.1 Logical device division......................................................................................................... 96
+8.6.2 Data protection..................................................................................................................... 96
+8.6.3 Functional constraints......................................................................................................... 96
+8.6.4 Data types...............................................................................................................................97
+8.6.5 Standard compatibility........................................................................................................ 97
+8.6.6 Primary values....................................................................................................................... 98
+8.6.7 Substitution........................................................................................................................... 98
+8.7 Settings...................................................................................................................................................99
+8.7.1 Device menu...........................................................................................................................99
+8.7.2 Function mode handling......................................................................................................99
+8.7.3 Setting group parameters.................................................................................................105
+8.7.4 Setting group control......................................................................................................... 106
+8.8 Control...................................................................................................................................................106
+8.8.1 Local/remote handling...................................................................................................... 106
+8.8.2 Control model...................................................................................................................... 106
+8.9 Data sets............................................................................................................................................... 107
+8.9.1 Supported data types in data sets.................................................................................. 107
+8.9.2 Editing data sets in IEC 61850 Configuration............................................................... 108
+8.10 Sampled measured values................................................................................................................. 110
+8.11 GOOSE....................................................................................................................................................110
+8.11.1 SCL configuration checklist for GOOSE.......................................................................... 110
+Contents
+10 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE11
+8.11.2 Editing GOOSE control blocks in IEC 61850 Configuration......................................... 111
+8.12 Reporting...............................................................................................................................................112
+8.12.1 SCL configuration checklist for ReportControl..............................................................112
+8.12.2 Editing ReportControl blocks in IEC 61850 Configuration.......................................... 113
+8.13 Logging..................................................................................................................................................114
+8.14 Service tracking....................................................................................................................................115
+9 Glossary.................................................................................................. 116
+Contents
+REC615
+IEC 61850 Engineering Guide
+11
+PDF_PAGE12
+1 Introduction
+1.1 This manual
+The engineering guide provides information for IEC 61850 engineering of the
+protection relays with PCM600. The guide can be used as a technical reference
+during the engineering phase, installation and commissioning phase, and during
+normal service. For more details on tool usage, see the PCM600 documentation.
+1.2 Intended audience
+This manual addresses the system engineers and installation and commissioning
+personnel.
+The system engineer must have a thorough knowledge of protection systems,
+protection equipment, protection functions and the configured functional logic
+in the protection relays. The installation and commissioning personnel must have
+basic knowledge of how to handle the electronic equipment.
+Introduction 2NGA002470 A
+12 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE13
+1.3 Product documentation
+1.3.1 Product documentation set
+ 
+Planning & 
+purchase
+Engineering
+Installation
+Commissioning
+Operation
+Maintenance
+Decommissioning 
+Quick installation guide
+Brochure
+Product  guide
+Operation manual
+Installation manual
+Engineering manual
+Technical manual
+Application manual
+Communication protocol manual
+IEC 61850 engineering guide
+Cyber security deployment guideline
+Hardware modification instructions
+Modification sales guideline
+End of Life Instructions
+Deinstallation
+Recycling
+Figure 1: The intended use of documents during the product life cycle
+1.3.2 Document revision history
+Document revision/date Product connectivity level History
+A/2025-05-09 PCL1 First release
+1.3.3 Related documentation
+Download the latest documents from the ABB Technical documentation
+portal.
+1.4 Symbols and conventions
+2NGA002470 A Introduction
+REC615
+IEC 61850 Engineering Guide
+13
+PDF_PAGE14
+1.4.1 Symbols
+The caution icon indicates important information or warning related to
+the concept discussed in the text. It might indicate the presence of
+a hazard which could result in corruption of software or damage to
+equipment or property.
+The information icon alerts the reader of important facts and conditions.
+The tip icon indicates advice on, for example, how to design your project
+or how to use a certain function.
+Although warning hazards are related to personal injury, it is necessary to
+understand that under certain operational conditions, operation of damaged
+equipment may result in degraded process performance leading to personal injury
+or death. Therefore, comply fully with all warning and caution notices.
+1.4.2 Document conventions
+A particular convention may not be used in this manual.
+• Abbreviations and acronyms are spelled out in the glossary. The glossary also
+contains definitions of important terms.
+• Menu paths are presented in bold.
+Select Main menu > Settings.
+• Parameter names are shown in italics.
+The function can be enabled and disabled with the Operation setting
+• Parameter values are indicated with quotation marks.
+The corresponding parameter values are "On" and "Off".
+• Input/output messages and monitored data names are shown in Courier font.
+When the function starts, the START output is set to TRUE.
+• Values of quantities are expressed with a number and an SI unit. The
+corresponding imperial units may be given in parentheses.
+• This document assumes that the parameter setting visibility is "Advanced".
+Introduction 2NGA002470 A
+14 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE15
+2 IEC 61850 overview
+The international IEC 61850 standard defines a framework for substation
+communication networks and systems. The standard consists of several parts
+ranging from the requirements on substation automation systems to the details of
+a communication protocol. Its main goal is interoperability; the ability for IEDs from
+one or different manufacturers to exchange information and use the information for
+their own functions.
+This standard has been out since 2005 and used successfully in ABB products. It
+is updated with a new version, Edition 2.1, which extends to new application areas
+in transmission and distribution power systems and also defines new functionality.
+This product supports both IEC 61850 versions, Edition 1 and Edition 2.1.
+IEC 61850 Edition 2 adds new functionality which is not supported by the Edition 1
+devices. Therefore it is recommended to always use the same standard version in all
+devices and not to mix different versions in the same project.
+A major difference between the other communication protocols applied in
+substation automation and IEC 61850 is that the latter is not only a communication
+protocol, but a whole framework for specifying, engineering and operating
+substation automation systems. The communication part covers the connection
+between the IEDs and the substation clients, for example, SCADA and gateways.
+2NGA002470 A IEC 61850 overview
+REC615
+IEC 61850 Engineering Guide
+15
+PDF_PAGE16
+Basic principles
+Glossary
+System and project management
+General Requirements
+Communication requirements
+Substation Automation System Configuration
+Basic Communication Structure
+Mapping to
+ MMS and
+ Ethernet
+Sampled Measured Values
+Mapping to Ethernet
+PTP profile
+Conformance Testing
+Part 1
+Part 2
+Part 3
+Part 4
+Part 5
+Part 6
+Part 7
+Part 9
+Part 10
+Part 8
+Primary
+Parts
+Figure 2: Structure and parts of the IEC 61850 standard
+The IEC 61850 standard specifies an expandable object-oriented data model and a
+wide set of protocol services for substation automation (standard parts 7-x). The
+standard does not specify any protection or control functions, but specifies how the
+functions expose their information to a communication network.
+The standard supports free allocation of functions to devices. With efficient
+communication facilities, the functions can be located anywhere in the system,
+that is, an interlocking function can reside in the IED or on the station level.
+Additionally, the standard is open for different system implementations, that is,
+different integration levels and allocation of functions to different devices are
+supported.
+The standard defines a system configuration description language (SCL) for
+substation automation systems. The language facilitates efficient automated
+integration of devices into systems. Additionally, the standard supports a
+comprehensive and consistent system definition and engineering, which makes not
+only the devices, but also their tools and systems interoperable (standard part 6).
+The standard uses Ethernet and TCP /IP for communication. Since Ethernet and TCP /
+IP are widely accepted and used, the application of these technologies provides a
+broad range of features from mainstream communication (standard parts 8-1, 9-2).
+The communication profiles in IEC 61850 can be divided into vertical and horizontal.
+The vertical profile uses MMS over TCP /IP and horizontal communication Layer 2
+Ethernet multicast messages. The standard separates the functionality represented
+IEC 61850 overview 2NGA002470 A
+16 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE17
+by the data model and the related communication services from the communication
+implementation thus being open for new communication concepts in the future.
+Data model (objects, sevices) 
+Client server 
+communication GOOSE Sampled 
+values 
+Mapping 
+Real-time 
+communication 
+MMS 
+TCP 
+IP 
+Ethernet link layer 
+Ethernet physical layer with priority tagging (100 Mbit/s) 
+1
+2
+3
+Figure 3: Communication stacks and mapping used in IEC 61850
+1 Abstract communication services interface (ACSI)
+2 Stack interface
+3 ISO/OSI stack
+2NGA002470 A IEC 61850 overview
+REC615
+IEC 61850 Engineering Guide
+17
+PDF_PAGE18
+3 PCM600
+Protection and Control IED Manager PCM600 offers all the necessary functionality
+to work throughout all stages of the protection relay's life cycle.
+• Planning
+• Engineering
+• Commissioning
+• Operation and disturbance handling
+• Functional analysis
+The whole substation configuration can be managed and different tasks and
+functions can be performed with the individual tool components. PCM600 can
+operate with many different topologies, depending on the project needs.
+For more information, see the PCM600 documentation.
+3.1 Connectivity packages
+A connectivity package is a software component that consists of executable code
+and data which enable system tools to communicate with a protection relay.
+Connectivity packages are used to create configuration structures in PCM600. The
+latest PCM600 and connectivity packages are backward compatible with older
+protection relay versions within product family.
+A connectivity package includes all the data which is used to describe the
+protection relay. For example, it contains a list of the existing parameters, data
+format used, units, setting range, access rights and visibility of the parameters.
+In addition, it contains code which allows the software packages that use the
+connectivity package to properly communicate with the protection relay.
+3.2 PCM600 and relay connectivity package version
+• Protection and Control IED Manager PCM600 Ver. 2.13 HF3 or later
+• REC615 Connectivity Package Ver. 3.0.0 or later
+Download connectivity packages from the ABB Web site www.abb.com/
+mediumvoltage or directly with Update Manager in PCM600.
+PCM600 2NGA002470 A
+18 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE19
+4 REC615 data model
+4.1 REC615 implementation
+The protection relay is modelled according to IEC 61850. This means that the
+functionality of the protection relay is represented in a data model in accordance
+with the standard and the protection relay supports a wide range of the services
+provided by the standard.
+• Process data: monitoring of statuses and measurements
+• Application data: protection activation, tripping, fault recordings
+• Disturbance records
+• Control commands
+• Protection settings
+• Settings and setting groups
+• Configuration data
+• Diagnostics and self-supervision
+• Fast horizontal communication between devices
+• Time synchronization
+• File transfer
+As this protection relay supports both versions of IEC 61850, Edition 1 and Edition
+2.1, there are small differences in the IEC 61850 data models depending on the used
+version. Generally, the relay’s protection and control functionalities are independent
+of the IEC 61850 version used. Any differences between data model versions are
+documented.
+It is possible to have Edition 1 and Edition 2 relays configured in the same PCM600
+project. The PCM600 project's SCL edition is the highest SCL edition of the relays
+in the project, but if IEC 61850 is not used for the station bus, either version can be
+applied. The protection relay's IEC 61850 version is by default Edition 2. See Table 1
+for the limitations in identification lengths in IEC 61850 versions and, in case of a
+mixed system, consider them when engineering. Edition 2 introduces new common
+data classes, which work only with Edition 2 capable devices.
+4.2 Information model
+The IEC 61850 data model can include up to four logical devices where
+different logical nodes, representing protection and control functionality, are
+located. Depending on the selected functionality in the protection relay, different
+configurations have different sets of logical devices and logical nodes. Data
+models also include modelling and functionality of settings, setting groups and
+configuration according to the IEC 61850 concept.
+• Control logical device, CTRL
+• Disturbance recorder logical device, DR
+2NGA002470 A REC615 data model
+REC615
+IEC 61850 Engineering Guide
+19
+PDF_PAGE20
+• Protection logical device, LD0
+• Sampled measured values sending logical device, MU01, if configured
+All generic functionality, such as modelling of physical inputs and outputs as well as
+the alarming LED functionality, resides under logical device LD0. A full description of
+the protection relay's data model is available in the parameter list.
+During system engineering in the system configuration tool, do not
+delete or rename logical devices, logical nodes, data objects or data
+attributes in the IEC 61850 data model.
+Figure 4: Example of an IEC 61850 data model of a protection relay
+In the IEC 61850 standard, communication services are configured through a
+number of data structures including data sets, report control blocks, GOOSE control
+blocks and setting group control blocks. As these data structures pertain to the
+entire logical device, the standard indicates that they are to be modeled under
+LLN0, which is a special logical node that describes the common functionality of the
+logical device. All these data structures are located in logical device LD0 logical node
+LLN0.
+REC615 data model 2NGA002470 A
+20 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE21
+The data model can be exported from PCM600 to an SCL file.
+4.3 Vertical and horizontal communication
+The protection relays are capable of vertical communication between the protection
+relay and monitoring and control systems (clients) such as PCM600 or ZEE600.
+Each protection relay can communicate to five separate clients to receive events,
+read or write data (an active PCM600 connection is considered to be a client).
+The protection relay can report data in either buffered or unbuffered mode and
+execute direct or select-before-operate control sequences according to the control
+commands sent by the client.
+The protection relays are also capable of horizontal or peer-to-peer communication.
+They can be programmed to publish (send) information to and subscribe (receive)
+information from other devices according to IEC 61850-8-1 and IEC 61850-9-2 LE.
+IEC 61850 standard Edition 2 increased several identification string lengths
+which affects communication engineering and interoperability. Table 1 lists the
+identification length values to be considered especially with third-party tools. ABB
+tools generally check the length values.
+Table 1: Identification lengths in IEC 61850 versions
+Object Edition 1 length Edition 2 length Description
+IED name 28 (32-4) 60 (64-4) Excluding the longest LD name length
+of 4 characters
+Report con-
+trol block
+name
+14 30 Without a two digit RCB instance num-
+ber
+Data set
+name
+32 32
+RptID 65 129 Report Identifier
+Direct point-to-point link between
+PCM600 and the protection relay's front
+port
+GoID 65 129 GOOSE Identifier
+MSVID 65 129 Multicast Sampled Value Identifier
+(length as in IEC 61850-9-2 LE)
+Table 2: Number of control block data sets and size of data sets
+Control Block Maximum data
+sets
+Maximum
+length
+Description
+GoCB 8 120 data objects
+or attributes in
+total
+The sending GOOSE data sets can have
+in total 120 data objects or attributes in
+the GOOSE data sets. To minimize the
+message-handling load in the receiving
+and sending protection relays, it is rec-
+Table continues on the next page
+2NGA002470 A REC615 data model
+REC615
+IEC 61850 Engineering Guide
+21
+PDF_PAGE22
+Control Block Maximum data
+sets
+Maximum
+length
+Description
+80 data objects
+or attributes per
+data set
+ommended to limit the data object and
+attribute amount to 20 per data set.
+RCB+GoCB+S
+VCB
+27 Edition 1: 256
+data attributes
+Edition 2: When
+the data attrib-
+ute level is used,
+maximum 80
+data attributes
+can be config-
+ured per data
+set. When the
+data object level
+is used, maxi-
+mum 80 data
+objects can be
+configured if the
+limit of 300 at-
+tributes per da-
+ta set is not
+reached before
+that. Structured
+data objects
+contain more
+data attributes.
+The recommendation is to use data ob-
+jects when creating reporting data sets.
+The maximum number of reporting da-
+ta sets is affected by the used GOOSE
+and SMV data sets. The number of da-
+ta sets is shared with GOOSE meaning
+that there can be minimum 21 data sets
+for reporting.
+SVCB 1 16 data attrib-
+utes
+The sending sampled value data set has
+a fixed set of 16 data attributes, as de-
+fined in IEC 61850-9-2 LE, with four cur-
+rent and four voltage measurement val-
+ues with corresponding quality attrib-
+utes.
+4.3.1 Predefined vertical communication data sets
+In vertical communications, the protection relay can generate events that
+are automatically reported to any listening clients. These communications are
+configured via a series of predefined data sets and corresponding report control
+blocks. The data sets are used to configure what data is sent and the report control
+block is used to configure when data is sent.
+The relay's connectivity package includes predefined data sets and control blocks
+for vertical MMS event reporting. These data sets are used in predefined reporting
+control blocks for five clients. The selected data in the data sets is suitable to
+most applications and the selected default data automatically considers the used
+protection relay type and options.
+The data sets and report control blocks can be modified using IEC 61850
+Configuration in PCM600, however, this should only be done by users that are
+familiar with both the protection relays and IEC 61850. Inappropriate modifications
+can result in malfunction of the protection relay.
+• StatIed – generic status information of IEDs
+• StatIo – inputs, outputs, LEDs
+REC615 data model 2NGA002470 A
+22 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE23
+• StatUrg – measurement limit supervision, control feedback
+• StatNrml – protection start and trip signals, autoreclosing status
+• StatDR – digital fault recorder status
+• MeasReg – registered measurement values at faults
+• MeasFlt – measurements
+When function blocks are added to or removed from an application configuration
+also the default data sets and the content of data sets are automatically modified
+to follow the IED data model. If all data does not fit into one data set, two data sets
+with suffixes "A" and "B" are created.
+The protection relays support both buffered and unbuffered event reporting.
+In the predefined configuration all report control blocks are configured to use
+buffered reporting. The benefit of buffered reporting is that it buffers events during
+communication breaks and thus no events are lost. A data set can only be used by
+one report control block and the same data set entry cannot be used in different
+event reporting data sets.
+The default values for the data sets and control blocks are suitable for most
+applications. The protection relay allows free renaming and editing of report control
+blocks and data sets. Only users who have an in-depth understanding of the
+protection relay and IEC 61850 should modify the default configuration. Description
+of the data in default data sets is available in the parameter list.
+4.3.2 Predefined horizontal communication data sets
+In horizontal communication the user normally has to engineer IEC 61850-8-1
+GOOSE data sets. When IEC 61850-9-2 is used, the connectivity package
+automatically creates a data set including data as defined in 9-2 LE: four currents
+and four voltages with quality attributes.
+It is not allowed to engineer or modify the predefined 9-2 LE data set. Together with
+the 9-2 LE data sets, the connectivity package also creates a default SMV control
+block. The SVCB configuration needs to be finalized in the tool before connecting
+the sent 9-2 LE data to the receiver IEDs.
+4.3.3 Vertical communication diagnostic counters
+The IEDs' IEC 61850 data model includes a logical node LD0.MMSLPRT1 for IEC
+61850 vertical communication diagnostic. The counters are available via the HMI or
+PCM600 path Monitoring > Communication > Protocols > MMSLPRT1.
+Table 3: Diagnostic data objects
+Data object Description Diagnostic information
+SucConn Successful connections Number of succeeded client connection
+attempts
+FailConn Failed connections Number of failed client connection at-
+tempts
+ConcCnt Concludes Number of session concludes
+Table continues on the next page
+2NGA002470 A REC615 data model
+REC615
+IEC 61850 Engineering Guide
+23
+PDF_PAGE24
+Data object Description Diagnostic information
+TxAbtCnt Sent aborts Number of association aborts sent by
+server
+RxAbtCnt Received aborts Number of received association aborts by
+server
+TxRejCnt Sent rejects Number of sent rejects by server
+RxRqCnt Received request Number of received client requests
+FailRqCnt Failed requests Number of failed client requests
+SucReadCnt Reads Number of variable reads
+FailReadCnt Failed reads Number of failed variable reads
+SucWrCnt Writes Number of succeeded variable writes
+FailWrCnt Failed writes Number of failed variable writes
+InfRepCnt Reports Number of sent reports
+ActConnCnt Active connections Number of active client connections
+It is possible to reset the vertical diagnostics counters via Monitoring >
+Communication > MMSLPRT1 > Protocols > MMSLPRT1 > Reset counters and via
+the IEC 61850 communication by writing TRUE to the RsCnt.Oper.ctlVal attribute
+under MMSLPRT1.
+4.4 Parameter setting and disturbance recorder
+The relay's protection function parameters can be set and the active setting groups
+can be changed by a IEC 61850 client using the standard IEC 61850 services. The
+disturbance recorder and load profile files in COMTRADE format are retrieved from
+the \COMTRADE\ and \LPD\COMTRADE\ directories by using PCM600 or any other
+client supporting IEC 61850 file transfer service or FTP.
+When setting the parameter Configuration > Communication > Protocols > MMS >
+Unit mode to “Primary”, the values sent over IEC 61850 are scaled according to the
+CT and VT settings.
+Restart the protection relay after changing the parameter. This feature
+is needed if the SCADA system or substation gateway does not handle
+scaling from nominal values.
+REC615 data model 2NGA002470 A
+24 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE25
+5 GOOSE
+5.1 Horizontal communication
+GOOSE is used in substation automation for fast horizontal communication
+between protection relays. GOOSE can be used for direct data exchange, for
+example, of interlocking and blocking information between protection relays.
+According to the IEC 61850-8-1 standard, GOOSE uses a publisher/subscriber
+profile in which information is shared from one device to one or several devices
+by using Ethernet multicast messages. A message is an image of a sent IEC 61850
+data set that is defined in the configuration.
+The protection relay can send any type of status or measurement data in the GOOSE
+messages from its IEC 61850 data model. The status data response time, that is, the
+time it takes the application to handle a received GOOSE message and to send the
+data back to the network, is below 3 ms. The response time fulfils the type 1A and
+performance class P1 requirements of IEC 61850-5 Edition 2.
+When the protection relay is configured to send measurements, the analog, integer
+or counter type data should be placed in its own data set to minimize the
+bandwidth consumption in the network and to avoid unnecessary publishing of
+unchanged status data. The triggering of analog data sending is controlled by
+deadband handling, zero-point clamping and limit supervision.
+The horizontal communication configuration consists of the protection relays'
+GOOSE control block, data set and GOOSE input configuration. The result of the
+configuration work is a system configuration which is used for the protection relays.
+The used files in the workflow are IEC 61850 standard format SCL files.
+5.2 GOOSE publishing properties
+GOOSE data is transmitted event based and at regular intervals in 802.1Q multicast
+frames over Network1. Peer devices can determine the state of the communications
+by listening for the transmissions. When a data value changes, the GOOSE message
+with the latest data values is transmitted multiple times for a few milliseconds to
+ensure the reception of the changed data. After fast retransmission, the GOOSE
+retransmission scheme moves to use the heartbeat cycle time.
+In GOOSE, data sending is based on data sets and GOOSE control blocks. The data
+set defines what device data is used in the GOOSE service and sent to the local
+Ethernet subnetwork in a GOOSE message.
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+25
+PDF_PAGE26
+Table 4: GOOSE control block attributes
+GoCB property Description
+GoCB name GOOSE control block name
+Application ID A unique GOOSE identification string for each GoCB in the
+system. By default, it is the GoCB identification in the relay
+data model.
+Max Time Indicates the background "heartbeat" cycle time in millisec-
+onds; the default value is “10 000 ms”. If there are no data
+changes, the relay still resends the last message content with
+the heartbeat cycle. Communication supervision is based on
+this idle sending mechanism.
+Min Time The sending delay on a data change between the first imme-
+diate sending of the change and the first repetition in ms. In
+the relay this is less than 2 ms.
+Multicast MAC address A multicast addressing scheme is used when sending GOOSE
+messages. A multicast address can be shared by several
+GoCBs but to enable the multicast message filtering of the
+devices and a properly working network, it is recommended
+to use unique multicast addresses in each GoCB. The multi-
+cast MAC address is the address to which the GOOSE data
+is sent. The receiving relay filters the frames and starts to
+process them if a multicast address is subscribed in the
+configuration. The range for GOOSE multicast addresses is
+01-0C-CD- 01-00-00...01-0C-CD-01-01-FF.
+Configuration Revision Integer value indicating the revision of the GOOSE configura-
+tion. It is sent in every GOOSE message. The integer indicates
+the number of changes in the sent GOOSE data set; the re-
+ceiver checks the value to detect possible configuration mis-
+matches. Both the GOOSE sender and the receiver must use
+the same ConfRev value from configuration. This ensures that
+both devices have the same configuration level in the substa-
+tion configuration. ConfRev updates are done automatically
+by tools. If the latest system configuration is not downloaded
+to all required devices, the configuration revision may differ
+between the receiver and sender and data exchange does not
+work.
+APPID A hexadecimal application identifier value for the published
+GoCB. It needs to be a unique value within the system. It
+identifies the purpose of a data set. The value range is
+0000...3FFF.
+Data set Data content sent in GOOSE messages
+VLAN ID The VLAN group can be used when configuring the Ethernet
+network topology's virtual LANs for routing and segmenting.
+Configuration is done in managed Ethernet switches. If static
+VLAN identifiers are defined, it also affects the switch port
+configuration. Value “000” indicates a nonconfigured VLAN;
+in this case, switches do not filter these messages on a port
+basis. This is recommended if there is no need to split the
+logical network. The VLAN identifier is a three-character hexa-
+decimal value with range 000...FFF.
+VLAN Priority Used in networks supporting VLANs. The priority is used with
+network switches. The default value for GOOSE is “4” and the
+value range is 0...7.
+GOOSE 2NGA002470 A
+26 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE27
+5.3 GOOSE load estimations
+GOOSE performance classes are defined in standard part IEC 61850-5 Edition 2. For
+trip signals, there are several performance classes.
+• P1 = quarter of the electrical network sinus waveform cycle
+• P2 = in the order of half of the electrical network sinus waveform cycle
+For other fast messages, there is one performance class.
+• P3 = in the order of one cycle of the electrical network sinus waveform
+For the medium-speed messages, there is one performance class.
+• P4 = transfer times under 100 ms
+Configuration load calculation ensures that the relay's application configuration is
+within the allowed limits. GOOSE load estimation is calculated independently and
+uses the remaining system capacity. The process bus load is handled by hardware.
+For more information on the configuration load calculation, see the engineering
+manual.
+To have optimal GOOSE performance in the P1...P3 performance classes, several
+configuration aspects should be considered.
+All the above configuration loads are feasible, but in different application types. If
+the configuration exceeds the above time categories, it is not possible to use it. The
+tool does not download the configuration to the relay and error message “Increased
+GOOSE latency detected under heavy load. Configuration changes needed” is
+shown.
+1. Minimizing the overall configuration load (ACT configuration) since the
+remaining time is available for GOOSE.
+Unused function blocks should be removed.
+2. Minimizing the received and sent GOOSE data set sizes.
+- It is optimal to have smaller data sets.
+- Each received data set needs to be decoded before the attribute content can
+be used. Thus all attributes are counted in load estimations. For example, 20
+received data sets having 20 attributes results in a 400- attribute load.
+- Minimizing the number of measurement values in GOOSE data sets
+3. Designing the station level data flows and bay function allocation.
+- Good basic understanding of the system data flows helps keeping the
+concepts clear and minimizes the traffic.
+- It may be good to use some configurations for collecting and grouping
+global states. For example, the busbar state is collected in a sectionalizer
+and sent to other bays.
+In REC615, GOOSE load estimations are based on the worst case measured
+values. The performance class met by the configuration is expressed by
+information and warning messages. The tool does not produce messages for
+performance classes above P3.
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+27
+PDF_PAGE28
+Table 5: Message examples
+Messages Description
+Information messages
+Increased GOOSE latency might be detec-
+ted under heavy load.
+P3 performance class requirement may not
+be met.
+Increased GOOSE latency will be detected
+under heavy load.
+50% of the packets do not meet the P3
+performance class requirement.
+Warning messages
+Increased GOOSE latency detected under
+heavy load. Configuration changes needed.
+70% of the packets do not meet the P3
+performance class requirement.
+5.4 Configuring GOOSE with Application Configuration
+GOOSE can handle horizontal communication of time-critical events, such as
+triggers, interlocking, disturbance recording, and autoreclosing, between the IEDs
+in a substation. Typically, engineering involves several PCM600 tools (ICE, ACT, SMT)
+and, optionally, a separate tool for the GOOSE configuration.
+To configure GOOSE with Application Configuration, GOOSE configuration must be
+enabled from options.
+Figure 5: Enabling GOOSE configuration
+After that, horizontal communication can be configured using only Application
+Configuration in PCM600. Knowledge of configuration details is not needed.
+1. To create horizontal communication between function block signals of two
+different IEDs, open Application Configuration of the receiving IED.
+2. Locate the function block input and right-click the input.
+GOOSE 2NGA002470 A
+28 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE29
+3. Point to Connect and select GOOSE.
+4. In the Connect to Goose dialog box, connect GOOSE by selecting the function
+block output of the sender application or the signal of the sender logical node.
+5.4.1 Connecting sender function block signal to GOOSE
+receiver block using Application Configuration tab
+1. On the Application Configuration tab, select the sender IED function block
+signal and click Connect.
+Figure 6: Connecting non-directional earth-fault protection start signal
+The needed horizontal communication function block and input variable are
+created automatically.
+It is also possible to create the GOOSE receiver function block
+separately and connect it to the receiver and sender function block
+signals.
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+29
+PDF_PAGE30
+2. Right-click the created input connection variable to navigate to the connected
+sender function block signal.
+Figure 7: Navigating to the connected sender function block signal
+Figure 8: Sender function block signal connected
+5.4.2 Connecting sender function block signal to GOOSE
+receiver block using SCL Configuration tab
+1. On the SCL Configuration tab, select a data attribute of the sender logical node
+to connect.
+Depending on the attribute, an input of the GOOSE receiver block may also
+need to be selected. This configuration method requires some insight into the
+underlying data model.
+Figure 9: Using SCL to connect the GOOSE sender signal
+The needed horizontal communication function block and input variable are
+created automatically.
+GOOSE 2NGA002470 A
+30 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE31
+2. Right-click the created input connection variable to navigate to the connected
+sender function block's signal.
+Figure 10: Connected circuit breaker open signal
+A separate internal GOOSE sender application worksheet is created for the
+sender IED. On this worksheet, function blocks can be moved, but they cannot
+be edited. Also, picture texts can be added.
+Figure 11: All internal GOOSE sender composite function blocks added to a
+special worksheet
+5.5 Configuring GOOSE with IEC 61850 Configuration
+1. Add devices to a PCM600 project.
+2. Engineer the GOOSE connections between the devices.
+a) Define the published GOOSE data and control blocks.
+b) Define the subscribing IEDs for the GOOSE data.
+3. Connect the GOOSE inputs in the IED applications.
+5.5.1 Defining IEDs and starting IEC 61850 Configuration
+Use PCM600 to define the substation and the IEDs. Before starting the system
+engineering, configure the IED settings and logic in PCM600.
+For more information, see PCM600 documentation.
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+31
+PDF_PAGE32
+1. Create a PCM600 project with all the needed IEDs.
+If the substation includes third-party IEDs requiring configuring for
+horizontal GOOSE communication, instantiate a generic IEC 61850
+IED under the substation in the plant structure and import the SCL
+files (ICD/ CID) holding the information on those IEDs. The third-
+party IEDs have separate tools for creating the ICD/CID/ SCD file.
+2. Start the IEC 61850 Configuration.
+5.5.2 Configuring a GOOSE publisher with IEC 61850
+Configuration
+To control the GOOSE data publishing, such as addressing, every publisher IED must
+have at least one data set for GOOSE data and one GOOSE control block.
+1. Group the data to a data set sent to IEC 61850 station bus.
+2. Define the GOOSE control block.
+The IED can send single binary, double binary, integer and floating point
+data values with a quality attribute. A quality attribute is used at the
+receiver side to check data validity.
+5.5.2.1 Creating a GOOSE data set with IEC 61850 Configuration
+The sending data set is defined with the GOOSE control block. A maximum of 120
+data attributes can be added to the IED's GOOSE data sets. The recommendation
+is to divide the attribute amount to 20 per GOOSE data set, for maximum
+performance in sender and receiver.
+All data sets must be configured under the logical node LLN0 and must be provided
+with unique names in the relay. For more information on GOOSE data sets, see Table
+2. In simple GOOSE applications it is often sufficient to define a single data set and
+control block for an application. However, it is recommended to use a separate data
+set and corresponding control block for analog values.
+1. Select the target IED in the Plant Structure view.
+2. Select GOOSE Communication in the drop-down box on the toolbar.
+Figure 12: Selecting GOOSE communication
+3. Select the Data Sets tab.
+GOOSE 2NGA002470 A
+32 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE33
+4. To add a new data set, right-click the area containing the data set names and
+select New.
+Figure 13: Creating a new data set
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+33
+PDF_PAGE34
+5. Define the LN where the data set is to be placed (accept preselected “ LD0/
+LLN0”) and give the data set a unique name.
+Figure 14: Naming the data set
+After creating the GOOSE data sets, define the data set entries (data attributes or
+data objects) for the data sets.
+If quality data attributes are added to a data set, they should be located
+after the status value of the corresponding data object. The reason for
+this is compatibility with other devices.
+The received GOOSE data set can contain signals on the data attribute or data
+object level. However, it is strongly recommended that GOOSE data sets be made on
+the data attribute level for faster data processing.
+Access point based transmitting and receiving of GOOSE to a specific
+network or port is not supported by the protection relay. By default,
+GOOSE is transmitted to and received from all Network1 ports. Network2
+ports do not support GOOSE or SMV. Port-based filters can be used if the
+transmitting or receiving of GOOSE must be limited to specific Ethernet
+ports. See the technical manual for more information.
+Defining GOOSE data set entries with IEC 61850 Configuration
+1. Select the Data Sets tab.
+2. Right-click a data set and select Details to add data attributes.
+3. In the Data Set Entry window, select the data attribute or data object present in
+the data set.
+GOOSE 2NGA002470 A
+34 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE35
+• Click Append selected to add the data to the end of the data set. To add a
+data object level entry, select it from the FC section. To add a data attribute
+level entry, select it from the DA section
+• Click Insert selected to add the data above the selected row in the data set
+entries list.
+• To remove a data from the data set, select the data in the data set entries
+pane and click Remove selected.
+Figure 15: Adding data set entries
+If a data set has quality attributes, the attributes must be
+located after the status value of the same data object.
+After defining the data entries for the data sets, configure the GOOSE
+control block properties.
+5.5.2.2 Configuring a GOOSE control block with IEC 61850 Configuration
+1. Select the IED in the Plant Structure view.
+2. Select the GOOSE Controls tab in the tool pane.
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+35
+PDF_PAGE36
+3. To add a new GOOSE control block, right-click the area containing the existing
+GOOSE control blocks and select New.
+Figure 16: Creating a new GOOSE control block
+4. Browse to LLN0 under LD0 to define where the GOOSE control block must be
+placed.
+GOOSE 2NGA002470 A
+36 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE37
+5. Give a unique name to the GOOSE control block.
+Figure 17: Naming a GOOSE control block
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+37
+PDF_PAGE38
+6. In the Data set drop-down list, select the previously created data set to link
+with the GCB.
+Figure 18: Data set drop-down list
+Data set entries in a data set linked to the GCB can be modified from
+the GOOSE control block tab by selecting Data Set details in the
+shortcut menu.
+GOOSE 2NGA002470 A
+38 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE39
+7. Edit the properties and addresses of the created GOOSE control block.
+Edit at least MAC Address and App ID.
+Figure 19: GOOSE control block properties
+With this protection relay, only Max Time is configurable, not Min Time.
+The multicast MAC Address is usually unique, and App ID must be
+unique. System SCL data validation is performed by PCM600 to check
+any overlapping APP IDs.
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+39
+PDF_PAGE40
+5.5.3 Configuring a GOOSE subscriber with IEC 61850
+Configuration
+The IED application can receive and use single binary, double binary, integer and
+floating point values with attached quality information. A quality attribute is
+received and processed automatically.
+5.5.3.1 Configuring GOOSE inputs with IEC 61850 Configuration
+1. Select the IED node from the plant structure in the Project Explorer window.
+2. Click the GOOSE Controls tab in the tool pane.
+The rows of the GCB client editor show GCBs, the so-called senders, and the
+columns show the IEDs available as the GOOSE clients, the so-called receivers.
+All IEDs that are configured in the plant structure automatically appear in the
+clients column.
+3. To add or remove clients for a GOOSE control block, click the check-box in the
+grid corresponding to the IEDs.
+When adding or removing clients, the input sections of the corresponding IEDs
+are updated.
+1 Subscriber 2 Publisher
+Figure 20: GCB client editor showing the senders and receivers
+GOOSE 2NGA002470 A
+40 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE41
+On the Data Sets tab, the clients are mapped
+automatically to the corresponding data sets based on
+the configuration done on the GOOSE Controls tab and
+vice versa.
+5.6 Connecting GOOSE inputs to a relay application
+1. In PCM600, open Project Explorer and select the Plant Structure tab.
+2. Add the GOOSERCV function block with Application Configuration.
+The GOOSERCV function block can only be added with Application
+Configuration.
+Give the GOOSERCV block application-specific user-defined names
+to distinguish between different blocks when making GOOSE
+connections in Signal Matrix.
+Figure 21: Adding the GOOSERCV function block
+3. Create the connection in the application.
+a) Create the connection.
+b) Save the connection to the application.
+4. To open Signal Matrix, right-click the protection relay, and select Signal Matrix.
+5. To map the input points to the receiving input data, click the cell.
+To expand the source field, drag the edge of the field to expand it until the
+whole GOOSE source address is visible.
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+41
+PDF_PAGE42
+6. In Signal Matrix on the GOOSE tab, map the GOOSE publisher data to the
+corresponding GOOSERCV function block.
+The columns on the GOOSE tab represent publisher data and the rows
+represent the possible subscriber input points.
+Figure 22: GOOSE tab in Signal Matrix
+The GOOSE receiver block output VALID defines the validity for the
+received data. The value is based on the received quality attribute
+value or communication status. This validity information can be used
+in the application to build the validity logic in addition to the GOOSE
+default supervision information.
+During the protection relay start-up phase, the protection relay
+keeps the value of the output VALID as "1" (GOOD) until the
+communication is activated. After the communication is activated,
+the value of the output VALID is updated by the value received
+via the communication. If the quality attribute is missing from the
+received GOOSE data set, the GOOSE receiver block output VALID is
+always "1" (GOOD).
+If the data type does not match with the GOOSERCV function block,
+the attribute cell is red.
+In Signal Matrix, the received GOOSE data can be directly connected to the
+relay application. The GOOSE inputs are shown on the Binary or Analog Inputs
+sheets and they can be connected to the application receiver function blocks.
+The columns represent publisher data and the rows represent the possible
+subscriber input points.
+If the data type, for example timestamp, is not supported by the relay
+application, the attribute column is red. The quality attribute is automatically
+incorporated in the application with the status value, and it is not seen in Signal
+Matrix.
+GOOSE 2NGA002470 A
+42 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE43
+7. Save the changes made in Signal Matrix.
+8. Write to the IED.
+5.7 GOOSE simulation
+When the IEC 61850 Edition 2 configuration has been selected for the protection
+relay, it is capable of processing simulated messages. The switchover to simulated
+messages requires that the relay is set to allow simulated messages and that it
+receives the first simulated message. Detection of simulated messages is separated
+per GOOSE publisher. Therefore, one GOOSE input may receive a simulated message
+while another input receives a real GOOSE message.
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+43
+PDF_PAGE44
+Target Data Value and 
+Quality Are Updated 
+Accordingly
+Device In Test 
+Mode?
+Test Diagnostic 
+Counter +1
+GOOSE message 
+received
+Receiver Edition 
+>1?
+FALSE
+TRUE Simulation bit set in 
+received frame? FALSE
+TRUE
+Device allows 
+simulation?Test=TRUE set in 
+received frame’s 
+PDU?
+TRUE
+TRUE
+TRUE
+TRUE
+FALSE
+FALSEKeep old value
+Received data 
+quality=test?
+Device in test 
+mode?
+TRUE
+Received data 
+quality=test?
+Device in test 
+mode?
+TRUE
+TRUE
+TRUE
+Set default value and 
+mark data invalid
+FALSE
+Received
+already one 
+simulated 
+message?
+Device allows 
+simulation?
+TRUE
+Reject frame
+TRUE
+FALSE
+FALSE
+Keep old valueFALSEFALSE
+Reject frame
+FALSE
+Figure 23: Receiving of GOOSE data in case of simulation or test mode
+To set the protection relay to allow simulated GOOSE, either LD0.LPHD1.Sim is
+set to true via the IEC 61850 protocol or the Tests > IED Test > Allow simulation
+parameter is set via the WHMI or the LHMI to "Yes".
+Switching back to receiving real GOOSE messages requires that the Tests > IED Test
+> Allow simulation parameter is set to "No" (or LD0.LPHD1.Sim = false). The values
+change to real ones after the first received real GOOSE message.
+GOOSE 2NGA002470 A
+44 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE45
+5.8 Received GOOSE message handling
+A GOOSE frame is not accepted if the Needs Commission bit is set. When the
+protection relay uses IEC 61850 Edition 2, data with the Test quality bit set is
+accepted only if the receiving device is also in the test mode. When the relay uses
+IEC 61850 Edition 1, the Test field in the GOOSE message is also used. For more
+information about GOOSE quality handling, see the corresponding flowcharts.
+When the protection relay uses IEC 61850 Edition 2, the Test quality bit is active in
+the sender if the relay is set to test mode. When the relay uses IEC 61850 Edition 1,
+the Test field in the GOOSE message is also set when the relay is in test mode.
+When the GOOSE sender is in test mode and the GOOSE receiver is not, in Edition 1
+mode the GOOSE receiver freezes to its previous valid state, and in Edition 2 mode
+the data value is defaulted and the quality is set to invalid.
+The Test bit is active in the sender if the protection relay is set to test mode.
+See the technical manual for more information on the test mode.
+The GOOSE frame is not accepted either if ConfRev deviates from the one in the
+configuration. These error situations can be observed in the GSELPRT1 diagnostic
+counters.
+The default GOOSE input value is “0” for all the data types. The functionality is
+analogous to physically wired galvanic Normally Open (NO) contacts where the
+disconnected signal gives value “0” of FALSE to relay application. The application
+must be designed to withstand the default value. This value is used when the
+subscribed GOOSE data is not valid, or it is not received from the network and
+the peer device is considered to be in a time-out state.
+If a peer device sends the data including the quality attribute, the receiver device
+input object is not updated according to the received status value if the data quality
+is bad, questionable or blocked. The default value is also used in this case.
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+45
+PDF_PAGE46
+Status or measurand 
+value has been 
+received.
+Value is followed by 
+quality attribute?
+Proceed to next data entry
+Target data value is 
+defaulted and quality set 
+to invalid.
+Quality is bad?
+FALSE
+TRUE
+Bad quality=
+INVALID | RESERVED |QUESTIONABLE |  
+OVERFLOW | OUT-OF-RANGE | BAD-
+REFERENCE | OSCILLATORY | FAILURE 
+|  INCONSISTENT | INACCURATE
+TRUE
+Old data?Operator blocked?
+Operator blocked?
+TRUE
+FALSE
+FALSE
+Target data value is 
+defaulted and quality is 
+set according to q 
+attribute.
+FALSE
+Target data value is 
+updated and quality is set 
+according to q attribute.
+TRUE
+TRUE
+FALSE
+Target data value is 
+updated.
+TRUETRUE
+Figure 24: Receiving of GOOSE data with quality in protection relays
+5.9 GOOSE supervision
+5.9.1 Background sending
+To ensure reliability and availability of the application, GOOSE communication must
+be supervised. The application should handle communication losses, for example,
+when a peer device is not available or there are communication time-outs.
+If there are no GOOSE-related data changes, the protection relay resends the
+last GOOSE message with a heartbeat cycle to enable the receiver to detect
+communication losses. The heartbeat cycle is defined by modifying the MaxTime
+property on the GOOSE control block.
+Every GOOSE frame has a TAL field which shows how long the frame is valid until the
+next heartbeat frame. Other devices may have their own TAL values. Nevertheless, all
+the TAL values under 1000 ms are rounded up to 1000 ms on the receiving side.
+GOOSE 2NGA002470 A
+46 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE47
+If no frames are received during 2×TAL, that is, if at least two consecutive frames are
+lost, then the receiver considers the whole data set as invalid. The quality attribute
+for the entire data set is set to "bad" and the values are set to their default values.
+This is an important consideration when designing the application as the default
+values need to be fail-safe values. For example, the protection relay should use an
+enabled signal for interlocking and a blocking-type signal for protection.
+5.9.2 Default value handling
+The information is of point-to-point type which means that there is only one signal
+connected to the function block input.
+The default value of the GOOSE receiver blocks output (OUT) is FALSE (0) if there is
+a communication error. This is applicable for all signal types (binary, integer, enum
+and floating point). In addition to the default value handling, the value output signal
+automatically carries validity information to the application function blocks. Validity
+information can be used in application by adding the quality function blocks..
+In communication disturbance cases, GOOSE receiver blocks use default values.
+Application function blocks using these signals have their own handling for
+propagated quality information and fail-safe functionality, especially when receiving
+analog data. For more information on the fail-safe functionality, see the function
+block description in the technical manual.
+If one relay application function block input receives signals from several protection
+relays, the input value is calculated in OR or AND operation (configured in
+Application Configuration) from several inputs. In this case, one default signal is
+treated as logical FALSE (0), but the other signals can keep the function block input
+value active. It works similarly to the traditional galvanic signal wires connected
+between protection relays. The advantage in the GOOSE-based signaling is that the
+application always detects faulty connections, unlike the Normally Open (NO) type
+of physically wired galvanic contacts.
+In all cases, however, a separate alarm event is generated by the GSELPRT1.Alm data
+object for IEC 61850 event clients.
+GSELPRT1.Alm can also be used on the application side as an input in the Signal
+Matrix's Binary Outputs sheet (signal GSELPRT ALARM).
+5.9.3 Alarm supervision in application
+In a communication time-out situation, all the peer devices receive information
+about the problem. The system does not tolerate single failures or non-existing
+devices, for example, in service situations. This should be considered when
+designing an application.
+Disable GOOSE sending by writing “false” from IEC 61850 clients to
+the GoEna attribute under the GOOSE control block. Use this feature
+carefully, and for test purposes only.
+5.9.4 Diagnostic counters
+The protection relays' IEC 61850 data model includes a logical node LD0.GSELPRT1
+for the GOOSE communication diagnostic. The counters are also available via the
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+47
+PDF_PAGE48
+HMI or PCM600 path Monitoring > I/O Status > Communication > GSELPRT1 >
+Monitoring.
+It is possible to reset the GOOSE communication diagnostics counters via
+Monitoring > I/O Status > Communication > GSELPRT1 > Monitoring >
+Reset counters and via the IEC 61850 communication by writing TRUE to the
+RsCnt.Oper.ctlVal attribute under GSELPRT1.
+Table 6: Diagnostics data objects
+Data object Description Diagnostic information
+FrRxCnt Received messages When increasing, the protection relay is receiv-
+ing GOOSE messages.
+FrTxCnt Transmitted messages When increasing, the protection relay is send-
+ing GOOSE messages.
+RxStCnt Received state changes Received GOOSE messages with a new stNum
+value
+RxSeqCnt Received sequence number Received GOOSE retransmissions or heartbeat
+cycle messages with a new sequence number
+RxTestCnt Received frames with test
+bit
+Received GOOSE frames with the test flag on.
+Incremented only in Edition 1 mode
+StWrnCnt State warnings Number of detected state number jumps
+SeqWrnCnt Sequence warnings Number of detected sequence number jumps
+RxTmOutC nt Receiver time-outs Number of detected peer device time-outs
+ConfErrCnt Received ConfRev mis-
+matches
+When increasing, there is a mismatch between
+the received GOOSE frame information and
+configured GOOSE.
+NdsComCnt Received frames with Needs
+Commissioning bit
+One or many peer devices indicate that their
+configuration is not valid or up-to-date.
+DSErrCnt Errors in received data set Received data is syntactically incorrect, or the
+amount of data in the data set is not as expec-
+ted.
+Alm Receiver alarm Alarm signal value connected to the event and
+application logic. It is active when one or many
+peer devices are in time-out.
+RptProtCnt Replay protection warnings Number of detected message replays
+GOOSE Alarm is activated in the receiver device in certain situations.
+• Time-out
+• Configuration revision mismatch
+• Error in the received data set
+• The Needs Commissioning bit is active in the received message
+GOOSE 2NGA002470 A
+48 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE49
+5.10 Forcing of GOOSE signals
+Application Configuration in PCM600 is used for configuring the IED.
+5.10.1 Forcing of GOOSE inputs
+Configuration logic testing is done for individual configurations. GOOSE signals can
+be forced using Signal Monitoring.
+GOOSERCV_BIN
+Force value
+Device under test
+Figure 25: Testing of one device
+The device must be in test mode.
+5.10.2 Forcing of GOOSE outputs
+Any status data can be sent through GOOSE communication. Horizontal
+communication can be tested by forcing the outputs of the sender device and
+observing the results in the receiving device.
+Both devices must be in test mode.
+2NGA002470 A GOOSE
+REC615
+IEC 61850 Engineering Guide
+49
+PDF_PAGE50
+6 Process bus and IEEE 1588 time
+synchronization
+6.1 Sampled measured values and IEEE 1588 v2 time
+synchronization
+The protection relay supports the IEC 61850 process bus with the IEC 61850-9-2
+sampled values protocol. By default, if sampled values sending is enabled, relay
+sends 9-2LE conformant sampled values data. However, if modifying specific SMV
+options or attributes, the SMV data might not be according to 9-2LE specification
+anymore. PCM600 gives user a warning if the SMV stream configured is not
+according to 9-2LE. If SMV data is sent to e.g. 3rd party device, system engineer
+must ensure is the SMV receiving device is capable to e.g. handle specific SMV
+options.
+6.2 System building
+Redundant Ethernet topologies (HSR/ PRP) are recommended to be used in the
+sampled measured values applications and with GOOSE to ensure the highest
+availability.
+6.2.1 High-availability seamless redundancy HSR
+The HSR topology presented here is a reference system for process bus usage with
+switches supporting HSR and IEEE 1588 v2. This topology includes an HSR ring
+with protection relays where IEEE 1588 v2 clock masters are connected to the ring
+using Ethernet switches. The HSR ring is presented with light blue lines and normal
+Ethernet connections with dark blue.
+Each connected node in the HSR ring must support the HSR protocol. Single
+attached nodes can be connected to an HSR ring with a separate redundancy box
+(RedBox).
+Use correct Ethernet ports in the protection relay with HSR. Protection
+relays with HSR support have redundant Ethernet ports marked as LAN A
+and LAN B.
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+50 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE51
+IEC 61850
+HSR
+SMV traﬃc
+Backup 1588
+master clock
+Managed HSR
+Ethernet
+switch
+Primary
+IEEE 1588 v2
+master clock
+Secondary
+IEEE 1588 v2
+master clock
+(optional)
+Managed HSR
+Ethernet
+switch
+Figure 26: Recommended HSR reference topology with SMV and IEEE 1588 v2
+The maximum number of IEDs supported in the HSR ring is 30. This is to
+keep the ring delay as small as possible for protection applications using
+the communication channel. When using IEEE 1588 time synchronization
+and IEC 61850-9-2 LE, 15 hops from the clock master to the IED is the
+maximum to reach 1 μs accuracy in measurements according to the IEEE
+1588 v2 standard.
+HSR bandwidth is 50 Mbit/s as all messages are doubled for both
+directions of the ring.
+6.2.2 Parallel redundancy protocol PRP
+The PRP topology presented here is a reference system for process bus usage with
+switches supporting IEEE 1588 v2. This topology includes duplicated star networks
+which are called LAN A and LAN B. IEEE 1588 v2 clock masters are connected to the
+network using Ethernet switches. LAN A is presented with dark red lines and LAN B
+with light red.
+In PRP, LAN A and LAN B must be connected only to end devices supporting
+PRP otherwise Ethernet communication is disturbed and might not work. Single
+attached nodes can be connected directly to LAN A or LAN B, in which case there is
+no redundancy for these nodes, or with a separate redundancy box (RedBox).
+Use correct Ethernet ports in the protection relay with PRP. Protection
+relays with PRP support have redundant Ethernet ports marked as LAN A
+and LAN B. Third Ethernet port, if available, is an interlink port which is
+used as a redundancy box connector.
+2NGA002470 A Process bus and IEEE 1588 time
+synchronization
+REC615
+IEC 61850 Engineering Guide
+51
+PDF_PAGE52
+Do not mix different PRP LANs. Ensure that the LAN A port is always
+connected to LAN A only and the LAN B port is connected to LAN B.
+Managed 
+Ethernet 
+switch
+Managed 
+Ethernet 
+switch
+Primary IEEE 
+1588 v2 
+master clock
+Secondary 
+IEEE 1588 v2 
+master clock 
+(optional)
+LAN A LAN B
+Backup IEEE 
+1588 v2 
+master clock
+SMV traffic
+IEE 1588 v2 messages
+Figure 27: Recommended PRP reference topology with SMV and IEEE 1588 v2
+6.2.3 Interlink port
+Most redundant communication cards have a third Ethernet port which is an
+interlink port that can be used to connect other relays or devices to HSR or PRP
+station bus. Interlink port should not be connected to second network, only to a
+single device. This port works as a redundancy box (RedBox) port for other devices.
+It also supports IEEE 1588 making it possible to connect the PTP grandmaster clock
+to the station bus using it. Additionally, single attached nodes connected to the
+interlink port can receive 1588 time synchronization over this port.
+6.2.4 Performance optimization
+• As the SMV messages cause high traffic in the network, they should be
+filtered out from the local subnetwork part not using them. Otherwise, the
+SMV messages reach also those network devices that do not subscribe them.
+Managed Ethernet switches can be configured to perform the filtering operation.
+• IEEE 1588 v2 network devices complying with Power profile or 61850-9-3 profile
+are highly recommended to simplify the settings and to ensure compatibility.
+Power Profile and the HSR standard recommend implementation according to
+the one-step mode.
+• It is recommended to use IEEE 1588 v2 devices with the same clock mode (one-
+step or two-step) within one network. Ethernet switches performing one-step to
+two-step conversions should be avoided due to additional inaccuracy.
+• One SMV publisher generates around 5 Mbit/s traffic to the network. This is
+about 5 % of bandwidth in PRP and 10 % in HSR when the bandwidth of the used
+network is 100 Mb/s.
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+52 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE53
+6.2.5 Requirements for third-party devices
+System and setting requirements
+• Support for the IEEE 1588 v2 time synchronization
+• IEEE 1588 v2 according to Power profile and implementation according to the
+one-step mode or Utility profile IEC 61850-9-3
+• All network devices between the IEEE 1588 v2 clock master and the IED must
+support IEEE 1588 v2
+Ethernet switch requirements
+• Support for the IEEE 1588 PTPv2 protocol, transparent clock operation mode
+with hardware assisted timestamping
+• Managed switch with optional capabilities for SMV filtering and VLAN to restrict
+the SMV flow only to devices using it
+• Switches that support IEEE 802.1D with LLDP enabled
+• TC time accuracy to comply with IEEE Std C37.238-2011 annex B
+IEEE 1588 v2 master clock requirements
+• Support for IEEE 1588 v2 Grand Master operation mode
+• IEEE Std C37.238-2011 or IEC/IEEE 61850-9-3:2016 PTP profile support
+6.3 SMV system configuration
+6.3.1 SMVSENDER ACT configuration
+The SMVSENDER function block must be added to the ACT configuration and
+connected to at least one triplet or residual channel to activate SMV sending.
+Unused channels in SMVSENDER must be connected to GRPOFF. As a result, the
+sampled value control block and the related data set are automatically added to
+the protection relay configuration. Relay supports sample rate of 4000 samples per
+second in a 50 Hz system and 4800 samples per second in a 60 Hz system.
+Scaling of SMV currents is standardized to 1 mA/bit (IEC 61850-9-2LE and
+IEC 61869-9). In the case of calculated I0 (-3I0) the measured value can
+exceed the maximum 32 bit number reserved for measurements in IEC
+61850-9-2. If the calculated I0 value exceeds 1518,5 kA RMS it will saturate
+(clip).
+The relay however also calculates the I0 from individual phase current
+when received over SMV, using this calculated I0 instead (ILTCTR
+IRES_CLK output) is a possible workaround.
+Additionally when sending calculated I0 over SMV the maximum usable
+primary current setting is 11,8 kA in the sender IED. Exceeding this
+setting value results in zero amplitude for calculated I0 in SMV stream.
+Workaround for this is also to use calculated I0 in calculated in receiver
+instead (ILTCTR IRES_CLK  output).
+2NGA002470 A Process bus and IEEE 1588 time
+synchronization
+REC615
+IEC 61850 Engineering Guide
+53
+PDF_PAGE54
+Figure 28: SMVSENDER block in Application Configuration
+6.3.2 SMVRCVx ACT configuration
+At least one SMVRCVx function block must be added to the ACT configuration of the
+SMV receiver protection relay to enable SMV receiving.
+A maximum of 16 SMV channels can be received The total number of channels
+that the relay can process is 64 including local, remote and calculated channels.
+Forwarding of received SMV channels through SMVSENDER is not supported.
+Figure 29: SMVRCVx block in Application Configuration
+6.3.3 Configuring SMV with IEC 61850 Configuration
+The connection between the SMV sender and receiver is handled using IEC 61850
+Configuration.
+1. In the Plant Structure view, right-click the correct sender IED and select IEC
+61850 Configuration.
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+54 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE55
+2. Select Process Bus Communication in the drop-down box on the toolbar.
+Figure 30: Selecting Process Bus Communication
+The SMV sender and the possible SMV receiver IEDs become visible.
+3. On the Sampled Value Controls tab, edit the properties and addresses of the
+sampled value control block.
+Figure 31: Changing the VLAN ID
+Some switches do not support multicast filtering with VLAN value
+“0” because it means “no VLAN” and VLAN 1 has a special purpose
+as the management VLAN for switches. The recommended value for
+VLAN is 2...1001.
+Use a unique multicast address for each SVCB. The address range for
+sampled values multicast addresses is 01-0C-CD-04-00-00...01-0C-
+CD-04-01-FF.
+Selected IEC 61850 edition is followed by default. Samples
+Synchronized behavior can be controlled using Smv SmpSynch
+format parameter in SMVSENDER function.
+4. Connect the SMV sender to the receivers.
+2NGA002470 A Process bus and IEEE 1588 time
+synchronization
+REC615
+IEC 61850 Engineering Guide
+55
+PDF_PAGE56
+5. In PCM600, select Write to IED.
+Figure 32: Configuring the SMV sender and receivers
+If the configuration is updated in a manner that affects the SV
+frame content, e.g. options, SVID, Conf.Rev , dst MAC change,
+configurations of both SMV sender and all receivers must be
+rewritten from PCM600 to the relays.
+6.3.4 Configuring SMV receiver with Signal Matrix’s SMV tool
+The connection between the SMV receiver and sender is handled using the Signal
+Matrix’s SMV tool. If the receiver IED’s ACT configuration includes multiple SMVRCVx
+blocks, the SMV tool can also be used to specify which sender is connected to which
+receiver.
+1. In the Plant Structure view, right-click the correct receiver IED and select Signal
+Matrix.
+2. Select the SMV tab.
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+56 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE57
+3. Connect the SMV receiver with the sender.
+Figure 33: Configuring the SMV receiver
+Figure 34: Configuring the SMV receiver in case of multiple SMVRCVx blocks
+2NGA002470 A Process bus and IEEE 1588 time
+synchronization
+REC615
+IEC 61850 Engineering Guide
+57
+PDF_PAGE58
+6.4 Bay level configuration
+6.4.1 Application configuration of SMV receiver
+The SMV receiver application configuration is done with Application Configuration
+in PCM600. TxTR function blocks are used in the receiver application to supervise
+the sampled values and to connect the received analog inputs to the application.
+The SMVRCV function block outputs need to be connected according to the SMV
+application requirements. Typically, all three analog phase voltages are connected,
+for example, to UTVTR1. When voltages are used, the VT connection analog input
+setting parameter for phase voltages must be set to "Wye" for IEC 61850-9-2 LE
+compliancy.
+UTVTR1
+O:13|T:2,5|I:1
+UL1
+UL2
+UL3
+MINCB_OPEN
+URES
+ALARM
+WARNING
+URES_ALARM
+URES_WARNING
+U3P
+URES_CLC
+URES_MEAS
+URES_CLC_DR
+URES_MEAS_DR
+U1_DR
+U2_DR
+U3_DR
+NPS_DR
+PPS_DR
+FREQ_DR
+U3P1
+URES1_CAL
+U1_1_DR
+U2_1_DR
+U3_1_DR
+UTVTR1[1]_URES_MEAS
+SMVRCV1
+O:11|T:2,5|I:1
+UL1
+UL2
+UL3
+Uo
+IL1
+IL2
+IL3
+Io
+UTVTR1[1]_ALARM
+UTVTR1[1]_WARNING
+Figure 35: Receiving all phase voltages and residual voltage using SMV
+The synchrocheck function requires only one analog phase voltage (UL1).
+SMVRCV2
+O:2|T:2,5|I:2
+UL1
+UL2
+UL3
+Uo
+IL1
+IL2
+IL3
+Io
+UTVTR2
+O:2|T:2,5|I:2
+UL1
+UL2
+UL3
+MINCB_OPEN
+URES
+ALARM
+WARNING
+URES_ALARM
+URES_WARNING
+U3P
+URES_CLC
+URES_MEAS
+URES_CLC_DR
+URES_MEAS_DR
+U1_DR
+U2_DR
+U3_DR
+NPS_DR
+PPS_DR
+FREQ_DR
+UTVTR2[2]_ALARM
+UTVTR2[2]_WARNING
+UTVTR2[2]_U3P
+UTVTR2[2]_U1_DR
+Figure 36: Receiving one line voltage for synchrocheck functionality using SMV
+ALARM and WARNING outputs are active during the configuration writing.
+In case of unsupported configuration, an SMV error is indicated.
+The WARNING output of TxTR should be connected in the SMV applications to
+perform the necessary actions if the SMV angle information is out of the accuracy
+range. Depending on the protection function operation principle, inaccurate
+angle information is also seen in the protection function operation inaccuracy.
+Additionally, the ALARM output of TxTR should be connected to ensure fail-safe
+operation in all circumstances. The WARNING output is internally active whenever the
+ALARM output is active.
+WARNING and ALARM information is internally propagated to the measurement
+functions. Thus, measurement functions can update the measured value quality
+information accordingly without any additional connections.
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+58 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE59
+Figure 37: Application Configuration tool logic example for the SMV applications
+The receiver activates the TxTR WARNING and ALARM outputs if any of the quality
+bits, except for the derived bit, is activated. When the receiver is in the test mode, it
+accepts SMV frames with a test bit without activating the TxTR WARNING and ALARM
+outputs.
+The TxTR WARNING in the receiver is activated if the synchronization accuracy of the
+sender or the receiver is worse than 4 µs. The output is held on for 10 seconds after
+the synchronization accuracy returns within limits.
+The TxTR ALARM in the receiver is activated if the synchronization accuracy of the
+sender or the receiver is unknown, the difference between the received samples'
+time stamp and the protection relay's time is more than 8 ms, the SMV frame is
+delayed more than SMV Max Delay or two or more consecutive SMV frames are lost.
+The output is held on for 10 seconds after the synchronization accuracy returns
+within limits.
+The quality of received SMV is available as outputs in TxTR function blocks and
+is not propagated directly to protection function blocks along with the SMV
+measurement values. To handle situations where SMV is not available, its quality
+is not good or there is an issue with time synchronization, the WARNING and
+ALARM outputs of SMV measurement function blocks must be connected to the
+application, for example to block directional protection.
+2NGA002470 A Process bus and IEEE 1588 time
+synchronization
+REC615
+IEC 61850 Engineering Guide
+59
+PDF_PAGE60
+6.4.2 SMV control block
+Table 7: Sampled value control block attributes
+SVCB attribute Description
+SVID A SVCB-specific string. The default value is
+<IedName>MU01.
+Maximum SVID length is 129 characters, as defined in IEC 61850-9-2 Ed
+2.1.
+Multicast address A multicast addressing scheme is used when sending sampled values
+messages. A multicast address can be shared by several sending devi-
+ces or it can be IED specific. To keep the multicast message filtering
+of the devices working, it is recommended to use unique multicast
+addresses.
+SVCB name The name of the SVCB structure seen by the IEC 61850/MMS client
+Data set Data sent in sampled values messages to the network. Default data set
+PhsMeas1 should not be changed.
+ConfRev ConfRev increases when the referenced data set is modified. Both the
+sampled values sender and the receiver must have the same ConfRev
+value. This ensures that both IEDs have the same configuration level
+in the substation configuration. ConfRev usage is done automatically
+by the tools. If the latest system configuration is not downloaded into
+all required IEDs, the configuration revision may differ between the
+receiver and sender.
+MAC Address Multicast MAC address to which the sampled values data is sent. The
+receiving IED filters the frames and starts to process them if a multi-
+cast address is defined in the configuration. It is recommended to have
+one unique multicast address per SVCB. The address range for sampled
+values multicast addresses is 01-0C- CD-04-00-00...01-0C-CD-04-01-FF.
+APPID Unique HEX value application identifier for sending the SVCB within
+the system. It identifies the purpose of a data set. The value range for
+sampled values is 0x4000...0x7FFF. 1
+VLAN-ID Used if the Ethernet switches in a station bus support VLAN. If static
+VLAN identifiers are defined, it also affects the switch port configura-
+tion. Value “000” indicates a non-configured VLAN and switches do not
+filter these messages on a port basis. This is recommended if there is
+no need to split the logical network.
+The VLAN identifier is a three-character HEX value with range 000...FFF.
+The recommended values are 2...1001.
+VLAN Priority Used in networks supporting VLANs. The priority is used with network
+switches. The default value for sampled values is “4” and the value
+range is 0...7.
+Sample Rate Amount of samples per period
+Table continues on the next page
+1 To be scrictly compliant with 9-2LE, check that relay APPID is set to 0x4000.  Configuration tool
+gives incrementing APPIDs if multiple SMV senders are configured within the same project.
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+60 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE61
+SVCB attribute Description
+NoAsdu Number of ASDUs, which are concatenated into one APDU
+IncludeSampleRate If selected SV buffer contains the attribute “SmpRate”
+Master Clock ID If selected SV frame contains the grandmaster id of the SMV sender.
+That is, the IEC 61850-9-2 option "gmIdentity".
+Modify only MAC address, VLAN ID and sampled value ID to keep the 9-2
+LE compliancy. Default SMV properties are 9-2 LE compliant.
+Use a unique APPID and/or destination MAC for each SMV stream to
+ensure that always the correct SMV stream is received and used by the
+application. It is also highly recommended to use unique MAC addresses
+to fully benefit from the network filters. Having multiple SMV streams
+with the same destination MAC+APPID in the system, can result in faulty
+SMV handling in the devices.
+IEC61850-9-2 SV option "Samples synchronized" is mandatory for proper
+operation if SV cannot be disabled.
+2NGA002470 A Process bus and IEEE 1588 time
+synchronization
+REC615
+IEC 61850 Engineering Guide
+61
+PDF_PAGE62
+6.4.3 Angle and amplitude corrections
+The TxTR instrument transformer amplitude and angle correction factors also affect
+the scaling in SMV frames. Thus, it is sufficient to configure these correction factors
+in the sender only.
+Figure 38: Amplitude and angle correction
+6.4.4 SMV delay
+The SMV Max Delay parameter, found via menu path Configuration > System,
+defines how long the receiver waits for the SMV frames before activating the TxTR
+ALARM output. This setting also delays the local measurements of the receiver to
+keep them correctly time aligned. The SMV Max Delay values include sampling,
+processing and network delay.
+For best performance, the SMV Max Delay value should not be set
+needlessly high since this delays the protection by an equal amount of
+time Table 8. Setting it too low can cause SMV samples to arrive after
+the set deadline and thus make SMV-based protection inoperable. To
+determine suitable SMV Max Delay values, see Table 9.
+TxTR ALARM activates when two or more consecutive SMV frames are lost or late.
+A single loss of frame is corrected with a zero-order hold scheme. The effect on
+protection is considered negligible in this case and it does not activate the TxTR
+WARNING or ALARM outputs.
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+62 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE63
+Table 8: Topology-dependent SMV max delay setting
+Number
+of hops
+Internal application
+delay (μs)
+Internal
+switch
+latency
+(μs)1
+Store and
+forward
+latency
+(μs)1
+Queue
+latency
+(μs) 1 ,2
+Addition
+al
+tolerance
+(μs) 3
+Theoretical max
+delay (μs)
+Recommended max
+delay setting (ms)
+50 Hz 60 Hz 50 Hz 60 Hz 50 Hz 60 Hz
+2 1555 1296 20 24 240 80 1919 1660 2 2
+5 1555 1296 50 60 600 200 2465 2206 3 3
+10 1555 1296 100 120 1200 250 3225 2966 5 4
+15 1555 1296 150 180 1800 300 3985 3726 5 4
+20 1555 1296 200 240 2400 350 4745 4486 5 5
+25 1555 1296 250 300 3000 400 5505 5246 6 6
+30 1555 1296 300 360 3600 450 6265 6006 7 6
+Table 9: Protection delays and network margins
+System frequency
+(Hz)
+SMV max delay
+setting (ms)
+Ethernet network
+margin (ms)4, 5
+Additional
+protection delay
+(ms)
+50 2 0,25 0,94
+3 1,5 2,19
+5 2,75 3,44
+6 4,00 4,69
+7 5,25 5,94
+60 2 0,21 0,78
+3 1,25 1,83
+4 2,29 2,87
+5 3,33 3,91
+6 4,38 4,95
+6.4.5 SMV additional settings and backward compatibility
+The SMV SmpSynch field is defined to operate in different way in IEC 61850-9-2 Ed
+1 and Ed 2.1 standard versions. By default the behavior of this field follows the IEC
+61850 edition that is selected in PCM600 tool.
+1 Latencies are totals over the number of hops and they are calculated for 100 Mbit full-duplex
+Ethernet network.
+2 Queue latency calculated when the port has started to send a full-sized frame (1500 bytes)
+before the SMV frame and the switch has been configured to prioritize SMV
+3 Additional tolerance in case of long wires or disturbance in network
+4 Average values, variation is ±0.17 ms
+5 based on REC615 3.0 as sender without network and switch latencies
+2NGA002470 A Process bus and IEEE 1588 time
+synchronization
+REC615
+IEC 61850 Engineering Guide
+63
+PDF_PAGE64
+To override the SmpSynch behavior, for backward compatibility reasons, parameter
+"Smv SmpSynch" format can be used. In Ed 1 mode the SmpSynch values are FALSE/
+TRUE and in Ed 2.1 mode SmpSynch values are: 0=none, 1=local, 2=global. The
+relay SMV receiver decoder can accept both however properly. However backwards
+compatibility might be needed for example for older 3rd party devices.
+6.4.6 IEEE 1588 v2 parameters and status information
+Time
+The time parameters are found via menu path Configuration > Time.
+Table 10: Non group settings
+Parameter Values (Range) Unit Step Default Description
+Synch source 0=None
+1=SNTP
+2=Modbus
+3=IEEE 1588
+5=IRIG-B
+9=DNP
+16=IEC60870-5-101
+18=IEC60870-5-104
+1=SNTP Time synchroniza-
+tion source
+PTP Profile 1=IEEE
+C37.238-2011
+2=IEC 61850-9-3
+1=IEEE
+C37.238-2011
+Profile Selection for
+the Precision Time
+Protocol
+PTP domain ID 0...255 1 0 The domain is iden-
+tified by an inte-
+ger, the domain-
+Number, in the
+range of 0 to 255.
+PTP priority 1 1 0...255 1 128 PTP priority 1. Inter-
+nally 255 in Slave-
+only mode.
+PTP priority 2 1 0...255 1 128 PTP priority 2.
+Internally 255 in
+Slave-only mode.
+PTP Slave-only 0=False
+1=True
+0=False If true, the IED can-
+not become a clock
+master
+Time master mode 1=Master with fi-
+nite holdover
+2=Master with in-
+finite holdover
+1=Master with fi-
+nite holdover
+Device Time Master
+Mode
+Clear clock list 0=False
+1=True
+0=False Clears the stored
+master clock list
+Time Syn Src Tmm 1...65535 min 1 3 Time synchroniza-
+tion timeout for
+legacy protocols as
+clock source (Mod-
+bus, IEC103, IEC101,
+IEC104 and DNP)
+1 Smaller value has higher priority
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+64 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE65
+Table 11: Non group settings
+Parameter Values (Range) Unit Step Default Description
+Local time offset -840...840 min 1 0 Local time offset in
+minutes
+Table 12: Non group settings
+Parameter Values (Range) Unit Step Default Description
+IP SNTP primary 192.168.2.166 IP address for SNTP
+primary server
+IP SNTP secondary 192.168.2.165 IP address for SNTP
+secondary server
+Table 13: Non group settings
+Parameter Values (Range) Unit Step Default Description
+DST in use 0=False
+1=True
+1=True DST in use setting
+DST on time
+(hours)
+0...23 h 2 Daylight saving
+time on, time (hh)
+DST on time (mi-
+nutes)
+0...59 min 0 Daylight saving
+time on, time (mm)
+DST on date (day) 1...31 1 Daylight saving
+time on, date
+(dd:mm)
+DST on date
+(month) 1=January
+2=February
+3=March
+4=April
+5=May
+6=June
+7=July
+8=August
+9=September
+10=October
+11=November
+12=December
+5=May Daylight saving
+time on, date
+(dd:mm)
+DST on day (week-
+day) 0=reserved
+1=Monday
+2=Tuesday
+3=Wednesday
+4=Thursday
+5=Friday
+6=Saturday
+7=Sunday
+0=reserved Daylight saving
+time on, day of
+week
+DST off time
+(hours)
+0...23 h 2 Daylight saving
+time off, time (hh)
+DST off time (mi-
+nutes)
+0...59 min 0 Daylight saving
+time off, time (mm)
+DST off date (day) 1...31 25 Daylight saving
+time off, date
+(dd:mm)
+DST off date
+(month) 1=January
+2=February
+3=March
+9=September Daylight saving
+time off, date
+(dd:mm)
+Table continues on the next page
+2NGA002470 A Process bus and IEEE 1588 time
+synchronization
+REC615
+IEC 61850 Engineering Guide
+65
+PDF_PAGE66
+Parameter Values (Range) Unit Step Default Description
+4=April
+5=May
+6=June
+7=July
+8=August
+9=September
+10=October
+11=November
+12=December
+DST off day (week-
+day) 0=reserved
+1=Monday
+2=Tuesday
+3=Wednesday
+4=Thursday
+5=Friday
+6=Saturday
+7=Sunday
+0=reserved Daylight saving
+time off, day of
+week
+DST offset -720...720 min 1 60 Daylight saving
+time offset
+In IEEE 1588 v2, the PTP domain is a logical grouping of clocks that synchronize to
+each other using the protocol but that are not necessarily synchronized to clocks in
+another domain.
+PTP priority 1 and PTP priority 2 are used in the execution of the best master clock
+algorithm in which lower values take precedence. Priority 1 is the first one used to
+decide the clock master.
+PTP profile is used to select the profile which affects PTP announce frame format.
+Possible selection are "IEEE C37.238-2011" which is often referred as old Power
+profile and "IEC 61850-9-3" which is a profile for power utility automation.
+Clear clock list is used to clear the stored master clock list. For more information,
+see time synchronization in the technical manual.
+Best master clock algorithm
+The best master clock algorithm compares data describing two clocks to determine
+which data describes the better clock. This algorithm is used to determine which of
+the described clocks in several announce messages received by the local clock port
+is the best clock. It is also used to determine whether a newly discovered clock is
+better than the local clock.
+The comparison algorithm is based on pair-wise comparisons of attributes with the
+following precedence.
+• Priority 1
+• Clock class
+• Clock accuracy
+• Clock stability
+• Priority 2
+• Clock identity: A tie-breaker based on unique identifiers
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+66 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE67
+The TxTR ALARM output activates in the SMV receiver if transfer is made to a IEEE
+1588 v2 master that has 8 ms or more offset compared to the previous master. The
+ALARM output stays on for a period of 11...33 s.
+Time synchronization monitoring values
+The time synchronization monitoring values are found via menu path Monitoring >
+IED status > Time synchronization.
+Table 14: Time synchronization monitoring values
+Description Value
+Synch source IEEE 1588 master
+IEEE 1588 slave
+Synch status Up
+Down
+Synch accuracy 0...26 bits
+Sync accuracy indicates the synchronization accuracy in number of fractional bits
+and can be calculated from the number of bits according to a formula.
+Synch accuracy bits_ = −2 seconds
+(Equation 1)
+Table 15: Synch accuracy values and corresponding accuracies
+Bits Accuracy
+17 8 µs
+18 4 µs
+19 2 µs
+20 1 µs
+21 500 ns
+22 250 ns
+23 125 ns
+24 62.5 ns
+25 31.25 ns
+The time synchronization accuracy is rounded to the next worse
+accuracy, for example, if the accuracy is 2..3 ms, it is shown as 8 bits
+(4 ms).
+2NGA002470 A Process bus and IEEE 1588 time
+synchronization
+REC615
+IEC 61850 Engineering Guide
+67
+PDF_PAGE68
+IEEE 1588 v2 monitoring values
+The IEEE 1588 v2 monitoring values are found via menu path Monitoring > IED
+status > Time synchronization.
+IEEE 1588 v2 monitoring values
+Table 16: IEEE 1588 v2 monitoring values
+Description Value
+PTP gm identity
+PTP gm time Src Atomic clock
+GPS
+Terrestrial radio
+PTP
+NTP
+Hand set
+Other
+Internal oscil.
+PTP gm accuracy
+Within a domain, grandmaster is the clock that is the ultimate source of time for
+clock synchronization using the PTP protocol.
+PTP gm identity indicates the identity of the master clock.
+PTP gm time Src indicates the source of time announced by the grandmaster clock.
+PTP gm accuracy indicates the accuracy announced by the grandmaster clock.
+SMV accuracy monitoring values
+The SMV accuracy monitoring values are found via menu path Monitoring > IED
+status > SMV accuracy.
+Table 17: SMV accuracy monitoring values
+Description Value
+SMV synch accuracy InternalClock
+LocalAreaClock
+GlobalAreaClock
+Local synch accuracy
+Max Dev Sync Acc
+SMV synch accuracy value "InternalClock" indicates that the SMV is either not in use
+or it is not synchronized with IEEE 1588 v2. "LocalAreaClock" indicates that SMV
+is synchronized to a local area clock and "GlobalAreaClock" indicates that SMV is
+synchronized to a global time reference such as GPS.
+Local synch accuracy indicates the time synchronization accuracy in microseconds.
+Max Dev Sync Acc indicates the maximum clock deviation when the clock accuracy
+was over 4 μs.
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+68 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE69
+During changing network conditions where e.g. main GPS clock is lost, the system
+elects a new PTP master utilizing the best master clock algorithm. Due to time
+accuracy sensitivity of SMV applications, it is advisable to have more than one PTP
+master capable device in the network, for uninterrupted SMV quality (smpSync). By
+default settings, the relay can act as a temporary backup PTP master, until main
+GPS clock is restored. There is also possibility to deny this operation, by setting
+"PTP slave-only” TRUE value in time synchronization menu. However, it is good to
+be aware that SMV application cannot operate properly (SmpSync=none) without an
+accurate PTP master constantly available in the network.
+6.4.7 Quality bits in SMV frames
+Table 18: Explanation of quality bits
+Quality bit Description
+smpSynch Synchronization accuracy for all channels in the
+SMV frame.
+0: less than 4 µs synchronization accuracy
+1: synchronized to local clock within 4 us accu-
+racy
+2: synchronized to global clock within 4 us ac-
+curacy
+test bit The sender IED is in test mode.
+invalid 01 & bad reference The sender time synchronization is uninitial-
+ized (accuracy unknown).
+The sender has time accuracy less than 100
+ms.
+invalid 01 The channel is not available.
+questionable 11 & inaccurate The accuracy of the measurement value is in-
+accurate or not supported.
+derived The channel is derived from other channels, for
+example, calculated residual voltage.
+6.4.8 SMV Simulation
+Relay is capable of processing simulated messages. The switchover to simulated
+messages requires that the relay is set to allow simulated messages and that it
+receives the first simulated message. Detection of simulated messages is separated
+per SMV publisher. Therefore, one SMV stream may receive as simulated while
+another stream is received as a non-simulated one.
+To set the protection relay to allow simulated SMV, either LD0.LPHD1. Sim is set to
+true via the IEC 61850 protocol or the Tests > IED Test > Allow simulation parameter
+is set via the WHMI or the LHMI to "Yes".
+Switching back to receiving only non-simulated normal SMV stream requires that
+the Allow simulation parameter is set to "No" (or LD0.LPHD1.Sim = false). The values
+2NGA002470 A Process bus and IEEE 1588 time
+synchronization
+REC615
+IEC 61850 Engineering Guide
+69
+PDF_PAGE70
+change to real ones after the first received normal SMV packet after simulation
+mode has been disabled.
+The simulation mode behavior is described in more detail in IEC 61850-7-1 standard
+section. To monitor if the SMV stream(s) received by the relay is simulated or not,
+check HMI: Monitoring > IED status > SMV traffic > SMVRCVx > Simulation status.
+6.5 Engineering verification
+This chapter gives a checklist of items to check and confirm during the engineering
+phase. The complete test specification depends on the network topology and used
+system components.
+Check the configuration and settings with real system load and topology.
+In the Measurement view of the SMV receiver, the voltage values in
+brackets indicate an invalid or a questionable measurement.
+Table 19: SMV sender
+Item Description Checked
+Missing sender Disable the SMV sender via Configuration > Communica-
+tion > Ethernet > SMVSENDER and verify the expected
+handling in receivers. In the SMV receivers's Measurement
+view, the voltage values should be in brackets indicating
+invalid or questionable measurement. If The SMVSENDER
+is disabled from the LHMI, it can only be enabled from the
+LHMI. Thus, in this situation a configuration write from
+PCM600 does not enable the SMVSENDER.
+Internal fault test Force internal fault in the sender via Tests > IED test and
+check that the receiving devices behave as expected.
+SMV receiver monitored data is available in three locations.
+• Monitoring > I/O status > Analog inputs
+• Monitoring > IED status > SMV traffic
+• Monitoring > IED status > SMV accuracy
+Table 20: SMV receiver
+Item Description Checked
+WARNING WARNING ( Monitoring > I/O status > Analog inputs >
+Voltage(3U,VT)) works as specified in the Application
+Configuration tool. Necessary special handling consid-
+ered in the Application Configuration tool logics. WARN-
+ING is active when the IED starts.
+ALARM ALARM ( Monitoring > I/O status > Analog inputs > Volt-
+age(3U,VT)) works as specified in the Application Con-
+figuration tool. Necessary special handling considered in
+Table continues on the next page
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+70 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE71
+Item Description Checked
+the Application Configuration tool logics. ALARM is active
+when the IED starts.
+Max delay The maximum delay ( Monitoring > IED status > SMV
+traffic) must be in all conditions smaller than the SMV
+Max Delay parameter ( Configuration > System). Larger
+values indicate configuration problems in the network or
+the need to change the SMV Max Delay.
+Average delay The average delay ( Monitoring > IED status > SMV traf-
+fic) variation is small in different network traffic setups.
+A large variation may indicate configuration problems in
+the network.
+Measurement In the SMV receivers' Measurement view, the voltage val-
+ues should be without brackets indicating good status.
+Brackets indicate questionable or invalid values. The SMV
+traffic delay ( Monitoring > IED status > SMV traffic) val-
+ue should be lower than the value of SMV Max delay (Max
+6.48ms).
+Table 21: Time synchronization
+Item Description Checked
+Time quality Observe the grandmaster accuracy (Moni-
+toring > IED status > Time Synchroniza-
+tion). The IED GNRLLTMS1 WARNING
+signal is activated if the accuracy is not
+within the specified limits.
+Missing clock Disable the clock master and check that one
+IED takes the clock master role.
+SMV Synch accuracy The global clock is seen when the clock
+master is present.
+Local synch accuracy According to 9-2 LE the synchronization ac-
+curacy needs to be better than 4 μs which is
+the defined supervision limit. 1
+Max Dev synch Accuracy According to 9-2 LE the synchronization ac-
+curacy needs to be better than 4 μs which is
+the defined supervision limit. 1
+Grandmaster Check the grandmaster monitoring from
+the master configuration via the LHMI path
+Monitoring > IED status > Time synchroni-
+zation. Check that all IEDs are synchronized
+to the same PTP master.
+1 4 μs corresponds to approximately 0.07 degrees in 50 Hz systems
+2NGA002470 A Process bus and IEEE 1588 time
+synchronization
+REC615
+IEC 61850 Engineering Guide
+71
+PDF_PAGE72
+Table 22: Network
+Item Description Checked
+Max HSR loop size Maximum supported HSR loop size is 30. Consider apply-
+ing different topology in case a larger system is needed.
+Redundancy Check the maximum delays in different network setups.
+Process bus and IEEE 1588 time
+synchronization
+2NGA002470 A
+72 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE73
+7 Engineering of event reporting with
+PCM600
+7.1 IEC 61850 client management with IEC 61850
+Configuration
+The default IED SCL contains five default client definitions, “Client1”...”Client5”,
+which are used by all the RCBs. PCM600 does not show these clients in the
+plant structure, but IEC 61850 Configuration shows the clients in the client-server
+communication.
+If other clients need to be added to the project, the ICD file describing the client
+data model should be imported to PCM600.
+7.1.1 Adding new IEC 61850 clients for IEC 61850 Configuration
+Adding a new IEC 61850 client to a PCM600 project is a two-step operation. First,
+a new generic IEC 61850 IED object must be created under the plant structure and
+then the relevant client ICD or CID file must be imported to the generic IEC 61850
+IED.
+2NGA002470 A Engineering of event reporting with
+PCM600
+REC615
+IEC 61850 Engineering Guide
+73
+PDF_PAGE74
+1. Right-click a bay node in the project plant structure, point to New, then point to
+Generic IEC61850 IEC and select IEC61850 IED.
+Figure 39: Creating a generic IEC 61850 IED
+2. Rename the IED object as “Client_G”.
+Engineering of event reporting with
+PCM600
+2NGA002470 A
+74 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE75
+3. Right-click the IED and then select Import.
+Figure 40: Selecting Import on the shortcut menu
+4. Select a valid Client SCL file (ICD or CID) and click Open in the file selection
+dialog box.
+2NGA002470 A Engineering of event reporting with
+PCM600
+REC615
+IEC 61850 Engineering Guide
+75
+PDF_PAGE76
+5. In the SCL Import Options dialog box, select Ignore PCM Object Type and then
+click Import.
+Figure 41: Defining SCL import options
+6. Start IEC 61850 Configuration and select Client-Server communication as
+engineering mode.
+The newly added client should be present in the Clients column along with other
+clients on both the Data Set tab and the Report Controls tab.
+7.2 IEC 61850 Configuration user interface
+Engineering of event reporting with
+PCM600
+2NGA002470 A
+76 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE77
+1 Engineering mode selection
+2 Switch engineering mode on and off
+3 Switch IEC 61850 IED naming on and off
+4 Create new object
+5 Selection details
+6 Receiving access points
+7 Mapping grid
+8 Data to send/receive
+9 Engineering type selection
+10 Object properties
+Figure 42: IEC 61850 Configuration user interface
+1. Engineering mode selection
+The communication mode can be selected from the drop-down list on
+the toolbar. Four modes are available: “GOOSE Communication”, “Client-
+Server Communication”, “Process Bus Communication” and “Subnetwork
+Configuration”.
+2. Switching engineering mode on and off
+The button switches between engineering and view mode. The configuration
+can be edited only in the engineering mode.
+Figure 43: Engineering mode selection button
+When the engineering mode is enabled, SCD files from external IEC
+61850 engineering tools cannot be imported into PCM600.
+3. Switching IEC 61850 IED naming on and off
+The button switches between IEC 61850 and PCM600 IED naming.
+2NGA002470 A Engineering of event reporting with
+PCM600
+REC615
+IEC 61850 Engineering Guide
+77
+PDF_PAGE78
+4. Create new object.
+The button opens a window to create a new object. The type of object depends
+on the currently selected engineering type.
+5. Selection details
+The button opens the Editor window for the data currently selected in the
+mapping grid. The same editor can also be opened by double-clicking the data.
+6. Receiving access points
+All IEDs that have access points capable of receiving the kind of data according
+to the currently selected engineering type and engineering mode are displayed
+as columns in the mapping grid. A check mark in a column means that the
+access point is receiving the data.
+7. Mapping grid
+The mapping grid consists of check boxes for configuring what data is sent to
+or received by an access point. A check mark in the grid means that the data on
+the row is sent to the receiver in the column.
+8. Data to send/receive
+The data available for sending or receiving in the selected engineering
+mode and its type are displayed as rows in the mapping grid. The data is
+contextsensitive with the current selection in the PCM600 plant structure. A
+check mark on the row means that the data is sent to or received by an access
+point. The data editor is opened by double-clicking the data..
+9. Engineering type selection
+Each engineering mode has several engineering types. Engineering type means
+the type of data to configure. The types can be selected by clicking the tab page
+on the bottom of the tool window. The available engineering types depend on
+the selected engineering mode.
+- Data sets: Create, delete, modify or send data sets
+- GOOSE controls: Create, delete, modify or send GOOSE controls
+- Sampled value controls: Create, delete, modify or send sampled value
+controls
+- Report controls: Create, delete, modify or send report controls
+- Inputs: View inputs (external references)
+10. Object properties
+The Object Properties window displays the properties of the currently selected
+data. Different data properties are edited in this window.
+7.3 Creating data sets with IEC 61850 Configuration
+1. Select Plant Structure in the Project Explorer window.
+2. Right-click the IED node.
+3. Select IEC 61850 Configuration in context menu.
+Engineering of event reporting with
+PCM600
+2NGA002470 A
+78 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE79
+4. Select Client-Server Communication in the drop-down box on the toolbar.
+Figure 44: Selecting Client-Server Communication
+5. Select the Data Sets tab.
+6. Right-click the area containing the data set names and select New to add a new
+data set.
+Figure 45: Creating a new data set
+2NGA002470 A Engineering of event reporting with
+PCM600
+REC615
+IEC 61850 Engineering Guide
+79
+PDF_PAGE80
+7. In the Create New Data Set dialog box, define the LN where to place the data
+set (accept preselected “LD0/LLN0”) and give the data set a unique name.
+Figure 46: Naming the data set
+After creating the GOOSE data sets, define the data set entries (data attributes or
+data objects) for the data sets.
+7.3.1 Defining data set entries with IEC 61850 Configuration
+1. Select the Data Sets tab.
+Engineering of event reporting with
+PCM600
+2NGA002470 A
+80 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE81
+2. Right-click a data set and select Details to add data attributes.
+Figure 47: Adding data attributes
+3. In the data set entry window, select the data attribute to be contained in the
+data set.
+• Click Append selected to add the data attribute to the end of the data set.
+• Click Insert selected to add the data attribute above the selected row in the
+data set entries list.
+• To remove a data attribute from the data set, select the data attribute in the
+data set entries pane and click Remove selected.
+Reporting data sets can include status and measurement type of data. Also
+configuration and setting values can be added to data sets in case required.
+Data set entries for vertical reporting are selected using
+the data object level, and entries for GOOSE are selected
+using the data attribute or data object level.
+The default data set for SMV sending is fixed and may not
+be modified.
+2NGA002470 A Engineering of event reporting with
+PCM600
+REC615
+IEC 61850 Engineering Guide
+81
+PDF_PAGE82
+7.4 Creating report control blocks with IEC 61850
+Configuration
+1. Select the IED node in Plant Structure in Project Explorer.
+2. Click the Report Controls tab.
+3. Right-click the area containing the existing RCBs and select New to add a new
+RCB.
+Figure 48: Adding a new report control block
+4. Browse to LLN0 under LD0 to define where to place the RCB.
+5. Give a unique name to the RCB.
+Engineering of event reporting with
+PCM600
+2NGA002470 A
+82 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE83
+6. In the drop-down list, select the previously created data set to link with the RCB.
+Figure 49: Selecting a data set to be linked with the RCB
+2NGA002470 A Engineering of event reporting with
+PCM600
+REC615
+IEC 61850 Engineering Guide
+83
+PDF_PAGE84
+7. Edit the properties and options of the created RCB.
+Figure 50: Editing the RCB properties
+Data set entries in a data set linked to the GCB can be modified from the
+RCB Control Block tab by selecting the Data Set Details in the shortcut
+menu.
+7.4.1 Report control block trigger options
+The report control block properties can be configured in the Object Properties
+window. The properties contain standard options such as buffering and trigger
+options. The parameters have effect on the reporting behavior and the content of
+the MMS reports sent to the clients. Detailed description of the report control block
+options can be found in the IEC 61850 standard part 7-2.
+Engineering of event reporting with
+PCM600
+2NGA002470 A
+84 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE85
+Trigger options
+The triggering method for the MMS report can be configured under Trigger Options
+in the report control block’s Object Properties window. By default all data sets
+are configured to be triggered by data change, data update and quality change.
+The General Interrogation option is also enabled to allow the client to make
+interrogation for the data set content.
+For fast event based reporting it is recommended to keep these default trigger
+options enabled for most data sets. Some data sets, such as ones including
+measurement and counter data, can report data with 'data update' flag only.
+Cyclic trigger option is recommended for measurement data only. It can be used for
+periodic update of instantaneous measurement values. More information in chapter
+'Cyclic reporting'.
+Cyclic reporting
+The Cyclic trigger option can be enabled to allow periodical reporting of the data
+set values. Enabling the cyclic trigger option also changes the internal behavior of
+the relay to periodically update and report the instantaneous values of the data
+set content, such as instCVal. This can be beneficial, for example, in reporting
+slowly changing measurement values periodically to the client. By enabling the cyclic
+trigger option, instantaneous measurement values can be reported in a periodical
+manner instead of data change based reporting. As the data change based
+reporting relies on the internal deadband values of the measurement Application
+Function, it can be slow to report small changes in the measurement data. The cycle
+period for updating and reporting the data can be set by the Cycle Time property.
+To configure cyclic reporting only, enable the Cyclic trigger option, and
+disable the Data Change and Data Update trigger option. If all options
+are enabled, the report control block reports cyclical and event based
+reports to the client.
+It is recommended to use the default Data Change and Data Update
+trigger options for status data for fast change detection. This includes
+most of the default data sets with Stat (ST) data objects. The Cyclic
+trigger option is recommended only for the periodical sending of
+measurand (MX) values.
+7.5 Configuring report control block clients with IEC
+61850 Configuration
+Add and configure the IEDs before configuring the RCB client. The potential clients
+and their communication configuration should be known for a successful RCB client
+configuration.
+1. In Plant Structure, click the IED node which is the RCB server.
+2. Click the Report Controls tab.
+The rows of the Report Controls window show the RCBs configured for the IED.
+The columns of the Report Controls window show the RCB clients configured in
+the PCM600.
+2NGA002470 A Engineering of event reporting with
+PCM600
+REC615
+IEC 61850 Engineering Guide
+85
+PDF_PAGE86
+3. To add or remove clients for an RCB, click the check box in the grid,
+corresponding to the client and RCB.
+Five clients at a maximum can be connected to an RCB.
+21
+Figure 51: RCB clients
+1 RCBs configured for the IED
+2 RCB clients
+The clients are automatically added to or removed from
+the corresponding data sets on the Data Sets tab. Date
+sets are based on the configuration done on the Reports
+Controls tab and vice versa.
+7.6 Substation section configuration in IEC 61850
+Configuration
+The substation topology consists of the substation, voltage level and bay nodes.
+The bay nodes include also the conducting (primary) equipment, which corresponds
+to the switches, that is, the circuit breakers, disconnectors, and earth switch, of the
+configured IED. In addition to the substation topology configuration, logical nodes
+of the IEDs are mapped to proper objects, for example, to support the automatic
+bay configuration via SCL files in the SCADA system.
+At the moment, IEC 61850 Configuration does not support engineering of the
+substation section. Export SCD file from PCM600 to configure substation section
+in external tool.
+Engineering of event reporting with
+PCM600
+2NGA002470 A
+86 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE87
+8 Flexible product naming
+8.1 Flexible product naming concept
+Flexible Product Naming in PCM600 allows the use of a vendor-independent IEC
+61850 model of the IED. This model is exposed in all IEC 61850 communication, but
+all other aspects of the IED remain unchanged (for example, names on the local HMI
+and names in the tools). This offers significant flexibility to adapt the IED to the
+customers' system and standard solution.
+There are several benefits.
+• IEDs use the customer model for communication.
+• Customer-specific naming convention for communication can be used.
+• Other IEDs and station-level equipment can be defined from the customer
+specific communication model.
+• Error tracing of communication can be the same between different installations.
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+87
+PDF_PAGE88
+8.2 Mapping examples
+LHMI
+view
+PCM
+view
+...view
+FunctionA APTOC
+FunctionB BPTOC
+LD
+LD
+LD
+LD
+L1PTOC
+L2PTOC
+Figure 52: L1PTOC in the customer model mapped to BPTOC in the IED model and
+L2PTOC mapped to APTOC
+The mapping shown in Figure 52 results in the mapping shown in Figure 53.
+LHMI
+view
+PCM
+view
+...view
+FunctionA
+FunctionB
+LD
+LD
+LD
+L1PTOC
+L2PTOC
+Figure 53: L1PTOC mapped to FunctionB and L2PTOC mapped to FunctionA
+Flexible product naming 2NGA002470 A
+88 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE89
+Mapping possibilities and requirements
+Mapping is possible at several levels in the structure.
+• Logical node level (LN to LN)
+• Data object level (DO to DO)
+• Data attribute level (DA to DA)
+Custom logical device name (LDName) can be used for addressing.
+When the mapping is performed, there are some requirements that must be
+fulfilled.
+• Used system configuration files must be standard compatible.
+• One attribute in the customer model can be mapped only to one attribute in the
+IED model. However, one attribute in the IED model can be mapped to several
+attributes in the customer model.
+• Number of data sets must not exceed the maximum number of data sets that
+the IED supports.
+There are also some consequences that must be considered.
+• If two DOs in one LN in the customer model are mapped to DOs in different LNs
+in the IED model, the DOs in the customer model might have inconsistent quality
+in case of different operational states of the IED functions.
+• When several LNs in the customer model are mapped to one function in the IED,
+the Mod of the function affects all the customer LNs.
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+89
+PDF_PAGE90
+8.3 Import scenarios
+The IEC 61850 model provides extensive information tagging for substation
+automation. The IED data model can be browsed through MMS, and the SCL
+file provides additional tagging description information. It is possible to have
+flexible tools which understand the modeling details. PCM600 and ABB-defined
+data models are recommended for engineering.
+On the other hand, if the SCADA/client configuration cannot be changed, for
+example, in retrofitting and for some standardization changes, there is a need to
+support IED 61850 configuration changes through FPN.
+SCADA
+Old IED
+Old IED 
+configuration
+tool
+System
+configuration
+tool
+REX6xx
+PCM600
+FPN
+configuration
+IEC 61850-8-1
+Replaces
+CID
+SCD
+SCD
+SCD
+Minimal changes
+Figure 54: Retrofit workflow for an existing IED
+IEC 61850 allows usage of templates in engineering. If customer specification
+defines system configuration (SCD), it is possible to use it and continue engineering
+in PCM600.
+SCADA
+REX6xx
+PCM600
+FPN
+configuration
+System
+configuration
+tool
+Customer
+specification
+IEC 61850-8-1
+IID
+SCD
+SCD
+Minimal changes
+Figure 55: Customer-specification based workflow
+Flexible product naming 2NGA002470 A
+90 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE91
+8.4 Network configuration
+Access point configuration facilitates usage of different IP addresses in Network1
+and Network2.
+Basic IEC 61850 configurations support one server data model (SCL/IED/
+AccessPoint/Server) in the defined network address.
+The relay also supports a second access point with a ServerAt definition (SCL/IED/
+AccessPoint/ServerAt). In this case, the same data model is visible on both access
+points.
+Most FPN configurations contain only one access point. If the template project
+contains multiple access points for one relay, the unnecessary extra access points
+need to be filtered away in the tool.
+SCL configuration checklist
+FPN configuration cannot exceed the ABB relay's capabilities. When not matching,
+the FPN system configuration needs to be adjusted in the system tool or manually
+in SCL.
+One standard rule needs to be considered in exiting SCD files.
+• SCL/Communicaton/Subnetwork/@type must be “8-MMS”.
+One ABB-specific limitation must also be considered.
+• SCL/IED/Accesspoint/@name must not exceed the ABB device limit of 20.
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+91
+PDF_PAGE92
+8.4.1 Defining subnetwork
+Before starting the FPN configuration of the relay, the ABB-specific configuration
+must be correct.
+• Potential additional subnetwork must be configured using PCM600
+configuration.
+• The IED's access point must be defined using Ethernet Configuration in PCM600.
+1. In PCM600, right-click an IED in the plant structure and select Options.
+2. Enable the IEC 61850 configuration engineering mode.
+Figure 56: Enabling IEC 61850 configuration engineering mode
+3. On the toolbar, select Subnetwork configuration from the drop-down list.
+Figure 57: Subnetwork configuration for REC615
+4. Configure Ethernet ports in Ethernet Configuration.
+Flexible product naming 2NGA002470 A
+92 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE93
+Figure 58: Configuring Ethernet ports
+8.4.2 Mapping access points
+1. Right-click one of the nodes and point to Flexible Product Naming.
+2. Click IEC 61850 Structure Mapping.
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+93
+PDF_PAGE94
+3. On the Access Point Mapping tab, map access points to define the relations
+between REC615 internal access points and customer access points.
+Figure 59: Mapping access points
+In the above example, REC615 access point AP1 is in subnetwork WA1, while
+access point AP2 is in subnetwork WA2. The configuration is created using
+Ethernet configuration.
+The network configuration must be correct before the flexible
+product mapping is started.
+REC615 supports one access point for the data model. A second
+access point AP2 is based on the ServerAt concept and has the same
+data model in different IP addresses.
+The REC615 access points are mapped to FPN project access points IED1_AP1
+and IED_AP2. The third access point IED1_AP3_UNDESIRED is excluded from the
+mapping since it does not have a network interface.
+8.5 Engineering
+8.5.1 IEC 61850 edition selection
+The IEC 61850 edition selection is done in the system configuration phase before
+importing the FPN data model.
+The relay determines the data model / SCL version from the configuration file. This
+has an impact, for example, on the used control blocks.
+Flexible product naming 2NGA002470 A
+94 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE95
+8.5.2 Parameter setting
+The relay's parameter setting in PCM600 and on the relay's HMI is independent of
+the FPN configuration. PCM600 uses FTPS by default but offers FTP as an optional
+choice. FTP may be useful for passing traffic through a router with the help of an
+FTP ALG.
+8.5.3 IED identification
+FPN configuration defines the relay.
+• name: technical key
+• type: Instead of REC615, the imported version is used, for example, REF615.
+• manufacturer: Instead of ABB, the imported version is used, for example,
+GENERIC. ABB Inc.
+• configVersion: Instead of the REC615-specific value, the imported project-
+specific value is used.
+• desc: The imported project-specific value is used.
+The project needs to adjust the IED configuration details according to the client
+(SCADA) requirements to minimize the changes in retrofit projects, for example.
+8.5.4 Configuration size
+FPN replaces the existing MMS configuration. The relay's booting time is longer due
+to processing of project-specific configuration. The configuration size is compared
+to the maximum recommended configuration size and a warning is given if the
+configuration size exceeds the recommended maximum.
+The tool does not download the configuration if the relay's capabilities are
+exceeded. The configuration size warning is given when the project is larger than
+verified in ABB. In this case, it is recommended to check and minimize unnecessary
+options.
+The configuration size can be minimized in several ways.
+• Decrease the number of RCB clients per control block. This can be checked
+from //ReportControl/RptEnabled/@max.
+• Decrease the number of report controls and data sets
+• Remove the unnecessary logical nodes from configuration. The data model size
+can be minimized if a replaced relay is configured with a default configuration or
+a configuration which contains unused functions.
+8.5.5 Functional naming
+FPN allows customer definition of the IEC 61850-8-1 data model. It is possible to
+have multiple logical devices and their data attribute tagging indicating functions
+and subfunctions.
+The test mode and setting group handling in the IED is global.
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+95
+PDF_PAGE96
+If the project contains functional naming, it is possible to have explicit LD name
+in /LD/@LDName attribute. Functional naming affects the MMS domain name and
+it changes the data set referencing objects of RCBs and GOOSE control blocks.
+Functional naming cannot be used for the relay's SMV model in MU01
+because this is based on the IEC 61850-9-2 LE edition 1 specification.
+Functional naming can be used for the LD’s necessary subset.
+PCM600 does not support functional naming configuration in an ABB-specific
+project, but it is possible to configure functional naming for the relay by importing
+the SCD project.
+8.5.6 Name space definition files
+System engineering rules may use only data objects defined in IEC 61850-7-4. Name
+space definition files can be used by tools to check the data object extension's
+origin. For this relay, extension data can be found in the IEC 61850 MICS document
+and it is also defined by name space attributes in the CID file, which can be
+exported.
+8.6 Data model
+8.6.1 Logical device division
+It is possible to have maximum of 45 logical devices. Function designs consisting of
+multiple logical nodes should be mapped under the same logical device.
+8.6.2 Data protection
+In data type templates, the valKind attribute defines data access.
+• RO=Read only
+• Set=Settable
+• Conf=Configuration time
+It is possible to have customer-specific valKind in SCL, but the REC615-specific
+access rights cannot be overridden and thus data is protected. A warning message
+is given in mapping in such cases. When aiming to monitor, it is typically ok to
+ignore that warning.
+8.6.3 Functional constraints
+From the IEC 61850 point of view, functional constraints should match between
+the ABB model and the FPN model. It is possible to map data between known
+predefined functional constraints. For example, different devices may have different
+Flexible product naming 2NGA002470 A
+96 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE97
+requirements of setting group handling. When the FPN model is used for
+monitoring, a warning message can be ignored.
+Table 23: Examples of functional constraint rules
+FPN model ABB model Description
+SP SG See Chapter 8.7.3 Setting group parameters.
+SG SP See Chapter 8.7.3 Setting group parameters.
+SV ST, MX ,DC REC615 does not support substitution. It is, however, pos-
+sible to have substation data in the FPN data model and
+map it to the relay's application data.
+BL ST Not supported by REC615 directly, but it is possible to map
+to generic data.
+OR ST Not supported by REC615 directly, but it is possible to map
+to generic data.
+SR ST, DC Not supported by REC615 directly, but it is possible to map
+to generic data.
+8.6.4 Data types
+From the IEC 61850 point of view, the data types of common data classes should
+match. Data mapping between different types is possible, but a warning is given.
+The engineer must understand the possible loss of precision when mapping
+between types.
+8.6.5 Standard compatibility
+For structural types like CMV, it is important to have SCL data in correct order in
+the SCD file's data type template section. The IEC 61850-8-1 part suggests that
+the functional constraints are in consecutive order. If the order is different than
+specified in the standard, the data attribute locations in the data objects may be
+interpreted differently in the received and sent GOOSE.
+Table 24: Example of the SCL data order
+DA fc DA name DA bType type
+MX instCVal Struct MyVector
+MX cVal Struct MyVector
+MX range Enum MyRangeConfig
+MX rangeAng Enum MyRangeConfig
+MX q Quality
+Table continues on the next page
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+97
+PDF_PAGE98
+DA fc DA name DA bType type
+MX t Timestamp
+SV subEna BOOLEAN
+SV subCVal Struct MyVector
+SV subQ Struct MyVector
+SV subID VisString64
+BL blkEna BOOLEAN
+CF units Struct MyUnit
+CF db INT32U
+CF dbAng INT32U
+CF zeroDb INT32U
+CF rangeC Struct MyRangeConfig
+CF rangeAngC Struct MyRangeConfig
+CF magSVC Struct MyScaledValueConfig
+CF angSVC Struct MyScaledValueConfig
+CF angRef Enum
+CF smpRate INT32U
+DC d VisString255
+DC dU Unicode255
+EX cdcNs VisString255
+EX cdcName VisString255
+EX dataNs VisString255
+8.6.6 Primary values
+By default, the relay is in nominal mode. If system engineering requires it, MMS
+monitoring can be set to primary mode.
+Table 25: Parameter Unit mode
+Parameter Values Menu path
+Unit mode 1=Primary; 0=Nominal Configuration > Communication > Protocols > MMS
+Flexible product naming 2NGA002470 A
+98 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE99
+8.6.7 Substitution
+The relay does not support substitution. It is, however, possible to have substation
+data in the FPN data model and map it to the relay's application data.
+8.7 Settings
+In IEC 61850, function mode handing is defined in control model. In REC615,
+function mode parameters are not changed during normal operation, but they
+are set up during the engineering phase. Therefore, the most relevant of the
+“Operation” parameters are defined in the Settings menu.
+For instant change of the configuration scenario, the setting group concept with
+blocking signals is recommended. Another alternative for the operator role is to use
+the controllable single- and double-point status from relevant application functions.
+8.7.1 Device menu
+Menus are the same regardless of FPN. Thus, the function's IEC 61850 name is the
+default due to manual reference. The functions' IEC, ANSI and user-defined naming
+is settable with parameter <place>.
+8.7.2 Function mode handling
+Parameter Setting is the primary tool for changing the function's operation
+mode. IEC 61850 defines the logical node's common behavior. Each logical device
+(LD) must contain standard data objects LLN0.Mod and LLN0.Beh which can be
+statusonly or controllable.
+Due to security and limited visibility in the menu, several mapping rules apply to
+Mod data objects.
+• Mod data objects are mapped to existing Mod parameters which are visible in
+the menu.
+• If Mod is unmapped, the functionality is always “on”.
+• If the intention is to turn the function off, the behavior (Beh) data must be in the
+menu.
+• Status-only must be used for the FPN control model when the intention is not to
+write the data. It is possible to override the ABB direct-with-normalsecurity by
+status-only in control model (ctlModel).
+There are some recommendations for the menu parameters.
+• Test mode = "LD0.LLN0.Mod" via Tests > IED test
+• Device state = "LD0.LLN0.Beh" via Monitoring > IED status > Self-supervision
+• Control mode = "CTRL.LLN0.Mod" via Configuration > Control > General
+• Operation = "Function block master Mod" via Settings > Settings > <Category> >
+<Function name>
+• <Function name> = Function block Beh via Monitoring > FB status
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+99
+PDF_PAGE100
+Mapping example 1
+All FPN mode parameters are mapped to the existing ABB model. The global
+mode parameter of the logical device (LLN0.Mod) is mapped to the ABB-specific
+LD0.LLN0.Mod.
+Table 26: Mapping example 1
+FPN model ABB model
+LD LN DO DA Default LD LN DO DA
+Prot LD0
+LLN0 LLN0
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+HIPTOC1 PHIP-
+TOC1
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+Mapping example 2
+The FPN model's global mode is set to the default value. The behavior indicates the
+IED's global test mode regardless of the mapping.
+Flexible product naming 2NGA002470 A
+100 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE101
+Table 27: Mapping example 2
+FPN model ABB model
+LD LN DO DA Default LD LN DO DA
+Prot LD0
+LLN0 (NONE)
+Mod (NONE)
+stVal on (NONE)
+Op-
+er.ctlVal
+(NONE)
+ctlModel status-
+only
+(NONE)
+Beh (NONE)
+stVal (NONE)
+HIPTOC1 PHIP-
+TOC1
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+Mapping example 3
+DARREC1 is moved logically under control functions and existing ABB data
+LD0.DARREC1.Mod.stVal is explicitly mapped to new Control.Q1RREC1.Mod.stVal.
+When the IEC 61850 MMS client writes Control.LLN0.Mod.Oper.ctlVal value "off",
+DARREC1 is switched off.
+• According to data model inheritance, MMS data Control.Q1RREC1.Beh.stVal
+indicates "off".
+• Existing menu parameter “Monitoring\FB status\Control\DARREC1”, which is
+actually LD0.DARREC1.Beh.stVal, indicates "off".
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+101
+PDF_PAGE102
+Table 28: Mapping example 3
+FPN model ABB model
+LD LN DO DA Default LD LN DO DA
+Control CTRL
+LLN0 LLN0
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+Q1CSWI CBCSWI1
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+LD0
+Q1RREC1 DAR-
+REC1
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+Flexible product naming 2NGA002470 A
+102 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE103
+Mapping example 4
+DARREC1 is moved visually under control functions. Since the engineer has
+not mapped DARREC1.Mod.stVal, the function still belongs logically under
+LD0.LLN0.Mod.
+Table 29: Mapping example 4
+FPN model ABB model
+LD LN DO DA Default LD LN DO DA
+Control CTRL
+LLN0 LLN0
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+Q1CSWI CBCSWI1
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+LD0
+Q1RREC1 DARREC
+Mod (NONE)
+stVal on (NONE)
+Op-
+er.ctlVal
+(NONE)
+ctlModel (NONE)
+Table continues on the next page
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+103
+PDF_PAGE104
+FPN model ABB model
+LD LN DO DA Default LD LN DO DA
+Beh Beh
+stVal stVal
+Mapping example 5
+It is possible to have multiple logical devices. Global modes LLN0.Mod should
+typically be mapped to global test mode LD0.LLN0.Mod. However, it is also possible
+to map the Mode parameter to existing ABB data in a more demanding way.
+In the example below, ABB Operation parameters of protection trip conditioning
+(LD0.TPRPPTR1/2.Mod) are allocated to different logical devices of the FPN project
+(LLN.Mod). If the user writes "Off" to Prot2.LLN0.Mod.Oper.ctlVal, the following
+happens:
+• Relay's DEFPTOC1 is turned off.
+• FPN model's Control.DEFTOC1.Beh indicates “off”.
+• In the relay's menu, LD0.DEFPTOC1.Beh indicates “off”.
+Table 30: Mapping example 5
+FPN model ABB model
+LD LN DO DA Default LD LN DO DA
+Prot1 LD0
+LLN0 TRPPTR
+C1
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+OCPTRC
+1
+Op Op
+general general
+OCP-
+TOC1
+PHIP-
+TOC1
+Table continues on the next page
+Flexible product naming 2NGA002470 A
+104 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE105
+FPN model ABB model
+LD LN DO DA Default LD LN DO DA
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+Prot2
+LLN0 TRPPTR
+C2
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+DEFPTR
+C1
+Op Op
+general general
+DEFP-
+TOC1
+DEFHP-
+TOC1
+Mod Mod
+stVal stVal
+Op-
+er.ctlVal
+Op-
+er.ctlVal
+ctlModel ctlModel
+Beh Beh
+stVal stVal
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+105
+PDF_PAGE106
+8.7.3 Setting group parameters
+ABB product's settings are divided into setting group (SG) and non-group settings
+(SP) as needed.
+If the division differs in the engineered case, it is possible to map SG and SP
+settings. In this case, the device functionality is not altered and group 1 is only
+visible through MMS.
+Table 31: Mapping of setting group parameters
+Access FPN data ABB data Description
+R SG SP Returning same SP value for all SG
+groups
+W SG SP It is only allowed to write group 1. Writ-
+ing other groups results in error.
+R/W SP SG The value is always redirected to group
+1. Other SG group values are set via Pa-
+rameter Setting in PCM600 or the LHMI
+menu.
+However, it is possible to edit the group settings from PCM600 and the LHMI menu.
+8.7.4 Setting group control
+Setting group control is global for the device. In the ABB engineering mode, it is
+possible to use six groups and handle them by binary input.
+In the FPN mode, the number of setting groups is taken from the project SCD file.
+Since the relay has global setting group control for all logical devices, the biggest
+value is taken.
+8.8 Control
+The FPN model does not extend the device's services, so existing PIXIT defines the
+supported services and capabilities.
+8.8.1 Local/remote handling
+Local/remote handling is defined in the device data model. The engineer needs
+to map the correct data object according to the used client application. Since the
+existing local/remote data is a superset of all choices, a reduced FPN model may
+help the SCADA engineering.
+8.8.2 Control model
+The product-specific default data model members are visible in parameter tables
+and details of function features can be found in the technical manual.
+Flexible product naming 2NGA002470 A
+106 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE107
+It is possible to use the customer data model, but the control model
+(ctlModel) allows only product-dependent choices. The control model can be status-
+only or direct-with-normal-security. For DPC, sbo-with-enhanced-security is also
+supported. The engineer can map the control model directly to the product data
+object or restrict the FPN model's default value to "status-only".
+Time-activated control is not supported, but if the controllable objects contain
+additional optional attributes, it is possible to write the command structures.
+Optional attributes must then have default values.
+8.9 Data sets
+Data sets and control blocks must be defined in the SCL configuration phase under
+one LLN0. Dynamic creation is not supported.
+The number of data set members and report controls should be kept within the
+limits of standard configuration offering. When adding data set members above
+the recommended defaults, the IED configuration may have different data priority/
+speed.
+Table 32: Possible errors if the imported FPN SCD file contains invalid data sets
+Condition Cause Remedy
+The customer IED contains [xx] data
+sets. The internal IED allows 27 data sets
+at maximum.
+There are too many data sets in the con-
+figuration.
+Combine or remove some data sets.
+The customer IED contains one or more
+data sets having [xx] entries. The inter-
+nal IED allows 80 entries at maximum.
+One or more data sets in the imported
+configuration are too big.
+Check the data set sizes on the editing
+dialog box for data set entries. Remove
+some entries or split data sets into mul-
+tiple data sets if possible.
+8.9.1 Supported data types in data sets
+Table 33: Supported data types in data sets
+Data type Description
+ST and MX Partly supported
+CF, SG and SP Supported but not recommended
+CO Not supported
+According to the standard, it is write-only.
+OR and BL Supported
+However, since the relay does not natively support the types,
+the engineer needs to define the used ST data behavior in
+Application Configuration.
+Array Not supported
+VisString Not supported
+The data is not operational.
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+107
+PDF_PAGE108
+8.9.2 Editing data sets in IEC 61850 Configuration
+To edit data sets, IEC 61850 configuration engineering mode must be enabled from options.
+Figure 60: Enabling IEC 61850 configuration engineering mode
+1. To open IEC 61850 Configuration, right-click an IED and select IEC 61850
+Configuration.
+Figure 61: Opening IEC 61850 Configuration
+Flexible product naming 2NGA002470 A
+108 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE109
+2. On the toolbar, select the communication mode for which data sets are
+managed.
+Figure 62: Selecting the type of the data sets to be edited
+3. Manage data sets on the Data Sets tab.
+a) To add new data sets, right-click and select New.
+b) To delete data sets, select the data sets to be deleted, right-click and select
+Delete.
+c) To edit entries in a data set, select the data set and open Entries from
+Object Properties.
+Figure 63: Adding, deleting or editing a data set
+This opens a dialog box where entries can be added or removed.
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+109
+PDF_PAGE110
+Figure 64: Editing data sets
+8.10 Sampled measured values
+The relay supports sending of one and receiving of two IEC 61850-9-2 LE streams.
+Each stream contains four currents and four voltages. 16 received measurements in
+total can be connected into the protection relay application.
+Sampled measured value data sets must be defined according to IEC 61850-9-2 LE.
+• Data set name must be PhsMeas1.
+• SampledValueControl name must be MSVCB01 or MSVCB02.
+• The content of the default SV data set PhsMeas1 must not be modified.
+8.11 GOOSE
+In FPN configuration, sent GOOSE data sets refer to the FPN configuration data
+while the received GOOSE data refers to the internal data of REC615.
+It is strongly recommended that GOOSE data sets should be on data attribute level.
+Both DA level and DO level definitions work, however. Reasons for that are:
+• Different optional attributes can exist in the data model.
+• The used SCL file may contain data attributes in non-standard order (standard
+does not state this) and thus the tool interprets the data order differently than
+the IED. See the Chapter 8.6.5 Standard compatibility.
+Flexible product naming 2NGA002470 A
+110 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE111
+8.11.1 SCL configuration checklist for GOOSE
+The relay supports six GOOSE send data sets so //SCL/IED/Services/GOOSE/
+@max should not exceed 6. It may be easiest to replace the Services section by
+the section in the REC615 type data files.
+In receiving, the relay uses APPID in packet detection. It is a standard way, however
+in some template projects, APPID is not set for send GOOSE. Variable //SCL/
+Communication/SubNetwork/ConnectedAP /GSE/Address/P /@type for APPID must
+be defined for each GSE element.
+Table 34: Possible errors if imported FPN SCD file contains invalid GOOSE control
+blocks
+Condition Cause Remedy
+The customer IED contains
+[xx] GOOSE control blocks.
+The internal IED allows 6
+GOOSE control blocks at
+maximum
+There are too many GOOSE
+control blocks in the impor-
+ted configuration.
+Check the GOOSE control
+blocks using IEC 61850 Con-
+figuration.
+8.11.2 Editing GOOSE control blocks in IEC 61850 Configuration
+To edit GOOSE control blocks, IEC 61850 configuration engineering mode must be
+enabled from options.
+Figure 65: Enabling IEC 61850 configuration engineering mode
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+111
+PDF_PAGE112
+1. To open IEC 61850 Configuration, right-click an IED and select IEC 61850
+Configuration.
+Figure 66: Opening IEC 61850 Configuration
+2. On the toolbar, select GOOSE Communication from the drop-down menu.
+Figure 67: Editing GOOSE control blocks
+Use the Data Sets tab for editing data sets for GOOSE control blocks and the
+GOOSE Controls tab for editing GOOSE control blocks.
+8.12 Reporting
+Flexible product naming 2NGA002470 A
+112 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE113
+8.12.1 SCL configuration checklist for ReportControl
+The relay supports 20 data sets out of which four can be defined for GOOSE.
+For reporting, the total number of ReportControl blocks is 80 (//Services&/
+ConfReportControl/@max), which typically means that 16 report data sets can have
+five clients (//ReportControl/RptEnabled/@max). It may be easiest to replace the
+Services section by the section in the REC615 type data files.
+Table 35: Possible errors if imported FPN SCD file contains invalid ReportControl
+blocks
+Condition Cause Remedy
+The customer IED contains
+one or more report control
+blocks having [xx] instanti-
+ated clients. The internal IED
+allows 5 instantiated report
+clients per report control
+block at maximum.
+Some of the report controls
+have too many clients.
+Check the report control
+blocks using IEC 61850 Con-
+figuration.
+Too many reporting clients Enabled clients are out of val-
+id range for some of the re-
+port control blocks.
+Using IEC 61850 Configura-
+tion, check the enabled cli-
+ents from Object Properties
+for all the ReportControl
+blocks. This must be in the
+range of 2...5.
+8.12.2 Editing ReportControl blocks in IEC 61850 Configuration
+To edit ReportControl blocks, IEC 61850 configuration engineering mode must be
+enabled from options.
+Figure 68: Enabling IEC 61850 configuration engineering mode
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+113
+PDF_PAGE114
+1. To open IEC 61850 Configuration, right-click an IED and select IEC 61850
+Configuration.
+Figure 69: Opening IEC 61850 Configuration
+2. On the toolbar, select Client-Server Communication from the drop-downmenu.
+Figure 70: Selecting client-server communication
+3. Click the Data Sets tab to edit data sets for report controls and the Report
+Controls tab to edit ReportControl blocks.
+4. To edit the clients for each ReportControl block, select a ReportControl block
+and open Clients from Object Properties.
+One ReportControl block can have a maximum of five clients.
+Flexible product naming 2NGA002470 A
+114 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE115
+8.13 Logging
+IEC 61850 logging is not supported by the relay. Central activity logging and audit
+trail is a recommended system solution. For more information on security logging,
+see the cyber security deployment guideline.
+8.14 Service tracking
+IEC 61850 service tracking is not supported by the relay.
+The relay, however, supports service tracking of logical nodes and data object
+creation due to the SCL data type support.
+2NGA002470 A Flexible product naming
+REC615
+IEC 61850 Engineering Guide
+115
+PDF_PAGE116
+9 Glossary
+Access point The connection that ties wireless communication devices into a network
+ACSI Abstract communication service interface
+ACT 1. Application configuration tool in PCM600
+2. Trip status in IEC 61850
+ALG Application level gateway
+APDU Application protocol data unit
+APPID Application identifier
+ASDU Application-layer service data unit
+CID Configured IED description
+COM600S Substation Management Unit. An all-in-one communication gateway, au-
+tomation platform and user interface solution for utility and industrial
+distribution substations.
+COMTRADE Common format for transient data exchange for power systems. Defined
+by the IEEE Standard.
+Connectivity
+package
+A collection of software and information related to a specific protection
+and control IED, providing system products and tools to connect and
+interact with the IED.
+CT Current transformer
+CTRL Control logical device
+DA Data attribute
+Data attribute Defines the name, format, range of possible values and representation of
+values while being communicated
+Data object Also known as DO. Part of a logical node object representing specific in-
+formation, for example status or measurement. From an object-oriented
+point of view, a data object is an instance of a class data object. DOs are
+normally used as transaction objects; that is, they are data structures.
+Data set The content basis for reporting and logging containing references to the
+data and data attribute values
+DO Data object
+DPC Double-point control
+DR Disturbance recorder
+EMC Electromagnetic compatibility
+Ethernet A standard for connecting a family of frame-based computer networking
+technologies into a LAN.
+FC Functional constraint
+FPN Flexible product naming
+FTP File transfer protocol
+FTPS FTP Secure
+Glossary 2NGA002470 A
+116 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE117
+GCB 1. GOOSE control block
+2. Generator circuit breaker
+GoCB GOOSE control block
+GOOSE Generic object-oriented substation event
+GPS Global positioning system
+GSE Generic substation event
+HMI Human-machine interface
+HSR High-availability seamless redundancy
+ICD IED capability description
+IEC International electrotechnical commission
+IEC 61850 International standard for substation communication and modeling
+IEC 61850-8-1 A communication protocol based on the IEC 61850 standard series
+IEC 61850-9-2 A communication protocol based on the IEC 61850 standard series
+IEC 61850-9-2 LE Lite Edition of IEC 61850-9-2 offering process bus interface
+IED Intelligent electronic device
+IEEE 1588 Standard for a Precision Clock Synchronization Protocol for networked
+measurement and control systems
+LD Logical device
+LD0 Logical device zero (0)
+LED Light-emitting diode
+LHMI Local human-machine interface
+LLDP Link layer discovery protocol
+LLN0 Logical node zero (0)
+LN Logical node
+Logical device Also known as LD. Representation of a group of functions. Each function
+is defined as a logical node. A physical device has one or several LDs.
+Logical node Also known as LN. The smallest part of a function that exchanges data.
+An LN is an object defined by its data and methods.
+MAC Media access control
+MicroSCADA Substation automation system
+MICS Model implementation conformance statement
+MMS 1. Manufacturing message specification
+2. Metering management system
+Modbus A serial communication protocol developed by the Modicon company in
+1979. Originally used for communication in PLCs and RTU devices.
+NTP Network time protocol
+P2P peer-to-peer
+PCL Product connectivity level
+PCM600 Protection and control IED manager
+PRP Parallel redundancy protocol
+2NGA002470 A Glossary
+REC615
+IEC 61850 Engineering Guide
+117
+PDF_PAGE118
+PTP Precision time protocol
+RCB Report control block
+SCADA Supervision, control and data acquisition
+SCD Substation configuration description
+SCL XML-based substation description configuration language defined by IEC
+61850
+SHMI Switchgear HMI
+SI Sensor input
+SMV Sampled measured values
+ST Connector type for glass fiber cable
+SVCB Sampled value control block
+TAL Time allowed to live
+TCP /IP Transmission control protocol/Internet protocol
+VLAN Virtual LAN
+VT Voltage transformer
+Glossary 2NGA002470 A
+118 REC615
+IEC 61850 Engineering Guide
+PDF_PAGE119
+abb.com/mediumvoltage 
+abb.com/relion 
+go.abb/digitalsubstations 
+ABB Distribution Solutions 
+Digital Substation Products
+P.O. Box 699
+FI-65101 VAASA, Finland 
+Phone +358 10 22 11 
+—
+2NGA002470 A
+© Copyright 2025 ABB. All rights reserved.

@@ -1,0 +1,31 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Payload Field(s) Length Value/Description
+…
+Table 79. Kovio specific RF parameters inside the RF_INTF_ACTIVATED_NTF...continued
+It is then up to the DH to decide when to leave the RFST_POLLING_ACTIVE state, and also to decide if it
+directly comes back to RFST_DISCOVERY, where the same Kovio tag may be discovered again, or if it comes
+back to RFST_IDLE first, in order to wait without any RF activity or re-configuring the RF Discovery so that
+PN7160 does not poll for a Kovio tag again.
+7.5.1  Access through the [NCI] Frame RF Interface
+Due to the very particular behavior of the Kovio tags, it is necessary to configure the RF Discovery specifically
+for these tags, using the NFC-A_KOVIO_POLL_MODE parameter for the RF_DISCOVER_CMD as highlighted
+in the table below:
+Command Main Parameters Values
+RF Protocol PROTOCOL_KOVIO
+Mode PollRF_DISCOVER_MAP_CMD
+RF Interface Frame RF Interface
+CORE_SET_CONFIG_CMD
+PA_BAIL_OUT
+Note:  This parameter is not
+active in PN7160: it can be
+read/written, but PN7160
+will always behave with Bail
+Out in NFC-A, whatever the
+value written by the DH to that
+parameter.
+RF_DISCOVER_CMD RF Technology & Mode NFC_A_KOVIO_POLL_MODE
+Table 80. Configuration sequence for Reader/Writer of Kovio tags through the Frame RF Interface
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+73 / 147

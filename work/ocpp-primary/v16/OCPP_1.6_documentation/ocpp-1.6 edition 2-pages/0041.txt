@@ -1,0 +1,36 @@
+Charge Point Central System
+MeterValues.req(connectorId, meterValue, [transactionId])
+MeterValues.conf()
+Figure 18. Sequence Diagram: Meter Values
+A Charge Point MAY sample the electrical meter or other sensor/transducer hardware to provide extra
+information about its meter values. It is up to the Charge Point to decide when it will send meter values. This can
+be configured using the ChangeConfiguration.req message to data acquisition intervals and specify data to be
+acquired & reported.
+The Charge Point SHALL send a MeterValues.req PDU for offloading meter values. The request PDU SHALL
+contain for each sample:
+1. The id of the Connector from which samples were taken. If the connectorId is 0, it is associated with the
+entire Charge Point. If the connectorId is 0 and the Measurand is energy related, the sample SHOULD be
+taken from the main energy meter.
+2. The transactionId of the transaction to which these values are related, if applicable. If there is no
+transaction in progress or if the values are taken from the main meter, then transaction id may be
+omitted.
+3. One or more meterValue elements, of type MeterValue, each representing a set of one or more data
+values taken at a particular point in time.
+Each MeterValue element contains a timestamp and a set of one or more individual sampledvalue elements, all
+captured at the same point in time. Each sampledValue element contains a single value datum. The nature of
+each sampledValue is determined by the optional measurand, context, location, unit, phase, and format fields.
+The optional measurand field specifies the type of value being measured/reported.
+The optional context field specifies the reason/event triggering the reading.
+The optional location field specifies where the measurement is taken (e.g. Inlet, Outlet).
+The optional phase field specifies to which phase or phases of the electric installation the value applies. The
+Charging Point SHALL report all phase number dependent values from the electrical meter (or grid connection
+when absent) point of view.
+ The phase field is not applicable to all Measurands.
+
+Two measurands (Current.Offered and Power.Offered) are available that are strictly speaking no
+measured values. They indicate the maximum amount of current/power that is being offered
+to the EV and are intended for use in smart charging applications.
+For individual connector phase rotation information, the Central System MAY query the
+ConnectorPhaseRotation configuration key on the Charging Point via GetConfiguration. The Charge Point
+SHALL report the phase rotation in respect to the grid connection. Possible values per connector are:
+36

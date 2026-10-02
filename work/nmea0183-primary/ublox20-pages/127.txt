@@ -1,0 +1,56 @@
+u-blox 20 HPG 2.00 - Interface description
+bit 0   U:1 headerAuth
+Status
+- - Indicates if the NMA header has been authenticated.
+bits 2…1   U:2 nmaStatus - - Status of OSNMA service (as indicated by the Galileo
+system)
+• 0: Service status not authenticated yet
+• 1: OSNMA service in test
+• 2: OSNMA service operational
+• 3: OSNMA service invalid, service not usable
+bits 4…3   U:2 chainInForce - - Id of the TESLA chain in force
+bits 7…5   U:3 CPKS - - TESLA chain and public key status
+• 0: Data is not applicable
+• 1: Nominal
+• 2: End of Chain (EOC), new DSM-KROOT is being
+transmitted
+• 3: Chain revoked (CREV), a chain is or has been
+revoked
+• 4: New public key (NPK), the public key in force is
+being renewed
+• 5: Public key revocation (PKREV), the public key is
+or has been revoked
+• 6: New Merkle tree (NMT), the Merkle tree is
+being renewed
+• 7: Alert message (AM), OSNMA cryptographic
+data has been dropped. Connect to the GSC
+OSNMA server
+2 X2 osnmaMonitoring - - Monitoring information on OSNMA service as
+observed by the receiver
+bit 0   U:1 osnmaEnabled - - Flag that indicates whether OSNMA execution is
+enabled in the receiver
+bits 5…1   U:5 numberSVs - - Number of SVs from which OSNMA data is being
+collected
+bits 7…6   U:2 nmaHeader
+Update
+- - New unauthenticated NMA header (NMA status,
+chain in force and CPKS) observed in the
+signal. Changes are pending on authentication.
+The authentication of the MAC and TESLA keys
+is discontinued until the new header has been
+authenticated
+• 0: Last observed NMA header is the same as the
+last authenticated header
+• 1: New observed NMA header pending on
+authentication: Update still indicates a healthy
+service
+• 2: New observed NMA header pending on
+authentication: Update indicates a problem in the
+service provision
+bit 8   U:1 noData - - If true, OSNMA data is not available
+for the time deﬁned in CFG-SEC-
+SPOOFDET_OSNMA_DENIAL_TIME .
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 127 of 224
+C1-Public

@@ -1,0 +1,71 @@
+ID Precondition Requirement definition
+K08.FR.02 Upon receipt of
+GetCompositeScheduleRequest.
+The Charging Station SHALL calculate the scheduled time intervals, from
+the moment of message receipt up to the Duration (in seconds) and send
+them to the CSMS.
+K08.FR.03 If the evseId in the
+GetCompositeScheduleRequest is
+set to '0'
+The Charging Station SHALL report the total expected power or current
+the Charging Station expects to consume from the grid during the
+requested time period.
+K08.FR.04 (2.1) At any point in time, the charging limit, dischargeLimit or setpoint,
+reactiveSetpoint in the CompositeSchedule which are the result of
+merging the schedules from all valid charging profiles with the highest
+stackLevel from each of the purposes ChargingStationMaxProfile,
+ChargingStationExternalConstraints and TxDefaultProfile
+(or TxProfile or PriorityCharging), SHALL be less than or equal to
+the lowest value of available power or current in any of the merged
+schedules.
+If a charging profile with purpose LocalGeneration is active, this
+capacity is added on top of the calculated charging limit based on above-
+mentioned merged schedules.
+(See also SC.01)
+K08.FR.05 If the Charging Station is not able to
+report the requested schedule, for
+instance if the evseId is unknown
+The Charging Station SHALL respond with the status Rejected.
+K08.FR.06 (2.1) K08.FR.02 AND
+When there is no transaction active
+on an EVSE
+The Charging Station SHALL calculate the CompositeSchedule as if there
+is a transaction ongoing on the EVSE that is using the TxDefaultProfile (if
+this profile purpose is set) with a randomizedDelay = 0.
+K08.FR.07 When receiving a
+GetCompositeScheduleRequest with
+a chargingRateUnit, which is not
+configured in the configuration
+variable
+ChargingScheduleChargingRat
+eUnit
+The Charging Station SHALL respond with
+GetCompositeScheduleResponse with status Rejected.
+K08.FR.08 (2.1) K08.FR.04 AND
+the result of merging schedules
+from all charging profiles contains
+limit or dischargeLimit values as well
+as setpoint values
+Charging Station SHALL cap negative values of setpoint to the value of
+dischargeLimit and positive values of setpoint to the value of limit.
+(See V2X.03 and V2X.04)
+K08.FR.09 (2.1) K08.FR.02 AND
+a chargingSchedulePeriod in the
+applicable charging profiles
+contains limit_L2 and/or limit_L3
+values
+Charging Station SHALL report the composite value for limit_L2 and/or
+limit_L3 values in the resulting chargingSchedulePeriod of the
+GetCompositeScheduleResponse.
+K09 - Get Charging Profiles
+No. Type Description
+1 Name Get Charging Profile
+2 ID K09
+3 Objective(s) To enable the CSMS to view the Charging Schedules/limits installed in a Charging Station, these
+can be installed by the CSMS or some other source.
+4 Description With the GetChargingProfilesRequest message the CSMS can ask a Charging Station to report all,
+or a subset of all the install Charging Profiles from the different possible sources. This can be
+used for some automatic smart charging control system, or for debug purposes by a CSO.
+Actors Charging Station, CSMS
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 354/803 Part 2 - Specification

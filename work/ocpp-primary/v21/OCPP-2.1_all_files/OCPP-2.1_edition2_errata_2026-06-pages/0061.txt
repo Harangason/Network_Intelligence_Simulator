@@ -1,0 +1,54 @@
+Main (Test scenario)
+Option B :
+ If  AuthCtrlr.AuthorizeRemoteStart  =   true :
+4.  The Charging Station sends an     
+ RequestStartTransactionResponse
+3.  The Test System sends an     
+ RequestStartTransactionRequest  with   idToken  =   <configured
+valid_idtoken_idtoken>
+Note: It is allowed that Charging Station sends a CALLRESULTERROR if it cannot process the tariff in the response.
+Note 2: A transaction may have been started already when         TxStartPoint  contains   ParkingBayOccupancy  or   EVConnected .
+Energy shall be delivered, because idToken is Accepted and Charging Station continues with default tariff or CSMS does central cost                   
+calculation
+4.  Execute   Reusable State   EnergyTransferStarted
+5.  The Charging Station sends a
+NotifyEventRequest 6.  The Test System sends a
+NotifyEventResponse
+Tool validations
+* Step 2:
+Message SetDefaultTariffResponse
+- status Accepted
+* Step 5 :
+Message NotifyEventRequest
+- trigger = Alerting or Delta
+- component = TariffCostCtrlr
+- variable = Problem
+- actualValue = true
+Note: It is allowed to also receive other NotifyEventRequests from the Charging Station.
+Post scenario validations:
+- Charging Station SHALL deliver energy.
+6.2.34. Page 424/425 - (2026-02) - TC_I_109_CS - Added reusable state
+EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+…
+2. The Charging Station sends a TransactionEventRequest
+3. The Test System responds with a TransactionEventResponse
+2.  Execute   Reusable State   EnergyTransferStarted
+5. 4.  The Charging Station responds with GetTariffsResponse
+4. 3.  The Test System sends a GetTariffsRequest with
+evseId <Configured evseId>
+6. 5.  Execute Reusable State StopAuthorized
+8. 7.  The Charging Station responds with GetTariffsResponse
+7. 6.  The Test System sends a GetTariffsRequest with
+evseId <Configured evseId>
+9. 8.  Execute Reusable State Authorized
+10. 9.  The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed after the <Configured
+ev_connection_timeout> expires, if the transaction has been
+started. So in the case TxStartPoint contains
+ParkingBayOccupancy OR Authorized
+11. 10.  The Test System responds with a
+TransactionEventResponse
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 57/116 Errata 2026-06

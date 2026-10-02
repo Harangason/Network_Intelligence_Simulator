@@ -1,0 +1,42 @@
+TC_B_21_CS: Reset Charging Station - With Ongoing Transaction - OnIdle
+Test case name Reset Charging Station - With Ongoing Transaction - OnIdle
+Test case Id TC_B_21_CS
+Use case Id(s) B12
+Requirement(s) B12.FR.01, B12.FR.03
+System under test Charging Station
+Description This test case covers how the CSMS can remotely request the Charging Station to reset itself by sending a
+ResetRequest during a transaction. When ResetRequest "OnIdle" is send the charging stations schedules a
+reboot after all transactions are stopped.
+This could for example be necessary if the Charging Station is not functioning correctly.
+Purpose To verify if the Charging Station is able to perform the reset mechanism while there is an ongoing
+transaction as described at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ResetResponse
+1. The Test System sends a ResetRequest
+with type OnIdle
+3. Execute Reusable State StopAuthorized
+4. Execute Reusable State EVConnectedPostSession
+5. Execute Reusable State EVDisconnected
+Notes(s): Steps 4 and 5 will only be executed if TxStartPoint does not contain: EnergyTransferStarted, DataSigned, PowerPathClosed,
+or Authorized
+6. Execute Reusable State ParkingBayUnoccupied
+Notes(s): Step 6 will only be executed if TxStartPoint does not contain: EnergyTransferStarted, DataSigned, PowerPathClosed,
+Authorized, or EVConnected
+7. The Charging Station sends a BootNotificationRequest
+8. The Test System responds with a BootNotificationResponse
+9. The Charging Station notifies the CSMS about the current
+state of all connectors. 10. The Test System responds accordingly.
+11. The Charging Station sends a
+SecurityEventNotificationRequest 12. The Test System responds with a
+SecurityEventNotificationResponse
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 57/914 Part 6 - Test Cases

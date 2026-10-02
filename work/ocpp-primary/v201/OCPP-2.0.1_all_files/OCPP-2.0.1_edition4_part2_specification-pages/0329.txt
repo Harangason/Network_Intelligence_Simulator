@@ -1,0 +1,51 @@
+ID Precondition Requirement definition
+M05.FR.16 M05.FR.15 AND
+If after the number of attempts the connection
+fails AND
+If it goes back to the old
+NetworkConnectionProfile
+(See B10.FR.03)
+The Charging Station SHALL use the old CSMS Root (fallback)
+certificate to verify the server certificate.
+M05.FR.17 NOT M05.FR.10 AND
+After receiving an InstallCertificateRequest for a
+certificate that is already present in the
+certificate trust store of the Charging Station
+The Charging Station SHALL replace the certificate and respond
+with InstallCertificateResponse with status = Accepted.
+M06 - Get V2G Charging Station Certificate status
+No. Type Description
+1 Name Get V2G Charging Station Certificate status
+2 ID M06
+3 Objective(s) To enable a Charging Station to cache the OCSP certificate status needed for the TLS handshake
+between EV and Charging Station.
+4 Description When the cable gets plugged in and an ISO 15118 supported EV gets connected to the Charging
+Station, the EV requests the Charging Station to prove the validity of the (SubCA) certificates by
+an OCSPResponse. A request needs to be sent per SubCA. Because the timeout constraint in ISO
+15118 is too strict to make the call to an external server, OCPP requires to cache the OCSP
+certificate status of the certificates beforehand. The Charging Station needs to refresh the
+cached OCSP data once a week..
+Actors Charging Station, CSMS
+Scenario description 1. The Charging Station requests the CSMS to provide OCSP certificate status by sending a
+GetCertificateStatusRequest.
+2. The CSMS responds with a GetCertificateStatusResponse.
+5 Prerequisite(s) n/a
+6 Postcondition(s) Successful postcondition:
+The Charging Station received the OCSP certificate status for the requested certificate
+Failure postcondition:
+The retrieval of the OCSP certificate status by the CSMS failed
+7 Error handling n/a
+8 Remark(s) The status indicator in the GetCertificateStatusResponse indicates whether or not the CSMS was
+successful in retrieving the certificate status. it does NOT indicate the validity of the certificate.
+For installing the (V2G) Charging Station Certificate, see use cases A02 - Update Charging Station
+Certificate by request of CSMS and A03 - Update Charging Station Certificate initiated by the
+Charging Station. The V2G certificate chain SHOULD NOT include the V2GRootCertificate. This
+SHOULD be installed using Use case M05 - Install CA certificate in a Charging Station.
+OCPP allows for only one certificate per GetCertificateStatusRequest. Because when multiple
+answers on a GetCertificateStatusRequest are to be expected, it makes handling the request and
+status more complex. So a GetCertificateStatusRequest needs to be sent per SubCA.
+responderURL is required in OCPP, while it is optional in ISO 15118. Without a responderURL in a
+certificate it cannot work, so a responderURL is required for any certificate for which a
+GetCertificateStatusRequest can be expected.
+Edition 4, 2025-12-03 M. Certificate Management
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 319/491 Part 2 - Specification

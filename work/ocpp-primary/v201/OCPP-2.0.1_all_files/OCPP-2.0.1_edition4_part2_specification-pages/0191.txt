@@ -1,0 +1,72 @@
+External Trigger
+CSMS Charging Station
+TxStartPoint = EVConnected
+remote start()
+RequestStartTransactionRequest(idToken = ABCD, remoteStartId = 123)
+RequestStartTransactionResponse(status = Accepted)
+opt
+notification
+opt [AuthorizeRemoteStart = true]
+AuthorizeRequest(idToken = ABCD)
+AuthorizeResponse(idTokenInfo)
+Plugin cable
+StatusNotificationRequest(Occupied)
+StatusNotificationResponse()
+Using triggerReason = RemoteStart instead of CablePluggedIn! (F02.FR.21)
+TransactionEventRequest(eventType = Started, transactionId = AB1234, idToken = ABCD,
+chargingState = EVConnected, evse.id = 1, evse.connectorId = 1, meterValues,
+triggerReason = RemoteStart, remoteStartId = 123, ...)
+TransactionEventResponse(...)
+opt [if cable not permanently
+attached]
+lock connector
+start energy offer
+TransactionEventRequest(eventType = Updated, chargingState = Charging,
+triggerReason = ChargingStateChanged, ...)
+TransactionEventResponse(...)
+Figure 66. Sequence Diagram: Remote Start Transaction - Remote Start First with TxStartPoint=EVConnected
+F02 - Remote Start Transaction - Remote Start First - Requirements
+Table 76. F02 - Requirements
+ID Precondition Requirement definition Note
+F02.FR.01 When a transaction is started as a
+result of a
+RequestStartTransactionRequest.
+The Charging Station SHALL put the remoteStartId
+in the first TransactionEventRequest it sends for
+this new transaction.
+F02.FR.02 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Started), See: Meter
+Values - Configuration
+The Charging Station SHALL add the configured
+measurands to the optional meterValue field in the
+TransactionEventRequest(eventType = Started)
+sent to the CSMS to provide more details at the
+start of the transaction.
+Same as F01.FR.14
+F02.FR.03 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Updated), See: Meter
+Values - Configuration
+The Charging Station SHALL add the configured
+measurands to the optional meterValue field in the
+TransactionEventRequest(eventType = Updated)
+sent to the CSMS to provide more details during
+updates of the transaction.
+Same as J02.FR.11
+F02.FR.04 F02.FR.03
+AND
+Amount of meter data is too much for
+1 TransactionEventRequest
+(eventType = Updated)
+The Charging Station MAY split meter data over
+multiple TransactionEventRequest(eventType =
+Updated) messages with the same timestamp.
+Same as J02.FR.14
+F02.FR.05 When the IdToken information is
+known.
+The next TransactionEventRequest SHALL contain
+IdTokenType information.
+Same as E03.FR.01
+Edition 4, 2025-12-03 F. Remote Control
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 181/491 Part 2 - Specification

@@ -1,0 +1,42 @@
+2.10. CertificateHashDataType
+Class
+CertificateHashDataType is used by: Common:CertificateHashDataChainType , Common:CertificateStatusRequestInfoType ,
+Common:CertificateStatusType , SignCertificateRequest , DeleteCertificateRequest , CustomerInformationRequest
+Field Name Field Type Card. Description
+hashAlgorithm HashAlgorithmEnumType 1..1 Required. Used algorithms for the hashes provided.
+issuerNameHash identifierString[0..128] 1..1 Required. The hash of the issuer’s distinguished name
+(DN), that must be calculated over the DER encoding of
+the issuer’s name field in the certificate being checked.
+issuerKeyHash string[0..128] 1..1 Required. The hash of the DER encoded public key: the
+value (excluding tag and length) of the subject public key
+field in the issuer’s certificate.
+serialNumber identifierString[0..40] 1..1 Required. The string representation of the hexadecimal
+value of the serial number without the prefix "0x" and
+without leading zeroes.
+2.11. CertificateStatusRequestInfoType
+Class
+Data necessary to request the revocation status of a certificate.
+CertificateStatusRequestInfoType is used by: GetCertificateChainStatusRequest
+Field Name Field Type Card. Description
+source CertificateStatusSourceEnumType 1..1 Required. Source of status: OCSP, CRL
+urls string[0..2000] 1..5 Required. URL(s) of source.
+certificateHashData CertificateHashDataType 1..1 Required. Hash data of certificate.
+2.12. CertificateStatusType
+Class
+Revocation status of certificate
+CertificateStatusType is used by: GetCertificateChainStatusResponse
+Field Name Field Type Card. Description
+source CertificateStatusSourceEnumType 1..1 Required. Source of status: OCSP, CRL
+status CertificateStatusEnumType 1..1 Required. Status of certificate: good, revoked or
+unknown.
+nextUpdate dateTime 1..1 Required.
+certificateHashData CertificateHashDataType 1..1 Required. Hash data of the certificate.
+2.13. ChargingLimitType
+Class
+ChargingLimitType is used by: NotifyChargingLimitRequest
+Field Name Field Type Card. Description
+chargingLimitSource string[0..20] 1..1 Required. Represents the source of the charging limit.
+Values defined in appendix as
+ChargingLimitSourceEnumStringType.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 628/803 Part 2 - Specification

@@ -1,0 +1,51 @@
+OS81092
+DS60001271B-page 66  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+16.2 Optional Components
+Figure 16-1 shows Schottky diodes between the 1.8 V and 3.3 V power supplies and ferrite beads on the analog power
+supply pins. The use of these components is optional a nd should be considered on a case-by-case basis, depending
+on application requirements and limitations.
+As noted in Section 16.1 “Power”, the 1.8 V supply must never exceed the 3.3 V supplies by more than 0.5 V. Addition-
+ally, the 3.3 V analog supply must never exceed the 3.3 V continuous supply by more than 0.5 V. One approach to sat-
+isfying these power sequencing requirements is to connect Schottky diodes between the supplies to prevent a particular
+supply from exceeding another by more than a diode drop. If used, these diodes should be sized according to the power
+requirements of the 3.3 V supply.
+Ferrite beads can be added to VDDA18 and VDDA33 for increased noise immunity in EMI-sensitive applications.
+16.3 Reset
+After both the 3.3 V and 1.8 V power supplies have stabilized, the OS81092 must be reset (RST low) for normal oper-
+ation. A proper reset is when both supplies are 90 % VDD; however, electrical specifications are applicable only within
+±5 % VDD. Once initialized, INIC is typically reset by the EHC only when a fatal error occurs, or when loading the INIC
+Configuration String (see the OS81092 INIC API User’s Manual [2]).
+If the external POR circuit does not drive the RST line high (e.g. open-drain output), an external pull-up resistor to 3.3 V
+should be used. If the external POR circuit drives the RST line high and low (e.g. push-pull output), a series resistor
+should be used between the POR circuit and the OS81092 RST pin in lieu of the pull-up. This series resistor allows INIC
+to be reset by something other than the POR circuit, such as the EHC or the INIC Explorer tool. The pull-up or series
+resistor should be at least 10 k.
+The RST pulse width should be long enough to allow the external configuration pins (ERR/BOOT and INT) to achieve
+their default state. The transition time of RST is not relevant, provided the noise level does not exceed the Vhys-rst
+parameter specified in Section 15.4.2 “Reset and Power Management”.
+16.4 Other Application Pins
+For normal operation, the ERR/BOOT pin should be pulled to 3.3 V. To support the Customer Configuration Interface,
+the on-board pull-up resistor on ERR/BOOT must not be less than 10 k; however, the actual resistor value should be
+chosen based on the input leakage of the INIC pin and on the other devices connected to the line. The JTAG Port pins
+TMS, TCK, TDI, and TDO require pull-up resistors to 3.3 V, regardless of whether or not the JTAG interface is used.
+The OS81092 RSOUT pin is an optional output that allows INIC to reset the EHC. When used, the RSOUT pin should
+be pulled high by an on-board resistor (10 k recommended) and connected to the Reset pin of the EHC. INIC drives
+RSOUT low to reset the EHC when either:
+•t h e  Reset.Start(Target) INIC function is called and the Target parameter specifies the EHC as the device 
+to be reset, or
+• the watchdog timer expires and the WatchdogMode() INIC function indicates the EHC should be reset.
+The length of the reset pulse on RSOUT is 10 ms. For more information on the RSOUT pin, refer to the OS81092 INIC
+API User’s Manual [2] and the MOST INIC Hardware Concepts Specification [8].
+When an external crystal is used, the XTI and XTO pins should be connected directly to the crystal (e.g. no series resis-
+tance). The crystal used must be 384 Fs and should comply with the specifications outlined in Section 16.7 “Crystal
+Oscillator Selection”. If an external clock is used in lieu of a crystal oscillator, it must be connected to XTI and support
+the drive levels listed in the Chapter 15.0 “Electrical Characteristics” chapter.
+When external power management is used, the PWROFF pin must be pulled high through an external resistor. After
+initialization, INIC drives PWROFF low during normal operation and releases PWROFF when the INIC Processor is
+ready to be shutdown. Refer to Chapter 10.0 “External Power Management” for more information.
+16.5 Persistent Memory
+The OS81092 may optionally use persistent memory to maintain certain internal values when the OS81092 is placed in
+a low-power mode (e.g. MOST Sleep Mode). To support this functionality, the application should supply 3.3 V continu-
+ous power to VDDU, which powers the RAM-based per sistent memory, independent of all other switched power sup-
+plies (VDDA18, VDDA33, VDDCn, VDDEn, and VDDPn). Refer to the OS81092 INIC API User’s Manual [2] for more
+information on using OS81092 persistent memory.

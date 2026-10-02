@@ -1,0 +1,59 @@
+ID Precondition Requirement definition
+A00.FR.421 The CSMS SHALL support at least the following four cipher suites:
+TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+TLS_RSA_WITH_AES_128_GCM_SHA256
+TLS_RSA_WITH_AES_256_GCM_SHA384
+(Same as A00.FR.318)
+Note: The CSMS will have to provide 2 different certificates to support
+both cipher suites. Also when using security profile 3, the CSMS should be
+capable of generating client side certificates for both cipher suites.
+A00.FR.422 The Charging Station SHALL support at least the cipher suites:
+(TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+AND
+TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384)
+OR
+(TLS_RSA_WITH_AES_128_GCM_SHA256
+AND
+TLS_RSA_WITH_AES_256_GCM_SHA384)
+(Same as A00.FR.319)
+Note 1: TLS_RSA does not support forward secrecy, therefore TLS_ECDHE
+is RECOMMENDED. In certain jurisdictions formward secrecy is
+mandatory. Furthermore, if the Charging Station detects an algorithm
+used that is not secure, it SHOULD trigger an InvalidTLSCipherSuite
+security event (See part 2 appendices for the full list of security events).
+Note 2: Please note that ISO15118-2 prescribes to implement the
+following cipher suites for the communication between EV and Charging
+Station:
+TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,
+TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256
+A00.FR.423 The Charging Station and CSMS SHALL NOT use cipher suites that use
+cryptographic primitives marked as unsuitable for legacy use in [1]. This
+will mean that when one (or more) of the cipher suites described in this
+specification becomes marked as unsuitable for legacy use, it SHALL NOT
+be used anymore. (Same as A00.FR.320)
+A00.FR.424 The TLS Server and Client SHALL NOT use TLS compression methods to
+avoid compression side-channel attacks and to ensure interoperability as
+described in Section 6 of [10]. (Same as A00.FR.321)
+A00.FR.425 A00.FR.424
+AND
+If the CSMS detects that the
+Charging Station only allows
+connections using one of these
+suites
+The CSMS SHALL terminate the connection. (Same as A00.FR.322)
+A00.FR.426 A00.FR.424
+AND
+The Charging Station detects that
+the CSMS only allows connections
+using one of these suites
+The Charging Station SHALL trigger an InvalidTLSCipherSuite security
+event AND terminate the connection (See part 2 appendices for the full list
+of security events). (Same as A00.FR.323)
+A00.FR.427 A unique Charging Station certificate SHALL be used for each Charging
+Station.
+A00.FR.428 The Charging Station Certificate MAY be the same certificate as the SECC
+Certificate in ISO15118-2, used to set up a TLS connection between the
+Charging Station and an Electric Vehicle.
+Edition 4, 2025-12-03 A. Security
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 25/491 Part 2 - Specification

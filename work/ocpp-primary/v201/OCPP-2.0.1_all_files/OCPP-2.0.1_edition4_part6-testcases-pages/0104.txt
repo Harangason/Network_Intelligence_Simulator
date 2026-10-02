@@ -1,0 +1,46 @@
+TC_C_14_CS: Authorization through authorization cache - GroupID equal to
+MasterPassGroupId.
+Test case name Authorization through authorization cache - GroupID equal to MasterPassGroupId.
+Test case Id TC_C_14_CS
+Use case Id(s) C12
+Requirement(s) C12_FR_09, C16.FR.03
+System under test Charging Station
+Description This test case describes how the EV Driver is authorized to start a transaction while the Charging Station
+uses Cached IdToken. This enables the EV Driver to Online start a transaction by using the Authorization
+Cache in which the Charging Station can respond faster, as no AuthorizeRequest is being sent.
+Purpose To verify if the Charging Station is able to respond correctly to an idToken which has the
+"MasterPassGroupId" as group id according to the mechanism as described in the OCPP specification.
+Prerequisite(s) AuthCacheCtrlr.Available is implemented with value true
+The Charging station supports MasterPass feature.
+The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+AuthCacheCtrlr.AuthCacheEnabled is true (If implemented)
+AuthCtrlr.LocalPreAuthorize is true (If implemented)
+AuthCtrlr.MasterPassGroupId is <Configured MasterPassGroupId>
+Memory State:
+Store the idToken that is part of the MasterPass group at the cache.
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present the idToken with group id "MasterPassGroupId" which is already configured in the Authorization Cache
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+3. Execute Reusable State EVConnectedPostSession
+4. Execute Reusable State EVDisconnected
+5. Execute Reusable State ParkingBayUnoccupied
+Note(s): Step 3, 4, and 5 are only executed if the transaction is still running.
+Tool validations
+* Step 2:
+Message TransactionEventRequest
+- triggerReason StopAuthorized
+- idToken.idToken <Configured masterPass idToken>
+- idToken.type <Configured masterPass idTokenType>
+If eventType Ended, then:
+- transactionInfo.stoppedReason MasterPass
+Post scenario validations:
+- N/a
+NOTE If the Charging Station supports ISO15118, this testcase needs to be executed using EIM.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 102/914 Part 6 - Test Cases

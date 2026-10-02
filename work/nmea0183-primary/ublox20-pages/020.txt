@@ -1,0 +1,57 @@
+u-blox 20 HPG 2.00 - Interface description
+Filter Conﬁguration Item Description
+Date ﬁltering CFG-NMEA-OUT_INVDATE Enable to permit the receiver's best knowledge of date to be
+output, even though it might be wrong.
+GPS-only ﬁltering CFG-NMEA-OUT_ONLYGPS Enable to restrict output to only report GPS satellites.
+Track ﬁltering CFG-NMEA-OUT_FROZENCOG Enable to permit course over ground (COG) to be reported even
+when it would otherwise be frozen.
+The following ﬁltering ﬂags can be used to conﬁgure the output of some NMEA message ﬂags:
+Mode Conﬁguration Item Description
+Compatibility mode CFG-NMEA-COMPAT Some older NMEA applications expect the NMEA output to be
+formatted in a speciﬁc way, for example, they will only work if the
+latitude and longitude have exactly four digits behind the decimal
+point. u-blox receivers oﬀer a compatibility mode to support these
+legacy applications.
+Consideration mode CFG-NMEA-CONSIDER u-blox receivers use a sophisticated signal quality detection
+scheme, in order to produce the best possible position output.
+This algorithm considers all SV measurements, and may
+eventually decide to only use a subset thereof, if it improves
+the overall position accuracy. If consideration mode is enabled,
+all satellites, which were considered for navigation, are
+communicated as being used for the position determination.
+If consideration mode is disabled, only those satellites which
+after the consideration step remained in the position output are
+marked as being used.
+Limit length mode CFG-NMEA-LIMIT82 Enabling this mode will limit the NMEA sentence length to a
+maximum of 82 characters.
+High precision mode CFG-NMEA-HIGHPREC Enabling this mode increases precision of the position output.
+Latitude and longitude then have seven digits after the decimal
+point, and altitude has three digits after the decimal point. Note:
+The high precision mode cannot be set in conjunction with either
+compatibility mode or Limit82 mode.
+The following extended conﬁguration options are available:
+Option Conﬁguration Item(s) Description
+GNSS to ﬁlter CFG-NMEA-FILT_GPS etc. Filters satellites based on the GNSS they belong to.
+Satellite numbering CFG-NMEA-SVNUMBERING This ﬁeld conﬁgures the display of satellites that do not have an
+NMEA-deﬁned value. Note: this does not apply to satellites with
+an unknown ID. See also Satellite identiﬁers.
+Main Talker ID CFG-NMEA-MAINTALKERID By default the main Talker ID (i.e. the Talker ID used for all
+messages other than GSV) is determined by the GNSS
+assignment of the receiver's channels (see conﬁguration items
+CFG-SIGNAL-*). This ﬁeld enables the main Talker ID to be
+overridden. See also NMEA Talker ID.
+GSV Talker ID CFG-NMEA-GSVTALKERID By default the Talker ID for GSV messages is GNSS-speciﬁc (as
+deﬁned by NMEA). This ﬁeld enables the GSV Talker ID to be
+overridden.
+BDS Talker ID CFG-NMEA-BDSTALKERID By default the Talker ID for BeiDou is "GB". This ﬁeld enables the
+BeiDou Talker ID to be overridden.
+2.3 NMEA proprietary messages
+The NMEA standard allows for proprietary, manufacturer-speciﬁc messages to be added. These
+shall be marked with a manufacturer mnemonic. The mnemonic assigned to u-blox is UBX and is
+used for all non-standard messages. These proprietary NMEA messages therefore have the address
+ﬁeld set to PUBX. The ﬁrst data ﬁeld in a PUBX message identiﬁes the message number with two
+digits.
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 20 of 224
+C1-Public

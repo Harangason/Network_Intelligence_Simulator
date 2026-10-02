@@ -1,0 +1,69 @@
+ID Precondition Requirement definition
+A00.FR.404 The CSMS SHALL verify that the certificate is owned by the CSO (or an
+organization trusted by the CSO) by checking that the O
+(organizationName) RDN in the subject field of the certificate contains
+the CSO name.
+A00.FR.405 The CSMS SHALL verify that the certificate belongs to this Charging
+Station by checking that the CN (commonName) RDN in the subject field of
+the certificate contains the unique serial number of the Charging Station
+(see Certificate Properties).
+A00.FR.406 If the Charging Station certificate is
+not owned by the CSO, for instance
+immediately after installation
+it is RECOMMENDED to update the certificate before continuing
+communication with the Charging Station (also see Installation)
+A00.FR.407 NOT A00.FR.429 AND
+If the Charging Station does not own
+a valid certificate, or if the
+certification path is invalid
+The CSMS SHALL terminate the connection.
+A00.FR.408 A00.FR.407 OR A00.FR.429 It is RECOMMENDED to log a security event
+InvalidChargingStationCertificate in the CSMS.
+A00.FR.409 The CSMS SHALL act as the TLS server. (Same as A00.FR.306)
+A00.FR.410 The CSMS SHALL authenticate itself by using the CSMS certificate as
+server side certificate. (Same as A00.FR.307)
+A00.FR.411 The Charging Station SHALL verify the certification path of the CSMS’s
+certificate according to the path validation rules established in Section 6
+of [3]. (Same as A00.FR.308)
+A00.FR.412 The Charging Station SHALL verify that the commonName matches the
+CSMS’s FQDN. (Same as A00.FR.309)
+A00.FR.413 If the CSMS does not own a valid
+certificate, or if the certification path
+is invalid
+The Charging Station SHALL trigger an InvalidCsmsCertificate security
+event (See part 2 appendices for the full list of security events). (Same as
+A00.FR.310)
+A00.FR.414 A00.FR.413 The Charging Station SHALL terminate the connection. (Same as
+A00.FR.311)
+A00.FR.415 The communication channel SHALL be secured using Transport Layer
+Security (TLS) [4]. (Same as A00.FR.312)
+A00.FR.416 The Charging Station and CSMS SHALL only use TLS v1.2 or above.
+(Same as A00.FR.313)
+A00.FR.417 Both of these endpoints SHALL check the version of TLS used. (Same as
+A00.FR.314)
+A00.FR.418 A00.FR.417
+AND
+The CSMS detects that the Charging
+Station only allows connections
+using an older version of TLS, or
+only allows SSL
+The CSMS SHALL terminate the connection. (Same as A00.FR.315)
+A00.FR.419 A00.FR.417
+AND
+The Charging Station detects that
+the CSMS only allows connections
+using an older version of TLS, or
+only allows SSL
+The Charging Station SHALL trigger an InvalidTLSVersion security event
+AND terminate the connection (See part 2 appendices for the full list of
+security events).
+(Same as A00.FR.316)
+NOTE: This is a critical security event that will need to be queued and sent
+to CSMS once a connection has been made, as described in use case
+A04.
+A security event only needs to be sent once for repeated failed connection
+attempts, in order to avoid overflow to the offline queue.
+A00.FR.420 TLS SHALL be implemented as in [4] or its successor standards without
+any modifications. (Same as A00.FR.317)
+Edition 2, 2025-12-03 A. Security
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 27/803 Part 2 - Specification

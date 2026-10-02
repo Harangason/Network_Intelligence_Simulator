@@ -1,0 +1,25 @@
+the Will feature. During the asleep state, all messages that need to be sent to the client are buffered at the
+server/gateway.
+Figure 5: Sleep procedure
+The sleep timer is stopped when the server/gateway receives a PINGREQ from the client. Like the CONNECT
+message, this PINGREQ message contains the Client Id. The identiﬁed client is then in the awake state. If the
+server/gateway has buffered messages for the client, it will sends these messages to the client. The transfer of
+messages to the client is closed by the server/gateway by means of a PINGRESP message, i.e. the server/gateway
+will consider the client as asleep and restart the sleep timer again after having sent the PINGRESP message.
+If the server/gateway does not have any messages buffered for the client, it answers immediately with a
+PINGRESP message, returns the client back to the asleep state, and restarts the sleep timer for that client.
+After having sent the PINGREQ to the server/gateway, the client uses the “retransmission procedure” of
+section 6.13 to supervise the arrival of messages sent by the server/gateway, i.e. it restarts timer Tretry when it
+receives a message other than a PINGRESP, and stops it when it receives a PINGRESP. The PINGREQ message
+is retransmitted and timer Tretry restarted when timer Tretry times out. To avoid a ﬂattening of its battery due
+to excessive retransmission of the PINGREQ message (e.g. if it looses the gateway), the client should limit the
+retransmission of the PINGREQ message (e.g. by a retry counter) and go back to sleep when the limit is reached
+and it still does not receive a PINGRESP message.
+From the asleep or awake state a client can return either to the active state by sending a CONNECT message
+or to the disconnected state by sending a normal DISCONNECT message (i.e. without duration ﬁeld). The client
+can also modify its sleep duration by sending a DISCONNECT message with a new value of the sleep duration.
+Note that a sleeping client should go the awake state only if it just wants to check whether the server/gateway
+has any messages buffered for it and returns as soon as possible to the asleep state without sending any messages
+to the server/gateway. Otherwise, it should return to the active state by sending a CONNECT message to the
+server/gateway.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 26

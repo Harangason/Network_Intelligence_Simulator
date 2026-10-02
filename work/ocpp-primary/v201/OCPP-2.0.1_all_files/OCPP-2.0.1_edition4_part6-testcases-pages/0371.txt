@@ -1,0 +1,62 @@
+TC_K_37_CS: Remote start transaction with charging profile - Success
+Test case name Remote start transaction with charging profile - Success
+Test case Id TC_K_37_CS
+Use case Id(s) K05,F01
+Requirement(s) K05.FR.03, E01.FR.02,F01.FR.10,F01.FR.13
+System under test Charging Station
+Description The CSMS sets a TxProfile on a specific EVSE inside a RequestStartTransactionRequest message.
+Purpose To verify if the Charging Station is able to set a TxProfile on a specific EVSE when receiving one in a
+RequestStartTransactionRequest message.
+Prerequisite(s) The Charging Station must support the GetChargingProfiles feature.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+RequestStartTransactionResponse
+1. The Test System sends a RequestStartTransactionRequest
+with idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+evseId <Configured evseId>
+chargingProfile.chargingProfilePurpose is TxProfile
+chargingProfile.transactionId is omitted.
+chargingProfile.chargingProfileKind is Relative
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].numberPhases <Configured numberPhases>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+3. The Charging Station sends an AuthorizeRequest
+Note(s):
+- This step needs to be executed when
+AuthCtrlr.AuthorizeRemoteStart is true, unless (AuthEnabled is
+implemented with mutability ReadOnly AND the value is set to
+false) OR
+the idToken is cached.
+In case the idToken is used for a reservation, sending the
+AuthorizeRequest message is optional.
+4. The Test System responds with an AuthorizeResponse
+with idTokenInfo.status Accepted
+5. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed when TxStartPoint contains
+Authorized OR the transaction already started. So in the case
+TxStartPoint contains ParkingBayOccupancy or (EVConnected, in
+the case this testcase was initiated from state
+EVConnectedPreSession.)
+6. The Test System responds with a TransactionEventResponse
+Note(s):
+- The first TransactionEventRequest sent after authorization
+contains the idToken field. The TransactionEventResponse of this
+request message contains idTokenInfo
+with status Accepted
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 369/914 Part 6 - Test Cases

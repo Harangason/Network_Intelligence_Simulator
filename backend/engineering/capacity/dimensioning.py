@@ -38,10 +38,16 @@ def local_evidence_proposal(protocol, rows):
     for row in rows:
         evidence = row.get("local_timing_evidence") or {}
         owner = str(row.get("name") or row.get("stream_id") or "Gerät")
-        for key, label in LOCAL_EVIDENCE_FIELDS[protocol]:
+        scope=evidence.get('evidence_scope') or 'TRANSACTION'
+        for spec in profile.get('local_timing_schema') or []:
+            key,label=spec['key'],spec['label']
+            if spec.get('required_scopes') and scope not in spec['required_scopes']:
+                continue
             if key == "arbitration_bound_us" and evidence.get("multi_master") is False:
                 continue
             value = evidence.get(key)
+            if spec.get('optional') and value is None:
+                continue
             fields.append({"key": f"{row.get('stream_id')}:{key}", "label": f"{owner} · {label}",
                            "value": str(value) if value is not None else None,
                            "state": "CONFIRMED" if evidence.get("confirmed") and evidence.get("source") and value is not None else "REVIEW_REQUIRED",

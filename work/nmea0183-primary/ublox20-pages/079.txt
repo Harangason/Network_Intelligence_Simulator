@@ -1,0 +1,50 @@
+u-blox 20 HPG 2.00 - Interface description
+3 X1 flags - - Frequency reference
+bits 3…0   U:4 source - - • 0 = frequency available on EXTINT0
+• 1 = frequency available on EXTINT1
+• 2-15 = reserved
+bit 4   U:1 fall - - use falling edge of EXTINT pulse (default rising)
+4 I4 freq 1e-2 Hz Frequency
+8 U4 freqAcc - ppb Frequency accuracy
+3.13.8 UBX-MGA-QZSS (0x13 0x05)
+3.13.8.1 QZSS ephemeris assistance
+Message UBX-MGA-QZSS-EPH
+QZSS ephemeris assistance
+Type Input
+Comment This message allows the delivery of QZSS ephemeris assistance to a receiver.
+See section AssistNow Online in the integration manual for details.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x05 68 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 type - - Message type (0x01 for this type)
+1 U1 version - - Message version (0x00 for this version)
+2 U1 svId - - QZSS Satellite identiﬁer (see Satellite Numbering),
+Range 1-5
+3 U1 reserved0 - - Reserved
+4 U1 fitInterval - - Fit interval ﬂag
+5 U1 uraIndex - - URA index
+6 U1 svHealth - - SV health
+7 I1 tgd 2^-31 s Group delay diﬀerential
+8 U2 iodc - - IODC
+10 U2 toc 2^4 s Clock data reference time
+12 U1 reserved1 - - Reserved
+13 I1 af2 2^-55 s/s
+squared
+Time polynomial coeﬃcient 2
+14 I2 af1 2^-43 s/s Time polynomial coeﬃcient 1
+16 I4 af0 2^-31 s Time polynomial coeﬃcient 0
+20 I2 crs 2^-5 m Crs
+22 I2 deltaN 2^-43 semi-
+circles/s
+Mean motion diﬀerence from computed value
+24 I4 m0 2^-31 semi-
+circles
+Mean anomaly at reference time
+28 I2 cuc 2^-29 radians Amp of cosine harmonic corr term to arg of lat
+30 I2 cus 2^-29 radians Amp of sine harmonic corr term to arg of lat
+32 U4 e 2^-33 - eccentricity
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 79 of 224
+C1-Public

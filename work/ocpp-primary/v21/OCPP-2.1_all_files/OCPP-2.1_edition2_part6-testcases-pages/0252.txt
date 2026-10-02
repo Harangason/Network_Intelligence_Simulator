@@ -1,0 +1,33 @@
+TC_E_38_CS: Local start transaction - EV not ready
+Test case name Local start transaction - EV not ready
+Test case Id TC_E_38_CS
+Use case Id(s) E03
+Requirement(s) N/a
+System under test Charging Station
+Description OCPP 2.x.x allows an EV driver to either first connect the EV and EVSE OR present a form of identification.
+Both sequences will result in being able to charge.
+Purpose To verify if the Charging Station is able to handle and report if an EV is not ready to start the energy transfer
+(yet).
+Prerequisite(s) TxStartPoint should not be EnergyTransfer
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is Authorized
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Set the EV to a state in which it is NOT ready for energy transfer.
+1. Execute Reusable State EVConnectedPreSession
+2. The Charging Station sends a TransactionEventRequest
+3. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 2:
+Message: TransactionEventRequest
+- triggerReason must be ChargingStateChanged
+- transactionInfo.chargingState should be SuspendedEV
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 250/1383 Part 6 - Test Cases

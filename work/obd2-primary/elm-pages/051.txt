@@ -1,0 +1,101 @@
+Using Higher RS232 Baud Rates
+A serial interface has always been provided with
+our ELM OBD products, largely due to its versatility.
+Older computers, microprocessors and PDAs can all
+interface easily with it, as can USB, Bluetooth,
+ethernet and WiFi modules. It is simply one of the
+most versatile interfaces available.
+Originally, our users almost exclusively used the
+traditional RS232 interface to connect our integrated
+circuits to their computers. Interface circuits were
+easily made, or purchased, and could be used with a
+very large range of devices. The large voltage swings
+and cable capacitance worked against using the
+interface for very high data rates, however, so we set
+the default data rate of the ELM327 to a conservative
+38.4 kbps.
+ If your application needs a traditional RS232
+interface, then by all means use one. We offer a few
+suggestions in the Example Applications section that
+you might try. The discrete version that we show works
+extremely well at speeds of up to 57600 bps, and
+depending on several factors, it may also work well at
+speeds as high as 115200 bps.
+If you would like to operate your interface at
+speeds of 115200 bps or higher, there are several
+single IC solutions that are available. These include
+devices such as the ADM232A from Analog Devices
+(www.analog.com), or the popular MAX232 series of
+integrated circuits from Maxim Integrated Products
+(www.maximintegrated.com). These are all excellent
+devices that can be used for speeds of up to 115.2
+kbps. We do caution that many of these devices are
+only rated for operation up to 120 kbps, however, so
+may not be suitable for very high data rates - be sure
+to check the manufacturers data sheet before
+committing to a design.
+An RS232 interface is typically limited to operating
+at speeds of about 230.4 kbps maximum. If you wish
+to go higher than that, then you must consider
+alternatives - one of which is to use USB.
+Almost all computers that are made today have
+replaced the once familiar RS232 port with a USB one.
+Software is readily available to make these look like
+traditional serial (‘COM’) ports, and modules are
+available for connecting to circuits like the ELM327.
+Several manufacturers offer these modules (often
+called  ‘bridge’ circuits) – try the CP2102 from Silicon
+Labs (www.silabs.com) or the FT232R from Future
+Technology Devices (www.ftdichip.com). If planning to
+use higher baud rates, these interfaces are essential.
+ We are often asked if it is possible to use a direct
+connection to a microprocessor. That is certainly an
+option, and one that allows a full speed connection at
+essentially zero cost.  If you are developing such an
+interface, refer to page 77 for more details.
+The default configuration for the ELM327 typically
+provides a data rate of 38400 baud. There are two
+ways that this rate can be changed – either
+permanently with a Programmable Parameter, or
+temporarily with an AT command.
+Programmable Parameter ‘0C’ is the ELM327
+device setting that stores the baud rate divisor. The
+value is stored in ‘non-volatile’ memory (EEPROM)
+that is not affected by power cycles or resets (but
+changing this value may affect the operation of some
+software packages, so be careful how you use it).
+If you store a new value in PP 0C, then enable it,
+your stored rate will become the new data rate after
+the next reset. As an example, perhaps you would like
+to have the ELM327 use a baud rate of 57.6 kbps,
+rather than the factory setting of 38.4 kbps. To do this,
+you need to determine the required value for PP 0C,
+store this value in PP 0C, and then enable the PP.
+The value stored in PP 0C is actually an internal
+divisor that is used to determine the baud rate (the
+baud rate in kbps is 4000 divided by the value of
+PP 0C). To obtain a setting of 57.6 then, a baud rate
+divisor of 69 is required (4000/69 is approximately
+57.6). Since 69 in decimal is 45 in hexadecimal, you
+need to tell the ELM327 to set the value of PP 0C to
+45, with the set value command:
+>AT PP 0C SV 45
+then enable the new PP 0C value for use:
+>AT PP 0C ON
+from that point on, the default data rate will be 57.6K,
+and not 38.4K. Note that the value that you write does
+not become effective until the next full reset (a power
+off/on, AT Z, or MCLR pulse).
+If you are designing your own circuitry, you will
+know what your circuit is capable of, and can assign a
+baud rate with PP 0C. Software developers will not
+usually know what hardware is to be connected,
+however, so will not know what the limitations are. For
+these users, we have provided the BRD command.
+This command allows a new baud rate divisor to
+be tested, and then accepted or rejected depending on
+the results of the test. The chart shown here tries to
+explain just how this command should be used.
+ELM327
+51 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com

@@ -1,0 +1,71 @@
+K21.FR.04 K21.FR.03 Charging Station SHALL stop applying the
+TxDefaultProfile or TxProfile charging
+profile (if active) to this transaction and applies the
+PriorityCharging profile instead.
+ChargingStationMaxProfi
+le charging profiles remains in
+effect.
+K21.FR.05 K21.FR.04 Charging Station SHALL send a
+NotifyPriorityChargingRequest with activated = true
+and transactionId set to the associated transaction
+K21.FR.06 Charging Station receives a
+UsePriorityChargingRequest
+with transactionId that matches
+an ongoing transaction and
+activate = false
+Charging Station SHALL respond with
+UsePriorityChargingResponse with status =
+Accepted
+If no PriorityCharging
+profile was active, then this has
+no effect.
+K21.FR.07 K21.FR.06 AND
+PriorityCharging is active
+for the transaction
+Charging Station SHALL stop applying the
+PriorityCharging profile and reapply the
+TxDefaultProfile or TxProfile charging
+profile (if existing) to this transaction.
+K21.FR.08 K21.FR.07 Charging Station SHALL send a
+NotifyPriorityChargingRequest with activated =
+false and transactionId set to the associated
+transaction
+K21.FR.09 K21.FR.05 OR K21.FR.08 CSMS SHALL respond with
+NotifyPriorityChargingResponse.
+K21.FR.10 CSMS SHALL support sending a
+UsePriorityChargingRequest
+A Charging Station reports
+support for this in
+SmartChargingCtrlr.SupportedA
+dditionalPurposes.
+K22 - Requesting priority charging locally
+New in OCPP 2.1
+No. Type Description
+1 Name Requesting priority charging locally
+2 ID K22
+3 Objective(s) To let a user request immediate charging at the Charging Station.
+4 Description The user requests to charge the EV immediately and avoid V2X discharging. Charging Station
+switches to a priority charging schedule to charge the EV with the highest power possible under
+the circumstances. Note, that this may be less than the maximum capacity of the CS when other
+restrictions (e.g. load-balancing) are in effect.
+Actors Charging Station, CSMS
+Scenario description 1. User instructs Charging Station (via button or display) to request a priority charging for the
+transaction.
+2. The Charging Station stops applying the TxDefaultProfile or TxProfile charging
+profile (if active) to this transaction, and applies the PriorityCharging profile instead.
+3. The Charging Station responds with a NotifyPriorityChargingRequest with activated = true
+and transactionId set to the transaction to tell CSMS that it now applies the priority
+charging profile.
+4. The CSMS confirms receipt with a NotifyPriorityChargingResponse.
+5 Prerequisites The Charging Station is online and a transaction is active.
+6 Post conditions Transaction using the priority charging profile with the highest possible power profile that CSMS
+deems possible under the circumstances.
+7 Error Handling If Charging Station has no PriorityCharging profile, then it cannot switch to priority charging.
+8 Remarks If the Charging Station is offline, it switches to the PriorityCharging profile and queues the
+NotifyPriorityChargingRequest message to be transmitted when it is back online.
+The priority charging profile remains in effect for the duration of the transaction. It ceases to be
+active when the charging session is terminated, or when priority charging is requested to stop.
+The use of priority charging is not restricted to V2X operations only. A priority charging profile can
+also be requested for non-V2X transactions.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 401/803 Part 2 - Specification

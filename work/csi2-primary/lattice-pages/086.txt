@@ -1,0 +1,45 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  86 
+ 
+Figure 9.2. Horizontal Line Blanking between Line End and the Next Line Start HS Burst Short Packet (Number of 
+Horizontal Blanking Bytes in Byte Clock Domain = 559) 
+From the IP simulation waveforms, the additional duration between the LP-11 state assertion to the 
+horizontal_blanking_cnt_en_o assertion and the horizontal_blanking_cnt_en_o de-assertion to LP-11 state de-
+assertion are the overheads of data path logic delays and minimum LP-11 state duration imposed by TX. The LP-11 
+state for horizontal blanking begins when the d_p_io and d_n_io signals are asserted and ends when either the d_p_io 
+or d_n_io signal is de-asserted. The data_type_r and line_period_ns signals are status variable from RX simulation 
+model in the testbench. 
+ 
+Additional Overheads = 315.548 ns + 657.6 ns 
+          = 973.148 ns 
+ 
+Line Start Short Packet HS Burst/Line End Short Packet HS Burst Duration = ~245  ns (SOT) + ~101 ns (EOT) + (2 bytes x 
+Byte Clock Period) 
+            = ~363.5438 ns  
+ 
+Long Packet HS Burst Duration = ((1200 (Data) + 2 (Packet Header) + 1 (CRC)) x Byte Clock Period) + 245 ns (SOT) +  
+   101 ns (EOT)  
+            = ~10898.6318 ns 
+ 
+LP-11 Minimum Duration   = ~831 ns (from simulation) 
+ 
+Vertical Frame Blanking Duration  = Same as LP-11 minimum duration 
+ 
+Horizontal Line Blanking Duration  = ~5874.56 ns (from simulation) 
+ 
+Line Period   = (2 x 363.5438 ns) + (2 x 831 ns) + 10898.6317 ns + 5874.56 ns = 19.1622 µs 
+ 
+The actual required Horizontal Line Blanking Duration can be calculated as follows: 
+Line Period Without Additional Horizontal Line Blanking Duration = 19.1622 µs – 5.8745 µs + 0.9731 µs (Overhead) 
+             = 14.2608 µs 
+ 
+Required Horizontal Line Blanking Duration  = Expected Line Period – Line Period Without Additional Horizontal Line  
+Blanking Duration 
+= 15.4314 µs – 14.2608 µs 
+     = ~1170.60 ns 
+ 

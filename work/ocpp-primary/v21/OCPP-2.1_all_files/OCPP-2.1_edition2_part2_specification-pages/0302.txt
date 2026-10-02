@@ -1,0 +1,27 @@
+EV Driver Charging Station CSMS
+TxStartPoint = PowerPathClosed
+(and plugging-in first)
+Plug-in cable
+User has driver-specific tariff
+Present charge card AB1234
+AuthorizeRequest(idToken = AB1234)
+CSMS returns driver tariff
+AuthorizeResponse(idTokenInfo.status = Accepted,
+tariff = {"100", "0.55 ct/kWh", ""EUR", energy = {...}})
+TransactionEventRequest(eventType = Started, transactionInfo.transactionId = 123,
+idToken = AB1234, evse = 1, triggerReason = Authorized,
+transactionInfo.chargingState = EVConnected, ... )
+TransactionEventResponse(idTokenInfo.status = Accepted)
+No charging until tariff accepted
+Display driver tariff
+description to user
+"Accept tariff to
+start charging."
+Accept tariff
+TransactionEventRequest(eventType = Updated, transactionInfo.transactionId = 123,
+transactionInfo.tariffId = 100, triggerReason = ChargingStateChanged,
+transactionInfo.chargingState = Charging, ... )
+TransactionEventResponse(idTokenInfo.status = Accepted)
+Figure 107. Sequence diagram TxStartPoint = PowerPathClosed, plug-in first
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 289/803 Part 2 - Specification

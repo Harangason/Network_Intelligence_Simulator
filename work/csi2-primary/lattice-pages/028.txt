@@ -1,0 +1,57 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  28 
+fr_clk_i
+axis_byte_tready_i
+axis_byte_tvalid_o
+HS Packet
+(Long Packet)
+HS Packet
+(Short Packet)
+axis_byte_tdata_o[31:0] B B B B B BBB B
+axis_byte_tlast_o
+axis_byte_tuser_o[5:2] Packet Virtual Channel    (VCX+VC) VCX
++VC
+axis_byte_tuser_o[0:0]
+Byte Buffer Depth - 1
+ 
+Figure 2.26. MBSI RX Timing Diagram for 32-bit Passthrough Mode with TREADY Deassertion 
+2.5. MIPI CSI/DSI Transmitter PHY Block 
+The PHY block (D‑PHY transmitter) is the physical interface that drives MIPI D-PHY signals onto differential lanes and 
+converts parallel byte data into serialized high‑speed (HS) and low power (LP) signaling as required by the MIPI D-PHY 
+specification. The PHY block supports the Soft D‑PHY and Hard D‑PHY modes. 
+This block performs the following key functions: 
+• Clock generation: Produces the byte clock output from external high -speed clock and ensures proper distribution 
+to the data lanes. 
+• Start-of-transmission (SoT) signaling: Generates the required HS prepare, HS -zero, and SoT sequences and appends 
+SYNC WORD pattern 0xB8 to incoming HS payload data before transmitting.  
+• End-of-transmission (EoT) signaling: Drives the required EoT and HS-trail patterns, followed by switching the lane 
+back to LP mode. 
+• Serialization: Converts the incoming 8-bit parallel data into DDR-based serialized HS output on differential data 
+lanes. 
+• Low power and high-speed control: Manages LP-to-HS and HS-to-LP transitions based on request inputs, ensuring 
+compliance with MIPI D-PHY timing requirements. 
+• LP signaling: Drives LP-00 and LP-11 states for control sequences. 
+• Skew calibration: Drives a skew calibration HS sequence on all data lanes when requested by the controller after 
+completing the power-up initialization (T-INIT) process. The PHY drives the serial link with skew calibration sync 
+pattern followed by calibration pattern for the defined calibration time.  
+2.6. MIPI Timing Parameters 
+tLPX tCLK-PREP tCLK-HSZERO
+tLPX tDATPREP tDAT_HSZERO
+T-HS-ZERO DATA High-Speed Data
+tDATTRAIL tDATEXIT
+tCLKPOST+1 tCLKTRAIL tCLKEXIT
+High-Speed Clock
+Clock Lane
+Data Lane
+ 
+Figure 2.27. MIPI Timing Parameters 
+Figure 2.27 provides a visual representation of the MIPI D-PHY clock and data lane timing behavior, illustrating the 
+relationship between signal transitions and the defined timing parameters. The timing parameters referenced in the 
+MIPI CSI/DSI TX Protocol Timing Parameters section are depicted in the diagram using labeled intervals on the clock 
+and data lanes. Each labeled interval corresponds to a specific timing parameter and indicates the location of delays 
+and transition periods relative to the clock and data signals. Variations in timing parameter values are re flected as 

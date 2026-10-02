@@ -1,0 +1,25 @@
+4.2.2. CALLRESULT
+If the call can be handled correctly the result will be a regular CALLRESULT. Error situations that are covered by the definition of the
+OCPP response definition are not considered errors in this context. They are regular results and as such will be treated as a normal
+CALLRESULT, even if the result is undesirable for the recipient.
+A CALLRESULT always consists of 3 elements: The standard elements MessageTypeId and MessageId and a payload, containing
+the response to the Action in the original Call.
+The syntax of a CALLRESULT looks like this:
+[<MessageTypeId>, "<MessageId>", {<Payload>}]
+Table 6. CALLRESULT Fields
+Field Datatype Meaning
+MessageTypeId integer This is a Message Type Number which is used to identify the type of the message.
+MessageId string[36] This MUST be the exact same ID that is in the call request so that the recipient can match
+request and result.
+Payload JSON JSON Payload of the action, see: JSON Payload for more information.
+For example, a BootNotification response could look like this:
+[3,
+ "19223201",
+ {
+   "currentTime": "2013-02-01T20:53:32.486Z",
+   "interval": 300,
+   "status": "Accepted"
+ }
+]
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 12/28 Part 4 - JSON over WebSockets implementation guide

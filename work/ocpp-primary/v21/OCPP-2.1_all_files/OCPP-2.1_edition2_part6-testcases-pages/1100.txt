@@ -1,0 +1,57 @@
+TC_E_113_CSMS: Resuming transaction after interruption - TxResumptionTimeout
+not expired - TxAllowEnergyTransferResumption is true
+Test case name Resuming transaction after interruption - TxResumptionTimeout not expired -
+TxAllowEnergyTransferResumption is true
+Test case Id TC_E_113_CSMS
+Use case Id(s) E17
+Requirement(s) E17.FR.15
+System under test CSMS
+Description CSMS restores TxProfile after Charging Station resumes transactions which had a Charging profile with
+purpose TxProfile configured.
+Purpose To verify the CSMS restores the charging profile for a transaction after resuming transactions by the
+Charging Station.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+The Test System disconnects the connection.
+The Test System waits the <Configured transaction duration>
+The Test System restores the connection.
+1. The Test System sends a BootNotificationRequest
+2. The CSMS responds with a BootNotificationResponse
+3. The Test System notifies the CSMS about the current state of
+all connectors.
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+Configured EVSE.Connector:
+- eventData[0].actualValue "Occupied"
+Other connectors:
+- eventData[0].actualValue "Available"
+4. The CSMS responds accordingly.
+5 The Test System sends a SecurityEventNotificationRequest -
+type must be StartupOfTheDevice OR ResetOrReboot
+6 The CSMS responds with a
+SecurityEventNotificationResponse
+7 The Test System sends a NotifyEventRequest
+eventData.trigger = Delta
+eventData.transactionId = <transactionId from this transaction>
+eventData.eventNotificationType = HardWiredNotification
+eventData.severity = 3
+eventData.actualValue = true
+eventData.component.name = ElectricalFeed
+eventData.variable.name = Problem
+8 The CSMS responds with a NotifyEventResponse
+9 The Test System sends a NotifyEventRequest
+Same content as step 7, but with actualValue = false:
+eventData.actualValue = false
+10 The CSMS responds with a NotifyEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1098/1383 Part 6 - Test Cases

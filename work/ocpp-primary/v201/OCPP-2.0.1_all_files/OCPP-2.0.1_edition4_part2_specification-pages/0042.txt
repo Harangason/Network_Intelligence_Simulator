@@ -1,0 +1,52 @@
+No. Type Description
+Scenario description SignChargingStationCertificate
+1. The CSMS requests the Charging Station to update its certificate using the
+TriggerMessageRequest with the requestedMessage field set to SignChargingStationCertificate.
+2. The Charging Station responds with TriggerMessageResponse
+3. The Charging Station generates a new public / private key pair.
+4. The Charging Station sends a SignCertificateRequest to the CSMS containing the
+certificateType = ChargingStationCertificate .
+5. The CSMS responds with SignCertificateResponse, with status Accepted.
+6. The CSMS forwards the CSR to the Certificate Authority Server.
+7. Certificate Authority Server signs the certificate.
+8. The Certificate Authority Server returns the Signed Certificate to the CSMS.
+9. The CSMS sends CertificateSignedRequest to the Charging Station.
+10. The Charging Station verifies the Signed Certificate.
+11. The Charging Station responds with CertificateSignedResponse to the CSMS with the status
+Accepted or Rejected.
+Alternative scenario SignV2GCertificate
+1. CSMS requests information about component ISO15118Ctrlr by sending a GetReportRequest
+for componentVariable.component = "ISO15118Ctrlr" and componentVariable.variable = "SeccId".
+2. For each unique SeccId that is returned:
+2.1. The CSMS requests the Charging Station to update its certificate using the
+TriggerMessageRequest with the requestedMessage field set to SignV2GCertificate for a 15118
+certificate, and evse set to the EVSE of the ISO15118Ctrlr. (If ISO15118Ctrlr only exists as one
+component at toplevel, then evse can be omitted.)
+2.2. The Charging Station responds with TriggerMessageResponse
+2.3. The Charging Station generates a new public / private key pair.
+2.4. The Charging Station sends a SignCertificateRequest to the CSMS containing the
+certificateType = V2GCertificate and a csr in which the CommonName (CN) is set to the value
+of SeccId .
+2.5. CSMS responds with SignCertificateResponse, with status Accepted.
+2.6. The CSMS forwards the CSR to the Certificate Authority Server.
+2.7. Certificate Authority Server signs the certificate.
+2.8. The Certificate Authority Server returns the Signed Certificate to the CSMS.
+2.9. The CSMS sends CertificateSignedRequest to the Charging Station.
+2.10. The Charging Station verifies the Signed Certificate.
+2.11. The Charging Station responds with CertificateSignedResponse to the CSMS with the status
+Accepted or Rejected.
+5 Prerequisite(s) The standard configuration variable "OrganizationName" MUST be set. For SignV2GCertificate the
+variable ISO15118Ctrlr.SeccId must be set.
+6 Postcondition(s) Successful postcondition:
+New Client Side certificate installed in the Charging Station. 
+Failure postcondition:
+New Client Side certificate is rejected and discarded.
+7 Error handling The CSMS accepts the CSR request from the Charging Station, before forwarding it to the CA. But
+when the CA cannot be reached, or rejects the CSR, the Charging Station will never be known. The
+CSMS may do some checks on the CSR, but cannot do all the checks that a CA does, and it does
+not prevent connection timeout to the CA. When something like this goes wrong, either the CA is
+offline or the CSR send by the Charging Station is not correct, according to the CA. In both cases
+this is something an operator at the CSO needs to be notified of. The operator then needs to
+investigate the issue. When resolved, the operator can re-run A02.
+Edition 4, 2025-12-03 A. Security
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 32/491 Part 2 - Specification

@@ -1,0 +1,63 @@
+Table 7-47. FS_CTL Register Field Descriptions
+Bit Field Type Reset Description
+7:4 FS_MODE R/W 0x0 FrameSync Mode
+0000: Internal Generated FrameSync, use Back-channel frame clock 
+from port 0
+0001: Internal Generated FrameSync, use Back-channel frame clock 
+from port 1
+0010: Internal Generated FrameSync, use Back-channel frame clock 
+from port 2
+0011: Internal Generated FrameSync, use Back-channel frame clock 
+from port 3
+01xx: Internal Generated FrameSync, use 25MHz clock
+1000: External FrameSync from GPIO0
+1001: External FrameSync from GPIO1
+1010: External FrameSync from GPIO2
+1011: External FrameSync from GPIO3
+1100: External FrameSync from GPIO4
+1101: External FrameSync from GPIO5
+1110: External FrameSync from GPIO6
+1111: External FrameSync from GPIO7
+3 FS_SINGLE RH/W1S 0x0 Generate Single FrameSync pulse
+When this bit is set, a single FrameSync pulse is generated. 
+The system should wait for the full duration of the desired pulse 
+before generating another pulse. When using this feature, the 
+FS_GEN_ENABLE bit should remain set to 0. This bit is self-clearing 
+and will always return 0.
+2 FS_INIT_STATE R/W 0x0 Initial State
+This register controls the initial state of the FrameSync signal.
+0: FrameSync initial state is 0
+1: FrameSync initial state is 1
+1 FS_GEN_MODE R/W 0x0 FrameSync Generation Mode
+This control selects between Hi/Lo and 50/50 modes. In Hi/Lo 
+mode, the FrameSync generator will use the FS_HIGH_TIME[15:0] 
+and FS_LOW_TIME[15:0] register values to separately control the 
+High and Low periods for the generated FrameSync signal. In 
+50/50 mode, the FrameSync generator will use the values in 
+the FS_HIGH_TIME_0, FS_LOW_TIME_1 and FS_LOW_TIME_0 
+registers as a 24-bit value for both the High and Low periods of the 
+generated FrameSync signal.
+0: Hi/Lo
+1: 50/50
+0 FS_GEN_ENABLE R/W 0x0 FrameSync Generation Enable
+0: Disabled
+1: Enabled
+7.6.1.26 FS_HIGH_TIME_1 Register (Address = 0x19) [Reset = 0x00] 
+FS_HIGH_TIME_1 is shown in Table 7-48.
+Return to the Summary Table.
+Table 7-48. FS_HIGH_TIME_1 Register Field Descriptions
+Bit Field Type Reset Description
+7:0 FRAMESYNC_HIGH_TIM
+E_1
+R/W 0x0 FrameSync High Time bits 15:8
+The value programmed to the FS_HIGH_TIME register should be 
+reduced by 1 from the desired delay. For example, a value of 0 in the 
+FRAMESYNC_HIGH_TIME field will result in a 1 cycle high pulse on 
+the FrameSync signal.
+7.6.1.27 FS_HIGH_TIME_0 Register (Address = 0x1A) [Reset = 0x00] 
+FS_HIGH_TIME_0 is shown in Table 7-49.
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+92 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

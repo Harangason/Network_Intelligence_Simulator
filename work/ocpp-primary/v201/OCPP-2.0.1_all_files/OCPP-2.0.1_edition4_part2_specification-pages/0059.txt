@@ -1,0 +1,101 @@
+B02 - Cold Boot Charging Station - Pending - Requirements
+Table 31. B02 - Requirements
+ID Precondition Requirement definition Note
+B02.FR.01 After the Charging Station received
+the Pending status.
+The CSMS MAY send messages to retrieve
+information from the Charging Station (as
+described in use cases B06, B07, B08) or change its
+configuration by SetVariablesRequest (as
+described in use case B05). The Charging Station
+SHALL respond to these messages.
+The Pending status can
+thus indicate that the
+CSMS wants to retrieve
+or set certain information
+on the Charging Station
+before it will accept the
+Charging Station.
+B02.FR.02 While the CSMS has not yet
+responded to a
+BootNotificationRequest with an
+Accepted status in the
+BootNotificationResponse.
+The Charging Station SHALL NOT send RPC
+Framework: CALL messages (Except
+BootNotificationRequest) to the CSMS, unless it
+has been instructed by the CSMS to do so, using
+one of the following messages:
+TriggerMessageRequest, GetBaseReportRequest,
+GetReportRequest.
+B02.FR.03 While the CSMS has not yet
+responded to a
+BootNotificationRequest with an
+Accepted status in the
+BootNotificationResponse.
+A Charging Station Operator MAY choose to
+configure a Charging Station to accept transactions
+and queue TransactionEventRequest messages to
+be sent to the CSMS
+Parties who want to
+implement this behavior
+must realize that it is
+uncertain if those
+transactions can ever be
+delivered to the CSMS.
+B02.FR.04 While the CSMS has not yet
+responded to a
+BootNotificationRequest with an
+Accepted status in the
+BootNotificationResponse.
+A Charging Station SHALL NOT send
+BootNotificationRequest earlier than the value of
+the Interval field in BootNotificationResponse,
+unless requested to do so with
+TriggerMessageRequest.
+B02.FR.05 While in Pending status AND receiving
+a RequestStartTransactionRequest or
+RequestStopTransactionRequest
+The Charging Station SHALL respond with a
+RequestStartTransactionResponse or
+RequestStopTransactionResponse with status
+Rejected. (Even if the Charging Station is allowed to
+start transaction, see B02.FR.03. If the CSMS wants
+to use RequestStartTransaction etc. it SHALL first
+accept the Charging Station)
+B02.FR.06 When the CSMS returns the Pending
+status
+The communication channel SHALL NOT be closed
+by either the Charging Station or the CSMS.
+B02.FR.07 If the interval in the
+BootNotificationResponse equals 0,
+and the status is other than Accepted,
+The Charging Station SHALL choose a waiting
+interval on its own, in a way that avoids flooding the
+CSMS with requests.
+B02.FR.08 If the interval in the
+BootNotificationResponse > 0, and the
+status is other than Accepted,
+The Charging Station SHALL send a
+BootNotificationRequest after the set interval has
+past.
+B02.FR.09 The Charging Station has received a
+BootNotificationResponse with status
+Pending
+AND
+the Charging Station sends a RPC
+Framework: CALL message that is
+NOT a BootNotificationRequest or a
+message triggered by one of the
+following messages:
+TriggerMessageRequest,
+GetBaseReportRequest,
+GetReportRequest.
+The CSMS SHALL respond with RPC Framework:
+CALLERROR: SecurityError.
+The Charging Station is
+not allowed to initiate
+sending other messages
+before being accepted.
+Edition 4, 2025-12-03 B. Provisioning
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 49/491 Part 2 - Specification

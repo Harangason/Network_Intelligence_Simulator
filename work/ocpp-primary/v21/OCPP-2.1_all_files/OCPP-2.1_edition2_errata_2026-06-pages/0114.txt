@@ -1,0 +1,52 @@
+Tool validations
+* Step 1:
+Message SetVariableMonitoringRequest with:
+- setMonitoringData[0].type = Periodic,
+- setMonitoringData[0].severity = 8,
+- setMonitoringData[0].component.name = "EVSE"
+- setMonitoringData[0].component.evse.id = <Configured evseId>
+- setMonitoringData[0].variable.name = Power
+- setMonitoringData[0].value = 5
+- setMonitoringData[0].periodicEventStream.interval 5
+- setMonitoringData[0].periodicEventStream.values 10
+* Step 2: Step 4: 
+Message OpenPeriodicEventStreamResponse
+- status must be Accepted
+* Step 3: Step 6: 
+Message AdjustPeriodicEventStreamRequest
+id must be 2
+params.interval must be 15 10
+params.values must be 45 20
+6.3.19. Page 1339/1340 - (2026-02) - TC_Q_107_CSMS - Test case updated
+Test case updated to reflect current use cases and functional requirements.
+Test case name V2X Authorisation - ISO15118-20 - Charging only (V2X control) before starting V2X
+Test case Id TC_Q_107_CSMS
+…
+Before (Preparations)
+Configuration State:
+- CSMS is configured to start transactions first in a non-V2X mode before upgrading to V2X
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is ISO15118-20 transaction just started exposing:
+- <allowedEnergyTransferModes>
+- <transactionId>
+Main (Test scenario)
+Charging Station CSMS
+Agree on energy transfer mode
+1. The Test System sends a NotifyEVChargingNeedsRequest
+with
+evseId <Configured evseId>
+chargingNeeds.requestedEnergyTransfer one of non-
+bidirectional mode in <allowedEnergyTransferModes> received in
+AuthorizeResponse or if omitted AC_three_phase 
+chargingNeeds.availableEnergyTransfer [AC_single_phase,
+AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]
+chargingNeeds.controlMode ScheduledControl
+chargingNeeds.v2xChargingParameters.maxChargePower
+1234W
+chargingNeeds.v2xChargingParameters.maxDischargePower
+1234W
+2. The CSMS responds with a NotifyEVChargingNeedsResponse
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 110/116 Errata 2026-06

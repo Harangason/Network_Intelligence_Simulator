@@ -1,0 +1,18 @@
+Figure 205. Control received before start of superseded control. From [RefCSIP]
+In the second case, the charging station receives the higher priority control while executing the lower priority control. In this case,
+the charging station continues with the lower priority control until the start time of the higher priority control. It then supersedes the
+lower priority control and switches to executing the higher priority control as shown in the figure below.
+Figure 206. Control received after start of superseded event. From [RefCSIP]
+Superseded controls remain present in the charging station and are reported with a isSuperseded flag set to true. Controls that are
+past their scheduled time and duration will be automatically removed by the charging station.
+Scheduling by CSMS
+Ideally, CSMS will take care of the prioritization and only send the highest priority DER control to the charging station. However, in
+some cases this must be handled by the charging station. An example of this is the situation where CSMS has already sent a DER
+control for "X" with priority = 1 to the charging station, and this control is now active. Then suddenly CSMS receives another DER
+control for "X" with priority = 0 that is overlapping, as shown in figure Control received after start of superseded event. From
+[RefCSIP]. If charging station would not be able to handle controls with different priority, then CSMS would have to send the new
+control with priority = 0 at the moment that it should start, thus replacing the older control. However, due to network and system
+latency, it would be impossible to guarantee that the new event starts exactly at its startTime. The charging station will thus have to
+deal with two or more controls for the same type with different priorities.
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 547/803 Part 2 - Specification

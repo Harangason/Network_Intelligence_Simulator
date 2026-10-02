@@ -1,0 +1,65 @@
+16-Bit
+Short Packet 
+Data Field
+VCX + ECC
+Data ID
+32-bit SHORT PACKET (SH)
+Data Type (DT) = 0x00 – 0x0F
+Figure 7-8. CSI-2 Short Packet Structure
+7.4.15 CSI-2 Long Packet
+A long packet consists of three elements: a 32-bit packet header (PH), an application-specific data payload with 
+a variable number of 8-bit data words, and a 16-bit packet footer (PF). The packet header is further composed 
+of three elements: an 8-bit data identifier, a 16-bit word count field, and an 8-bit ECC. The packet footer has one 
+element, a 16-bit checksum. Figure 7-9 shows the structure of a long packet.
+16-Bit
+Word Count
+ECC
+Data ID
+Data 0
+Data 1
+Data 2
+Data 3
+Data WC-4
+Data WC-3
+Data WC-2
+Data WC-1
+16-bit 
+Checksum
+32-bit 
+PACKET 
+HEADER 
+(PH)
+16-bit 
+PACKET 
+FOOTER 
+(PF)
+PACKET DATA:
+Length = Word Count (WC) * Data Word 
+Width (8-bits). There are NO restrictions 
+on the values of the data words
+Figure 7-9. CSI-2 Long Packet Structure
+Table 7-14. CSI-2 Long Packet Structure Description
+PACKET PART FIELD NAME SIZE (BIT) DESCRIPTION
+Header
+VC / Data ID 8 Contains the virtual channel identifier and the data-type information.
+Word Count 16 Number of data words in the packet data. A word is 8 bits.
+ECC 8 ECC for data ID and WC field. Allows 1-bit error recovery and 2-bit 
+error detection.
+Data Data WC * 8 Application-specific payload (WC words of 8 bits).
+Footer Checksum 16 16-bit cyclic redundancy check (CRC) for packet data.
+7.4.16 CSI-2 Data Identifier
+The DS90UB960-Q1 MIPI CSI-2 protocol interface transmits the data identifier byte containing the values for the 
+virtual channel ID (VC) and data type (DT) for the application specific payload data, as shown in Figure 7-10. 
+The virtual channel ID is contained in the 2 MSBs of the data identifier byte and identify the data as directed to 
+one of four virtual channels. The value of the data type is contained in the 6 LSBs of the data identifier byte. 
+When partnered with a DS90UB935-Q1 or DS90UB953-Q1 serializer, the Data Type is passed through from the 
+received CSI-2 packets. When partnered with a DS90UB933-Q1 or DS90UB913A-Q1 the received RAW mode 
+data is converted to CSI-2 Tx packets with assigned data type and virtual channel ID.
+DVP format serializer inputs must have discrete synchronization signals. When interfacing with DS90UB913A-
+Q1 or DS90UB933-Q1 serializers, the DS90UB960-Q1 utilizes the HSYNC and VSYNC inputs to construct 
+the MIPI CSI-2 Tx data packets. When paired with a DVP serializer, the DS90UB960-Q1 deserializer supports 
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+40 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

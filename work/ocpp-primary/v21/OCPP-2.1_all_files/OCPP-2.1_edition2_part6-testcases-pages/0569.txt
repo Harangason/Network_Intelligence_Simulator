@@ -1,0 +1,55 @@
+TC_K_116_CS: Renegotiating a Charging Schedule ISO 15118-20 - Adjusting
+charging schedule when energy needs change
+Test case name Renegotiating a Charging Schedule ISO 15118-20 - Adjusting charging schedule when energy needs
+change
+Test case Id TC_K_116_CS
+Use case Id(s) K17,K20
+Requirement(s) K20.FR.01, K20.FR.02, K17.FR.01, K17.FR.06, K17.FR.09, K17.FR.10
+System under test Charging Station
+Description The EV signals the Charging Station that it wants to renegotiate and it provides new charging needs, which
+the Charging Station sends to the CSMS. Based on this and other parameters, the CSMS calculates a new
+charging schedule and sends it via SetChargingProfileRequest to Charging Station, which communicates it
+to the EV.
+Purpose To verify if the Charging Station is able to perform load leveling when it receives a renegotiate request from
+the EV.
+Prerequisite(s) Charging station supports ISO15118-20.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+State is Authorized15118 (for 15118-20)
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Use EV to trigger renegotiation requesting:
+departureTime <Current DateTime + 2 hours>
+evTargetEnergyRequest* 5000
+1. The Charging Station sends a
+NotifyEVChargingNeedsRequest. 2. The Test System responds with a
+NotifyEVChargingNeedsResponse.
+With status Accepted
+4. The Charging Station responds with a
+SetChargingProfileResponse
+3. The Test System sends a SetChargingProfileRequest with
+chargingProfile.chargingProfilePurpose TxProfile
+chargingProfile.transactionId <Provided transactionId from
+before>
+chargingProfile.chargingSchedule[0].id 10
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 2.5 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Note: EV selects charging schedule 10
+5. The Charging Station sends a
+NotifyEVChargingScheduleRequest. 6. The Test System responds with a
+NotifyEVChargingScheduleResponse.
+With status Accepted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 567/1383 Part 6 - Test Cases

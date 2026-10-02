@@ -1,0 +1,59 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  19/50 
+MB Server Sends mb_exception_rsp EXIT
+ExceptionCode = 04
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+YES
+NO
+NO
+ExceptionCode = 02
+YES
+NO
+ExceptionCode = 03
+YES
+ENTRY
+WriteSingleOutput == OK
+MB Server Sends mb_rsp
+NO
+YES
+Output Value == 0x0000
+OR 0xFF00
+Function code
+supported
+Output Address == OK
+Request Processing
+ 
+Figure 15: Write Single Output state diagram  
+ 
+6.6 06 (0x06) Write Single Register  
+This function code is used to write a single holding register in a remote device.  
+The Request PDU specifies the address of the register to be written. Registers are addressed 
+starting at zero. Therefore register numbered 1 is addressed as 0.  
+The normal response is an echo of the request, returned after the register contents have been 
+written.  
+ 
+Request  
+Function code  1 Byte  0x06  
+Register Address  2 Bytes  0x0000 to 0xFFFF  
+Register Value  2 Bytes  0x0000 to  0xFFFF  
+ 
+Response  
+Function code  1 Byte  0x06  
+Register Address  2 Bytes  0x0000 to 0xFFFF  
+Register Value  2 Bytes  0x0000 to  0xFFFF  
+ 
+Error  
+Error code  1 Byte  0x86  
+Exception code  1 Byte  01 or 02 or 03 or 04  
+ 
+Here is an example of a request to write register 2 to 00 03 hex:  
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  06 Function  06 
+Register Address Hi  00 Register Address Hi 00 
+Register Address Lo  01 Register Address Lo  01 
+Register Value Hi  00 Register Value Hi  00 
+Register Value Lo  03 Register Value Lo  03 
+ 
+ 

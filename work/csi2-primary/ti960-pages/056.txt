@@ -1,0 +1,41 @@
+7.4.25.7 CSI-2 Transmitter Output Control
+Two register controls allow control of CSI-2 Transmitter outputs to disable the CSI-2 Transmitter outputs. If the 
+OUTPUT_SLEEP_STATE_SELECT (OSS_SEL) control is set to 0 in the GENERAL_CFG 0x02 register, the 
+CSI-2 Transmitter outputs are forced to the HS-0 state. If the OUTPUT_ENABLE (OEN) register bit is set to 0 in 
+the GENERAL_CFG register, the CSI-2 pins are set to the high-impedance state.
+For normal operation (OSS_SEL and OEN both set to 1), the detection of activity on FPD3 inputs determines 
+the state of the CSI-2 outputs. The FPD3 inputs are considered active if the Receiver indicates valid lock to the 
+incoming signal. For a CSI-2 TX port, lock is considered valid if any Received port mapped to the TX port is 
+indicating Lock.
+Table 7-17. CSI-2 Output Control Options
+PDB pin OSS_SEL OEN FPD3 INPUT CSI-2 PIN STATE
+0 X X X Hi-Z
+1 0 X X HS-0
+1 1 0 X Hi-Z
+1 1 1 Inactive Hi-Z
+1 1 1 Active Valid
+7.4.25.8 Enabling and Disabling CSI-2 Transmitters
+Once enabled, it is typically best to leave the CSI-2 Transmitter enabled, and only change the forwarding 
+controls if changes are required to the system. When enabling and disabling the CSI-2 Transmitter, forwarding 
+should be disabled to ensure proper start and stop of the CSI-2 Transmitter.
+When enabling and disabling the CSI-2 Transmitter, use the following sequence:
+To Disable:
+1. Disable Forwarding for assigned ports in the FWD_CTL1 register
+2. Disable CSI-2 Periodic Calibration (if enabled) in the CSI_ CTL2 register
+3. Disable Continuous Clock operation (if enabled) in the CSI_ CTL register
+4. Clear CSI-2 Transmit enable in CSI_ CTL register
+To Enable:
+1. Set CSI-2 Transmit enable (and Continuous clock if desired) in CSI_ CTL register
+2. Enable CSI-2 Periodic Calibration (if desired) in the CSI_CTL2 register
+3. Enable Forwarding for assigned ports in the FWD_CTL1 register
+7.5 Programming
+7.5.1 Serial Control Bus
+The DS90UB960-Q1 implements two I2C-compatible serial control buses. Both I2C ports support local device 
+configuration and incorporate a bidirectional control channel (BCC) that allows communication with a remote 
+serializers as well as remote I2C target devices.
+The device address is set through a resistor divider connected to the IDx pin (R1 and R2 – see Figure 7-22).
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+56 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

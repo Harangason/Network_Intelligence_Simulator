@@ -1,0 +1,38 @@
+TC_C_113_CS: Integrated Payment Terminal - Cancelation after start of transaction
+- stopped by EV driver
+Test case name Integrated Payment Terminal - Cancelation after start of transaction - stopped by EV driver
+Test case Id TC_C_113_CS
+Use case Id(s) C20
+Requirement(s) C20.FR.01, C20.FR.03, C20.FR.04
+System under test Charging Station
+Description In order to test that Charging Station supports cancelation of a payment terminal authorization after a
+transaction has started when the EV driver stops the session at the Charging Station.
+Purpose To verify if the Charging Station is able to handle cancelation of a payment terminal authorization after a
+transaction has started when the EV driver stops the session at the Charging Station.
+Prerequisite(s) - Charging Station has an integrated Payment Terminal
+- TxStartPoint contains ParkingBayOccupancy or Authorized
+Before (Preparations)
+Configuration State:
+PaymentCtrlr.Enabled is true
+PaymentCtrlr.AuthorizationAmount is 50.00
+PaymentCtrlr.AuthorizeDirectPayment is false
+PaymentCtrlr.PaymentDetails = CardLast4Digits
+PaymentCtrlr.SettlementByCSMS is false
+TxCtrlr.EVConnectionTimeout is 5
+TxStartPoint Authorized or ParkingBayOccupancy
+Memory State:
+N/a
+Reusable State(s):
+State is DefaultTariffConfigured
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State AuthorizedPaymentTerminal (Local)
+Note(s):
+- The EVConnectionTimeout occurs after 5 seconds
+- Charging Station instructs payment terminal to release the authorization amount of 25.00 EUR and cancel the payment
+2. The Charging Station sends a TransactionEventRequest
+3. The Test System responds with a TransactionEventResponse
+4. The Charging Station sends a NotifySettlementRequest
+5. The Test System responds with a NotifySettlementResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 196/1383 Part 6 - Test Cases

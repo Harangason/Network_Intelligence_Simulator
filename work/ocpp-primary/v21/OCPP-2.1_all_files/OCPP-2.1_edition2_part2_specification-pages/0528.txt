@@ -1,0 +1,62 @@
+ID. Precondition Requirements Note
+Q02.FR.04 Q02.FR.03 Charging Station SHALL send a
+NotifyEVChargingNeedsRequest with evseId set to
+the EVSE used for this transaction and
+requestedEnergyTransfer set to its default energy
+transfer (charging only AC/DC) and
+availableEnergyTransfer set to the supported energy
+transfers.
+Depending on type of
+EVSE this will be
+AC_single_phase,
+AC_two_phase,
+AC_three_phase or DC,
+DC_ACDP
+Q02.FR.05 When CSMS changes the list of
+allowed energy transfers for a
+transaction
+CSMS SHALL send a
+NotifyAllowedEnergyTransferRequest with the
+allowedEnergyTransfer list and with transactionId
+set to the transaction for which this is intended.
+For example, when
+permission for V2X is
+received some time after
+authorization.
+Q02.FR.06 Q02.FR.05 Charging Station SHALL respond with a
+NotifyAllowedEnergyTransferResponse with status
+= Accepted and start an ISO 15118 service
+renegotiation with EV
+Q02.FR.07 Q02.FR.06 Charging Station SHALL send a
+NotifyEVChargingNeedsRequest as in Q01.FR.03
+with an updated list of requestedEnergyTransfer.
+Q03 - Central V2X control with charging schedule
+New in OCPP 2.1
+No. Type Description
+1 Name Central V2X control with charging schedule
+2 ID Q03
+3 Objective(s) To allow the CSMS to control the charge and discharge behaviour of an EV with power profiles.
+4 Description The EV’s charging and discharging behaviour is controlled by the Central System. The CSMS
+sends a power profile and can update it at any time. The power profile might be determined by
+some secondary actor that relays through the CSMS.
+Actors EV, Charging Station, CSMS, [secondary actor]
+Scenario description 1. The CSMS has sent a SetChargingProfileRequest message with a chargingProfilePurpose
+TxProfile or TxDefaultProfile and with a chargingSchedule that has one or more
+periods with operationMode set to CentralSetpoint and setpoint to the desired active
+power the EV should import or export.
+2. In ISO 15118 Scheduled mode the Charging Station will send the schedule to the EV to be
+executed. A change to the schedule will trigger a renegotiation in ISO 15118.
+3. In ISO 15118 Dynamic mode the Charging Station will set the charge or discharge rate of
+the EV to setpoint at start of each schedule period. No schedule is sent to EV and no
+renegotiation is triggered in ISO 15118.
+If the charging profile is of chargingProfileKind = Dynamic, then CSMS can update the setpoint
+via the UpdateDynamicScheduleRequest message.
+5 Prerequisites A charging profile from CSMS must have profile purpose TxProfile or TxDefaultProfile for
+V2X operations.
+6 Post conditions Charging profile ends
+7 Error Handling
+8 Remarks CSMS can control with the fields maxOfflineDuration and invalidAfterOfflineDuration of a
+ChargingProfileType how long it remains valid in an offline situation, and whether it can be
+resumed once online again.
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 515/803 Part 2 - Specification

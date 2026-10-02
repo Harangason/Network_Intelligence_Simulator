@@ -1,0 +1,54 @@
+No. Type Description
+2 Profile No. 1
+3 Description The Unsecured Transport with Basic Authentication profile provides a low level of security.
+Charging Station authentication is done through a username and password. No measures are
+included to secure the communication channel.
+4 Charging Station
+Authentication
+For Charging Station authentication HTTP Basic authentication is used.
+5 CSMS Authentication In this profile, the CSMS does not authenticate itself to the Charging Station. The Charging Station
+has to trust that the server it connects to is indeed the CSMS.
+6 Communication
+Security
+No communication security measures are included in the profile.
+Charging Station CSMS
+HTTP GET / ProtectedData (clear text communication)
+HTTP/401 Authorization Required
+HTTP GET / ProtectedData
+Authorization Basic
+Username / Password
+HTTP 200 / ProtectedData
+Application Data
+Figure 2. Sequence Diagram: HTTP Basic Authentication sequence diagram
+7 Remark(s) Please note, that the encoding of the basic authentication password in OCPP 2.1 (A00.FR.205)
+differs from how this was done in OCPP 1.6.
+1.3.3. Unsecured Transport with Basic Authentication Profile - Requirements
+Table 15. Security Profile 1 - Unsecured Transport with Basic Authentication - Requirements
+ID Precondition Requirement definition
+A00.FR.201 The Unsecured Transport with Basic Authentication Profile SHOULD only
+be used in trusted networks.
+A00.FR.202 The Charging Station SHALL authenticate itself to the CSMS using HTTP
+Basic authentication [18]
+A00.FR.203 A00.FR.202 The client, i.e. the Charging Station, SHALL provide a username and
+password with every connection request.
+A00.FR.204 A00.FR.203 The username SHALL be equal to the Charging Station identity, which is
+the identifying string of the Charging Station as it uses it in the OCPP-J
+connection URL. When using Basic Authentication, the Charging Station
+identity may not contain the character ":". Otherwise the CSMS may be
+unable to separate the username from the password.
+A00.FR.205 The password SHALL be stored in the BasicAuthPassword
+configuration variable. It SHALL be a randomly chosen passwordString
+with a sufficiently high entropy, consisting of minimum 16 and a
+maximum as defined by the maxLimit of configuration variable
+BasicAuthPassword, which must be at least 40 characters and at most
+64. The password SHALL be sent as a UTF-8 encoded string (NOT
+encoded into octet string or base64).
+A00.FR.206 A00.FR.203 With HTTP Basic, the username and password are transmitted in clear
+text, encoded in base64 only. Hence, it is RECOMMENDED that this
+mechanism will only be used over connections that are already secured
+with other means, such as VPNs.
+A00.FR.207 A00.FR.202 The CSMS SHALL validate that Charging Station identity and the Basic
+Authentication password match with username and password in the
+authorization header of the connection request.
+Edition 2, 2025-12-03 A. Security
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 22/803 Part 2 - Specification

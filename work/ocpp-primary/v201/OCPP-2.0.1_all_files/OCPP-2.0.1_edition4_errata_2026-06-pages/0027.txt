@@ -1,0 +1,49 @@
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does not accept a reconnect.
+Manual Action: Drive EV into parking bay.
+Manual Action: Connect the EV and EVSE.
+Note(s): The tool will wait for <Configured Transaction Duration> 61 seconds (ISO15118-2 timeout)   .
+2. The Test System accepts the reconnection attempt from the Charging Station after <Configured Transaction Duration> 61 seconds 
+(ISO15118-2 timeout) .
+…
+Tool validations
+…
+Post scenario validations:
+EV is not authorized and shall not charge:
+Charging Station does not send TransactionEventRequest with:
+While offline, the EV is not authorized and shall not charge:          
+Charging Station does not send an       TransactionEventRequest  with: 
+-  offline  =   true
+- triggerReason = Authorized or chargingState = Charging
+6.2.11. Page 222 - (2026-06) - TC_E_41_CS, TC_E_42_CS, TC_E_50_CS and
+TC_E_51_CS - retry mechanism applied to TransactionEventRequest after
+suspending energy transfer on EV side
+Due to the complexity of having different TxStartPoints and Charging Station manufacturers also have the option to combine
+TransactionEvent triggers in some specific cases, it has been decided that it would be easier to test this testcase by using the
+TransactionEventRequest after suspending energy transfer on EV side.
+All:
+Before (Preparations)
+…
+Reusable State(s):
+State is Authorized
+State is EVConnectedPreSession
+State is   EnergyTransferStarted
+Main (Test scenario)
+…
+Tool validations
+* Step 1:
+- triggerReason SignedDataReceived
+* Step 3:
+- triggerReason ChargingStateChanged
+- chargingState SuspendedEVSE
+* Step 5:
+- Needs to be sent a number of times equal to <Configured message_attempts_transaction_event> with an interval of (<Configured
+message_attempts_transaction_event_interval> * the number of preceding transmissions of this same message) +
+OCPPCommCtrlr.MessageTimeout.Default.
+- The Test System waits an additional MessageAttemptsTransactionEvent iteration where the interval is multiplied again, to
+validate if the Charging Station stops resending the TransactionRequest message(s).
+Post scenario validations:
+N/a
+TC_E_41_CS:
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2026 24/34 Errata 2026-06

@@ -1,0 +1,93 @@
+28 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+possible time delay of just over 5 seconds results
+when a value of FF (decimal 255) is used. The default
+setting (92) provides a nominal delay of 3 seconds
+between messages.
+Note that the value 00 (zero) is special, as it will
+stop the periodic (wakeup) messages. This provides a
+control for experimenters to stop the messages while
+keeping the rest of the protocol functioning normally,
+and is not intended to be used regularly. Issuing
+AT SW 00 will not change a prior setting for the time
+between wakeup messages, if the protocol is re-
+initialized. Once periodic messages have been turned
+off with AT SW, they can only be reestablished by
+closing and reinitializing the protocol.
+TA hh [ set the Tester Address to hh ]
+This command is used to change the current
+tester (ie. scan tool) address that is used in the
+headers, periodic messages, filters, etc. The ELM327
+normally uses the value that is stored in PP 06 for this,
+but the TA command allows you to temporarily
+override that value.
+Sending AT TA will affect all protocols, including
+J1939. This provides a convenient means to change
+the J1939 address from the default value of F9,
+without affecting other settings.
+Although this command may appear to work ‘on
+the fly’, it is not recommended that you try to change
+this address after a protocol is active, as the results
+may be unpredictable.
+TP h [ Try Protocol h ]
+This command is identical to the SP command,
+except that the protocol that you select is not
+immediately saved in internal EEPROM memory, so
+does not change the default setting. Note that if the
+memory function is enabled (AT M1), and this new
+protocol that you are trying is found to be valid, that
+protocol will then be stored in memory as the new
+default.
+TP Ah [ Try Protocol h with Auto ]
+This command is very similar to the AT TP
+command above, except that if the protocol that is tried
+should fail to initialize, the ELM327 will then
+automatically sequence through the other protocols,
+attempting to connect to one of them.
+V0 and V1 [ Variable data lengths off or on ]
+Many CAN protocols (ie ISO 15765-4) expect to
+send eight data bytes at all times. The V0 and V1
+commands may be used to override this behaviour (for
+any CAN protocol) should you wish.
+Choosing V1 will cause the current CAN protocol
+to send variable data length messages, just as bit 6 of
+PP 2C and PP 2E do for protocols B and C. It does not
+matter what the protocol should be doing - V1 will
+override that. This allows experimenting with variable
+data length messages on demand.
+If you select V0 (the default setting), the forced
+sending of variable length CAN messages is turned
+off. The format of the sent messages reverts to the
+protocol’s settings.
+WM [1 to 6 bytes]  [ set Wakeup Message to… ]
+This command allows the user to override the
+default settings for the wakeup messages (sometimes
+known as the ‘periodic idle’ messages). Simply provide
+the message that you wish to have sent (typically three
+header bytes and one to three data bytes), and the
+ELM327 will add the checksum and send them as
+required, at the rate determined by the AT SW setting.
+Default settings will send the bytes 68 6A F1 01 00
+for ISO 9141, and C1 33 F1 3E for KWP.
+WS [ Warm Start ]
+This command causes the ELM327 to perform a
+complete reset. It is very similar to the AT Z command,
+but does not include the power on LED test. Users
+may find this a convenient way to quickly ‘start over’
+without having the extra delay of the AT Z command.
+If using variable RS232 baud rates (ie AT BRD
+commands), it is preferred that you reset the IC using
+this command rather than AT Z, as AT WS will not
+affect the chosen RS232 baud rate.
+Z [ reset all ]
+This command causes the chip to perform a
+complete reset as if power were cycled off and then on
+again. All settings are returned to their default values,
+and the chip will be put into the idle state, waiting for
+characters on the RS232 bus. Note that any baud rate
+that was set with the AT BRD command will be lost,
+and the ELM327 will return to the default baud rate
+setting.
+AT Command Descriptions (continued)

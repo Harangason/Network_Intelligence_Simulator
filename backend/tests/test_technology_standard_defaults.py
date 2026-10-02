@@ -73,7 +73,7 @@ def test_every_distinct_bus_pair_rejects_foreign_confirmed_rate():
 def device_evidence():
     return {'technology': 'I2C', 'confirmed': True, 'source': 'Reviewed device datasheet',
             'master_node_id': 'controller', 'slave_address': '0x20', 'address_bits': 7,
-            'i2c_mode': 'STANDARD', 'transfer_direction': 'READ', 'start_stop_bound_us': 2,
+            'i2c_mode': 'STANDARD', 'transfer_direction': 'READ', 'start_stop_bound_us': 8,
             'clock_stretch_limit_us': 5, 'multi_master': False,
             'transfer_bits_bound': 100, 'bitrate_bps': 100_000}
 
@@ -94,7 +94,12 @@ def test_i2c_standard_is_shared_but_does_not_invent_device_evidence():
 
 
 def test_port_capability_evidence_is_used_and_rejects_wrong_bus_and_clock():
-    p = {'technology': 'i2c', 'bitrate': 100_000}
+    p = {'technology': 'i2c', 'bitrate': 100_000,'i2c_mode':'STANDARD',
+         'i2c_profile':'UM10204_STANDARD_LIMITS','i2c_endpoint_role':'CONTROLLER',
+         'i2c_controller_id':'controller','i2c_device_source':'actual device datasheet',
+         'i2c_binding_source':'actual controller target port binding',
+         'i2c_physical_source':'actual voltage and capacitance evidence',
+         'i2c_schedule_source':'actual bounded transactions'}
     port = {'technology': 'I2C', 'capabilities': {'local_timing_evidence': device_evidence()}}
     resolved = parameters_for_protocol('I2C', p, port, confirmed_parameters=p)
     assert resolved['_rate_evidenced'] and resolved['bitrate'] == 100_000
@@ -115,7 +120,7 @@ def test_single_master_editor_null_arbitration_is_optional_but_multi_master_requ
     assert confirmed_serial_evidence('I2C', {'local_timing_evidence': evidence}, 8) == evidence
 
 
-@pytest.mark.parametrize('technology,value', [('can', 1_000_001), ('modbus_rtu', 1), ('nmea2000', 100_000_000), ('ethernet', 250_000)])
+@pytest.mark.parametrize('technology,value', [('can', 1_000_001), ('modbus_rtu', 0), ('nmea2000', 100_000_000), ('ethernet', 250_000)])
 def test_matching_identity_cannot_authorize_out_of_profile_rate(technology, value):
     p = {'technology': technology, 'bitrate': value}
     assert registry.validate_parameters(technology, {'bitrate_bps': value})['status'] == 'INVALID'
@@ -128,11 +133,17 @@ def test_layered_can_form_has_no_ethernet_label_or_phy_parameters():
         fields = SimulationService._parameter_schema(technology, registry.profile(technology))
         assert 'Ethernet' not in next(f for f in fields if f['key'] == 'bitrate')['label']
         assert not {'duplex', 'mtu_bytes', 'vlan_id'}.intersection(f['key'] for f in fields)
-    for technology in ['modbus_tcp', 'ros2', 'profinet']:
+    for technology in ['ros2']:
         fields = SimulationService._parameter_schema(technology, registry.profile(technology))
-        assert {'duplex', 'mtu_bytes', 'vlan_id'} <= {f['key'] for f in fields}
-    fields = SimulationService._parameter_schema('dds', registry.profile('dds'))
-    assert not {'bitrate', 'duplex', 'mtu_bytes', 'vlan_id'}.intersection(f['key'] for f in fields)
+        assert {'ros_middleware', 'ros_rmw', 'ros_transport'} <= {f['key'] for f in fields}
+        assert not {'duplex', 'mtu_bytes', 'vlan_id', 'bitrate'}.intersection(f['key'] for f in fields)
+    pn_fields = SimulationService._parameter_schema('profinet', registry.profile('profinet'))
+    pn_keys = {f['key'] for f in pn_fields}
+    assert {'pn_duplex', 'pn_vlan_id', 'pn_csdu_bytes'} <= pn_keys
+    assert not {'duplex', 'mtu_bytes', 'vlan_id'}.intersection(pn_keys)
+    for technology in ['dds','modbus_tcp']:
+        fields = SimulationService._parameter_schema(technology, registry.profile(technology))
+        assert not {'bitrate', 'duplex', 'mtu_bytes', 'vlan_id'}.intersection(f['key'] for f in fields)
 
 
 def test_changed_global_rate_does_not_reuse_old_confirmation():

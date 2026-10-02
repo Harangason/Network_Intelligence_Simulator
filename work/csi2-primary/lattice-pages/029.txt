@@ -1,0 +1,55 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  29 
+changes in the extent or placement of the corresponding waveform segments on the clock lane, the data lane, or both. 
+When viewed together with the timing parameter definitions in the MIPI CSI/DSI TX Protocol Timing Parameters 
+section, the diagram provides a clear mapping between the configured timing values and the resulting manifestation 
+on the physical interface. 
+2.7. MIPI CSI/DSI Transmitter Controller Block 
+The TX controller block prepares outgoing video data and constructs MIPI ‑compatible packet headers and payloads 
+before sending the data to the PHY for serialization. The controller block handles packet formatting, lane distribution, 
+and all necessary packet‑level control required for transmission. 
+This block performs the following key functions: 
+• Packetization: In UVSI mode, the packetizer takes incoming pixel data and builds MIPI packets by adding the 
+required header and footer information, such as Data Type, Word Count, Frame Number, Line Number, ECC, and 
+CRC. In MBSI mode, the packetizer receives an already formatted packet (including header, payload, and CRC 
+footer), then recalculates and inserts the ECC/CRC values and updates the VC/VCX information in the packet 
+header. 
+• Lane distribution: Splits the outgoing byte stream across multiple lanes based on the configured lane count, 
+performing width expansion, byte mapping, and lane-based data scheduling. 
+• Initial skew calibration scheduling: Triggers a one-time skew calibration pulse on power-up when Initial Skew 
+Calibration is enabled and supports runtime re-triggering through CSR when Enable AXI4-Lite Interface is enabled. 
+The controller gates the upstream data path until the initial skew calibration transmission is complete.  
+• Periodic skew calibration scheduling: Triggers a periodic skew calibration pulse during vertical blanking intervals to 
+avoid disrupting active video transmission. The periodic calibration feature can be enabled or disabled through 
+runtime CSR configuration. 
+Table 2.4. MIPI CSI/DSI Transmitter Word Count Support Limitation for MBSI and UVSI 
+PHY Direction PHY Mode Protocol Mode Controller Mode Minimum Word Count 
+Limitation (Bytes) 
+TX Soft D-PHY CSI-2 32-bit 32 
+TX Hard D-PHY CSI-2 64-bit 32 
+ 
+2.7.1. MIPI CSI/DSI Transmitter Skew Calibration 
+Skew calibration is a Hard D-PHY transmitter feature that compensates for inter-lane skew on high-speed serial links. 
+Per the MIPI D-PHY specification, transmission of a skew calibration sequence is required for data rates above 1500 
+Mbps. Configure the initial and periodic skew calibrations with an acceptable period interval to avoid disruption of 
+throughput. In UVSI mode, configure the calibration period with a value that is lower than the blanking interval 
+between two image frames. The IP supports two calibration modes: 
+• Initial skew calibration — Runs once after PHY power-up and initialization, before any HS data transmission begins. 
+This ensures the receiver can compensate for lane-to-lane skew from the start of operation. 
+• Periodic skew calibration — Runs at Frame End intervals during operation to compensate for skew drift over time. 
+Initial and periodic skew calibration can be enabled using the following methods: 
+• Using the GUI: 
+• Initial skew calibration is available when PHY Mode is set to Hard D-PHY and the Line Rate per Lane exceeds 
+1500.0 Mbps. 
+• Periodic skew calibration is available when PHY Mode is set to Hard D-PHY , at any supported line rate. 
+• Using CSR access: 
+• When the AXI4-Lite interface is enabled, both initial and periodic skew calibration can be enabled or disabled 
+at runtime via the CSR register at address 0x220 via the CAL_INITIAL_EN and CAL_PERIODIC_EN register 
+spaces, respectively. 
+• The calibration duration for both initial and periodic skew calibration can also be configured through the same 
+register location via the T_SKEW_INITIAL and T_SKEW_PERIODIC register spaces, respectively. 

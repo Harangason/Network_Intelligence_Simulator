@@ -1,0 +1,41 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Command Main Parameters Values
+PB_SENSB_REQ_PARAM
+Note:  This parameter is not supported
+in PN7160: STATUS_INVALID_PARAM
+will be returned to the DH if it attempts to
+write this parameter.
+RF_DISCOVER_CMD RF Technology & Mode NFC_B_PASSIVE_POLL_MODE
+Table 68. Configuration sequence for R/W of NFC-B / ISO-DEP through the ISO-DEP interface...continued
+7.3.3  [PN7160-NCI] ISO-DEP R(NAK) Presence Check
+NCI 2.0 defines the ISO-DEP R(NAK) Presence Check to the ISO-DEP RF Interface. When a Tag/Card has
+been activated in Poll Mode, the RF State Machine is then in state RFST_POLL_ACTIVE. It is useful for the DH
+to know if the card is still in the field or not, especially at the end of the transaction.
+All the rules defined for command/response in [NCI] (section 3.2) apply to the command defined here. Here are
+two additional rules:
+• The DH can use this command ONLY if the RF State Machine is in state RFST_POLL_ACTIVE. PN7160 will
+respond “STATUS_SEMANTIC_ERROR” in case this command is sent in any other state
+• The DH can use this command ONLY if the active protocol is either ISO-DEP or NFC-DEP
+GID OID Numbers of
+parameter(s) Description
+0001b 0x10 0 The DH asks to know if the ISO-DEP Tag/Card is in the field or not.
+Table 69. RF_ISO_DEP_NACK_PRESENCE_CMD
+GID OID Numbers of
+parameter(s) Description
+01b 0x10 1 The NFCC acknowledges the command received from the DH.
+Table 70. RF_ ISO_DEP_NACK_PRESENCE_RSP
+Parameter Length Value/Description
+Status 1 byte One of the following Status codes, as defined in table 128 of NCI 1.0.
+0x00: STATUS_OK
+0x01: STATUS_REJECTED
+0x06: STATUS_SEMANTIC_ERROR
+Others: RFU
+Table 71. RF_ ISO_DEP_NACK_PRESENCE_RSP parameter
+GID OID Numbers of
+parameter(s) Description
+0001b 0x10 1 NFCC indicates if the ISO-DEP Tag/Card is still in the field or not.
+Table 72. RF_ ISO_DEP_NACK_PRESENCE _NTF
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+68 / 147

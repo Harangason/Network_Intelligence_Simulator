@@ -1,0 +1,30 @@
+Tool validations
+* Step 2:
+Message SetDefaultTariffResponse
+- status must be Accepted
+* Step 3 and 4 and 5 combined: (First transactionEventRequest with idToken)
+Message TransactionEventRequest with:
+- idToken must be <Not empty>
+- idToken.type must be DirectPayment
+- transactionInfo.transactionId must be <transactionId>
+- transactionInfo.transactionLimit.maxCost must be 50.00
+* Step 6 and 7 combined (TransactionEventRequest with eventType Ended):
+Message TransactionEventRequest with:
+- costDetails.totalCost.currency must be EUR
+- costDetails.totalCost.fixed.exclTax must be 15.00
+- costDetails.totalCost.fixed.inclTax must be 18.15 EUR
+- costDetails.totalCost.fixed.taxRate.type must be MyTax
+- costDetails.totalCost.fixed.taxRate.tax must be 21
+* Step 8:
+Message NotifySettlementRequest
+- transactionId must be <transactionId>
+- pspRef must be <Equal to idToken from TransactionEventRequest with triggerReason Authorized or RemoteStart>
+- status must be Rejected
+- settlementTime must be <not omitted>
+- settlementAmount must be 18.15
+- receiptUrl must be <omitted>
+- receiptId must be <omitted>
+Post scenario validations:
+- The transaction settlement was rejected by the payment terminal for 18.15 EUR.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 207/1383 Part 6 - Test Cases

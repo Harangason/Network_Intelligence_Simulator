@@ -1,0 +1,38 @@
+5 Prerequisite(s) EVSE has been reserved for GroupIdToken. EVSE connectorStatus = Reserved.
+6 Postcondition(s) n/a
+EV Driver
+CSMS Charging Station
+Connector is reserved
+for groupIdToken B
+Present IdToken(TOKEN_A)
+alt [Lookup groupIdToken of TOKEN_A
+in Authorization Cache or List]
+[If TOKEN_A is NOT found in Authorization Cache or Local Authorization List]
+AuthorizeRequest(idToken = TOKEN_A)
+AuthorizeResponse(idTokenInfo.groupIdToken = TOKEN_B))
+Continue regular transaction
+Figure 82. Sequence Diagram: Use a reserved EVSE with GroupId
+S3 Scenario objective Use an EVSE when Charging Station has a reservation for idToken, but connector
+status is Available.
+This happens when reservation is for an unspecified EVSE and multiple EVSEs are
+available.
+Scenario description TxStartPoint = "Authorized"; IdToken presented first
+Identical to scenario S1 above.
+Scenario description #2 TxStartPoint = "EVConnected"; Cable plugged in first
+1. The EV Driver connects the cable
+2. Charging Station reports connector status as Occupied
+3. Charging Station starts a transaction
+4. The EV Driver presents an IdTokenType at the Charging Station that is the
+same as the reservation’s IdTokenType
+5. Charging Station matches IdTokenType with the reservation
+6. Charging Station optionally authorizes the IdTokenType via an
+AuthorizeRequest
+7. If authorization accepted, or authorization step was skipped:
+a. Charging Station starts a transaction as in E02 - Start Transaction -
+Cable Plugin First
+5 Prerequisite(s) Unspecified EVSE has been reserved for idToken. EVSE connector status is
+Available.
+6 Postcondition(s) n/a
+7 Error handling n/a
+Edition 4, 2025-12-03 H. Reservation
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 213/491 Part 2 - Specification

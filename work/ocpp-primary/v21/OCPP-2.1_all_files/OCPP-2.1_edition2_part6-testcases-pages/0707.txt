@@ -1,0 +1,40 @@
+TC_N_28_CS: Get Customer Information - Accepted + no data
+Test case name Get Customer Information - Accepted + no data
+Test case Id TC_N_28_CS
+Use case Id(s) N09
+Requirement(s) N09.FR.02, N09.FR.06
+System under test Charging Station
+Description The CSMS sends a message to the Charging Station to retrieve IdToken customer information, for example
+to be compliant with local privacy laws. The Charging Station notifies the CSMS by sending one or more
+reports.
+Purpose To verify if the Charging Station accepts the request and correctly respond when it couldn’t find the right
+information as described at the OCPP specification.
+Prerequisite(s) Charging Station has no customer information available of <Configured valid idToken fields>
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+The CSMS requests the CS to clear the customerInformation for idToken <Configured valid idToken fields>
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+CustomerInformationResponse
+1. The Test System sends a CustomerInformationRequest with
+- report true 
+- idToken <Configured valid idToken fields> 
+3. The Charging Station sends a
+NotifyCustomerInformationRequest 4. The Test System responds with a
+NotifyCustomerInformationResponse .
+Tool validations
+* Step 2:
+Message CustomerInformationResponse
+- status Accepted
+* Step 3:
+Message NotifyCustomerInformationRequest
+- tbc Not true
+Post scenario validations:
+- A message is sent indicating that no data is found
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 705/1383 Part 6 - Test Cases

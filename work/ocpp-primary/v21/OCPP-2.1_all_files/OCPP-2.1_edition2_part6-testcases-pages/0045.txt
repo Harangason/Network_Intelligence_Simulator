@@ -1,0 +1,61 @@
+TC_B_11_CS: Set Variables - invalidly formatted values
+Test case name Set Variables - invalidly formatted values
+Test case Id TC_B_11_CS
+Use case Id(s) B05
+Requirement(s) B05.FR.07
+System under test Charging Station
+Description Set the value of two of the required variables of OCPPCommCtrlr
+Purpose To test setting of variables of different type with invalidly formatted values using GetVariablesRequest for
+one of the mandatory component/variable combinations that must exist in the DM implementation.
+Prerequisite(s) Charging Station DM has the variable "NextTimeOffsetTransitionDateTime" of component "ClockCtrlr" to
+test setting of a date.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Notes:
+Steps 1 to 8 are repeated 5 times for value = <configured offlineThreshold>, <configured offlineThreshold + 0.1>, true, currentTime,
+"abc"
+2. Charging Station responds with SetVariablesResponse with
+If value not supported:
+attributeStatus = Rejected
+attributeStatusInfo = InvalidValue
+If component/variable/value supported:
+attributeStatus = Accepted
+1. Test System sends SetVariablesRequest with
+- variable.name = "OfflineThreshold"
+- component.name = "OCPPCommCtrlr"
+- attributeValue = value
+Notes:
+Steps 3 and 4 will only be tested if this component/variable combination is supported
+4. Charging Station responds with SetVariablesResponse with
+If value not supported:
+attributeStatus = Rejected
+attributeStatusInfo = InvalidValue
+If component/variable/value supported:
+attributeStatus = Accepted
+3. Test System sends SetVariablesRequest with
+- variable.name = "LimitChangeSignificance"
+- component.name = "SmartChargingCtrlr"
+- attributeValue = value
+Notes:
+Steps 5 and 6 will only be executed if this component/variable combination is readwrite
+6. Charging Station responds with SetVariablesResponse with
+If value not supported:
+attributeStatus = Rejected
+attributeStatusInfo = InvalidValue
+If component/variable/value supported:
+attributeStatus = Accepted
+5. Test System sends SetVariablesRequest with:
+- variable.name = "AuthorizeRemoteStart"
+- component.name = "AuthCtrlr"
+- attributeValue = value
+Notes:
+Steps 7 and 8 will only be executed if the CS supports this component/variable combination
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 43/1383 Part 6 - Test Cases

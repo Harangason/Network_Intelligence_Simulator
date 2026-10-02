@@ -1,0 +1,44 @@
+TC_K_131_CS: Set Charging Profile - LocalGeneration unsupported
+Test case name Set Charging Profile - LocalGeneration unsupported
+Test case Id TC_K_131_CS
+Use case Id(s) K01
+Requirement(s) K01.FR.120
+System under test Charging Station
+Description Test case to verify that a Charging Station that doesn’t support LocalGeneration correctly rejects a
+SetChargingProfileRequest with chargingProfilePurpose set to LocalGeneration.
+Purpose To verify that the Charging Station correctly handles a SetChargingProfileRequest with an unsupported
+chargingProfilePurpose (LocalGeneration).
+Prerequisite(s) SmartChargingCtrlr.SupportedAdditionalPurposes doesn’t contain LocalGeneration
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is Booted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.id 1
+chargingProfile.stackLevel 0
+chargingProfile.chargingProfilePurpose LocalGeneration
+chargingProfile.chargingProfileKind Absolute
+chargingProfile.chargingSchedule.chargingRateUnit A
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].s
+tartPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].li
+mit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Tool validations
+* Step 2:
+Message SetChargingProfileResponse
+- status must be Rejected
+- statusInfo.reasonCode must be UnsupportedPurpose or <omitted>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 591/1383 Part 6 - Test Cases

@@ -1,0 +1,47 @@
+Field Name Field Type Card. Description
+evseId integer, 0 <= val 0..* Optional. Only used when the IdToken is only valid for
+one or more specific EVSEs, not for the entire Charging
+Station.
+groupIdToken IdTokenType 0..1 Optional. This contains the group identifier.
+personalMessage MessageContentType 0..1 Optional. Personal message that can be shown to the EV
+Driver and can be used for tariff information, user
+greetings etc.
+2.61. IdTokenType
+Class
+Contains a case insensitive identifier to use for the authorization and the type of authorization to support multiple forms of
+identifiers.
+IdTokenType is used by: Common:AuthorizationData , Common:IdTokenInfoType , RequestStartTransactionRequest ,
+AuthorizeRequest , TransactionEventRequest , ReserveNowRequest , CustomerInformationRequest , BatterySwapRequest ,
+RequestBatterySwapRequest
+Field Name Field Type Card. Description
+idToken identifierString[0..255] 1..1 Required. (2.1) IdToken is case insensitive. Might hold
+the hidden id of an RFID tag, but can for example also
+contain a UUID.
+type string[0..20] 1..1 Required. (2.1) Enumeration of possible idToken types.
+Values defined in Appendix as IdTokenEnumStringType.
+additionalInfo AdditionalInfoType 0..* Optional. AdditionalInfo can be used to send extra
+information which can be validated by the CSMS in
+addition to the regular authorization with IdToken.
+AdditionalInfo contains one or more custom types, which
+need to be agreed upon by all parties involved. When
+AdditionalInfo is NOT implemented or a not supported
+AdditionalInfo.type is used, the CSMS/Charging Station
+MAY ignore the AdditionalInfo.
+2.62. LimitAtSoCType
+Class
+LimitAtSoCType is used by: Common:ChargingScheduleType
+Field Name Field Type Card. Description
+soc integer, 0 <= val <= 100 1..1 Required. The SoC value beyond which the charging rate
+limit should be applied.
+limit decimal 1..1 Required. Charging rate limit beyond the SoC value. The
+unit is defined by chargingSchedule.chargingRateUnit.
+2.63. LimitMaxDischargeGetType
+Class
+LimitMaxDischargeGetType is used by: ReportDERControlRequest
+Field Name Field Type Card. Description
+id identifierString[0..36] 1..1 Required. Id of setting
+isDefault boolean 1..1 Required. True if setting is a default control.
+isSuperseded boolean 1..1 Required. True if this setting is superseded by a higher
+priority setting (i.e. lower value of priority)
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 654/803 Part 2 - Specification

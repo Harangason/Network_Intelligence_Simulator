@@ -1,0 +1,42 @@
+u-blox 20 HPG 2.00 - Interface description
+13 + n·12 U1 reserved1 - - Reserved
+14 + n·12 U1 udre - - Monitoring status
+15 + n·12 U1 svSys - - System (WAAS/EGNOS/...)
+same as SYS
+16 + n·12 U1 svService - - Services available
+same as SERVICE
+17 + n·12 U1 reserved2 - - Reserved
+18 + n·12 I2 prc - cm Pseudo Range correction in [cm]
+20 + n·12 U1[2] reserved3 - - Reserved
+22 + n·12 I2 ic - cm Ionosphere correction in [cm]
+End of repeated group (cnt times)
+3.15.17 UBX-NAV-SIG (0x01 0x43)
+3.15.17.1 Signal information
+Message UBX-NAV-SIG
+Signal information
+Type Periodic/polled
+Comment This message displays information about signals currently tracked or searched by the receiver.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x43 8 + numSigs·16 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+4 U1 version - - Message version (0x00 for this version)
+5 U1 numSigs - - Number of signals
+6 U1[2] reserved0 - - Reserved
+Start of repeated group (numSigs times)
+8 + n·16 U1 gnssId - - GNSS identiﬁer (see Satellite Numbering) for
+assignment
+9 + n·16 U1 svId - - Satellite identiﬁer (see Satellite Numbering) for
+assignment
+10 + n·16 U1 sigId - - New style signal identiﬁer (see Signal Identiﬁers)
+11 + n·16 U1 freqId - - Only used for GLONASS: This is the frequency slot + 7
+(range from 0 to 13)
+12 + n·16 I2 prRes 0.1 m Pseudorange residual
+14 + n·16 U1 cno - dBHz Carrier-to-noise density ratio (signal strength)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 106 of 224
+C1-Public

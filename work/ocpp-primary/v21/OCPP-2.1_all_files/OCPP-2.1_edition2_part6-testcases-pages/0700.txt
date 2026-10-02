@@ -1,0 +1,45 @@
+TC_N_23_CS: Offline Notification - OfflineMonitoringEventQueuingSeverity set
+higher than severityLevel of the monitor
+Test case name Offline Notification - OfflineMonitoringEventQueuingSeverity set higher than
+severityLevel of the monitor
+Test case Id TC_N_23_CS
+Use case Id(s) N07
+Requirement(s) N07.FR.04
+System under test Charging Station
+Description Charging Station does not queue event notifications when offline.
+Purpose To test that Charging Station does not queue event notifications with a severity higher
+than OfflineMonitoringEventQueuingSeverity.
+Prerequisite(s) Charging Station is online at start of test for configuration.
+CS has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+SetConfiguration with:
+- component.name = "MonitoringCtrlr"
+- variable.name = "OfflineQueuingSeverity"
+- attributeValue = <Configured Severity>
+Memory State:
+Charging Station has custom or predefined monitors on variable AvailabilityState of Configured EVSE and Configured ConnectorId
+with severity = <Configured severity> + 1
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Connect the EV and EVSE.
+1. The Charging Station notifies the CSMS about the status
+change of the connector. 2. The Test System responds accordingly.
+Note(s): Step 3, 4, 5, 6, 7, and 8 need to be executed when TxStartPoint contains EVConnected OR ParkingBayOccupancy
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+Manual Action: Take Charging Station offline.
+Manual Action: Disconnect the EV and EVSE.
+Manual Action: Connect the EV and EVSE.
+Note(s): The tool will now wait for <Configured Transaction Duration> seconds
+Manual Action: Bring Charging Station back online.
+5. The Charging Station sends a TransactionEventRequest
+6. The Test System responds with a TransactionEventResponse
+7. The Charging Station sends a TransactionEventRequest
+8. The Test System responds with a TransactionEventResponse
+Note(s): The CS shall not send a NotifyEventRequest for AvailabilityState of EVSE and Connector. A StatusNotification may still be
+received.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 698/1383 Part 6 - Test Cases

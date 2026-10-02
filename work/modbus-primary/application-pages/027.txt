@@ -1,0 +1,62 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  27/50 
+The normal response contains a two –byte status word field, a two –byte event count field, a 
+two–byte m essage count field, and a field containing 0 -64 bytes of events. A byte count field 
+defines the total length of the data in these four fields.  
+Request  
+Function code  1 Byte  0x0C  
+ 
+Response  
+Function code  1 Byte  0x0C  
+Byte Count  1 Byte  N* 
+Status  2 Bytes  0x0000 to 0xFFFF  
+Event Count  2 Bytes  0x0000 to 0xFFFF  
+Message Count  2 Bytes  0x0000 to 0xFFFF  
+Events  (N-6) x 1 Byte   
+*N = Quantity of Events + 3 x 2 Bytes, (Length of Status, Event Count and Message Count)  
+ 
+Error  
+Error code  1 Byte  0x8C  
+Exception code  1 Byte  01 or 04  
+ 
+Here is an example of a request to get the communications event log in remote device:  
+ 
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  0C Function  0C 
+  Byte Count  08 
+  Status Hi  00 
+  Status Lo  00 
+  Event Count Hi  01 
+  Event Count Lo  08 
+  Message Count Hi  01 
+  Message Count Lo  21 
+  Event 0  20 
+  Event 1  00 
+ 
+In this example, the status word is 00 00  hex, indicating that the remote device is not 
+processing a program function. The event count shows that 264 (01 08 hex) events have been 
+counted by the remote device. The message count shows that 289 (01 21 hex) messages 
+have been processed.  
+The most rece nt communications event is shown in the Event 0 byte. Its content (20 hex) 
+show that the remote device has most recently entered the Listen Only Mode.  
+The previous event is shown in the Event 1 byte. Its contents (00 hex) show that the remote 
+device receiv ed a Communications Restart.  
+ 
+The layout of the response’s event bytes is described below.  
+ 
+What the Event Bytes Contain  
+An event byte returned by the Get Communications Event Log function can be any one of four 
+types. The type is defined by bit 7 (the high –order bit) in each byte. It may be further defined 
+by bit 6. This is explained below.  
+ Remote device MODBUS Receive Event  
+The remote device stores this type of event byte when a query message is received. It 
+is stored before the remote device processes  the message. This event is defined by bit 
+7 set to logic ‘1’. The other bits will be set to a logic ‘1’ if the corresponding condition 
+is TRUE. The bit layout is:  
+Bit Contents  
+0 Not Used  
+1 Communication Error  
+2 Not Used  
+3 Not Used  
+4 Character Overrun  

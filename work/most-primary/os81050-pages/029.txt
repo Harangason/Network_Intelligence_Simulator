@@ -1,0 +1,49 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 29
+If the OS81050 is busy supporting higher priority tasks, it will NACK the I 2C address, indicating that the
+master should retry the message at a later time. I 2C NACK responses occur at the address byte boundary
+(e.g. following the R/W  bit).
+For information on the I 2C protocol, refer to the I2C-Bus Specification [5].
+5.1  Writing to the Control Port
+The beginning of transmission is marked by a start condition. The first byte specifies the chip address, as
+well as whether the operation is a read or a wr ite. The OS81050 address (Factory default of 0100000)
+occupies the upper seven bits of the first byte; the R/W  bit is the LSB.
+When the Control Port receives an address byte of 40h (Factory default of OS81050 address and R/W  bit
+clear), it acknowledges reception of the byte through an acknowledge bit and the rest of the data is written
+into the Control Port. The write data is defined as the Port Message (PM) and can be one of the following:
+/square6 FIFO Command message
+/square6 FIFO Data (Write) message
+/square6 FIFO Status (Write) message
+Figure 5-3 illustrates the I 2C transmission write sequence. The characters “S” and “P” represent the start
+and stop conditions for messages. 
+SDA
+SCL Shift Register
+Main Control Circuitry
+Control
+Logic
+Figure 5-2: Control Port Block Diagram
+External 
+System:
+Control Port:
+Start bit
+Part Address
+Write
+Acknowledge
+S 01000
+R/W
+A Data1 A Data2 A DataN P0
+Acknowledge Acknowledge
+Stop bit
+A
+Acknowledge
+SDA
+Port Message (PM)
+FIFO Data Body
+FIFO Command
+00
+PML PMHL FDHFPH
+PML PMHL FPHFIFO Command message:
+FIFO Data Write message:
+FIFO Status WritePML PMHL FPHFIFO Status Write message:
+Figure 5-3: Control Port Write Sequence

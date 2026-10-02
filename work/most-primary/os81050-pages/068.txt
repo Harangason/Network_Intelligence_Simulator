@@ -1,0 +1,51 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 68
+OS81050
+13.5  Configuration and Debug
+The OS81050 provides internal memory space for storing power-up configuration settings. The initial
+power-up configurations are collectively referred to as the INIC Configuration String (or ConfigString). The
+INIC Configuration String includes initial hardware configuration information such as:
+/square6 Control Port I2C address
+/square6 Default port for INIC-EHC communication
+/square6 MediaLB Port default mode and speed
+/square6 RMCK configuration, and
+/square6 Network device mode (timing-master/timing-slave).
+The INIC Configuration String is preloaded with the OS81050 Factory default settings and only needs to be
+programmed when the Factory defaults are not adequate for the application. Refer to the
+OS8105x/6x INIC API User’s Manual [2] for the OS81050 Factory defaults, as well as a complete listing of
+INIC Configuration String settings.
+The INIC Configuration String can be programmed by the EHC via the Control Port. This approach is suitable
+for production-level applications. See Section 13.5.1 for more information. Alternatively, SMSC’s INIC Explorer
+[4] tool can program configuration data via the Customer Configuration Interface . This technique is suitable for
+development-level applications. See Section 13.5.2 for more information.
+13.5.1   EHC via Control Port
+The Control Port can be used by the EHC to program the  INIC Configuration String  or update the OS81050
+Flash memory. To support this feature, the EHC must be connected to the INIC Control Port ( SDA, SCL,
+and INT) and be capable of controlling the ERR/BOOT and RST pins. The required connections are shown
+in Figure 13-4. 
+INT
+SCL
+SDA
+OS81050
+RST
+≥10 kΩ
+An open-drain output 
+requires a pull-up in lieu of 
+the series resistor.
+ERR/BOOT
+100 kΩ
+2.5Vs
+EHC
+Configuration/Debug Header
+Must be open-drain or 
+high-impedance when 
+not used.
+3.3Vs/2.5Vs
+4.7 kΩ
+3.3Vs
+RESET
+MR
+Vcc
+Reset
+(push-pull)
+Figure 13-4: Control Port Interface Programming

@@ -1,0 +1,55 @@
+Table 7-76. CSI_STS Register Field Descriptions (continued)
+Bit Field Type Reset Description
+0 TX_PORT_PASS R 0x0 TX Port Pass
+Indicates valid data is available on at least one port, or on all ports 
+if configured for all port status via the CSI_PASS_MODE bit in the 
+CSI_CTL2 register. The function differs based on mode of operation. 
+In asynchronous operation, the TX_PORT_PASS indicates the CSI-2 
+port is actively delivering valid video data. The status is cleared 
+based on detection of an error condition that interrupts transmission. 
+During Synchronized forwarding, the TX_PORT_PASS indicates 
+valid data is available for delivery on the CSI-2 TX output. Data may 
+not be delivered if ports are not synchronized. The TX_PORT_SYNC 
+status is a better indicator that valid data is being delivered to the 
+CSI-2 transmit port.
+7.6.1.55 CSI_TX_ICR Register (Address = 0x36) [Reset = 0x00] 
+CSI_TX_ICR is shown in Table 7-77.
+Return to the Summary Table.
+CSI-2 TX port-specific register. The CSI-2 Port Select register 0x32 configures which unique CSI-2 TX port 
+registers can be accessed by I2C read and write commands.
+Table 7-77. CSI_TX_ICR Register Field Descriptions
+Bit Field Type Reset Description
+7:5 RESERVED R 0x0 Reserved
+4 IE_RX_PORT_INT R/W 0x0 RX Port Interrupt Enable
+Enable interrupt based on receiver port interrupt for the RX Ports 
+being forwarded to the CSI-2 Transmit Port.
+3 IE_CSI_SYNC_ERROR R/W 0x0 CSI-2 Sync Error interrupt Enable
+Enable interrupt on CSI-2 Synchronization enable.
+2 IE_CSI_SYNC R/W 0x0 CSI-2 Synchronized interrupt Enable
+Enable interrupts on CSI-2 Transmit Port assertion of CSI-2 
+Synchronized Status.
+1 IE_CSI_PASS_ERROR R/W 0x0 CSI-2 RX Pass Error interrupt Enable
+Enable interrupt on CSI-2 Pass Error
+0 IE_CSI_PASS R/W 0x0 CSI-2 Pass interrupt Enable
+Enable interrupt on CSI-2 Transmit Port assertion of CSI-2 Pass.
+7.6.1.56 CSI_TX_ISR Register (Address = 0x37) [Reset = 0x00] 
+CSI_TX_ISR is shown in Table 7-78.
+Return to the Summary Table.
+CSI-2 TX port-specific register. The CSI-2 Port Select register 0x32 configures which unique CSI-2 TX port 
+registers can be accessed by I2C read and write commands.
+Table 7-78. CSI_TX_ISR Register Field Descriptions
+Bit Field Type Reset Description
+7:5 RESERVED R 0x0 Reserved
+4 IS_RX_PORT_INT R 0x0 RX Port Interrupt
+A Receiver port interrupt has been generated for one of the RX 
+Ports being forwarded to the CSI-2 Transmit Port. A read of the 
+associated port receive status registers will clear this interrupt. See 
+the PORT_ISR_HI and PORT_ISR_LO registers for details.
+3 IS_CSI_SYNC_ERROR RC 0x0 CSI-2 Sync Error interrupt
+A synchronization error has been detected for multiple video stream 
+inputs to the CSI-2 Transmitter.
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+104 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

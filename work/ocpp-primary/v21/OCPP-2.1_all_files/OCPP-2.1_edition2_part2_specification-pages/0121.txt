@@ -1,0 +1,39 @@
+EV Charging Station CSMS
+Identify first
+User might identify prior to connecting the EV to the EVSE
+AuthorizeRequest(idToken)
+AuthorizeResponse(idTokenInfo)
+ServiceDiscoveryReq()
+ServiceDiscoveryRes(PaymentServiceList: ExternalPayment)
+PaymentServiceSelectionReq(paymentOption: ExternalPayment)
+PaymentServiceSelectionRes()
+AuthorizationReq()
+Identify after plugin
+User might identify after plugging in, sequence time-out is 60 seconds
+AuthorizeRequest(idToken)
+AuthorizeResponse(idTokenInfo)
+AuthorizationRes()
+Figure 28. Sequence Diagram: Authorization using external identification means with ISO 15118-2
+EV Charging Station CSMS
+opt [Identify first]
+User might identify prior to connecting the EV to the EVSE
+AuthorizeRequest(idToken)
+AuthorizeResponse(idTokenInfo)
+AuthorizationSetupReq()
+AuthorizationSetupRes(AuthorizationServices,
+GenChallenge)
+AuthorizationReq(SelectedAuthorizationService = EIM))
+opt [Identify after connecting]
+AuthorizeRequest(idToken)
+AuthorizeResponse(idTokenInfo)
+AuthorizationRes(EVSEProcessing = Finished, ResponseCode)
+Figure 29. Sequence Diagram: Authorization using external identification means with ISO 15118-20
+Source: ISO15118-1
+C08 - Authorization at EVSE using ISO 15118 External Identification Means (EIM) -
+Requirements
+Table 50. C08 - Requirements
+ID Precondition Requirement definition
+C08.FR.01 The Charging Station SHALL send the identification to the CSMS
+for validation.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 108/803 Part 2 - Specification

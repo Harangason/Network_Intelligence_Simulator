@@ -1,0 +1,59 @@
+No. Type Description
+3 Objective(s) To describe how smart charging can be performed by an EMS that is connected to a Local
+Controller that manages Charging Stations in the building.
+The setting of the charging limits to a Local Controller is described in detail in use case K14 for
+any External Control System. This use case describes the specific situation where the External
+Control System is an EMS in a building.
+4 Description EMS is managing the load within a site. It regularly updates a current or power limitation for the
+cluster of Charging Stations that is managed by a Local Contoller, such that the local grid
+connection is not overloaded.
+Site
+Other loadsLocal PV Generation
+Charging
+Station 1
+Charging
+Station 2
+Local ControllerEMS
+Grid_connection
+DSO
+CSMS
+ExternalConstraints,
+LocalGeneration
+MaxProfile 1,
+LocalGeneration 1,
+TxProfile 1
+MaxProfile 2,
+LocalGeneration 2,
+TxProfile 2
+TxProfile (optional)
+Actors EMS, Local Controller, Charging Station, CSMS
+Scenario description 1. EMS measures power consumption from other loads in the building
+2. EMS determines available power for EV charging based on the capacity of the local grid
+connection, other loads and the amount of locally generated energy (e.g. PV panels)
+3. EMS sets power (or current) limit to the Local Controller via a direct connection. (The
+protocol between EMS and Local Controller is not relevant for the use case).
+4. Local Controller internally represents the given limitation as charging profile with
+chargingProfilePurpose = ChargingStationExternalConstraints. (Depending on
+EMS this can be a single limit value or a schedule of limits over time).
+5. Local Controller notifies CSMS of the received limit if it changed by more than the
+configured threshold: LimitChangeSignificance, by sending a
+NotifyChargingLimitRequest message with chargingLimitSource = EMS and (optionally) a
+chargingSchedule that represents the limit(s).
+6. Local Controller balances the available current or power across all connected Charging
+Stations by sending each Charging Station an (updated) charging profile via a
+SetChargingProfileRequest message with chargingProfilePurpose =
+ChargingStationMaxProfile.
+7. If a transaction is ongoing, and the received charging profile limits have changed more
+than LimitChangeSignificance, Charging Station will send a
+TransactionEventRequest message with trigger = ChargingRateChanged to record that
+a power limitation occurred during the transaction.
+5 Prerequisites Local Controller is able to load-balance across Charging Stations at site.
+6 Post conditions Charging power is reduced when needed to avoid overloading local grid connection.
+7 Error Handling
+8 Remarks A Local Controller acts as a local CSMS for the site. The chargingProfilePurpose must therefore
+not be ChargingStationExternalConstraints, because the Local Controller is not seen as
+an External Control System.
+A NotifyChargingLimitRequest is only sent by the Local Controller (not by the individual Charging
+Stations), since that is the component that receives the external charging limit.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 367/803 Part 2 - Specification

@@ -1,0 +1,55 @@
+Before (Preparations)
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.id <Configured chargingProfileId>
+chargingProfile.chargingProfilePurpose PriorityCharging
+chargingProfile.chargingSchedule.duration <Configured
+duration>
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.star
+tPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limi
+t 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.nu
+mberPhases <Configured numberPhases>
+4. The Charging Station responds with a
+SetChargingProfileResponse
+3. The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile.id <Configured chargingProfileId2>
+chargingProfile.chargingProfilePurpose PriorityCharging
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.star
+tPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limi
+t 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.nu
+mberPhases <Configured numberPhases>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.ope
+rationMode <Configured operationMode other than
+ChargingOnly>
+Tool validations
+* Step 2:
+Message SetChargingProfileResponse
+- status must be Rejected
+- statusInfo.reasonCode must be InvalidSchedule or <omitted>
+* Step 4:
+Message SetChargingProfileResponse
+- status must be Rejected
+- statusInfo.reasonCode must be InvalidSchedule
+Post scenario validations:
+n/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 546/1383 Part 6 - Test Cases

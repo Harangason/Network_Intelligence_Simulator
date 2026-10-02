@@ -1,0 +1,42 @@
+TC_G_11_CS: Change Availability EVSE - With ongoing transaction
+Test case name Change Availability EVSE - With ongoing transaction
+Test case Id TC_G_11_CS
+Use case Id(s) G03
+Requirement(s) G03.FR.01, G03.FR.02, G03.FR.04, G03.FR.05
+System under test Charging Station
+Description This test case covers how the CSMS requests the Charging Station to change the availability of one of the
+EVSEs from Operative to Inoperative. An EVSE is considered Operative in any status other than Faulted and
+Unavailable.
+Purpose To verify if the Charging Station is able to perform the change availability during a transaction according to
+the mechanism as described at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+ChangeAvailabilityResponse
+1. The Test System sends a ChangeAvailabilityRequest
+with operationalStatus Inoperative
+and evse.id <Configured evseId>
+Note(s): Wait for <Configured Transaction Duration>
+3. Execute Reusable State StopAuthorized
+4. The Charging Station notifies the CSMS about the current
+state of the connectors of the configured evse. 5. The Test System responds accordingly.
+6. Execute Reusable State EVConnectedPostSession
+7. The Charging Station notifies the CSMS about the current
+state of the connectors of the configured evse. 8. The Test System responds accordingly.
+9. Execute Reusable State EVDisconnected
+10. The Charging Station notifies the CSMS about the current
+state of the connectors of the configured evse. 11. The Test System responds accordingly.
+12. Execute Reusable State ParkingBayUnoccupied
+13. The Charging Station notifies the CSMS about the current
+state of the connectors of the configured evse. 14. The Test System responds accordingly.
+Note(s): Steps 4, 5, 7, 8, 10, 11, 13, and 14 will only be executed if the previous step ended the transaction
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 354/1383 Part 6 - Test Cases

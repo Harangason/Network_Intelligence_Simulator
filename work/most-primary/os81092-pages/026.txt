@@ -1,0 +1,77 @@
+OS81092
+DS60001271B-page 26  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+7.2.1 WRITING TO AN I 2C SLAVE DEVICE
+Per the I2C-Bus Specification [5] a ’11110’ following a start condition indicates use of the 10-bit addressing scheme. For
+a write operation the first byte contains the two most significant bits of the 10 bit device address as well as the R/W flag.
+Following acknowledgment from the external device, the remaining eight address bits are sent in the second byte. Mes-
+sage payload (Data1 - DataN) begins in the third byte of the message for 10-bit addressing. Figure 7-5 below shows a
+write operation for both 7-bit and 10-bit addressing modes.
+FIGURE 7-5: CONTROL PORT WR ITE SEQUENCE (MASTER MODE)
+When using 10-bit addressing, the second address byte is actually sent as the first data byte. Therefore, the total length
+of the message to be sent on the Control Port  must be adjusted appropriately. Refer to the OS81092 INIC API User’s
+Manual [2] for more information.
+7.2.2 READING FROM AN I 2C SLAVE DEVICE
+Read operations on slave devices with 10-bit addresse s require a Repeated Start condition. Refer to the I2C-Bus
+Specification [5] for more information. The master first fully addresses the 10-bit slave device with a write operation and
+then issues a Repeated Start condition. After the Repeated Start, the direction is changed and the master completes
+the read transaction with an abbreviated version (onl y the two most significant  bits) of the address. Figure 7-6 below
+shows a read operation for both 7-bit and 10-bit addressing modes.
+FIGURE 7-6: CONTROL PORT RE AD SEQUENCE (MASTER MODE)
+Start
+Addr[9:8]
+Write
+11110 A P
+Stop
+Azz
+Addr[7:0]
+Data1 A DataN Ayyxxxxyy
+Acknowledge Acknowledge Acknowledge Acknowledge
+SSDA:
+Control Port:
+External Device:
+Start
+Addr[6:0]
+Write
+S yyyxx AD a t a 1 P
+Stop
+Axx Data2 A DataN A
+Acknowledge Acknowledge Acknowledge Acknowledge
+SDA:
+Control Port:
+External Device:
+W
+W
+(7-bit Address)
+(10-bit Address)
+Start Write
+11110 A P
+Stop
+Azz
+Addr[7:0]
+A DataN Ayyxxxxyy
+Acknowledge Acknowledge Acknowledge
+SSDA:
+Control Port:
+External Device:
+W 11110 zz R
+Addr[9:8]Addr[9:8]
+Data1 A
+Acknowledge
+Not Acknowledge
+Sr
+Repeated Start Read
+Start
+Addr[6:0]
+Read
+S yyyxx A Data1 P
+Stop
+Axx Data2 A DataN A
+Acknowledge
+SDA:
+Control Port:
+External Device:
+R
+Acknowledge Acknowledge
+Not Acknowledge
+(7-bit Address)
+(10-bit Address)

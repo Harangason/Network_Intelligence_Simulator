@@ -1,0 +1,27 @@
+No. Type Description
+7 Error Handling When requestedEnergyTransfer is NOT accepted by the CSMS:
+1. The Charging Station uses the NotifyEVChargingNeedsRequest message to send the
+chosen requestedEnergyTransfer to the CSMS.
+2. The CSMS will respond with the NotifyEVChargingNeedsResponse message, with status
+set to Rejected.
+3. The Charging Station will stop the current transaction.
+8 Remarks A V2X energy transfer may likely require authorization from a third party (e.g. the eMSP). When
+Charging Station requests a V2X energy service, there is a possibility that the CSMS cannot allow
+that energy service within the timeout of the EV. It can then only Reject it and the transaction will
+stop. It is therefore advised to always start by requesting a ChargingOnly energy service, but
+indicate that the V2X service is available for this EV. Once the Charging Station receives the
+allowedEnergyTransfer including the V2X service from the CSMS, there can be a service
+renegotiation to change to the V2X service.
+The ISO 15118 EVCCID of the EV is available in the device model as the variable VehicleId from
+the component ConnectedEV, if that is needed by the operator to determine whether to allow V2X
+operations. In some cases the EVCCID may be used as an idToken for authorization, or it can be
+added to the additionalInfo field of the idToken that is used for authorization.
+NOTE
+The ISO 15118-20 ScheduleExchangeReq has a timeout of 2s, but this can be prolonged up to 1 minute if the
+Charging Station returns a ScheduleExchangeRes(EVSEProcessing = Ongoing) response before the 2s timeout.
+This will trigger the EV to send another ScheduleExchangeReq() to which the Charging Station can eventually
+respond with ScheduleExchangeRes(EVSEProcessing = Finished) once the
+NotifyEVChargingNeedsRequest/Response and SetChargingProfileRequest/Response have been exchanged
+between Charging Station and CSMS.
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 509/803 Part 2 - Specification

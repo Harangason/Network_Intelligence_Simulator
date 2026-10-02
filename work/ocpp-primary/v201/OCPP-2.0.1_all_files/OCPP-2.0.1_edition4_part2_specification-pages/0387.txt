@@ -1,0 +1,41 @@
+1.34.2. NotifyCustomerInformationResponse
+1.35. NotifyDisplayMessages
+1.35.1. NotifyDisplayMessagesRequest
+This contains the field definition of the NotifyDisplayMessagesRequest PDU sent by the Charging Station to the CSMS.
+Class
+Field Name Field Type Card. Description
+requestId integer 1..1 Required. The id of the GetDisplayMessagesRequest that
+requested this message.
+tbc boolean 0..1 Optional. "to be continued" indicator. Indicates whether
+another part of the report follows in an upcoming
+NotifyDisplayMessagesRequest message. Default value
+when omitted is false.
+messageInfo MessageInfoType 0..* Optional. The requested display message as configured
+in the Charging Station.
+1.35.2. NotifyDisplayMessagesResponse
+The NotifyDisplayMessagesResponse message is sent by the CSMS to the Charging Station in response to a
+NotifyDisplayMessagesRequest. No fields are defined.
+1.36. NotifyEVChargingNeeds
+1.36.1. NotifyEVChargingNeedsRequest
+The Charging Station uses this message to communicate the charging needs as calculated by the EV to the CSMS.
+Class
+Field Name Field Type Card. Description
+maxScheduleTuples integer 0..1 Optional. Contains the maximum schedule tuples the car
+supports per schedule.
+evseId integer 1..1 Required. Defines the EVSE and connector to which the
+EV is connected. EvseId may not be 0.
+chargingNeeds ChargingNeedsType 1..1 Required. The characteristics of the energy delivery
+required.
+1.36.2. NotifyEVChargingNeedsResponse
+Response to a NotifyEVChargingNeedsRequest.
+Class
+Field Name Field Type Card. Description
+status NotifyEVChargingNeedsStatusEnu
+mType
+1..1 Required. Returns whether the CSMS has been able to
+process the message successfully. It does not imply that
+the evChargingNeeds can be met with the current
+charging profile.
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 377/491 Part 2 - Specification

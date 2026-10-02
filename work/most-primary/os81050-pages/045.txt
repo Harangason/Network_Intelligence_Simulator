@@ -1,0 +1,46 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 45
+8 External Power Management
+The OS81050 INIC supports external power management logic by providing two inputs ( PS0 and PS1) and
+one output (PWROFF). The PS0 and PS1 inputs convey status of the external power management logic. The
+PWROFF output pin is driven low during normal operation and released when the OS81050 INIC is ready to
+be powered-off by the external power management logic.
+The PS0 and PS1 inputs should indicate power management status, and communicate when an external
+power management event has occurred. Table 8-1 describes the power management states that are
+defined by the MOST Specification [1] and should be communicated via PS0 and PS1. More information on
+system-wide INIC power management architectures can be found in the MOST INIC Hardware Concepts
+Technical Bulletin [8].
+Hardware recognizes an external power management state when PS0 and PS1 remain at a valid logic level
+for a minimum time, t pshold (see Section 11.5.2); however, the INIC Software Stack  may use longer hold
+times for PS0 and PS1 states before responding to an external power management event. In addition, the
+INIC Software Stack  controls how INIC responds to external power management events (e.g. driving
+PWROFF). If external power management is not used, PS0 and PS1 should be pulled to ground.
+INIC recognizes an STP event upon power-up (or reset) and on a transition to PS[1:0] = 01. If these pins
+continue to indicate an STP event ( PS[1:0] = 01) after an STP event has already been recognized, then the
+last known power state is assumed. If an STP event is indicated directly after power-up (or reset), then the
+UNormal state is assumed. An STP event can cause INIC to enter Ring-Break Diagnosis  mode, based on the
+RBDOptions() function parameter settings. See the OS8105x/6x INIC API User’s Manual [2] for more infor-
+mation.
+In a typical application, as illustrated in Figure 8-1, the power management circuitry is powered by a
+continuous supply and manages the switched power to the rest of the node. This circuitry also monitors the
+activity signal ( STATUS) coming from the Fiber Optic Receiver (FOR) of the physical layer. When network
+activity is detected, the circuitry enables the switched supply and drives the PS[1:0] pins to the proper state,
+as depicted in Figure 8-2. When INIC powers up, it could take up to  tstp time for INIC to recognize the
+PS[1:0] state. When INIC is ready for shut down (such as when U Low state is recognized), it drives the
+PWROFF pin high.
+Additionally, when the U Low state is recognized, ERR/BOOT is driven high and the network output ( TX) is
+switched off. As long as the U Low state is indicated on PS[1:0], the TX output remains disabled, regardless
+of activity on RX.
+If the EHC requires time after power-up (or re set) for initialization, it could utilize a PWRHOLD line that the
+circuitry detects. The use of PWRHOLD would suspend node power-down until the EHC is ready.
+The PMIConfig() property specifies whether INIC drives PWROFF active when the network is shut down
+(NetInterface: Off state). Parameters optionally limit INIC from driving PWROFF (as a result of NetInterface:
+Off state) in specific EHCI states (e.g. EHCIState()). This property is set in the INIC Configuration String
+(see the OS8105x/6x INIC API User’s Manual [2] for more information).
+PS1 PS0 Status
+00 UNormal 
+0 1 Switch-To-Power (STP)
+10 UCritical, USuper
+11 ULow 
+Table 8-1: External Power Management States

@@ -1,0 +1,52 @@
+u-blox 20 HPG 2.00 - Interface description
+8 I4 fQzssTow - ns Fractional part of QZSS time of week (range:
++/-500000000).
+The precise QZSS time of week in seconds is:
+qzssTow + (fQzssTow * 1e-9)
+12 I2 qzssWno - - QZSS week number of the navigation epoch
+14 I1 leapS - s QZSS leap seconds (QZSS-UTC)
+15 X1 valid - - Validity Flags
+bit 0   U:1 qzssTowValid - - 1 = Valid QZSS time of week (qzssTow and fQzssTow)
+bit 1   U:1 qzssWnoValid - - 1 = Valid QZSS week number
+bit 2   U:1 leapSValid - - 1 = Valid QZSS leap seconds
+16 U4 tAcc - ns Time Accuracy Estimate
+3.15.26 UBX-NAV-TIMETRUSTED (0x01 0x64)
+3.15.26.1 External trusted time information
+Message UBX-NAV-TIMETRUSTED
+External trusted time information
+Type Periodic/polled
+Comment This message contains information about external trusted time received via assistance data (UBX-MGA-INI-
+TIME_UTC or UBX-MGA-INI-TIME_GNSS).
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x64 40 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x01 for this version)
+1 U1 refSys - - Reference time system (all the GNSS system
+supported by UBX-MGA-INI-TIME_GNSS except
+Glonass
+• 0: None
+• 1: GPS Time
+• 2: Galileo System Time (GST)
+• 3: Beidou System Time (BDT)
+• 15: NavIC System Time
+2 X1 valid - - Validity Flags
+bit 0   U:1 trustedTime
+Valid
+- - 1 = Valid initial and propagated trusted time (iniWno,
+iniTow, fIniTow, iniTAcc, propWno, propTow, fPropTow
+and propTAcc)
+bit 1   U:1 deltaTimeValid - - 1 = Valid delta time (deltaS and deltaMs) between
+current estimated time and the propagated trusted
+time
+3 U1 reserved0 - - Reserved
+4 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+8 U2 iniWno - - Initial week number
+10 U2 propWno - - Week number propagating the initial trusted time
+12 U4 iniTow - ms Initial time of week
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 115 of 224
+C1-Public

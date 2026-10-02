@@ -1,0 +1,144 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  27 
+fr_clk_i
+axis_byte_tready_i
+axis_byte_tvalid_o
+HS Packet
+(Long Packet)
+HS Packet
+(Short Packet)
+axis_byte_tdata_o[63:0] B B B B B BBB B
+axis_byte_tlast_o
+axis_byte_tuser_o[5:2] Packet Virtual Channel   (VCX+VC)
+Hdr[7:0] : DID
+Hdr[15:8] : DF[7:0]
+Hdr[23:16]: DF[15:8]
+Hdr[31:24]: VCX+ECC
+axis_byte_tuser_o[0:0]
+Hdr[7:0] : DID
+Hdr[15:8] : WC[7:0] Packet: Byte5
+Hdr[23:16]: WC[15:8]
+Hdr[31:24]: VCX+ECC
+Packet: Byte6
+Packet: Byte7
+Packet: Byte13
+Packet: Byte14
+Packet: Byte15
+Packet: Byte4 Packet: Byte12
+Packet: ByteN-3
+Packet: ByteN-2
+Packet: ByteN-1
+Packet: ByteN-4
+...
+Packet: Byte0
+Packet: Byte1 Packet: Byte9
+Packet: Byte2
+Packet: Byte3
+Packet: Byte10
+Packet: Byte11
+Packet: Byte17
+Packet: Byte18
+Packet: Byte19
+Packet: Byte8 Packet: Byte16
+Footer: CRC[15:8]
+Footer: CRC[7:0]
+...
+TDATA[7:0]
+TDATA[15:8]
+TDATA[23:16]
+TDATA[31:24]
+TDATA[39:32]
+TDATA[47:40]
+TDATA[55:48]
+TDATA[63:56]
+VCX
++VC
+MIPI Packets of a Frame
+ 
+Figure 2.24. MBSI RX Timing Diagram for 64-bit Passthrough Mode 
+In 64-bit DSI Controller Mode, packets for MPPT may appear in the same clock cycle. Figure 2.25 shows an example 
+where the footer of the first packet coincides with the header bytes of the second packet in the same clock cycle. TLAST 
+asserts on the last beat of packet per HS transaction and asserts exactly once per HS transaction, on the last content 
+beat of the transaction. 
+fr_clk_i
+axis_byte_tready_i
+axis_byte_tvalid_o
+HS Packet
+(Long Packet)
+axis_byte_tdata_o[63:0] B B B B B BBB
+axis_byte_tlast_o
+axis_byte_tuser_o[5:2] Packet Virtual Channel   (VCX+VC)
+axis_byte_tuser_o[0:0]
+Hdr[7:0] : DID
+Hdr[15:8] : WC[7:0] Packet: Byte5
+Hdr[23:16]: WC[15:8]
+Hdr[31:24]: VCX+ECC
+Packet: Byte6
+Packet: Byte7
+Packet: Byte13
+Packet: Byte14
+Packet: Byte15
+Packet: Byte4 Packet: Byte12
+Packet: ByteN-3
+Packet: ByteN-2
+Packet: ByteN-1
+Packet: ByteN-4
+...
+Packet: Byte0
+Packet: Byte1 Packet: Byte9
+Packet: Byte2
+Packet: Byte3
+Packet: Byte10
+Packet: Byte11
+Packet: Byte17
+Packet: Byte18
+Packet: Byte19
+Packet: Byte8 Packet: Byte16
+Footer: CRC[15:8]
+Footer: CRC[7:0]
+...
+TDATA[7:0]
+TDATA[15:8]
+TDATA[23:16]
+TDATA[31:24]
+TDATA[39:32]
+TDATA[47:40]
+TDATA[55:48]
+TDATA[63:56]
+MIPI Packets of a Frame
+Hdr[7:0] : DID
+Hdr[15:8] : WC[7:0]
+Packet: Byte0
+Packet: Byte1
+Packet: Byte7
+Packet: Byte8
+Packet: Byte9
+Packet: Byte6
+Packet: Byte3
+Packet: Byte4
+Packet: Byte5
+Packet: Byte11
+Packet: Byte12
+Packet: Byte13
+Packet: Byte2 Packet: Byte10
+Hdr[23:16]: WC[15:8]
+Hdr[31:24]: VCX+ECC Packet: ByteN-3
+Packet: ByteN-2
+Packet: ByteN-1
+Packet: ByteN-4
+Footer: CRC[15:8]
+Footer: CRC[7:0]
+...
+...
+B B B B B B BB B B B B
+1st Packet
+ 
+Figure 2.25. MBSI RX Timing Diagram for 64-bit MPPT Passthrough Mode 
+When MIPI Byte Streaming Interface is enabled, a single clock FIFO is used to hold data when downstream is not ready 
+(TREADY is low). FIFO depth is configurable through the Byte Buffer Depth attribute. If TREADY remains low for a 
+duration greater than or equal to the configured buffer depth, the buffer can overflow, leading to functional errors. 

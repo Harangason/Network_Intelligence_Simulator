@@ -1,0 +1,46 @@
+TC_C_47_CS: Stop Transaction with a Master Pass - With UI - All transactions
+Test case name Stop Transaction with a Master Pass - With UI - All transactions
+Test case Id TC_C_47_CS
+Use case Id(s) C16
+Requirement(s) C16_FR_01
+System under test Charging Station
+Description This test case covers how somebody with a Master Pass (User) can stop (selected) ongoing transactions,
+so the cable becomes unlocked. This Master Pass can be configured in: MasterPassGroupId. This could for
+example be usefull for Law Enforcement officials.
+Purpose To verify if the Charging Station is able to correctly stop all transactions when an idToken which has the
+MasterPass as GroupId is used and the user has selected to stop all transactions in the User Interface
+according to the mechanism as described in the OCPP specification.
+Prerequisite(s) - The Charging Station supports at least one authorization method described at the following Use cases;
+C01, C04. 
+- Charging station has a User Interface
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+AuthCtrlr.MastersPassGroupId is configured
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted for all EVSE
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present configured masterpass idToken
+1. The Charging Station sends an AuthorizeRequest
+2. The Test System responds with an AuthorizeResponse with
+idTokenInfo.status Accepted
+idTokenInfo.groupIdToken.idToken <Configured
+masterPassGroupId>
+Manual Action: Select to stop all transactions
+3. The Charging Station sends a TransactionEventRequest for all
+EVSE 4. The Test System responds with a TransactionEventResponse
+with
+idTokenInfo.status Accepted
+idTokenInfo.groupIdToken.idToken <Configured
+masterPassGroupId>
+for all EVSE
+Note(s): The charging Station will repeat for all runing transactions and can stop a transaction in more than one
+TransactionEventRequest.
+5. Execute Reusable State EVConnectedPostSession for all EVSE
+6. Execute Reusable State EVDisconnected for all EVSE
+7. Execute Reusable State ParkingBayUnoccupied for all EVSE
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 162/1383 Part 6 - Test Cases

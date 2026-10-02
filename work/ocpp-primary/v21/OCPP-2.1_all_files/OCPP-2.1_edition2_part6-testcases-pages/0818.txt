@@ -1,0 +1,39 @@
+TC_Q_103_CS: V2X Authorisation - ISO15118-20 - Charging needs rejected
+Test case name V2X Authorisation - ISO15118-20 - Charging needs rejected
+Test case Id TC_Q_103_CS
+Use case Id(s) Q01
+Requirement(s) Q01.FR.03, Q01.FR.06
+System under test Charging Station
+Description Authorization of an EV by the CSMS to start a V2X power transfer loop.
+Purpose To verify if the Charging Station is able to end the transaction when the charging needs are rejected and it
+doesn’t support ISO15118ServiceRenegotiationSupport.
+Prerequisite(s) - EV supports V2X power transfer loop
+- EV and charging station support ISO15118-20
+- Charging Station doesn’t support ISO15118ServiceRenegotiationSupport (component variable
+ISO15118Ctrlr.ServiceRenegotiationSupport is false or absent)
+- Charging Station has a TxStartPoint containing one or more of ParkingBayOccupancy, EVConnected,
+Authorized or PowerPathClosed
+- EV selects a BPT service
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is Iso1511820V2xControlBpt
+State is EVConnectedPreSession
+State is Authorized15118 (for 15118-20)
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+Note(s):
+- This step is captured by Authorized15118 (for 15118-20), but
+validated on testcase level.
+2. The Test System responds with a
+NotifyEVChargingNeedsResponse with
+- status Rejected
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 816/1383 Part 6 - Test Cases

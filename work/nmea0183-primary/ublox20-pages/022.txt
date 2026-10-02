@@ -1,0 +1,46 @@
+u-blox 20 HPG 2.00 - Interface description
+GNSS Talker ID Comments
+Any combination of GNSS GN
+2.5.2 NMEA extra ﬁelds
+The following extra ﬁelds are available in NMEA 4.10 and later.
+Message Extra ﬁelds
+NMEA-Standard-GBS systemId and signalId
+NMEA-Standard-GNS navStatus
+NMEA-Standard-GRS systemId and signalId
+NMEA-Standard-GSA systemId
+NMEA-Standard-GSV signalId
+NMEA-Standard-RMC navStatus
+2.5.3 NMEA latitude and longitude format
+According to the NMEA standard, latitude and longitude are output in the format degrees, minutes
+and (decimal) fractions of minutes . To convert to degrees and fractions of degrees , or degrees,
+minutes, seconds and fractions of seconds , the minutes and fractional minutes  parts need to be
+converted. For example:
+Format Latitude Longitude
+Receiver output $GNRMC,014230.00,A,4722.80340,N,00831.68218,E,0.000,,120477,,,A,V*14
+(d)ddmm.mmmmm 4722.80340 North 00831.68218 East
+Degrees and minutes 47 degrees, 22.80340 minutes 8 degrees, 31.68218 minutes
+Degrees 47.38005667 degrees 8.52803633 degrees
+Degrees, minutes and seconds 47 degrees, 22 minutes, 48.2040 seconds 8 degrees, 31 minutes, 40.9308 seconds
+2.5.4 NMEA GNSS, satellite, and signal numbering
+See GNSS, satellite, and signal identiﬁers for details on how GNSS, satellites and signals are
+numbered in the NMEA protocol.
+NMEA deﬁnes satellite numbering systems for some, but not all GNSS. The exact behavior depends
+on the conﬁgured NMEA protocol version and ("extended" or "strict") mode. See NMEA protocol
+conﬁguration for details.
+2.5.5 NMEA position ﬁx ﬂags
+This section shows how u-blox positioning receivers implement the NMEA protocol and the
+conditions determining how ﬂags are set.
+The following ﬂags are used in NMEA 4.10 and later.   
+NMEA Message GLL, RMC GGA GLL, VTG RMC, GNS
+Field status6 quality7 posMode8 posMode8
+No position ﬁx (at power-up, after losing satellite lock) V 0 N N
+6 Possible status values: V = data invalid, A = data valid
+7 Possible values for quality: 0 = No ﬁx, 1 = autonomous GNSS ﬁx, 2 = diﬀerential GNSS ﬁx, 4 = RTK ﬁxed, 5 = RTK ﬂoat, 6 =
+estimated/dead reckoning ﬁx
+8 Possible values for posMode: N = No ﬁx, E = estimated/dead reckoning ﬁx, A = autonomous GNSS ﬁx, D = diﬀerential
+GNSS ﬁx, F = RTK ﬂoat, R = RTK ﬁxed. In NMEA GNS, u-blox uses a non-standard implementation where same single
+status is reported for all enabled and not ﬁltered out constellations.
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 22 of 224
+C1-Public

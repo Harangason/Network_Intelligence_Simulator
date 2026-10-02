@@ -1,0 +1,91 @@
+right-most 29 bits of those provided will be used -  the
+most significant three bits are always removed. This
+command only affects Flow Control mode 1.
+FC SM h [ Flow Control Set Mode to h ]
+This command sets how the ELM327 responds to
+First Frame messages when automatic Flow Control
+responses are enabled. The single digit provided can
+either be ‘0’ (the default) for fully automatic responses,
+‘1’ for completely user defined responses, or ‘2’ for
+user defined data bytes in the response. Note that FC
+modes 1 and 2 can only be enabled if you have
+defined the needed data and possibly ID bytes. If you
+have not, you will get an error. More complete details
+and examples can be found in the Altering Flow
+Control Messages section (page 61).
+FE [ Forget Events ]
+There are certain events which may change how
+the ELM327 responds from that time onwards. One of
+these is the occurrence of a fatal CAN error (ERR94),
+which blocks subsequent searching through CAN
+protocols if PP 2A bit 5 is ‘1’. Normally, an event such
+as this will affect all searches until the next power off
+and on, but it can be ‘forgotten’ using software, with
+the AT FE command.
+Another example is an ‘LV RESET’ event which
+will prevent searches through CAN protocols if PP 2A
+bit 4 is ‘1’. It may also be forgotten with the AT FE
+command.
+FI [ perform a Fast Initiation ]
+One version of the Keyword protocol uses what is
+known as a 'fast initiation' sequence to begin
+communications. Usually, this sequence is performed
+when the first message needs to be sent, and then the
+message is sent immediately after. Some ECUs may
+need more time between the two however, and having
+a separate initiation command allows you to control
+this time. Simply send AT FI, wait a little, then send the
+message. You may need to experiment to get the right
+amount of delay.
+Another use for this command might be if you
+would like to perform a fast initiation with an ISO 9141
+type protocol (ie 3 - CARB format). Simply follow these
+steps to generate a fast init, then switch to protocol 3:
+AT SP 5
+AT FI
+AT SP 3
+AT BI
+You should then be able to communicate with the
+ECU. Note that a protocol close (ie AT PC) is not
+required in the above code, as the ELM327
+automatically performs one when you switch protocols.
+Protocol 5 must be selected to use the AT FI
+command, or an error will result.
+H0 and H1 [ Headers off or on ]
+These commands control whether or not the
+additional (header) bytes of information are shown in
+the responses from the vehicle. These are not
+normally shown by the ELM327, but may be of interest
+(especially if you receive multiple responses and wish
+to determine what modules they were from).
+Turning the headers on (with AT H1) actually
+shows more than just the header bytes – you will see
+the complete message as transmitted, including the
+check-digits and PCI bytes, and possibly the CAN data
+length code (DLC) if it has been enabled with PP 29 or
+AT D1. The current version of this IC does not display
+the CAN CRC code, nor the special J1850 IFR bytes
+(which some protocols use to acknowledge receipt of a
+message).
+I [ Identify yourself ]
+Issuing this command causes the chip to identify
+itself, by printing the startup product ID string (currently
+‘ELM327 v2.2’). Software can use this to determine
+exactly which integrated circuit it is talking to, without
+having to reset the IC.
+IB10 [ set the ISO Baud rate to 10400 ]
+This command restores the ISO 9141-2 and
+ISO 14230-4 baud rates to the default value of 10400.
+IB12 [ set the ISO Baud rate to 12500 ]
+This command  is used to change the baud rate
+used for the ISO 9141-2 and ISO 14230-4  protocols
+(numbers 3, 4, and 5) to 12500 baud.
+IB15 [ set the ISO Baud rate to 15625 ]
+This command  is used to change the baud rate
+used for the ISO 9141-2 and ISO 14230-4  protocols
+(numbers 3, 4, and 5) to 15625 baud.
+18 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+AT Command Descriptions (continued)

@@ -1,0 +1,31 @@
+5. Operations Initiated by Central System
+5.1. Cancel Reservation
+Charge Point Central System
+CancelReservation.req(reservationId)
+CancelReservation.conf(status)
+Figure 22. Sequence Diagram: Cancel Reservation
+To cancel a reservation the Central System SHALL send an CancelReservation.req PDU to the Charge Point.
+If the Charge Point has a reservation matching the reservationId in the request PDU, it SHALL return status
+‘Accepted’. Otherwise it SHALL return ‘Rejected’.
+5.2. Change Availability
+Charge Point Central System
+ChangeAvailability.req(connectorId, type)
+ChangeAvailability.conf(status)
+Figure 23. Sequence Diagram: Change Availability
+Central System can request a Charge Point to change its availability. A Charge Point is considered available
+(“operative”) when it is charging or ready for charging. A Charge Point is considered unavailable when it does not
+allow any charging. The Central System SHALL send a ChangeAvailability.req PDU for requesting a Charge Point
+to change its availability. The Central System can change the availability to available or unavailable.
+Upon receipt of a ChangeAvailability.req PDU, the Charge Point SHALL respond with a ChangeAvailability.conf
+PDU. The response PDU SHALL indicate whether the Charge Point is able to change to the requested availability
+or not. When a transaction is in progress Charge Point SHALL respond with availability status 'Scheduled' to
+indicate that it is scheduled to occur after the transaction has finished.
+In the event that Central System requests Charge Point to change to a status it is already in, Charge Point SHALL
+respond with availability status ‘Accepted’.
+When an availability change requested with a ChangeAvailability.req PDU has happened, the Charge Point SHALL
+inform Central System of its new availability status with a StatusNotification.req as described there.
+ In the case the ChangeAvailability.req contains ConnectorId = 0, the status change applies to
+the Charge Point and all Connectors.
+ Persistent states: for example: Connector set to Unavailable shall persist a reboot.
+5.3. Change Configuration
+45

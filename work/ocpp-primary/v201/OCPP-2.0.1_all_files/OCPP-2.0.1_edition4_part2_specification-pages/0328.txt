@@ -1,0 +1,73 @@
+CSMS Charging Station
+InstallCertificateRequest(certificateType, certificate)
+InstallCertificateResponse(installCertificateStatus)
+Figure 127. Install CA certificate in a Charging Station
+M05 - Install CA certificate in a Charging Station - Requirements
+Table 120. M05 - Requirements
+ID Precondition Requirement definition
+M05.FR.01 After receiving an InstallCertificateRequest The Charging Station SHALL attempt to install the certificate and
+respond with an InstallCertificateResponse.
+M05.FR.02 M05.FR.01 AND
+The installation was successful
+The Charging Station SHALL indicate success by setting status
+to Accepted in the InstallCertificateResponse.
+M05.FR.03 M05.FR.01 AND
+The installation failed
+The Charging Station SHALL indicate failure by setting status to
+Failed in the InstallCertificateResponse.
+M05.FR.06 When a new certificate gets installed AND
+the CertificateEntries.maxLimit is going to be
+exceeded
+The Charging Station SHALL respond with status = Rejected.
+M05.FR.07 M05.FR.01 AND
+The certificate is invalid.
+The Charging Station SHALL indicate rejection by setting status
+to Rejected in the InstallCertificateResponse.
+M05.FR.09 When AdditionalRootCertificateCheck
+is true
+Only one certificate (plus a temporarily fallback certificate) of
+certificateType CSMSRootCertificate is allowed to be installed at
+a time.
+M05.FR.10 When AdditionalRootCertificateCheck
+is true AND
+installing a new certificate of certificateType
+CSMSRootCertificate
+The new CSMS Root certificate SHALL replace the old CSMS
+Root certificate AND the new Root Certificate MUST be signed
+by the old Root Certificate it is replacing
+M05.FR.11 M05.FR.10 AND
+the new CSMS Root certificate is NOT signed by
+the old CSMS Root certificate
+The Charging Station SHALL NOT install the new CSMS Root
+Certificate and respond with status = Rejected.
+M05.FR.12 M05.FR.10 AND
+the new CSMS Root certificate is signed by the
+old CSMS Root certificate
+The Charging Station SHALL install the new CSMS Root
+Certificate AND temporarily keep the old CSMS Root certificate
+as a fallback certificate AND respond with status = Accepted
+M05.FR.13 M05.FR.12 AND
+the Charging Station successfully connected to
+the CSMS using the new CSMS Root certificate
+The Charging Station SHALL remove the old CSMS Root
+(fallback) certificate.
+M05.FR.14 M05.FR.12 AND
+The Charging Station is attempting to reconnect
+to the CSMS (NOT migrating to another CSMS
+with Use Case B10 - Migrate to new CSMS), but
+determines that the server certificate provided
+by the CSMS is invalid when using the new
+CSMS Root certificate to verify it
+The Charging Station SHALL try to use the old CSMS Root
+(fallback) certificate to verify the server certificate.
+M05.FR.15 M05.FR.12 AND
+When the Charging Station is migrating to
+another CSMS with Use Case B10 - Migrate to
+new CSMS, but determines that the server
+certificate provided by the CSMS is invalid when
+using the new CSMS Root certificate to verify it
+The Charging Station SHALL use the
+NetworkProfileConnectionAttempts mechanism as
+described at Use Case B10 - Migrate to new CSMS .
+Edition 4, 2025-12-03 M. Certificate Management
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 318/491 Part 2 - Specification

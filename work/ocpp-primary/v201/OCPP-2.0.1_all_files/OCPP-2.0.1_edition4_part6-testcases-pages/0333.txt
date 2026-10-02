@@ -1,0 +1,56 @@
+TC_K_04_CS: Replace charging profile - With chargingProfileId
+Test case name Replace charging profile - With chargingProfileId
+Test case Id TC_K_04_CS
+Use case Id(s) K01
+Requirement(s) K01.FR.05
+System under test Charging Station
+Description To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the entire
+Charging Station over a period of time. The CSMS sends a SetChargingProfileRequest to the Charging
+Station to influence the power or current drawn by EVs. The CSMS calculates a ChargingSchedule to stay
+within certain limits, which MAY be imposed by any external system.
+Purpose To verify if the Charging station is able to accept and successfully change to the
+ChargingStationMaxProfile sent by the CSMS on a specific EVSE as described at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+A chargeprofile with <Generated chargingProfileId> AND limit 6.0/6000.0 AND ChargingProfilePurpose TxDefaultProfile is
+configured
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+chargingProfile.id <Configured chargingProfileId>
+chargingProfile.chargingProfilePurpose TxDefaultProfile
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limi
+t 10 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+4. The Charging Station responds with a
+GetChargingProfilesResponse
+3. The Test System sends a GetChargingProfilesRequest with
+chargingProfile.chargingProfileId <Configured
+chargingProfileId>
+5. The Charging Station sends a ReportChargingProfilesRequest
+6. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If tbc is True at Step 5 then step 5 and 6 will be repeated
+Tool validations
+* Step 2:
+Message SetChargingProfileResponse
+- status Accepted
+* Step 4:
+Message GetChargingProfilesResponse
+- status Accepted
+* Step 5:
+Message ReportChargingProfilesRequest
+- requestId Same Id as in the GetChargingProfilesRequest in step 3
+- EVSEId <Configured EVSEId>
+- chargingProfile <ChargingProfile set in step 1>
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 331/914 Part 6 - Test Cases

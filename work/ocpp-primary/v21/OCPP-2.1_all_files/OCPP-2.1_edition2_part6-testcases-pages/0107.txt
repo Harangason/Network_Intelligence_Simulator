@@ -1,0 +1,53 @@
+TC_B_109_CS: Set new NetworkConnectionProfile - When changing
+SecurityCtrlr.Identity/BasicAuthPassword the
+NetworkProfiles.Identity/BasicAuthPassword must be cleared
+Test case name Set new NetworkConnectionProfile - When changing SecurityCtrlr.Identity/BasicAuthPassword the
+NetworkProfiles.Identity/BasicAuthPassword must be cleared
+Test case Id TC_B_109_CS
+Use case Id(s) B09
+Requirement(s) B09.FR.16, B09.FR.18, B09.FR.26, B09.FR.27
+System under test Charging Station
+Description The CSMS updates the connection details on the Charging Station. For instance in preparation of a
+migration to a new CSMS.
+Purpose To verify that the Charging Station clears Identity/BasicAuthPassword from the active network connection
+profile, when this value is set via SecurityCtrlr component.
+Clearing of BasicAuthPassword cannot be checked, because this field is not readable.
+Prerequisite(s) NetworkConfiguration component variables are writable.
+NetworkConfiguration.Identity and NetworkConfiguration.BasicAuthPassword are set.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with GetVariablesResponse
+1. Test System sends GetVariablesRequest for
+- OCPPCommCtrlr.ActiveNetworkProfile
+Note:The result of Step #2 is called <the active configuration>
+4. The Charging Station responds with GetVariablesResponse
+3. Test System sends GetVariablesRequest for
+- NetworkConfiguration[<the active configuration>].Identity
+6. The Charging Station responds with SetVariablesResponses
+5. Test System sends SetVariablesRequests for
+- SecurityCtrlr.Identity = <configured ChargingStationId>
+- SecurityCtrlr.BasicAuthPassword = <configured
+BasicAuthPassword>
+8. The Charging Station responds with GetVariablesResponse
+7. Test System sends GetVariablesRequest for
+- NetworkConfiguration[<the active configuration>.Identity
+10. Charging Station reconnects
+9. Test System closes the websocket connection
+Note: Test System reconnects using values from SecurityCtrlr.Identity/BasicAuthPassword
+12. The Charging Station responds with GetVariablesResponse
+11. Test System sends GetVariablesRequest for
+- OCPPCommCtrlr.ActiveNetworkProfile
+Note:Restoring the Identity and BasicAuthPassword via SetNetworkProfileRequest and reconnecting.
+14. The Charging Station responds with GetVariablesResponse
+13. Test System sends GetVariablesRequest for
+- NetworkConfiguration[<the active configuration>
+.SecurityProfile
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 105/1383 Part 6 - Test Cases

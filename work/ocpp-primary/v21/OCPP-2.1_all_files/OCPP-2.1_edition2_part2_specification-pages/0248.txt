@@ -1,0 +1,51 @@
+ID Precondition Requirement definition Note
+F03.FR.07 When the Charging Station receives a
+RequestStopTransactionRequest AND
+the TransactionId can be matched to
+an active transaction.
+The Charging Station SHALL respond with a
+RequestStopTransactionResponse with status set
+to Accepted.
+F03.FR.08 When the Charging Station receives a
+RequestStopTransactionRequest AND
+the TransactionId cannot be matched
+to an active transaction.
+The Charging Station SHALL respond with a
+RequestStopTransactionResponse with status set
+to Rejected.
+F03.FR.09 When sending a
+TransactionEventRequest
+The Charging Station SHALL set the triggerReason
+to inform the CSMS about what triggered the event.
+What reason to use is described in the description
+of TriggerReasonEnumType.
+Same as E06.FR.15
+F04 - Remote Stop ISO 15118 Charging from CSMS
+No. Type Description
+1 Name Remote Stop ISO 15118 Charging from CSMS
+2 ID F04
+Reference ISO15118-1 F2 Charging loop with interrupt from the SECC.
+3 Objective(s) See ISO15118-1, use case Objective F2, page 38.
+4 Description See ISO15118-1, use case Description F2, page 38.
+Actors EV, CSMS, Charging Station
+Combined scenario
+description
+OCPP:
+1. The CSMS sends a RequestStopTransactionRequest to the Charging Station.
+2. The Charging Station responds with a RequestStopTransactionResponse.
+ISO 15118-2:
+3. The EV sends a ChargingStatus (in case of AC charging) or CurrentDemandReq (in case of DC
+Charging) PDU to the Charging Station.
+4. The Charging Station responds with an EVSENotification = StopCharging.
+ISO 15118-20:
+3. The EV sends a AC_ChargeLoopRes (in case of AC charging) or DC_ChargeLoopRes (in case of
+DC charging) PDU to the Charging Station.
+4. The Charging Station responds with an EVSENotification = Terminate.
+5 Prerequisites - If authorization according use cases in Functional Block C is applied, it SHALL be finished
+successfully.
+See ISO15118-1, use case Prerequisites F2, page 38.
+6 Postcondition(s) See ISO15118-1, use case End conditions F2, page 38.
+7 Error handling n/a
+8 Remark(s) n/a
+Edition 2, 2025-12-03 F. Remote Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 235/803 Part 2 - Specification

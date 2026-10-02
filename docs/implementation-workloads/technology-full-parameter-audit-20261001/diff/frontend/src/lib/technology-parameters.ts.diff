@@ -1,6 +1,6 @@
 --- before/frontend/src/lib/technology-parameters.ts
 +++ after/frontend/src/lib/technology-parameters.ts
-@@ -1,9 +1,27 @@
+@@ -1,9 +1,37 @@
 -import type { Technology } from './types';
 +import type { Technology, TechnologyParameterField } from './types';
  
@@ -10,6 +10,16 @@
  export const technologyKey = (value: unknown) => String(value ?? '').toLowerCase().replace(/[ -]/g, '_');
 +const matchingProof = (proof: Parameters, technologyId: string) => ['technology', 'technology_id', 'protocol']
 +  .every(key => !proof[key] || technologyKey(proof[key]) === technologyKey(technologyId));
++
++/** The profile owns device requirements; a controller port is not a transaction. */
++export function localEvidenceFieldRequired(
++  field: NonNullable<Technology['local_timing_schema']>[number], values: Parameters,
++): boolean {
++  if (field.required_scopes) return field.required_scopes.includes(String(values.evidence_scope || 'TRANSACTION'));
++  if (field.required_when) return Object.entries(field.required_when).every(([key, value]) => values[key] === value);
++  if (field.key === 'arbitration_bound_us') return values.multi_master === true;
++  return !field.optional;
++}
 +
 +/** A device state with no default must remain unknown until explicitly selected. */
 +export function booleanParameterValue(field: {default?: unknown}, raw: FormDataEntryValue | null): boolean | null {
@@ -29,7 +39,7 @@
  
  /** Catalog defaults remain proposals; only matching saved values may override them. */
  export function technologyParameterValues(parameters: Parameters, technology: Technology): Parameters {
-@@ -11,39 +29,77 @@
+@@ -11,39 +39,77 @@
    const proposed = record(record(parameters.technology_defaults)[technology.id]);
    const global = technologyKey(parameters.technology) === technology.id ? parameters : {};
    const saved = record(scoped.values);
@@ -114,7 +124,7 @@
    // A different rate model cannot retain a previous technology's rate phases.
    for (const key of ['bitrate_bps', 'nominal_bitrate_bps', 'data_bitrate_bps', 'arbitration_bitrate', 'data_bitrate']) {
      if (!(key in selected)) delete result[key];
-@@ -56,7 +112,8 @@
+@@ -56,7 +122,8 @@
    const selected = new Set(ids);
    if (!selected.size || networks.filter(item => selected.has(item.id)).length !== selected.size) throw new Error('Die ausgewählten Netze sind nicht mehr vorhanden. Bitte neu laden.');
    if (networks.some(item => selected.has(item.id) && technologyKey(item.technology) !== technology.id)) throw new Error('Die Auswahl enthält eine andere Technologie. Bitte neu laden.');

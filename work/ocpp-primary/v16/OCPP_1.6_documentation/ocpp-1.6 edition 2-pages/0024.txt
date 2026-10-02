@@ -1,0 +1,36 @@
+
+To promote interoperability, based on common practice to date in the case of IdToken data
+representing physical ISO 14443 compatible RFID card UIDs, it is RECOMMENDED that such
+UIDs be represented as hex representations of the UID bytes. According to ISO14443-3, byte 0
+should come first in the hex string.
+3.10. Parent idTag
+This section is normative.
+A Central System has the ability to treat a set of identity tokens as a “group”, thereby allowing any one token in
+the group to start a transaction and for the same token, or another token in the same group, to stop the
+transaction. This supports the common use-cases of families or businesses with multiple drivers using one or
+more shared electric vehicles on a single recharging contract account.
+Tokens (idTags) are grouped for authorization purposes by specifying a common group identifier in the optional
+ParentId element in IdTagInfo: two idTags are considered to be in the same group if their ParentId Tags match.
+
+Even though the ParentId has the same nominal data type (IdToken) as an idTag, the value of
+this element may not be in the common format of IdTokens and/or may not represent an
+actual valid IdToken (e.g. it may be a common shared "account number"): therefore, the
+ParentId value SHOULD NOT be used for comparison against a presented Token value (unless
+it also occurs as an idTag value).
+3.11. Reservations
+This section is informative.
+Reservation of a Charge Point is possible using the Reserve Now operation. This operation reserves the Charge
+Point until a certain expiry time for a specific idTag. A parent idTag may be included in the reservation to support
+‘group’ reservations. It is possible to reserve a specific connector on a Charge Point or to reserve any connector
+on a Charge Point. A reservation is released when the reserved idTag is used on the reserved connector (when
+specified) or on any connector (when unspecified) or when the expiry time is reached or when the reservation is
+explicitly canceled.
+3.12. Vendor-specific data transfer
+This section is informative.
+The mechanism of vendor-specific data transfer allows for the exchange of data or messages not standardized
+in OCPP . As such, it offers a framework within OCPP for experimental functionality that may find its way into
+future OCPP versions. Experimenting can be done without creating new (possibly incompatible) OCPP dialects.
+Secondly, it offers a possibility to implement additional functionality agreed upon between specific Central
+System and Charge Point vendors.
+The operation Vendor Specific Data MAY be initiated either by the Central System or by the Charge Point.
+19

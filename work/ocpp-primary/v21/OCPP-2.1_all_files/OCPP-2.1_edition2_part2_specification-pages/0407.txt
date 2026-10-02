@@ -1,0 +1,54 @@
+EV Charging Station CSMS
+TransactionEventRequest( eventType = Started, ...)
+TransactionEventResponse(...)
+ServiceDiscoveryReq()
+ServiceDiscoveryRes( allowedEnergyTransfer, ... )
+ServiceSelectionReq( requestedEnergyTransfer, controlMode=2 )
+ServiceSelectionRes()
+AC/DC_ChargeParameterDiscoveryReq( evChargingParameters, ... )
+AC/DC_ChargeParameterDiscoveryRes( evseChargingParameters, ... )
+ScheduleExchangeReq( Dynamic_SEResControlMode, ... )
+NotifyEVChargingNeedsRequest( DepartureTime,
+EVTargetEnergyRequest, requestedEnergyTransfer, ... )
+NotifyEVChargingNeedsResponse( Accepted )
+loop [until SetChargingProfileRequest received]
+ScheduleExchangeRes( Dynamic_SEResControlMode
+EVSEProcessing=Ongoing )
+ScheduleExchangeReq( DepartureTime, EVTargetEnergyRequest, ... )
+SetChargingProfileRequest( ChargingSchedule_1, PriceSchedule_1 )
+SetChargingProfileRequest( Accepted )
+ScheduleExchangeRes( Dynamic_SEResControlMode )
+PowerDeliveryReq( ChargeProgress=Start, EVPowerProfile )
+Contactor Close
+PowerDeliveryRes()
+NotifyEVChargingScheduleRequest(evseId, chargingSchedule)
+NotifyEVChargingScheduleResponse(Accepted)
+TransactionEventRequest( eventType = Updated,
+triggerReason = ChargingStateChanged,
+chargingState = Charging, ...)
+TransactionEventResponse(...)
+Charging Station controls charging rate
+loop
+DC_ChargeLoopReq( DepartureTime, TargetEnergy, EVTargetVoltage, ...)
+DC_ChargeLoopRes( EVSEMin/MaxPower, ...)
+Figure 143. Charging with load-leveling using ISO 15118-20 Dynamic Control Mode
+K19 - ISO 15118-20 Dynamic Control Mode - Requirements
+Table 115. K19 - Requirements
+ID Precondition Requirements Note
+K19.FR.01 When the Charging Station
+receives charging needs from
+the EV in
+ScheduleExchangeReq for
+dynamic control mode
+The Charging Station SHALL send a
+NotifyEVChargingNeedsRequest with controlMode
+= DynamicControl to the CSMS.
+K19.FR.02 K19.FR.01 In response to a NotifyEVChargingNeedsRequest
+the CSMS SHALL send a
+NotifyEVChargingNeedsResponse.
+K19.FR.03 K19.FR.02 If the CSMS is able to provide a charging schedule,
+it SHALL indicate this by setting the status field in
+the NotifyEVChargingNeedsResponse to
+Accepted.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 394/803 Part 2 - Specification

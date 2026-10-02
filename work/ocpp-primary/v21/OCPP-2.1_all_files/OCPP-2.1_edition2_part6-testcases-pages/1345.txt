@@ -1,0 +1,25 @@
+Tool validations
+* Step 1:
+Message: SetChargingProfileRequest
+- chargingProfile.chargingProfileKind must be Dynamic
+- chargingProfile. must be TxDefaultProfile
+- chargingProfile.chargingSchedule[0].chargingSchedulePeriods must be size 1
+- chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0].startPeriod must be 0
+- chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0].limit must be 6 * <limit multiplier>
+Note: Check [csms_csKSmartChargingChargingProfileLimits] for <limit multiplier>
+* Step 3:
+Message: UpdateDynamicScheduleRequest
+- chargingProfileId must be <SetChargingProfileRequest.chargingProfile.id from step 1>
+- scheduleUpdate.limit must be <not omitted>
+* Step 5:
+Message: UpdateDynamicScheduleRequest
+- chargingProfileId must be <SetChargingProfileRequest.chargingProfile.id from step 1>
+- scheduleUpdate.limit must be <not omitted>
+* Step 7:
+Message: ClearChargingProfileRequest
+- chargingProfileId <chargingProfileId from step 1 chargingProfile>
+- chargingProfileCriteria omit
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1343/1383 Part 6 - Test Cases

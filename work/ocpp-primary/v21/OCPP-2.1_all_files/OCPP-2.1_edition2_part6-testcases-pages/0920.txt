@@ -1,0 +1,40 @@
+Unavailable
+State Unavailable
+System under test Charging Station
+Description This state will prepare the Charging Station, so that the Charging Station / EVSEs / connectors are set to
+AvailabilityState Unavailable.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+ChangeAvailabilityResponse
+1. The Test System sends a ChangeAvailabilityRequest
+with operationalStatus Inoperative
+evse.id <Specified evseId>
+evse.connectorId <Specified connectorId>
+3. The Charging Station notifies the CSMS about the current
+state of all connectors belonging to the specified component(s). 4. The Test System responds accordingly.
+Tool validations
+* Step 2:
+Message ChangeAvailabilityResponse
+- status Accepted
+* Step 3:
+Message: StatusNotificationRequest
+- connectorStatus Unavailable
+- evseId <Specified evseId>
+- connectorId <Specified connectorId>
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Unavailable"
+- eventData[0].component.name "ChargingStation" / EVSE / Connector
+- eventData[0].variable.name "AvailabilityState"
+Post scenario validations:
+State is Reserved
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 918/1383 Part 6 - Test Cases

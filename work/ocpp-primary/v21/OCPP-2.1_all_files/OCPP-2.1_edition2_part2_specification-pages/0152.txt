@@ -1,0 +1,69 @@
+C21 - Settlement at end of transaction - Requirements
+ID Precondition Requirements Note
+C21.FR.01 When a locally started
+transaction ends that was
+authorized by an idToken of
+type = DirectPayment AND
+PaymentCtrlr.SettlementByCSM
+S is absent or false
+Charging Station SHALL settle the total cost of the
+transaction via the payment terminal.
+C21.FR.02 When Charging Station receives
+the settlement status from
+payment terminal
+Charging Station SHALL send a
+NotifySettlementRequest to CSMS with status,
+settlementAmount, settlementTime, transactionId
+and pspRef.
+Optionally a vatNumber and
+vatCompany can be added.
+C21.FR.03 C21.FR.02 AND
+PaymentCtrlr.ReceiptByCSMS =
+true
+CSMS SHALL respond with
+NotifySettlementResponse with receiptUrl.
+C21.FR.04 C21.FR.02 AND
+PaymentCtrlr.ReceiptByCSMS =
+false
+Charging Station SHALL add the URL to the receipt
+in the NotifySettlementRequest in field receiptUrl
+and the ID of the receipt in receiptId.
+C21.FR.05 When a locally started
+transaction ends that was
+authorized by an idToken of
+type = DirectPayment AND
+PaymentCtrlr.SettlementByCSM
+S is true
+CSMS SHALL settle the total cost of the transaction
+with the payment service provider.
+The PSP reference to settle the
+payment session is in idToken.
+C21.FR.06 C21.FR.05 Charging Station SHALL NOT settle the total cost of
+the transaction via the payment terminal.
+C21.FR.07 C21.FR.05 Charging Station MAY display the value of
+PaymentCtrlr.ReceiptServerUrl to the EV Driver as a
+location where a receipt can be retrieved at a later
+time.
+This information can, for
+example, be shown immediately
+after authorization and/or when
+stopping the transaction.
+C22 - Settlement is rejected or fails
+New in OCPP 2.1
+No. Type Description
+1 Name Settlement is rejected or fails
+2 ID C22
+3 Objective To inform the CSMS that the transaction settlement has been rejected or otherwise failed to be
+successfully settled.
+4 Description The Charging Station failed to settle the amount. Settlement can be rejected by the payment
+service provider, or it can fail for technical reasons.
+Actors EV Driver, Payment Terminal, CSMS, Charging Station
+Scenario description PSP rejects settlement
+1. Charging Station requests payment terminal to settle payment.
+2. PSP rejects settlement.
+3. Payment terminal returns a rejection and error code.
+4. Charging Station sends a NotifySettlementRequest with transactionId, idToken,
+settlementAmount, settlementTime and status = Rejected and (optional) additional error
+information in statusInfo.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 139/803 Part 2 - Specification

@@ -1,0 +1,35 @@
+TC_M_23_CS: Delete a certificate from a Charging Station - Unable to delete the
+Charging Station Certificate
+Test case name Delete a certificate from a Charging Station - Unable to delete the Charging Station Certificate
+Test case Id TC_M_23_CS
+Use case Id(s) M04
+Requirement(s) M04.FR.01,M04.FR.06
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to delete an installed certificate using the
+DeleteCertificateRequest message.
+Purpose To verify if the Charging Station does NOT allow the deletion of the Charging Station certificate.
+Prerequisite(s) - The Charging Station supports Security Profile 3.
+- A valid CSMSRootCertificate is installed on the Charging Station.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+RenewChargingStationCertificate for certificateType ChargingStationCertificate
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State GetInstalledCertificates with certificateType omitted.
+3. The Charging Station responds with a
+DeleteCertificateResponse
+2. The Test System sends a DeleteCertificateRequest
+with certificateHashData is <certificateHashData from the
+generated ChargingStationCertificate at before.>
+Tool validations
+* Step 3:
+Message: DeleteCertificateResponse
+- status must be NotFound OR Failed
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 657/1383 Part 6 - Test Cases

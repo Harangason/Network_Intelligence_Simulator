@@ -1,0 +1,57 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+October 24, 2006 http://www.Modbus.org 31/46
+The MODBUS Backend service will use the appropriate interface to the user 
+application : 
+ Either a physical interface based on a seri al link, or a dual-port RAM scheme, or
+a simple I/O line, or a logical interface based on messaging services provided by
+an operating system.
+ The interface to the User Applicati on may be synchronous or asynchronous.
+The MODBUS Backend service will also use the appropriate design pattern to get/set 
+objects attributes or to trigger services. In some cases, a simple "gateway pattern" will 
+be adequate. In some other cases, the designer will have to implement a "proxy 
+pattern" with a corresponding caching strategy, from a simple exchange table history to 
+more sophisticated replication mechanisms. 
+The MODBUS Backend service has the resp onsibility to implement the protocol 
+transcription in order to interact with the Us er Application. Therefore, it can have to 
+implement mechanisms for packet fragmentation/reconstruction, data consistency 
+guarantee, and synchronization whatever is required. 
+4.4.2.5 MODBUS Response building 
+Once the request has been processed, the MO DBUS  server has to build the response 
+using the adequate MODBUS server transact ion and has to send it to the TCP 
+management component. 
+Depending on the result of the processing two types of response can be built :  
+ A positive MODBUS response :
+ The response function code = The request function code
+ A MODBUS Exception response :
+ The objective is to provide to the client relevant information concerning the
+error detected during the processing ;
+ The response function code = the request function code + 0x80 ;
+ The exception code is provided to indicate the reason of the error.
+Exception 
+Code 
+MODBUS name Comments 
+01 Illegal Function 
+Code 
+The function code is unknown by the server 
+02 Illegal Data 
+Address 
+Dependant on the request 
+03 Illegal Data Value Dependant on the request 
+04 Server Failure The server failed during the execution 
+05 Acknowledge The server accepted the service invocation but the 
+service requires a relatively long time to 
+execute. The 
+server therefore returns onl y an acknowledgement of the 
+service invocation receipt. 
+06 Server Busy The server was unabl e to accept the MB Request PDU. 
+The client application has the responsibility of deciding if 
+and when to re-send the request. 
+0A Gateway problem Gateway paths not available. 
+0B Gateway problem The targeted devic e failed to respond. T he gateway 
+generates this exception 
+The MODBUS response PDU must be prefixed with the MBAP header which is built 
+using data memorized in the transaction context. 
+• Unit Identifier
+The Unit Identifier is copied as it was gi ven within the received MODBUS request
+and memorized in the transaction context.
+Modbus Organization  

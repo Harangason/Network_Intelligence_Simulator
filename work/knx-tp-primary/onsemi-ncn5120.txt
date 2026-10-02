@@ -1,0 +1,3530 @@
+
+--- PAGE 1 ---
+©  Semiconductor Components Industries, LLC, 2015
+September, 2024 − Rev. 8
+1 Publication Order Number:
+NCN5120/D
+NCN5120
+Transceiver for KNX
+Twisted Pair Networks
+Introduction
+NCN5120 is a receiver −transmitter IC suitable for use in KNX
+twisted pair networks (KNX TP1−256). It supports the connection of
+actuators, sensors, microcontrollers, switches or other applications in
+a building network.
+NCN5120 handles the transmission and reception of data on the bus.
+It generates from the unregulated bus voltage stabilized voltages for its
+own power needs as well as to power external devices, for example, a
+microcontroller.
+NCN5120 assures safe coupling to and decoupling from the bus.
+Bus monitoring warns the external microcontroller in case of loss of
+power so that critical data can be stored in time.
+Key Features
+• Replaced by NCN5121
+• 9600 baud KNX Communication Speed
+• Supervision of KNX Bus V oltage
+• Supports Bus Current Consumption up to 13 and 26 mA
+• Selectable KNX Bus Current (0.5 mA/ms and 1.0 mA/ms)
+• High Efficient DC−DC Converters
+♦ 3.3 V Fixed
+♦ 3.3 V to 21 V Selectable
+• Control and Monitoring of Power Regulators
+• Linear 20 V Regulator
+• Prepared for Sleep Mode
+• Buffering of Sent Data Frames (Extended Frames Supported)
+• Selectable UART or SPI Interface to Host Controller
+• Selectable UART and SPI baud Rate to Host Controller
+• Optional CRC on UART to the Host
+• Optional Received Frame−end with MARKER Service
+• Optional Direct Coupling of RxD and TxD to Host (analog mode)
+• Operates with Industry Standard Low Cost 16 MHz Quartz
+• Generates Clock of 8 or 16 MHz for External Devices
+• Auto Acknowledge (optional)
+• Auto Polling (optional)
+• Temperature Monitoring
+• Operating Temperature Range −25°C to +85°C
+• These Devices are Pb−Free and are RoHS Compliant
+www.onsemi.com
+QFN40
+MN SUFFIX
+CASE 485AU
+See detailed ordering and shipping information in the package
+dimensions section on page 54 of this data sheet.
+ORDERING INFORMATION
+A = Assembly Location
+WL = Wafer Lot
+YY = Year
+WW = Work Week
+G = Pb −Free Package
+MARKING DIAGRAM
+401
+NCN5120
+21245−002
+AWLYYWWG
+
+
+--- PAGE 2 ---
+NCN5120
+www.onsemi.com
+2
+BLOCK DIAGRAM
+Figure 1. Block Diagram NCN5120
+POR
+TW
+TSD UVD
+DC/DC
+Converter 1
+DC/DC
+Converter 2
+OSC
+NCN5120
+CAV
+VBUS1
+CCP
+TXO
+FANIN/WAKE
+VBUS2
+V20V
+XTAL1
+XTAL2
+XSEL
+XCLK
+SAVEB RESETBTESTOUT
+VSS2
+VDD2
+VDD2MV
+VDD2MC
+VSW2
+VSS1
+VDD1
+VDD1M
+VSW1
+VIN
+MODE2
+MODE1
+TREQ
+CSB/UC1
+SDO/TXD
+SDI/RXD
+SCK/UC2
+VSSDVDDDVDDA VSSAVFILTCEQ2CEQ1
+20V LDO
+Fan−In
+Control
+VAUX
+Bus Coupler
+Impedance
+Control
+Transmitter
+OSC
+Receiver
+UART
+SPI
+KNX
+DLL
+Mode
+Interface
+Controller
+RC
+OSC
+Diagnostics
+Wake−Up
+PIN OUT
+VSSA
+VBUS2
+TXO
+CCP
+CAV
+VBUS1
+CEQ1
+CEQ2
+VFILT
+VDD2MV
+VDD2MC
+VDD2
+VSS2
+VSW2
+VSW1
+VSS1
+VDD1
+VDD1M
+NC
+NC
+MODE1
+MODE2
+TREQ
+CSB/UC1
+SDI/RXD
+SDO/TXD
+SCK/UC2
+VDDD
+VSSD
+XCLK
+XSEL
+XTAL2
+XTAL1
+SAVEB
+RESETB
+FANIN/WAKE
+TESTOUT
+VDDA
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+30
+29
+28
+27
+26
+25
+24
+23
+22
+21
+40
+39
+38
+37
+36
+35
+34
+33
+32
+31
+NCN5120
+V20V
+Figure 2. Pin Out NCN5120 (Top View)
+VIN
+
+--- PAGE 3 ---
+NCN5120
+www.onsemi.com
+3
+PIN DESCRIPTION
+Table 1. PIN LIST AND DESCRIPTION
+Name Pin Description Type
+Equivalent
+Schematic
+VSSA 1 Analog Supply Voltage Ground Supply
+VBUS2 2 Ground for KNX Transmitter Supply
+TX0 3 KNX Transmitter Output Analog Output Type 1
+CCP 4 AC coupling external capacitor connection Analog I/O Type 2
+CAV 5 Capacitor connection to average bus DC voltage Analog I/O Type 3
+VBUS1 6 KNX power supply input Supply Type 5
+CEQ1 7 Capacitor connection 1 for defining equalization pulse Analog I/O Type 4
+CEQ2 8 Capacitor connection 2 for defining equalization pulse Analog I/O Type 4
+VFILT 9 Filtered bus voltage Supply Type 5
+V20V 10 20V supply output Supply Type 5
+VDD2MV 11 Voltage monitor of Voltage Regulator 2 Analog Input Type 8
+VDD2MC 12 Current monitor input 1 of Voltage Regulator 2 Analog Input Type 9
+VDD2 13 Current monitor input 2 of Voltage Regulator 2 Analog Input Type 8
+VSS2 14 Voltage Regulator 2 Ground Supply
+VSW2 15 Switch output of Voltage Regulator 2 Analog Output Type 6
+VIN 16 Voltage Regulator 1 and 2 Power Supply Input Supply Type 5
+VSW1 17 Switch output of Voltage Regulator 1 Analog Output Type 6
+VSS1 18 Voltage Regulator 1 Ground Supply
+VDD1 19 Current Input 2 and Voltage Monitor Input of Voltage Regulator 1 Analog Input Type 8
+VDD1M 20 Current Monitor Input 1 of Voltage Monitor 1 Analog Input Type 9
+NC 21, 22 Not connected (do not connect)
+MODE1 23 Mode Selection Input 1 Digital Input Type 12
+MODE2 24 Mode Selection Input 2 Digital Input Type 12
+TREQ 25 Transmit Request Input Digital Input Type 12
+CSB/UC1 26 Chip Select Output (SPI) or Configuration Input (UART) Digital Output or
+Digital Input
+Type 13 or
+14
+SDI/RXD 27 Serial Data Input (SPI) or Receive Input (UART) Digital Input Type 14
+SDO/TXD 28 Serial Data Output (SPI) or Transmit Output (UART) Digital Output Type 13
+SCK/UC2 29 Serial Clock Output (SPI) or Configuration Input (UART) Digital Output or
+Digital Input
+Type 13 or
+14
+VDDD 30 Digital Supply Voltage Input Supply Type 7
+VSSD 31 Digital Supply Voltage Ground Supply
+XCLK 32 Oscillator Clock Output Digital Output Type 13
+XSEL 33 Clock Selection (Quartz or Digital Clock) Digital Input Type 12
+XTAL2 34 Clock Generator Output (Quartz) or Input (Digital Clock) Analog Output or
+Digital Input
+Type 10 or
+14
+XTAL1 35 Clock Generator Input (Quartz) Analog Input Type 10
+SAVEB 36 Save Signal (open drain with pull−up) Digital Output Type 15
+RESETB 37 Reset Signal (open drain with pull−up) Digital Output Type 15
+FANIN/WAKE 38 Fan−In and Wake−Up Input Digital Input Type 11
+TESTOUT 39 Test Output (do not connect) Analog Output
+VDDA 40 Analog Supply Voltage Input Supply Type 7
+NOTE: Type of CSB/UC1 and SCK/UC2 is depending on status MODE1 − MODE2 pin
+Type of XTAL1 and XTAL2 pin is depending on status XSEL pin.
+
+--- PAGE 4 ---
+NCN5120
+www.onsemi.com
+4
+EQUIVALENT SCHEMATICS
+Following figure gives the equivalent schematics of the user relevant inputs and outputs. The diagrams are simplified
+representations of the circuits used.
+TXO
+60V
+CCP
+60V
+60V
+CAV
+7V
+CEQx
+60V
+Type 1: TXO−pin Type 2: CCP −pin Type 3: CAV −pin Type 4: CEQ1 and CEQ2 −pin
+VBUS1
+60V
+VBUS1
+VFILT
+60V
+VFILT
+V20V
+60V
+V20V
+VIN
+60V
+VIN
+VSWx
+VIN
+60V
+Type 5: VBUS1−, VFILT−, V20V and VIN−pin Type 6: VSW1 and VSW2 −pin
+VDDA
+VDDA
+7V
+VDDD
+VDDD
+7V
+VDD2MV
+7V
+VDD2
+60V
+VDD1
+7V
+Type 7: VDDD− and VDDA−pin Type 8: VDD1 −, VDD2− and VDD2MV−pin
+VDD1M
+VDD1
+7V
+7V
+VDD2MC
+VDD2
+7V
+60V
+XTAL2
+VDDD
+XTAL1
+VDDD
+Type 9: VDD1M− and VDD2MC−pin Type 10: XTAL1 − and XTAL2−pin
+IN
+VDDD
+RDOWN
+OUT
+VDDD
+IN
+VDDD
+OUT
+VDDD
+RUP
+Type 12: MODE1−, MODE2−,
+TREQ− and XSEL−pin
+Type 13: CSB/UC1−,
+SDO/TXD−, SCK/UC2−
+and XCLK−pin
+Type 14: CSB/UC1−,
+SDI/RXD−, SCK/UC2
+and XTAL2−pin
+Type 15: RESETB− and
+SAVEB−pin
+FANIN/WAKE
+RUP
+7V
+Vaux
+Type 11: FANIN/WAKE−pin
+NOTE: Type of CSB/UC1 and SCK/UC2 is depending on status MODE1 − MODE2 pin
+Type of XTAL1 and XTAL2 pin is depending on status XSEL pin.
+Figure 3. In− and Output Equivalent Diagrams
+
+--- PAGE 5 ---
+NCN5120
+www.onsemi.com
+5
+ELECTRICAL SPECIFICATION
+Table 2. ABSOLUTE MAXIMUM RATINGS (Notes 1 and 2)
+Symbol Parameter Min Max Unit
+VTXO KNX Transmitter Output Voltage −0.3 +45 V
+ITXO KNX Transmitter Output Current (Note 3) 250 mA
+VCCP Voltage on CCP−pin −10.5 +14.5 V
+VCAV Voltage on CAV−pin −0.3 +3.6 V
+VBUS1 Voltage on VBUS1−pin −0.3 +45 V
+IBUS1 Current Consumption VBUS1−pin 0 60 mA
+VCEQ Voltage on pins CEQ1 and CEQ2 −0.3 +45 V
+VFILT Voltage on VFILT−pin −0.3 +45 V
+V20V Voltage on V20V−pin −0.3 +25 V
+VDD2MV Voltage on VDD2MV−pin −0.3 +3.6 V
+VDD2MC Voltage on VDD2MC−pin −0.3 +45 V
+VDD2 Voltage on VDD2−pin −0.3 +45 V
+VSW Voltage on VSW1− and VSW2−pin −0.3 +45 V
+VIN Voltage on VIN−pin −0.3 +45 V
+VDD1 Voltage on VDD1−pin −0.3 +3.6 V
+VDD1M Voltage on VDD1M−pin −0.3 +3.6 V
+VDIG Voltage on pins MODE1, MODE2, TREQ, CSB/UC1, SDI/TXD, SDO/RXD, SCK/
+UC2, XCLK, XSEL, SAVEB, RESETB and FANIN/WAKE
+−0.3 +3.6 V
+VDD Voltage on VDDD− and VDDA−pin −0.3 +3.6 V
+VXTAL Voltage on XTAL1− and XTAL2−pin −0.3 +3.6 V
+TST Storage temperature −55 +150 °C
+TJ Junction Temperature (Note 4) −25 +155 °C
+VHBM Human Body Model electronic discharge immunity (Note 5) −2 +2 kV
+Stresses exceeding those listed in the Maximum Ratings table may damage the device. If any of these limits are exceeded, device functionality
+should not be assumed, damage may occur and reliability may be affected.
+1. Convention: currents flowing in the circuit are defined as positive.
+2. VBUS2, VSS1, VSS2, VSSA and VSSD form the common ground. They are hard connected to the PCB ground layer.
+3. Room temperature, 27 /C0087 shunt resistor for transmitter, 250 mA over temperature range.
+4. Normal performance within the limitations is guaranteed up to the Thermal Warning level. Between Thermal Warning and Thermal Shutdown
+temporary loss of function or degradation of performance (which ceases after the disturbance ceases) is possible.
+5. According to JEDEC JESD22 −A114.
+
+--- PAGE 6 ---
+NCN5120
+www.onsemi.com
+6
+Recommend Operation Conditions
+Operating ranges define the limits for functional operation and parametric characteristics of the device. Note that the
+functionality of the chip outside these operating ranges is not guaranteed. Operating outside the recommended operating ranges
+for extended periods of time may affect device reliability.
+Table 3. OPERATING RANGES
+Symbol Parameter Min Max Unit
+VBUS1 VBUS1 Voltage (Note 6) +20 +33 V
+VDD Digital and Analog Supply Voltage (VDDD− and VDDA−pin) +3.13 +3.47 V
+VIN Input Voltage DC−DC Converter 1 and 2 (Note 7) +8.47 +33 V
+VCCP Input Voltage at CCP−pin −10.5 +14.5 V
+VDD1 Input Voltage on VDD1−pin +3.13 +3.47 V
+VDD1M Input Voltage on VDD1M−pin +3.13 +3.57 V
+VDD2 Input Voltage on VDD2−pin +3.1 +21 V
+VDD2MC Input Voltage on VDD2MC−pin +3.1 +21.1 V
+VDD2MV Input Voltage on VDD2MV−pin +1.2 VDD V
+VDIG Input Voltage on pins MODE1, MODE2, TREQ, CSB/UC1, SDI/RXD, SCK/UC2,
+and XSEL
+0 VDD V
+VWAKE Input Voltage on FANIN/WAKE−pin 0 3.6 V
+fclk Clock Frequency External Quartz 16 MHz
+TA Ambient Temperature −25 +85 °C
+TJ Junction Temperature (Note 8) −25 +125 °C
+6. Voltage indicates DC value. With equalization pulse bus voltage must be between 11 V and 45 V.
+7. Minimum operating voltage on VIN −pin should be equal to the highest value of VDD1 and VDD2.
+8. Higher junction temperature can result in reduced lifetime.
+Table 4. DC PARAMETERS The DC parameters are given for a device operating within the Recommended Operating Conditions
+unless otherwise specified. Convention: currents flowing in the circuit are defined as positive.
+Symbol Pin(s) Parameter Remark/Test Conditions Min Typ Max Unit
+POWER SUPPLY
+VBUS1
+VBUS1
+Bus DC voltage Excluding active and
+equalization pulse 20 33 V
+IBUS1_Int Bus Current Consumption
+Normal operating mode. No
+external load, DC1 and DC2
+enabled, continuous trans−
+mission of ‘0’ on the KNX bus
+by another KNX device (50%
+bus load), based on Figure 14
+5 mA
+ISLEEP
+Sleep Mode Current
+Consumption 1.35 1.8 mA
+VBUSH Undervoltage release level VBUS1 rising, see Figure 4 17.1 18.0 18.9 V
+VBUSL Undervoltage trigger level VBUS1 falling, see Figure 4 15.9 16.8 17.7 V
+VBUS_Hyst Undervoltage hysteresis 0.6 V
+VDDD VDDD Digital Power Supply 3.13 3.3 3.47 V
+VDDA VDDA Analog Power Supply 3.13 3.3 3.47 V
+VAUX Auxiliary Supply Internal supply, for info only 2.8 3.3 3.6 V
+KNX BUS COUPLER
+Icoupler_lim VBUS1 Bus Coupler Current Limitation
+FANIN/WAKE = 1, VFILT >
+VFILTH
+13  30 mA
+FANIN/WAKE = 0, VFILT >
+VFILTH
+26  60 mA
+
+--- PAGE 7 ---
+NCN5120
+www.onsemi.com
+7
+Table 4. DC PARAMETERS The DC parameters are given for a device operating within the Recommended Operating Conditions
+unless otherwise specified. Convention: currents flowing in the circuit are defined as positive.
+Symbol UnitMaxTypMinRemark/Test ConditionsParameterPin(s)
+KNX BUS COUPLER
+Vcoupler_drop
+VBUS1,
+VFILT Coupler Voltage Drop
+IBUS1 = 12 mA
+Vcoupler_drop = VBUS1 − VFILT
+3.5  6.5 V
+IBUS1 = 24 mA
+Vcoupler_drop = VBUS1 − VFILT
+4.5  8 V
+VFILTH
+VFILT
+Undervoltage release level VFILT rising, see Figure 5 10.1 10.6 11.2 V
+VFILTL Undervoltage trigger level VFILT falling, see Figure 5 8.4 8.9 9.4 V
+FIXED DC−DC CONVERTER
+VIN VIN Input Voltage 8.47 33 V
+VDD1 VDD1 Output Voltage 3.13 3.3 3.47 V
+VDD1_rip Output Voltage Ripple VIN = 25 V, IDD1 = 40 mA 40 mV
+IDD1_lim Overcurrent Threshold R2 = 1 /C0087, see Figure 14 −100 −200 mA
+/C0104VDD1
+Power Efficiency
+(DC Converter Only)
+Vin = 25 V, IDD1 = 35 mA, 
+L1 = 220 /C0109H (1.26 /C0087 ESR), 
+see Figure 13
+90 %
+RDS(on)_p1 RDS(on) of power switch See Figure 17 8 /C0087
+RDS(on)_n1 RDS(on) of flyback switch See Figure 17 4 /C0087
+VDD1M VDD1M Input voltage VDD1M−pin 3.57 V
+ADJUSTABLE DC−DC CONVERTER
+VIN VIN Input Voltage VDD2 33 V
+VDD2
+VDD2
+Output Voltage VIN ≥ VDD2 3.3 21 V
+VDD2H Undervoltage release level VDD2 rising, see Figure 6 0.9 x
+VDD2
+V
+VDD2L Undervoltage trigger level VDD2 falling, see Figure 6 0.8 x
+VDD2
+V
+VDD2_rip Output Voltage Ripple VIN = 25 V, VDD2 = 3.3 V, 
+IDD2 = 40 mA 40 mV
+IDD2_lim Overcurrent Threshold R3 = 1 /C0087, see Figure 14 −100 −200 mA
+/C0104VDD2
+Power Efficiency
+(DC Converter Only)
+Vin = 25 V, VDD2 = 3.3 V, 
+IDD2 = 35 mA, L2 = 220 /C0109H
+(1.26 /C0087 ESR), see Figure 14
+90 %
+RDS(on)_p2 RDS(on) of power switch See Figure 17 8 /C0087
+RDS(on)_n2 RDS(on) of flyback switch See Figure 17 4 /C0087
+VDD2M VDD2MC Input voltage VDD2MC−pin 21.1 V
+RVDD2M VDD2MV Input Resistance VDD2MV−pin 60 100 140 k/C0087
+Ileak,vsw2 Half−bridge leakage 20 /C0109A
+V20V REGULATOR
+V20V
+V20V
+V20V Output Voltage I20V < 4 mA, VFILT ≥ 21 V 18 20 22 V
+I20V V20V Output Current 0 −4 mA
+I20V_lim V20V Output Current Limitation −11 mA
+V20VH
+V20V Undervoltage release
+level V20V rising, see Figure 7 12.6 13.4 14.2 V
+V20VL
+V20V Undervoltage trigger
+level V20V falling, see Figure 7 11.8 12.6 13.4 V
+V20V_hyst V20V Undervoltage hysteresis V20V_hyst = V20VH – V20VL 0.8 V
+
+--- PAGE 8 ---
+NCN5120
+www.onsemi.com
+8
+Table 4. DC PARAMETERS The DC parameters are given for a device operating within the Recommended Operating Conditions
+unless otherwise specified. Convention: currents flowing in the circuit are defined as positive.
+Symbol UnitMaxTypMinRemark/Test ConditionsParameterPin(s)
+XTAL OSCILLATOR
+VXTAL XTAL1, XTAL2 Voltage on XTAL−pin VDDD V
+FAN−IN AND WAKE−UP CONTROL
+VWAKE_H
+FANIN/
+WAKE
+FANIN/WAKE−pin release level See Figure 8 1.5 1.8 2.1 V
+VWAKE_L FANIN/WAKE−pin active level See Figure 8 0.9 1.2 1.4 V
+VWAKE_hyst
+Hysteresis on FANIN/WAKE−
+pin See Figure 8  0.6  V
+RWAKE
+Pull−Up Resistor FANIN/
+WAKE−pin Pull−up connected to VAUX 80 165 270 /C0087
+DIGITAL INPUTS
+VIL SCK/UC2,
+SDI/RXD,
+CSB/UC1,
+TREQ,
+MODE1,
+MODE2, XSEL
+Logic Low Threshold 0 0.7 V
+VIH Logic High Threshold 2.65 VDDD V
+RDOWN Internal Pull−Down Resistor
+SCK/UC2−, SDI/RXD− and
+CSB/UC1 pin excluded. Only
+valid in Normal State.
+5 10 28 k/C0087
+DIGITAL OUTPUTS
+VOL SCK/UC2,
+SDO/TXD,
+CSB/UC1,
+XCLK
+Logic low output level 0 0.4 V
+VOH Logic high output level VDDD −
+0.45 VDDD V
+IL
+SCK/UC2,
+XCLK
+Load Current
+8 mA
+SDO/TXD,
+CSB/UC1 4 mA
+VOL SAVEB,
+RESETB
+Logic low level open drain IOL = 4 mA 0.4 V
+Rup Internal Pull−up Resistor 20 40 80 k/C0087
+TEMPERATURE MONITOR
+TTW Thermal Warning Rising temperature
+See Figure 9 105 115 135 °C
+TTSD Thermal shutdown Rising temperature 
+See Figure 9 125 140 155 °C
+THyst Thermal Hysteresis See Figure 9 5 11 15 °C
+/C0068T Delta TTSD and TTW See Figure 9 25 °C
+PACKAGE THERMAL RESISTANCE VALUE
+Rthja
+Thermal Resistance 
+Junction−to−Ambient
+Simulated Conform 
+JEDEC JESD−51, (2S2P) 30 K/W
+Simulated Conform 
+JEDEC JESD−51, (1S0P) 60 K/W
+Rthjp
+Thermal Resistance 
+Junction−to−Exposed Pad 0.95 K/W
+
+--- PAGE 9 ---
+NCN5120
+www.onsemi.com
+9
+Table 5. AC PARAMETER The AC parameters are given for a device operating within the Recommended Operating Conditions
+unless otherwise specified.
+Symbol Pin(s) Parameter Remark/Test Conditions Min Typ Max Unit
+POWER SUPPLY
+tBUS_FILTER VBUS1 VBUS1 filter time See Figure 4 2 ms
+FIXED DC−DC CONVERTER
+tVSW1_rise
+VSW1
+Rising slope at VSW1−pin 0.45 V/ns
+tVSW1_fall Falling slope at VSW1−pin 0.6 V/ns
+ADJUSTABLE DC−DC CONVERTER
+tVSW2_rise
+VSW2
+Rising slope at VSW2−pin 0.45 V/ns
+tVSW2_fall Falling slope at VSW2−pin 0.6 V/ns
+XTAL OSCILLATOR
+fXTAL XTAL1, XTAL2 XTAL Oscillator Frequency 16 MHz
+FAN−IN AND WAKE−UP CONTROL
+tWAKE
+FANIN/
+WAKE
+Debounce Time on FANIN/
+WAKE−pin See Figure 8   100 ms
+WATCHDOG
+tWDPR
+ 
+Prohibited Watchdog
+Acknowledge Delay See Watchdog, p19 2  33 ms
+tWDTO Watchdog Timeout Interval Selectable over UART or SPI 33  524 ms
+tWDTO_acc
+Watchdog Timeout Interval
+Accuracy  =Xtal accuracy
+tWDRD Watchdog Reset Delay   0  ns
+tRESET Reset Duration   8  /C0109s
+MASTER SERIAL PERIPHERAL INTERFACE (MASTER SPI)
+tsck
+SCK
+SPI Clock period
+SPI Baudrate depending on
+configuration input bits (see
+Interface Mode, p24). Tolerance
+is equal to Xtal oscillator
+tolerance. 
+See also Figure 11
+2 /C0109s
+8 /C0109s
+tSCK_HIGH SPI Clock high time tSCK / 2
+tSCK_LOW SPI Clock low time tSCK / 2
+tSDI_SET
+SDI
+SPI Data Input setup time 125 ns
+tSDI_HOLD SPI Data Input hold time 125 ns
+tSDO_VALID SDO SPI Data Output valid time CL = 20 pF, See Figure 11 100 ns
+tCS_HIGH
+CSB
+SPI Chip Select high time
+See Figure 11
+0.5 x
+tSCK
+tCS_SET SPI Chip Select setup time 0.5 x
+tSCK
+tCS_HOLD SPI Chip Select hold time 0.5 x
+tSCK
+tTREQ_LOW
+TREQ
+TREQ low time
+See Figure 12
+125 ns
+tTREQ_HIGH TREQ high time 125 ns
+tTREQ_SET TREQ setup time 125 ns
+tTREQ_HOLD TREQ hold time 125 ns
+UNIVERSAL ASYNCHRONOUS RECEIVER/TRANSMITTER (UART)
+fUART TXD, RXD UART Interface Baudrate
+Baudrate depending on
+configuration input pins (see
+Interface Mode, p24). 
+Tolerance is equal to tolerance
+of Xtal oscillator tolerance.
+19200 Baud
+38400 Baud
+
+--- PAGE 10 ---
+NCN5120
+www.onsemi.com
+10
+VBUS
+t
+VBUSH
+VBUSL
+tBUS_FILTER
+<VBUS>
+Comments:
+<VBUS> is an internal signal which can be verified with the Internal State Service.
+tBUS_FILTER
+Figure 4. Bus Voltage Undervoltage Threshold
+t
+VFILT
+VFILTL
+VFILTH
+<VFILT>
+Comments:
+<VFILT> is an internal signal which can be verified with the System State Service
+Figure 5. VFILT Undervoltage Threshold
+t
+VDD2
+VDD2L
+VDD2H
+<VDD2>
+Comments:
+<VDD2> is an internal signal which can be verified with the System State Service
+Figure 6. VDD2 Undervoltage Thresholds
+
+--- PAGE 11 ---
+NCN5120
+www.onsemi.com
+11
+t
+V20V
+V20VL
+V20VH
+<V20V>
+Comments:
+<V20V> is an internal signal which can be verified with the System State Service.
+V20V_hyst
+Figure 7. V20V Undervoltage Threshold levels
+t
+V FANIN/WAKE
+<WAKE>
+Comments:
+−<WAKE> is an internal signal indicating a wake up
+−Wake functionality only possible when FANIN/WAKE−pin is high during normal operation
+≤ tWAKE
+VWAKE_H
+VWAKE_L
+V WAKE_Hyst
+t WAKE
+Figure 8. Wake−Up Threshold Levels and Timing
+Figure 9. Temperature Monitoring Levels
+<TW>
+SAVEB
+RESETB
+Comments:
+  - <TW> is an internal signal which can be verified with the System State Service.
+  - No SPI/UART communication possible when RESETB is low!
+  - It's assumed all voltage supplies are within their operating condition.
+t
+T
+TTW
+TTSD
+THyst
+THyst
+/C0110TNormal
+Stand-By
+Reset
+Start-Up
+Normal
+Stand-By
+Analog State
+
+--- PAGE 12 ---
+NCN5120
+www.onsemi.com
+12
+<WDEN>
+WD Timer
+RESETB
+Remarks:
+− WD Timer is an internal timer
+− t WDTO = <WDT[3:0]>
+− <WDEN> and <WDT[3:0]> are Watchdog Register bits
+Enable
+Watchdog
+Re−enable
+Watchdog
+t WDPR
+t WDTO
+>t WDPR and < tWDTO /C0118tWDPR and /C0119t WDTO t WDRD
+t
+t
+t
+treset
+Figure 10. Watchdog Timing Diagram
+ÉÉÉÉÉÉÉÉÉÉÉÉÉÉ
+ÉÉÉÉÉÉÉÉÉÉÉÉÉÉ
+ÉÉÉÉÉÉÉÉÉÉÉÉÉÉ
+ÉÉÉÉÉÉ
+ÉÉÉÉÉÉ
+ÉÉÉÉÉÉ
+DO
+ÉÉÉÉÉÉÉÉÉÉÉÉÉÉÉÉ
+ÉÉÉÉÉÉÉÉÉÉÉÉÉÉÉÉ
+ÉÉÉÉÉÉÉÉÉÉÉÉÉÉÉÉ
+ÉÉÉÉÉÉ
+ÉÉÉÉÉÉ
+ÉÉÉÉÉÉ
+CLK
+DI
+CS
+tSCK
+tSDI_SET tSDI _HOLD
+tCS _ SET tSCK _HIGH tSCK _LOW
+tCS_HOLD
+tCS _HIGH
+tSDO_VALID
+Figure 11. SPI Bus Timing Diagram
+ÉÉÉÉÉÉÉÉ
+ÉÉÉÉÉÉÉÉ
+ÉÉÉÉÉÉÉÉÉ
+ÉÉÉÉÉÉÉÉÉ
+ÉÉÉÉÉ
+ÉÉÉÉÉ
+ÉÉÉÉÉ
+ÉÉÉÉÉ
+DO
+CLK
+DI
+CS
+TREQ
+tTREQ _SET
+LSB 1 7 2
+Dummy Dummy Dummy Dummy
+tTREQ _LOW tTREQ_HIGH
+tTREQ_HOLD
+Figure 12. TREQ Timing Diagram
+
+--- PAGE 13 ---
+NCN5120
+www.onsemi.com
+13
+TYPICAL APPLICATION SCHEMATICS
+Figure 13. Typical Application Schematic NCN5120, 9−bit UART Mode (19200bps), Single Supply
+NCN5120
+VSSA 1
+VBUS2 2
+TXO 3
+CCP 4
+CAV 5
+VBUS1 6
+CEQ1 7
+CEQ2 8
+VFILT 9
+VDD2MV 11
+VDD2MC 12
+VDD2 13
+VSS2 14
+VSW2 15
+VIN 16
+VSW1 17
+VSS1 18
+VDD1 19
+VDD1M 20
+NC21
+NC22
+MODE123
+TREQ25
+MODE224
+CSB/UC126
+SDI/RXD27
+SDO/TXD28
+V20V 10
+SCK/UC229
+VDDD30
+VSSD31
+XCLK32
+XSEL33
+XTAL234
+XTAL135
+SAVEB36
+RESETB37
+FANIN/WAKE38
+TESTOUT39
+VDDA40
+3.3
+C5
+D1
+D2
+R1
+C1
+C3 C4 C7
+C2
+L1
+C10
+3.3
+3.3
+C9C8
+A
+B
+GND
+VCC
+3.3
+TxD
+RxD
+SAVEb
+RESETb
+R2
+X1
+uC CLK
+3.3
+C6
+Figure 14. Typical Application Schematic NCN5120, SPI (500 kbps), Dual Supply and Wake−up
+NCN5120
+VSSA 1
+VBUS2 2
+TXO 3
+CCP 4
+CAV 5
+VBUS1 6
+CEQ1 7
+CEQ2 8
+VFILT 9
+VDD2MV 11
+VDD2MC 12
+VDD2 13
+VSS2 14
+VSW2 15
+VIN 16
+VSW1 17
+VSS1 18
+VDD1 19
+VDD1M 20
+NC21
+NC22
+MODE123
+TREQ25
+MODE224
+CSB/UC126
+SDI/RXD27
+SDO/TXD28
+V20V 10
+SCK/UC229
+VDDD30
+VSSD31
+XCLK32
+XSEL33
+XTAL234
+XTAL135
+SAVEB36
+RESETB37
+FANIN/WAKE38
+TESTOUT39
+VDDA40
+3.3
+C5
+D1
+D2
+R1
+C1
+C3 C4 C7
+C2
+L1
+C10
+3.3
+3.3
+C6
+C9C8
+A
+B
+GND
+VCC
+3.3
+SDO
+SDI
+SAVEb
+RESETb
+R2
+L2
+R3
+R4
+R5
+C11
+V2
+V2
+VCC2
+SCK
+SCB
+S1 uC CLK
+X1
+TREQ
+
+--- PAGE 14 ---
+NCN5120
+www.onsemi.com
+14
+TYPICAL APPLICATION SCHEMATICS
+Figure 15. Typical Application Schematic NCN5120, Analog Mode, Single Supply, 1.0 mA/ms Current Slope
+(FANIN/WAKE−pin Pulled to Ground)
+NCN5120
+VSSA 1
+VBUS2 2
+TXO 3
+CCP 4
+CAV 5
+VBUS1 6
+CEQ1 7
+CEQ2 8
+VFILT 9
+VDD2MV 11
+VDD2MC 12
+VDD2 13
+VSS2 14
+VSW2 15
+VIN 16
+VSW1 17
+VSS1 18
+VDD1 19
+VDD1M 20
+NC21
+NC22
+MODE123
+TREQ25
+MODE224
+CSB/UC126
+SDI/RXD27
+SDO/TXD28
+V20V 10
+SCK/UC229
+VDDD30
+VSSD31
+XCLK32
+XSEL33
+XTAL234
+XTAL135
+SAVEB36
+RESETB37
+FANIN38
+TESTOUT39
+VDDA40
+3.3
+C5
+R1
+C1
+C3 C4 C7
+C2
+L1
+C10
+3.3
+3.3
+C6
+GND
+VCC
+3.3
+TxD
+RxD
+SAVEb
+RESETb
+R2
+3.3
+D1
+D2
+A
+B
+
+--- PAGE 15 ---
+NCN5120
+www.onsemi.com
+15
+Table 6. EXTERNAL COMPONENTS LIST AND DESCRIPTION
+Comp. Function Min Value Max Unit Remarks Notes
+C1 AC coupling capacitor 38 47 56 nF 50 V, Ceramic 9
+C2 Equalization capacitor 4.2 4.7 5.2 nF 25 V, Ceramic 9
+C3 Capacitor to average bus DC voltage 80 100 120 nF 50 V, Ceramic 9
+C4 Storage and filter capacitor VFILT 80 100 1000 /C0109F 35 V 9
+C5 VDDA HF rejection capacitor 80 100 nF 6.3 V, Ceramic
+C6 VDDD HF rejection capacitor 80 100 nF 6.3 V, Ceramic
+C7 Load Capacitor V20V 1 /C0109F 35 V, Ceramic, ESR < 2 /C0087 14, 15
+C8, C9 Parallel capacitor X−tal 8 10 12 pF 6.3 V, Ceramic 10
+C10 Load capacitor VDD1 8 10 /C0109F 6.3 V, Ceramic, ESR < 0.1 /C0087
+C11 Load capacitor VDD2 8 10 /C0109F Ceramic, ESR < 0.1 /C0087 11
+R1 Shunt resistor for transmitting 19.8 22 24.2 /C00871 W 9
+R2 DC1 sensing resistor 0.47 1 10 /C00871/16 W
+R3 DC2 sensing resistor 0.47 1 10 /C00871/16 W
+R4 Voltage divider to specify VDD2 10 k/C00871/16 W, see p17 for calculat-
+ing the exact valueR5 27 100 k/C0087
+L1, L2 DC1/DC2 inductor 220 /C0109H
+D1 Reverse polarity protection diode SS16 12
+D2 Voltage suppressor 1SMA40CA
+X1 Crystal oscillator FA−238 13
+S1 Push Button
+9. Component must be between minimum and maximum value to fulfill the KNX requirement.
+10.Actual capacitor value depends on X1. If an crystal oscillator is chosen, the capacitors need to be chosen in such a way that the frequency
+equals 16 MHz. Capacitors are not required if external clock signal is supplied.
+11. Voltage of capacitor depends on VDD2 value defined by R4 and R5. See p16 for more details on defining VDD2 voltage value.
+12.Reverse polarity diode is mandatory to fulfill the KNX requirement.
+13.A clock signal of 16 MHz (50 ppm or less) is mandatory to fulfill the KNX requirements. Or a crystal oscillator of 16 MHz, 50 ppm is used
+(C8 and C9 need to be of the correct value based on the crystal datasheet), or an external 16 MHz clock is used.
+14.It’s allowed to short this pin to VFILT−pin.
+15.High capacitor value might affect the start up time.
+
+--- PAGE 16 ---
+NCN5120
+www.onsemi.com
+16
+ANALOG FUNCTIONAL DESCRIPTION
+Because NCN5120 follows the KNX standard only a brief
+description of the KNX related blocks is given in this
+datasheet. Detailed information on the KNX Bus can be
+found on the KNX website (www.knx.org) and in the KNX
+standards.
+KNX Bus Interfacing
+Each bit period is 104 /C0109s. Logic 1 is simply the DC level
+of the bus voltage which is between 20 V and 33 V . Logic 0
+is encoded as a drop in the bus voltage with respect to the DC
+level. Logic 0 is known as the active pulse.
+The active pulse is produced by the transmitter and is
+ideally rectangular. It has a duration of 35 /C0109s and a depth
+between 6 and 9 V (Vact). Each active pulse is followed by
+an equalization pulse with a duration of 69 /C0109s. The latter is
+an abrupt jump of the bus voltage above the DC level
+followed by an exponential decay down to the DC level. The
+equalization pulse is characterized by its height Veq and the
+voltage Vend reached at the end of the equalization pulse.
+See the KNX Twisted Pair Standard (KNX TP1−256) for
+more detailed KNX information.
+DC Level
+VBUS
+t
+104 /C0109s
+35 /C0109s6 9 /C0109s
+Active Pulse Equalization Pulse
+104 /C0109s
+0
+1 VeqVact
+Ven d
+Figure 16. KNX Bus Voltage versus Digital Value
+KNX Bus Transmitter
+The purpose of the transmitter is to produce an active
+pulse (see Figure 16) between 6 V and 9 V regardless of the
+bus impedance (Note 1). In order to do this the transmitter
+will sink as much current as necessary until the bus voltage
+drops by the desired amount.
+KNX Bus Receiver
+The receiver detects the beginning and the end of the
+active pulse. The detection threshold for the start of the
+active pulse is −0.45 V (typ.) below the average bus voltage.
+The detection threshold for the end of the active pulse is
+−0.2 V (typ.) below the average bus voltage giving a
+hysteresis of 0.25 V (typ.).
+Bus Coupler
+The role of the bus coupler is to extract the DC voltage
+from the bus and provide a stable voltage supply for the
+purpose of powering the NCN5120. This stable voltage
+supplied by the bus coupler will follow the average bus
+voltage. The bus coupler also makes sure that the current
+drawn from the bus changes very slowly. For this a large
+filter capacitor is used on the VFILT −pin. Abrupt load
+current steps are absorbed by the filter capacitor. Long−term
+stability requires that the average bus coupler input current
+is equal to the average (bus coupler) load current.
+There are 4 conditions that determine the dimensioning of
+the VFILT capacitor. First, the capacitor value should be
+between 12.5 /C0109F and 4000 /C0109F to garantuee proper operation
+of the part.
+The next requirement on the VFILT capacitor is
+determined by the startup time of the system. According to
+the KNX specification, the total startup time must be below
+10 s. This time is comprised of the time to charge the VFILT
+capacitor to 12 V (where the DCDC convertor becomes
+operatonal) and the startup time of the rest of the system
+tstartup,system. This gives the following formula:
+C /C0116/C046610 s /C0042tstartup,system/C0467/C0032
+Icoupler_Ilim,startup
+VFILTH
+The third limit on VFILT capacitor value is the required
+capacitor value to filter out current steps /C0068Istep of the system
+without going into reset.
+C /C0117
+/C0068Istep
+2
+/C04662 /C0064(VBUS1 /C0042Vcoupler_drop /C0042VFILTL) /C0064Islope/C0467
+1. Maximum bus impedance is specified in the KNX Twisted Pair Standard
+
+--- PAGE 17 ---
+NCN5120
+www.onsemi.com
+17
+The last condition on the size of VFILT is the desired
+warning time twarning between SA VEB and RESETB in case
+the bus voltage drops away. This is determined by the current
+consumption of the system Isystem.
+C /C0117Isystem /C0032
+/C0466twarning /C0041tbusfilter/C0467
+/C0466VBUS1 /C0042Vcoupler_drop /C0042VFILTL/C0467
+The bus coupler is implemented as a linear voltage
+regulator. For efficiency purpose, the voltage drop over the
+bus coupler is kept minimal (see Table 4).
+KNX Impedance Control
+The impedance control circuit defines the impedance of
+the bus device during the active and equalization pulses. The
+impedance can be divided into a static and a dynamic
+component, the latter being a function of time. The static
+impedance defines the load for the active pulse current and
+the equalization pulse current. The dynamic impedance is
+produced by a block, called an equalization pulse generator,
+that reduces the device current consumption (i.e. increases
+the device impedance) as a function of time during the
+equalization phase so as to return energy to the bus.
+Fixed and Adjustable DC−DC Converter
+The device contains two DC −DC buck converters, both
+supplied from VFILT.
+DC1 provides a fixed voltage of 3.3 V. This voltage is used
+as an internal low voltage supply (VDDA and VDDD) but can
+also be used to power external devices (VDD1−pin). DC1 is
+automatically enabled during the power−up procedure (see
+Analog State Diagram, p20).
+DC2 provides a programmable voltage by means of an
+external resistor divider. It is not used as an internal voltage
+supply making it not mandatory to use this DC −DC
+converter (if not needed, tie the VDD2MV pin to VDD1, see
+also Figure 13).
+DC2 can be monitored (<VDD2>, see System Status
+Service, p34), and/or disabled by a command from the host
+controller (<DC2EN>, see Analog Control Register 0, p51).
+DC2 will only be enabled when VFILT−bit is set (<VFILT>,
+see System Status Service, p34). The status of DC2 can be
+monitored (<VDD2>, see System Status Service, p34).
+The voltage divider can be calculated as follows:
+R4 /C0043
+R5 /C0032RVDD2M
+R5 /C0041RVDD2M
+/C0032
+VDD2 /C00423.3
+3.3 (eq. 1)
+Both DC −DC converters make use of slope control to
+improve EMC performance (see Table 5).
+To operate DC1 and DC2 correctly, the voltage on the
+VIN−pin should be higher than the highest value of DC1 and
+DC2.
+Although both DC −DC converters are capable of
+delivering 100 mA, the maximum current capability will not
+always be usable. One always needs to make sure that the
+KNX bus power consumption stays within the KNX
+specification. The maximum allowed current for the DC−DC
+converters and V20V regulator can be estimated as next:
+VBUS /C0032/C0466IBUS /C0042I20V/C0467
+2 /C0032/C0426/C0466VDD1 /C0032IDD1/C0467/C0041/C0466VDD2 /C0032IDD2/C0467/C0427
+/C01191 (eq. 2)
+IBUS will be limited by the KNX standard and should be
+lower or equal to I coupler (see Table 4). Minimum VBUS is
+20 V (see KNX standard). VDD1 and VDD2 can be found back
+in Table 4. IDD1, IDD2 and I20V must be chosen in a correct
+way to be in line with the KNX specification (Note 2).
+Although DC2 can operate up to 21V , it will not be
+possible to generate this 21V under all operating conditions.
+For relay applications this could give certain limitations. See
+application note AND9149 for more info on draving relays.
+See application note AND9135 for defining the optimum
+inductor and capacitor of the DC-DC converters. When
+using low series resistance output capacitors on DC2, it is
+advised to split the the current sense resistor as shown in
+Figure 12 to reduce ripple current for low load conditions.
+V20V Regulator
+This is the 20 V low drop linear voltage regulator used to
+supply external devices. As it draws current from VFILT,
+this current is seen without any power conversion directly at
+the VBUS1 pin.
+The V20V regulator starts up by default but can be
+disabled by a command from the host controller
+(<V20VEN>, see Analog Control Register 0, p51). When
+the V20V regulator is not used, no load capacitor needs to
+be connected (see C7 of Figures 13, 14 and 15). Connect
+V20V−pin with VFILT−pin in this case.
+V20V regulator will only be enabled when VFILT−bit is
+set (<VFILT>, see System Status Service, p34). The host
+controller can also monitor the status of the regulator
+(<V20V>, see System Status Service, p34).
+Xtal Oscillator
+An analog oscillator cell generates the main clock of
+16 MHz. This clock is directly provided to the digital block
+to generate all necessary clock domains.
+An input pin XSEL is foreseen to enable the use of a quartz
+crystal (see Figure 18) or an external clock generator (see
+Figure 19) to generate the main clock.
+The XCLK−pin can be used to supply a clock signal of
+8 MHz to the host controller. The frequency of this clock
+signal can be doubled or switched off by a command from
+the host controller (<XCLKFREQ> and <XCLKEN>, see
+Analog Control Register 0, p51).
+After power−up, a 4 MHz (Note 3) clock signal will be
+present on the XCLK−pin during Stand−By. When Normal
+State is entered, a 8 or 16 MHz clock signal will be present
+on the XCLK−pin. See also Figure 21.
+2. The formula is for a typical KNX application. It‘s only given as guidance and does not guarantee compliance with the KNX standard.
+3. The 4 MHz clock signal is internally generated and will be less accurate as the crystal generated clock signal of 8 or 16 MHz.
+
+--- PAGE 18 ---
+NCN5120
+www.onsemi.com
+18
+When Normal State is left and Stand−By State is entered
+due to an issue different than an Xtal issue, the 8 or 16 MHz
+clock signal will still be present on the XCLK−pin during the
+Stand−By State. If however Stand −By is entered from
+Normal State due to an Xtal issue, the 4 MHz clock signal
+will be present on the XCLK−pin. See also Table 7.
+FANIN/WAKE−pin
+The FANIN/W AKE−pin has a double purpose. First of all
+it defines the maximum allowed bus current and bus current
+slopes. If the FANIN/W AKE−pin is kept floating or pulled
+high, NCN5120 will limit the KNX bus current slopes to
+0.5 mA/ms at all times. NCN5120 will also limit the KNX
+bus current to 30mA during start −up. During normal
+operation, NCN5120 is capable of taking up to 13 mA (=
+Icoupler) from the KNX bus for supplying external loads
+(DC1, DC2 and V20V). Because NCN5120 will not limit the
+KNX bus current to 13 mA during normal operation, it’s up
+to the user to make sure that the Icoupler bus current does not
+go above 13 mA (for FANIN/WAKE−pin floating or high).
+If the FANIN/W AKE −pin is pulled to ground the
+operation is similar as above with the exception that the
+KNX bus current slopes will be limited to 1 mA/ms at all
+times, the KNX bus current will be limited to 60 mA during
+start−up and the up to 26 mA (Icoupler) can be taken from
+the KNX bus during normal operation. Definitions for
+Start−Up and Normal Operation (as given above) can be
+found in the KNX Specification.
+The FANIN/W AKE−pin can also be used to exit from
+Sleep Mode (see p19). When in Sleep Mode, a low level on
+the FANIN/W AKE−pin initiates the power−up procedure of
+the device. Because FANIN/W AKE −pin has an internal
+pull−up a simple push button can be used to exit Sleep Mode
+(see also Figure 14). This functionality is not available when
+the FANIN/Wake−pin is pulled to ground.
+When using the FANIN/W AKE −pin, timings must be
+respected (see Table 5 and Figure 8).
+RESETB− and SAVEB−pin
+The RESETB signal can be used to keep the host
+controller in a reset state. When RESETB is low this
+indicates that the bus voltage is too low for normal operation
+and that the fixed DC −DC converter has not started up. It
+could also indicate a Thermal Shutdown (TSD). The
+RESETB signal also indicates if communication between
+host and NCN5120 is possible.
+The SA VEB signal indicates correct operation. When
+SA VEB goes low, this indicates a possible issue (loss of bus
+power or too high temperature) which could trigger the host
+controller to save critical data or go to a save state. SA VEB
+goes low immediately when VFILT goes below 14 V (due
+to sudden large current usage) or after 2 ms when VBUS
+goes below 20 V . RESETB goes low when VFILT goes
+below 12 V .
+RESETB− and SA VEB−pin are open−drain pins with an
+internal pull−up resistor to VDDD.
+Voltage Supervisors
+NCN5120 has different voltage supervisors monitoring
+VBUS, VFILT, VDD2 and V20V . The general function of a
+voltage supervisor is to detect when a voltage is above or
+below a certain level. The levels for the different voltages
+monitored can be found back in Table 4 (see also Figures 4,
+5, 6 and 7).
+The status of the voltage supervisors can be monitored by
+the host controller (see System Status Service, p34).
+Depending on the voltage supervisor outputs, the device
+can enter different states (see Analog State Diagram, p20).
+Figure 17. Fixed (VDD1) and Adjustable (VDD2) DC−DC Converter
+VSW1
+VIN
+VSS1
+VDD1M
+VDD1
+VSW2
+VSS2
+VDD2MV
+VDD2MC
+VDD2
+COMP
+Switch
+Controller
+COMP
+Switch
+Controller
+From VFILT
+1Ω
+10μF
+VDD1 = 3.3V
+0.47Ω
+10μF
+VDD2 = 3.3V – 20V
+NCN5120
+R5
+R4
+L2
+L1
+P2
+N2
+P1
+N1
+0.47Ω
+
+--- PAGE 19 ---
+NCN5120
+www.onsemi.com
+19
+Rdown
+Osc
+16MHz
+8 MHz
+NCN5120
+XCLK
+XTAL1
+XTAL2
+XSEL
+Figure 18. XTAL Oscillator Figure 19. External Clock Generator
+or 16 MHz
+Rdown
+Osc
+8MHz or
+16MHz
+NCN5120
+3.3V
+XTAL2
+XTAL1
+XCLK
+XSEL
+CLKOUT
+3.3V
+VCC
+GND
+Micro−
+controller
+Table 7. STATUS OF SEVERAL BLOCKS DURING THE DIFFERENT (ANALOG) STATES
+State Osc XCLK VDD1 VDD2/V20V SPI/UART KNX
+Reset Off Off Off Off Inactive Inactive
+Start−Up Off Off Start−up Off Inactive Inactive
+Stand−By (Note 16) Off 4 MHz On Start−Up Active Inactive
+(Note 21)
+Stand−By (Note 17) On
+(Note 19)
+On
+(Note 19)
+On On (Note 20) Active Inactive
+(Note 21)
+Normal On On
+(Note 18)
+On On Active Active
+Sleep Off Off Off Off Inactive Inactive
+16.Only valid when entering Stand−By from Start−Up State.
+17.Only valid when entering Stand−By from Normal State.
+18.8 MHz
+19.4 MHz signal if Stand−By state was entered due to oscillator issue. Otherwise 8 MHz clock signal.
+20.Only operational if Stand−By state was not entered due to VDD2 or V20V issue.
+21.Under certain conditions KNX bus is (partly) active. See Digital State Diagram for more details.
+Temperature Monitor
+The device produces an over−temperature warning (TW)
+and a thermal shutdown warning (TSD). Whenever the
+junction temperature rises above the Thermal Warning level
+(TTW), the SA VEB−pin will go low to signal the issue to the
+host controller. Because the SA VEB−pin will not only go
+low on a Thermal Warning (TW), the host controller needs
+to verify the issue by requesting the status (<TW>, see
+System Status Service, p34). When the junction temperature
+is above TW, the host controller should undertake actions to
+reduce the junction temperature and/or store critical data.
+When the junction temperature reaches Thermal
+Shutdown (TTSD), the device will go to the Reset State. The
+Thermal Shutdown will be stored (<TSD>, see Analog
+Status Register, p52) and the analog and digital power
+supply will be stopped (to protect the device). The device
+will stay in the Reset State as long as the temperature stays
+above TTSD.
+If the temperature drops below TTSD, Start−Up State will
+be entered (see also Figure 20). At the moment VDD1 is
+back up and the OTP memory is read, Stand−By State will
+be entered and RESETB will go high. The Xtal oscillator
+will be started. Once the temperature has dropped below
+TTW and all voltages are high enough, Normal State will be
+entered. SA VEB will go high and KNX communication is
+again possible.
+The TW −bit will be reset at the moment the junction
+temperature drops below T TW. The TSD −bit will only be
+reset when the junction temperature is below TTSD and the
+<TSD> bit is read (see Analog Status Register, p52).
+Figure 9 gives a better view on the temperature monitor.
+Sleep Mode
+Sleep Mode can be entered by setting the SLP −bit
+(<SLP>, see Analog Control Register 1, p52). Leaving
+Sleep Mode can only be done by means of a (wake) pulse on
+the FANIN/W AKE−pin (or a POR). An exit from Sleep
+Mode can be verified by the host controller (<SLP>, see
+Analog Status Register, p52).
+It’s not possible to enter Sleep Mode when the
+FANIN/W AKE−pin is pulled low (see p18).
+See Table 7 for the status of several blocks during Sleep
+Mode.
+Watchdog
+NCN5120 provides a Watchdog function to the host
+controller. The Watchdog function can be enabled by means
+of the WDEN−bit (<WDEN>, see Watchdog Register, p51).
+
+--- PAGE 20 ---
+NCN5120
+www.onsemi.com
+20
+Once this bit is set to ‘1’, the host controller needs to re−write
+this bit to clear the internal timer before the Watchdog
+Timeout Interval expires (Watchdog Timeout Interval =
+<WDT>, see Watchdog Register, p51).
+In case the Watchdog is acknowledged too early (before
+tWDPR) or not within the Watchdog Timeout Interval
+(tWDTO), the RESETB−pin will be made low (= reset host
+controller).
+Table 8 gives the Watchdog timings t WDTO and t WDPR.
+Details on <WDT> can be found in the Watchdog Register,
+p51.
+Table 8. WATCHDOG TIMINGS
+WDT[3:0] tWDTO [ms] tWDPR [ms]
+0000 33 2
+0001 66 4
+0010 98 6
+0011 131 8
+0100 164 10
+0101 197 12
+0110 229 14
+0111 262 16
+1000 295 18
+1001 328 20
+1010 360 23
+1011 393 25
+1100 426 27
+1101 459 29
+1110 492 30
+1111 524 31
+Analog State Diagram
+The analog state diagram of NCN5120 is given in
+Figure 20. The status of the oscillator, XCLK−pin, DC−DC
+converters, V20V regulator, serial and KNX
+communication during the different (analog) states is given
+in Table 7.
+Figure 21 gives a detailed view on the start−up behavior
+of NCN5120. After applying the bus voltage, the filter
+capacitor starts to charge. During this Reset State, the
+current drawn from the bus is limited to Icoupler (for details
+see the KNX Standards). Once the voltage on the filter
+capacitor reaches 10 V (typ.), the fixed DC −DC converter
+(powering VDDA) will be enabled and the device enters the
+Start−Up State. When V DD1 gets above 2.8 V (typ.), the
+OTP memory is read out to trim some analog parameters
+(OTP memory is not accessible by the user). When done, the
+Stand−By State is entered and the RESETB −pin is made
+high. If at this moment VBUS is above VBUSH, the VBUS−bit
+will be set (<VBUS>, see System Status Service, p34). After
+aprox. 2 ms the Xtal oscillator will start. When V FILT is
+above VFILTH DC2 and V20V will be started. When the Xtal
+oscillator has started, no Thermal Warning (TW) or Thermal
+Shutdown (TSD) was detected and the VBUS −, VFILT−,
+VDD2− and V20V −bits are set, the Normal State will be
+entered and SA VEB−pin will go high.
+Figure 22 gives a detailed view on the shut −down
+behavior. If the KNX bus voltage drops below V BUSL for
+more than tbus_filter, the VBUS−bit will be reset (<VBUS>,
+see System Status Service, p34) and the Standy−By State is
+entered. SA VEB will go low to signal this. When VFILT
+drops below VFILTL, DC2 and the V20V regulator will be
+switched off. When VFILT drops below 6.5 V (typ), DC1
+will be switched off and VDD1 drops below 2.8 V (typ.) the
+device goes to Reset State (RESETB low).
+
+--- PAGE 21 ---
+NCN5120
+www.onsemi.com
+21
+Figure 20. Analog State Diagram
+Reset
+RESETB = ‘0’
+SAVEB = ‘0’
+Start−Up
+RESETB = ‘0’
+SAVEB = ‘0’
+Stand−By
+RESETB = ‘1’
+SAVEB = ‘0’
+Normal
+RESETB = ‘1’
+SAVEB = ‘1’
+Sleep
+RESETB = ‘0’
+SAVEB = ‘0’
+VFILT > 10 V
+and
+Temp < TSD
+VFILT < 6.5 V
+VDDA OK
+and
+OTP read done
+<TSD> = ‘1’
+or
+VDDA nOK
+Remarks:
+− <TW>, <TSD>, <XTAL, <VBUS> and <VFILT> are internal status bits which can be verified with the
+System State Service (with exception of <TSD> for which Internal Register Read should be used).
+−Although Reset State could be entered from Normal State on a TSD, Stand−By State will be
+entered first due to a TW.
+− Enabling of DC2 and V20V will depend on the <DC2EN> and <V20VEN> bits in Analog Control Register 0.
+Enable DC 1 Disable DC 1
+Enable DC2 and V20V
+VFILT >V FILTH
+Disable DC2 and V20V
+VFILT <V FILTL
+Disable DC1
+VFILT < 6.5 V
+<TW> = ‘1’ or <XTAL> = ‘0’ or
+<VBUS> = ‘0’ or <VFILT> = ‘0’
+Disable DC1, DC2 and V20V
+<TW> = ‘0’ and <TSD> = ‘0’ and
+<XTAL> = ‘1’ and <VBUS> = ‘1’ and
+<VFILT> = ‘1’
+Enable DC 1
+Disable DC1, DC2 and V20V
+<TSD> = ‘1’
+or
+VDDA nOK
+VFILT < 6.5 V
+Wake
+Pulse
+Sleep Command and
+WAKE−pin = ‘1’
+and
+clock present
+
+--- PAGE 22 ---
+NCN5120
+www.onsemi.com
+22
+Figure 21. Start−Up Behavior
+<VFILT>
+<VDD2>
+<V20V>
+RESETB
+SAVEB
+XCLK
+VBUS
+VFILT
+IBUS
+Icoupler_lim
+VDD1
+10V
+VFILTH
+2.8V
+VXTAL
+Xtal Oscillator
+<VBUS>
+VBUSH
+VDD2
+0.9 x VDD2
+V20V
+V20VH
+Reset Start-Up Stand-By Normal t
+Remarks:
+VDD1 directly connected to VDDA.
+±3ms
+Slope maximum 0.5mA/ms (FANIN/WAKE−pin = high)
+or 1mA/ms (FANIN/WAKE−pin = low)
+Maximum 30 mA (FANIN/WAKE−pin = high) or 60mA (FANIN/WAKE−pin = low)
+Should be limited to 13 mA (FANIN/Wake−pin = high)
+or 26 mA (FANIN/WAKe−pin = low)
+
+--- PAGE 23 ---
+NCN5120
+www.onsemi.com
+23
+Figure 22. Shut−Down Behavior
+<VFILT>
+<VDD2>
+<V20V>
+RESETB
+SAVEB
+XCLK
+VBUS
+VFILT
+IBUS
+VDD1
+6.5V
+VFILTL
+2.8V
+VXTAL
+Xtal Oscillator
+<VBUS>
+VBUSH
+VDD2
+0.9 x VDD2
+V20V
+ResetStand-ByNormal
+t
+Remarks:
+VDD1 directly connected to VDDA.
+VBUSL
+tbus_filter tbus_filter
+Normal Stand-By
+
+--- PAGE 24 ---
+NCN5120
+www.onsemi.com
+24
+Interface Mode
+The device can communicate with the host controller by
+means of a UART interface or an SPI interface. The
+selection of the interface is done by the pins MODE1,
+MODE2, TREQ, SCK/UC2 and CSB/UC1.
+Table 9. INTERFACE SELECTION
+TREQ MODE2 MODE1 SCK/UC2 CSB/UC1 SDI/RXD SDO/TXD Description
+0 0 0 0 0
+RXD TXD
+9−bit UART−Mode, 19200 bps
+0 0 0 0 1 9−bit UART−Mode, 38400 bps
+0 0 0 1 0 8−bit UART−Mode, 19200 bps
+0 0 0 1 1 8−bit UART−Mode, 38400 bps
+1 0 0 X X Driver Receiver Analog Mode
+TREQ 0 1
+SCK (out) CSB (out) SDI SDO
+SPI Master, 125 kbps
+TREQ 1 0 SPI Master, 500 kbps
+NOTE: X = Don‘t Care
+UART Interface
+The UART interface is selected by pulling pins TREQ,
+MODE1 and MODE2 to ground. Pin UC2 is used to select
+the UART Mode (‘0’ = 9−bit, ‘1’ = 8−bit) and pin UC1 is
+used to select the baudrate (‘0’ = 19200 bps, ‘1’ =
+38400 bps). The UART interface allows full duplex,
+asynchronous communication.
+The difference between 8−bit mode and 9−bit mode is that
+in 9−bit an additional even parity bit is transmitted (with
+exception of the internal register read and write services
+where the parity bit is meaningless and should be ignored).
+In 8 −bit mode one extra service is available
+(U_FrameState.ind). The SDI/RXD −pin is the NCN5120
+UART receive pin and is used to send data from the host
+controller to the device. Pin SDO/TXD is the NCN5120
+UART transmit pin and is used to transmit data between the
+device and the host controller. Figure 13 gives an UART
+application example (9−bit, 19200 bps). Data is transmitted
+LSB first.
+Start
+(= 0) Bit 0 Bit 1 Bit 2 Bit 3 Bit 4 Bit 5 Bit 6 Bit 7 Stop
+(= 1)
+Figure 23. 8−bit UART Mode
+Start
+(= 0) Bit 0 Bit 1 Bit 2 Bit 3 Bit 4 Bit 5 Bit 6 Bit 7 Parity Stop
+(= 1)
+Figure 24. 9−bit UART Mode
+One special UART Mode is foreseen called Analog Mode.
+When this mode is selected (TREQ = ‘1’, MODEx = ‘0’) an
+immediate connection is made with the KNX transmitter
+receiver (see Figure 25). Bit level coding/decoding has to be
+done by the host controller. Keep in mind that the signals on
+the SDI/RXD− and SDO/TXD−pin are inverted. Figure 15
+gives an Analog Mode application example. When using the
+device in Analog Mode, no clock needs to be provided to the
+device.
+Figure 25. Analog UART Mode
+POR
+TW/
+TSD UVD
+DC/DC
+Converter 1
+DC/DC
+Converter 2
+OSC
+NCN5120
+CAV
+VBUS1
+CCP
+TXO
+FANIN/WAKE
+VBUS2
+V20V
+XTAL1
+XTAL2
+XSEL
+XCLK
+SAVEB RESETBTESTOUT
+VSS2
+VDD2
+VDD2MV
+VDD2MC
+VSW2
+VSS1
+VDD1
+VDD1M
+VSW1
+VIN
+MODE2
+MODE1
+TREQ (TREQ = 1)
+CSB/UC1
+SDO/TXD
+SDI/RXD
+SCK/UC2
+VSSDVDDDVDDA VSSAVFILTCEQ2CEQ1
+20V LDO
+Fan−In
+Control
+VAUX
+Bus Coupler
+Impedance
+Control
+Transmitter
+OSC
+Receiver
+RC
+Osc
+Diagnostics
+Wake−Up
+
+--- PAGE 25 ---
+NCN5120
+www.onsemi.com
+25
+SPI Interface
+The SPI interface is selected by MODE1 − and
+MODE2−pin. The baudrate is determined by which
+MODE−pin is pulled high (MODE1 pulled high = 125 kbps,
+MODE2 pulled high = 500 kbps).
+The SPI interface allows full duplex synchronous
+communication between the device and the host controller.
+The interface operates in Mode 0 (CPOL and CPHA = ‘0’)
+meaning that the data is clocked out on the falling edge and
+sampled on the rising edge. The LSB is transmitted first.
+ÉÉ
+ÉÉ
+ÉÉ
+ÉÉ
+SCK
+SDI
+CSB
+LSB 1 2 3 4 5 6 MSBSDO
+10 32 54 76
+LSB 1 2 3 4 5 6 MSB
+Figure 26. SPI Transfer
+During SPI transmission, data is transmitted (shifted out
+serially) on the SDO/TXD −pin and received (shifted in
+serially) on the SDI/RXD−pin simultaneously. SCK/UC2 is
+set as output and is used as the serial clock (SCK) to
+synchronize shifting and sampling of the data on the SDI−
+and SDO−pin. The speed of this clock signal is selectable
+(see Table 9). The slave select line (CSB/UC1−pin) will go
+low during each transmission allowing to selection the host
+controller (CSB−pin is high when SPI is in idle state).
+Shift Register
+Control
+NCN5120
+SDO /TXD
+SDI/RXD
+SCK /UC2
+CSB /UC1
+Shift Register
+Host Controller
+MISO
+MOSI
+SCLK
+SS Control
+Figure 27. SPI Master
+In an SPI network only one SPI Master is allowed (in this
+case NCN5120). To allow the host controller to
+communicate with the device the TREQ −pin can be used
+(Transmit Request). When NCN5120 detects a negative
+edge on TREQ, the device will issue dummy transmission
+of 8 bits which will result in a transmission of data byte from
+the host controller to the device. See Figure 12 for details on
+the timings. See Figure 14 for an SPI application example.
+SCK
+SDI
+CSB
+SDO
+TREQ
+01 2 3 4 567
+DD D D D DDD
+01 2 3 4
+DD D D D
+Dummy
+Start dummy transmission
+Figure 28. Transmission Request
+
+--- PAGE 26 ---
+NCN5120
+www.onsemi.com
+26
+DIGITAL FUNCTIONAL DESCRIPTION
+The implementation of the Data Link Layer as specified in the KNX standard is divided in two parts. All functions related
+to communication with the Physical Layer and most of the Data Link Layer services are inside NCN5120, the rest of the
+functions and the upper communication layers are implemented into the host controller (see Figure 29).
+The host controller is responsible for handling:
+• Checksum
+• Parity
+• Addressing
+• Length
+The NCN5120 is responsible for handling:
+• Checksum
+• Parity
+• Acknowledge
+• Repetition
+• Timing
+Digital State Diagram
+The digital state diagram is given in Figure 30.
+The current mode of operation can be retrieved by the host controller at any time (when RESETB−pin is high) by issuing
+the U_SystemStat.req service and parsing back U_SystemStat.ind service (see System Status Service, p34).
+Table 10. NCN5120 DIGITAL STATES
+State Explanation
+RESET Entered after Power On Reset (POR) or in response to a U_Reset.req service issued by the host controller. In
+this state NCN5120 gets initialized, all features disabled and services are ignored and not executed.
+POWER−UP /
+POWER−UP STOP
+Entered after Reset State or when VBUS, VFILT or Xtal are not operating correctly (operation of VBUS, VFILT
+and XTAL can be verified by means of the System Status Service, p34). Communication with KNX bus is not
+allowed. 
+U_SystemStat.ind can be used to verify this state (code 00).
+SYNC NCN5120 remains in this state until it detects silence on the KNX bus for at least 40 Tbits. Although the receiver
+of NCN5120 is on, no frames are transmitted to the host controller. 
+U_SystemStat.ind can be used to verify this state (code 01).
+STOP This state is useful for setting−up NCN5120 safely or temporarily interrupting reception from the KNX bus.
+U_SystemStat.ind can be used to verify this state (code 10).
+NORMAL In this state the device is fully functional. Communication with the KNX bus is allowed.
+U_SystemStat.ind can be used to verify this state (code 11).
+
+--- PAGE 27 ---
+NCN5120
+www.onsemi.com
+27
+Application Layer
+Presentation Layer
+Session Layer
+Transport Layer
+Network Layer
+Data Link Layer
+Logic Link Control
+Media Access Control
+Physical Layer
+7
+6
+5
+4
+3
+2
+1
+NCN5120 Host Controller
+Figure 29. OSI Model Reference
+Reset
+Initialize device
+Deactivate all features
+POR or U_Reset.req
+Power−Up
+Code: 00
+KNX Rx = off
+KNX Tx = off
+Sync
+Code: 01
+KNX Rx = on
+KNX Tx = off
+Stop
+Code: 10
+KNX Rx = off
+KNX Tx = off
+Normal
+Code: 11
+KNX Rx = on
+KNX Tx = on
+Power−Up Stop
+Code: 00
+KNX Rx = off
+KNX Tx = off
+<X T A L>=‘ 1 ’
+and
+<VBUS> = ‘1’
+and
+<VFILT> = ‘1’
+< X T A L >=‘ 0 ’
+or
+<VBUS> = ‘0’
+or
+<VFILT> = ‘0’
+<XTAL > = ‘1’
+and
+<VBUS> = ‘1’
+and
+<VFILT> = ‘1’
+<XTAL> = ‘0’
+or
+<VBUS> = ‘0’
+or
+<VFILT> = ‘0’
+<XTAL> = ‘0’
+or
+<VBUS> = ‘0’
+or
+<VFILT> = ‘0’
+Send U _Reset .ind
+to host
+KNX bus idle for /C011940 Tbits
+U_ExitStopMode.req
+Send U_StopMode.ind
+to host
+U_StopMode.req
+U_StopMode.req and
+no activity for /C011930 Tbits
+U_ExitStopMode .req
+Send U_StopMode.ind
+to hostU_StopMode .req
+Figure 30. Digital State Diagram
+
+--- PAGE 28 ---
+NCN5120
+www.onsemi.com
+28
+Services
+Execution of services depends on the digital state (Figure 30). Certain services are rejected if received outside the Normal
+State. The following table gives a view of all services and there acceptance during the different digital states.
+Table 11. ACCEPTANCE OF SERVICES
+Service
+State
+Normal Stop Sync Power−Up Bus Monitor
+U_Reset.req E E E E E
+U_State.req E E E E I
+U_SetBusy.req E E E E I
+U_QuitBusy.req E E E E I
+U_Busmon.req E E E E I
+U_SetAddress.req E E E E I
+U_SetRepetition.req E E E E I
+U_L_DataOffset.req E E E E I
+U_SystemStat.req E E E E I
+U_StopMode.req E I E E E
+U_ExitStopMode.req I E I I E
+U_Ackn.req E R R R I
+U_Configure.req E E E E I
+U_IntRegWr.req E E E E E
+U_IntRegRd.req E E E E E
+U_L_DataStart.req E R R R I
+U_L_DataCont.req E R R R I
+U_L_DataEnd.req E R R R I
+U_PollingState.req E E E E I
+NOTE:
+Bus Monitor state is not a separate state. It is applied on top of Normal, Stop, Sync or Power−Up State.
+Legend: E = service is executed
+I = service is ignored (not executed and no feedback sent to the host controller)
+R = service is rejected (not executed, protocol error is sent back to the host controller through U_State.ind)
+See Internal Register Read Service (p36) for limitations of U_IntRegRd.req
+
+--- PAGE 29 ---
+NCN5120
+www.onsemi.com
+29
+Table 12. SERVICES FROM HOST CONTROLLER
+Control Field
+Service Name Hex Remark
+Extra Following
+Bytes
+Total
+Bytes7 6 5 4 3 2 1 0
+INTERNAL COMMANDS – DEVICE SPECIFIC
+0 0 0 0 0 0 0 1 U_Reset.req 01 1
+0 0 0 0 0 0 1 0 U_State.req 02 1
+0 0 0 0 0 0 1 1 U_SetBusy.req 03 1
+0 0 0 0 0 1 0 0 U_QuitBusy.req 04 1
+0 0 0 0 0 1 0 1 U_Busmon.req 05 1
+1 1 1 1 0 0 0 1 U_SetAddress.req F1 AddrHigh
+AddrLow
+X (don’t care)
+4
+1 1 1 1 0 0 1 0 U_SetRepetition.req F2 RepCntrs
+X (don’t care)
+X (don’t care)
+4
+0 0 0 0 1 i i i U_L_DataOffset.req 08−0C iii = MSB byte
+index (0…4)
+1
+0 0 0 0 1 1 0 1 U_SystemState.req 0D 1
+0 0 0 0 1 1 1 0 U_StopMode.req 0E 1
+0 0 0 0 1 1 1 1 U_ExitStopMode.req 0F 1
+0 0 0 1 0 n b a U_Ackn.req 10−17 n = nack
+b = busy
+a = addressed
+1
+0 0 0 1 1 p c m U_Configure.req 18−1F p = auto−polling
+c = CRC−CCITT
+m = frame end
+with MARKER
+1
+0 0 1 0 1 0 a a U_IntRegWr.req 28−2B aa = address of
+internal register
+Data to be written 2
+0 0 1 1 1 0 a a U_IntRegRd.req 38−3B 1
+1 1 1 0 s s s s U_PollingState.req E0−EE s = slot number
+(0 … 14)
+PollAddrHigh  
+PollAddrLow
+PollState
+4
+KNX TRANSMIT DATA COMMANDS
+1 0 0 0 0 0 0 0 U_L_DataStart.req 80 Control Octet (CTRL) 2
+1 0 i i i i i i U_L_DataCont.req 81−BF i = index (1…63) Data octet (CTRLE,
+SA, DA, AT, NPCI, LG,
+TPDU)
+2
+0 1 l l l l l l U_L_DataEnd.req 47−7F l = last index + 1
+(7 … 63)
+Check Octet (FCS) 2
+With respect to command length, there are two types of services from the host controller:
+• Single−byte commands: the control byte is the only data sent from the host controller to NCN5120.
+• Multiple−byte commands: the following data byte(s) need to be handled according to the already received control byte.
+With respect to command purpose there are two types of services from the host controller:
+• Internal command: does not initiate any communication on the KNX bus.
+• KNX transmit data command: initiates KNX communication
+
+--- PAGE 30 ---
+NCN5120
+www.onsemi.com
+30
+Table 13. SERVICES TO HOST CONTROLLER
+Control Field
+Service Name Remark
+Extra
+Following
+Bytes
+Total
+Bytes7 6 5 4 3 2 1 0
+DLL (LAYER 2) SERVICES (DEVICE IS TRANSPARENT)
+1 0 r 1 p1 p0 0 0 L_Data_Standard.ind r = not repeated (‘1’) or
+repeated L_Data frame (‘0’)
+p1, p0 = priority
+n
+0 0 r 1 p1 p0 0 0 L_Data_Extended.ind n
+1 1 1 1 0 0 0 0 L_Poll_Data.ind n
+ACKNOWLEDGE SERVICES (DEVICE IS TRANSPARENT IN BUS MONITOR MODE)
+x x 0 0 x x 0 0 L_Ackn.ind x = acknowledge frame 1
+z 0 0 0 1 0 1 1 L_Data.con z = positive (‘1’) or negative
+(‘0’) confirmation
+1
+CONTROL SERVICES – DEVICE SPECIFIC
+0 0 0 0 0 0 1 1 U_Reset..ind 1
+sc re te pe tw 1 1 1 U_State.ind sc = slave collision
+re = receive error
+te = transmit error
+pe = protocol error 
+tw = temperature warning
+1
+re ce te 1 res 0 1 1 U_FrameState.ind re = parity or bit error
+ce = checksum or length
+error
+te = timing error
+res = reserved
+1
+0 b aa ap c m 0 1 U_Configure.ind b = reserved
+aa = auto−acknowledge
+ap = auto−polling
+c = CRC−CCITT
+m = frame end with
+MARKER
+1
+1 1 0 0 1 0 1 1 U_FrameEnd.ind 1
+0 0 1 0 1 0 1 1 U_StopMode.ind 1
+0 1 0 0 1 0 1 1 U_SystemStat.ind V20V, VDD2,
+VBUS, VFILT,
+XTAL, TW,
+Mode
+2
+Each data byte received from the KNX bus is transparently transmitted to the host controller. An exception is the
+Acknowledge byte which is transmitted to the host controller only in bus monitoring mode. Other useful information can be
+transmitted to the host controller by request using internal control services.
+A detailed description of the services is given on the next pages. For all figures, the MSB bit is always given on the left side
+no matter how the arrow is drawn.
+Host Ctrl NCN5120 KNX Bus
+MSB
+6
+5
+4
+3
+2
+1
+LSB
+MSB
+6
+5
+4
+3
+2
+1
+LSB
+MSB
+6
+5
+4
+3
+2
+1
+LSB
+MSB
+6
+5
+4
+3
+2
+1
+LSB
+Figure 31. Bit Order of Services
+
+--- PAGE 31 ---
+NCN5120
+www.onsemi.com
+31
+Reset Service
+Reset the device to the initial state.
+0 0 0 0 0 0 0 1
+U_Reset.req
+0 0 0 0 0 0 1 1
+U_Reset.ind
+Host Ctrl NCN5120 KNX Bus
+Figure 32. Reset Service
+Remark: U_Reset.Ind will be send when entering Normal State (see Digital State Diagram, p26).
+State Service
+Get internal communication state of the device.
+0 0 0 0 0 0 1 0
+U_State.req
+sc re te pe tw 1 1 1
+U_State.ind
+Host Ctrl NCN5120 KNX Bus
+Figure 33. State Service
+sc (slave collision): ‘1’ if collision is detected during transmission of polling state
+re (receive error): ‘1’ if corrupted bytes were sent by the host controller. Corruption involves incorrect parity (9 −bit
+UART only) and stop bit of every byte as well as incorrect control octet, length or checksum of frame
+for transmission.
+te (transceiver error): ‘1’ if error detected during frame transmission (sending ‘0’ but receiving ‘1’).
+pe (protocol error): ‘1’ if an incorrect sequence of commands sent by the host controller is detected.
+tw (thermal warning): ‘1’ if thermal warning condition is detected.
+Set Busy Service
+Activate BUSY mode.
+During this time and when autoacknowledge is active (see Set Address Service p32), NCN5120 rejects the frames whose
+destination address corresponds to the stored physical address by sending the BUSY acknowledge. This service has no effect
+if autoacknowledge is not active.
+0 0 0 0 0 0 1 1
+U_SetBusy.req
+Host Ctrl NCN5120 KNX Bus
+Figure 34. Set Busy Service
+Remark: BUSY mode is deactivated immediately if the host controller confirms a frame by sending U_Ackn.req service.
+Quit Busy Service
+Deactivate the BUSY mode.
+Restores back to the normal autoacknowledge behavior with ACK sent on the bus in response to addressing frame (only if
+autoacknowledge is active). This service has no effect if autoacknowledge is not active or BUSY mode was not set.
+0 0 0 0 0 1 0 0
+U_QuitBusy.req
+Host Ctrl NCN5120 KNX Bus
+Figure 35. Quit Busy Service
+
+--- PAGE 32 ---
+NCN5120
+www.onsemi.com
+32
+Bus Monitor Service
+Activate bus monitoring state.
+In this mode all data received from the KNX bus is sent to the host controller without performing any filtering on Data Link
+Layer. Acknowledge Frames are also transmitted transparently. This state can only be exited by the Reset Service (see p31).
+0 0 0 0 0 1 0 1
+U_Busmon.req
+x x x x x x x x
+KNX Message
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+KNX Message
+x x x x x x x x
+KNX Message
+x x x x x x x x
+KNX Message
+0 0 0 0 0 0 0 1
+U_Reset.req
+0 0 0 0 0 0 1 1
+U_Reset.ind
+x x 0 0 x x 0 0
+Acknowledge
+x x 0 0 x x 0 0
+Acknowledge
+Figure 36. Bus Monitor Service
+Remark:
+x = don‘t care
+Set Address Service
+Sets the physical address of the device and activates the auto−acknowledge function.
+NCN5120 starts accepting all frames whose destination address corresponds to the stored physical address or whose
+destination address is the group address by sending IACK on the bus. In case of an error detected during such frame reception,
+NCN5120 sends NACK instead of IACK.
+When issued several times after each other, the first call will set the physical address and activate the auto−acknowledge.
+Following calls will only set the physical address because auto−acknowledge is already activated.
+NCN5120 confirms activation of auto−acknowledge function by sending the U_Configure.ind service to the host controller.
+1 1 1 1 0 0 0 1
+U_SetAddress.req
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Address High Byte
+x x x x x x x x
+Address Low Byte
+0 b aa ap c m 0 1
+U_Configure.ind
+x x x x x x x x
+Dummy
+Figure 37. Set Address Service
+
+--- PAGE 33 ---
+NCN5120
+www.onsemi.com
+33
+b (busy mode): ‘1’ if busy mode is active. Can be enabled with U_SetBusy.req (see Set Busy Service, p31) and
+disabled with U_QuitBusy.req service (see Quit Busy Service, p31) or U_Ackn.req service
+(see Receive Frame Service, p44).
+aa (auto−acknowledge):‘1’ if auto−acknowledge feature is active. Can be enabled with U_SetAddress.req service
+(see Set Address Service, p32).
+ap (auto−polling): ‘1’ if auto −polling feature is active. This feature can be enabled with U_Configure.req service
+(see Configure Service, p35).
+c (CRC−CCITT): ‘1’ if CRC −CCITT feature is active. This feature can be enabled with U_Configure.req service
+(see Configure Service, p35).
+m (frame end with MARKER): ‘1’ when feature is active. This feature can be enabled with U_Configure.req service
+(see Configure Service, p35).
+Remarks:
+• Set Address Service can be issued any time but the new physical address and the autoacknowledge function will only
+get active after the KNX bus becomes idle.
+• Autoacknowledge can only be deactivated by a Reset Service (p31)
+• x = don’t care
+• Dummy byte can be anything. NCN5120 completely disregards this information.
+Set Repetition Service
+Specifies the maximum repetition count for transmitted frames when not acknowledged with IACK.
+Separate counters can be set for NACK and BUSY frames. Initial value of both counters is 3.
+If the acknowledge from remote Data Link Layer is BUSY during frame transmission, NCN5120 tries to repeat after at least
+150 bit times KNX bus idle. The BUSY counter determines the maximum amount of times the frame is repeated. If the BUSY
+acknowledge is still received after the last try, an L_Data.con with a negative conformation is sent back to the host controller.
+For all other cases (NACK acknowledgment received, invalid/corrupted acknowledge received or time −out after 30 bit
+times) NCN5120 will repeat after 50 bit times of KNX bus idle. The NACK counter determines the maximum retries.
+L_Data.con with a negative confirmation is send back to the host controller when the maximum retries were reached.
+In worst case, the same request is transmitted (NACK + BUSY + 1) times before NCN5120 stops retransmission.
+Figure 38. Set Repetition Service
+1 1 1 1 0 0 1 0
+U_SetRepetition.req
+Host Ctrl NCN5120 KNX Bus
+0 b 0 n
+Maximum Repetitions
+bb nn
+x x x x
+Dummy
+xx xx
+x x x x
+Dummy
+xx xx
+bbb: BUSY counter (a frame will be retransmitted bbb−times if acknowledge with BUSY).
+nnn: NACK counter (a frame will be retransmitted nnn−times if acknowledge with NACK).
+Remark: Bit 3 and 7 of the second byte need to be zero (‘0’)!
+
+--- PAGE 34 ---
+NCN5120
+www.onsemi.com
+34
+System Status Service
+Request the internal system state of the device.
+0 0 0 0 1 1 0 1
+U_SystemStat .req
+Host Ctrl NCN5120 KNX Bus
+0 1 0 0 1 0 1 1
+U_SystemStat .ind
+2nd byte
+XTAL
+VFILT
+VBU S
+VDD2
+V20V
+TW
+Mode
+Figure 39. System State Service
+V20V: ‘1’ if V20V linear voltage regulator is within normal operating range
+VDD2: ‘1’ if DC2 regulator is within normal operating range
+VBUS: ‘1’ if KNX bus voltage is within normal operating range
+VFILT: ‘1’ if voltage on tank capacitor is within normal operating range State Service
+XTAL: ‘1’ if crystal oscillator frequency is within normal operating range
+TW: ‘1’ if thermal warning condition is present (can also be verified with U_State.ind service (see State Service,
+p31)
+Mode: Operation mode (see also Digital State Diagram, p26).
+Bit
+Mode1 0
+0 0 Power−Up
+0 1 Sync
+1 0 Stop
+1 1 Normal
+Note: SA VEB−pin is low if any of bits 3 to 7 is ‘0’ (zero) or bit 2 is ‘1’.
+Stop Mode Service
+Go to Stop State. A confirmation is sent to indicate that device has switched to the Stop State. See also Digital State Diagram,
+p26
+0 0 0 0 1 1 1 0
+U_StopMode.req
+Host Ctrl NCN5120 KNX Bus
+0 0 1 0 1 0 1 1
+U_StopMode.ind
+Figure 40. Stop Mode Service
+
+--- PAGE 35 ---
+NCN5120
+www.onsemi.com
+35
+Exit Stop Mode Service
+Request transition from Stop to Sync State. An acknowledge service is send later to confirm that device has switched from
+Sync to Normal State. See also Digital State Diagram, p26.
+0 0 0 0 1 1 1 1
+U_ExitStopMode .req
+Host Ctrl NCN5120 KNX Bus
+0 0 0 0 0 0 1 1
+U_Reset.ind
+Figure 41. Exit Stop Mode Service
+Configure Service
+Activate additional features (which are disabled after reset).
+U_Configure.ind service is send back to the host controller at the exact moment when the new features get activated. This
+is done during bus idle or outside the Normal State. It confirms the execution of the request service.
+Host Ctrl NCN5120 KNX Bus
+0 0 0 1 1 m
+U_Configure.req
+cp
+0 b aa ap c 1
+U_Configure.ind
+0m
+Figure 42. Configure Service
+p (auto polling): when active, NCN5120 automatically fills in corresponding poll slot of polling telegrams.
+Host controller is responsible to provide appropriate polling information with the
+U_PollingState.req service (See Slave Polling Frame Service and Master Polling Frame
+Service, p47 and 48).
+c (CRC−CCITT): when active, NCN5120 accompanies every received frame with a 2 −byte CRC−CCITT
+value. CRC−CCITT is also known as CRC−16−CCITT.
+m (frame end with MARKER): End of received frames is normally reported with a silence of 2.6 ms on the Tx line to the host
+controller. With this feature active, NCN5120 marks end of frame with U_FrameEnd.ind +
+U_FrameState.ind services (See Send Frame Service and Receive Frame Service, p36 and 44).
+b: ‘1’ if busy mode is active. Can be enabled with U_SetBusy.req (see Set Busy Service, p31)
+and disabled with U_QuitBusy.req service (see Quit Busy Service, p31) or U_Ackn.req
+service (see Receive Frame Service, p44).
+aa: ‘1’ if auto −acknowledge feature is active. Can be enabled with U_SetAddress.req service
+(see Set Address Service, p32).
+ap (auto−polling): ‘1’ if auto −polling feature is active. This feature can be enabled with U_Configure.req service.
+c (CRC−CCITT): ‘1’ if CRC −CCITT feature is active. See p50 for info on CRC−CCITT.
+This feature can be enabled with U_Configure.req service.
+m (frame end with MARKER): ‘1’ when feature is active. This feature can be enabled with U_Configure.req service.
+Remark:
+Activation of the additional features is done by setting the corresponding bit to ‘1’. Setting the bit to ‘0’ (zero) has no effect
+(will not deactivate feature). Features can only be deactivated by a reset. Set all bits (m, c and p) to ‘0‘ (zero) to poll the current
+configuration status.
+
+--- PAGE 36 ---
+NCN5120
+www.onsemi.com
+36
+Internal Register Write Service
+Write a byte to an internal device−specific register (see Internal Device−Specific Registers, p51). The address of the register
+is specified in the request. The data to be written is transmitted after the request.
+0 0 1 0 1 0 a a
+U_IntRegWr .req
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Data Byte
+Figure 43. Internal Register Write Service
+aa: address of the internal register
+Remark: x = don’t care (in line with Internal Device−Specific Registers, p51).
+NOTE: Internal Register Write is not synchronized with other services. One should only use this service when all
+previous services are ended. When using communication over SPI, it is recommended to go to stop mode when
+performing a register write. When communicating over UART, this is not required.
+Internal Register Read Service
+Read a byte from an internal device −specific register (see Internal Device−Specific Registers, p51). The address of the
+register is specified in the request. The next byte returns the data of the addressed register.
+0 0 1 1 1 0 a a
+U_IntRegRd.req
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Data Byte
+Figure 44. Internal Register Read Service
+aa: address of the internal register
+Remarks:
+• x = don’t care (in line with Internal Device−Specific Registers, p51).
+• It’s advised to only use this service in Stop, Power−Up Stop or Power−Up State. In the other state erroneous behavior
+could occur.
+NOTE: Internal Register Read is not synchronized with other services. One should only use this service when all
+previous services are ended. When using communication over SPI or UART, it is recommended to go to stop
+mode when performing a register write.
+Send Frame Service
+Send data over the KNX bus.
+The U_L_DataStart.req is used to start transmission of a new frame. The byte following this request is the control byte of
+the KNX telegram.
+The different bytes following the control byte are assembled by using U_L_DataCont.req. The byte following
+U_L_DataCont.req is the data byte of the KNX telegram. U_L_DataCont.req contains the index which specifies the position
+of the data byte inside the KNX telegram. It‘s allowed to transmit bytes in random order and even overwrite bytes (= write
+several times into the same index). It‘s up to the host controller to correctly populate all data bytes of the KNX telegram.
+U_L_DataEnd.req is used to finalize the frame and start the KNX transfer. The byte following U_L_DataEnd.req is the
+checksum of the KNX telegram. If the checksum received by the device corresponds to the calculated checksum, the device
+starts the transmission on the KNX bus. If not, the device returns U_State.ind message to the host controller with Receive Error
+flag set (see State Service p31 for U_State.ind).
+U_L_DataStart/DataCont/DataEnd only provides space for 6 index bits. Because an extended frame can consist out of
+
+--- PAGE 37 ---
+NCN5120
+www.onsemi.com
+37
+263 bytes, an index of 9 bits long is needed. U_DataOffset.req provides the 3 most significant bits of the data byte index. The
+value is stored internally until a new offset is provided with another call.
+Each transmitted data octet on the KNX bus will also be transmitted back to the host controller.
+Each transmission is ended with a L_Data.con service where the MSB indicates if an acknowledgment was received or not.
+When operating in SPI or UART 8−bit Mode, L_Data.con is preceded with U_FrameState.ind.
+Depending on the activated features, a CRC−CCITT service and/or a MARKER could be included.
+Next figures give different examples of send frames.
+1 0 0 0 0 0 0 0
+U_L_DataStart.req
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+1 0 i i i i i i
+U_L_DataCont.req
+x x x x x x x x
+Data Octet 1
+0 0 0 0 1 i i i
+U_L_DataOffSet .req
+1 0 i i i i i i
+U_L_DataCont.req
+x x x x x x x x
+Data Octet N
+0 1 l l l l l l
+U_L_DataEnd.req
+x x x x x x x x
+Checksum
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+re ce te 1 res 0 1 1
+U_FrameState.ind
+x 0 0 0 1 0 1 1
+L_Data.con
+/C01192.6ms silence
+Figure 45. Send Frame, SPI or 8−bit UART Mode, Frame End with Silence, No CRC−CCITT
+
+--- PAGE 38 ---
+NCN5120
+www.onsemi.com
+38
+1 0 0 0 0 0 0 0
+U_L_DataStart.req
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+1 0 i i i i i i
+U_L_DataCont.req
+x x x x x x x x
+Data Octet 1
+0 0 0 0 1 i i i
+U_L_DataOffSet .req
+1 0 i i i i i i
+U_L_DataCont.req
+x x x x x x x x
+Data Octet N
+0 1 l l l l l l
+U_L_DataEnd.req
+x x x x x x x x
+Checksum
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+x 0 0 0 1 0 1 1
+L_Data.con
+/C01192.6ms silence
+Figure 46. Send Frame, 9−bit UART Mode, Frame End with Silence, No CRC−CCITT
+
+--- PAGE 39 ---
+NCN5120
+www.onsemi.com
+39
+1 0 0 0 0 0 0 0
+U_L_DataStart.req
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+1 0 i i i i i i
+U_L_DataCont.req
+x x x x x x x x
+Data Octet 1
+0 0 0 0 1 i i i
+U_L_DataOffSet .req
+1 0 i i i i i i
+U_L_DataCont.req
+x x x x x x x x
+Data Octet N
+0 1 l l l l l l
+U_L_DataEnd.req
+x x x x x x x x
+Checksum
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+x x x x x x x x
+CRC−CCITT Low Byte
+/C01192.6 ms silence
+x x x x x x x x
+CRC−CCITT High Byte
+x 0 0 0 1 0 1 1
+L_Data.con
+Figure 47. Send Frame, 9−bit UART Mode, Frame End with Silence, with CRC−CCITT
+
+--- PAGE 40 ---
+NCN5120
+www.onsemi.com
+40
+1 0 0 0 0 0 0 0
+U_L_DataStart.req
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+1 0 i i i i i i
+U_L_DataCont.req
+x x x x x x x x
+Data Octet 1
+0 0 0 0 1 i i i
+U_L_DataOffSet .req
+1 0 i i i i i i
+U_L_DataCont.req
+x x x x x x x x
+Data Octet N
+0 1 l l l l l l
+U_L_DataEnd.req
+x x x x x x x x
+Checksum
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+x x x x x x x x
+CRC−CCITT Low Byte
+/C01192.6ms silence
+x x x x x x x x
+CRC−CCITT High Byte
+re ce te 1 res 0 1 1
+U_FrameState.ind
+x 0 0 0 1 0 1 1
+L_Data.con
+Figure 48. Send Frame, SPI or 8−bit UART Mode, Frame End with Silence, with CRC−CCITT
+
+--- PAGE 41 ---
+NCN5120
+www.onsemi.com
+41
+1 0 0 0 0 0 0 0
+U_L_DataStart .req
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+1 0 i i i i i i
+U_L_DataCont .req
+x x x x x x x x
+Data Octet 1
+0 0 0 0 1 i i i
+U_L_DataOffSet .req
+1 0 i i i i i i
+U_L_DataCont .req
+x x x x x x x x
+Data Octet N
+0 1 l l l l l l
+U_L_DataEnd.req
+x x x x x x x x
+Checksum
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+re ce te 1 res 0 1 1
+U_FrameState .ind
+x 0 0 0 1 0 1 1
+L_Data.con
+1 1 0 0 1 0 1 1
+U_FrameEnd.ind
+Figure 49. Send Frame, All Modes, Frame End with MARKER, No CRC−CCITT
+
+--- PAGE 42 ---
+NCN5120
+www.onsemi.com
+42
+1 0 0 0 0 0 0 0
+U_L_DataStart.req
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+1 0 i i i i i i
+U_L_DataCont.req
+x x x x x x x x
+Data Octet 1
+0 0 0 0 1 i i i
+U_L_DataOffSet .req
+1 0 i i i i i i
+U_L_DataCont.req
+x x x x x x x x
+Data Octet N
+0 1 l l l l l l
+U_L_DataEnd.req
+x x x x x x x x
+Checksum
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+x x x x x x x x
+CRC−CCITT Low Byte
+x x x x x x x x
+CRC−CCITT High Byte
+re ce te 1 res 0 1 1
+U_FrameState .ind
+x 0 0 0 1 0 1 1
+L_Data.con
+1 1 0 0 1 0 1 1
+U_FrameEnd.ind
+Figure 50. Send Frame, All Modes, Frame End with MARKER and with CRC−CCITT
+
+--- PAGE 43 ---
+NCN5120
+www.onsemi.com
+43
+re (receive error): ‘1’ if newly received frame contained corrupted bytes (wrong parity, wrong stop bit or 
+incorrect bit timings)
+ce (checksum or length error): ‘1’ if newly received frame contained wrong checksum or length which does not correspond
+to the number of received bytes
+te (timing error): ‘1’ if newly received frame contained bytes whose timings do not comply with the KNX 
+standard
+res (reserved): Reserved for future use (will be ‘0’).
+Remarks:
+− If the repeat flag is not set (see Set Repetition Service p33), the device will only perform one attempt to send the KNX
+telegram.
+− Sending of the KNX telegram over the KNX bus is only started after all data bytes are received and the telegram is
+assembled.
+− When starting transmission of a new frame with U_L_DataStart.req, the device automatically resets the internal offset of
+the data index to zero.
+− Data offsets of 5, 6 and 7 are forbidden (U_L_DataOffset.req)!
+Remarks on Figures 45 to 50:
+− x = don‘t care (in respect with KNX standard)
+− See Tables 12 and 13 for more details on all the bits
+− Code of U_FrameEnd.ind (0xCB) can also be part of the KNX frame content (Data Octet). When NCN5120 transmits
+the data octet (0xCB) on the KNX bus, 2 bytes (2 times 0xCB) will be transmitted back to the host controller to make it
+possible for the host controller to distinguish between a data octet (0xCB) and U_FrameEnd.ind. This remark is only
+valid if frame end with MARKER is enabled.
+− See p50 for info on CRC−CCITT.
+
+--- PAGE 44 ---
+NCN5120
+www.onsemi.com
+44
+Receive Frame Service
+Receive data over the KNX bus.
+Upon reception from the control byte, the control byte is checked by the device. If correct, the control byte is transmitted
+back to the host (L_Data_Standard.ind or L_Data_Extended.ind depending if standard or extended frame type is received).
+After the control byte, all data bytes are transparently transmitted back to the host controller. Handling of this data is a task
+for the Data Link Layer which should be implemented in the host controller.
+The host controller can indicate if the device is addressed by setting the NACK, BUSY or ACK flag (U_Ackn.req).
+When working in SPI or 8−bit UART Mode, each frame is ended with an U_FrameState.ind. Depending on the activated
+features, a CRC−CCITT or MARKER could be added to the complete frame.
+Below figures give different examples of receive frames.
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+re ce te 1 0 0 1 1
+U_FrameState .ind
+0 0 0 1 0 n b a
+U_Ackn.req
+x x x x x x x x
+Data Octet N
+/C01192.6 ms silence
+Figure 51. Receive Frame, SPI or 8−bit UART Mode, Frame End with Silence, No CRC−CCITT
+
+--- PAGE 45 ---
+NCN5120
+www.onsemi.com
+45
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+0 0 0 1 0 n b a
+U_Ackn.req
+x x x x x x x x
+Data Octet N
+/C01192.6 ms silence
+Figure 52. Receive Frame, 9−bit UART Mode, Frame End with Silence, No CRC−CCITT
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+0 0 0 1 0 n b a
+U_Ackn.req
+x x x x x x x x
+Data Octet N
+/C01192.6ms silence
+x x x x x x x x
+CRC−CCITT Low Byte
+x x x x x x x x
+CRC−CCITT High Byte
+Figure 53. Receive Frame, 9−bit UART Mode, Frame End with Silence, with CRC−CCITT
+
+--- PAGE 46 ---
+NCN5120
+www.onsemi.com
+46
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+0 0 0 1 0 n b a
+U_Ackn.req
+x x x x x x x x
+Data Octet N
+/C01192.6ms silence
+x x x x x x x x
+CRC−CCITT Low Byte
+x x x x x x x x
+CRC−CCITT High Byte
+re ce te 1 res 0 1 1
+U_FrameState.ind
+Figure 54. Receive Frame, SPI or 8−bit UART Mode, Frame End with Silence, with CRC−CCITT
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+0 0 0 1 0 n b a
+U_Ackn.req
+x x x x x x x x
+Data Octet N
+re ce te 1 res 0 1 1
+U_FrameState.ind
+1 1 0 0 1 0 1 1
+U_FrameEnd.ind
+Figure 55. Receive Frame, All Modes, Frame End with MARKER, No CRC−CCITT
+
+--- PAGE 47 ---
+NCN5120
+www.onsemi.com
+47
+Host Ctrl NCN5120 KNX Bus
+x x x x x x x x
+Control Byte
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Checksum
+x 0 r 1 p1 p0 0 0
+L_Data.ind
+x x x x x x x x
+Data Octet 1
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+Checksum
+x x x x x x x x
+Immediate Ackn
+0 0 0 1 0 n b a
+U_Ackn.req
+x x x x x x x x
+Data Octet N
+x x x x x x x x
+CRC −CCITT Low Byte
+x x x x x x x x
+CRC −CCITT High Byte
+re ce te 1 res 0 1 1
+U_FrameState .ind
+1 1 0 0 1 0 1 1
+U_FrameEnd .ind
+Figure 56. Receive Frame, All Modes, Frame End with MARKER, with CRC−CCITT
+re (receive error): ‘1’ if newly received frame contained corrupted bytes (wrong parity, wrong stop bit or 
+incorrect bit timings)
+ce (checksum or length error): ‘1’ if newly received frame contained wrong checksum or length which does not correspond
+to the number of received bytes
+te (timing error) : ‘1’ if newly received frame contained bytes whose timings do not comply with the KNX 
+standard
+res (reserved) : Reserved for future use (will be ‘0’).
+Remarks on Figures 51 to 56:
+− x = don‘t care (in respect with KNX standard)
+− See Tables 12 and 13 for more details on all the bits
+− Code of U_FrameEnd.ind (0xCB) can also be part of the KNX frame content (Data Octet). To make a distinguish
+between a data octet and U_FrameEnd.ind, NCN5120 duplicates the data content (if 0xCB). This will result in 2 bytes
+transmitted to the host controller (two times 0xCB) corresponding to 1 byte received on the KNX bus.
+Above is only valid if frame end with MARKER is enabled.
+− See p50 for info on CRC−CCITT.
+Slave Polling Frame Service
+Upon reception and consistency check of the polling control byte, the control byte is send back to the host controller
+(L_Poll_Data.ind). The host controller will send the slot number to the device (U_PollingState.req), followed by the polling
+address and the polling state. At the same time the source address, polling address, slot count and checksum is received over
+the KNX bus. If the polling address received from the KNX bus is equal to the polling address received from the host controller,
+NCN5120 will send the polling data in the slot as define by U_PollingState.req (only if the slotcount is higher as the define
+slot).
+U_PollingState.req can be sent at any time (not only during a transmission of a polling telegram). The information is stored
+internally in NCN5120 and can be reused for further polling telegrams if auto−polling function gets activated.
+
+--- PAGE 48 ---
+NCN5120
+www.onsemi.com
+48
+Host Ctrl NCN5120 KNX Bus
+1 1 1 1 0 0 0 0
+Control Byte
+x x x x x x x x
+Source Address
+x x x x x x x x
+Checksum
+1 1 1 1 0 0 0 0
+L_Poll_Data.ind
+1 1 1 0 s s s s
+U_PollingState.req
+x x x x x x x x
+Slot 0
+x x x x x x x x
+PollAddrHigh
+x x x x x x x x
+Source Address
+x x x x x x x x
+PollAddrLow
+x x x x x x x x
+Poll Address
+x x x x x x x x
+Poll Address
+x x x x x x x x
+Slot Count
+x x x x x x x x
+PollState
+x x x x x x x x
+Slot N
+Figure 57. Slave Polling Frame Service
+Remarks:
+x = don’t care (in respect with KNX standard)
+ssss = slot number
+Master Polling Frame Service
+When NCN5120 receives the polling frame from the host controller, the polling frame will be transmitted over the KNX bus.
+
+--- PAGE 49 ---
+NCN5120
+www.onsemi.com
+49
+Host Ctrl NCN5120 KNX Bus
+1 1 1 1 0 0 0 0
+Control Byte
+x x x x x x x x
+Source Address
+x x x x x x x x
+Checksum
+1 1 1 1 0 0 0 0
+L_Poll_Data.ind
+1 1 1 0 s s s s
+U_PollingState .req
+x x x x x x x x
+Slot 0
+x x x x x x x x
+Poll Address
+x x x x x x x x
+Source Address
+x x x x x x x x
+PollAddrLow
+x x x x x x x x
+Poll Address
+x x x x x x x x
+Poll Address
+x x x x x x x x
+Slot Count
+x x x x x x x x
+PollState
+x x x x x x x x
+Slot N
+x x x x x x x x
+Source Address
+x x x x x x x x
+PollAddrHigh
+x x x x x x x x
+Source Address
+x x x x x x x x
+Poll Address
+x x x x x x x x
+Slot Count
+x x x x x x x x
+Checksum
+x x x x x x x x
+Slot 0
+x x x x x x x x
+Slot N
+1 1 1 1 0 0 0 0
+Control Byte
+x x x x x x x x
+Source Address
+x x x x x x x x
+Checksum
+x x x x x x x x
+Source Address
+x x x x x x x x
+Poll Address
+x x x x x x x x
+Poll Address
+x x x x x x x x
+Slot Count
+Figure 58. Master Polling Frame Service
+Remarks:
+x = don‘t care (in respect with KNX standard)
+ssss = slot number
+
+--- PAGE 50 ---
+NCN5120
+www.onsemi.com
+50
+CRC−CCITT
+CRC order - 16 bit
+CRC polynom (hex) - 1021
+Initial value (hex) − FFFF
+Final XOR value (hex) − 0
+No reverse on output CRC
+Test string „123456789“ is 29B1h
+CRC−CCITT value over a buffer of bytes can be calculated with following code fragment in C, where
+pBuf is pointer to the start of frame buffer
+uLength is the frame length in bytes
+unsigned short calc_CRC_CCITT(unsigned char* pBuf, unsigned short uLength)
+{
+unsigned short u_crc_ccitt;
+for (u_crc_ccitt = 0xFFFF; uLength−−; p++)
+{
+u_crc_ccitt = get_CRC_CCITT(u_crc_ccitt, *p);
+}
+return u_crc_ccitt;
+}
+unsigned short get_CRC_CCITT(unsigned short u_crc_val, unsigned char btVal)
+{
+u_crc_val = ((unsigned char)(u_crc_val >> 8)) | (u_crc_val << 8);
+u_crc_val ^= btVal;
+u_crc_val ^= ((unsigned char)(u_crc_val & 0xFF)) >> 4;
+u_crc_val ^= u_crc_val << 12;
+u_crc_val ^= (u_crc_val & 0xFF) << 5;
+return u_crc_val;
+}
+
+--- PAGE 51 ---
+NCN5120
+www.onsemi.com
+51
+Internal Device−Specific Registers
+In total 4 device-specific register are available:
+• Watchdog Register (0x00)
+• Analog Control Register 0 (0x01)
+• Analog Control Register 1 (0x02)
+• Analog Status Register 0 (0x03)
+Watchdog Register
+The Watchdog Register is located at address 0x00 and can be used to enable the watchdog and set the watchdog time.
+Table 14. WATCHDOG REGISTER
+ExtWatchdogCtrl (ExtWR)
+Address Bit 7 Bit 6 Bit 5 Bit 4 Bit 3 Bit 2 Bit 1 Bit 0
+0x00
+Access R/W R/W R/W R/W R/W R/W R/W R/W
+Reset 0 0 0 0 1 1 1 1
+Data WDEN - - - WDT
+Table 15. WATCHDOG REGISTER PARAMETERS
+Parameter Value Description Info
+WDEN
+0 Disable
+Enables/disables the watchdog
+p19
+1 Enable
+WDT
+0000 33 ms
+Defines the watchdog time. The watchdog needs to be re-enabled (WDEN)
+within this time or a watchdog event will be triggered.
+0001 66 ms
+0010 98 ms
+0011 131 ms
+0100 164 ms
+0101 197 ms
+0110 229 ms
+0111 262 ms
+1000 295 ms
+1001 328 ms
+1010 360 ms
+1011 393 ms
+1100 426 ms
+1101 459 ms
+1110 492 ms
+1111 524 ms
+Remark: Bit 4 … 6 are reserved.
+Analog Control Register 0
+The Analog Control Register 0 is located at address 0x01 and can be used to enable Sleep Mode, to disable the V20V and
+the DC2 regulator, to disable the XCLK-pin and to set the frequency of the XCLK output signal.
+Table 16. ANALOG CONTROL REGISTER 0
+Analog Control Register 0 (AnaCtrl0)
+Address Bit 7 Bit 6 Bit 5 Bit 4 Bit 3 Bit 2 Bit 1 Bit 0
+0x01
+Access R/W R/W R/W R/W R/W R/W R/W R/W
+Reset 0 1 1 1 0 0 0 0
+Data SLPEN V20VEN DC2EN XCLKEN XCLKFREQ - - -
+
+--- PAGE 52 ---
+NCN5120
+www.onsemi.com
+52
+Table 17. ANALOG CONTROL REGISTER 0 PARAMETERS
+Parameter Value Description Info
+SLPEN
+0 Disable Enables/disables Sleep Mode
+(≠ going to Sleep Mode) p 19
+1 Enable
+V20VEN
+0 Disable
+Enables/disables the V20V regulator p 17
+1 Enable
+DC2EN
+0 Disable
+Enables/disables the DC2 converter p 17
+1 Enable
+XCLKEN
+0 Disable
+Enables/disables the XCLK output signal
+p 17
+1 Enable
+XCLKFREQ
+0 8 MHz
+Sets the frequency of the XCLK output signal (if enabled)
+1 16 MHz
+Remark: Bit 0 … 2 are reserved.
+Analog Control Register 1
+The Analog Control Register 1 is located at address 0x02 and can be used to put the device in Sleep Mode.
+Table 18. ANALOG CONTROL REGISTER 1
+Analog Control Register 1 (AnaCtrl1)
+Address Bit 7 Bit 6 Bit 5 Bit 4 Bit 3 Bit 2 Bit 1 Bit 0
+0x02
+Access R/W R/W R/W R/W R/W R/W R/W R/W
+Reset 0 0 0 0 0 0 0 0
+Data SLP - - - - - - -
+Table 19. ANALOG CONTROL REGISTER 1 PARAMETERS
+Parameter Value Description Info
+SLP
+0 Disable If ‘1’, device goes to Sleep Mode (if SLPEN = ‘1’). Once in Sleep Mode, only way
+to get out is a Wake-Up Event on the FANIN/WAKE-pin.
+p 18 and
+191 Enable
+Remark: Bit 0 … 6 are reserved.
+Analog Status Register
+The Analog Status Register is located at address 0x03 and can be used to verify the Sleep Mode, voltage monitors, Xtal and
+thermal status.
+Table 20. ANALOG STATUS REGISTER
+Analog Status Register (AnaStat)
+Address Bit 7 Bit 6 Bit 5 Bit 4 Bit 3 Bit 2 Bit 1 Bit 0
+0x03
+Access R R R R R R R R
+Reset 0 0 0 0 0 0 0 0
+Data SLPMODE V20V VDD2 VBUS VFILT XTAL TW TSD
+
+--- PAGE 53 ---
+NCN5120
+www.onsemi.com
+53
+Table 21. ANALOG STATUS REGISTER PARAMETERS
+Parameter Value Value Description Info
+SLPMODE
+0 Disabled
+Contains information about the previous Sleep Mode of the device p 19
+1 Enabled
+V20V
+0 nOK
+‘1’ if voltage on V20V-pin is above the V20V undervoltage level p 17
+1 OK
+VDD2
+0 nOK
+‘1’ if voltage on VDD2-pin is above the VDD2 undervoltage level p 17
+1 OK
+VBUS
+0 nOK
+‘1’ if bus voltage is above the VBUS undervoltage level P 16
+1 OK
+VFILT
+0 nOK
+‘1’ if voltage on VFILT-pin is above the VFILT undervoltage level p 16
+1 OK
+XTAL
+0 nOK
+‘1’ if XTAL is up and running p 17
+1 OK
+TW
+0 No TW
+‘1’ if Thermal Warning detected
+p 19
+1 TW
+TSD
+0 No TSD
+Contains information about the previous Thermal Shutdown situation
+1 TSD
+
+--- PAGE 54 ---
+NCN5120
+www.onsemi.com
+54
+PACKAGE THERMAL CHARACTERISTICS
+The NCN5120 is available in a QFN40 package. For cooling optimizations, the QFN40 has an exposed thermal pad which
+has to be soldered to the PCB ground plane. The ground plane needs thermal vias to conduct the heat to the bottom layer.
+Figure 59 gives an example of good heat transfer. The exposed thermal pad is soldered directly on the top ground layer (left
+picture of Figure 59). It‘s advised to make the top ground layer as large as possible (see arrows Figure 59). To improve the heat
+transfer even more, the exposed thermal pad is connected to a bottom ground layer by using thermal vias (see right picture of
+Figure 59). It‘s advised to make this bottom ground layer as large as possible and with as less as possible interruptions.
+For precise thermal cooling calculations the major thermal resistances of the device are given (Table 4). The thermal media
+to which the power of the devices has to be given are:
+− Static environmental air (via the case)
+− PCB board copper area (via the exposed pad)
+The major thermal resistances of the device are the Rth from the junction to the ambient (Rthja) and the overall Rth from
+the junction to exposed pad (Rthjp). In Table 4 one can find the values for the Rthja and Rthjp, simulated according to JESD−51.
+The Rthja for 2S2P is simulated conform JEDEC JESD−51 as follows:
+− A 4−layer printed circuit board with inner power planes and outer (top and bottom) signal layers is used
+− Board thickness is 1.46 mm (FR4 PCB material)
+− The 2 signal layers: 70 /C0109m thick copper with an area of 5500 mm2 copper and 20% conductivity
+− The 2 power internal planes: 36 /C0109m thick copper with an area of 5500 mm2 copper and 90% conductivity
+The Rthja for 1S0P is simulated conform to JEDEC JESD−51 as follows:
+− A 1−layer printed circuit board with only 1 layer
+− Board thickness is 1.46 mm (FR4 PCB material)
+− The layer has a thickness of 70 /C0109m copper with an area of 5500 mm2 copper and 20% conductivity
+Figure 59. PCB Ground Plane Layout Condition (left picture displays the top ground layer, right picture displays
+the bottom ground layer)
+ORDERING INFORMATION
+Device Number Temperature Range Package Shipping†
+NCN5120MNG −25°C to 85°C QFN−40
+(Pb−Free)
+50 Units / Tube
+100 Tubes / Box
+NCN5120MNTWG −25°C to 85°C QFN−40
+(Pb−Free)
+3000 / Tape & Reel
+†For information on tape and reel specifications, including part orientation and tape sizes, please refer to our Tape and Reel Packaging
+Specification Brochure, BRD8011/D.
+
+--- PAGE 55 ---
+QFN40 6x6, 0.5P
+CASE 485AU−01
+ISSUE O
+DATE 01 JUL 2008
+SCALE 2:1
+SEATINGNOTE 4
+K
+0.15 C
+(A3)
+A
+A1
+D2
+b
+1
+11 20
+21
+40
+E2
+40X
+10
+30
+L
+BOTTOM VIEW
+TOP VIEW
+SIDE VIEW
+D A B
+E
+0.15 C
+ÉÉ
+ÉÉ
+PIN ONE
+LOCATION
+0.10 C
+0.08 C
+C
+31
+e
+A0.10 BC
+0.05 C
+NOTES:
+1. DIMENSIONING AND TOLERANCING PER
+ASME Y14.5M, 1994.
+2. CONTROLLING DIMENSIONS: MILLIMETERS.
+3. DIMENSION b APPLIES TO PLATED
+TERMINAL AND IS MEASURED BETWEEN
+0.15 AND 0.30mm FROM TERMINAL TIP .
+4. COPLANARITY APPLIES TO THE EXPOSED
+PAD AS WELL AS THE TERMINALS.
+DIM MIN MAX
+MILLIMETERS
+A 0.80 1.00
+A1 0.00 0.05
+A3 0.20 REF
+b 0.18 0.30
+D 6.00 BSC
+D2 3.10 3.30
+E 6.00 BSC
+3.30E2 3.10
+e 0.50 BSC
+L 0.30 0.50
+K
+401
+*This information is generic. Please refer to
+device data sheet for actual part marking.
+Pb−Free indicator, “G” or microdot “ /C0071”,
+may or may not be present.
+GENERIC
+MARKING DIAGRAM*
+XXX = Specific Device Code
+A = Assembly Location
+WL = Wafer Lot
+YY = Year
+WW = Work Week
+G = Pb −Free Package
+XXXXXXXX
+AWLYYWWG
+PLANE
+DIMENSIONS: MILLIMETERS
+0.50 PITCH
+3.32
+0.28
+3.32
+40X
+0.63
+40X
+6.30
+6.30
+*For additional information on our Pb−Free strategy and soldering
+details, please download the ON Semiconductor Soldering and
+Mounting Techniques Reference Manual, SOLDERRM/D.
+SOLDERING FOOTPRINT*
+1
+L1
+DETAIL A
+L
+OPTIONAL
+CONSTRUCTIONS
+L
+ÉÉÉ
+ÉÉÉÉÉÉ
+DETAIL B
+MOLD CMPDEXPOSED Cu
+OPTIONAL
+CONSTRUCTIONS
+DETAIL B
+DETAIL A
+0.20 MIN
+L1 −−− 0.15
+A0.10 BC
+A0.10 BC
+PACKAGE
+OUTLINE
+MECHANICAL CASE OUTLINE
+PACKAGE DIMENSIONS
+98AON31154EDOCUMENT NUMBER:
+DESCRIPTION:
+Electronic versions are uncontrolled except when accessed directly from the Document Repository.
+Printed  versions are uncontrolled  except when stamped  “CONTROLLED COPY” in red.
+PAGE 1 OF 1QFN40, 6x6,  0.5P
+onsemi and                     are trademarks of Semiconductor Components Industries, LLC dba onsemi or its subsidiaries in the United States and/or other countries. onsemi reserves
+the right to make changes without further notice to any products herein. onsemi makes no warranty, representation or guarantee regarding the suitability of its products for any particular
+purpose, nor does onsemi assume any liability arising out of the application or use of any product or circuit, and specifically disclaims any and all liability, including without limitation
+special, consequential or incidental damages. onsemi does not convey any license under its patent rights nor the rights of others.
+©  Semiconductor Components Industries, LLC, 2008 www.onsemi.com
+
+--- PAGE 56 ---
+onsemi,  , and other names, marks, and brands are registered and/or common law trademarks of Semiconductor Components Industries, LLC  dba “onsemi” or its affiliates
+and/or subsidiaries in the United States and/or other countries. onsemi owns the rights to a number of patents, trademarks, copyrights, trade secrets, and other intellectual property.
+A listing of onsemi’s product/patent coverage may be accessed at www.onsemi.com/site/pdf/Patent−Marking.pdf. onsemi reserves the right to make changes at any time to any
+products or information herein, without notice. The information herein is provided “as−is” and onsemi makes no warranty, representation or guarantee regarding the accuracy of the
+information, product features, availability, functionality, or suitability of its products for any particular purpose, nor does onsemi assume any liability arising out of the application or use
+of any product or circuit, and specifically disclaims any and all liability, including without limitation special, consequential or incidental damages. Buyer is responsible for its products
+and applications using onsemi products, including compliance with all laws, regulations and safety requirements or standards, regardless of any support or applications information
+provided by onsemi. “Typical” parameters which may be provided in onsemi data sheets and/or specifications can and do vary in different applications and actual performance may
+vary over time. All operating parameters, including “Typicals” must be validated for each customer application by customer’s technical experts. onsemi does not convey any license
+under any of its intellectual property rights nor the rights of others. onsemi products are not designed, intended, or authorized for use as a critical component in life support systems
+or any FDA Class 3 medical devices or medical devices with a same or similar classification in a foreign jurisdiction or any devices intended for implantation in the human body. Should
+Buyer purchase or use onsemi products for any such unintended or unauthorized application, Buyer shall indemnify and hold onsemi and its officers, employees, subsidiaries, affiliates,
+and distributors harmless against all claims, costs, damages, and expenses, and reasonable attorney fees arising out of, direct ly or indirectly, any claim of personal injury or death
+associated with such unintended or unauthorized use, even if such claim alleges that onsemi was negligent regarding the design or manufacture of the part. onsemi is an Equal
+Opportunity/Affirmative Action Employer. This literature is subject to all applicable copyright laws and is not for resale in any manner.
+ADDITIONAL INFORMATION
+TECHNICAL PUBLICATIONS:
+Technical Library: www.onsemi.com/design/resources/technical−documentation
+onsemi Website: www.onsemi.com
+ONLINE SUPPORT: www.onsemi.com/support
+For additional information, please contact your local Sales Representative at
+www.onsemi.com/support/sales
+

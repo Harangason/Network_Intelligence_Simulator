@@ -1,0 +1,65 @@
+EV Charging Station CSMS
+loop [Charging in progress...]
+alt [if AC Charging]
+AC_ChargeLoopReq()
+AC_ChargeLoopRes()
+[if DC Charging]
+DC_ChargeloopReq()
+DC_ChargeloopRes()
+TransactionEventRequest(eventType = Updated,...)
+TransactionEventResponse(...)
+EV initiates renegotiation
+ISO15118 in side channel ScheduleRenegotiationPayloadID
+AC/DC_ChargeParameterDiscoveryReq( evChargingParameters, ... )
+AC/DC_ChargeParameterDiscoveryRes( evseChargingParameters, ...)
+Charging station sends new EV charging needs.
+ScheduleExchangeReq( DepartureTime, EVTargetEnergyRequest,
+EVEnergyOffer, ... )
+NotifyEVChargingNeedsRequest(DepartureTime,
+EVTargetEnergyRequest, requestedEnergyTransfer, ... )
+NotifyEVChargingNeedsResponse( Accepted )
+loop [until SetChargingProfileRequest received]
+ScheduleExchangeRes(Dynamic/Scheduled_SEResControlMode
+EVSEProcessing=Ongoing)
+ScheduleExchangeReq( DepartureTime, EVTargetEnergyRequest,
+EVEnergyOffer, ... )
+CSMS sends new profile matching EV charging needs.
+SetChargingProfileRequest( ChargingSchedule(s), PriceSchedule(s) )
+SetChargingProfileRequest( Accepted )
+ScheduleExchangeRes(Dynamic/Scheduled_SEResControlMode)
+PowerDeliveryReq(ChargeProgress=ScheduleRenegotiation, EVPowerProfile)
+PowerDeliveryRes(OK)
+NotifyEVChargingScheduleRequest(evseId, chargingSchedule)
+NotifyEVChargingScheduleResponse(Accepted)
+Figure 141. Renegotiation initiated by EV when using ISO 15118-20
+K17 - Renegotiation initiated by EV - Requirements
+Table 113. K17 - Requirements
+ID Precondition Requirements Note
+K17.FR.01 EV triggers a
+renegotiation and
+sends new charging
+needs
+The Charging Station SHALL send a
+NotifyEVChargingNeedsRequest to the CSMS.
+K17.FR.02 K17.FR.01 In response to a
+NotifyEVChargingNeedsRequest the CSMS
+SHALL send a
+NotifyEVChargingNeedsResponse.
+K17.FR.03 K17.FR.02 AND
+If the CSMS is able to
+provide a charging
+schedule now
+CSMS SHALL indicate this by setting the
+status field in the
+NotifyEVChargingNeedsResponse to
+'Accepted'.
+K17.FR.04 K17.FR.02 AND
+If the CSMS is not able
+to provide a charging
+schedule now
+CSMS SHALL indicate this by setting the
+status field in the
+NotifyEVChargingNeedsResponse to
+'Rejected'.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 386/803 Part 2 - Specification

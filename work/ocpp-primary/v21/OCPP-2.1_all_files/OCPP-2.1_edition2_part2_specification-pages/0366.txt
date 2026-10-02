@@ -1,0 +1,46 @@
+No. Type Description
+4 Description This use cases describes how the CSMS requests the Charging Station to report the Composite
+Charging Schedule, as calculated by the Charging Station, by sending
+GetCompositeScheduleRequest.
+The CompositeSchedule is the result of the calculation of all active schedules and possible local
+limits present in the Charging Station.
+Actors Charging Station, CSMS
+Scenario description 1. The CSMS requests the Charging Station to report the Composite Charging Schedule by
+sending a GetCompositeScheduleRequest.
+2. The Charging Station calculates the schedule.
+3. The Charging Station responds with a GetCompositeScheduleResponse with the status and
+ChargingSchedule.
+5 Prerequisite(s) The Functional Block Smart Charging is installed.
+6 Postcondition(s) Successful postcondition:
+The CSMS Successfully received the composite schedule from the Charging Station.
+Failure postcondition:
+The CSMS did not receive the composite schedule from the Charging Station.
+7 Error handling n/a
+8 Remark(s) Please note that the charging schedule sent by the Charging Station is only indicative for that
+point in time. This schedule might change over time due to external causes (e.g. local balancing
+based on grid connection capacity is active and one EVSE becomes available).
+The Composite Schedule that will guide the charging level is a combination of the prevailing
+Charging Profiles of the different chargingProfilePurposes.
+This Composite Schedule is calculated by taking the minimum value for each time interval (see:
+Smart Charging signals to a Charging Station from multiple actors). Time intervals do not have to
+be of fixed length, nor do they have to be the same for every charging profile purpose. This means
+that a resulting Composite Schedule MAY contain intervals of different lengths.
+The reported schedule, in GetCompositeScheduleResponse, is the result of the calculation of all
+active schedules and possible local limits present in the Charging Station. 
+The composite schedule reports the expected power or current the Charging Station expects to
+consume from the grid, for the requested EVSE, during the requested time period.
+When requested for evseid=0, the Charging Station will calculate the total expected consumption
+for the grid connection.
+CSMS Charging Station
+GetCompositeScheduleRequest(evseId, duration)
+calculate
+schedule
+GetCompositeScheduleResponse(status, schedule)
+Figure 129. Sequence Diagram: Get Composite Schedule
+K08 - Get Composite Schedule - Requirements
+Table 104. K08 - Requirements
+ID Precondition Requirement definition
+K08.FR.01 The CSMS MAY request the Charging Station to report the
+CompositeSchedule by sending GetCompositeScheduleRequest.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 353/803 Part 2 - Specification

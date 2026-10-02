@@ -1,0 +1,60 @@
+ID Precondition Requirements Note
+C24.FR.02 C24.FR.01 AND
+Charging Station sends a
+TransactionEventRequest with
+eventType = Started
+CSMS SHALL respond with a
+TransactionEventResponse with
+transactionLimit set to the required limit.
+transactionLimit uses
+maxCost for cost limit,
+maxEnergy for energy limit,
+maxTime for time limit or
+maxSoC for SoC limit.
+C24.FR.03 C24.FR.02 Charging Station SHALL send a
+TransactionEventRequest with triggerReason
+= LimitSet and include this limit once in the
+field transactionInfo.transactionLimit.
+Same as E16.FR.03
+C24.FR.04 Charging Station SHALL behave as in use
+case E16 - Transactions with fixed cost,
+energy, SoC or time.
+Settlement
+C24.FR.10 After CSMS received a
+TransactionEventRequest with
+eventType = Ended or the transaction
+CSMS SHALL send a message to Payment
+Kiosk or PSP to settle the cost
+Whether settling is done via
+Payment Kiosk or directly
+with PSP is depending on the
+implementation.
+Cost may have been
+calculated locally or centrally.
+C24.FR.11 When CSMS receives receipt
+information or a URL to a receipt from
+Payment Kiosk or PSP
+CSMS MAY send a
+SetDisplayMessageRequest with a URL
+where EV Driver can download the receipt .
+Other methods to find and
+download receipts may also
+be offered by CSO.
+C25 - Ad hoc payment via a QR code
+New in OCPP 2.1
+No. Type Description
+1 Name Ad hoc payment via a QR code
+2 ID C25
+3 Objective To provide a static or dynamic QR code with a URL for ad hoc payment
+4 Description Static QR code: The Charging Station has a static QR code (often a sticker) to scan to start a
+transaction.
+Dynamic QR code: The Charging Station displays a dynamic QR code with a time-based one-time
+password that is based on a shared secret between Charging Station and CSMS.
+The EV Driver scans the QR code to access a website where the EV Driver can enter payment
+credentials for the charging service. In case of a dynamic QR code the CSMS checks that the URL
+scanned from the QR code is authentic. Upon successful payment authorization CSMS issues a
+remote start of a transaction on the Charging Station (and optional EVSE) that is encoded in the
+URL.
+Actors EV Driver, PSP, CSMS, Charging Station
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 145/803 Part 2 - Specification

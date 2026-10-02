@@ -1,0 +1,45 @@
+No. Type Description
+6 Postcondition(s) n/a
+EV Driver
+CSMS Charging Station
+Connector is reserved
+for TOKEN_A
+Present IdToken(TOKEN_A)
+opt
+alt [Authorize from Authorization Cache or List]
+[Send AuthorizeRequest for TOKEN_A]
+AuthorizeRequest(idToken = TOKEN_A)
+AuthorizeResponse(idTokenInfo.status = Accepted)
+Continue regular charging session
+Figure 81. Sequence Diagram: Use a reserved EVSE with IdToken
+S2 Scenario objective Use an EVSE with connector status Reserved, that is reserved for this GroupIdToken
+Scenario description TxStartPoint = "Authorized"; IdToken presented first
+1. The EV Driver presents an IdTokenType at the Charging Station that is not the
+same as the reservation’s IdTokenType, but the reservation contains a
+groupIdToken.
+2. Charging Station authorizes the IdTokenType via an AuthorizeRequest, Local
+Authorization List or Authorization Cache, and checks if the groupIdToken of
+the IdTokenType matches with the reservation.
+3. If groupIdTokens match:
+a. Connector status becomes Available, since reservation has now
+been consumed.
+b. Charging Station starts a transaction as in E03 - Start Transaction -
+IdToken First
+c. Connector status will become Occupied when cable is connected
+Scenario description #2 TxStartPoint = "EVConnected"; Cable plugged in first
+1. The EV Driver connects the cable.
+2. Charging Station starts a transaction, but connector status remains
+Reserved.
+3. The EV Driver presents an IdTokenType at the Charging Station that is not the
+same as the reservation’s IdTokenType, but the reservation contains a
+groupIdToken.
+4. Charging Station authorizes the IdTokenType via an AuthorizeRequest, Local
+Authorization List or Authorization Cache, and checks if the groupIdToken of
+the IdTokenType matches with the reservation.
+5. If groupIdTokens match:
+a. Connector status becomes Occupied, since reservation has now been
+consumed.
+b. Charging Station starts a transaction as in E02 - Start Transaction -
+Cable Plugin First
+Edition 4, 2025-12-03 H. Reservation
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 212/491 Part 2 - Specification

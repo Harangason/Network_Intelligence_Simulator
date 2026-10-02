@@ -1,0 +1,69 @@
+EV Driver
+Charging Station CSMS
+User authorization successful.
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 1, timestamp,
+triggerReason = StopAuthorized, idToken.id = 1234)
+TransactionEventResponse(idTokenInfo.status)
+opt [if cable not permanently attached & (same identification or authorized)]
+unlock connector
+alt [TxStopPoint = Authorized OR PowerPathClosed OR EnergyTransfer]
+TransactionEventRequest(eventType = Ended, transactionId = AB1234, seqNo = N + 2, timestamp,
+triggerReason = ChargingStateChanged, chargingState = EVConnected, stoppedReason = Local, meterValues)
+TransactionEventResponse()
+[TxStopPoint = EVConnected OR TxStopPoint = ParkingBayOccupancy]
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 2, timestamp,
+triggerReason = ChargingStateChanged, chargingState = EVConnected, meterValues)
+TransactionEventResponse()
+Unplug cable
+StatusNotificationRequest(Available)
+StatusNotificationResponse()
+alt [TxStopPoint = EVConnected]
+TransactionEventRequest(eventType = Ended, transactionId = AB1234, seqNo = N + 3, timestamp,
+triggerReason = EVCommunicationLost, stoppedReason = Local)
+TransactionEventResponse()
+[TxStopPoint = ParkingBayOccupancy]
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 3, timestamp,
+triggerReason = EVCommunicationLost)
+TransactionEventResponse()
+Drive out of parking bay
+alt [TxStopPoint = ParkingBayOccupancy]
+TransactionEventRequest(eventType = Ended, transactionId = AB1234, seqNo = N + 3, timestamp,
+triggerReason = EVDeparted, stoppedReason = Local)
+TransactionEventResponse()
+Figure 55. Sequence Diagram: Transaction locally stopped by IdToken with delayed TransactionEventRequest eventType = Ended for
+TxStopPoint = Authorized OR PowerPathClosed
+E07 - Transaction locally stopped by IdToken - Requirements
+Table 67. E07 - Requirements
+ID Precondition Requirement definition Note
+E07.FR.01 When an idToken is presented during
+a transaction that has been authorized
+AND
+(a) the presented idToken is the same
+as the idToken that started the
+authorization
+OR
+(b) when the presented idToken is in
+the Local Authorization List or
+Authorization Cache AND is valid AND
+has the same GroupIdToken as the
+IdToken that started the authorization.
+The Charging Station SHALL end the authorization
+of the transaction, without first sending an
+AuthorizeRequest
+The idToken that started
+the authorization can
+always be used to end
+the authorization.
+Ending authorization will
+end delivery of energy.
+Depending on the
+TxStopPoint ending of
+the authorization may
+also end the transaction.
+Read use case C09
+(C09.FR.05/07) for
+detailed description of
+stopping based on
+groupId.
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 152/491 Part 2 - Specification

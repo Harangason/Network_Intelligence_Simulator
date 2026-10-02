@@ -1,0 +1,96 @@
+ID Precondition Requirement definition Note
+N04.FR.12 When the Charging Station receives a
+SetVariableMonitoringRequest with an
+Id AND
+A monitor exists matching the given Id
+AND
+The given Component/Variable
+combination corresponds with the
+existing VariableMonitor.
+The Charging Station SHALL replace the monitor.
+N04.FR.13 When the Charging Station receives a
+SetVariableMonitoringRequest with an
+Id AND
+No monitor exists matching the given
+Id.
+The Charging Station SHALL set the attributeStatus
+field in the corresponding SetMonitoringResult to:
+Rejected.
+N04.FR.14 When the Charging Station receives a
+SetVariableMonitoringRequest with
+type Delta and value contains a
+negative value.
+The Charging Station SHALL set the attributeStatus
+field in the corresponding SetMonitoringResult to:
+Rejected.
+More information can be
+provided in the optional
+statusInfo element.
+N04.FR.15 N04.FR.12 AND
+The replaced VariableMonitor
+belonged to the
+'PreconfiguredMonitors'.
+The new VariableMonitor shall be classified as a
+'CustomMonitor', until reset by a
+SetMonitoringBaseRequest.
+N04.FR.16 When the Charging Station receives a
+SetVariableMonitoringRequest with an
+Id AND
+a monitor exists matching the given Id
+AND
+the given Component/Variable
+combination does NOT correspond
+with the existing VariableMonitor.
+The Charging Station SHALL respond with
+Rejected AND NOT replace the VariableMonitor.
+It is not allowed to
+change Variable or
+Component of a monitor.
+N04.FR.17 When the CSMS sends a
+SetVariableMonitoringRequest with
+type Delta for a Variable that is NOT of
+a numeric type
+It is RECOMMENDED to use a value of 1. value is irrelevant for
+non-numeric types (e.g.
+any type except decimal
+or integer), since the
+monitor is triggered by
+every change of the
+Variable.
+N04.FR.18 N04.FR.12 AND
+The id in the
+SetVariableMonitoringRequest refers
+to a HardWiredMonitor
+The Charging Station SHALL respond with
+Rejected AND NOT replace the VariableMonitor.
+It is not possible to
+change a hardwired
+monitor.
+N04.FR.19 The Charging Station has rebooted The CSMS IS RECOMMENDED to send a
+GetMonitoringReportRequest message to get a new
+list of monitors.
+Custom monitors are
+persistent after reboot or
+firmware update, but IDs
+may have changed.
+N04.FR.20 When the Charging Station receives a
+SetVariableMonitoringRequest with
+type Delta and the value is zero.
+The Charging Station SHOULD set the
+attributeStatus field in the corresponding
+SetMonitoringResult to: Rejected.
+N04.FR.14 describes
+rejecting the negative
+value. This requirement
+allows the Charging
+Station to also reject the
+value zero.
+N05 - Set Monitoring Level
+No. Type Description
+1 Name Set Monitoring Level
+2 ID N05
+3 Objective(s) To give the CSMS the ability to request the Charging Station to restrict the reporting of monitoring
+events by NotifyEventRequest to only those monitors with a severity number lower than or equal
+to a certain severity.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 460/803 Part 2 - Specification

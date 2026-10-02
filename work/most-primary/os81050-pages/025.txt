@@ -1,0 +1,27 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 25
+4.3  FIFO Data Messages
+FIFO Data messages, which indicate either a read or write of a control message or asynchronous packet,
+are comprised of the following fields:
+/square6 Port Message Length (PML) - This 16-bit field specifies the total byte length of the message, not 
+including this field.
+/square6 Port Message Header Length  (PMHL) - This single byte field specifies the total byte length of the two 
+fields that follow (FIFO Protocol Header and FIFO Data Header).
+/square6 FIFO Protocol Header (FPH) - At least one byte in length, this field defines the message type and the 
+FIFO to be targeted by the message. The length is extensible up to three bytes on a byte-basis.
+/square6 FIFO Data Header (FDH) - This field contains message information, such as Target Address, Source 
+Address, Functional Address (FBlockID.InstID  part of the control message), message priority, 
+and retry parameters. This is a variable-length field, based upon FPH setting.
+/square6 Port Message Body (PMB) - This field (also known as the FIFO Data Body), contains the actual message, 
+and has a total length defined by (PML - PMHL - 1). In addition to payload, this field defines the 
+FktID.OpType(Parameters)  part of the control message, required by the MOST Specification for 
+typical control messages.
+For MOST Data Packets (MDPs), this field contains a 16-bit length sub-field and a maximum MOST 
+Packet message payload of 1014 bytes when the message is sent via the MediaLB interface. When 
+sent via the Control Port, the maximum MOST Packet payload is 50 bytes.
+Figure 4-3 illustrates the main fields of the FIFO Data (Read/Write) messages.
+PML PM Header (PMH) PM Body (PMB)
+Port Message (PM)
+FIFO Data Header (FDH) FIFO Data BodyPML PMHL FPH
+Figure 4-3: FIFO Read and Write Message Format

@@ -1,0 +1,84 @@
+VOD (+)
+tBIT (1 UI)
+Ew
+VOD (-)
+0V
+Figure 7-5. CMLOUT Output Driver
+Table 7-10 includes details on selecting the corresponding RX receiver of CMLOUTP/N configuration.
+Table 7-10. Channel Monitor Loop-Through Output Configuration
+FPD3 RX Port 0 FPD3 RX Port 1 FPD3 RX Port 2 FPD3 RX Port 3
+ENABLE MAIN LOOPTHRU DRIVER
+0xB0 = 0x14
+0xB1 = 0x00
+0xB2 = 0x80
+0xB0 = 0x14
+0xB1 = 0x00
+0xB2 = 0x80
+0xB0 = 0x14
+0xB1 = 0x00
+0xB2 = 0x80
+0xB0 = 0x14
+0xB1 = 0x00
+0xB2 = 0x80
+SELECT CHANNEL MUX 0xB1 = 0x01
+0xB2 = 0x01
+0xB1 = 0x01
+0xB2 = 0x02
+0xB1 = 0x01
+0xB2 = 0x04
+0xB1 = 0x01
+0xB2 = 0x08
+SELECT RX PORT
+0xB0 = 0x04
+0xB1 = 0x0F
+0xB2 = 0x01
+0xB1 = 0x10
+0xB2 = 0x02
+0xB0 = 0x08
+0xB1 = 0x0F
+0xB2 = 0x01
+0xB1 = 0x10
+0xB2 = 0x02
+0xB0 = 0x0C
+0xB1 = 0x0F
+0xB2 = 0x01
+0xB1 = 0x10
+0xB2 = 0x02
+0xB0 = 0x10
+0xB1 = 0x0F
+0xB2 = 0x01
+0xB1 = 0x10
+0xB2 = 0x02
+7.4.8.1 Code Example for CMLOUT FPD3 RX Port 0:
+WriteI2C(0xB0,0x14)   # FPD3 RX Shared, page 0
+WriteI2C(0xB1,0x00)   # Offset 0 (reg_0_sh)
+WriteI2C(0xB2,0x80)   # Enable loop throu driver
+WriteI2C(0xB1,0x01)   # Select Drive Mux
+WriteI2C(0xB2,0x01)   # 
+WriteI2C(0xB0,0x04)   # FPD3 RX Port 0, page 0
+WriteI2C(0xB1,0x0F)   # 
+WriteI2C(0xB2,0x01)   # Loop through select
+WriteI2C(0xB1,0x10)   # 
+WriteI2C(0xB2,0x02)   # Enable CML data output
+7.4.9 RX Port Status
+The DS90UB960-Q1 is able to monitor and detect several other RX port specific conditions and interrupt states. 
+This information is latched into the RX port status registers RX_PORT_STS1 0x4D and RX_PORT_STS2 0x4E. 
+There are bits to flag any change in LOCK status (LOCK_STS_CHG) or detect any errors in the control channel 
+over the forward link (BCC_CRC_ERROR, BCC_SEQ_ERROR) which are cleared upon read. The Rx Port 
+status registers also allow monitoring of the presence stable input signal along with monitoring parity and CRC 
+errors, line length, and lines per video frame.
+7.4.9.1 RX Parity Status
+The FPD-Link III receiver checks the decoded data parity to detect any errors in the received FPD-Link III 
+frame. Parity errors are counted up and accessible through the RX_PAR_ERR_HI and RX_PAR_ERR_LO 
+registers 0x55 and 0x56 to provide combined 16-bit error counter. In addition, a parity error flag can be 
+set once a programmed number of parity errors have been detected. This condition is indicated by the 
+PARITY_ERROR flag in the RX_PORT_STS1 register. Reading the counter value will clear the counter value 
+and PARITY_ERROR flag. An interrupt may also be generated based on assertion of the parity error flag. By 
+default, the parity error counter will be cleared and flag will be cleared on loss of Receiver lock. To ensure an 
+exact read of the parity error counter, parity checking should be disabled in the GENERAL_CFG register 0x02 
+before reading the counter.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 35
+Product Folder Links: DS90UB960-Q1

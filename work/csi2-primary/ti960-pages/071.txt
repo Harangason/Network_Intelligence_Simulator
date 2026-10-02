@@ -1,0 +1,36 @@
+When BIST is activated, the DS90UB960Q1 sends register writes to the Serializer through the Back Channel. 
+The control channel register writes configure the Serializer for BIST mode operation. The serializer outputs a 
+continuous stream of a pseudo-random sequence and drives the link at speed. The deserializer detects the test 
+pattern and monitors the pattern for errors. The serializer also tracks errors indicated by the CRC fields in each 
+back channel frame.
+The CMLOUT output function is also available during BIST mode. While the lock indications are required to 
+identify the beginning of proper data reception, for any link failures or data corruption, the best indication is the 
+contents of the error counter in the BIST_ERR_COUNT register 0x57 for each RX port. The test may select 
+whether the Serializer uses an external or internal clock as reference for the BIST pattern frequency.
+7.5.13.1 BIST Operation
+The FPD-Link III BIST is configured and enabled by programming the BIST Control register. Set 0xB3 = 0x01 
+to enable BIST and set 0xB3 = 00 to disable BIST. BIST pass or fail status may be brought to GPIO pins by 
+selecting the Pass indication for each receive port using the GPIOx_PIN_CTL registers. The Pass/Fail status will 
+be de-asserted low for each data error detected on the selected port input data. In addition, it is advisable to 
+bring the Receiver Lock status for selected ports to the GPIO pins as well. After completion of BIST, the BIST 
+Error Counter may be read to determine if errors occurred during the test. If the DS90UB960-Q1 failed to lock to 
+the input signal or lost lock to the input signal, the BIST Error Counter will indicate 0xFF. The maximum normal 
+count value will be 0xFE. The SER_BIST_ACT register bit 0xD0[5] can be monitored during testing to ensure 
+BIST is activated in the serializer.
+During BIST, DS90UB960-Q1 output activity are gated by BIST_Control[7:6] (BIST_OUT_MODE[1:0]) as follows:
+00 : Outputs disabled during BIST
+10 : Outputs enabled during BIST
+When enabling the outputs by setting BIST_OUT_MODE = 10, the CSI-2 will be inactive by default (LP11 state). 
+To exercise the CSI-2 interface during BIST mode, it is possible to Enable Pattern Generator to send a video 
+data pattern on the CSI-2 outputs.
+The BIST clock frequency is controlled by the BIST_CLOCK_SOURCE field in the BIST Control register. This 
+2-bit value will be written to the Serializer register 0x14[2:1]. A value of 00 will select an external clock. A 
+non-zero value will enable an internal clock of the frequency defined in the Serializer register 0x14. Note that 
+when the DS90UB960-Q1 is paired with DS90UB933-Q1 or DS90UB913A-Q1, a setting of 11 may result in a 
+frequency that is too slow for the DS90UB960-Q1 to recover. The BIST_CLOCK_SOURCE field is sampled at 
+the start of BIST. Changing this value after BIST is enabled will not change operation.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 71
+Product Folder Links: DS90UB960-Q1

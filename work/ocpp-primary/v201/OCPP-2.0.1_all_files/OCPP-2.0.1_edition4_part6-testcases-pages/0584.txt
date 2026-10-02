@@ -1,0 +1,52 @@
+RenewChargingStationCertificate
+State RenewChargingStationCertificate
+System under test Charging Station
+Description The ChargingStationCertificate is renewed using A02/A03
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+TriggerMessageResponse
+1. The Test System sends a TriggerMessageRequest
+With requestedMessage SignChargingStationCertificate
+3 The Charging Station sends a SignCertificateRequest
+4. The Test System responds with a SignCertificateResponse
+With status Accepted
+6. The Charging Station responds with a
+CertificateSignedResponse
+5. The Test System sends a CertificateSignedRequest
+With certificateChain <Certificate generated from the received
+CSR from step 3 and signed by the provided CSMS Root
+certificate>
+certificateType ChargingStationCertificate
+If the certificate is valid, then Charging Station should reconnect with the new certificate. Test System waits some time for a
+reconnection, and if that does not occur, will drop the connection to force a reconnection.
+7. The Charging Station reconnects.
+8. If Charging Station rebooted:
+The Charging Station sends a BootNotificationRequest
+9. Test System responds with a BootNotificationResponse.
+Tool validations
+* Step 2:
+Message: TriggerMessageResponse
+- status must be Accepted
+* Step 3:
+Message: SignCertificateRequest
+- csr must contain <An CSR that meets the following requirements:
+When using RSA or DSA the key must be at least 2048 bits long.
+and when using elliptic curve cryptography the key must be at least 224 bits long.
+The received CSR must be transmitted as described in RFC 2986 and then encoded in Privacy-Enhanced Mail (PEM) format.>
+* Step 6:
+Message: CertificateSignedResponse
+- status must be Accepted
+* Step 7:
+Charging Station must reconnect with new certificate.
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 582/914 Part 6 - Test Cases

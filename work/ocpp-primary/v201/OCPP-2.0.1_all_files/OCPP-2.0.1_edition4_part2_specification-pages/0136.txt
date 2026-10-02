@@ -1,0 +1,28 @@
+EV Driver
+Charging Station CSMS
+provides identification
+User authorization successful,
+TransactionEventRequest(eventType = Started,
+triggerReason = Authorized)
+TransactionEventResponse()
+Figure 40. Sequence Diagram: Start Transaction options - Authorized
+S4 Scenario objective To start a transaction when the meter has provided the first signed meter values before starting
+with charging.
+Scenario description 1. The EV Driver plugs in the cable at the Charging Station and the EV.
+2. The Charging Station request the Meter for a signed value.
+3. The Meter provides a signed value (this might take some time).
+4. The Charging Station sends a TransactionEventRequest (eventType = Started) notifying the
+CSMS about a transaction that has started.
+5. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+Prerequisite(s) No transaction is ongoing on the EVSE.
+Configuration Variable: TxStartPoint: DataSigned.
+The Charging Station has a meter that can sign measured values
+Configuration Variable: SampledDataSignReadings set to true.
+Postcondition(s) Successful postcondition:
+The transaction is ongoing and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is not ongoing, or
+The CSMS is not informed.
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 126/491 Part 2 - Specification

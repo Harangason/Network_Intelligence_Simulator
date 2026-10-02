@@ -1,0 +1,44 @@
+Tool validations
+* Step 2:
+Message SetDefaultTariffResponse
+- status must be Accepted
+* Step 3 and 4 and 5 combined: (First transactionEventRequest with idToken)
+Message TransactionEventRequest with:
+- idToken must be <Not empty>
+- idToken.type must be DirectPayment
+- transactionInfo.transactionId must be <transactionId>
+- transactionInfo.transactionLimit.maxCost must be 10.00
+* Step 6:
+Message TransactionEventRequest
+- eventType must be Updated
+- triggerReason  must be    LimitSet
+- transactionInfo.transactionId must be <transactionId>
+- transactionInfo.transactionLimit.maxCost must be 15.00
+* Step 8:
+Message TransactionEventRequest
+- eventType must be Updated
+- triggerReason  must be    LimitSet
+- transactionInfo.transactionId must be <transactionId>
+- transactionInfo.transactionLimit.maxCost must be 20.00
+* Step 10:
+Message TransactionEventRequest
+- eventType must be Updated
+- triggerReason  must be    LimitSet
+- transactionInfo.transactionId must be <transactionId>
+- transactionInfo.transactionLimit.maxCost must be 25.00
+Post scenario validations:
+N/a
+6.2.18. Page 182 - (2026-02) - TC_C_55_CS -Explicit mention of offline
+transactions only
+Test case name Authorization using Contract Certificates 15118 - Offline - ContractValidationOffline is false
+Test case Id TC_C_55_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does not accept a reconnect.
+Manual Action: Drive EV into parking bay.
+Manual Action: Connect the EV and EVSE.
+Note(s): The tool will wait for <Configured Transaction Duration> 61 seconds (ISO15118-2 timeout)   .
+2. The Test System accepts the reconnection attempt from the Charging Station after <Configured Transaction Duration> 61 seconds 
+(ISO15118-2 timeout) .
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 42/116 Errata 2026-06

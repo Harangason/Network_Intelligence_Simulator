@@ -1,0 +1,46 @@
+u-blox 20 HPG 2.00 - Interface description
+2 U2 nEntries - - Total number of reported patches
+Start of repeated group (nEntries times)
+4 + n·16 X4 patchInfo - - Status information about the reported patch
+bit 0   U:1 activated - - 1: the patch is active, 0: otherwise
+bits 2…1   U:2 location - - Indicates where the patch is stored. 0: OTP, 1: ROM, 2:
+BBR, 3: ﬁle system
+8 + n·16 U4 comparator
+Number
+- - The number of the comparator
+12 + n·16 U4 patchAddress - - The address that is targeted by the patch
+16 + n·16 U4 patchData - - The data that is inserted at the patchAddress
+End of repeated group (nEntries times)
+3.14.5 UBX-MON-POST (0x0a 0x3b)
+3.14.5.1 Power on self test (POST) information
+Message UBX-MON-POST
+Power on self test (POST) information
+Type Polled
+Comment Information on power on self
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0a 0x3b 12 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 X1 flags - - Flags
+bit 0   U:1 safeBoot - - Safeboot mode (0 = inactive, 1 = active)
+2 U1[2] reserved0 - - Reserved
+4 U4 postStatus - - POST status word
+8 U1[4] reserved1 - - Reserved
+3.14.6 UBX-MON-RF (0x0a 0x38)
+3.14.6.1 RF information
+Message UBX-MON-RF
+RF information
+Type Periodic/polled
+Comment Information for each RF block. There are as many RF blocks reported as bands supported by this receiver.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0a 0x38 4 + nBlocks·24 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 U1 nBlocks - - The number of RF blocks included
+2 U1[2] reserved0 - - Reserved
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 86 of 224
+C1-Public

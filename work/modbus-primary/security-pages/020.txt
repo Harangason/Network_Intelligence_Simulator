@@ -1,0 +1,71 @@
+Modbus.org 
+MB-TCP-Security-v36_2021-07-30 
+                                                  20 
+ 
+ 
+11 APPENDIX A: mbaps Packet Structure 531 
+ 532 
+Figure A.1 TLS Transportation of mbap ADU shows the layering of the TLS protocol on TCP. The 533 
+mbap ADU encapsulated in a TLS Application Protocol Packet. The mbaps protocol which is the 534 
+mbap protocol transported by TLS is found at TCP port 802. 535 
+ 536 
+Figure A.1 TLS Transportation of mbap ADU 537 
+The structure of the TLS Record Layer used by mbaps is defined in [RFC5246] sec A -1, where: 538 
+• ContentType type = 23, Application Protocol 539 
+• ProtocolVersion version = {3,3} for TLS v1.2 540 
+• uint16 length = number of bytes of the following TLSCiphertext.fragment,  541 
+            MUST NOT exceed 16384 + 2048 (18432)  542 
+• fragment = The encrypted form of TLSCompressed.Fragment, with the MAC 543 
+ 544 
+ 545 
+ 546 
+ 547 
+ 548 
+ 549 
+ 550 
+ 551 
+ 552 
+ 553 
+ 554 
+ 555 
+Figure A.2 TLS Record Layer Structure 556 
+For block ciphers such as AES, the fragment type is GenericBlockCipher. As defined in section 557 
+10.4 TLS Compression, the CompressionMethod is set to NULL. Consequently, 558 
+TLSCompressed.length is the same as the uncompressed fragment length.  559 
+ 560 
+ 561 
+ 562 
+ 563 
+ 564 
+ 565 
+ 566 
+ 567 
+ 568 
+ 569 
+ 570 
+  571 
+Figure A.3 TLS Generic Block Cipher 572 
+The content element of the Generic Block Structure is the mbap ADU. 573 
+struct { 
+       ContentType type; 
+       ProtocolVersion version; 
+       uint16 length; 
+       select (SecurityParameters.cipher_type) { 
+           case stream: GenericStreamCipher; 
+           case block:  GenericBlockCipher; 
+           case aead:   GenericAEADCipher; 
+       } fragment; 
+   } TLSCiphertext; 
+ 
+struct {  
+opaque IV[SecurityParameters.record_iv_length];  
+block-ciphered struct {  
+opaque content[TLSCompressed.length];  
+opaque MAC[SecurityParameters.mac_length];  
+uint8 
+padding[GenericBlockCipher.padding_length];  
+uint8 padding_length;  
+};  
+} GenericBlockCipher; 
+  
+mbap ADU  

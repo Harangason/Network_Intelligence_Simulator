@@ -1,0 +1,60 @@
+Field Name Field Type Card. Description
+digestValue string[0..88] 0..1 Optional. (2.1) Base64 encoded hash (SHA256 for ISO
+15118-2, SHA512 for ISO 15118-20) of the EXI price
+schedule element. Used in signature.
+useLocalTime boolean 0..1 Optional. (2.1) Defaults to false. When true, disregard
+time zone offset in dateTime fields of
+ChargingScheduleType and use unqualified local time at
+Charging Station instead. This allows the same
+Absolute or Recurring charging profile to be used in
+both summer and winter time.
+randomizedDelay integer, 0 <= val 0..1 Optional. (2.1) Defaults to 0. When randomizedDelay not
+equals zero, then the start of each
+ChargingSchedulePeriodType is delayed by a randomly
+chosen number of seconds between 0 and
+randomizedDelay. Only allowed for TxProfile and
+TxDefaultProfile.
+salesTariff SalesTariffType 0..1 Optional. Sales tariff for charging associated with this
+schedule.
+chargingSchedulePeriod ChargingSchedulePeriodType 1..102
+4
+Required. List of ChargingSchedulePeriod elements
+defining maximum power or current usage over time. The
+maximum number of periods, that is supported by the
+Charging Station, if less than 1024, is set by device model
+variable SmartChargingCtrlr.PeriodsPerSchedule.
+absolutePriceSchedule AbsolutePriceScheduleType 0..1 Optional. (2.1) The ISO 15118-20 absolute price
+schedule.
+priceLevelSchedule PriceLevelScheduleType 0..1 Optional. (2.1) The ISO 15118-20 price level schedule
+limitAtSoC LimitAtSoCType 0..1 Optional. (2.1) When present and SoC of EV is greater
+than or equal to soc, then charging limit or setpoint will
+be capped to the value of limit.
+2.20. ChargingScheduleUpdateType
+Class
+Updates to a ChargingSchedulePeriodType for dynamic charging profiles.
+ChargingScheduleUpdateType is used by: PullDynamicScheduleUpdateResponse , UpdateDynamicScheduleRequest
+Field Name Field Type Card. Description
+limit decimal 0..1 Optional. Optional only when not required by the
+operationMode, as in CentralSetpoint, ExternalSetpoint,
+ExternalLimits, LocalFrequency, LocalLoadBalancing.
+Charging rate limit during the schedule period, in the
+applicable chargingRateUnit. This SHOULD be a non-
+negative value; a negative value is only supported for
+backwards compatibility with older systems that use a
+negative value to specify a discharging limit. For AC this
+field represents the sum of all phases, unless values are
+provided for L2 and L3, in which case this field represents
+phase L1.
+limit_L2 decimal 0..1 Optional. (2.1) Charging rate limit on phase L2 in the
+applicable chargingRateUnit.
+limit_L3 decimal 0..1 Optional. (2.1) Charging rate limit on phase L3 in the
+applicable chargingRateUnit.
+dischargeLimit decimal, val <= 0 0..1 Optional. (2.1) Limit in chargingRateUnit that the EV is
+allowed to discharge with. Note, these are negative
+values in order to be consistent with setpoint, which can
+be positive and negative. 
+For AC this field represents the sum of all phases, unless
+values are provided for L2 and L3, in which case this field
+represents phase L1.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 636/803 Part 2 - Specification

@@ -1,0 +1,33 @@
+transaction has been started, the Charge Point will send a StartTransaction request to the Central System,
+and the Central System will check the authorization status of the idTag when processing this
+StartTransaction request.
+The following typical use cases are the reason for Remote Start Transaction:
+• Enable a CPO operator to help an EV driver that has problems starting a transaction.
+• Enable mobile apps to control charging transactions via the Central System.
+• Enable the use of SMS to control charging transactions via the Central System.
+The RemoteStartTransaction.req SHALL contain an identifier (idTag), which Charge Point SHALL use, if it is able to
+start a transaction, to send a StartTransaction.req to Central System. The transaction is started in the same way
+as described in StartTransaction. The RemoteStartTransaction.req MAY contain a connector id if the transaction
+is to be started on a specific connector. When no connector id is provided, the Charge Point is in control of the
+connector selection. A Charge Point MAY reject a RemoteStartTransaction.req without a connector id.
+The Central System MAY include a ChargingProfile in the RemoteStartTransaction request. The purpose of this
+ChargingProfile SHALL be set to TxProfile. If accepted, the Charge Point SHALL use this ChargingProfile for the
+transaction.
+ If a Charge Point without support for Smart Charging receives a RemoteStartTransaction.req
+with a Charging Profile, this parameter SHOULD be ignored.
+5.12. Remote Stop Transaction
+Charge Point Central System
+RemoteStopTransaction.req(transactionId)
+RemoteStopTransaction.conf(status)
+Figure 33. Sequence Diagram: Remote Stop Transaction
+Central System can request a Charge Point to stop a transaction by sending a RemoteStopTransaction.req to
+Charge Point with the identifier of the transaction. Charge Point SHALL reply with RemoteStopTransaction.conf
+and a status indicating whether it has accepted the request and a transaction with the given transactionId is
+ongoing and will be stopped.
+This remote request to stop a transaction is equal to a local action to stop a transaction. Therefore, the
+transaction SHALL be stopped, The Charge Point SHALL send a StopTransaction.req and, if applicable, unlock the
+connector.
+The following two main use cases are the reason for Remote Stop Transaction:
+• Enable a CPO operator to help an EV driver that has problems stopping a transaction.
+• Enable mobile apps to control charging transactions via the Central System.
+50

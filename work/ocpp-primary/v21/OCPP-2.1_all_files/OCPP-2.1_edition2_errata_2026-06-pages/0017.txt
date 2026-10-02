@@ -1,0 +1,21 @@
+Thresholds and offsets
+Two thresholds define the minimum EV action:
+• LowerThreshold (negative): minimum discharging rate of the EV
+• UpperThreshold (positive): minimum charging rate of the EV
+Between these two values, the EV is not required to compensate the home load.
+Offsets are used to shift or widen this neutral zone:
+• LowerOffset is added to LowerThreshold
+• UpperOffset is added to UpperThreshold
+This results in the effective limits:
+• Lower limit = LowerThreshold + LowerOffset
+• Upper limit = UpperThreshold + UpperOffset
+These limits define the allowed grid power band.
+Controller behavior (conceptual)
+At each control step:
+1. Measure the grid power at the PCC (including EV).
+2. Compare the measured value with the lower and upper limits.
+3. Apply the following logic:
+◦ If grid power is below the lower limit (too much export): the EV increases charging power to raise grid power.
+◦ If grid power is above the upper limit (too much import): the EV increases discharging power to lower grid power.
+◦ If grid power is inside the limits: the EV setpoint is left unchanged.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 13/116 Errata 2026-06

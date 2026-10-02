@@ -1,0 +1,39 @@
+As an alternative to paging to access FPD-Link III receive port 3 registers, a separate I2C address may be 
+enabled to allow direct access to the port 3 specific registers. The I2C_RX_3_ID register provides a simpler 
+method of accessing device registers specifically for port 3 without having to use the paging function to select 
+the register page. Using this address also allows access to all shared registers.
+Table 7-188. I2C_RX3_ID Register Field Descriptions
+Bit Field Type Reset Description
+7:1 RX_PORT3_ID R/W 0x0 7-bit Receive Port 3 I2C ID
+Configures the decoder for detecting transactions designated for 
+Receiver port 3 registers. This provides a simpler method of 
+accessing device registers specifically for port 3 without having to 
+use the paging function to select the register page. A value of 0 in 
+this field disables the Port3 decoder.
+0 RESERVED R 0x0 Reserved
+7.6.2 Indirect Access Registers
+Several functional blocks include register sets contained in the Indirect Access map (Indirect Register Map 
+Description); i.e. Pattern Generator, CSI-2 timing, and Analog controls. Register access is provided via an 
+indirect access mechanism through the Indirect Access registers (IND_ACC_CTL, IND_ACC_ADDR, and 
+IND_ACC_DATA). These registers are located at offsets 0xB0-0xB2 in the main register space.
+The indirect address mechanism involves setting the control register to select the desired block, setting the 
+register offset address, and reading or writing the data register. In addition, an auto-increment function is 
+provided in the control register to automatically increment the offset address following each read or write of the 
+data register.
+For writes, the process is as follows:
+1. Write to the IND_ACC_CTL register to select the desired register block
+2. Write to the IND_ACC_ADDR register to set the register offset
+3. Write the data value to the IND_ACC_DATA register
+If auto-increment is set in the IND_ACC_CTL register, repeating step 3 will write additional data bytes to 
+subsequent register offset locations
+For reads, the process is as follows:
+1. Write to the IND_ACC_CTL register to select the desired register block
+2. Write to the IND_ACC_ADDR register to set the register offset
+3. Read from the IND_ACC_DATA register
+If auto-increment is set in the IND_ACC_CTL register, repeating step 3 will read additional data bytes from 
+subsequent register offset locations.
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+148 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

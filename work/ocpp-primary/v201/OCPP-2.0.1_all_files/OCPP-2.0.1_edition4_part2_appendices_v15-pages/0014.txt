@@ -1,0 +1,53 @@
+Description
+ExternalControlSignalsEnabled boolean Indicates whether a Charging Station should respond to external control signals
+that influence charging.
+NotifyChargingLimitWithSched
+ules
+boolean Indicates if the Charging Station should include the externally set charging
+limit/schedule in the message when it sends a NotifyChargingLimitRequest
+message. This might increase the data usage significantly, especially when an
+external system sends new profiles/limits with a short interval. Default is false
+when omitted.
+Phases3to1 boolean If defined and true, this Charging Station supports switching from 3 to 1 phase
+during a transaction.
+Entries integer Amount of Charging profiles currently installed on the Charging Station. MaxLimit
+used to limit number of Charging profiles installed at any time.
+LimitChangeSignificance integer If at the Charging Station side a change in the limit in a ChargingProfile is lower
+than this percentage, the Charging Station MAY skip sending a
+NotifyChargingLimitRequest or a TransactionEventRequest message to the
+CSMS. It is RECOMMENDED to set this key to a low value. See Smart Charging
+signals to a Charging Station from multiple actors.
+Updated in v1.5
+3.1.17. TariffCostCtrlr
+Description
+Logical Component responsible for configuration relating to tariff and cost display.
+Variables Instance Type Description
+Available Cost boolean Whether Cost is supported.
+Available Tariff boolean Whether Tariff is supported.
+Enabled Cost boolean Whether Cost is enabled.
+Enabled Tariff boolean Whether Tariff is enabled.
+TariffFallbackMessage string Message (and/or tariff information) to be shown to an EV Driver
+when there is no driver specific tariff information available.
+TotalCostFallbackMessa
+ge
+string Message to be shown to an EV Driver when the Charging Station
+cannot retrieve the cost for a transaction at the end of the
+transaction.
+Currency string Currency used by this Charging Station in a ISO 4217 formatted
+currency code.
+3.1.18. TxCtrlr
+Description
+Logical Component responsible for configuration relating to transaction characteristics and behaviour.
+Variables Type Description
+EVConnectionTimeOut integer Interval in seconds from between "starting" of a transaction until incipient
+transaction is automatically canceled, due to failure of EV driver to (correctly)
+insert the charging cable connector(s) into the appropriate socket(s). The
+Charging Station SHALL go back to the original state, probably: 'Available'.
+"Starting" might be the swiping of the RFID, pressing a start button, a
+RequestStartTransactionRequest being received etc.
+TxBeforeAcceptedEnabled boolean With this configuration variable the Charging Station can be configured to allow
+charging before having received a BootNotificationResponse with
+RegistrationStatus: Accepted. See: Transactions before being accepted by a
+CSMS.
+v1.5, 2025-12-03 Chapter 3. Standardized Components
+OCPP 2.0.1 - © Open Charge Alliance 2025 12/46 Part 2 - Appendices

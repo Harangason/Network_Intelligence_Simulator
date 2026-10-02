@@ -1,0 +1,56 @@
+K27.FR.02 K27.FR.01 AND
+Charging Station receives a
+GetChargingProfilesRequest
+from CSMS
+Charging Station SHALL include the charging
+profile with chargingProfilePurpose =
+LocalGeneration in the reported charging
+profiles (if it exists).
+K27.FR.03 When the charging limit has
+changed by more than:
+LimitChangeSignificance
+and this is caused by a charging
+profile with
+chargingProfilePurpose =
+LocalGeneration
+Charging Station SHALL send a
+NotifyChargingLimitRequest message to CSMS
+with a chargingLimit that has chargingLimitSource =
+EMS or Other and isLocalGeneration = true.
+Limit can change every
+charging schedule period, or
+can be changed dynamically in
+a Dynamic charging profile.
+K27.FR.04 K27.FR.03 AND
+NotifyChargingLimitWith
+Schedules is true
+The NotifyChargingLimitRequest SHALL contain
+the charging limits/schedules as set by the external
+system.
+K27.FR.05 K27.FR.03 AND
+When Charging Station receives
+charging profiles from external
+system(s) that have a
+chargingProfilePurpose =
+LocalGeneration as well as
+a chargingProfilePurpose =
+ChargingStation-
+ExternalConstraints
+Charging Station SHALL send the
+chargingSchedules for the charging profiles with
+chargingProfilePurpose = LocalGeneration
+together in a NotifyChargingLimitRequest message
+with isLocalGeneration = true AND
+Charging Station SHALL send the
+chargingSchedules for the charging profiles with
+chargingProfilePurpose = ChargingStation-
+ExternalConstraints together in a
+NotifyChargingLimitRequest message with
+isLocalGeneration = false or absent.
+This is needed, because CSMS
+cannot deduce from the
+charging schedule that a
+schedule represents local
+generation or a limit.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 376/803 Part 2 - Specification

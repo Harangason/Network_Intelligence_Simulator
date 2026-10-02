@@ -1,0 +1,35 @@
+TC_N_19_CS: Clear Monitoring  - Not found
+Test case name Clear Monitoring - Not found
+Test case Id TC_N_19_CS
+Use case Id(s) N06
+Requirement(s) N06.FR.02
+System under test Charging Station
+Description CSMS clears a monitor that does not exist.
+Purpose To test that Charging Station responds with NotFound result.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+Test System Sends a GetMonitoringReportRequest, the CS then reports all existsing monitors if it has any. If any monitors exist the
+tool will take the highest id number and add 1, if no monitors are reported a preconfigured number is used.
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+This test uses a monitor id, that is expected not to exist.
+2. Charging Station responds with:
+ClearVariableMonitoringResponse
+1. Test System sends:
+ClearVariableMonitoringRequest with:
+- id monitor id from the Preparations
+Tool validations
+* Step 2:
+Message: ClearVariableMonitoringResponse with:
+clearMonitoringResult:
+- status = NotFound
+- id = 123456
+- statusInfo is absent or statusInfo.reasonCode = "NotFound"
+Post scenario validations:
+N/A
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 693/1383 Part 6 - Test Cases

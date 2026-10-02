@@ -1,0 +1,30 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 9
+1.2  INIC Processor
+The INIC Processor manages the transfer of data to and from the network. The Network Port connects the
+INIC Processor to the network using the OS81050 network transmission and reception pins ( TX and RX).
+These Network Port reception and transmission pins require connection to external physical layer circuitry:
+a Fiber Optic Transmitter (FOX) driving an LED on the transmit side and a Fiber Optic Receiver (FOR) with
+a photodiode on the receive side.
+Working in conjunction with the Clock Manager, the Network Port recovers the network clock, decodes
+received data, and passes the data to the INIC Processor. The INIC Processor then routes data to the
+appropriate destinations on and off the chip.
+The network frame to be transmitted by the OS81050 is constructed by the INIC Processor by combining
+incoming network data from the Network Port with outgoing data from other on-chip resources. The Net-
+work Port then encodes the data for network transmission.
+The INIC Software Stack  runs on the INIC Processor and configures the Network Port at power up, which
+allows the network to become fully operational without any external protocol stack. This has been accom-
+plished by placing all the lower layers of the ISO protocol stack inside of the device. In addition to the INIC
+Software Stack , the INIC Processor supports two groups of functions: FBlock  NBMIN  and FBlock INIC.
+Figure 1-1 illustrates the position of the INIC Software Stack within the ISO software model.
+Each network node contains a general set of functions, referred to as the FBlock NetBlock functions.
+INIC manages network-related NetBlock functions and the EHC manages the higher-level NetBlock
+functions. To discern between these two sections of the FBlock  NetBlock, the INIC portion is referred to
+as NBMIN and the EHC portion is labeled NBEHC.
+FBlock INIC contains functions used to configure the chip. This includes the setup of hardware ports and
+the utilization of network bandwidth for transporting streaming data.
+The upper levels of the network protocol must be implemented by an EHC that is capable of processing
+the user application with the minimal overhead imposed by the INIC API. During real-time operation, the
+EHC and the INIC Software Stack  within the INIC Processor communicate using control messages via the
+MediaLB Port or the Control Port.

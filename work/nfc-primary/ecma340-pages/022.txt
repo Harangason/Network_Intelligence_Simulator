@@ -1,0 +1,36 @@
+ 
+16  © Ecma International 2024 
+ 
+Table 3 — NFCID2 contents 
+Prefix code 6-byte number Meaning 
+‘01’ ‘FE’ Random number,  
+dynamically generated  
+by the Target 
+Indicates Target is compliant with the transport protocol specified 
+in Clause 12 and Attribute Request is supported. 
+‘02’ ‘FE’ Fixed number,  
+non-unique 
+Indicates Target is not compliant with the transport protocol 
+specified in Clause 12 and Attribute Request is not supported. 
+Other values n/a RFU 
+NOTE The prefix code of ‘02’ ‘FE’ is harmonized with the NFC Forum Digital Protocol Technical Specification[2]. 
+11.3.2.5 Polling Request Frame format 
+To find Targets, an Initiator shall send a Polling Request frame, see Figure 9. 
+ 
+Figure 9 — Polling Request Frame format 
+The Preamble, SYNC, Length and CRC shall be in accordance with 11.3.2.2. 
+The Length shall be set to ‘06’, which is calculated as specified in 11.3.2.2. 
+The 1st byte of the Payload shall be set to ‘00’. 
+The 2nd byte and the 3rd of Payload shall be set to ‘FF’ and other settings are RFU. 
+The 4th byte of Payload shall be set to ‘00’, and other settings are RFU. 
+The TSN shall be ‘00’, ‘01’, ‘03’, ‘07’, or ‘0F’. Any other settings are RFU. 
+Figure 8 illustrates an example where the TSN is ‘03’. If the TSN is set to ‘00’ then only the time slot  0 shall be 
+used. 
+11.3.2.6 Polling Response Frame format 
+Target shall send the following frame as the Polling Response toward the Polling Request, see Figure 10. 
+ 
+Figure 10 — Polling Response Frame format 
+The Preamble, SYNC, Length and CRC shall be in accordance with 11.3.2.2. 
+The Length field shall be set ‘12’, which is calculated as specified in 11.3.2.2. 
+The start byte of the Payload shall be set to ‘01’. The Payload shall contain 8-byte of NFCID2 and 8‑byte of Pad. 
+The Pad shall be ignored for data interchange. 

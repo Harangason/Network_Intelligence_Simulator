@@ -1,0 +1,53 @@
+3.1.10. LocalAuthListCtrlr (Updated in v1.2)
+Description
+Logical Component responsible for configuration relating to the use of Local Authorization Lists for Charging Station use.
+Variables Type Description
+Enabled boolean Whether Local Authorization List is enabled.
+Entries integer Amount of IdTokens currently in the Local Authorization List. The maxLimit of
+this variable SHALL be provided to report the maximum number of IdTokens that
+can be stored in the Local Authorization List.
+Available boolean Whether Local Authorization List is supported.
+ItemsPerMessage integer Maximum number of identifications that can be sent in a single
+SendLocalListRequest.
+BytesPerMessage integer Message Size (in bytes) - puts a constraint on SendLocalListRequest message
+size.
+Storage integer Indicates the number of bytes currently used by the Local Authorization List.
+MaxLimit indicates the maximum number of bytes that can be used by the Local
+Authorization List.
+DisablePostAuthorize boolean When set to true this variable disables the behavior to request authorization for
+an idToken that is stored in the local authorization list with a status other than
+Accepted, as stated in C14.FR.03.
+SupportsExpiryDateTime boolean When set to true Charging Station will disregard idTokens for authorization as if
+not present in the Local Authorization List when current date/time is past the
+value of cacheExpiryDateTime.
+3.1.11. MonitoringCtrlr (Updated in  v1.3)
+Description
+Logical Component responsible for configuration relating to the exchange of monitoring event data.
+Variables Type Description
+Enabled boolean Whether Monitoring is enabled.
+Available boolean Whether Monitoring is supported.
+ItemsPerMessage integer Maximum number of items.
+BytesPerMessage integer Message Size (in bytes) - puts constraint on message size.
+MonitoringBase optionList Currently used MonitoringBase. (readonly)
+MonitoringLevel integer Currently use MonitoringLevel (readonly)
+OfflineQueuingSeverity integer When set and the Charging Station is offline, the Charging Station shall queue
+any notifyEventRequest messages triggered by a monitor with a severity number
+equal to or lower than the severity configured here. Value ranging from 0
+(Emergency) to 9 (Debug).
+ActiveMonitoringBase OptionList Shows the currently used MonitoringBase. Valid values according
+MonitoringBaseEnumType: All, FactoryDefault, HardwiredOnly. (readonly)
+ActiveMonitoringLevel integer Shows the currently used MonitoringLevel. Valid values are severity levels of
+SetMonitoringLevelRequest: 0-9. (readonly)
+3.1.12. OCPPCommCtrlr (Updated in  v1.4)
+Description
+Logical Component responsible for configuration relating to information exchange between Charging Station and CSMS.
+Variables Type Description
+ActiveNetworkProfile integer Indicates the configuration profile the station uses at that moment to connect to
+the network.
+FileTransferProtocols MemberList List of supported file transfer protocols.
+HeartbeatInterval integer Interval in seconds of inactivity (no OCPP exchanges) with CSMS after which the
+Charging Station should send HeartbeatRequest.
+MessageAttempts integer How often the Charging Station should try to submit a TransactionEventRequest
+message when the CSMS fails to process it.
+v1.5, 2025-12-03 Chapter 3. Standardized Components
+OCPP 2.0.1 - © Open Charge Alliance 2025 9/46 Part 2 - Appendices

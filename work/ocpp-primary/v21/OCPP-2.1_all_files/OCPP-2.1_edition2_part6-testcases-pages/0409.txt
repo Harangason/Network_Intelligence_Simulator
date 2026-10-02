@@ -1,0 +1,46 @@
+TC_I_101_CS: Set Default Tariff - startTimeOfDay, endTimeOfDay
+Test case name Set Default Tariff - startTimeOfDay, endTimeOfDay
+Test case Id TC_I_101_CS
+Use case Id(s) I07, I12
+Requirement(s) I07.FR.10, I07.FR.14, I12.FR.02, I12.FR.03, I12.FR.10, I12.FR.16
+System under test Charging Station
+Description To set the default tariff on the charging station, for example for ad hoc charging, or when there is no driver-
+specific tariff.
+Purpose To verify if the Charging Station supports the start/endTimeOfDay conditions
+Prerequisite(s) - The Charging Station supports local cost calculation using the Tariff mechanism
+(TariffCostCtrlr.Enabled[Tariff] exists and ReadWrite or is true and ReadOnly).
+Before (Preparations)
+Configuration State:
+- TariffCostCtrlr.Enabled[Tariff] is true
+- TariffCostCtrlr.Enabled[RunningCost] is true
+- TariffCostCtrlr.Enabled[Cost] is true
+- TariffCostCtrlr.Interval[Cost] is 15
+- TariffCostCtrlr.ConditionsSupported[Tariff] is true
+- SampledDataCtrl.TxUpdatedInterval = 0
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.chargingTime.prices[0].priceMinute 0.00
+tariff.chargingTime.prices[0].conditions.startTimeOfDay
+<Current Time>
+tariff.chargingTime.prices[0].conditions.endTimeOfDay
+<Current Time + 1 minute>
+tariff.chargingTime.prices[1].priceMinute 10.00
+3. Execute Reusable State EnergyTransferStarted
+4. The Charging Station sends a TransactionEventRequest
+5. The Test System responds with a TransactionEventResponse
+Note: Steps 4 and 5 will repeat every 15 seconds for 1 minute using price of 0.00 EUR/minute
+6. The Charging Station sends a TransactionEventRequest
+7. The Test System responds with a TransactionEventResponse
+Note: Steps 6 will report cost
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 407/1383 Part 6 - Test Cases

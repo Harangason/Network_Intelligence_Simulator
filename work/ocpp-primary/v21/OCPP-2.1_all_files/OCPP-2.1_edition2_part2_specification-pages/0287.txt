@@ -1,0 +1,53 @@
+    },
+    "total": {
+      "exclTax": 2.50,
+      "inclTax": 2.75
+    }
+  }
+  "totalUsage": {
+      "energy": 10000
+  }
+}
+The start of a charging period is a timestamp, rather than seconds since start of a transaction. This makes it easier for a CSO or
+EMSP to validate the price against the tariff. Start and stop time of transaction are not part of CostDetailsType, because that
+information is already part of the TransactionEventRequest messages. Similarly, unit prices and conditions are not part of it either,
+because that information is already in the TariffType referred to by tariffId.
+Below is an example of a transaction with two ChargingPeriodType that started at 17:30h for the low price and continued after
+18:00h for the higher price.
+NOTE In this example the local time is in Zulu (or GMT) timezone for simplicity.
+CostDetails example for tariff 11 (above) when charging 10 kWh in which 6 kWh have a high and 4 kWh have a low price
+{
+  "chargingPeriods": [{
+    "tariffId": "11",
+    "startPeriod": "2023-04-05T17:30:00Z",
+    "dimensions": [{
+      "type": "energy",
+      "volume": 6000 -- 6 kWh @ 0,25
+    }]
+  },{
+    "tariffId": "11",
+    "startPeriod": "2023-04-05T18:00:00Z",
+    "dimensions": [{
+      "type": "energy",
+      "volume": 4000 -- 4 kWh @ 0.40
+    }]
+  }],
+  "totalCost": {
+    "currency": "EUR",
+    "energy": {
+      "exclTax": 3.10,
+      "inclTax": 3.41,
+      "taxRates": [ { "type": "vat", "tax": 10.0 } ]
+    },
+    "total": {
+      "exclTax": 3.10,
+      "inclTax": 3.41
+    }
+  },
+  "totalUsage": {
+    "energy": 10000
+  }
+}
+Following is an example with one ChargingPeriodType that has two CostDimensionType, because price was determined by both
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 274/803 Part 2 - Specification

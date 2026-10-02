@@ -1,0 +1,54 @@
+TC_Q_126_CS: Idle operationMode - Idle, minimizing energy consumption - Idle
+with EvseSleep unsupported
+Test case name Idle operationMode - Idle, minimizing energy consumption - Idle with EvseSleep unsupported
+Test case Id TC_Q_126_CS
+Use case Id(s) Q10
+Requirement(s) Q10.FR.05
+System under test Charging Station
+Description To request the EV to not perform any charging or discharging. Preconditioning of the vehicle is allowed.
+Purpose To verify if the Charging Station reports evseSleep as false when not supported
+Prerequisite(s) - EV supports V2X power transfer loop
+- EV and charging station support ISO15118-20 or CHAdeMO
+- V2XChargingCtrlr.SupportedOperationModes contains Idle
+- SmartChargingCtrlr.SupportsFeature[EvseSleep] is false or absent
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+IF <Configured EVProtocol> is CHAdeMO THEN
+- State is Authorized
+ELSE
+- State is Iso1511820V2xControlBpt
+END IF
+State EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Profile with EVSE sleep
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile
+- transactionId <transactionId>
+- chargingProfilePurpose TxProfile
+- chargingSchedule.chargingRateUnit W
+- chargingSchedule.chargingSchedulePeriod.operationMode
+Idle
+- chargingSchedule.chargingSchedulePeriod.evseSleep true
+3. The Charging Station sends following
+TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 2:
+Message: SetChargingProfileResponse
+- status must be Accepted
+* Step 3:
+Message: TransactionEventRequest
+- eventType must be Updated
+- eventData.transactionData.transactionId must be <transactionId>
+- evseSleep must be false | <omitted>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 865/1383 Part 6 - Test Cases

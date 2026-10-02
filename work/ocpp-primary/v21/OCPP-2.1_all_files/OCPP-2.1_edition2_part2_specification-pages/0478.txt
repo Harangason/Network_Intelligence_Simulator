@@ -1,0 +1,102 @@
+ID Precondition Requirement definition Note
+N07.FR.18 When there is a monitor with type
+Delta on a Component/Variable
+combination AND
+the Variable is of a numeric type AND
+the Actual value (attributeType
+Actual) of the Variable has changed
+more than plus or minus value since
+the time that this monitor was set or
+since the last time this event notice
+was sent, whichever was last,
+The Charging Station SHALL send a
+NotifyEventRequest with trigger Delta for the
+triggered monitor.
+N07.FR.19 When there is a monitor with type
+Delta on a Component/Variable
+combination AND
+the Variable is NOT of a numeric type
+AND
+the Actual value (
+attributeType`Actual`) of the Variable
+has changed since the time that this
+monitor was set or since the last time
+this event notice was sent, whichever
+was last, (Note: For variables that are
+not numeric, like boolean, string or
+enumerations, a monitor of type
+Delta will trigger an event notice
+whenever the variable changes,
+regardless of the value of value)
+The Charging Station SHALL send a
+NotifyEventRequest with trigger Delta for the
+triggered monitor.
+N07.FR.20
+(2.1)
+N07.FR.06 Charging Station SHOULD set the field
+eventData.severity of the NotifyEventRequest to the
+severity of the monitor referred to in
+variableMonitoringId.
+A HardwiredNotification
+does not have an
+associated monitor, but
+can still provide a
+severity.
+The requirement is a
+"should", because the
+added field is optional for
+backwards compatibility,
+but it is recommended to
+provide a severity.
+N07.FR.21
+(2.1)
+When eventData.eventNotificationType
+= HardwiredNotification in
+NotifyEventRequest
+Charging Station SHOULD set eventData.severity to
+an implementation-defined value.
+Value of severity is up to
+implementation, since
+this notification is not
+related to a monitor.
+N07.FR.22
+(2.1)
+When there is a monitor with type
+TargetDelta on a
+Component/Variable combination
+AND
+the Actual value (attributeType
+Actual) of the Variable differs from
+the Target value (attributeType
+Target) more than plus or minus
+value
+The Charging Station SHALL send a
+NotifyEventRequest with trigger Alerting for the
+triggered monitor.
+Example: when target =
+100, value = 10, then an
+event is triggered when
+actual < 90 or actual >
+110.
+N07.FR.23
+(2.1)
+When there is a monitor with type
+TargetDeltaRelative on a
+Component/Variable combination
+AND
+the Actual value (attributeType
+Actual) of the Variable differs from
+the Target value (attributeType
+Target) more than plus or minus
+(value * Target value)
+The Charging Station SHALL send a
+NotifyEventRequest with trigger Alerting for the
+triggered monitor.
+Example: when target =
+100, value = 0.1, then an
+event is triggered when
+actual < 90 or actual >
+110.
+N08 - Periodic Event
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 465/803 Part 2 - Specification

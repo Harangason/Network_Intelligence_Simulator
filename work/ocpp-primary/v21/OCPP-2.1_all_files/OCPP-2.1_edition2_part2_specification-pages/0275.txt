@@ -1,0 +1,59 @@
+ID Precondition Requirement definition
+H02.FR.04 H02.FR.03 The Charging Station SHALL send a StatusNotificationRequest
+with status Available or a NotifyEventRequest with
+AvailabilityState set to Available to the CSMS for each connector,
+notifying the CSMS that all the connectors of this EVSE are
+available again for any EV Driver.
+H02.FR.05 H02.FR.02 AND
+If no specific EVSE was reserved for this
+reservation
+The Charging Station SHALL allow charging on all EVSE which
+were not reserved explicitly.
+H02.FR.06 H01.FR.05 AND
+before cancelling the reservation the amount of
+EVSEs reserved was equal to the amount of
+reservations
+The Charging Station SHALL send for all connectors of all EVSEs
+which were not reserved explicitly:
+- a NotifyEventRequest with component = "Connector", variable =
+"AvailabilityState", trigger = "Delta", actualValue = "Available", OR
+- a StatusNotificationRequest with connectorStatus =
+Available.
+H03 - Use a reserved EVSE
+No. Type Description
+1 Name Use a reserved EVSE
+2 ID H03
+3 Objective(s) Use a reserved EVSE
+4 Description This use cases covers how a reserved EVSE can be used based on IdToken and
+GroupIdToken information.
+Actors Charging Station, CSMS, EV Driver
+S1 Scenario objective Use an EVSE with connector status Reserved, that is reserved for this IdToken
+Scenario description TxStartPoint = "Authorized"; IdToken presented first
+1. The EV Driver presents an IdTokenType at the Charging Station that is the
+same as the reservation’s IdTokenType.
+2. Charging Station matches IdTokenType with the reservation.
+3. Connector status becomes Available, since reservation has now been
+consumed.
+4. Charging Station optionally authorizes the IdTokenType via an
+AuthorizeRequest.
+5. If authorization accepted, or authorization step was skipped:
+a. Charging Station starts a transaction as in E03 - Start Transaction -
+IdToken First.
+b. Connector status will become Occupied when cable is connected.
+Scenario description #2 TxStartPoint = "EVConnected"; Cable plugged in first
+1. The EV Driver connects the cable.
+2. Charging Station starts a transaction, but EVSE connector status remains
+Reserved.
+3. The EV Driver presents an IdTokenType at the Charging Station that is the
+same as the reservation’s IdTokenType
+4. Charging Station matches IdTokenType with the reservation
+5. Connector status becomes Occupied, since reservation has now been
+consumed
+6. Charging Station optionally authorizes the IdTokenType via an
+AuthorizeRequest
+7. If authorization accepted, or authorization step was skipped:
+a. Charging Station starts a transaction as in E02 - Start Transaction -
+Cable Plugin First
+5 Prerequisite(s) EVSE has been reserved for IdToken and connector status is Reserved.
+Edition 2, 2025-12-03 H. Reservation
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 262/803 Part 2 - Specification

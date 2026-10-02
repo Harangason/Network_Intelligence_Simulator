@@ -1,0 +1,52 @@
+MODBUS Application Protocol Specification V1.1b3 Modbus 
+April 26, 20 12 http://www.modbus.org  12/50 
+*N = Quantity of Outputs / 8, if the remainder is different of 0  N = N+1
+Error 
+Function  code  1 Byte  Function code + 0x80  
+Exception code 1 Byte 01 or 02 or 03 or 04  
+Here is an example of a request to read discrete outputs 20 –38: 
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  01 Function  01 
+Starting Address Hi  00 Byte Count  03 
+Starting Address Lo  13 Outputs status 27 -20 CD 
+Quantity of Outputs Hi  00 Outputs status 35 -28 6B 
+Quantity of Outputs Lo  13 Outputs status 38 -36 05 
+The status of outputs 27 –20 is shown as the byte value CD hex, or binary 1100 1101. Output 
+27 is the MSB of this byte, and output 20 is the LSB. 
+By convention, bits within a byte are shown with the MSB to the left, and the LSB to the right. 
+Thus the outputs in the first byte are ‘27 through 20’, from left to right. The next byte has 
+outputs ‘35 through 28’, left to right. As the bits are transmitted serially, they flow from LSB to 
+MSB: 20 . . . 27, 28 . . . 35, and so on. 
+In the last data byte, the status of outputs 38-36 is shown as the byte value 05 hex, or binary 
+0000 0101. Output 38 is in the sixth bit position from the left, and output 36 is the LSB of this 
+byte. The five remaining high order bits are zero filled. 
+ Note : The five remaining bits (toward the high order end) are zero filled.  
+MB Server Sends mb_exception_rsp EXIT
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+YES
+NO
+NO
+ExceptionCode = 02
+YES
+NO
+ExceptionCode = 03
+YES
+ENTRY
+ReadDiscreteOutputs == OK
+MB Server Sends mb_rsp
+NO
+YES
+0x0001  Quantity of Outputs  0x07D0
+Function code
+supported
+Starting Address == OK
+AND
+Starting Address + Quantity of Outputs == OK
+ExceptionCode = 04
+Request Processing
+Figure 11: Read Coils state diagram 
+6.2 02 (0x02) Read Discrete Inputs 
+This function code is used to read from 1 to 2000 contiguous status of discrete inputs in a 
+remote device. The Request PDU specifies the starting address, i.e. the address of the first 

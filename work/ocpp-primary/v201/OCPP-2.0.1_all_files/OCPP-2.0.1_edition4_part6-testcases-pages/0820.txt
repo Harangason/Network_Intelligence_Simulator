@@ -1,0 +1,49 @@
+Main (Test scenario)
+12. The Test System sends a
+FirmwareStatusNotificationRequest.
+With status Downloaded
+13. The CSMS responds with a
+FirmwareStatusNotificationResponse.
+14. The Test System sends a
+FirmwareStatusNotificationRequest.
+With status SignatureVerified
+15. The CSMS responds with a
+FirmwareStatusNotificationResponse.
+16. The Test System sends a
+FirmwareStatusNotificationRequest.
+With status Installing
+17. The CSMS responds with a
+FirmwareStatusNotificationResponse.
+18. The Test System sends a
+FirmwareStatusNotificationRequest.
+With status InstallRebooting
+19. The CSMS responds with a
+FirmwareStatusNotificationResponse.
+20. The Test System sends a BootNotificationRequest
+With reason FirmwareUpdate 21. The CSMS responds with a BootNotificationResponse
+22. The Test System notifies the CSMS about the current state
+of all connectors.
+Message: StatusNotificationRequest
+connectorStatus Available
+Message: NotifyEventRequest
+trigger Delta
+actualValue "Available"
+component.name "Connector"
+variable.name "AvailabilityState"
+23. The CSMS responds accordingly.
+24. The Test System sends a
+FirmwareStatusNotificationRequest.
+With status Installed
+25. The CSMS responds with a
+FirmwareStatusNotificationResponse.
+Tool validations
+* Step 1:
+Message UpdateFirmwareRequest
+- firmware.signingCertificate <configured signingCertificate>
+* Step 19:
+Message BootNotificationResponse
+- status Accepted
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 818/914 Part 6 - Test Cases

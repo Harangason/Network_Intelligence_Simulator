@@ -1,0 +1,54 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  32/50 
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  11 Function  11 
+  Byte Count  Device 
+Specific  
+  Server  ID Device 
+Specific  
+  Run Indicator Status  0x00 or 0xFF  
+  Additional Data  Device 
+Specific  
+ 
+MB Server Sends mb_exception_rsp EXIT
+ExceptionCode = 04
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+NO
+YES
+ENTRY
+ReportSlaveID == OK
+MB Server Sends mb_rsp
+NO
+YES
+Function code
+supported
+Request Processing
+ 
+Figure 23: Report server  ID state diagram  
+ 
+6.14  20 (0x14 ) Read File Record  
+This function code is used to perform a file record read. All Request Data Lengths are 
+provided in terms of number of bytes and all Record Lengths are provided in terms of 
+registers.  
+A file is an organization of records. Each file contains 10000 records, addressed 0000 to 9999 
+decimal or 0X0000 to 0X270F. For example, record 12 is addressed as 12.  
+The function can read multiple groups of references. The groups can be separating (non -
+contiguous), but the references within each group must be sequential.  
+Each group is defined in a separate ‘sub -request’ field that contains 7 bytes:  
+The reference type: 1 byte (must be specified as 6)  
+The File number: 2 bytes  
+The starting record number wit hin the file: 2 bytes  
+The length of the record to be read: 2 bytes.  
+ 
+The quantity of registers to be read, combined with all other fields in the expected response, 
+must not exceed the allowable length of the MODBUS PDU  : 253 bytes.  
+The normal response is a  series of ‘sub -responses’, one for each ‘sub -request’. The byte 
+count field is the total combined count of bytes in all ‘sub -responses’. In addition, each ‘sub -
+response’ contains a field that shows its own byte count.  
+Request  
+Function code  1 Byte  0x14  
+Byte Count  1 Byte  0x07 to 0xF5 bytes  
+Sub-Req. x, Reference Type  1 Byte  06 
+Sub-Req. x, File Number  2 Bytes  0x0001  to 0xFFFF  

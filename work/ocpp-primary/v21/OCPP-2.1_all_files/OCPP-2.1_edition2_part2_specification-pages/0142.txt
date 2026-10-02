@@ -1,0 +1,51 @@
+session for the user. In order to prevent fraud by pasting fake QR stickers on the Charging Station it is recommended to show a
+dynamic QR code on the Charging Station display.
+This is described in use case C25 - Ad hoc payment via a QR code.
+C18 - Authorization using locally connected payment terminal
+New in OCPP 2.1
+No. Type Description
+1 Name Authorization using locally connected payment terminal
+2 ID C18
+3 Objective To start/authorize a transaction from a payment terminal connected directly to the Charging
+Station.
+4 Description EV Driver presents a payment card to integrated payment terminal in Charging Station. Payment
+terminal authorizes payment card with Payment Service Provider. The PspRef from PSP is used
+as idToken with type = DirectPayment, card details are added in idToken.additionalInfo fields.
+Actors EV Driver, Payment Terminal, PSP, CSMS, Charging Station
+Scenario description PaymentCtrlr.AuthorizeDirectPayment = false
+(A default ad hoc tariff exists on Charging Station)
+1. EV Driver presents payment card to payment terminal.
+2. Payment terminal requests PSP for authorization of the amount configured in
+PaymentCtrlr.Authorization amount.
+3. Upon approval PSP returns an approved status and a unique reference for this payment in
+the PSP platform.
+a. This unique reference is called "PspRef" in OCPP.
+4. Payment Terminal sends payment details, such as PspRef, cardBin, cardLast4Digits, etc.
+to Charging Station controller.
+a. Prior to this use case the fields that need to be added as additionalInfo elements
+have been configured by CSMS in the actual value of
+PaymentCtrlr.PaymentDetails.
+b. The fields that Payment Terminal is able to provide have been reported in a device
+model report by Charging Station in the valuesList of
+PaymentCtrlr.PaymentDetails.
+5. Charging Station authorizes idToken with value <PspRef> and type = DirectPayment.
+6. When EV Driver plugs-in vehicle, Charging Station starts a transaction and sends a
+TransactionEventRequest with eventType = Started and idToken with the payment
+details in additionalInfo element of IdTokenType, and with transactionLimit.maxCost set to
+the payment card authorization amount, as configured in
+PaymentCtrlr.AuthorizationAmount.
+a. CSMS responds with TransactionEventResponse.
+Alternative scenario(s) PaymentCtrlr.AuthorizeDirectPayment = true
+Steps 1 to 4 identical to scenario above
+5. Charging Station sends AuthorizeRequest with idToken with value <PspRef> and type =
+DirectPayment and payment details in additionalInfo element of IdTokenType.
+a. CSMS responds with AuthorizeResponse with status = Accepted and optionally a
+tariff to use (in case a default tariff is not applicable).
+6. When EV Driver plugs in vehicle, Charging Station starts a transaction and sends a
+TransactionEventRequest with eventType = Started and idToken with the payment
+details in additionalInfo element of IdTokenType, and with transactionLimit.maxCost set to
+the payment card authorization amount, as configured in
+PaymentCtrlr.AuthorizationAmount.
+a. CSMS responds with TransactionEventResponse.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 129/803 Part 2 - Specification

@@ -1,0 +1,67 @@
+74 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Programmable Parameter Summary (continued)
+2C
+2D
+2E 80
+(10000000)
+2F 0A
+(50 Kbps)
+Protocol B (USER1) baud rate divisor. See PP 2B for a description.
+00 to FF
+E0
+(11100000)
+04
+(125 Kbps)
+01 to 40
+00 to FF
+Protocol C (USER2) CAN options. See PP 2C for a description.
+Protocol C (USER2) baud rate divisor. See PP 2B for a description.
+01 to 40
+R
+Protocol B (USER1) CAN options.
+Each bit of this byte controls an option, as follows:
+b7: Transmit ID Length 0: 29 bit ID 1: 11 bit ID
+b6: Data Length 0: fixed 8 byte 1: variable DLC
+b5: Receive ID Length 0: as set by b7 1: both 11 and 29 bit 
+b4: baud rate multiplier 0: x1 1: x 8/7 (see note 3)
+b3: reserved for future - leave set at 0.
+b2, b1, and b0 determine the data formatting options:
+    b2    b1    b0        Data Format
+     0      0      0          none
+     0      0      1          ISO 15765-4
+     0      1      0          SAE J1939
+Other combinations are reserved for future updates – results will 
+be unpredictable if you should select one of them.
+R
+R
+R
+2B 02
+(250 Kbps)
+01 to 40Protocol A (SAE J1939) CAN baud rate divisor
+baud rate (in kbps) = 500 ÷ (PP 2B value)
+For example, setting this PP to 19 (ie. decimal 25) provides
+a baud rate of 500/25 = 20 kbps.
+R
+2A 3C
+(00111100)
+00 to FF DCAN Error Checking (applies to protocols 6 to C)
+Each bit of this byte controls an option, as follows:
+b7: ISO15765 Data Length 0: accept any 1: must be 8 bytes
+b6: ISO15765 PCI = 00 0: allowed 1: not allowed
+b5: Search after ERR94 0: normal 1: CAN is blocked
+b4: Search after LV RESET 0: normal 1: CAN is blocked
+b3: Wiring Test 0: bypass 1: perform
+Processing 7F xx 78’s:
+b2: enabled (CAN & KWP) 0: no 1: yes
+b1: valid Modes (xx values) 0: all 1: only 00 to 0F
+b0: valid CAN protocols 0: all 1: only ISO15765
+Notes: 1. The ELM327 does not accept decimal digits for the Programmable Parameters - all values are hexadecimal.
+2. For Programmable Parameters that describe options in terms of bits, b7 is the msb, and b0 is the lsb.
+3. When b4 of PP 2C or PP 2E are set, the CAN baud rate will be increased by a factor of 8/7, but the baud
+rate displayed by the AT DP command will still show the base rate (as set by PP 2D or PP 2F). For example,
+if you set PP 2C b4 to 1, and then PP 2D to 06, the base frequency will be 83.3 kbps. The AT DP command
+will report 83 kbps, but the actual baud rate will be 83.3x8/7 = 95.2 kbps.
+PP Description Values Default Type

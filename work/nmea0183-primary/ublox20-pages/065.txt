@@ -1,0 +1,48 @@
+u-blox 20 HPG 2.00 - Interface description
+12 I1 dtLS - s Delta time due to leap seconds before the new leap
+second eﬀective
+13 U1 reserved1 - - Reserved
+14 U1 wnRec - week BeiDou week number of reception of this UTC
+parameter set (8-bit truncated)
+15 U1 wnLSF - week Week number of the new leap second
+16 U1 dN - day Day number of the new leap second
+17 I1 dtLSF - s Delta time due to leap seconds after the new leap
+second eﬀective
+18 U1[2] reserved2 - - Reserved
+3.13.2.5 BeiDou ionosphere assistance
+Message UBX-MGA-BDS-IONO
+BeiDou ionosphere assistance
+Type Input
+Comment This message allows the delivery of BeiDou ionospheric assistance to a receiver.
+See section AssistNow online in the integration manual for details.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x03 16 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 type - - Message type (0x06 for this type)
+1 U1 version - - Message version (0x00 for this version)
+2 U1[2] reserved0 - - Reserved
+4 I1 alpha0 2^-30 s Ionospheric parameter alpha0
+5 I1 alpha1 2^-27 s/pi Ionospheric parameter alpha1
+6 I1 alpha2 2^-24 s/pi^2 Ionospheric parameter alpha2
+7 I1 alpha3 2^-24 s/pi^3 Ionospheric parameter alpha3
+8 I1 beta0 2^11 s Ionospheric parameter beta0
+9 I1 beta1 2^14 s/pi Ionospheric parameter beta1
+10 I1 beta2 2^16 s/pi^2 Ionospheric parameter beta2
+11 I1 beta3 2^16 s/pi^3 Ionospheric parameter beta3
+12 U1[4] reserved1 - - Reserved
+3.13.3 UBX-MGA-DBD (0x13 0x80)
+3.13.3.1 Poll the navigation database
+Message UBX-MGA-DBD
+Poll the navigation database
+Type Poll request
+Comment Poll the whole navigation data base. The receiver will send all available data from its internal database. The
+receiver will indicate the ﬁnish of the transmission with a UBX-MGA-ACK. The msgPayloadStart ﬁeld of the
+UBX-MGA-ACK message will contain a U4 representing the number of UBX-MGA-DBD-DATA* messages sent.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x80 0 see below CK_A CK_B
+Payload This message has no payload.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 65 of 224
+C1-Public

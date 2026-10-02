@@ -1,0 +1,54 @@
+No. Type Description
+Scenario description #1 Driver authorizes first (TxStartPoint = PowerPathClosed)
+1. Driver presents idToken for authorization.
+a. Charging Station sends an AuthorizeRequest for idToken.
+b. CSMS determines that a driver-specific tariff exists for this idToken and responds
+with an AuthorizeResponse with idTokenInfo which has status = Accepted and
+the tariff for the driver in tariff.
+2. Charging Station shows the tariff to driver.
+NOTE
+If driver had already plugged-in, then charging would immediately start after
+authorization. In order to give the driver time to read and accept the tariff,
+Charging Station may decide to delay the charging until this has happened.
+3. Driver connects the charging cable and accepts the tariff.
+4. Charging Station starts a transaction and associates it with the driver-specific tariff.
+a. Charging Station sends a TransactionEventRequest with eventType = Started,
+triggerReason = CablePluggedIn, the idToken, the evse that is used,
+chargingState = Charging and transactionInfo.tariffId set to the driver-specific
+tariff (plus any other relevant fields).
+b. CSMS responds with a TransactionEventResponse with idTokenInfo.status =
+Accepted.
+Scenario description #2 Driver plugs-in first (TxStartPoint = EVConnected)
+1. Driver connects the charging cable.
+a. Charging Station sends a TransactionEventRequest with eventType = Started,
+triggerReason = CablePluggedIn, the evse that is used, chargingState =
+EVConnected (and any other relevant fields).
+b. CSMS responds with a TransactionEventResponse.
+2. Driver presents idToken for authorization.
+a. Charging Station sends an AuthorizeRequest for idToken.
+b. CSMS determines that a driver-specific tariff exists for this idToken and responds
+with an AuthorizeResponse with idTokenInfo which has status = Accepted and
+the tariff for the driver in tariff.
+c. Charging Station sends a TransactionEventRequest with eventType = Updated,
+triggerReason = Authorized, chargingState = EVConnected (and any other
+relevant fields).
+d. CSMS responds with a TransactionEventResponse with idTokenInfo.status =
+Accepted.
+3. Charging Station delays the charging until driver accepts tariff.
+4. Charging Station shows the tariff to driver.
+5. Driver accepts tariff.
+6. Charging Station associates the transaction with the tariff.
+a. Charging Station sends a TransactionEventRequest with eventType = Updated,
+triggerReason = ChargingStateChanged, chargingState = Charging and
+transactionInfo.tariffId set to the driver-specific tariff (plus any other relevant
+fields).
+b. CSMS responds with a TransactionEventResponse.
+5 Prerequisites Authorization Cache or Local Authorization List are not enabled.
+Charging Station supports local cost calculation.
+6 Postcondition(s) Charging Station does local cost calculation for transaction.
+7 Error Handling A tariff structure in field tariff of AuthorizeResponse can be complex. If Charging Station fails to
+parse tariff (for whatever reason), it will respond with an RPC Framework
+CALLRESULTERROR(FormatViolation or InternalError). Charging Station will not allow idToken to
+start charging.
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 287/803 Part 2 - Specification

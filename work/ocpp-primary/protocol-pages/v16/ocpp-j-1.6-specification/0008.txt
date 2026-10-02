@@ -1,0 +1,31 @@
+2. Benefits & Issues
+The WebSocket protocol is defined in [RFC6455]. Working implementations of earlier draft WebSocket
+specifications exist, but OCPP-J implementations SHOULD use the protocol described in [RFC6455].
+Be aware that WebSocket defines its own message structure on top of TCP. Data sent over a websocket,
+on a TCP level, is wrapped in a WebSocket frame with a header. When using a framework this is
+completely transparent. When working for an embedded system however, WebSocket libraries may
+not be available and then one has to frame messages correctly according to [RFC6455] him/herself.
+3. Connection
+For the connection between a Charge Point and a Central System using OCPP-J, the Central System acts
+as a WebSocket server and the Charge Point acts as a WebSocket client.
+3.1. Client request
+To set up a connection, the Charge Point initiates a WebSocket connection as described in [RFC6455]
+section 4, "Opening Handshake".
+OCPP-J imposes extra constraints on the URL and the WebSocket subprotocol, detailed in the following
+two sections 4.1.1 and 4.1.2.
+3.1.1. The connection URL
+To initiate a WebSocket connection, the Charge Point needs a URL ([RFC3986]) to connect to. This URL is
+henceforth called the "connection URL". This connection URL is specific to a charge point. The charge
+point’s connection URL contains the charge point identity so that the Central System knows which
+charge point a WebSocket connection belongs to.
+A Central System supporting OCPP-J MUST provide at least one OCPP-J endpoint URL, from which the
+Charge Point SHOULD derive its connection URL. This OCPP-J endpoint URL can be any URL with a "ws"
+or "wss" scheme. How the Charge Point obtains an OCPP-J endpoint URL is outside of the scope of this
+document.
+To derive its connection URL, the Charge Point modifies the OCPP-J endpoint URL by appending to the
+path first a '/' (U+002F SOLIDUS) and then a string uniquely identifying the Charge Point. This uniquely
+identifying string has to be percent-encoded as necessary as described in [RFC3986].
+Example 1: for a charge point with identity “CP001” connecting to a Central System with OCPP-J
+endpoint URL "ws://centralsystem.example.com/ocpp" this would give the following connection URL:
+ws://centralsystem.example.com/ocpp/CP001
+6

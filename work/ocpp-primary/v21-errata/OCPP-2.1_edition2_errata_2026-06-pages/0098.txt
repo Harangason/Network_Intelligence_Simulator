@@ -1,0 +1,54 @@
+Tool validations
+* Step 2:
+Message: GetBaseReportResponse
+- status must be Accepted
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+* Step 3:
+Message: NotifyReportRequest
+- requestId must be <Generated requestId>
+- generatedAt must be <timestamp at charging station>
+- seqNo must be 0
+* Step 5:
+Message: NotifyReportRequest
+- requestId must be <Generated requestId>
+- generatedAt must be <timestamp at charging station>
+- seqNo must be <incremented seqNo>
+* Step 8:
+Message: SetVariablesResponse
+- setVariableResult[0].attributeStatus must be Rejected
+* Step 10:
+Message: SetVariablesResponse
+- setVariableResult[0].attributeStatus must be Rejected
+* Step 12:
+Message: SetVariablesResponse
+- setVariableResult[0].attributeStatus must be Accepted
+* Step 14:
+Message: SetVariablesResponse
+- setVariableResult[0].attributeStatus must be Accepted
+Post scenario validations:
+In the collected data of all NotifyReportRequest.reportData it must contain:
+- baseReportData[0].component.name must be TxCtrlr
+- baseReportData[0].component.variable.name must be TxStartPoint
+- baseReportData[0].component.variableAttribute.type is absent or must be Actual
+- baseReportData[0].component.variableAttribute.value must be EVConnected
+- baseReportData[0].component.variableAttribute.mutability must be ReadOnly
+- baseReportData[0].component.variableCharacteristics.dataType must be MemberList
+- baseReportData[0].component.variableCharacteristics.valuesList must be EVConnected
+- baseReportData[1].component.name must be TxCtrlr
+- baseReportData[1].component.variable.name must be TxStopPoint
+- baseReportData[1].component.variableAttribute.type is absent or must be Actual
+- baseReportData[1].component.variableAttribute.value must be EVConnected
+- baseReportData[1].component.variableAttribute.mutability must be ReadOnly
+- baseReportData[1].component.variableCharacteristics.dataType must be MemberList
+- baseReportData[1].component.variableCharacteristics.valuesList must be EVConnected
+6.2.63. Page 904/905 - (2026-02) - TC_S_105_CS - Updated test case
+Removed Target SoC test steps. This will be covered in a separate test case.
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with GetVariablesResponse
+1. Test System sends GetVariablesRequest with:
+- variable.name = "SoC"
+- component.name = "BatteryCartridge"
+- component.evse.id = "<i>"
+- attributeType is omitted
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 94/116 Errata 2026-06

@@ -1,0 +1,46 @@
+TransactionEventRequest.
+Class
+Field Name Field Type Card. Description
+totalCost decimal 0..1 Optional. When eventType of TransactionEventRequest is
+Updated, then this value contains the running cost.
+When eventType of TransactionEventRequest is Ended,
+then this contains the final total cost of this transaction,
+including taxes, in the currency configured with the
+Configuration Variable: Currency. Absence of this value
+does not imply that the transaction was free. To indicate
+a free transaction, the CSMS SHALL send a value of 0.00.
+chargingPriority integer 0..1 Optional. Priority from a business point of view. Default
+priority is 0, The range is from -9 to 9. Higher values
+indicate a higher priority. The chargingPriority in
+TransactionEventResponse is temporarily, so it may not
+be set in the IdTokenInfoType afterwards. Also the
+chargingPriority in TransactionEventResponse overrules
+the one in IdTokenInfoType.
+idTokenInfo IdTokenInfoType 0..1 Optional. This contains information about authorization
+status, expiry and group id. Is required when the
+transactionEventRequest contained an idToken.
+updatedPersonalMessage MessageContentType 0..1 Optional. This can contain updated personal message
+that can be shown to the EV Driver. This can be used to
+provide updated tariff information .
+1.61. TriggerMessage
+1.61.1. TriggerMessageRequest
+This contains the field definition of the TriggerMessageRequest PDU sent by the CSMS to the Charging Station.
+Class
+Field Name Field Type Card. Description
+requestedMessage MessageTriggerEnumType 1..1 Required. Type of message to be triggered.
+evse EVSEType 0..1 Optional. Can be used to specifiy the EVSE and
+Connector if required for the message which needs to be
+sent.
+1.61.2. TriggerMessageResponse
+This contains the field definition of the TriggerMessageResponse PDU sent by the Charging Station to the CSMS in response to
+TriggerMessageResponse.
+Class
+Field Name Field Type Card. Description
+status TriggerMessageStatusEnumType 1..1 Required. Indicates whether the Charging Station will
+send the requested notification or not.
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+1.62. UnlockConnector
+1.62.1. UnlockConnectorRequest
+This contains the field definition of the UnlockConnectorRequest PDU sent by the CSMS to the Charging Station.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 391/491 Part 2 - Specification

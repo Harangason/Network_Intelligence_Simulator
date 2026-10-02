@@ -1,0 +1,45 @@
+Tool validations
+* Step 2:
+Message: GetBaseReportResponse
+- status must be Accepted
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+* Step 3:
+Message: NotifyReportRequest
+- requestId must be <Generated requestId>
+- generatedAt must be <timestamp at charging station>
+- seqNo must be 0
+* Step 5:
+Message: NotifyReportRequest
+- requestId must be <Generated requestId>
+- generatedAt must be <timestamp at charging station>
+- seqNo must be <incremented seqNo>
+* Step 8:
+Message: SetVariablesResponse
+- setVariableResult[0].attributeStatus must be Rejected
+* Step 10:
+Message: SetVariablesResponse
+- setVariableResult[0].attributeStatus must be Rejected
+* Step 12:
+Message: SetVariablesResponse
+- setVariableResult[0].attributeStatus must be Accepted
+* Step 14:
+Message: SetVariablesResponse
+- setVariableResult[0].attributeStatus must be Accepted
+Post scenario validations:
+In the collected data of all NotifyReportRequest.reportData it must contain:
+- baseReportData[0].component.name must be TxCtrlr
+- baseReportData[0].component.variable.name must be TxStartPoint
+- baseReportData[0].component.variableAttribute.type is absent or must be Actual
+- baseReportData[0].component.variableAttribute.value must be EVConnected
+- baseReportData[0].component.variableAttribute.mutability must be ReadOnly
+- baseReportData[0].component.variableCharacteristics.dataType must be MemberList
+- baseReportData[0].component.variableCharacteristics.valuesList must be EVConnected
+- baseReportData[1].component.name must be TxCtrlr
+- baseReportData[1].component.variable.name must be TxStopPoint
+- baseReportData[1].component.variableAttribute.type is absent or must be Actual
+- baseReportData[1].component.variableAttribute.value must be EVConnected
+- baseReportData[1].component.variableAttribute.mutability must be ReadOnly
+- baseReportData[1].component.variableCharacteristics.dataType must be MemberList
+- baseReportData[1].component.variableCharacteristics.valuesList must be EVConnected
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 903/1383 Part 6 - Test Cases

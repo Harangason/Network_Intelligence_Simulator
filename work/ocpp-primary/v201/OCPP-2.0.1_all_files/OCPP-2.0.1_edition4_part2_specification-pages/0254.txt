@@ -1,0 +1,43 @@
+"chargingProfile": {
+  "id": 10, "stackLevel": 1, "chargingProfilePurpose": "TxDefaultProfile",
+  "chargingProfileKind": "Recurring", "recurrencyKind": "Daily",
+  "chargingSchedule": [ {
+    "id": 1, "startSchedule": "2020-01-09T17:00:00", "duration": 1080,
+    "chargingRateUnit": "W",
+    "chargingSchedulePeriod": [ { "startPeriod": 0, "limit": 2000 } ]
+  } ]
+}
+(2) TxDefaultProfile, stack #2: overruling Sundays to no limit, recurring every week starting 2020-01-05.
+"chargingProfile": {
+  "id": 11, "stackLevel": 2, "chargingProfilePurpose": "TxDefaultProfile",
+  "chargingProfileKind": "Recurring", "recurrencyKind": "Weekly",
+  "chargingSchedule": [ {
+    "id": 1, "startSchedule": "2020-01-05T00:00:00", "duration": 86400,
+    "chargingRateUnit": "W",
+    "chargingSchedulePeriod": [ { "startPeriod": 0, "limit": 999999 } ]
+  } ]
+}
+(3) TxDefaultProfile, stack #3: overruling Christmas Day 2020 to no limit, fixed date 2020-12-25.
+Note, that this profile is only valid in the year 2020.
+"chargingProfile": {
+  "id": 12, "stackLevel": 3, "chargingProfilePurpose": "TxDefaultProfile",
+  "chargingProfileKind": "Absolute",
+  "validFrom": "2020-01-01T00:00:00", "validTo": "2021-01-01T00:00:00",
+  "chargingSchedule": [ {
+    "id": 1, "startSchedule": "2020-12-25T00:00:00", "duration": 86400,
+    "chargingRateUnit": "W",
+    "chargingSchedulePeriod": [ { "startPeriod": 0, "limit": 999999 } ]
+  } ]
+}
+NOTE
+Normally, when no limits are desired for charging, one will not define a charging schedule period for those hours
+(see stack level #1 for hours outside 17:00h - 20:00h). However, when overruling a charging schedule by one from
+a profile with a higher stack level, it is not possible to define a charging schedule period that has no limit.
+Therefore, the charging schedules for stack #2 and #3 in the above example use a (arbitrary) high value of
+999999.
+3.7. Avoiding Phase Conflicts
+In the situation where a ChargingStationMaxProfile or a ChargingStationExternalConstraints define a value for
+numberPhases or phaseToUse, then a possible conflict might arise if such values are also specified in a TxDefaultProfile or
+TxProfile. The following rules apply in that case:
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 244/491 Part 2 - Specification

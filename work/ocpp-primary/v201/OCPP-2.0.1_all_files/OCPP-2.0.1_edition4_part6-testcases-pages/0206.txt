@@ -1,0 +1,45 @@
+TC_E_24_CS: Disconnect cable on EV-side - Deauthorize transaction -
+UnlockOnEVSideDisconnect is true
+Test case name Disconnect cable on EV-side - Deauthorize transaction - UnlockOnEVSideDisconnect is true
+Test case Id TC_E_24_CS
+Use case Id(s) E09
+Requirement(s) E09.FR.01, E09.FR.02, E09.FR.04
+System under test Charging Station
+Description The Charging Station can behave in several different ways when the cable is disconnected at the EV side,
+based on its configuration. This test case tests one of the possible configuration settings.
+Purpose To verify if the Charging Station deauthorizes the transaction when the EV and EVSE are disconnected at
+the EV side and it has been configured to do so AND unlocks the cable at Charging Station side.
+Prerequisite(s) The Charging Station does NOT have a permanently attached cable.
+Before (Preparations)
+Configuration State:
+StopTxOnEVSideDisconnect is true
+UnlockOnEVSideDisconnect is true
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferSuspended
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Disconnect the EV and EVSE on EV side (EVSE loses connection with EV).
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+Manual Action: Disconnect the EV and EVSE on Charging Station side.
+3. The Charging Station notifies the CSMS about the current
+state of the connector. 4. The Test System responds accordingly.
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- triggerReason must be EVCommunicationLost
+- transactionInfo.chargingState must be Idle
+* Step 3:
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Available"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 204/914 Part 6 - Test Cases

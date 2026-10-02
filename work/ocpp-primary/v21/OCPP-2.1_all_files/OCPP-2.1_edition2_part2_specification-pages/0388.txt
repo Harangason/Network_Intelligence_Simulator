@@ -1,0 +1,47 @@
+EMS Charging Station CSMS
+SetChargingProfileRequest( TxDefaultProfile, Relative,
+chargingSchedulePeriod( limit=5000 ) )
+SetChargingProfileResponse( Accepted )
+alt [Using scheduled local generation]
+local generation schedule =
+[ t=0, 2 kW ] [ t=3600, 1 kW ]
+represent as LocalGeneration profile with 2 periods
+calculate composite schedule as 5 kW + 2 kW
+alt [limit change > LimitChangeSignificance]
+NotifyChargingLimitRequest(
+chargingLimitSource = 'EMS', isLocalGeneration = true,
+<charging schedule> )
+NotifyChargingLimitResponse()
+1 hour later
+calculate composite schedule as 5 kW + 1 kW
+alt [limit change > LimitChangeSignificance]
+NotifyChargingLimitRequest(
+chargingLimitSource = 'EMS', isLocalGeneration = true,
+<charging schedule> )
+NotifyChargingLimitResponse()
+[Using dynamic local generation]
+create a Dynamic charging profile to hold local generation limit
+loop [for every change in local generation]
+new local generation limit
+update value of limit in dynamic charging profile
+calculate composite schedule as 5 kW + new limit
+alt [limit change > LimitChangeSignificance]
+NotifyChargingLimitRequest(
+chargingLimitSource = 'EMS', isLocalGeneration = true,
+<charging schedule> )
+NotifyChargingLimitResponse()
+Figure 136. Using LocalGeneration
+K27 - Smart Charging with EMS and LocalGeneration - Requirements
+Table 111. K27 - Requirements
+ID. Precondition Requirements Note
+K27.FR.01 When an external charging
+limit/schedule is received that
+represents locally generated
+capacity
+Charging Station SHALL treat this internally as a
+charging profile with chargingProfilePurpose =
+LocalGeneration
+External limits can be a single
+value or a schedule.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 375/803 Part 2 - Specification

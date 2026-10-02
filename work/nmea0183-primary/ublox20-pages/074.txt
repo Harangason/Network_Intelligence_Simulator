@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+2 U1[2] reserved0 - - Reserved
+4 U1[32] healthCode - - Each byte represents a GPS SV (1-32). The 6 LSBs
+of each byte contains the 6 bit health code from
+subframes 4/5 page 25.
+36 U1[4] reserved1 - - Reserved
+3.13.6.4 GPS UTC assistance
+Message UBX-MGA-GPS-UTC
+GPS UTC assistance
+Type Input
+Comment This message allows the delivery of GPS UTC assistance to a receiver.
+See section AssistNow online in the integration manual for details.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x00 20 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 type - - Message type (0x05 for this type)
+1 U1 version - - Message version (0x00 for this version)
+2 U1[2] reserved0 - - Reserved
+4 I4 utcA0 2^-30 s First parameter of UTC polynomial
+8 I4 utcA1 2^-50 s/s Second parameter of UTC polynomial
+12 I1 utcDtLS - s Delta time due to current leap seconds
+13 U1 utcTot 2^12 s UTC parameters reference time of week (GPS time)
+14 U1 utcWNt - weeks UTC parameters reference week number (the 8-bit
+WNt ﬁeld)
+15 U1 utcWNlsf - weeks Week number at the end of which the future leap
+second becomes eﬀective (the 8-bit WNLSF ﬁeld)
+16 U1 utcDn - days Day number at the end of which the future leap second
+becomes eﬀective
+17 I1 utcDtLSF - s Delta time due to future leap seconds
+18 U1[2] reserved1 - - Reserved
+3.13.6.5 GPS ionosphere assistance
+Message UBX-MGA-GPS-IONO
+GPS ionosphere assistance
+Type Input
+Comment This message allows the delivery of GPS ionospheric assistance to a receiver.
+See section AssistNow online in the integration manual for details.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x00 16 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 type - - Message type (0x06 for this type)
+1 U1 version - - Message version (0x00 for this version)
+2 U1[2] reserved0 - - Reserved
+4 I1 ionoAlpha0 2^-30 s Ionospheric parameter alpha0 [s]
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 74 of 224
+C1-Public

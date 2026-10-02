@@ -1,0 +1,28 @@
+HTTP/1.1 101 Switching Protocols
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
+Sec-WebSocket-Protocol: ocpp1.6
+The bold parts are found as such in every WebSocket handshake response, the other parts are specific
+to this example.
+The roleof the Sec-WebSocket-Accept header is explained in [RFC6455].
+The Sec-WebSocket-Protocol header indicates that the server will be using OCPP1.6J on this connection.
+3.3. More information
+For those doing their own implementation of the WebSocket handshake, [WS] and [WIKIWS] give more
+information on the WebSocket protocol.
+4. RPC framework
+4.1. Introduction
+A websocket is a full-duplex connection, simply put a pipe where data goes in and data can come out
+and without a clear relation between in and out. The WebSocket protocol by itself provides no way to
+relate messages as requests and responses. To encode these request/response relations we need a small
+protocol on top of WebSocket. This problem occurs in more use cases of WebSocket so there are
+existing schemes to solve it. The most widely-used is WAMP (see [WAMP]) but with the current version
+of that framework handling RPCs symmetrically is not WAMP compliant. Since the required
+framework is very simple we decided to define our own framework, inspired by WAMP, leaving out
+what we do not need and adding what we find missing.
+Basically what we need is very simple: we need to send a message (CALL) and receive a reply
+(CALLRESULT) or an explanation why the message could not be handled properly (CALLERROR). For
+possible future compatibility we will keep the numbering of these message in sync with WAMP. Our
+actual OCPP message will be put into a wrapper that at least contains the type of message, a unique
+message ID and the payload, the OCPP message itself.
+9

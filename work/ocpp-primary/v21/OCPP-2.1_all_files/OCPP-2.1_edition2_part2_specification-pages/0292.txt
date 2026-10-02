@@ -1,0 +1,52 @@
+No. Type Description
+8 Remarks If the Charging Station was offline when the transaction ended and the
+TransactionEventResponse with totalCost is received when the Charging Station comes back
+online some time after that, then there is no use in displaying the cost, because the driver has
+likely left already. A similar situation applies when TxStopPoint is defined as
+ParkingBayOccupancy, in which case the EV must leave the Charging Station to cause the
+transaction to end.
+The scenario description and sequence diagram above are based on the Configuration Variable
+for stop transaction being configured as follows.
+TxStopPoint: ParkingBayOccupancy, EVConnected, Authorized
+This use-case is also valid for other configurations, but then the transaction might stop at another
+moment, which might change the sequence in which message are send. For more details see the
+use case: E06 - Stop Transaction options
+EV Driver
+Charging Station CSMS
+Ongoing transaction
+Present IdToken
+opt
+notification
+TransactionEvent / NotifyEvent
+messages left out for readability
+TransactionEventRequest(eventType = Ended, ...)
+TransactionEventResponse([idTokenInfo], totalCost = X.XX,...)
+show cost: X.XX
+Figure 101. Sequence Diagram: Show EV Driver Final Total Cost After Charging
+I03 - Show EV Driver Final Total Cost After Charging - Requirements
+ID. Precondition Requirements
+I03.FR.01 When transaction is stopped The Charging Station SHALL send a TransactionEventRequest
+(eventType = Ended) to the CSMS.
+I03.FR.02 I03.FR.01 AND
+When Total Cost is known to the CSMS.
+The CSMS SHALL send the total cost of the transaction in the
+totalCost field of the TransactionEventResponse message.
+I03.FR.03 I03.FR.02 AND
+Charging Station was online when transaction
+stopped
+The Charging Station SHALL display the total cost to the EV
+Driver.
+I03.FR.04 To indicate a free transaction, the CSMS SHALL set totalCost to
+0.00. Thus omitting totalCost does not imply that the transaction
+was free.
+I03.FR.05 I02.FR.02 AND
+TxStopPoint is defined as
+ParkingBayOccupancy
+The Charging Station SHOULD NOT display the total cost to the
+EV Driver. (Driver has left already).
+I04 - Show Fallback Tariff Information
+No. Type Description
+1 Name Show Fallback Tariff Information
+2 ID I04
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 279/803 Part 2 - Specification

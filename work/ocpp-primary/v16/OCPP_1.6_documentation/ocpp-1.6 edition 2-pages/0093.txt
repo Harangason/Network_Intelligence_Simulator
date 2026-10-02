@@ -1,0 +1,31 @@
+
+All "Register" values relating to a single charging transaction, or a non-transactional consumer
+(e.g. charge point internal power supply, overall supply) MUST be monotonically increasing in
+time.
+The actual quantity of energy corresponding to a reported ".Register" value is computed as
+the register value in question minus the register value recorded/reported at the start of the
+transaction or other relevant starting reference point in time. For improved auditability,
+".Register" values SHOULD reported exactly as they are directly read from a non-volatile
+register in the electrical metering hardware, and SHOULD NOT be re-based to zero at the start
+of transactions. This allows any "missing energy" between sequential transactions, due to
+hardware fault, mis-wiring, fraud, etc. to be identified, by allowing the Central System to
+confirm that the starting register value of any transaction is identical to the finishing register
+value of the preceding transaction on the same connector.
+7.32. MessageTrigger
+Enumeration
+Type of request to be triggered in a TriggerMessage.req.
+VALUE DESCRIPTION
+BootNotification To trigger a BootNotification request
+DiagnosticsStatusNotification To trigger a DiagnosticsStatusNotification request
+FirmwareStatusNotification To trigger a FirmwareStatusNotification request
+Heartbeat To trigger a Heartbeat request
+MeterValues To trigger a MeterValues request
+StatusNotification To trigger a StatusNotification request
+7.33. MeterValue
+Class
+Collection of one or more sampled values in MeterValues.req and StopTransaction.req. All sampled values in a
+MeterValue are sampled at the same point in time.
+FIELD NAME FIELD TYPE CARD. DESCRIPTION
+timestamp dateTime 1..1 Required. Timestamp for measured value(s).
+sampledValue SampledValue 1..* Required. One or more measured values
+88

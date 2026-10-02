@@ -1,0 +1,47 @@
+TC_A_10_CS: Update Charging Station Password for HTTP Basic Authentication -
+Rejected
+Test case name Update Charging Station Password for HTTP Basic Authentication - Rejected
+Test case Id TC_A_10_CS
+Use case Id(s) A01
+Requirement(s) A01.FR.01, A01.FR.11, A01.FR.12
+System under test Charging Station
+Description This test case defines how to use the BasicAuthPassword, the password used to authenticate Charging
+Stations in security profile 1 (Basic Authentication) and security profile 2 (TLS with Basic Authentication)
+Purpose To verify if the Charging Station is able to reject the new BasicAuthPassword.
+Prerequisite(s) The charging station supports security profile 1 and/or 2
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a SetVariablesResponse
+1. The Test System sends a SetVariablesRequest
+setVariableData[1]:
+- variable.name = "BasicAuthPassword"
+- component.name = "SecurityCtrlr"
+- attributeValue = "<NewPassword which is less than 16
+characters>"
+3. The ChargingStation sends a HTTP upgrade request with an
+Authorization header, containing a username/password
+combination (with the old BasicAuthPassword).
+Note(s):
+- The Authorization header is formatted as follows:
+AUTHORIZATION: Basic <Base64 encoded(<Configured
+ChargingStationId>:<OLD BasicAuthPassword>)>
+4. The Test System validates the username/password
+combination AND upgrades the connection to a (secured)
+WebSocket connection.
+5. Execute Reusable State Booted
+Tool validations
+* Step 2:
+Message: SetVariablesResponse
+- status must be Rejected
+Post scenario validations:
+BasicAuthPassword should be <Configured BasicAuthPassword>
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 14/914 Part 6 - Test Cases

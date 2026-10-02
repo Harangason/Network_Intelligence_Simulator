@@ -1,0 +1,28 @@
+1. Scope
+This document contains errata on the OCPP 1.6-S specification (SOAP).
+1.1. Terminology and Conventions
+Underlined: when needed to clarify differences, they might be underlined.
+2. Major errata
+Non known
+3. Minor errata
+Improvements to the descriptions on how the protocol (should) work.
+3.1. Page 9, par 4. No definition of: 'failure to process the message'
+The OCPP 1.6 spec points to the OCPP-S spec for a definition on how a SOAP implementation should respond to
+a request to indicate: 'failure to process message', but there was no definition of: 'failure to process the message'
+in the OCPP-S spec.
+Old text In cases where the receiving party (e.g. Charge Point or Central System) cannot process the request and the corresponding confirmation
+PDU does not have to ability to report the error, then the SOAP Fault Response Message SHOULD be used.
+New text In cases where the receiving party (e.g. Charge Point or Central System) cannot process the OCPP request and the corresponding
+confirmation PDU does not have to ability to report the error, the receiving party needs to report: 'failure to process the message'. In such
+a case, the receiving party SHALL use the SOAP Fault Response Message.
+3.2. Page 9, par 4. Contradiction in definition of resending 'transaction related
+messages'
+The OCPP 1.6 spec states:
+"It is permissible for the Charge Point to skip a transaction-related message if and only if the Central
+System repeatedly reports a `failure to process the message'."
+But the OCPP-S specification states:
+"If a sender receives a SOAP Fault Response from the receiver, the sender SHOULD NOT resend the same
+message."
+The following errata should fix this:
+Old text If a sender receives a SOAP Fault Response from the receiver, the sender SHOULD NOT resend the same message.
+2

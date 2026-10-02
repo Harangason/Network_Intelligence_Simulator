@@ -1,0 +1,90 @@
+ID Precondition Requirement definition Note
+L01.FR.28 When the Charging Station has
+successfully installed the new
+firmware
+The Charging Station SHALL send a
+FirmwareStatusNotificationRequest
+with status Installed AND
+The Charging Station SHOULD have
+activated the new firmware already or
+do so immediately.
+Activating the new firmware MAY
+involve an automatic reboot, but not
+necessarily so.
+L01.FR.29 If the verification of the new firmware
+(e.g. using a checksum or some other
+means) fails
+The Charging Station SHALL send a
+FirmwareStatusNotificationRequest
+with status
+InstallVerificationFailed
+L01.FR.30 When the Charging Station has failed
+all retry attempts to download the
+firmware.
+The Charging Station SHALL send a
+FirmwareStatusNotificationRequest
+with status DownloadFailed.
+A Charging Station MAY send a new
+Downloading status upon each retry
+attempt.
+L01.FR.31 L01.FR.28 The Charging Station SHALL send a
+SecurityEventNotificationRequest
+message with type =
+"FirmwareUpdated".
+L01.FR.32 When a Charging Station has
+successfully installed the new
+firmware AND
+the Charging Station needs to reboot
+before activating the new firmware
+The Charging Station SHALL either:
+(a) send an optional
+FirmwareStatusNotificationRequest
+with status = InstallRebooting
+before rebooting and send a
+mandatory
+FirmwareStatusNotificationRequest
+with status = Installed by the newly
+activated firmware, or
+(b) only send a
+FirmwareStatusNotificationRequest
+with status set to Installed without
+reporting the reboot and activation of
+the new firmware.
+Option (a) is preferred, because it
+notifies CSMS of an upcoming reboot
+of the Charging Station, and the final
+status = Installed is sent by the
+new firmware image, so that CSMS
+can be sure that the new firmware is
+active. This is not guaranteed by
+option (b) when rebooting of the new
+firmware should fail.
+L01.FR.33 L01.FR.05
+AND
+The Charging Station has ongoing
+transactions
+AND
+a reboot is needed to activate the
+installed firmware
+The Charging Station SHALL wait until
+all transactions have ended, before
+activating the installed firmware.
+E.g. in case of A/B firmware updates.
+L01.FR.34 L01.FR.04 AND
+installDateTime is not set AND
+Charging Station is waiting for a
+transaction to finish
+The Charging Station MAY send a
+FirmwareStatusNotificationRequest
+with status InstallScheduled.
+The case where installDateTime is set
+is covered by L01.FR.16.
+L02 - Non-Secure Firmware Update
+No. Type Description
+1 Name Non-Secure Firmware Update
+2 ID L02
+3 Objective(s) Download and install a Non-Secure firmware update.
+4 Description Illustrate how a Charging Station processes a Non-Secure firmware update.
+Actors CSMS, Charging Station
+Edition 4, 2025-12-03 L. Firmware Management
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 295/491 Part 2 - Specification

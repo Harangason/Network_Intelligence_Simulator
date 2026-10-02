@@ -1,0 +1,55 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 44
+OS81050
+7.3  Delayed-Bit Alignment
+When using the delayed-bit alignment format, which is I 2S compatible, there is a single SCK clock delay
+between the start of frame (falling edge of FSY) and the start of the frame data on SRn/SXn. The data and
+FSY signals change on the falling edges of SCK and are valid on the rising edges. Data is arranged MSB
+first, high byte first.
+Figure 7-5 illustrates the data alignment and timing when the delayed-bit format is selected. For higher
+data bit rates, the channel data remains bit-delayed from the edges of FSY, with more unused data bytes
+between channels.
+When SCK is 128 ×Fs or 256 ×Fs, a single (mono) channel is supported by the sequential, delayed-bit for-
+mat (see Section 7.4). When using the sequential, delayed-bit format, byte positions in a frame remain bit-
+delayed and fixed (as shown in Figure 7-5); however, the actual number of byte positions used in the frame
+is flexible. This allows sockets of various sizes to be connected.
+7.4  Sequential Alignment
+When using the sequential (non-delayed) alignment format, the data and FSY signals change on the falling
+edges of the clock and are valid on the rising edges. Data is arranged MSB first, high byte first. This format
+allows data bytes to exist at every byte position in the frame; however, the actual number of byte positions
+used is flexible. This allows a socket of variable size to be connected.
+Figure 7-6 illustrates the byte positions and timing for the sequential (non-delayed) alignment format when
+SCK is 64×Fs. At higher SCK frequencies, more byte positions are available.
+Because the sequential alignment format does not place restrictions on socket size, this format can
+support a single (mono) channel. For example, with SCK at 128×Fs, a single 16 bit data channel could be
+sent in the following byte positions:
+/square6 Positions 0 and 1 (for left-justified alignment)
+/square6 Positions 6 and 7 (for right-justified alignment)
+SCK
+FSY
+16802 416802 4
+MS Byte LS Byte
+L MS Byte R LS ByteL LS Byte R MS Byte
+MS Byte LS ByteMiddle
+Position 4 Position 5Position 1Sequential Position 0 Position 2 Position 6Position 3 Position 7
+L MS Byte R LS ByteL LS Byte R MS ByteL Middle R Middle
+16 bits
+(2 channels)
+24 bits
+(2 channels)
+SRn/SXn
+16 bits
+(1 channel)
+24 bits
+(1 channel)
+Figure 7-5: Delayed-Bit Streaming Data Format
+SCK
+FSY
+Position 0 Position 1Sequential
+MS Byte
+Position 2 Position 6Position 3 Position 7
+LS Byte
+SRn/SXn
+Position 4 Position 5
+16802 416802 4
+Figure 7-6: Sequential Streaming Data Format

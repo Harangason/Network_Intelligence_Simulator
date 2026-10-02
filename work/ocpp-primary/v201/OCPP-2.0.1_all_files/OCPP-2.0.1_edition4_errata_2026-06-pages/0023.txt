@@ -1,0 +1,47 @@
+Tool validations
+* Step 2:
+Message ResetResponse
+- status Scheduled
+* Step 11:
+Message BootNotificationRequest
+- reason ScheduledReset
+* Step 13:
+Message: StatusNotificationRequest
+- If the transaction was stopped charging station reset   at step 3 7 , then
+ — for the connector involved in the transaction: connectorStatus Occupied
+ — for other connectors of this EVSE: connectorStatus Available or Unavailable
+- Else connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+- If the transaction was stopped charging station reset   at step 3 7 , then
+ — for the connector involved in the transaction: eventData[0].actualValue Occupied
+ — for other connectors of this EVSE: eventData[0].actualValue Available or Unavailable
+- Else eventData[0].actualValue "Available"
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors.
+6.2.4. Page 102 - (2026-02) - TC_C_14_CS - Clarifications and Additional tool
+validations
+Test case name Authorization through authorization cache - GroupID equal to MasterPassGroupId.
+Test case Id TC_C_14_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+…
+Note(s): Step 3, 4, and 5 are only executed if the transaction is still running as determined by the <Configured TxStopPoint> .      
+Tool validations
+* Step 2:
+Message TransactionEventRequest
+- triggerReason StopAuthorized
+- idToken.idToken <Configured masterPass idToken>
+- idToken.type <Configured masterPass idTokenType>
+If eventType Ended, then:
+- transactionInfo.stoppedReason MasterPass
+* Step 3, 4, 5:    
+Message  TransactionEventRequest
+If  eventType   Ended , then: 
+-  transactionInfo.stoppedReason   MasterPass   
+Post scenario validations:
+- N/a
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2026 20/34 Errata 2026-06

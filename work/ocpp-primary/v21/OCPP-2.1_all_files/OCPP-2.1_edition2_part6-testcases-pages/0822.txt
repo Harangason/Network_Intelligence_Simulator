@@ -1,0 +1,61 @@
+TC_Q_107_CS: V2X Authorisation - ISO15118-20 - Charging only (V2X control)
+before starting V2X
+Test case name V2X Authorisation - ISO15118-20 - Charging only (V2X control) before starting V2X
+Test case Id TC_Q_107_CS
+Use case Id(s) Q02
+Requirement(s) Q01.FR.02, Q01.FR.03, Q02.FR.04, Q02.FR.06, Q02.FR.07 Q02.FR.04, Q02.FR.06, Q02.FR.07
+System under test Charging Station
+Description To describe starting a transaction in ChargingOnly mode before getting approval to do V2X.
+Purpose To verify if the Charging station uses Charging Only when CSMS doesn’t allow V2X.
+Prerequisite(s) - EV and charging station support ISO15118-20
+- Charging Station (is configured to) always start in charging only mode, even when EV requests
+bidirectional.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+State is Iso1511820V2xControlBpt
+State is EVConnectedPreSession
+State is Authorized15118 (for 15118-20)
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+Note(s):
+- This step is captured by Authorized15118 (for 15118-20), but
+validated on testcase level.
+2. The Test System responds with a
+NotifyEVChargingNeedsResponse with
+- status Accepted
+Setting ChargingOnly charging profile
+3. The Charging Station responds with a
+SetChargingProfileResponse
+4. The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile.chargingProfilePurpose TxProfile
+chargingProfile.chargingProfileKind Dynamic
+chargingProfile.transactionId <transactionId>
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].operationMode ChargingOnly
+6. The Charging Station responds with a
+NotifyAllowedEnergyTransferResponse
+5. The Test System sends a
+NotifyAllowedEnergyTransferRequest with
+allowedEnergyTransfer [AC_single_phase, AC_BPT, DC, DC_BPT]
+7. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+8. The Test System responds with a
+NotifyEVChargingNeedsResponse with
+- status Accepted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 820/1383 Part 6 - Test Cases

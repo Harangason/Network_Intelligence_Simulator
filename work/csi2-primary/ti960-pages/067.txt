@@ -1,0 +1,55 @@
+The setting of the individual interrupt status bits is not dependent on the related interrupt enable controls. The 
+interrupt enable controls whether an interrupt is generated based on the condition, but the enable does not 
+prevent the interrupt status assertion.
+7.5.10 Error Handling
+In the DS90UB960-Q1, the FPD-Link III receiver transfers incoming video frames to internal video buffers for 
+forwarding to the CSI-2 Transmit port s. When the DS90UB960-Q1 detects an error condition the standard 
+operation would be to flag this error condition, and stop sending the CSI-2 frame to avoid sending corrupted 
+data downstream. When the DS90UB960-Q1 recovers from an error condition, it will provide a Start of Frame 
+and resume sending valid data. Consequently, when the downstream CSI-2 input receives a repeated Start 
+of Frame condition, this will indicate that the data received in between the prior start of frame is suspect 
+and the signal processor can then discard the suspected data. The settings in registers PORT_CONFIG2 
+and PORT_PASS_CTL can be used to change how the DS90UB960-Q1 handles errors when passing video 
+frames. The receive ports may be configured to qualify the incoming video and provide a status indication and 
+prevent the forwarding of video frames until certain error-free conditions are met. The Pass indication may be 
+used to prevent forwarding packets to the internal video buffers by setting the PASS_DISCARD_EN bit in the 
+PORT_PASS_CTL register. When this bit is set, video input will be discarded until the Pass signal indicates valid 
+receive data. The Receive port will indicate Pass status once specific conditions are met, including a number of 
+valid frames received. Valid frames may include requiring no FPD-Link III Parity errors and consistent frame size, 
+including video line length and/or number of video lines.
+In addition, the Receive port may be programmed to cut off video frames containing errors and/or prevent 
+forwarding of video until the Pass conditions are met. Register settings in PORT_CONFIG2 register can be used 
+to cut off frames on different line/frame sizes or a CSI-2 parity error is detected. When the deserializer cuts off 
+frames in cases of different line/frame sizes different line/frame sizes, the video frame will stop immediately with 
+no frame end packet. Often the condition will not be cleared until the next valid frame is received.
+The Rx Port PASS indication may be used to prevent forwarding packets to the internal video buffers by 
+setting the PASS_DISCARD_EN bit in the PORT_PASS_CTL register. When this bit is set, video input will be 
+discarded until the Pass signal indicates valid receive data. The incoming video frames may be cut off based 
+on error conditions or change in video line size or number of lines. These functions are controlled by bits in 
+the PORT_CONFIG2 register. When cutting off video frames, the video frame may be cut off after sending any 
+number of video lines. A cut off frame will not send a Frame End packet to the CSI-2 Transmit port.
+7.5.10.1 Receive Frame Threshold
+The FPD-Link III Receiver may be programmed to require a specified number of valid video frames prior 
+to indicating a Pass condition and forwarding video frames. The number of required valid video frames is 
+programmable through the PASS_THRESH field in the PORT_PASS_CTL register. The threshold can be 
+programmed from 0 to 3 video frames. If set to 0, Pass will typically be indicated as soon as the FPD-Link 
+III Receiver reports Lock to the incoming signal. If set greater than 0, the Receiver will require that number of 
+valid frames before indicating Pass. Determination of valid frames will be dependent on the control bits in the 
+PORT_PASS_CTL register. In the case of a Parity Error, when PASS_PARITY_ERR is set to 1 forwarding will be 
+enabled one frame early. To ensure at least one good frame occurs following a parity error the counter should be 
+set to 2 or higher when PASS_PARITY_ERR = 1.
+7.5.10.2 Port PASS Control
+When the PASS_LINE_SIZE control is set in the PORT_PASS_CTL register, the Receiver will qualify received 
+frames based on having a consistent video line size. For PASS_LINE_SIZE to be clear, the deserializer checks 
+that the received line length remains consistent during the frame and between frames. For each video line, the 
+length (in bytes) will be determined. If it varies then we will flag this condition. Each video line in the packet must 
+be the same size, and the line size must be consistent across video frames. A change in video line size will 
+restart the valid frame counter.
+When the PASS_LINE_CNT control is set in the PORT_PASS_CTL register, the Receiver will qualify received 
+frames based on having a consistent frame size in number of lines. A change in number of video lines will restart 
+the valid frame counter.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 67
+Product Folder Links: DS90UB960-Q1

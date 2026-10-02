@@ -1,0 +1,88 @@
+30 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Reading the Battery Voltage
+Before learning the OBD Commands, we will show
+an example of how to use an AT Command. We will
+assume that you have built (or purchased) a circuit
+which is similar to that of Figure 9 in the Example
+Applications section (page 81). This circuit provides a
+connection to read the vehicle’s battery voltage, which
+many will find very useful.
+If you look in the AT Command list, you will see
+there is one command that is listed as RV [Read the
+input Voltage]. This is the command which you will
+need to use. First, be sure that the prompt character is
+shown (that is the ‘>’ character), then simply enter ‘AT’
+followed by RV, and press return (or enter):
+>AT RV
+Note that we used upper case characters for this
+request, but it was not required, as the ELM327 will
+accept upper case (AT RV) as well as lower case
+(at rv) or any combination of these (At rV). It does not
+matter if you insert space characters (‘ ’) within the
+message either, as they are ignored by the ELM327.
+A typical response to this command will show a
+voltage reading, followed by another prompt character:
+12.6V
+>
+The accuracy of this reading depends on several
+factors. As shipped from the factory, the ELM327
+voltage reading circuitry will typically be accurate to
+about 2%. For many, this is all that is needed. Some
+people may want to calibrate the circuitry for more
+accurate readings, however, so we have provided a
+special ‘Calibrate Voltage’ command for this.
+To change the internal calibration constants, you
+will need to know the actual battery voltage to more
+accuracy than the ELM327 shows. Many quality digital
+multimeters can do this, but you should verify the
+accuracy before making a change.
+Let us assume that you have connected your
+accurate multimeter, and you find that it reads 12.47V.
+The ELM327 is a little high at 12.6V, and you would
+like it to read the same as your meter. Simply calibrate
+the ELM327 to the measured voltage using the CV
+command:
+>AT CV 1247
+OK
+Note that you should not provide a decimal point in
+the CV value, as the ELM327 knows that it should be
+between the second and the third digits.
+At this point, the internal calibration values have
+been changed (ie. written to EEPROM), and the
+ELM327 now knows that the voltage at the input is
+actually 12.47V. To verify that the changes have taken
+place, simply read the voltage again:
+>AT RV
+12.5V
+The ELM327 always rounds off the measurement
+to one decimal place, so the 12.47V actually appears
+as 12.5V (but the second decimal place is maintained
+internally for accuracy and is used in the calculations).
+The ELM327 may be calibrated with any reference
+voltage that you have available, but note that the CV
+command always expects to receive four characters
+representing the voltage at the input. If you had used a
+9V battery for your reference, and it is actually 9.32V,
+then you must add a leading zero to the actual voltage
+when calibrating the IC:
+>AT CV 0932
+OK
+If you should get into trouble with this command
+(for example, if you set calibration values to something
+arbitrary and do not have a voltmeter on hand to
+provide accurate values), you can restore the settings
+to the original (factory) values with the CV 0000
+command. Simply send:
+>AT CV 0000
+OK
+The other AT Commands are used in the same
+manner. Simply type the letters A and T, then follow
+with the command you want to send and any
+arguments that are required. Then press return (or
+enter, depending on your keyboard). Remember - you
+can always insert space characters as often as you
+wish if it improves the readability for you, as they are
+ignored by the ELM327.

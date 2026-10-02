@@ -1,0 +1,46 @@
+TC_N_12_CS: Set Variable Monitoring - Value out of range - Delta monitor
+Test case name Set Variable Monitoring - Value out of range - Delta monitor
+Test case Id TC_N_12_CS
+Use case Id(s) N04
+Requirement(s) N04.FR.14
+System under test Charging Station
+Description CSMS tries to set a delta monitor with a value that is out of range.
+Purpose To test that Charging Station checks that value is within range of variable.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+This test case assumes a numeric component variable exists which can be monitored.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with:
+SetVariableMonitoringResponse
+Install monitors
+1. Test System sends SetVariableMonitoringRequest with:
+- setMonitoringData[0].value = -1
+- setMonitoringData[0].type = Delta
+- setMonitoringData[0].severity = <Configured severity>
+- setMonitoringData[0].component = <Configured numeric delta
+component>
+- setMonitoringData[0].variable = <Configured numeric delta
+component variable>
+Tool validations
+* Step 2:
+Message: SetVariableMonitoringResponse with (in arbitrary order):
+setMonitoringResult = {
+- id is absent
+- status = Rejected
+- type = Delta
+- severity = <Configured severity>
+- component = <Configured numeric delta component variable>
+- variable = <Configured numeric delta component variable>
+- statusInfo is absent or statusInfo.reasonCode = "ValueOutOfRange" or statusInfo.reasonCode = "ValuePositiveOnly"
+}
+Post scenario validations:
+N/A
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 686/1383 Part 6 - Test Cases

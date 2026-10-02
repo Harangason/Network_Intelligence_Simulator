@@ -1,0 +1,52 @@
+WriteI2C(0x4C,0x38) # RX3
+WriteI2C(0x23,0x88) # RX3 & INTB PIN EN
+7.5.9.2 FPD-Link III Receive Port Interrupts
+For each FPD-Link III Receive port, multiple options are available for generating interrupts. Interrupt 
+generation is controlled through the PORT_ICR_HI 0xD8 and PORT_ICR_LO 0xD9 registers. In addition, the 
+PORT_ISR_HI 0xDA and PORT_ISR_LO 0xDB registers provide read-only status for the interrupts. Clearing of 
+interrupt conditions is handled by reading the RX_PORT_STS1, RX_PORT_STS2, and CSI_RX_STS registers. 
+The status bits in the PORT_ISR_HI/LO registers are copies of the associated bits in the main status registers.
+To enable interrupts from one of the Receive port interrupt sources:
+1. Enable the interrupt source by setting the appropriate interrupt enable bit in the PORT_ICR_HI or 
+PORT_ICR_LO register
+2. Set the RX Port X Interrupt control bit (IE_RXx) in the INTERRUPT_CTL register
+3. Set the INT_EN bit in the INTERRUPT_CTL register to allow the interrupt to assert the INTB pin low
+To clear interrupts from one of the Receive port interrupt sources:
+1. (optional) Read the INTERRUPT_STS register to determine which RX Port caused the interrupt
+2. (optional) Read the PORT_ISR_HI and PORT_ISR_LO registers to determine source of interrupt
+3. Read the appropriate RX_PORT_STS1, RX_PORT_STS2, or CSI_RX_STS register to clear the interrupt.
+The first two steps are optional. The interrupt could be determined and cleared by just reading the status 
+registers.
+7.5.9.3 Interrupts on Forward Channel GPIO
+When connected to the DS90UB953-Q1 serializer, interrupts can be generated on changes in any of the four 
+forward channel GPIOs per port. Interrupts are enabled by setting bits in the FC_GPIO_ICR register. Interrupts 
+may be generated on rising and/or falling transitions on the GPIO signal. The GPIO interrupt status is cleared by 
+reading the FC_GPIO_STS register.
+Interrupts should only be used for GPIO signals operating at less than 10 MHz. High or low pulses that are less 
+than 100 ns might not be detected at the DS90UB960-Q1. To avoid false interrupt indications, the interrupts 
+should not be enabled until after the Forward Channel GPIOs are enabled at the serializer.
+7.5.9.4 Interrupts on Change in Sensor Status
+The FPD-Link III Receiver recovers 32-bits of Sensor status from the attached DS90UB953-Q1 serializer. 
+Interrupts may be generated based on changes in the Sensor Status values received from the forward channel. 
+The Sensor Status consists of 4 bytes of data, which may be read from the SENSOR_STS_x registers 
+for each Receive port. Interrupts may be generated based on a change in any of the bits in the first byte 
+(SENSOR_STS_0). Each bit can be individually masked for Rising and/or Falling interrupts.
+Two registers control the interrupt masks for the SENSOR_STS bits: SEN_INT_RISE_CTL and 
+SEN_INT_FALL_CTL.
+Two registers provide interrupt status: SEN_INT_RISE_STS, SEN_INT_FALL_STS.
+If a mask bit is set, a change in the associated SENSOR_STS_0 bit will be detected and latched in the 
+SEN_INT_RISE_STS or SEN_INT_FALL_STS registers. If the mask bit is not set, the associated interrupt status 
+bit will always be 0. If any of the SEN_INT_RISE_STS or SEN_INT_FALL_STS bits is set, the IS_FC_SEN_STS 
+bit will be set in the PORT_ISR_HI register.
+7.5.9.5 Code Example to Readback Interrupts
+INTERRUPT_STS = ReadI2C(0x24) # 0x24 INTERRUPT_STS 
+if ((INTERRUPT_STS & 0x80) >> 7):
+    print "# GLOBAL INTERRUPT DETECTED "
+if ((INTERRUPT_STS & 0x40) >> 6):
+    print "# RESERVED "
+if ((INTERRUPT_STS & 0x20) >> 5):
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+62 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

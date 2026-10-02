@@ -1,0 +1,53 @@
+OS81092
+DS60001271B-page 14  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+MediaLB is a token-passing bus, where the Controller manages the token and generates the data clock. The Controller
+passes the token by sending out a ChannelAddress on the signal information line. The ChannelAddresses are pre-assigned
+by the board integrator and are associated with a specific transmitting Device and a receiving Device. Once the trans-
+mitting Device associated with the ChannelAddress is granted bus access, it can send one quadlet of data on the MediaLB
+data line after a defined time delay. The Device provides information about the data being transmitted by simultaneously
+sending out a Command on the signal information line. After receiving the ChannelAddress, the receiving Device must decide
+whether to receive the associated message or reject it. A status byte from the receiving Device is placed on the signal
+information line, one byte after the Command from the sending Device is received. Once per network frame, the Controller
+generates a unique pattern (FRAMESYNC) on the signal information line. This defines the MediaLB frame edge, as well
+as the byte boundary of signal and data lines for all Devices. 
+Since MediaLB is a high-speed bus, connections to extern al devices should be implemented in hardware and not bit-
+banged on generic ports. A MediaLB Device interface, in the form of VHDL code, is available from Microchip. For more
+information about the Media Local Bus, refer to the MediaLB Specification [3].
+EHC devices without an integrated MediaLB interface can use one of the Microchip I/O Companion devices (IOCs) as
+a communication bridge between the OS81092 MediaLB Port and a parallel, SRAM-like EHC interface. For example,
+the IOC Host Bus Interface (HBI) is a 16-bit parallel communication inte rface for exchange of all network data types.
+This HBI Port is easily accommodated by EHCs with a ge neric SRAM port. In addition to serving as a communication
+bridge between its MediaLB and HBI Ports, the IOC provides hardware port expansion to the application via the Medi-
+aLB Port, as described in Section 4.3.6 “Port Expansion”.
+4.3.3 STREAMING PORT
+The Streaming Port provides a gateway for synchronous  data exchange between the OS81092 and external legacy
+devices. Depending on the configuration of the OS81092, the Streaming Port supports up to four serial data pins, which
+share a common synchronization signal and bit clock. The data format of the Streaming Port is compatible with industry-
+standard serial interfaces found on many ADCs, DACs and other devices.
+4.3.4 CONTROL PORT
+The Control Port operates as an I2C bus slave and supports asynchronous packet and control message exchange. An
+interrupt pin (INT) is used to notify the EHC when Control Port servicing is required (e.g. control message or asynchro-
+nous packet received). While the EHC can communicate wi th the OS81092 over the Control Port alone, the I 2C data
+rate limits throughput on the Application Layer. Application performance can be maximized by using the MediaLB Port
+to transport all network data types. Configuring and enabling of the MediaLB Port is supported via the I2C Control Port.
+The OS81092 Control Port may be configured as an I2C master by changing the settings in the INIC Configuration String.
+In master mode, the OS81092 performs read and write operations with on-board I2C slave devices based on remote com-
+mands from the MOST Network or from a local EHC.
+4.3.5 GPIO PORT
+Depending on the INIC Configuration String settings loaded in the OS81092, the General Purpose Input/Output (GPIO)
+Port may be available to support various external operations. Some of the OS81092 default functions or ports may not
+be available when the GPIO Port is used.
+4.3.6 PORT EXPANSION
+Devices belonging to the Microchip I/O Companion  (IOC) family can be used as companions to INIC, providing
+expanded hardware ports to the application. The OS85650 IOC, for example, is a high-performance routing engine that
+supports IO expansion and a Digital Transmission Content Protection (DTCP) coprocessor. The primary function of the
+OS85650 is routing of data streams between various hardware ports, while the integrated DTCP coprocessor provides
+optional encryption/decryption of data streams routed through the IOC device. Various services are available to support
+full Authentication and Key Exchange (AKE) implementation. For applications that do not require DTCP, the OS85652
+IOC provides the same functionality as the OS85650, albeit without the DTCP coprocessor.
+When the OS85650 IOC is used as a companion to the OS81092 INIC, the MediaLB bus is typically the medium used
+to exchange data between the two devices. Data exchanged over MediaLB is routed to another IOC hardware interface
+on which external devices may reside (e.g. ADC, DSP, EHC). The EHC for the application may reside on the IOC’s Host
+Bus Interface (HBI), which provides an SRAM-like parallel port for easy communication with various microcontrollers.
+In this way, the IOC allows an EHC to exploit the effici ency and bandwidth of the MediaLB bus, even when the EHC
+does not support a MediaLB interface.

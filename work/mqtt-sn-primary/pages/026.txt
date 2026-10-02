@@ -1,0 +1,28 @@
+6.13 Client’s Retransmission Procedure
+All messages that are “unicasted” to the GW (i.e. sent using the GW’s unicast address and not broadcasted)
+and for which a GW’s reply is expected are supervised by a retry timer Tretry and a retry counter Nretry. The
+retry timer Tretry is started by the client when the message is sent and stopped when the expected GW’s reply
+is received. If Tretry times out and the expected GW’s reply is not received, the client retransmits the message.
+After Nretry retransmissions, the client aborts the procedure and assumes that its MQTT-SN connection to the
+gateway is disconnected. It should then try to connect to another gateway, and only if it fails to re-connect again
+to the former gateway.
+6.14 Support of sleeping clients
+Sleeping clients are clients residing on (battery-operated) devices that want to save as much energy as possible.
+These devices need to enter a sleep mode whenever they are not active, and will wake up whenever they have data
+to send or to receive. The server/gateway needs to be aware of the sleeping state of these clients and will buffer
+messages destined to them for later delivery when they wake up.
+Figure 4: Client’s state transition diagram
+As illustrated in Fig 4, from the perspective of the server/gateway, a client may be in one of the following
+states: active, asleep, awake, disconnected, or lost. A client is in the active state when the server/gateway receives
+a CONNECT message from that client, as described in section 6.2. This state is supervised by the server/gateway
+with the “keep alive” timer as described in section 6.11. If the server/gateway does not receive any message from
+the client for a period longer than the keep alive duration (indicated in the CONNECT message), the gateway will
+consider that client as lost and activates for example the Will feature for that client.
+A client goes to the disconnected state when the server/gateway receives a DISCONNECT without a duration
+ﬁeld. This state is not time-supervised by the server/gateway.
+If a client want to sleep, it sends a DISCONNECT message which contains a sleep duration. The server/gateway
+acknowledges that message with a DISCONNECT message and considers the client for being in asleep state,
+see also Fig. 5. The asleep state is supervised by the server/gateway with the indicated sleep duration. If the
+server/gateway does not receive any message from the client for a period longer than the sleep duration, the
+server/gateway will consider that client as lost and - as with the keep alive procedure - activates for example
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 25

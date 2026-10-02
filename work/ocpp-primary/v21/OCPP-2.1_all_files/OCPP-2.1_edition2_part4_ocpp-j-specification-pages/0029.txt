@@ -1,0 +1,52 @@
+Chapter 9. CustomData Extension
+In the JSON schema files all classes have the attribute additionalProperties set to false, such that a JSON parser will not accept any
+other properties in the message. In order to allow for some flexibility to create non-standard extensions for experimentation
+purposes, every JSON class has been extended with a "customData" property. This property is of type "CustomDataType", which
+has only one required property: "vendorId", which is used to identify the kind of customization. However, since it does not have
+additionalProperties set to false it can be freely extended with new properties.
+In the same way as is defined for the DataTransfer message, the "vendorId" SHOULD be a value from the reversed DNS namespace,
+where the top tiers of the name, when reversed, corresponds to the publicly registered primary DNS name of the Vendor
+organization.
+The following example shows the "CustomDataType" definition and the (optional) "customData" property in the schema definition
+of HeartbeatRequest:
+{
+   "$schema": "http://json-schema.org/draft-06/schema#",
+   "$id": "HeartbeatRequest",
+   "definitions": {
+       "CustomDataType": {
+           "description": "This class does not get 'AdditionalProperties =
+false' in the schema
+               generation, so it can be extended with arbitrary JSON
+properties to allow adding
+               custom data.",
+           "javaType": "CustomData",
+           "type": "object",
+           "properties": {
+               "vendorId": {
+                   "type": "string",
+                   "maxLength": 255
+               }
+           },
+           "required": [ "vendorId" ]
+       }
+   },
+   "type": "object",
+   "additionalProperties": false,
+   "properties": {
+       "customData": {
+           "$ref": "#/definitions/CustomDataType"
+       }
+   }
+}
+Whereas the standard HeartbeatRequest has an empty body, a customized version, that provides the value of the main meter and a
+count of all sessions to date, could look like this:
+ {
+    "customData": {
+        "vendorId": "com.mycompany.customheartbeat",
+        "mainMeterValue": 12345,
+        "sessionsToDate": 342
+    }
+}
+A CSMS that has implemented this extension, identified by its "vendorId", will be able to process the data. Other CSMS
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 27/28 Part 4 - JSON over WebSockets implementation guide

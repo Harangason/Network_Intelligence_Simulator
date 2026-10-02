@@ -1,0 +1,57 @@
+Tool validations
+* Step 2:
+Message: NotifyChargingLimitRequest
+- evseId must be <Configured evseId>
+- chargingLimit.chargingLimitSource must be EMS
+- chargingLimit.isLocalGeneration must be false
+- chargingSchedule[0].chargingSchedulePeriod size must be 1
+- chargingSchedule[0].chargingSchedulePeriod[0].startPeriod must be 0
+- chargingSchedule[0].chargingSchedulePeriod[0].limit must be 8 * <limit multiplier>_
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+* Step 5:
+Message: GetChargingProfilesResponse
+- status must be Accepted
+* Step 6:
+Message ReportChargingProfilesRequest
+- requestId must be Same Id as in the GetChargingProfilesRequest in step 4
+- EvseId must be <Configured evseId>
+There must be one ChargingProfile be reported with
+- chargingProfile[0].chargingProfilePurpose must be ChargingStationExternalConstraints
+- chargingProfile[0].chargingProfileKind must be Dynamic
+- chargingProfile[0].dynUpdateTime must be <Datetime of moment of step 1>
+- chargingProfile[0].chargingSchedule size must be 1
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod size must be 1
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].startPeriod must be 0
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].limit must be 8 * <limit multiplier>_
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].operationMode must be ExternalLimits
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+* Step 9:
+Message: NotifyChargingLimitRequest
+- evseId must be <Configured evseId>
+- chargingLimit.chargingLimitSource must be EMS
+- chargingLimit.isLocalGeneration must be false
+- chargingSchedule[0].chargingSchedulePeriod size must be 1
+- chargingSchedule[0].chargingSchedulePeriod[0].startPeriod must be 0
+- chargingSchedule[0].chargingSchedulePeriod[0].limit must be 10 * <limit multiplier>_
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+* Step 12:
+Message: GetChargingProfilesResponse
+- status must be Accepted
+* Step 13:
+Message ReportChargingProfilesRequest
+- requestId must be Same Id as in the GetChargingProfilesRequest in step 11
+- EvseId must be <Configured evseId>
+There must be one ChargingProfile be reported with
+- chargingProfile[0].chargingProfilePurpose must be ChargingStationExternalConstraints
+- chargingProfile[0].chargingProfileKind must be Dynamic
+- chargingProfile[0].dynUpdateTime must be <Datetime of moment of step 8>
+- chargingProfile[0].chargingSchedule size must be 1
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod size must be 1
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].startPeriod must be 0
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].limit must be 10 * <limit multiplier>_
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].operationMode must be ExternalLimits
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 834/1383 Part 6 - Test Cases

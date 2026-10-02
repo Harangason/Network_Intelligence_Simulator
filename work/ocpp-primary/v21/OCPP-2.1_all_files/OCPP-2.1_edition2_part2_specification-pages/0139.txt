@@ -1,0 +1,51 @@
+No. Type Description
+Scenario description #2 Transaction already started when authorizing, e.g. TxStartPoint = "EVConnected" and cable is
+connected
+1. EV Driver presents an RFID card that is linked to an account with a prepaid balance.
+2. Charging Station sends AuthorizeRequest to CSMS with idToken that is read from the
+card.
+3. If card is not valid, CSMS responds with AuthorizeResponse with idTokenInfo.status =
+Invalid
+a. Charging station does not start energy transfer.
+b. Use case ends.
+(Transaction will be stopped when EV Driver disconnects the cable).
+4. CSMS checks prepaid balance of associated account.
+5. If card is valid, but prepaid balance is not positive, CSMS responds with
+AuthorizeResponse with idTokenInfo.status = NoCredit and
+idTokenInfo.cacheExpiryDateTime set to now.
+a. Charging station does not start energy transfer.
+b. Use case ends.
+(Transaction will be stopped when EV Driver disconnects the cable).
+6. If card is valid and prepaid balance is positive, CSMS responds with AuthorizeResponse
+with idTokenInfo.status = Accepted and idTokenInfo.cacheExpiryDateTime set to now.
+a. Charging station sends a TransactionEventRequest with eventType = Updated,
+with idToken of the prepaid card.
+b. CSMS responds with a TransactionEventResponse with transactionLimit.maxCost
+set to amount of credit left in account.
+c. Behavior according to use case E16 - Transactions with fixed cost, energy or time.
+Scenario description #3 Transaction not started by authorizing, e.g. TxStartPoint = "EVConnected" or "PowerPathClosed",
+and cable is not yet connected
+1. EV Driver presents an RFID card that is linked to an account with a prepaid balance.
+2. Charging Station sends AuthorizeRequest to CSMS with idToken that is read from the
+card.
+3. If card is not valid, CSMS responds with AuthorizeResponse with idTokenInfo.status =
+Invalid
+a. Use case ends.
+4. CSMS checks prepaid balance of associated account.
+5. If card is valid, but prepaid balance is not positive, CSMS responds with
+AuthorizeResponse with idTokenInfo.status = NoCredit and
+idTokenInfo.cacheExpiryDateTime set to now.
+a. Use case ends.
+6. If card is valid and prepaid balance is positive, CSMS responds with AuthorizeResponse
+with idTokenInfo.status = Accepted and idTokenInfo.cacheExpiryDateTime set to now.
+7. If EV Driver connects cable within timeout (EVConnectionTimeout), then
+a. Charging station sends a TransactionEventRequest with eventType = Started,
+with idToken of the prepaid card.
+b. CSMS responds with a TransactionEventResponse with transactionLimit.maxCost
+set to amount of credit left in account.
+c. Behavior according to use case E16 - Transactions with fixed cost, energy or time.
+5 Prerequisite(s) CSMS supports prepaid cards.
+6 Postcondition(s) Energy transfer is stopped when amount of prepaid balance is reached.
+7 Error handling
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 126/803 Part 2 - Specification

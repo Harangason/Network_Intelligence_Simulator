@@ -1,0 +1,53 @@
+Component componentNa
+me
+ISO15118Ctrlr
+evse *
+Variable variableName ProtocolEnabled
+variableInstanc
+e
+<instance number in ProtocolSupported variable>
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+dataType boolean
+Description By default, a protocol listed in ISO15118Ctrlr.ProtocolSupported is enabled,
+unless an instance of ISO15118Ctrlr.ProtocolEnabled with the same instance
+name exists that has a value of false. In that case the protocol mentioned in
+ISO15118Ctrl.ProtocolSupported with the same instance is explicitly disabled
+and cannot be used.
+ProtocolEnabled shall always have the same number of instances and the same
+instance names as ProtocolSupported, such that instance "1" of ProtocolEnabled
+matches with instance "1" of ProtocolSupported and instance "2" of
+ProtocolEnabled matches with instance "2" of ProtocolSupported, and so on.
+Below example shows how the ISO 15118-20:DC protocol can be disabled, even
+though it is supported:
+Example: Charging Station supports ISO 15118-2 and ISO 15118-20 DC
+- ISO15118Ctrlr.ProtocolSupported["1"] = "urn:iso:15118:2:2013:MsgDef,2,0"
+- ISO15118Ctrlr.ProtocolSupported["2"] = "urn:iso:std:iso:15118:-20:DC,1,0"
+CSO disables ISO 15118-20 DC:
+- ISO15118Ctrlr.ProtocolEnabled["1"] = true
+- ISO15118Ctrlr.ProtocolEnabled["2"] = false
+2.25. Page 786 - (2026-06) - Updated values ConnectedEV for
+CHAdeMO [1192]
+The highlighted rows have been added to the ConnectedEV for CHAdeMO in 2.16.2 in chapter Referenced Components and
+Variables.
+Variable Unit CHAdeMO value
+Voltage and current values:
+ACCurrent(MinSet) A -
+ACCurrent(MaxSet) A -
+ACVoltage(MaxSet) V -
+DCCurrent(MinSet) A Minimum charge current (H'100.0)
+DCCurrent(MaxSet) A Maximum charge current (H'102.3)   
+DCCurrent(Target) A Charging current request (H'108.3)   
+ If HighCurrentControl is true, use the value from        Charging current  
+request (extended) (H'110.1,2).  
+DCVoltage(MinSet) V Minimum battery voltage (H'100.2,3)
+DCVoltage(MaxSet) V Maximum battery voltage (H'100.4,5)
+DCVoltage(Target) V Target battery voltage (H'102.1,2)
+DischargeDCCurrent(MaxSet) A Maximum discharge current (H'200.0)   
+DischargeDCCurrent(Target) A Discharging current request (H'208.0)   
+DischargeDCVoltage(MinSet) V Minimum battery discharging voltage (H'200.4,5)    
+Power, energy and time values:
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 22/116 Errata 2026-06

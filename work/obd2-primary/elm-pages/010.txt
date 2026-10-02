@@ -1,0 +1,73 @@
+Several parameters within the ELM327 can be
+adjusted in order to modify its behaviour. These do not
+normally have to be changed before attempting to talk
+to the vehicle, but occasionally the user may wish to
+customize these settings – for example by turning the
+character echo off, adjusting a timeout value, or
+changing the header bytes. In order to do this, internal
+‘AT’ commands must be used.
+Those familiar with PC modems will immediately
+recognize AT commands as a standard way in which
+modems are internally configured. The ELM327 uses
+essentially the same method, always watching the
+data sent by the PC, looking for messages that begin
+with the character ‘A’ followed by the character ‘T’. If
+found, the next characters will be interpreted as an
+internal configuration or ‘AT’ command, and will be
+executed upon receipt of a terminating carriage return
+character. If the command is just a setting change, the
+ELM327 will reply with the characters ‘OK’, to say that
+it was successfully completed.
+Some of the following commands allow passing
+numbers as arguments in order to set the internal
+values. These will always be hexadecimal numbers
+which must generally be provided in pairs. The
+hexadecimal conversion chart in the OBD Commands
+section (page 31) may be helpful if you wish to
+interpret the values. Also, you should be aware that for
+the on/off types of commands, the second character is
+the number 1 or the number 0, the universal terms for
+on and off.
+The remainder of this page, and the two pages
+following provide a summary of all of the commands
+that the current version of the ELM327 recognizes. A
+more complete description of each command begins
+on page 12. Note that the settings which are shown
+with an asterisk (*) are the default values.
+10 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+AT Command Summary
+AT Commands
+General Commands
+<CR> repeat the last command
+BRD hh try Baud Rate Divisor hh
+BRT hh set Baud Rate Timeout
+D set all to Defaults
+E0, E1 Echo off, or on*
+FE Forget Events
+I print the version ID
+L0, L1 Linefeeds off, or on
+LP go to Low Power mode
+M0, M1 Memory off, or on
+RD Read the stored Data byte
+SD hh Save Data byte hh
+WS Warm Start (quick software reset)
+Z reset all
+@1 display the device description
+@2 display the device identifier
+@3 cccccccccccc  store the @2 identifier
+Programmable Parameter Commands
+PP xx OFF disable Prog Parameter xx
+PP FF OFF all Prog Parameters disabled
+PP xx ON enable Prog Parameter xx
+PP FF ON all Prog Parameters enabled
+PP xx SV yy  for PP xx, Set the Value to yy
+PPS print a PP Summary
+Voltage Reading Commands
+CV dddd Calibrate the Voltage to dd.dd volts
+CV 0000 restore CV value to factory setting
+RV Read the input Voltage
+Other
+IGN read the IgnMon input level

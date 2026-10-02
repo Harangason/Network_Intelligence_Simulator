@@ -1,0 +1,40 @@
+No. Type Description
+Scenario description #3 Settlement when transaction has finished
+1. If cost calculated locally
+a. Charging Station sends a TransactionEventRequest with eventType = Ended and
+costDetails to CSMS.
+b. CSMS responds with TransactionEventResponse.
+c. Charging Station shows the cost breakdown in costDetails to EV Driver.
+2. If cost calculated centrally
+a. Charging Station sends a TransactionEventRequest with eventType = Ended to
+CSMS.
+b. CSMS responds with TransactionEventResponse with totalCost and an
+updatedPersonalMessage.
+c. Charging Station shows the cost breakdown in updatedPersonalMessage to EV
+Driver.
+3. CSMS performs settlement directly with PSP based on the <pspRef>.
+4. PSP returns a receipt data or a URL to a receipt to CSMS.
+5. CSMS may use SetDisplayMessageRequest to display a URL to the receipt to the EV
+Driver.
+5 Prerequisites Dynamic QR code: The Charging Station has been configured with dynamic QR code configuration
+variables in WebPaymentsCtrlr, and Charging Station periodically displays a QR code with a new
+time-based one-time password.
+6 Postcondition(s) CSMS remotely starts a transaction for EV Driver.
+7 Error handling If the time-based one-time password verfication fails, then CSMS will not start a transaction.
+8 Remark(s) The communication between CSMS and PSP, as well as the manner how a receipt is
+communicated to the EV Driver, is out of scope of this document.
+This use case resembles use case C24 "Ad hoc payment via stand-alone payment terminal" with
+the difference that the credit/debit card terminal is replaced by the web page that the URL in the
+QR code points to.
+NOTE
+The mechanism to provide a URL for web payment via a QR code, as described
+in this use case, also applies to other mechanisms that can provide a URL, such
+as NFC tags or Bluetooth Beacons.
+This use case assumes that the CSMS of the CSO handles URL validation and communication
+with PSP, as is also the case in the other ad hoc payment use cases (directly or indirectly via a
+payment terminal).
+It is also possible to involve an EMSP in the use case to handle payment. In that case the URL
+points to the EMSP system that executes steps 2 to 7 of the use case after which it requests
+CSMS (via a roaming protocol) to start a session on the charging station.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 147/803 Part 2 - Specification

@@ -1,0 +1,101 @@
+ID Precondition Requirement definition Note
+C01.FR.11 Field: language1 SHALL be different from field
+language2.
+C01.FR.12 It is RECOMMENDED to implement messages in
+English as fall-back.
+C01.FR.13 If both language1 AND language2
+don’t match installed languages in the
+Charging Station
+It is RECOMMENDED to show messages to the EV
+Driver in English.
+C01.FR.17 Language SHALL be specified as RFC-4646 tags,
+see: [RFC5646], example: US English is: "en-US".
+C01.FR.18 If the IdToken is valid AND
+the EV driver is NOT allowed to charge
+at the type of EVSE(s) this Charging
+Station provides.
+The CSMS SHALL send an AuthorizeResponse with
+idTokenInfo.status NotAllowedTypeEVSE.
+C01.FR.19 idToken is allowed for any EVSE of the
+Charging Station
+The CSMS SHALL send an AuthorizeResponse in
+which idTokenInfo has an empty (or absent) evseId
+list.
+This will be the most
+common case. Even
+though the idToken might
+be allowed on any EVSE,
+the idTokenInfo.status
+still needs to be
+Accepted before
+charging is allowed.
+C01.FR.20 idToken is allowed for a subset of
+EVSEs of the Charging Station
+The CSMS SHALL send an AuthorizeResponse in
+which IdTokenInfo has an evseId list with the
+allowed EVSEs.
+Note the difference
+between validity of an
+idToken and the fact
+whether this (type of)
+token is allowed on an
+EVSE. The
+idTokenInfo.status still
+needs to be Accepted
+before charging is
+allowed.
+C01.FR.21 C01.FR.20 The Charging Station SHALL only allow charging on
+the EVSEs mentioned in the AuthorizeResponse.
+C01.FR.22 idToken is not allowed for any EVSE of
+the Charging Station
+The CSMS SHALL send an AuthorizeResponse in
+which idTokenInfo.status is NotAtThisLocation
+and evseId list is empty (or absent).
+Status
+NotAtThisLocation
+needed in order to
+differentiate with the
+situation in which
+idToken is allowed on all
+EVSEs.
+C01.FR.23 When a transaction is still active, that
+had been authorized earlier by an
+idToken, but which is now no longer
+authorized for charging AND
+a new idToken is presented to the
+Charging Station for authorization,
+that differs from the inital idToken
+The Charging Station SHOULD NOT allow the
+authorization of a different idToken.
+Multiple idTokens for a
+transaction are most
+likely not supported by a
+CSMS.
+C01.FR.24 When a transaction is still active, that
+had been authorized earlier by an
+idToken, but which is now no longer
+authorized for charging AND
+Charging Stations sends an
+AuthorizeRequest for a new idToken,
+that differs from the inital idToken of
+the transaction
+The CSMS is RECOMMENDED to respond with an
+AuthorizeResponse with idTokenInfo.status =
+NotAtThisTime for this idToken.
+If a second authorization
+is done by Charging
+Station then CSMS can
+reject the idToken.
+C01.FR.25 Two IdTokenType elements are considered to be
+equal when they have the same value for the fields
+idToken.idToken and idToken.type
+additionalInfo is not
+taken into account when
+comparing.
+See C01.FR.02,
+C01.FR.03, C01.FR.05 for
+idToken requirements
+where idTokens are
+compared.
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 81/491 Part 2 - Specification

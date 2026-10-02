@@ -1,0 +1,33 @@
+No. Type Description
+7 Error handling If CSMS does not accept the inserted battery, this can only be communicated with a customData
+extension in BatterySwapResponse with vendorId =
+"org.openchargealliance.batteryswapresponse".
+customData extension
+"customData": {
+  "vendorId":
+"org.openchargealliance.batteryswapresponse",
+  "status": "Rejected",  <== Accepted | Rejected
+  "statusInfo": {        <== optional element (example
+data)
+    "reasonCode": "BatteryUnknown",
+    "additionalInfo": "Not a battery of this CPO"
+  }
+}
+(See "OCPP-2.1 Part 4, Chapter 9" for the customData extension).
+A charging station that supports this customization, will report this via the variable
+CustomizationCtrlr.CustomImplementationEnabled[
+"org.openchargealliance.batteryswapresponse" ] = true.
+Predefined reason codes contain: BatterySoHLow, BatterySoC, BatteryDamaged,
+BatteryUnknown, BatteryType, NoBatteryAvailable. See Appendix 5 Reason Codes.
+8 Remark(s) A battery swap station is treated as a Charging Station in OCPP in which every battery slot
+represents a logical EVSE.
+The BatterySwapRequest message is related to the idToken of the EV Driver. The
+TransactionEvent messages are not associated with the EV Driver, hence the idToken in the
+TransactionEvent can be the predefined value in BatterySwapIdtoken or be absent.
+Battery swap stations usually operate as "old battery in first, new battery out second", as
+described in this use case. The described mechanism also works, however, when the order is
+reversed. If that is the case, this must be reported as BatterySwapCtrlr.SwapOrder = "Out-In".
+The use of a StatusNotificationRequest instead of a NotifyEventRequest to report
+AvailabilityState, is allowed, but use of StatusNotificationRequest has been deprecated.
+Edition 2, 2025-12-03 S. Battery Swapping
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 573/803 Part 2 - Specification

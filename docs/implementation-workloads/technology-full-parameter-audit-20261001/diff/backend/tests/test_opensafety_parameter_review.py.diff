@@ -1,0 +1,150 @@
+--- before/backend/tests/test_opensafety_parameter_review.py
++++ after/backend/tests/test_opensafety_parameter_review.py
+@@ -0,0 +1,147 @@
++"""Versioned reference bounds and safety/black-channel isolation regressions."""
++from copy import deepcopy
++import pytest
++from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
++from backend.communication.technologies import opensafety as S
++
++def actual(service='SPDO', direction='TRANSMIT'):
++    x = {'os_'+key:'synthetic-'+key for key in S.REQUIRED}
++    x.update(os_edition=S.EDITION, os_service=service, os_direction=direction,
++        os_node_role='SN', os_bearer_id='actual-registered-black-channel')
++    return x
++
++def status(x):
++    return registry.validate_parameters('opensafety', x)['status']
++
++def accepted():
++    x = actual(direction='RECEIVE')
++    x.update(os_data_accepted=True, os_crc1_valid=True, os_crc2_valid=True, os_subframes_consistent=True,
++        os_range_validated=True, os_synchronized=True, os_connection_valid=True, os_safe_state=False,
++        os_outcome='ACCEPTED', os_sct_ticks=100, os_elapsed_ticks=99, os_tick_us=250,
++        os_consecutive_time=2, os_previous_consecutive_time=65534, os_consecutive_distance=4,
++        os_propagation_min_ticks=1, os_propagation_max_ticks=10, os_propagation_ticks=5)
++    return x
++
++def test_opensafety_own_black_channel_not_a_can_clock_or_ethernet_frame():
++    p = registry.profile('opensafety')
++    assert p['default_stack']==['opensafety'] and p['max_payload_bytes'] is None
++    assert p['domain']=='generic_networking'
++    assert p['capacity_evidence']['status']=='MODEL_MISSING'
++    assert status(actual())=='VALID'
++    keys = [f['key'] for f in registry.parameter_fields('opensafety')]
++    assert len(keys)==len(set(keys)) and not set(keys)&set(S.REMOVED)
++    for bad in ({'bitrate_bps':500000}, {'mtu_bytes':1500}, {'local_timing_evidence':{}},
++                {'os_bearer_id':'opensafety'}, {'ps_mqtt_qos':1}):
++        assert status({**actual(), **bad})=='INVALID'
++    assert status({**actual(), 'payload_bytes':3000})=='VALID'
++
++@pytest.mark.parametrize('field',registry.parameter_fields('opensafety'),ids=lambda f:f['key'])
++def test_opensafety_every_declared_type_unit_bound(field):
++    bad = 'not-number' if field['type']=='number' else 1
++    assert status({**actual(),field['key']:bad})=='INVALID'
++    for edge,offset in (('min',-1),('max',1)):
++        if field.get(edge) is not None:
++            assert status({**actual(),field['key']:field[edge]+offset})=='INVALID'
++
++def test_opensafety_source_proposals_are_configuration_scoped_not_safety_assertions():
++    f = {v['key']:v for v in registry.parameter_fields('opensafety')}
++    assert f['os_edition']['default']==S.EDITION
++    assert {(d['when']['os_configuration'],d['value']) for d in f['os_max_ssdo_payload']['conditional_defaults']}=={('REFERENCE_DEMO',12),('MINIMUM_SUPPORTED',8)}
++    assert f['os_max_rx_spdo_payload']['conditional_defaults'][0]['value']==128
++    for key in ('os_address','os_domain','os_sct_ticks','os_tick_us','os_safe_state',
++                'os_safety_accepted','os_udid_hex','payload_bytes'):
++        assert 'default' not in f[key] and not f[key].get('conditional_defaults')
++
++@pytest.mark.parametrize('length,crc,fixed',[(0,1,11),(8,1,11),(9,2,13),(254,2,13)])
++@pytest.mark.parametrize('service,multiplier,frameid',[('SPDO',2,48),('SSDO',2,56),('SLIM_SSDO',1,58)])
++def test_opensafety_short_long_and_slim_geometry_crc_family_are_distinct(length,crc,fixed,service,multiplier,frameid):
++    polynomial = 0x2F if crc==1 else 0xAC9A if service=='SLIM_SSDO' else 0xBAAD
++    x = {**actual(service), 'os_frame_id':frameid, 'os_data_length':length, 'os_crc_bytes':crc,
++        'os_crc_polynomial':polynomial, 'os_crc_initial':0, 'os_frame_bytes':multiplier*length+fixed,
++        'os_subframe1_bytes':4+length+crc, 'os_subframe2_bytes':5+crc+(length if multiplier==2 else 0)}
++    assert status(x)=='VALID'
++    for bad in ({'os_frame_bytes':x['os_frame_bytes']+1}, {'os_crc_bytes':3-crc},
++                {'os_crc_polynomial':0xA001}, {'os_crc_initial':65535}, {'os_subframe2_bytes':4}):
++        assert status({**x,**bad})=='INVALID'
++    assert status({**x,'os_data_length':255})=='INVALID'
++
++def test_opensafety_valid_frame_ids_and_six_byte_identities_do_not_use_can_id():
++    assert status({**actual(),'os_frame_id':49,'os_udid_hex':'001122334455','os_scm_udid_hex':'AABBCCDDEEFF'})=='VALID'
++    for bad in ({'os_frame_id':54},{'os_frame_id':56},{'os_udid_hex':'00:11:22:33:44:55'},
++                {'os_udid_hex':0x001122334455},{'os_domain':0},{'os_address':1024}):
++        assert status({**actual(),**bad})=='INVALID'
++    assert status({**actual('SNMT'),'os_frame_id':47})=='VALID'
++
++def test_opensafety_actual_configuration_payload_and_bearer_bound_are_separate():
++    x = {**actual('SSDO'), 'os_data_length':12, 'os_max_ssdo_payload':12, 'os_crc_bytes':2,
++        'os_frame_bytes':37,'os_bearer_overhead_bytes':50,'os_wire_bytes':87,'os_bearer_limit_bytes':87}
++    assert status(x)=='VALID'
++    for bad in ({'os_max_ssdo_payload':8},{'os_wire_bytes':37},{'os_bearer_limit_bytes':86}):
++        assert status({**x,**bad})=='INVALID'
++    x.pop('os_bearer_overhead_bytes')
++    assert status(x)=='UNVERIFIED'
++
++def test_opensafety_sod_mapping_change_requires_preoperation_and_application_range_check():
++    x = {**actual(),'os_mapping_changed':True,'os_mapping_state':'PRE_OPERATIONAL','os_mapping_source':'actual-sod',
++        'os_data_length':8,'os_mapped_bytes':8,'os_mapped_entries':3}
++    assert status(x)=='VALID'
++    assert status({**x,'os_mapping_state':'OPERATIONAL'})=='INVALID'
++    assert status({**x,'os_mapped_bytes':9})=='INVALID'
++    assert status({**accepted(),'os_range_validated':False})=='INVALID'
++
++def test_opensafety_ticks_require_actual_clock_and_sct_does_not_define_fault_reaction():
++    x = {**actual(),'os_tick_us':250,'os_refresh_ticks':4,'os_refresh_us':1000,'os_sct_ticks':100,'os_sct_us':25000}
++    assert status(x)=='VALID'
++    assert status({**x,'os_sct_us':100})=='INVALID'
++    assert status({**x,'os_tick_us':0})=='INVALID'
++    x.pop('os_tick_us')
++    assert status(x)=='UNVERIFIED'
++    x = {**actual(),'os_fault_reaction_bound_us':40000,'os_fault_reaction_required_us':40000}
++    assert status(x)=='VALID'
++    assert status({**x,'os_fault_reaction_bound_us':40000.001})=='INVALID'
++
++def test_opensafety_wire_and_local_clock_wrap_comparisons_are_different():
++    assert status(accepted())=='VALID'
++    assert status({**accepted(),'os_consecutive_distance':3})=='INVALID'
++    x = {**actual(),'os_local_clock':0,'os_timeout_at':4294967295,'os_timeout_distance':1,'os_timeout_expired':True}
++    assert status(x)=='VALID'
++    assert status({**x,'os_timeout_expired':False})=='INVALID'
++    x.update(os_local_clock=4294967295,os_timeout_at=0,os_timeout_distance=4294967295,os_timeout_expired=False)
++    assert status(x)=='VALID'
++    assert status({**x,'os_timeout_expired':True})=='INVALID'
++    a = accepted()
++    a.update(os_consecutive_time=32766,os_previous_consecutive_time=65534,os_consecutive_distance=32768)
++    assert status(a)=='INVALID'
++
++def test_opensafety_scheduler_checks_smallest_active_period_not_selected_period():
++    x = {**actual(), 'os_tx_call_ticks':2, 'os_minimum_refresh_ticks':2,
++         'os_refresh_ticks':20, 'os_rx_check_ticks':3, 'os_minimum_sct_ticks':3, 'os_sct_ticks':100}
++    assert status(x)=='VALID'
++    for bad in ({'os_tx_call_ticks':2.01}, {'os_rx_check_ticks':3.01}, {'os_rx_check_ticks':0}):
++        assert status({**x, **bad})=='INVALID'
++    x.pop('os_minimum_sct_ticks')
++    assert status(x)=='UNVERIFIED'
++
++def test_opensafety_good_crc_does_not_accept_unsynchronized_first_expired_or_safe_data():
++    x = accepted()
++    assert status(x)=='VALID'
++    for bad in ({'os_crc2_valid':False},{'os_synchronized':False},{'os_connection_valid':False},
++                {'os_first_after_sync':True},{'os_safe_state':True},{'os_elapsed_ticks':100},
++                {'os_propagation_ticks':11},{'os_timeout_expired':True}):
++        assert status({**x,**bad})=='INVALID'
++    x.pop('os_sct_ticks')
++    assert status(x)=='UNVERIFIED'
++
++def test_opensafety_protocol_label_never_confirms_system_safety_case():
++    x = {**actual(),'os_safety_accepted':True}
++    assert status(x)=='UNVERIFIED'
++    x.update(os_safety_case_confirmed=True,os_certificate_scope_match=True,os_assurance_source='synthetic-external-case')
++    assert status(x)=='VALID'
++    assert status({**x,'os_certificate_scope_match':False})=='INVALID'
++    assert registry.profile('opensafety')['capacity_evidence']['status']=='MODEL_MISSING'
++
++def test_opensafety_rejected_foreign_rate_preserves_confirmed_native_configuration():
++    x = {**actual(),'os_tick_us':100,'os_sct_ticks':42,'os_max_tx_spdo_payload':64,'os_udid_hex':'001122334455'}
++    before = deepcopy(x)
++    assert status({**x,'bitrate_bps':500000})=='INVALID'
++    assert x==before and status(x)=='VALID'

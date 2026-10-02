@@ -1,0 +1,36 @@
+3.5.1. Authorization Cache
+A Charge Point MAY implement an Authorization Cache that autonomously maintains a record of previously
+presented identifiers that have been successfully authorized by the Central System. (Successfully meaning: a
+response received on a message containing an idTag)
+If implemented, the Authorization Cache SHOULD conform to the following semantics:
+• The Cache contains all the latest received identifiers (i.e. valid and NOT-valid).
+• The Cache is updated using all received IdTagInfo (from Authorize.conf, StartTransaction.conf and
+StopTransaction.conf)
+• When the validity of a Cache entry expires, it SHALL be changed to expired in the Cache.
+• When an IdTagInfo is received for an identifier in the Cache, it SHALL be updated.
+• If new identifier authorization data is received and the Authorization Cache is full, the Charge Point SHALL
+remove any NOT-valid entries, and then, if necessary, the oldest valid entries to make space for the new
+entry.
+• Cache values SHOULD be stored in non-volatile memory, and SHOULD be persisted across reboots and
+power outages.
+• When an identifier is presented that is stored in the cache as NOT-valid, and the Charge Point is online: an
+Authorize.req SHOULD be sent to the central System to check the current state of the identifier.
+Operation of the Authorization Cache, when present, is reported (and controlled, where possible) by the
+AuthorizationCacheEnabled configuration key.
+3.5.2. Local Authorization List
+The Local Authorization List is a list of identifiers that can be synchronized with the Central System.
+The list contains the authorization status of all (or a selection of) identifiers and the authorization
+status/expiration date.
+Identifiers in the Local Authorization list can be marked as valid, expired, (temporarily) blocked, or
+blacklisted, corresponding to IdTagInfo status values Accepted/ConcurrentTx, Expired, Blocked, and Invalid,
+respectively.
+These values may be used to provide more fine grained information to users (e.g. by display message) during
+local authorization.
+The Local Authorization List SHOULD be maintained by the Charge Point in non-volatile memory, and SHOULD
+be persisted across reboots and power outages.
+A Charge Point that supports Local Authorization List SHOULD implement the configuration key:
+LocalAuthListMaxLength This gives the Central System a way to known the the maximum possible number
+of Local Authorization List elements in a Charge Point
+The Charge Point indicates whether the Local Authorization List is supported by the presence or absence of the
+LocalAuthListManagement element in the value of the SupportedFeatureProfiles configuration key.
+13

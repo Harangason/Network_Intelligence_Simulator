@@ -1,0 +1,48 @@
+TC_C_58_CS: Online authorization through local authorization list -
+LocalAuthListDisablePostAuthorize
+Test case name Online authorization through local authorization list - LocalAuthListDisablePostAuthorize
+Test case Id TC_C_58_CS
+Use case Id(s) C14
+Requirement(s) C14_FR_03
+System under test Charging Station
+Description This test case describes how to authorize an IdToken via the Local Authorization List while the Charging
+Station is online. While online the Charging Station can then locally authorize the IdToken, and is not
+required to send an AuthorizeRequest for a known IdToken. For an IdToken that does not have status
+"Accepted" the Charging Station will still send an AuthorizeRequest to check against the most recent status
+from CSMS. However, when the setting LocalAuthListDisablePostAuthorize is set to true, then the Charging
+Station will not do this.
+Purpose To verify that the Charging Station will not send an AuthorizeRequest for an idToken which has status
+"Invalid" in its local authorization list.
+Prerequisite(s) - LocalAuthListCtrlr.Available is implemented with value true AND
+- LocalAuthListCtrlr.DisablePostAuthorize is implemented AND
+- The Charging Station must support an authorization method other than NoAuthorization or Central
+Before (Preparations)
+Configuration State:
+LocalAuthListCtrlr.Enabled is true (If implemented)
+AuthCtrlr.LocalPreAuthorize is true (If implemented)
+LocalAuthListCtrlr.DisablePostAuthorize true
+Memory State:
+IdTokenLocalAuthList for <Configured invalid idtoken fields>
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present Invalid idToken which is already stored in the Local Authorization List.
+Note: This step is executed if configured scenario is Local
+2. The Charging Station responds with a
+RequestStartTransactionResponse
+1. The Test System sends a RequestStartTransactionRequest
+with idToken.idToken <Configured invalid_idtoken_idtoken>
+idToken.type <Configured invalid_idtoken_type>
+evseId <Configured evseId>
+Note: This step is executed if configured scenario is Remote
+3. The Charging Station does NOT send a AuthorizeRequest
+4. Execute Reusable State EVConnectedPreSession
+5. The Charging Station does NOT start charging.
+Tool validations
+* Step 3:
+Check that Charging Station does NOT send an AuthorizeRequest and authorization is refused.
+Post scenario validations:
+The Charging Station does NOT start charging.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 118/914 Part 6 - Test Cases

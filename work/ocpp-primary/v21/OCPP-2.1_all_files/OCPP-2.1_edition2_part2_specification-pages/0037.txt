@@ -1,0 +1,57 @@
+7 Remark(s) TLS allows a number of configurations, not all of which provide sufficient security. The
+requirements below describe the configurations allowed for OCPP.
+The Charging Station should include the same header as used in Basic Auth RFC 2617, while
+requesting to upgrade the http connection to a websocket connection as described in RFC 6455.
+The server first needs to validate the Authorization header before upgrading the connection.
+Example:
+GET /ws HTTP/1.1
+Remote-Addr: 127.0.0.1
+UPGRADE: websocket
+CONNECTION: Upgrade
+HOST: 127.0.0.1:9999
+ORIGIN: http://127.0.0.1:9999
+SEC-WEBSOCKET-KEY: Pb4obWo2214EfaPQuazMjA==
+SEC-WEBSOCKET-VERSION: 13
+AUTHORIZATION: Basic <Base64 encoded(<ChargePointId>:<AuthorizationKey>)>
+Please note, that the encoding of the basic authentication password in OCPP 2.1 (A00.FR.304)
+differs from how this was done in OCPP 1.6.
+1.3.5. TLS with Basic Authentication Profile - Requirements
+Table 17. Security Profile 2 - TLS with Basic Authentication - Requirements
+ID Precondition Requirement definition
+A00.FR.301 The Charging Station SHALL authenticate itself to the CSMS using HTTP
+Basic authentication [18] (Same as A00.FR.202)
+A00.FR.302 A00.FR.301 The client, i.e. the Charging Station, SHALL provide a username and
+password with every connection request. (Same as A00.FR.203)
+A00.FR.303 A00.FR.302 The username SHALL be equal to the Charging Station identity, which is
+the identifying string of the Charging Station as it uses it in the OCPP-J
+connection URL. When using Basic Authentication, the Charging Station
+identity may not contain the character ":". Otherwise the CSMS may be
+unable to separate the username from the password. (Same as
+A00.FR.204)
+A00.FR.304 A00.FR.302 The password SHALL be stored in the BasicAuthPassword
+Configuration Variable. It SHALL be a randomly chosen passwordString
+with a sufficiently high entropy, consisting of minimum 16 and a
+maximum as defined by the maxLimit of configuration variable
+BasicAuthPassword, which must be at least 40 characters and at most
+64. The password SHALL be sent as a UTF-8 encoded string (NOT
+encoded into octet string or base64). (Same as A00.FR.205)
+A00.FR.306 The CSMS SHALL act as the TLS server.
+A00.FR.307 The CSMS SHALL authenticate itself by using the CSMS certificate as
+server side certificate.
+A00.FR.308 The Charging Station SHALL verify the certification path of the CSMS’s
+certificate according to the path validation rules established in Section 6
+of [3].
+A00.FR.309 The Charging Station SHALL verify that the commonName matches the
+CSMS’s FQDN.
+A00.FR.310 If the CSMS does not own a valid
+certificate, or if the certification path
+is invalid
+The Charging Station SHALL trigger an InvalidCsmsCertificate security
+event (See part 2 appendices for the full list of security events).
+A00.FR.311 A00.FR.310 The Charging Station SHALL terminate the connection.
+A00.FR.312 The communication channel SHALL be secured using Transport Layer
+Security (TLS) [4].
+A00.FR.313 The Charging Station and CSMS SHALL only use TLS v1.2 or above.
+A00.FR.314 Both of these endpoints SHALL check the version of TLS used.
+Edition 2, 2025-12-03 A. Security
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 24/803 Part 2 - Specification

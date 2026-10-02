@@ -1,0 +1,26 @@
+Table 1: Fault Response SubCodes
+Code Reason
+Value SubCode
+Sender SecurityError Sender failed authentication or is not authorized
+to use the requested operation.
+Sender IdentityMismatch Sender sent the wrong identity value.
+Sender ProtocolError Sender’s message does not comply with protocol
+specification.
+Receiver InternalError An internal error occurred and the receiver is not
+able to complete the operation.
+Receiver NotSupported The receiver does not support the requested
+operation.
+5. Mobile Networks
+In cases where Charge Points uses an IP based mobile data network (GPRS, UMTS, HSPDA, etc.) to
+communicate with the Central System, it’s possible that the Central System cannot initiate a network
+connection to a Charge Point directly. For example, a Network Operator may use dynamic IP addresses.
+To overcome this problem, a Central System SHOULD send a SMS to a Charge Point. The SMS SHOULD
+contain the Charge Point identifier, but the SMS MAY also be empty. How an SMS is sent to an SMSC
+and delivered to the Charge Point is outside the scope of this specification. Upon receipt of a SMS, the
+Charge Point MUST send a Heartbeat.req PDU to the Central System with WS-Addressing header
+“From”, with the URL of the Charge Point. See [WS-ADDR] for a description of the Web Service
+Addressing standard. The Central System SHOULD use this URL for sending a pending command to.
+When Charge Points are deployed in a mobile network, the Charge Point SHOULD set its URL in the
+WS-Addressing “From” field when sending a request. This way a Central System can first try sending
+commands to the supplied URL, before waking up the Charge Point via SMS.
+10

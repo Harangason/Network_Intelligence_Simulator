@@ -1,0 +1,37 @@
+TC_L_18_CS: Secure Firmware Update - Missing firmware signing certificate and
+signature
+Test case name Secure Firmware Update - Missing firmware signing certificate and signature
+Test case Id TC_L_18_CS
+Use case Id(s) L01
+Requirement(s) N/a
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to securely download and install a new firmware by
+sending an UpdateFirmwareRequest with a signingCertificate.
+Purpose To verify if the Charging Station is not accepting a non-secure firmware update request, when supporting
+secure firmware update.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+UpdateFirmwareResponse
+1. The Test System sends a UpdateFirmwareRequest
+with firmware.installDateTime <Current DateTime - 2 hours>
+firmware.location <Configured firmware_location>
+firmware.retrieveDateTime <Current DateTime - 2 hours>
+firmware.signingCertificate is omitted
+firmware.signature is omitted
+Tool validations
+* Step 2:
+Message UpdateFirmwareResponse
+- status Rejected OR InvalidCertificate
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 428/914 Part 6 - Test Cases

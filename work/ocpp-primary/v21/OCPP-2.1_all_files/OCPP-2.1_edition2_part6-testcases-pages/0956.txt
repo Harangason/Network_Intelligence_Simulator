@@ -1,0 +1,51 @@
+Main B (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+RequestStartTransactionResponse
+1. The Test System sends a RequestStartTransactionRequest
+with
+evseId <Configured evseId>
+idToken.idToken <Configured pspref_idtoken>
+idToken.type DirectPayment
+3. The Charging Station sends an AuthorizeRequest
+Note(s):
+- This step needs to be executed when
+AuthCtrlr.AuthorizeRemoteStart is true, unless
+PaymentCtrlr.AuthorizeDirectPayment = false
+4. The Test System responds with an AuthorizeResponse
+with idTokenInfo.status Accepted
+5. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed when TxStartPoint contains
+Authorized OR the transaction already started. So in the case
+TxStartPoint contains ParkingBayOccupancy or (EVConnected, in
+the case this testcase was initiated from state
+EVConnectedPreSession.)
+6. The Test System responds with a TransactionEventResponse
+Note(s):
+- The first TransactionEventRequest sent after authorization
+contains the idToken field. The TransactionEventResponse of this
+request message contains idTokenInfo
+with status Accepted
+Tool validations
+* Step 2:
+Message: RequestStartTransactionResponse
+- status must be Accepted
+If the transaction has already been started, so if TxStartPoint contains ParkingBayOccupancy OR (<Configured TxStartPoint>
+contains EVConnected AND State pre reusable state execution was EVConnectedPreSession) then
+- transactionId must be <Provided transactionId in first TransactionEventRequest>
+* Step 3:
+Message AuthorizeRequest
+- idToken must be <Not empty>
+- idToken.type must be DirectPayment
+* Step 5:
+Message: TransactionEventRequest
+- eventType Started if TxStartPoint is Authorized or PowerPathClosed and State is EVConnectedPreSession, else updated
+- triggerReason must be RemoteStart
+- transactionInfo.remoteStartId must be present.
+- idToken must be <Not empty>
+- idToken.type must be DirectPayment
+Post scenario validations:
+State is Authorized
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 954/1383 Part 6 - Test Cases

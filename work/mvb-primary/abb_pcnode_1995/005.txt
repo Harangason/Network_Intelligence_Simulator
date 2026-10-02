@@ -1,0 +1,36 @@
+Multifunction Vehicle Bus – details
+TN-AC-95/185 95-12-19 2 - 5
+Signalling on the MVB
+The data are encoded using a baseband Manchester code, which 
+combines into one signal the data, the clock and the frame syn-
+chronisation. A “1” is transmitted as a negative transition (active 
+to idle) in the middle of a bit cell, a “0” as a positive transition 
+(idle to active)  2) . 
+The frame data is headed by a 9-bit frame delimiter and followed 
+an 8-bit check sequence.
+Start delimiter The start delimiter is used for synchronizing receivers and con-
+tains 3 Manchester code violations (transitions of 1.5 cell lengths) 
+to distinguish it from valid data bit sequences. Master frames and 
+slave frames have different delimiters to protect against synchro-
+nisation slips.
+Check sequence The check sequence is built over at most 64 data bits. It uses the 
+high-safety TC57 telecontrol algorithm to provide a Hamming dis-
+tance of 6. The Manchester encoding is inherently robust since both 
+halves of a bit cell must be inverted to create a false bit. T aking 
+this encoding into account, the achieved Hamming distance is 
+even higher (around 8).
+End delimiter The frame is closed by an end delimiter to detect the end of a 
+frame. For the fibre optics and the RS 485 transmission this is sim-
+ply returning the line to the idle state for at least one bit time. In 
+the middle-distance medium, however, the end delimiter has DC-
+free symmetrical shape.
+2 The signal diagrams use “active on top” in [part 1 / p 42] and “idle on top” in [part 3 / p 37]!
+1 1 0 1 0 0 0 1 0 1 1 1 1 1 0 1
+9-bit delimiter 8-bit check sequence useful frame data
+end delimiter
+Signal
+Frame
+Clock
+Data
+line active
+line idle

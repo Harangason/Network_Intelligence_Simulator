@@ -1,0 +1,106 @@
+ID Precondition Requirement definition Note
+F01.FR.16 F01.FR.15
+AND
+Amount of meter data is too much for
+1 TransactionEventRequest
+(eventType = Updated)
+The Charging Station MAY split meter data over
+multiple TransactionEventRequest(eventType =
+Updated) messages with the same timestamp.
+Same as J02.FR.14
+F01.FR.17 When sending a
+TransactionEventRequest
+The Charging Station SHALL set the triggerReason
+to inform the CSMS about what triggered the event.
+What reason to use is described in the description
+of TriggerReasonEnumType.
+Same as E01.FR.15
+F01.FR.18 After a transaction has been started The Charging Station MAY send additional
+TransactionEventRequest(eventType = Updated)
+messages during the transaction when a trigger
+event occurs.
+F01.FR.19 When a
+RequestStartTransactionRequest is
+received.
+The next TransactionEventRequest SHALL contain
+triggerReason: RemoteStart.
+F01.FR.20 If the
+RequestStartTransactionRequest
+does not contain an evseId AND
+the Charging Station is capable of
+selecting an EVSE or accepts a plug-in
+at an arbitrary EVSE
+The Charging Station SHALL report in later
+TransactionEventRequests the selected EVSE or
+the EVSE where cable is plugged in.
+See also F01.FR.07 if
+Charging Station does
+not support starting at an
+arbitrary EVSE.
+F01.FR.21 When the evseId for
+RequestStartTransactionRequest is
+Reserved for an idToken that differs
+from idToken in the request AND
+has no reservation for a groupIdToken
+The Charging Station SHALL respond with
+RequestStartTransactionResponse with status =
+Rejected.
+F01.FR.22 When the evseId for
+RequestStartTransactionRequest is
+Reserved for an idToken that differs
+from idToken in the request AND
+is Reserved for a groupIdToken that
+differs from groupIdToken in the
+request
+The Charging Station SHALL respond with
+RequestStartTransactionResponse with status =
+Rejected.
+EV is not allowed to use
+station if neither idToken
+nor idGroupToken match
+the reservation.
+F01.FR.23 When the evse for
+RequestStartTransactionRequest is
+Unavailable or Faulted
+The Charging Station SHALL respond with
+RequestStartTransactionResponse with status =
+Rejected.
+F01.FR.24 When the evseId for
+RequestStartTransactionRequest is
+Occupied AND
+this evseId has a transaction that has
+been authorized
+The Charging Station SHALL respond with
+RequestStartTransactionResponse with status =
+Rejected.
+Only an EVSE with no
+transaction or with a
+transaction that has not
+yet been authorized can
+be matched with the
+RequestStartTransaction
+Request
+F01.FR.25 F01.FR.13 The Charging Station SHALL put the remoteStartId
+in the next TransactionEventRequest it sends for
+the associated transaction.
+F01.FR.26 If a Charging Station with support for
+Smart Charging receives a
+RequestStartTransactionRequest with
+an invalid ChargingProfile.
+The Charging Station SHALL respond with
+RequestStartTransactionResponse with status =
+Rejected and optionally with reasonCode =
+"InvalidProfile" or "InvalidSchedule".
+The device model
+variable
+SmartChargingCtrlr.Enabl
+ed tells CSMS whether
+smart charging is
+supported.
+F02 - Remote Start Transaction - Remote Start First
+No. Type Description
+1 Name Remote Start Transaction - Remote Start first
+2 ID F02
+Parent use case F01 - Remote Start Transaction - Cable Plugin First
+Edition 2, 2025-12-03 F. Remote Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 227/803 Part 2 - Specification

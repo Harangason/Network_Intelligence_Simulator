@@ -1,0 +1,65 @@
+Local group
+Local Controller
+CS00
+Charging Station
+CS01
+Charging Station
+CS02
+Charging Station
+CS03
+CSMS
+WebSocket
+ws://controller.example.local/ocpp/CS01
+WebSocket
+ws://controller.example.local/ocpp/CS02
+WebSocket
+ws://controller.example.local/ocpp/CS03
+WebSocket
+ws://csms.example.com/ocpp/CS00
+WebSocket
+ws://csms.example.com/ocpp/CS01
+WebSocket
+ws://csms.example.com/ocpp/CS02
+WebSocket
+ws://csms.example.com/ocpp/CS03
+Figure 4. Local Controller WebSocket Connections
+6.3. Connection loss
+Whenever one or more WebSocket connections between CSMS and the Local Controller are lost, the Local Controller SHALL close
+all corresponding WebSockets to the Charging Stations that are connected to it, unless the Local Controller is capable of
+responding to Charging Station requests, and forwards transaction-related requests to the CSMS once the connection is restored.
+This is needed to force the Charging Station to queue messages as it would have done if it would have been connected to the
+CSMS directly and would have lost the connection to that CSMS.
+Whenever the connection between a Charging Station and the Local Controller is lost, the Local Controller SHALL close the
+WebSocket connection it has for the Charging Station to the CSMS. This is needed to let the CSMS know the Charging Station is
+offline and no CSMS initiated messages can be sent to it.
+6.4. Local Controller initiated messages
+The Local Controller SHALL relay any Charging Station initiated message to the CSMS (and vice versa).
+Since the Local Controller can also initiate its own messages to the Charging Station(s), a Local Controller SHALL take care of the
+following:
+1. If a Local Controller sends its own messages to a Charging Station, it SHALL guarantee that its messages have IDs that do
+not collide with IDs used by the CSMS, now and in the future. This can be done by either assigning a range of numbers to
+the Local Controller to use (and the CSMS to skip), or by using UUIDs/GUIDs.
+2. Replies to messages from the Charging Station to messages initiated by the Local Controller SHALL NOT be sent to the
+CSMS.
+6.5. Local Controller Security
+For the local controller, the normal OCPP security mechanisms will be used, as described in [OCPP2.0.1-PART2] , part A. Security.
+All security profiles described there MAY be used when a Local Controller is deployed. The security section (part A) only describes
+the roles of the CSMS, and Charging Station. When a local controller is used, the security specification SHALL be interpreted as
+follows:
+• In the connection from the Charging Station to the Local Controller, the Charging Station SHALL act as the Charging Station,
+and the Local Controller SHALL act as the CSMS. When TLS is used, the Local Controller SHALL be the TLS server, and the
+Charging Station SHALL be the TLS client.
+• In the connection from the Local Controller to the CSMS, the Local Controller SHALL act as the Charging Station, and the
+CSMS SHALL acts as the CSMS. When TLS is used, the CSMS SHALL be the TLS server, and the Local Controller SHALL be
+the TLS client.
+When TLS with Client Side Certificates is used, the Local Controller SHALL have both a CSMS Certificate, and a Charging Station
+certificate (see [OCPP2.0.1-PART2] Part A - Keys used in OCPP), as it can function in both roles. These certificates SHALL be
+unique to the Local Controller. The Local Controller SHALL NOT store the Charging Station certificates of the attached Charging
+Stations. It SHALL also NOT store the CSMS Certificate of the CSMS. These certificates SHALL be kept private on their respective
+owners. The Local Controller SHALL only use its own certificates for setting up the TLS connections.
+It SHALL be possible to distinguish the Local Controller from the CSMS based on the URL in the CSMS Certificate. Because the
+Local Controller is placed in the field, there is a risk that its certificates get stolen from it, e.g. by an attack on the hardware. In that
+case, it SHALL only be possible to use the CSMS Certificate on the Local Controller to communicate with the attached Charging
+Stations, not with any other Charging Stations in the infrastructure.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 19/26 Part 4 - JSON over WebSockets implementation guide

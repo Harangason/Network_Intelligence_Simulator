@@ -1,0 +1,49 @@
+1.63. ReportChargingProfiles
+1.63.1. ReportChargingProfilesRequest
+Reports charging profiles installed in the Charging Station, as requested via a GetChargingProfilesRequest message. The charging
+profile report can be split over multiple ReportChargingProfilesRequest messages, this can be because charging profiles for
+different charging sources need to be reported, or because there is just to much data for one message.
+Class
+Field Name Field Type Card. Description
+requestId integer 1..1 Required. Id used to match the
+GetChargingProfilesRequest message with the resulting
+ReportChargingProfilesRequest messages. When the
+CSMS provided a requestId in the
+GetChargingProfilesRequest, this field SHALL contain the
+same value.
+chargingLimitSource string[0..20] 1..1 Required. Source that has installed this charging profile.
+Values defined in Appendix as
+ChargingLimitSourceEnumStringType.
+tbc boolean 0..1 Optional. To Be Continued. Default value when omitted:
+false. false indicates that there are no further messages
+as part of this report.
+evseId integer, 0 <= val 1..1 Required. The evse to which the charging profile applies.
+If evseId = 0, the message contains an overall limit for the
+Charging Station.
+chargingProfile ChargingProfileType 1..* Required. The charging profile as configured in the
+Charging Station.
+1.63.2. ReportChargingProfilesResponse
+The ReportChargingProfilesResponse message is sent by the CSMS to the Charging Station in response to a
+ReportChargingProfilesRequest. No fields are defined.
+1.64. ReportDERControl
+1.64.1. ReportDERControlRequest
+Reports DER controls requested by a GetDERControlRequest message. The report may consist of more than one message.
+Class
+Field Name Field Type Card. Description
+requestId integer 1..1 Required. RequestId from GetDERControlRequest.
+tbc boolean 0..1 Optional. To Be Continued. Default value when omitted:
+false.
+False indicates that there are no further messages as
+part of this report.
+fixedPFAbsorb FixedPFGetType 0..24 Optional. Fixed power factor setpoint when absorbing
+active power
+fixedPFInject FixedPFGetType 0..24 Optional. Fixed power factor setpoint when injecting
+active power
+fixedVar FixedVarGetType 0..24 Optional. Fixed reactive power setting
+limitMaxDischarge LimitMaxDischargeGetType 0..24 Optional. Limit maximum discharge as percentage of
+rated capability
+freqDroop FreqDroopGetType 0..24 Optional. Frequency-Watt parameterized mode
+enterService EnterServiceGetType 0..24 Optional. Enter service after trip parameters
+gradient GradientGetType 0..24 Optional. Gradient settings
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 607/803 Part 2 - Specification

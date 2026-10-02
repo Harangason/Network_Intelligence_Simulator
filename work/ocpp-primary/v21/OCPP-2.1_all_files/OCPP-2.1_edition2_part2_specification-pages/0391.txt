@@ -1,0 +1,61 @@
+EV Charging Station CSMS
+TransactionEventRequest(eventType = Started, ...)
+TransactionEventResponse(...)
+ChargeParameterDiscoveryReq(EnergyTransferMode, EVChargeParam)
+NotifyEVChargingNeedsRequest(evseId, chargingNeeds)
+NotifyEVChargingNeedsResponse(Accepted)
+loop [Until SetChargingProfileRequest]
+ChargeParameterDiscoveryRes(Ongoing)
+ChargeParameterDiscoveryReq(EnergyTransferMode, EVChargeParam)
+SetChargingProfileRequest(evseId, chargingProfile)
+SetChargingProfileResponse(Accepted)
+ChargeParameterDiscoveryRes(Finished, SAScheduleList)
+PowerDeliveryReq(Start, ChargingProfile, EVPowerDeliveryParam)
+Contactor close
+PowerDeliveryRes(OK)
+opt [If EV provides a charging schedule]
+NotifyEVChargingScheduleRequest(...)
+NotifyEVChargingScheduleResponse(Accepted)
+TransactionEventRequest(...)
+TransactionEventResponse(...)
+Figure 137. Sequence Diagram: Charging with load leveling based on High Level Communication
+K15 - ISO 15118-2 Charging with load leveling - Requirements
+Table 112. K15 - Requirements
+ID Precondition Requirements Note
+K15.FR.01 When the Charging
+Station receives
+charging needs from
+the EV
+The Charging Station SHALL send a
+NotifyEVChargingNeedsRequest to the CSMS.
+See also K15.FR.20
+K15.FR.02 K15.FR.01 In response to a
+NotifyEVChargingNeedsRequest the CSMS
+SHALL send a
+NotifyEVChargingNeedsResponse.
+K15.FR.03 K15.FR.02 If the CSMS is able to provide a charging
+schedule, it SHALL indicate this by setting the
+status field in the
+NotifyEVChargingNeedsResponse to
+Accepted.
+K15.FR.04 K15.FR.02 If the CSMS is not going to provide a charging
+schedule, it SHALL indicate this by setting the
+status field in the
+NotifyEVChargingNeedsResponse to
+Rejected.
+Charging Station will use a TxDefaultProfile or
+provide a schedule with unlimited power.
+K15.FR.05 K15.FR.02 If the CSMS is able to provide a charging
+schedule; but needs processing time, it SHALL
+indicate this by setting the status field in the
+NotifyEVChargingNeedsResponse to
+Processing.
+The Charging Station does not have to wait for
+the SetChargingProfileRequest. CSMS will
+send it later and trigger a renegotiation as per
+use case K16.
+K15.FR.06 A NotifyEVChargingNeedsRequest SHALL
+contain either ACChargingParameters or
+DCChargingParameters.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 378/803 Part 2 - Specification

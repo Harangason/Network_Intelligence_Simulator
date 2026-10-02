@@ -1,0 +1,107 @@
+ID Precondition Requirement definition Note
+N07.FR.04 When a monitor is triggered AND
+The severity number of the monitor is
+equal to or lower than the severity
+number set in the Configuration
+Variable
+OfflineMonitoringEventQueuin
+gSeverity 
+AND
+The Charging Station is offline
+The Charging Station SHALL queue this
+NotifyEventRequest and deliver it when it is back
+online.
+N07.FR.05 When a monitor is triggered AND
+another event caused this event
+The Charging Station MAY include the eventId of
+the other event in the cause field of the eventData
+element in the NotifyEventRequest message.
+N07.FR.06 When a monitor is triggered An eventData element in a NotifyEventRequest
+SHALL contain the Component, Variable and
+variableMonitoringId that caused the event.
+N07.FR.07 When a monitor is triggered The Charging Station SHALL set the seqNo of the
+first NotifyEventRequest sent for this event to 0.
+N07.FR.10 When a monitor is triggered AND
+A variableMonitoring setting has been
+set on a write-only variable.
+The actualField of the NotifyEventRequest SHALL
+be empty.
+N07.FR.11
+(2.1)
+When modifying a set UpperThreshold,
+LowerThreshold, TargetDelta or
+TargetDeltaRelative VariableMonitor
+AND
+( the new threshold clears the old
+threshold OR the new threshold is
+exceeded by the monitored value )
+The Charging Station SHALL send a
+NotifyEventRequest message for this
+VariableMonitor with the appropriate value for
+cleared.
+If monitored value is
+below new threshold,
+then cleared = true. If
+monitored value above
+threshold, then cleared =
+false or absent.
+N07.FR.12
+(2.1)
+When removing a set UpperThreshold,
+LowerThreshold, TargetDelta or
+TargetDeltaRelative VariableMonitor
+AND
+the threshold was exceeded.
+The Charging Station SHALL NOT send a
+NotifyEventRequest with an eventData with the
+attribute cleared is true.
+N07.FR.13 A VariableMonitoring needs to be stored
+persistently across reboots.
+N07.FR.14
+(2.1)
+When a variableMonitoring setting of
+type UpperThreshold, LowerThreshold,
+TargetDelta or TargetDeltaRelative has
+been triggered AND after a reboot
+occurred the monitored value returned
+within the configured threshold.
+The Charging Station SHALL send a
+NotifyEventRequest with an eventData with the
+attribute cleared is true.
+N07.FR.15 When a monitor is triggered AND
+The severity of the monitor is greater
+than the monitoring severity level set
+in a SetMonitoringLevelRequest by the
+CSMS (see use case N05 - Set
+Monitoring Level)
+The Charging Station SHALL NOT send a
+NotifyEventRequest for the triggered monitor.
+N07.FR.16 When there is a monitor with type
+UpperThreshold on a
+Component/Variable combination
+AND
+the Actual value (attributeType
+Actual) of the Variable exceeds
+value
+The Charging Station SHALL send a
+NotifyEventRequest with trigger Alerting for the
+triggered monitor.
+Notification is sent when
+exceeding the threshold,
+not on the threshold.
+N07.FR.17 When there is a monitor with type
+LowerThreshold on a
+Component/Variable combination
+AND
+the Actual value (attributeType
+Actual) of the Variable drops below
+value
+The Charging Station SHALL send a
+NotifyEventRequest with trigger Alerting for the
+triggered monitor.
+Notification is sent when
+dropping below the
+threshold, not on the
+threshold.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 464/803 Part 2 - Specification

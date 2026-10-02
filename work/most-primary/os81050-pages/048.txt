@@ -1,0 +1,61 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 48
+OS81050
+9.2  FLT Pin
+The circuitry illustrated in Figure 9-2 is the optimum setup for the FLT pin of the OS81050. The FLT analog
+component should be placed as close as possible to the GNDAn pins to minimize loop currents. The FLT
+pin is a high-impedance node; therefore, leakage should be kept below 1μA or average pulse-width distor-
+tion tolerance could be adversely affected. Conformal coating is recommended for systems where conden-
+sation can occur.
+In order to minimize vibration and shock effects on PLL locking, the capacitor used on FLT should be toler-
+ant of vibrations typical in the application. Capacitors with X7R dielectrics are more sensitive to shock than
+metal-film, tantalum, and other ceramic capacitors, such as C0G and X8R.
+The tolerance of the FLT capacitor must not vary by more than 20 % over all conditions. This includes the
+tolerance attributed to process, as well as degradation over life and temperature.
+Since the layout and component selection of the FLT circuitry impact the sensitivity to vibrations, each
+design should be tested over the full environmental stress conditions of the intended application.
+9.3  Crystal Pins (XTI/XTO)
+The crystal oscillator is enabled when the OS81050 is configured as the timing-master and reset is de-
+asserted. Timing-slave nodes require a crystal oscillator to allow the node to run diagnostics when the net-
+work is down, and to keep the PLL locked to a nominal frequency when not locked to the network. During
+normal operation, the crystal oscillator of a timing-slave node may be enabled or disabled, depending on
+the setting of MSVOptions() in the INIC Configuration String. It is recommended that MSVOptions().
+XTALConfiguration  be set to 1, allowing the crystal oscillator to remain enabled when the PLL is locked
+to RX. This provides improved frequency regulation and faster relocking after a network unlock.
+The crystal oscillator should be in a fundamental mode, parallel resonant. Figure 9-3 depicts the external
+circuitry connected to the OS81050 oscillator circuit. Since the internal inverter/amplifier is operated in its
+linear region, external series resistors should not be used, as they will lower the gain and could cause
+start-up problems.
+If an external clock is used in lieu of a crystal oscillator, it must support CMOS drive levels to the VDDCn
+supply and be connected to XTI, with XTO floating and having minimal capacitance (see Figure 9-3).
+The crystal frequency must be 256 times the desired operational frequency (Fs) of the network. Therefore,
+if the network Fs is 44.1 kHz, the crystal needed is 11.2896 MHz. When the network Fs is 48 kHz, the crys-
+tal needed is 12.288 MHz. Several factors must be considered when selecting a crystal, including load
+capacitance, oscillator margin, cut, and operating temperature. For more information, refer to Section 13.6.
+FLT
+0.47 μF*
+1 kΩ
+* Maximum variation of
+20 % over all conditions
+Figure 9-2: FLT Pin Circuit
+XTO
+MUX
+XTI
+C2
+C1 = C2 = 12 - 22 pF
+C1
+to PLL
+2 MΩ 20 kΩ
+3.3 mA/VXTAL
+XTO
+XTI
+2 MΩ 300 Ω
+3.3 mA/V
+OR
+CMOS output
+< 10 pF
+RX
+MUX
+to PLL
+RX
+Figure 9-3: Crystal Oscillator Input

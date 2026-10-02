@@ -1,0 +1,66 @@
+ID Precondition Requirement definition
+A00.FR.315 A00.FR.314
+AND
+The CSMS detects that the Charging
+Station only allows connections
+using an older version of TLS, or
+only allows SSL
+The CSMS SHALL terminate the connection.
+A00.FR.316 A00.FR.314
+AND
+The Charging Station detects that
+the CSMS only allows connections
+using an older version of TLS, or
+only allows SSL
+The Charging Station SHALL trigger an InvalidTLSVersion security event
+AND terminate the connection (See part 2 appendices for the full list of
+security events).
+NOTE: This is a critical security event that will need to be queued and sent
+to CSMS once a successful connection has been made, as described in
+use case A04.
+A security event only needs to be sent once for repeated failed connection
+attempts, in order to avoid overflow to the offline queue.
+A00.FR.317 TLS SHALL be implemented as in [4] or its successor standards without
+any modifications.
+A00.FR.318 The CSMS SHALL support at least the following four cipher suites:
+TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384
+TLS_RSA_WITH_AES_128_GCM_SHA256
+TLS_RSA_WITH_AES_256_GCM_SHA384
+Note: The CSMS will have to provide 2 different certificates to support
+both cipher suites. Also when using security profile 3, the CSMS should be
+capable of generating client side certificates for both cipher suites.
+A00.FR.319 The Charging Station SHALL support at least the cipher suites:
+(TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256
+AND
+TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384)
+OR
+(TLS_RSA_WITH_AES_128_GCM_SHA256
+AND
+TLS_RSA_WITH_AES_256_GCM_SHA384)
+Note 1: TLS_RSA does not support forward secrecy, therefore TLS_ECDHE
+is RECOMMENDED. In certain jurisdictions forward secrecy is mandatory.
+Furthermore, if the Charging Station detects an algorithm used that is not
+secure, it SHOULD trigger an InvalidTLSCipherSuite security event (See
+part 2 appendices for the full list of security events).
+Note 2: Please note that ISO15118-2 prescribes to implement the
+following cipher suites for the communication between EV and Charging
+Station:
+TLS_ECDH_ECDSA_WITH_AES_128_CBC_SHA256,
+TLS_ECDHE_ECDSA_WITH_AES_128_CBC_SHA256
+A00.FR.320 The Charging Station and CSMS SHALL NOT use cipher suites that use
+cryptographic primitives marked as unsuitable for legacy use in [1]. This
+will mean that when one (or more) of the cipher suites described in this
+specification becomes marked as unsuitable for legacy use, it SHALL NOT
+be used anymore.
+A00.FR.321 The TLS Server and Client SHALL NOT use TLS compression methods to
+avoid compression side-channel attacks and to ensure interoperability as
+described in Section 6 of [10].
+A00.FR.322 A00.FR.320
+AND
+The CSMS detects that the Charging
+Station only allows connections
+using one of these suites
+The CSMS SHALL terminate the connection.
+Edition 2, 2025-12-03 A. Security
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 25/803 Part 2 - Specification

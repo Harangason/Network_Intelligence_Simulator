@@ -1,0 +1,36 @@
+4. Operations Initiated by Charge Point
+4.1. Authorize
+Charge Point Central System
+Authorize.req(idTag)
+Authorize.conf(idTagInfo)
+Figure 12. Sequence Diagram: Authorize
+Before the owner of an electric vehicle can start or stop charging, the Charge Point has to authorize the
+operation. The Charge Point SHALL only supply energy after authorization. When stopping a Transaction, the
+Charge Point SHALL only send an Authorize.req when the identifier used for stopping the transaction is different
+from the identifier that started the transaction.
+Authorize.req SHOULD only be used for the authorization of an identifier for charging.
+A Charge Point MAY authorize identifier locally without involving the Central System, as described in Local
+Authorization List. If an idTag presented by the user is not present in the Local Authorization List or
+Authorization Cache, then the Charge Point SHALL send an Authorize.req PDU to the Central System to request
+authorization. If the idTag is present in the Local Authorization List or Authorization Cache, then the Charge Point
+MAY send an Authorize.req PDU to the Central System.
+Upon receipt of an Authorize.req PDU, the Central System SHALL respond with an Authorize.conf PDU. This
+response PDU SHALL indicate whether or not the idTag is accepted by the Central System. If the Central System
+accepts the idTag then the response PDU MAY include a parentIdTag and MUST include an authorization status
+value indicating acceptance or a reason for rejection.
+If Charge Point has implemented an Authorization Cache, then upon receipt of an Authorize.conf PDU the
+Charge Point SHALL update the cache entry, if the idTag is not in the Local Authorization List, with the IdTagInfo
+value from the response as described under Authorization Cache.
+4.2. Boot Notification
+Charge Point Central System
+BootNotification.req(chargePointModel, chargePointVendor, [chargeBoxSerialNumber],[chargePointSerialNumber],
+[firmwareVersion], [iccid], [imsi], [meterSerialNumber], [meterType])
+BootNotification.conf(currentTime, interval, status)
+Figure 13. Sequence Diagram: Boot Notification
+After start-up, a Charge Point SHALL send a request to the Central System with information about its
+configuration (e.g. version, vendor, etc.). The Central System SHALL respond to indicate whether it will accept the
+Charge Point.
+The Charge Point SHALL send a BootNotification.req PDU each time it boots or reboots. Between the physical
+power-on/reboot and the successful completion of a BootNotification, where Central System returns Accepted or
+Pending, the Charge Point SHALL NOT send any other request to the Central System. This includes cached
+32

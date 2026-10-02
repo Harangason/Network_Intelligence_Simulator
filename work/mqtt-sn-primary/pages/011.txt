@@ -1,0 +1,33 @@
+5.4.1 ADVERTISE
+Length MsgType GwId Duration
+(octet 0) (1) (2) (3,4)
+Table 6: ADVERTISE Message
+The ADVERTISE message is broadcasted periodically by a gateway to advertise its presence. The time
+interval until the next broadcast time is indicated in the Duration ﬁeld of this message. Its format is illustrated in
+Table 6:
+• Length and MsgType: see Section 5.2.
+• GwId: the id of the gateway which sends this message.
+• Duration: time interval until the next ADVERTISE is broadcasted by this gateway.
+5.4.2 SEARCHGW
+Length MsgType Radius
+(octet 0) (1) (2)
+Table 7: SEARCHGW Message
+The SEARCHGW message is broadcasted by a client when it searches for a GW. The broadcast radius of the
+SEARCHGW is limited and depends on the density of the clients deployment, e.g. only 1-hop broadcast in case
+of a very dense network in which every MQTT-SN client is reachable from each other within 1-hop transmission.
+The format of a SEARCHGW message is illustrated in Table 7:
+• Length and MsgType: see Section 5.2.
+• Radius: the broadcast radius of this message.
+The broadcast radius is also indicated to the underlying network layer when MQTT-SN gives this message for
+transmission.
+5.4.3 GWINFO
+Length MsgType GwId GwAdd*
+(octet 0) (1) (2) (3:n)
+(*) only present if message is sent by a client
+Table 8: GWINFO Message
+The GWINFO message is sent as response to a SEARCHGW message using the broadcast service of the
+underlying layer, with the radius as indicated in the SEARCHGW message. If sent by a GW, it contains only the
+id of the sending GW; otherwise, if sent by a client, it also includes the address of the GW, see Table 8:
+• Length and MsgType: see Section 5.2.
+• GwId: the id of a GW.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 10

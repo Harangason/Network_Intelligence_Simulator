@@ -1,0 +1,46 @@
+TC_J_06_CS: Clock-aligned Meter Values - No Meter Values during transaction
+Test case name Clock-aligned Meter Values - No Meter Values during transaction
+Test case Id TC_J_06_CS
+Use case Id(s) J01
+Requirement(s) N/a
+System under test Charging Station
+Description The Charging Station samples the electrical meter or other sensor/transducer hardware to provide
+information about its Meter Values. Depending on configuration settings, the Charging Station will send
+Meter Values.
+Purpose To verify if the Charging Station is able to only send clock-aligned Meter Values when there is no ongoing
+transaction, when it is configured to do so.
+Prerequisite(s) - The Charging Station has an energy meter.
+- The configuration variable AlignedDataSendDuringIdle is implemented.
+Before (Preparations)
+Configuration State:
+AlignedDataInterval is set to <Configured clock-aligned Meter Values interval>
+AlignedDataSendDuringIdle is set to true
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station notifies the CSMS about its measured
+Meter Values.
+Note(s):
+- The Meter Value messages do NOT need to be send/received at
+the exact specified interval. The configured measurands must be
+measured at the configured interval.
+- Multiple Meter Value messages may be sent per configured
+interval. One (or more in case the amount of measured data is too
+much for one message) for each EVSE and one (or more) for the
+main power meter (evseId=0)
+2. The Test System responds accordingly.
+3. Execute Reusable State EnergyTransferStarted
+4. The Charging Station notifies the CSMS about its measured
+Meter Values.
+Note(s):
+_- The Meter Value messages should not be send/received at the
+exact specified interval.
+5. The Test System responds accordingly.
+6. Execute Reusable State ParkingBayUnoccupied
+Note(s):
+- This step will be executed after the <Configured clock-aligned Meter Values interval + 5 seconds> is reached.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 466/1383 Part 6 - Test Cases

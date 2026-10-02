@@ -1,0 +1,56 @@
+No. Type Description
+4 Description An External System is not aware of individual charging sessions on a charging station. It can
+therefore only control charging station or EVSE power.
+This use case defines three scenarios:
+1. Scheduled external limits control: a schedule of limits provided by external system.
+2. Dynamic external limits control: limits are dynamically updated by external system.
+3. Dynamic setpoint control: setpoint is dynamically updated by external system.
+Actors EV, Charging Station, External System
+Scenario #1 Scheduled external limits control.
+1. External System sets a charging schedule with limits and/or dischargeLimits, which is
+represented in the charging station by a charging profile in which chargingProfilePurpose
+= ChargingStationExternalConstraints, chargingProfileKind = Absolute and
+with one or more chargingSchedulePeriods which have operationMode set to
+ExternalLimits and the externally received values for limit and dischargeLimit.
+2. With these chargingSchedulePeriods the External System controls the limits of the active
+power to import or export.
+3. When this external charging profile is set, charging station will send a
+NotifyChargingLimitRequest with chargingLimitSource = EMS and with the received
+schedule in chargingSchedule to CSMS.
+4. If the charging profile is set to EVSE #0 (i.e. the whole charging station), then it is up to
+the charging station to divide charging and discharging power among the EVSEs to keep
+the total charging station power within limit and dischargeLimit.
+Scenario #2 Dynamic external limits control.
+1. External System sets a single (discharge)limit, which is represented in the charging station
+by a charging profile in which chargingProfilePurpose =
+ChargingStationExternalConstraints, chargingProfileKind = Dynamic and with 1
+chargingSchedulePeriod which has operationMode set to ExternalLimits and the
+externally received value for limit and/or dischargeLimit.
+2. With this chargingSchedulePeriod the External System controls the limits of the active
+power to import or export.
+3. Since chargingProfileKind = Dynamic, the EMS can change the limit and dischargeLimit
+dynamically without having to update the charging profile.
+4. When this external charging profile is set and when the value of limit/dischargeLimit
+changes more than SmartChargingCtrlr.LimitChangeSignificance, the charging station will
+send a NotifyChargingLimitRequest with chargingLimitSource = EMS, isDynamic = true, and
+the charging schedule in chargingSchedule to CSMS.
+5. If the charging profile is set to EVSE #0 (i.e. the whole charging station), then it is up to
+the charging station to divide charging and discharging power among the EVSEs to keep
+the total charging station power such that it remains within limit and dischargeLimit.
+Scenario #3 Dynamic external setpoint control.
+1. External System sets a single setpoint and/or setpointReactive, which is represented in the
+charging station as a charging profile in which chargingProfilePurpose =
+ChargingStationExternalConstraints, chargingProfileKind = Dynamic and with 1
+chargingSchedulePeriod which has operationMode set to ExternalSetpoint and a
+value for setpoint and/or setpointReactive.
+2. With this chargingSchedulePeriod the External System controls the setpoint of the active
+and reactive power to import or export.
+3. When this external charging profile is set and when the value of limit/dischargeLimit
+changes more than SmartChargingCtrlr.LimitChangeSignificance, charging station will
+send a NotifyChargingLimitRequest with chargingLimitSource = EMS, isDynamic = true, and
+with the received schedule in chargingSchedule to CSMS.
+4. If the charging profile is set to EVSE #0 (i.e. the whole charging station), then it is up to
+the charging station to divide charging and discharging power among the EVSEs to
+ensure the total charging station power matches the setpoint.
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 522/803 Part 2 - Specification

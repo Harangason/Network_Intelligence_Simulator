@@ -1,0 +1,40 @@
+TC_B_57_CS: Network Reconnection - After connection loss
+Test case name Network Reconnection - After connection loss
+Test case Id TC_B_57_CS
+Use case Id(s) Part 4 section 5.3. Reconnecting
+Requirement(s) Described at section 5.3.
+System under test Charging Station
+Description When the connection is lost, the Charging Station SHALL try to reconnect. When reconnecting, the Charging
+Station SHALL use an increasing back-off time until it has successfully reconnected.
+Purpose To verify if the Charging Station is able to reconnect to the CSMS using the described OCPP reconnecting
+mechanism from part 4.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+OCPPCommCtrlr.NetworkProfileConnectionAttempts is 3
+OCPPCommCtrlr.RetryBackOffRepeatTimes is 2
+OCPPCommCtrlr.RetryBackOffRandomRange is 0
+OCPPCommCtrlr.RetryBackOffWaitMinimum is <Configured RetryBackOffWaitMinimum>
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the websocket connection.
+2. The Charging Station waits for the duration of the configured
+RetryBackOffWaitMinimum and reconnects to the Test System. 3. The connection attempt is accepted by the Test System.
+4. The Test System closes the websocket connection.
+5. The Charging Station waits for the duration of the configured
+RetryBackOffWaitMinimum and reconnects to the Test System. 6. The connection attempt is not accepted by the Test System.
+7. The Charging Station waits for double the reconnection time
+used at step 2 and reconnects to the Test System. 8. The connection attempt is accepted by the Test System.
+Tool validations
+* Step 2:
+- The reconnection time is at least the configured RetryBackOffWaitMinimum.
+* Step 7:
+- The reconnection time is at least 2 times the reconnection time from step 2.
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 90/1383 Part 6 - Test Cases

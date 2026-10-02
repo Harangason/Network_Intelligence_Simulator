@@ -1,0 +1,51 @@
+1.50. NotifyEVChargingNeeds
+1.50.1. NotifyEVChargingNeedsRequest
+The Charging Station uses this message to communicate the charging needs as calculated by the EV to the CSMS.
+Class
+Field Name Field Type Card. Description
+evseId integer, 1 <= val 1..1 Required. Defines the EVSE and connector to which the
+EV is connected. EvseId may not be 0.
+maxScheduleTuples integer, 0 <= val 0..1 Optional. Contains the maximum elements the EV
+supports for:
+- ISO 15118-2: schedule tuples in SASchedule (both Pmax
+and Tariff).
+- ISO 15118-20: PowerScheduleEntry, PriceRule and
+PriceLevelScheduleEntries.
+timestamp dateTime 0..1 Optional. (2.1) Time when EV charging needs were
+received.
+Field can be added when charging station was offline
+when charging needs were received.
+chargingNeeds ChargingNeedsType 1..1 Required. The characteristics of the energy delivery
+required.
+1.50.2. NotifyEVChargingNeedsResponse
+Response to a NotifyEVChargingNeedsRequest.
+Class
+Field Name Field Type Card. Description
+status NotifyEVChargingNeedsStatusEnu
+mType
+1..1 Required. Returns whether the CSMS has been able to
+process the message successfully. It does not imply that
+the evChargingNeeds can be met with the current
+charging profile.
+statusInfo StatusInfoType 0..1 Optional.
+1.51. NotifyEVChargingSchedule
+1.51.1. NotifyEVChargingScheduleRequest
+The Charging Station uses this message to communicate the charging schedule as calculated by the EV to the CSMS.
+Class
+Field Name Field Type Card. Description
+timeBase dateTime 1..1 Required. Periods contained in the charging profile are
+relative to this point in time.
+evseId integer, 1 <= val 1..1 Required. The charging schedule contained in this
+notification applies to an EVSE. EvseId must be > 0.
+selectedChargingScheduleI
+d
+integer, 0 <= val 0..1 Optional. (2.1) Id of the chargingSchedule that EV
+selected from the provided ChargingProfile.
+powerToleranceAcceptance boolean 0..1 Optional. (2.1) True when power tolerance is accepted by
+EV. This value is taken from
+EVPowerProfile.PowerToleranceAcceptance in the ISO
+15118-20 PowerDeliverReq message..
+chargingSchedule ChargingScheduleType 1..1 Required. Planned energy consumption of the EV over
+time. Always relative to timeBase.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 601/803 Part 2 - Specification

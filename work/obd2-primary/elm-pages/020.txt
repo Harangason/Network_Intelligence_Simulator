@@ -1,0 +1,94 @@
+20 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+AT Command Descriptions (continued)
+‘left-to-right’ order, which many of us would expect. For
+example, to send a request for the engine temperature
+(PGN 00FEEE), the data bytes are actually sent in the
+reverse order (ie EE FE 00), and the ELM327 would
+normally expect you to provide the data in that order
+for passing on to the vehicle.
+When experimenting, this constant need for byte
+reversals can be quite confusing, so we have defined
+an ELM format that reverses the bytes for you. When
+the J1939 ELM (JE) format is enabled, and you have a
+J1939 protocol selected, and you provide three data
+bytes to the ELM327, it will reverse the order for you
+before sending them to the ECU. To request the
+engine temperature PGN, you would send 00 FE EE
+(and not EE FE 00). The ‘JE’ type of automatic
+formatting is enabled by default.
+JHF0 and JHF1 [ J1939 Header Formatting off or on ]
+When printing responses, the ELM327 normally
+formats the J1939 ID (ie Header) bits in such a way as
+to isolate the priority bits and group all the PGN
+information, while keeping the source address byte
+separate. If you prefer to see the ID information as four
+separate bytes (which a lot of the J1939 software
+seems to do), then simply turn off the formatting with
+JHF0. The CAF0 command has the same effect (and
+overrides the JHF setting), but also affects other
+formatting. The default setting is JHF1.
+JS [ enables the J1939 SAE data format ]
+The AT JS command disables the automatic byte
+reordering that the JE command performs for you. If
+you wish to send data bytes to the J1939 vehicle
+without any manipulation of the byte order (ie in the
+order specified by the SAE documents), then select JS
+formatting.
+As an example, when sending a request for
+engine temperature (PGN 00FEEE) with the data
+format set to JS, you must present the bytes to the
+ELM327 as EE FE 00 (this is also known as little-
+endian byte ordering).
+The JS type of data formatting is off by default.
+JTM1 [ set the J1939 Timer Multiplier to 1 ]
+This command is used to set the AT ST time
+multiplier to x1 for the SAE J1939 protocol. As of
+firmware v2.1, this command now simply calls the
+CTM1 command.
+JTM5 [ set the J1939 Timer Multiplier to 5 ]
+This used to set the AT ST time multiplier to x5, for
+the SAE J1939 protocol. As of firmware v2.1, this
+command now simply calls the CTM5 command.
+KW [ display the Key Words ]
+When the ISO 9141-2 and ISO 14230-4 protocols
+are initialized, two special bytes (key words) are
+passed to the ELM327 (the values are used internally
+to determine whether a particular protocol variation
+can be supported by the ELM327). If you wish to see
+what the value of these bytes were, simply send the
+AT KW command.
+KW0 and KW1 [ Key Word checks off or on ]
+The ELM327 looks for specific bytes (called key
+words) to be sent to it during the ISO 9141-2 and
+ISO14230-4 initiation sequences. If the bytes are not
+found, the initiation is said to have failed (you might
+see ‘UNABLE TO CONNECT’ or perhaps ‘BUS INIT:
+...ERROR’). This might occur if you are trying to
+connect to a non-OBD compliant ECU, or perhaps to
+an older one.
+If you wish to experiment with non-standard
+systems, you may have to tell the ELM327 to perform
+the initiation sequence, but ignore the contents of the
+bytes that are sent and received. To do this, send:
+>AT KW0
+After turning keyword checking off, the ELM327
+will still require the two key word bytes in the
+response, but will not look at the actual values of the
+bytes. It will also send an acknowledgement to the
+ECU, and will wait for the final response from it (but
+will not stop and report an error if none is received).
+This may allow you to make a connection in an
+otherwise ‘impossible’ situation. Normal behaviour can
+be returned with AT KW1, which is the default setting.
+L0 and L1 [ Linefeeds off or on ]
+This option controls the sending of linefeed
+characters after each carriage return character. For
+AT L1, linefeeds will be generated after every carriage
+return character, and for AT L0, they will be off. Users
+will generally wish to have this option on if using a
+terminal program, but off if using a custom computer
+interface (as the extra characters transmitted will only
+serve to slow the communications down). The default

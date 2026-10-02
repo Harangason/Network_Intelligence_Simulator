@@ -1,0 +1,33 @@
+TC_H_04_CS: Reserve a specific EVSE - Occupied - EVSE Occupied
+Test case name Reserve a specific EVSE - Occupied - EVSE Occupied
+Test case Id TC_H_04_CS
+Use case Id(s) H01(S2)
+Requirement(s) H01.FR.13
+System under test Charging Station
+Description The CSMS is able to reserve a specific EVSE for a specific IdToken by sending a ReserveNowRequest
+containing an evseId.
+Purpose To verify if the Charging Station is able to respond with status Occupied, when the requested EVSE is
+occupied.
+Prerequisite(s) The configuration variable ReservationCtrlr.ReservationAvailable is implemented with value true
+Before (Preparations)
+Configuration State:
+ReservationCtrlr.ReservationEnabled is true (If implemented)
+Memory State:
+State is EnergyTransferStarted
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ReserveNowResponse
+1. The Test System sends a ReserveNowRequest
+with evseId is <Configured evseId>
+idToken.idToken <Configured valid_idtoken2_idtoken>
+idToken.type <Configured valid_idtoken2_type>
+Tool validations
+* Step 2:
+Message: ReserveNowResponse
+- status must be Occupied
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 372/1383 Part 6 - Test Cases

@@ -1,0 +1,67 @@
+I09 - Get Tariffs - Requirements
+ID. Precondition Requirements
+I09.FR.01 Upon receiving a GetTariffsRequest with evseId = 0 and
+tariffs are present in Charging Station
+Charging Station SHALL respond with
+GetTariffsResponse with status = Accepted and a list of
+tariffAssigments for all EVSEs.
+I09.FR.02 Upon receiving a GetTariffsRequest with evseId > 0 and
+tariffs are present at EVSE evseId
+Charging Station SHALL respond with
+GetTariffsResponse with status = Accepted and a list of
+tariffAssignments for only the tariffs present in EVSE
+evseId.
+I09.FR.03 Upon receiving a GetTariffsRequest and no tariffs are
+present in Charging Station or provided EVSE evseId
+Charging Station SHALL respond with
+GetTariffsResponse without a tariffAssignments field and
+with a status = NoTariff
+I09.FR.04 If GetTariffsResponse contains tariffs with tariffKind =
+DefaultTariff
+tariffAssignments in the GetTariffsResponse SHALL
+contain for each tariffId the list of evseIds where this
+tariff is installed.
+I09.FR.05 If GetTariffsResponse contains tariffs with tariffKind =
+DriverTariff
+tariffAssignments in the GetTariffsResponse SHALL
+contain for each tariffId the list of evseIds where this
+tariff is installed.
+I09.FR.06 I09.FR.05 AND
+An active transaction is associated with the tariff, i.e.
+transaction has transactionInfo.tariffId = tariffId
+tariffAssignments element SHALL also contain the EVSE
+where transaction is active in evseIds .
+I09.FR.07 If GetTariffsResponse contains tariffs that have a value
+for validFrom
+The tariffAssignments element in GetTariffsResponse
+SHALL contain validFrom for these tariffs.
+I10 - Local Cost Calculation - Clear Tariffs
+New in OCPP 2.1
+No. Type Description
+1 Name Local Cost Calculation - Clear Tariffs
+2 ID I10
+3 Objective(s) To clear (remove) one or more default tariffs from a Charging Station
+4 Description CSMS requests to clear one or more default tariffs from a Charging Station.
+ClearTariffsRequest only applies to default tariffs. Driver-specific tariffs are automatically
+removed when no longer in use. A default tariff that is currently in use can be cleared, but remains
+valid where it is used.
+Actors Charging Station, CSMS
+Scenario description Charging Station has 2 EVSEs
+1. A transaction is active on EVSE #1 with default tariff "Default01" and a transaction with a
+driver-specific tariff for idToken "FBFB0000" is active on EVSE #2.
+2. The following tariffs are present, as would be shown by a GetTariffsResponse:
+◦ tariffId = "Default01", tariffKind = DefaultTariff, evseIds = [1, 2]
+◦ tariffId = "MSP01", tariffKind = DriverTariff, idTokens = ["FBFB0000"], evseIds =
+[2]
+3. CSMS removes default tariffs "Default01" via ClearTariffsRequest with tariffIds = [
+"Default01" ].
+a. Charging Station clears "Default01" from both EVSE #1 and EVSE #2, but the tariff
+remains in use for the currently active transaction on EVSE #1.
+i. The driver-specific tariff "MSP01" in use on EVSE #2 is not affected.
+b. Charging Station responds with ClearTariffsResponse with 1 clearTariffResult item
+with status = Accepted for tariffId "Default01".
+5 Prerequisites Local cost calculation is supported.
+6 Postcondition(s) One or more tariffs are cleared from Charging Station, but running transactions are not affected.
+7 Error Handling
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 294/803 Part 2 - Specification

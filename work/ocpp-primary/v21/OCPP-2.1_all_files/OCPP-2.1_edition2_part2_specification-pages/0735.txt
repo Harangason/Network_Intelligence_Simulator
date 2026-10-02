@@ -1,0 +1,61 @@
+Req’d Component Instance Variable Comments
+no NetworkConfiguration [configurationSlot] VpnPassword VPN password
+no NetworkConfiguration [configurationSlot] VpnKey VPN shared secret
+yes NetworkConfiguration [configurationSlot] ApnEnabled True: APN is configured.
+False: APN is not configured.
+If variable is ReadOnly and set to False:
+APN is not supported.
+When False the values of variables "Apn*",
+SimPin, PreferredNetwork and
+UseOnlyPreferredNetwork have no
+meaning.
+no NetworkConfiguration [configurationSlot] Apn Access Point Name as URL
+no NetworkConfiguration [configurationSlot] ApnUserName APN user name
+no NetworkConfiguration [configurationSlot] ApnPassword APN password
+no NetworkConfiguration [configurationSlot] SimPin SIM card PIN code
+no NetworkConfiguration [configurationSlot] PreferredNetwork Preferred network as concatenation of
+MCC and MNC
+no NetworkConfiguration [configurationSlot] UseOnlyPreferredNetwork When true use only the preferred network
+no NetworkConfiguration [configurationSlot] ApnAuthentication Value from APNAuthenticationEnumType
+Note: The variables CsmsRootCertificateXXX are printed on two lines for readability, but are a single word: e.g.
+CsmsRootCertificateHashAlgorithm.
+2.1.9. OfflineThreshold
+Required yes
+Component componentNa
+me
+OCPPCommCtrlr
+Variable variableName OfflineThreshold
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+unit s
+dataType integer
+Description When the offline period of a Charging Station exceeds the OfflineThreshold
+it is recommended to send a StatusNotificationRequest for all its Connectors
+when the Charging Station is back online.
+2.1.10. QueueAllMessages
+Required no
+Component componentNa
+me
+OCPPCommCtrlr
+Variable variableName QueueAllMessages
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+dataType boolean
+Description When this variable is set to true, the Charging Station will queue all message until
+they are delivered to the CSMS. When set to false the Charging Station will only
+queue Transaction related messages as required in: E04.FR.01. and other
+requirements
+When this variable is the to true, and the Charging Station is running low on
+memory, the Charging Station SHALL drop TransactionEvent messages last, and
+when dropping measurements/meter data, the Charging Station SHALL drop
+intermediate values first (2nd value, 4th value, 6th etc), not drop the start and end
+values of the measurements/meter data.
+Default = false
+Edition 2, 2025-12-03 Referenced Components and Variables
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 722/803 Part 2 - Specification

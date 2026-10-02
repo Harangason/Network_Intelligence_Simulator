@@ -1,0 +1,35 @@
+The following text should be moved from: Page 15, section: 3.5.4 (OCPP 1.6 FINAL Page 18, section 3.4.4) to: Page
+37, section 4.8 (OCPP 1.6 FINAL Page 40)
+"When the authorization status in the StartTransaction.conf is not Accepted, and the transaction is still ongoing,
+the Charge Point SHOULD:
+• when StopTransactionOnInvalidId is set to true: stop the transaction normally as stated in Stop
+Transaction. The Reason field in the Stop Transaction request should be set to DeAuthorized. If the Charge
+Point has the possibility to lock the Charging Cable, it SHOULD keep the Charging Cable locked until the
+owner presents his identifier.
+• when StopTransactionOnInvalidId is set to false: only stop energy delivery to the vehicle.
+Note: In the case of an invalid identifier, an operator MAY choose to
+charge the EV with a minimum
+amount of energy so the EV is able to drive away. This amount is
+controlled by the optional
+configuration key: MaxEnergyOnInvalidId."
+3.18. Page 37, section: 4.8: How to deliver Transaction related messages when no
+transactionId is known.
+Added in errata sheet v4.0
+This section mentions at the end, that failing to respond with a StartTransaction.conf will cause the Charge Point
+to retry several times. However, it is not specified how to deal with Transaction related messages for which no
+transactionId is known, when this happens.
+At the end of section 4.8 add the following text:
+Additional text If the Charge Point was unable to deliver the StartTransaction.req despite repeated attempts, or if the Central System was
+unable to deliver the StartTransaction.conf response, then the Charge Point will not receive a transactionId.
+In that case, the Charge Point SHALL send any Transaction related messages for this transaction to the Central System with a
+transactionId = -1. The Central System SHALL respond as if these messages refer to a valid transactionId, so that the Charge
+Point is not blocked by this.
+3.19. Page 38, section: 4.9: Not defined that StatusNotification should always be
+send.
+Added in errata sheet v4.0
+OCPP 1.6 FINAL Page 40
+The specification on page 38 states: "The following table depicts changes from a previous status (left column) to
+a new status (upper row) upon which a Charge Point MAY send a StatusNotification.req PDU to the Central
+System."
+But the idea has always been that the Charge Point has to send a StatusNotification when the state changes.
+10

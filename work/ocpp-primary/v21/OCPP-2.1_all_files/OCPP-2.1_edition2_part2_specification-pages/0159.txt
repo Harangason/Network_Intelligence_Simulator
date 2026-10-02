@@ -1,0 +1,47 @@
+No. Type Description
+Scenario description #1 Scanning a dynamic QR code
+1. Charging Station displays a QR code with a time-based one-time password.
+a. Optionally, Charging Station requests input from EV Driver to specify a maximum
+time, energy or cost prior to displaying the QR code
+b. The input is added as query parameters to the URL in the QR code.
+2. EV Driver scans QR code with URL to access a web page of CSMS to initiate a charging
+session.
+3. CSMS decodes URL according to the configured URL template and validates the time-
+based one-time password.
+a. The URL contains as a minimum the Charging Station identity, one time password
+and version, and optionally the EVSE number, but other parameters can be
+configured in the URL template as well.
+b. If URL validation or decoding fails no charging session will be started.
+Use case ends here.
+4. CSMS optionally sends a NotifyWebPaymentStartedRequest message with evseId and
+timeout to notify Charging Station of the event.
+a. Charging Station displays feedback to EV Driver and prevents that a transaction is
+started locally on the EVSE in evseId for as long as timeout seconds, or until the
+RequestStartTransactionRequest from CSMS is received.
+5. CSMS diverts EV Driver to website of PSP (Payment Service Provider).
+6. EV Driver enters payment credentials in web page shown by PSP.
+7. Upon approval PSP returns an approved status and a unique reference for this payment in
+the PSP platform.
+a. This unique reference is called "pspRef" in OCPP.
+b. PSP sends payment details, such as PspRef, cardBin, cardLast4Digits, etc. to
+CSMS.
+8. CSMS sends a RequestStartTransactionRequest to Charging Station and EVSE from the
+URL and with idToken having value <pspRef> and type = DirectPayment .
+9. Use case continues as per use case "F07 Remote start with cost limit" in which CSMS will
+provide a transactionLimit.maxCost set to the payment card authorization amount, which
+acts as a ceiling for the cost, independent of a value entered bij EV Driver in step 1.
+Scenario description #2 Scanning a static QR code
+WARNING A static QR code is susceptible to fraud. A new QR sticker that points to a
+fake payment site can be pasted over the original QR sticker.
+1. Charging Station displays a static QR code (often a sticker).
+2. EV Driver scans QR code with URL to access a web page of CSMS to initiate a charging
+session.
+3. CSMS decodes URL.
+a. The URL contains the Charging Station identity and optional EVSE number.
+b. (The URL format is known by CSMS and does not need to be configured in the
+Charging Station.)
+c. If URL validation or decoding fails no charging session will be started.
+Use case ends here.
+4. The remaining steps 4 to 9 are identical to scenario description #1 above.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 146/803 Part 2 - Specification

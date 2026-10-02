@@ -1,0 +1,47 @@
+StopAuthorized
+State StopAuthorized
+System under test Charging Station
+Description This state will prepare the Charging Station, so that it is in a state where the charging session is authorized
+to stop. This can be done in two ways (Configurable at Test System):
+A. Using local authorization
+B. Using a RequestStopTransactionRequest
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+If State is NOT EnergyTransferStarted then execute Reusable State EnergyTransferStarted
+Note: The Test System will wait a number of seconds equal to the configured <TransactionDuration>, before proceeding to the
+Main stage.
+Main A (Test scenario)
+Charging Station CSMS
+Notes(s): The tool will wait for <Configured Transaction Duration> seconds
+Manual Action: Present the same idToken as used to start the transaction.
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+With idTokenInfo.status is Accepted
+Note(s): This step is optional
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+With idTokenInfo.status is Accepted
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- triggerReason must be StopAuthorized
+- idToken omit OR
+- idToken.idToken <Configured valid_idtoken_idtoken> AND
+- idToken.type <Configured valid_idtoken_type>
+* Step 3:
+Message: TransactionEventRequest
+- triggerReason must be ChargingStateChanged
+- transactionInfo.chargingState must be EVConnected
+If TxStopPoint contains Authorized or PowerPathClosed or EnergyTransfer
+Then the last of the two TransactionEventRequest messages from step 1 and 3 needs to contain:
+- eventType must be Ended
+- transactionInfo.stoppedReason must be Local or omitted
+Else
+Then both TransactionEventRequest messages need to contain:
+- eventType must be Updated
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 930/1383 Part 6 - Test Cases

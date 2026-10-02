@@ -1,0 +1,45 @@
+Class
+Field Name Field Type Card. Description
+location string[0..512] 1..1 Required. This contains a string containing a URI pointing
+to a location from which to retrieve the firmware.
+retries integer 0..1 Optional. This specifies how many times the Charging
+Station must retry to download the firmware before
+giving up. If this field is not present, it is left to Charging
+Station to decide how many times it wants to retry. If the
+value is 0, it means: no retries.
+checksum identifierString[0..32] 1..1 Required. The MD5 checksum over the entire firmware
+file as a hexadecimal string of length 32.
+requestId integer 1..1 Required. The Id of the request.
+retryInterval integer 0..1 Optional. The interval in seconds after which a retry may
+be attempted. If this field is not present, it is left to
+Charging Station to decide how long to wait between
+attempts.
+1.41.2. PublishFirmwareResponse
+This contains the field definition of the PublishFirmwareResponse PDU sent by the Local Controller to the CSMS in response to a
+PublishFirmwareRequest.
+Class
+Field Name Field Type Card. Description
+status GenericStatusEnumType 1..1 Required. Indicates whether the request was accepted.
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+1.42. PublishFirmwareStatusNotification
+1.42.1. PublishFirmwareStatusNotificationRequest
+This contains the field definition of the PublishFirmwareStatusNotificationRequest PDU sent by the Charging Station to the CSMS.
+Class
+Field Name Field Type Card. Description
+status PublishFirmwareStatusEnumType 1..1 Required. This contains the progress status of the
+publishfirmware installation.
+location string[0..512] 0..* Optional. Required if status is Published. Can be multiple
+URI’s, if the Local Controller supports e.g. HTTP, HTTPS,
+and FTP.
+requestId integer 0..1 Optional. The request id that was provided in the
+PublishFirmwareRequest which triggered this action.
+1.42.2. PublishFirmwareStatusNotificationResponse
+This contains the field definition of the PublishFirmwareStatusNotificationResponse PDU sent by the CSMS to the Charging station
+in response to a PublishFirmwareStatusNotificationRequest.
+1.43. ReportChargingProfiles
+1.43.1. ReportChargingProfilesRequest
+Reports charging profiles installed in the Charging Station, as requested via a GetChargingProfilesRequest message. The charging
+profile report can be split over multiple ReportChargingProfilesRequest messages, this can be because charging profiles for
+different charging sources need to be reported, or because there is just to much data for one message.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 380/491 Part 2 - Specification

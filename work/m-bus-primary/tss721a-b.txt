@@ -1,0 +1,769 @@
+PDF PAGE 1
+1
+2
+3
+4 13
+14
+15
+16
+RXI
+RIS
+GND
+BUSL1
+RIDD
+STC
+VB
+BUSL2
+D PACKAGE
+(TOP VIEW)
+5
+6
+7 10
+11
+12
+VS
+VDD
+RX
+TXI
+SC
+PF
+8 9 BA TTX
+TSS721A
+www.ti.com SLAS222B –APRIL 1999–REVISED NOVEMBER 2010
+METER-BUSTRANSCEIVER
+Check for Samples: TSS721A
+1FEATURES
+• Meter-Bus Transceiver (for Slave) Meets
+Standard EN1434-3
+• Receiver Logic With Dynamic Level
+Recognition
+• Adjustable Constant-Current Sink via Resistor
+• Polarity Independent
+• Power-Fail Function
+• Module Supply Voltage Switch
+• 3.3-V Constant Voltage Source
+• Remote Powering
+• Up to 9600 Baud in Half Duplex for UART
+Protocol
+• Slave Power Support
+– Supply From Meter-Bus via Output VDD
+– Supply From Meter-Bus via Output VDD or
+From Backup Battery
+– Supply From Battery – Meter-Bus Active for
+Data Transmission Only
+DESCRIPTION
+TSS721A is a single chip transceiver developed for Meter-Bus standard (EN1434-3) applications.
+The TSS721A interface circuit adjusts the different potentials between a slave system and the Meter- Bus
+master. The connection to the bus is polarity independent and supports full galvanic slave isolation with
+optocouplers.
+The circuit is supplied by the master via the bus. Therefore, this circuit offers no additional load for the slave
+battery. A power-fail function is integrated.
+The receiver has dynamic level recognition, and the transmitter has a programmable current sink.
+A 3.3-V voltage regulator, with power reserve for a delayed switch off at bus fault, is integrated.
+Table 1. ORDERING INFORMATION(1)(2)
+TA PACKAGE ORDERABLE PART NUMBER
+0°C to 70°C SOIC – D Reel of 2500 TSS721ADR
+(1) For the most current package and ordering information, see the Package Option Addendum at the end of this document, or see the TI
+web site at www.ti.com.
+(2) Package drawings, thermal data, and symbolization are available at www.ti.com/packaging.
+1
+Please be aware that an important notice concerning availability, standard warranty, and use in critical applications of Texas
+Instruments semiconductor products and disclaimers thereto appears at the end of this data sheet.
+PRODUCTION DATA information is current as of publication date. Copyright © 1999–2010, Texas Instruments IncorporatedProducts conform to specifications per the terms of the Texas
+Instruments standard warranty. Production processing does not
+necessarily include testing of all parameters.
+PDF PAGE 2
+V
+3.3 V
+VDD
+REF1
+7 V
+ECHO
+CS2
+TC1
+CS1
+BR
+TC3
+TC2
+TC4
+BAT
+CS3
+VF
+RIDD
+STC
+VS
+VDD
+ISTC_use ICI1
+ISTC
+IVDD
+RVS
+ICS3
+VB
+PF
+BUSL1
+TX
+GND
+RIS
+BUSL2
+TXI
+RX
+RXI
+SC
+REF2
+1.3 V
+IMS
+IBUSICI2
+TSS721A
+SLAS222B –APRIL 1999–REVISED NOVEMBER 2010 www.ti.com
+FUNCTIONAL DESCRIPTION
+Figure 1. Functional Schematic
+Table 2. Terminal Functions
+TERMINAL
+DESCRIPTION
+NAME NO.
+BUSL2 1 Meter-Bus
+VB 2 Differential bus voltage after rectifier
+STC 3 Support capacitor
+RIDD 4 Current adjustment input
+PF 5 Power fail output
+SC 6 Sampling capacitor
+TXI 7 Data output inverted
+TX 8 Data output
+BAT 9 Logic level adjust
+VS 10 Switch for bus or battery supply output
+VDD 11 Voltage regulator output
+RX 12 Data input
+RXI 13 Data input inverted
+RIS 14 Adjust input for modulation current
+GND 15 Ground
+BUSL1 16 Meter-Bus
+2 Submit Documentation Feedback Copyright © 1999–2010, Texas Instruments Incorporated
+Product Folder Link(s): TSS721A
+PDF PAGE 3
+BR
+VB
+BUSL1
+GND
+BUSL2
+TC3 TX
+TXI
+SCISCcharge
+ISCdischarge
+VT
+I = ConstantBUS
+V = 20.8 V to 42 VMA RK
+V = V – 10 VSPACE MARK
+VTXI
+VTX
+V
+I
+BUS
+BUS
+CSC
+to ICIBUS
+C = 30 pF typBUSL1-BUSL2
+V = 25 V, f = 1 MHzB meas
+I =SCdisharge
+ISCcharge
+40 (typ)
+TSS721A
+www.ti.com SLAS222B –APRIL 1999–REVISED NOVEMBER 2010
+Data Transmission, Master to Slave
+The mark level on the bus lines VBUS = MARK is defined by the difference of BUSL1 and BUSL2 at the slave. It
+is dependent on the distance of Master to Slave, which affects the voltage drop on the wire. To make the
+receiver independent, a dynamic reference level on the SC pin is used for the voltage comparator TC3 (see
+Figure 2).
+Figure 2. Data Transmission, Master to Slave
+A capacitor CSC at pin SC is charged by a current ISCcharge and is discharged with a current ISCdischarge where:
+(1)
+This ratio is necessary to run any kind of UART protocol independent of the data contents. (for example, if an
+11-bit UART protocol is transmitted with all data bits at 0 and only the stop bit at 1). There must be sufficient time
+to recharge the capacitor CSC. The input level detector TC3 detects voltage modulations from the master,
+VBUS = SPACE/MARK conditions, and switches the inverted output TXI and the non-inverted output TX.
+Copyright © 1999–2010, Texas Instruments Incorporated Submit Documentation Feedback 3
+Product Folder Link(s): TSS721A
+PDF PAGE 4
+BR
+VB
+BUSL1
+GND
+BUSL2
+ICS3
+RRIS
+RIS
+CS3
+TC4
+RX
+RXI
+IMS
+V = ConstantBUS
+IMC
+ISPACE
+IMARK
+V
+I
+BUS
+BUS
+VRXI
+VRXIBUS
+to IC
+I = I + IMC MS CS3
+20
+I
+(mA)
+MC
+0.1
+15
+5
+10
+R (k )RIS /c870
+Typical
+V = Voltage on pin RIS
+R = Programming resistor
+I = Programmable current
+I = Modulation current
+I = Modulation supply current (220 µA typ)
+RIS
+RIS
+CS3
+MC
+MS
+R    =RIS =VRIS
+ICS3
+VRIS
+I – IMC MS
+0.2 0.5 1
+TSS721A
+SLAS222B –APRIL 1999–REVISED NOVEMBER 2010 www.ti.com
+Data Transmission, Slave to Master
+The device uses current modulation to transmit information from the slave to the master while the bus voltage
+remains constant. The current source CS3 modulates the bus current and the master detects the modulation.
+The constant current source CS3 is controlled by the inverted input RXI or the non-inverted input RX. The current
+source CS3 can be programmed by an external resistor RRIS. The modulation supply current IMS flows in addition
+to the current source CS3 during the modulation time.
+Figure 3. Data Transmission, Slave to Master
+Because the TSS721A is configured for half-duplex only, the current modulation from RX or RXI is repeated
+concurrently as ECHO on the outputs TX and TXI. If the slave, as well as the master, is trying to send
+information via the lines, the added signals appear on the outputs TX and TXI, which indicates the data collision
+to the slave (see Figure 1).
+The bus topology requires a constant current consumption by each connected slave.
+To calculate the value of the programming resistor RRIS, use the formula shown in Figure 4.
+Figure 4. Calculate Programming Resistor RRIS
+4 Submit Documentation Feedback Copyright © 1999–2010, Texas Instruments Incorporated
+Product Folder Link(s): TSS721A
+PDF PAGE 5
+R = 25RID
+VRIDD
+ISTC
+= 25 VRIDD
+I + ISTC_use IC1
+916
+I
+(
+BUS
+mA)
+3
+914
+910
+912
+4 5 6 7 V (V)STC81 2
+TSS721A
+www.ti.com SLAS222B –APRIL 1999–REVISED NOVEMBER 2010
+Slave Supply, 3.3 V
+The TSS721A has an internal 3.3-V voltage regulator. The output power of this voltage regulator is supplied by
+the storage capacitor CSTC at pin STC. The storage capacitor CSTC at pin STC is charged with constant current
+ISTC_use from the current source CS1. The maximum capacitor voltage is limited to REF1. The charge current ISTC
+has to be defined by an external resistor at pin RIDD.
+The adjustment resistor RRIDD can be calculated using Equation 2.
+(2)
+Where,
+ISTC = current from current source CS1
+ISTC_use = charge current for support capacitor
+ICI = internal current
+VRIDD = voltage on pin RIDD
+RRIDD = value of adjustment resistor
+The voltage level of the storage capacitor CSTC is monitored with comparator TC1. Once the voltage VSTC
+reaches VVDD_on, the switch SVDD connects the stabilized voltage VVDD to pin VDD. VDD is turned off if the
+voltage VSTC drops below the VVDD_off level.
+Voltage variations on the capacitor CSTC create bus current changes (see Figure 5).
+Figure 5. Single Mode Bus Load
+At a bus fault the shut down time of VDD (toff) in which data storage can be performed depends on the system
+current IVDD and the value of capacitor CSTC. See Figure 6, which shows a correlation between the shutdown of
+the bus voltage VBUS and VDD_off and toff for dimensioning the capacitor.
+The output VS is meant for slave systems that are driven by the bus energy, as well as from a battery should the
+bus line voltage fail. The switching of VS is synchronized with VDD and is controlled by the comparator TC1. An
+external transistor at the output VS allows switching from the Meter-Bus remote supply to battery.
+Copyright © 1999–2010, Texas Instruments Incorporated Submit Documentation Feedback 5
+Product Folder Link(s): TSS721A
+PDF PAGE 6
+V =VB V + 0.6 VSTC
+ton
+VDDon
+VBUS
+VSTC
+VVS
+toff
+VDDoff
+VVDD
+VPF
+typical threshold voltage
+for power fail PF
+STC VDDoffoff STC
+VDD CI1
+V – Vt = C I + I
+TSS721A
+SLAS222B –APRIL 1999–REVISED NOVEMBER 2010 www.ti.com
+Power On/Off
+Figure 6. Power On/Off Timing
+Power Fail Function
+Because of the rectifier bridge BR at the input, BUSL1, and BUSL2, the TSS721A is polarity independent. The
+pin VB to ground (GND) delivers the bus voltage VVB less the voltage drop over the rectifier BR. The voltage
+comparator TC2 monitors the bus voltage. If the voltage VVB > VSTC + 0.6 V, then the output PF = 1. The output
+level PF = 0 (power fail) provides a warning of a critical voltage drop to the microcontroller to save the data
+immediately.
+6 Submit Documentation Feedback Copyright © 1999–2010, Texas Instruments Incorporated
+Product Folder Link(s): TSS721A
+PDF PAGE 7
+TSS721A
+www.ti.com SLAS222B –APRIL 1999–REVISED NOVEMBER 2010
+ABSOLUTE MAXIMUM RATINGS
+over operating free-air temperature range (unless otherwise noted)
+VMB Voltage, BUSL1 to BUSL2 ±50 V
+RX and RXI –0.3 V to 5.5 V
+VI Input voltage range
+BAT –0.3 V to 5.5 V
+TJ Operating junction temperature range –25°C to 150°C
+TA Operating free-air temperature range –25°C to 85°C
+TSTG Storage temperature range –65°C to 150°C
+Power derating factor, junction to ambient 8 mW/°C
+RECOMMENDED OPERATING CONDITIONS(1)
+MIN MAX UNIT
+Receiver 10.8 42
+VMB Bus voltage, |BUSL2 – BUSL1| V
+Transmitter 12 42
+VB (receive mode) 9.3
+VI Input voltage V
+BAT(2) 2.5 3.8
+RRIDD RIDD resistor 13 80 kΩ
+RRIS RIS resistor 100 Ω
+TA Operating free-air temperature –25 85 °C
+(1) All voltage values are measured with respect to the GND terminal unless otherwise noted.
+(2) VBAT(max) ≤ VSTC – 1 V
+ELECTRICAL CHARACTERISTICS(1)
+over operating free-air temperature range (unless otherwise noted)
+PARAMETER TEST CONDITIONS MIN TYP MAX UNIT
+ΔVBR Voltage drop at rectifier BR IBUS = 3 mA 1.5 V
+Voltage drop at currentΔVCS1 RRIDD = 13 kΩ 1.8 Vsource CS1
+RRIDD = 13 kΩ 3VSTC = 6.5 V,IBUS BUS current mAIMC = 0 mA RRIDD = 30 kΩ 1.5
+ΔIBUS BUS current accuracy ΔVBUS = 10 V, IMC = 0 mA, RRIDD = 13 kΩ to 30 kΩ 2 %
+ICC Supply current VSTC = 6.5 V, IMC = 0 mA, VBAT = 3.8 V, RRIDD = 13 kΩ(2) 650 µA
+VSTC = 6.5 V, IMC = 0 mA, VBAT = 3.8 V, RRIDD = 13 kΩ,ICI1 CI1 current 350 µAVBUS = 6.5 V, RX/RXI = off (2)
+IBAT BAT current –0.5 0.5 µA
+IBAT + IVDD BAT plus VDD current VBUS = 0 V, VSTC = 0 V –0.5 0.5 µA
+VVDD VDD voltage –IVDD = 1 mA, VSTC = 6.5 V 3.1 3.4 V
+RVDD VDD resistance –IVDD = 2 to 8 mA, VSTC = 4.5 V 5 Ω
+VDD = on, VS = on 5.6 6.4
+VSTC STC voltage VDD = off, VS = off 3.8 4.3 V
+IVDD < ISTC_use 6.5 7.5
+RRIDD = 30 kΩ 0.65 1.1
+ISTC_use STC current VSTC = 5 V mA
+RRIDD = 13 kΩ 1.85 2.4
+VRIDD RIDD voltage RRIDD = 30 kΩ 1.23 1.33 V
+VVS VS voltage VDD = on, IVS = –5 µA VSTC – 0.4 VSTC V
+RVS VS resistance VDD = off 0.3 1 MΩ
+VVB = VSTC + 0.8 V, IPF = –100 µA VBAT – 0.6 VBAT
+VPF PF voltage VSTC = 6.5 V VVB = VSTC + 0.3 V, IPF = 1 µA 0 0.6 V
+VVB = VSTC + 0.3 V, IPF = 5 µA 0 0.9
+(1) All voltage values are measured with respect to the GND terminal, unless otherwise noted.
+(2) Inputs RX/RXI and outputs TX/TXI are open, ICC = ICI1 + ICI2
+Copyright © 1999–2010, Texas Instruments Incorporated Submit Documentation Feedback 7
+Product Folder Link(s): TSS721A
+PDF PAGE 8
+TSS721A
+SLAS222B –APRIL 1999–REVISED NOVEMBER 2010 www.ti.com
+ELECTRICAL CHARACTERISTICS(1) (continued)
+over operating free-air temperature range (unless otherwise noted)
+PARAMETER TEST CONDITIONS MIN TYP MAX UNIT
+ton Turn-on time CSTC = 50 µF, Bus voltage slew rate: 1 V/µs 3 s
+RECEIVER SECTION ELECTRICAL CHARACTERISTICS(1)
+over operating free-air temperature range (unless otherwise noted)
+PARAMETER TEST CONDITIONS MIN TYP MAX UNIT
+MARK MARK –VT See Figure 2 V– 8.2 5.7
+VSC SC voltage VVB V
+ISCcharge SC charge current VSC = 24 V, VVB = 36 V –15 –40 µA
+–0.033 ×ISCdischarge SC discharge current VSC = VVB = 24 V 0.3 µAISCcharge
+High-level output voltage VBAT –VOH ITX/ITXI = –100 µA (see Figure 2) VBAT V(TX, TXI) 0.6
+ITX/ITXI = 100 µA 0 0.5Low-level output voltageVOL V(TX, TXI) ITX = 1.1 mA 0 1.5
+ITX TX, TXI current VTX = 7.5, VVB = 12 V, VSTC = 6 V, VBAT = 3.8 V 10 µAITXI
+(1) All voltage values are measured with respect to the GND terminal, unless otherwise noted.
+TRANSMITTER SECTION ELECTRICAL CHARACTERISTICS(1)
+over operating free-air temperature range (unless otherwise noted)
+PARAMETER TEST CONDITIONS MIN TYP MAX UNIT
+IMC MC voltage RRIS = 100 Ω 11.5 19.5 mA
+RRIS = 100 Ω 1.4 1.7
+VRIS RIS voltage V
+RRIS = 1000 Ω 1.5 1.8
+VBAT –VIH High-level input voltage (RX, RXI) See Figure 3, see (2) 5.5 V0.8
+VIL Low-level input voltage (RX, RXI) See Figure 3 0 0.8 V
+VRX = VBAT = 3 V, VVB = VSTC = 0 V -0.5 0.5
+IRX RX current µA
+VRX = 0 V, VBAT = 3 V, VSTC = 6.5 V -10 -40
+VRXI = VBAT = 3 V, VVB = VSTC = 0 V 10 40
+IRXI RXI current µA
+VRXI = VBAT = 3 V, VSTC = 6.5 V 10 40
+(1) All voltage values are measured with respect to the GND terminal, unless otherwise noted.
+(2) VIH(max) = 5.5 V is valid only when VSTC > = 6.5 V.
+8 Submit Documentation Feedback Copyright © 1999–2010, Texas Instruments Incorporated
+Product Folder Link(s): TSS721A
+PDF PAGE 9
++
+RL1
+220
+34
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14 15
+16
+1
+2
+BUSL2
+BUSL1
+VBPF
+VS
+VDD
+BAT
+RX
+RXI
+TX
+TXI
+TSS721A
+RL2
+220
+Meter-Bus
+CST
+CSC CSTC
+RRIS RRIDD
+T1
+RIS SC GND RIDD STC
+Remote Supply
+R = 30 kRIDD /c87 C =< 220 µFSTC
+R = 13 kRIDD /c87 C =< 470 µFSTC
+single load 1UL
+double load 2UL
+Sensor System
+(e.g., MSP430)
+34
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14 15
+16
+1
+2
+BUSL2
+BUSL1
+VBPF
+VS
+VDD
+BAT
+RX
+RXI
+TX
+TXI
+TSS721A
+Sensor System
+(e.g., MSP430)
+CSSC
+CSC
+RRIS RRIDD
+CVDD
+Rload
+RL1
+220
+RL2
+220
+Meter-Bus
+C - system stabilising capacitor
+C - support capacitor
+C - sampling capacitor
+C - stabilising capacitor (100 nF)
+C :C >= 4:1
+SSC
+STC
+SC
+VDD
+STC VDD
+R - slave-current adjustment resistor
+R - modulation-current resistor
+RL1,RL2 - protection resistors
+R - discharge resistor (100 k recommended)
+RIDD
+RIS
+load /c87
+BAT+
++ STCC
+TSS721A
+www.ti.com SLAS222B –APRIL 1999–REVISED NOVEMBER 2010
+APPLICATION INFORMATION
+NOTE: Transistor T1 should be a BSS84.
+Figure 7. Basic Application Circuit Using Support Capacitor CSTC > 50 µF
+Figure 8. Basic Application Circuit for Supply From Battery
+Copyright © 1999–2010, Texas Instruments Incorporated Submit Documentation Feedback 9
+Product Folder Link(s): TSS721A
+PDF PAGE 10
++
+RL1
+220
+34
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14 15
+16
+1
+2
+BUSL2
+BUSL1
+VBPF
+VS
+VDD
+BAT
+RX
+RXI
+TX
+TXI
+TSS721A
+RL2
+220Sensor System
+(e.g., MSP430)
+Meter-Bus
+SSCC
+SCC STCC
+RISR RIDDR
++
+34
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14 15
+16
+1
+2
+BUSL2
+BUSL1
+VBPF
+VS
+VDD
+BAT
+RX
+RXI
+TX
+TXI
+TSS721A
++ BAT C
+SCC STCC
+RISR RIDDR
++
+34
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14 15
+16
+1
+2
+BUSL2
+BUSL1
+VBPF
+VS
+VDD
+BAT
+RX
+RXI
+TX
+TXI
+TSS721A
+RIS+ BAT C
+SCC STCC
+RISR RIDDR
+Remote Supply
+Remote Supply/Battery Suppor t
+Battery Suppl y
+SSC
+SSC
+T1
+loadR
+VDDC
+RL1
+220
+RL2
+220
+RL1
+220
+RL2
+220
+SC GND RIDD STC
+RIS GND RIDD STCSC
+RIS GND RIDD STCSC
+Sensor System
+(e.g., MSP430)
+Sensor System
+(e.g., MSP430)
+Sensor System
+(e.g., MSP430)
++ BAT SSCC
++
+34
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14 15
+16
+1
+2
+BUSL2
+BUSL1
+VBPF
+VS
+VDD
+BAT
+RX
+RXI
+TX
+TXI
+TSS721A
+RIS SC GND RIDD
+SCC STCC
+OC1
+R1
+TXI
+RXI
+OC2
+VDDC
+loadR RISR RIDDR
+R2
+R3
+R4
+RL1
+220
+RL2
+220
+Meter-Bus
+STC
+TSS721A
+SLAS222B –APRIL 1999–REVISED NOVEMBER 2010 www.ti.com
+NOTE: RDSon of the transistor T1 (BSS84) at low battery voltage must be considered during application design.
+Figure 9. Basic Applications for Different Supply Modes
+Figure 10. Basic Optocoupler Application
+10 Submit Documentation Feedback Copyright © 1999–2010, Texas Instruments Incorporated
+Product Folder Link(s): TSS721A
+PDF PAGE 11
+PACKAGE OPTION ADDENDUM
+www.ti.com 5-Mar-2026
+PACKAGING INFORMATION
+Orderable part number Status
+(1)
+Material type
+(2)
+Package | Pins Package qty | Carrier RoHS
+(3)
+Lead finish/
+Ball material
+(4)
+MSL rating/
+Peak reflow
+(5)
+Op temp (°C) Part marking
+(6)
+TSS721AD Obsolete Production SOIC (D) | 16 - - Call TI Call TI -25 to 85 TSS721A
+TSS721ADR Active Production SOIC (D) | 16 2500 | LARGE T&R Yes NIPDAU Level-1-260C-UNLIM -25 to 85 TSS721A
+TSS721ADR.A Active Production SOIC (D) | 16 2500 | LARGE T&R Yes NIPDAU Level-1-260C-UNLIM -25 to 85 TSS721A
+ 
+(1) Status:  For more details on status, see our product life cycle.
+ 
+(2) Material type:  When designated, preproduction parts are prototypes/experimental devices, and are not yet approved or released for full production. Testing and final process, including without limitation quality assurance,
+reliability performance testing, and/or process qualification, may not yet be complete, and this item is subject to further changes or possible discontinuation. If available for ordering, purchases will be subject to an additional
+waiver at checkout, and are intended for early internal evaluation purposes only. These items are sold without warranties of any kind.
+ 
+(3) RoHS values:  Yes, No, RoHS Exempt. See the TI RoHS Statement for additional information and value definition.
+ 
+(4) Lead finish/Ball material:  Parts may have multiple material finish options. Finish options are separated by a vertical ruled line. Lead finish/Ball material values may wrap to two lines if the finish value exceeds the maximum
+column width.
+ 
+(5) MSL rating/Peak reflow:  The moisture sensitivity level ratings and peak solder (reflow) temperatures. In the event that a part has multiple moisture sensitivity ratings, only the lowest level per JEDEC standards is shown.
+Refer to the shipping label for the actual reflow temperature that will be used to mount the part to the printed circuit board.
+ 
+(6) Part marking:  There may be an additional marking, which relates to the logo, the lot trace code information, or the environmental category of the part.
+ 
+Multiple part markings will be inside parentheses. Only one part marking contained in parentheses and separated by a "~" will appear on a part. If a line is indented then it is a continuation of the previous line and the two
+combined represent the entire part marking for that device.
+ 
+Important Information and Disclaimer:The information provided on this page represents TI's knowledge and belief as of the date that it is provided. TI bases its knowledge and belief on information provided by third parties, and
+makes no representation or warranty as to the accuracy of such information. Efforts are underway to better integrate information from third parties. TI has taken and continues to take reasonable steps to provide representative
+and accurate information but may not have conducted destructive testing or chemical analysis on incoming materials and chemicals. TI and TI suppliers consider certain information to be proprietary, and thus CAS numbers
+and other limited information may not be available for release.
+ 
+In no event shall TI's liability arising out of such information exceed the total purchase price of the TI part(s) at issue in this document sold by TI to Customer on an annual basis.
+ 
+Addendum-Page 1
+PDF PAGE 12
+
+PDF PAGE 13
+IMPORTANT NOTICE AND DISCLAIMER
+TI PROVIDES TECHNICAL AND RELIABILITY DATA (INCLUDING DATASHEETS), DESIGN RESOURCES (INCLUDING REFERENCE 
+DESIGNS), APPLICATION OR OTHER DESIGN ADVICE, WEB TOOLS, SAFETY INFORMATION, AND OTHER RESOURCES “AS IS” 
+AND WITH ALL FAULTS, AND DISCLAIMS ALL WARRANTIES, EXPRESS AND IMPLIED, INCLUDING WITHOUT LIMITATION ANY 
+IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-INFRINGEMENT OF THIRD 
+PARTY INTELLECTUAL PROPERTY RIGHTS.
+These resources are intended for skilled developers designing with TI products. You are solely responsible for (1) selecting the appropriate 
+TI products for your application, (2) designing, validating and testing your application, and (3) ensuring your application meets applicable 
+standards, and any other safety, security, regulatory or other requirements.
+These resources are subject to change without notice. TI grants you permission to use these resources only for development of an 
+application that uses the TI products described in the resource. Other reproduction and display of these resources is prohibited. No license 
+is granted to any other TI intellectual property right or to any third party intellectual property right. TI disclaims responsibility for, and you fully 
+indemnify TI and its representatives against any claims, damages, costs, losses, and liabilities arising out of your use of these resources.
+TI’s products are provided subject to TI’s Terms of Sale, TI’s General Quality Guidelines, or other applicable terms available either on 
+ti.com or provided in conjunction with such TI products. TI’s provision of these resources does not expand or otherwise alter TI’s applicable 
+warranties or warranty disclaimers for TI products. Unless TI explicitly designates a product as custom or customer-specified, TI products 
+are standard, catalog, general purpose devices.
+TI objects to and rejects any additional or different terms you may propose.
+IMPORTANT NOTICE
+Copyright © 2026, Texas Instruments Incorporated
+Last updated 10/2025

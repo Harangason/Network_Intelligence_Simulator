@@ -1,0 +1,53 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  83 
+9. Design Considerations 
+9.1. Limitations for MIPI CSI/DSI Transmitter  
+• Escape Mode, Ultra Low Power State (ULPS), and Bus Turnaround sequences are not yet supported.  
+• Minimum word count supported is dependent on the IP setting. Refer to Table 2.4 for details. 
+• UVSI interlaced format is not supported. 
+• Trail duration may exceed maximum TEOT because of limitations in design implementation when Number of TX 
+Lanes > 1 for the following configurations:  
+• D-PHY TX IP is Soft D-PHY. For this configuration, consider reducing the trail timing parameter by 1.  
+• After reducing the trail timing parameter by 1, timing violations may still be observed at the lowest data rates 
+because of the wider byte clock period, which further constrains the trail timing margin. 
+• Some IP configurations may have slower Fmax when used in devices with slow performance grade.  
+• When using the Unified Video Streaming Interface (UVSI) with word count is not a multiple of 32, ensure there is a 
+minimum gap of 4 axis_vid_clk_i clock cycles between successive packet streams.  
+• When the Blanking Period Enable (BP_EN) option is enabled, observe the following timing constraint: 
+• T_line_uvsi < T_line_byte_clock 
+• T_line_uvsi — Line period as measured at the UVSI input interface.  
+T_line_uvsi = clock period of axis_vid_clk_i × number of pixels per horizontal line / PPC. 
+• T_line_byte_clock — Line period as computed in the byte clock domain.  
+T_line_byte_clock = ((NUM_BYTES_ACTIVE_H / number of lanes) + H_BLANKING_BYTES_TH) × T_byte_clock 
+• The UVSI line period must be strictly shorter than the total line budget allocated in the byte clock domain. This 
+ensures that the MIPI TX has sufficient time to transmit both the active pixel payload (NUM_BYTES_ACTIVE_H) 
+and the horizontal blanking period (H_BLANKING_BYTES_TH) within each line interval. If this constraint is not 
+met, the horizontal blanking period may extend beyond the configured threshold because of slower traffic in 
+the byte clock domain, causing the overall line period to exceed the expected value. 
+9.2. Limitations for MIPI CSI/DSI Receiver  
+• Escape Mode, Ultra Low Power State (ULPS), and Bus Turnaround sequences are not yet supported.   
+• Minimum word count supported is dependent on IP setting. Refer to Table 2.7 for details. 
+• UVSI interlaced format is not supported. 
+• In DSI mode, MPPT parsing is continuously enabled regardless of the number of packets per HS burst, preventing 
+the IP from distinguishing trailing bytes from valid data. Because of ECC correction, trailing bytes may be 
+misinterpreted as valid headers. EoTP transmission is required for reliable data parsing and ECC reporting . If EoTP 
+is disabled, link integrity must be assessed via ECC error flags. 
+• ECC error reporting may fail when a received header containing a 2-bit error is incorrectly corrected to either 
+0xFFFFFF or 0x00000, causing the ECC logic to not flag the error correctly. 
+• When PHY Mode == Soft D-PHY, the minimum duration of tHS-PREPARE + tHS-ZERO from D-PHY source must meet the 
+following condition: 
+𝑡𝐻𝑆−𝑃𝑅𝐸𝑃𝐴𝑅𝐸 + 𝑡𝐻𝑆−𝑍𝐸𝑅𝑂 ≥ 145 𝑛𝑠 + 10 UI + (8 × 𝑡𝐶𝐿𝐾_𝑆𝑌𝑁𝐶) 
+where tCLK_SYNC is the period of ref_clk_i. 
+• When PHY Mode == Soft D-PHY and the corresponding byte clock is ≤ 60 MHz, you must configure tHS-TRAIL duration 
+closer to but not exceeding tEOT limit as defined by the MIPI D-PHY specification. This configuration ensures reliable 
+data capture and proper end-of-transmission detection under low-frequency conditions. 
+• The minimum idle duration required between HS transactions is: 
+𝑡𝐼𝐷𝐿𝐸 ≥ max(𝑡𝑀𝐼𝑃𝐼_𝑅𝐸𝑄, 𝑡𝐼𝑃_𝑅𝐸𝑄) 
+where tMIPI_REQ is the MIPI Global Operation Timing Parameter requirement and t IP_REQ is as follows: 
+• For PHY Mode == Soft D-PHY 
+𝑡𝐼𝑃_𝑅𝐸𝑄 =  𝑡𝐻𝑆−𝐸𝑋𝐼𝑇 → 𝑡𝐿𝑃𝑋 ≥ (8 × 𝑡𝑏𝑦𝑡𝑒_𝑐𝑙𝑘_𝑜) 

@@ -1,0 +1,2837 @@
+PAGE 1
+ 
+ 
+PROFIBUS with STEP 7 V13 
+ 
+___________________ 
+___________________ 
+___________________ 
+___________________ 
+___________________ 
+___________________ 
+___________________ 
+ 
+SIMATIC 
+PROFIBUS 
+PROFIBUS with STEP 7 V13 
+Function Manual 
+ 
+  
+12/2014 
+A5E03775446-AC 
+Preface 
+ 
+ 
+ 
+Documentation guide 
+ 
+1 
+ 
+Description 
+ 
+2 
+ 
+Parameter 
+assignment/addressing 
+ 
+3 
+ 
+Diagnostics 
+ 
+4 
+ 
+Functions 
+ 
+5 
+ 
+Service & Support  
+ 
+A 
+PAGE 2
+ 
+   Siemens AG 
+Industry Sector 
+Postfach 48 48 
+90026 NÜRNBERG 
+GERMANY 
+A5E03775446-AC 
+Ⓟ 12/2014 Subject to change 
+Copyright © Siemens AG 2013 - 2014. 
+All rights reserved 
+Legal information 
+Warning notice system 
+This manual contains notices you have to observe in order to ensure your personal safety, as well as to prevent 
+damage to property. The notices referring to your personal safety are highlighted in the manual by a safety alert 
+symbol, notices referring only to property damage have no safety alert symbol. These notices shown below are 
+graded according to the degree of danger. 
+ 
+ DANGER 
+indicates that death or severe personal injury will result if proper precautions are not taken. 
+ 
+ 
+ WARNING 
+indicates that death or severe personal injury may result if proper precautions are not taken. 
+ 
+ 
+ CAUTION 
+indicates that minor personal injury can result if proper precautions are not taken. 
+ 
+ NOTICE 
+indicates that property damage can result if proper precautions are not taken. 
+If more than one degree of danger is present, the warning notice representing the highest degree of danger will 
+be used. A notice warning of injury to persons with a safety alert symbol may also include a warning relating to 
+property damage. 
+Qualified Personnel 
+The product/system described in this documentation may be operated only by personnel qualified for the specific 
+task in accordance with the relevant documentation, in particular its warning notices and safety instructions. 
+Qualified personnel are those who, based on their training and experience, are capable of identifying risks and 
+avoiding potential hazards when working with these products/systems. 
+Proper use of Siemens products 
+Note the following: 
+ 
+ WARNING 
+Siemens products may only be used for the applications described in the catalog and in the relevant technical 
+documentation. If products and components from other manufacturers are used, these must be recommended 
+or approved by Siemens. Proper transport, storage, installation, assembly, commissioning, operation and 
+maintenance are required to ensure that the products operate safely and without any problems. The permissible 
+ambient conditions must be complied with. The information in the relevant documentation must be observed. 
+Trademarks 
+All names identified by ® are registered trademarks of Siemens AG. The remaining trademarks in this publication 
+may be trademarks whose use by third parties for their own purposes could violate the rights of the owner. 
+Disclaimer of Liability 
+We have reviewed the contents of this publication to ensure consistency with the hardware and software 
+described. Since variance cannot be precluded entirely, we cannot guarantee full consistency. However, the 
+information in this publication is reviewed regularly and any necessary corrections are included in subsequent 
+editions. 
+PAGE 3
+ 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 3 
+Preface  
+ 
+Purpose of the manual 
+This function manual provides an overview of the PROFIBUS communication system with 
+SIMATIC STEP 7 V13. 
+STEP 7 V13 is integrated into the powerful graphic Totally Integrated Automation Portal 
+(TIA Portal), the new integration platform for all automation software tools. 
+This function manual supports you in planning a PROFIBUS system. The manual is 
+structured into the following subject areas: 
+● PROFIBUS basics 
+● PROFIBUS diagnostics 
+● PROFIBUS functions 
+Basic knowledge required 
+The following knowledge is required in order to understand the manual: 
+● General knowledge of automation technology 
+● Knowledge of the industrial automation system SIMATIC 
+● Knowledge about the use of Windows-based computers 
+● Proficiency with STEP 7 
+Scope 
+This function manual is the basic documentation for all SIMATIC products from the 
+PROFIBUS environment. The product documentation is based on this documentation.  
+The examples are based on the functionality of the S7-1500 automation system. 
+Changes compared to previous version 
+As compared to the previous version (version 07/2014), this manual contains the following 
+amendments/changes: 
+● Extension of the documentation to STEP 7 (TIA Portal) V13 SP1 
+● Addition of the function Intelligent DP slaves (I-slaves) 
+● New guide 
+PAGE 4
+Preface  
+ 
+ PROFIBUS with STEP 7 V13 
+4 Function Manual, 12/2014, A5E03775446-AC 
+Conventions 
+STEP 7: We refer to "STEP 7" in this documentation as a synonym for the configuration and 
+programming software "STEP 7 as of V12 (TIA Portal)" and subsequent versions. 
+This documentation contains figures of the devices described. The figures may differ slightly 
+from the device supplied. 
+You should also pay particular attention to notes such as the one shown below:  
+ 
+ Note 
+A note contains important information on the product described in the documentation, on the 
+handling of the product or on the section of the documentation to which particular attention 
+should be paid. 
+ 
+Additional support 
+You will find information about available technical support in the appendix Service & Support  
+(Page 91). 
+The technical documentation for the individual SIMATIC products and systems is available 
+on the Internet (http://www.siemens.com/simatic-tech-doku-portal). 
+The online catalog and the ordering system are available on the Internet 
+(http://mall.industry.siemens.com). 
+Security information 
+Siemens provides products and solutions with industrial security functions that support the 
+secure operation of plants, solutions, machines, equipment and/or networks. They are 
+important components in a holistic industrial security concept. With this in mind, Siemens’ 
+products and solutions undergo continuous development. Siemens recommends strongly 
+that you regularly check for product updates.  
+For the secure operation of Siemens products and solutions, it is necessary to take suitable 
+preventive action (e.g. cell protection concept) and integrate each component into a holistic, 
+state-of-the-art industrial security concept. Third-party products that may be in use should 
+also be considered. You can find more information about industrial security on the Internet 
+(http://www.siemens.com/industrialsecurity). 
+To stay informed about product updates as they occur, sign up for a product-specific 
+newsletter. You can find more information on the Internet 
+(http://support.automation.siemens.com). 
+PAGE 5
+ 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 5 
+Table of contents  
+ 
+ Preface ................................ ................................ ................................ ................................ ...................  3 
+1 Documentation guide ................................ ................................ ................................ ..............................  7 
+2 Description ................................ ................................ ................................ ................................ ............ 10 
+2.1 Introduction to PROFIBUS ...................................................................................................... 10 
+2.1.1 Applications of PROFIBUS DP ............................................................................................... 11 
+2.1.2 PROFIBUS terminology .......................................................................................................... 12 
+2.1.3 PROFIBUS DP interface ......................................................................................................... 16 
+2.2 Structure of PROFIBUS networks .......................................................................................... 17 
+2.2.1 Passive network components for RS 485 networks ............................................................... 19 
+2.2.1.1 RS 485 cables ......................................................................................................................... 19 
+2.2.1.2 PROFIBUS FastConnect system ............................................................................................ 20 
+2.2.1.3 PROFIBUS bus connector ...................................................................................................... 22 
+2.2.1.4 M12 bus connector ................................................................................................................. 24 
+2.2.1.5 Bus terminals for RS 485 networks ........................................................................................ 24 
+2.2.1.6 M12 bus terminating resistor .................................................................................................. 24 
+2.2.2 Passive components for optical networks............................................................................... 25 
+2.2.2.1 Fiber-optic cables .................................................................................................................... 25 
+2.2.2.2 Plastic and PCF fiber-optic cables .......................................................................................... 26 
+2.2.2.3 Glass fiber-optic cables........................................................................................................... 27 
+2.2.3 Active network components .................................................................................................... 29 
+2.2.3.1 Network components in electrical networks............................................................................ 29 
+2.2.3.2 Network components in optical networks ............................................................................... 33 
+2.2.4 Examples for topology ............................................................................................................ 35 
+2.2.4.1 Topology with RS485 repeater ............................................................................................... 35 
+2.2.4.2 Topology with diagnostic repeater .......................................................................................... 37 
+2.2.4.3 OLM topology .......................................................................................................................... 40 
+2.2.4.4 WLAN topology ....................................................................................................................... 40 
+2.2.4.5 Connecting PROFIBUS to PROFINET ................................................................................... 41 
+3 Parameter assignment/addressing ................................ ................................ ................................ ........ 42 
+3.1 Assigning the DP slave to a DP master .................................................................................. 43 
+3.2 PROFIBUS address ................................................................................................................ 45 
+3.3 Network settings ..................................................................................................................... 46 
+3.4 Cable configuration ................................................................................................................. 49 
+3.5 Additional network stations ..................................................................................................... 51 
+3.6 Bus parameters ....................................................................................................................... 52 
+3.7 Constant bus cycle time .......................................................................................................... 55 
+PAGE 6
+Table of contents  
+ 
+ PROFIBUS with STEP 7 V13 
+6 Function Manual, 12/2014, A5E03775446-AC 
+4 Diagnostics ................................ ................................ ................................ ................................ ........... 57 
+4.1 Overview ................................................................................................................................ 57 
+4.2 Diagnostics using the display of the S7-1500 ........................................................................ 58 
+4.3 Diagnostics with the diagnostic repeater ............................................................................... 60 
+4.4 I&M data (Identification and Maintenance) ............................................................................ 61 
+5 Functions ................................ ................................ ................................ ................................ ..............  62 
+5.1 Isochronous mode ................................................................................................................. 62 
+5.1.1 What is isochronous mode? ................................................................................................... 62 
+5.1.2 Use of isochronous mode ...................................................................................................... 63 
+5.1.3 Isochronous applications ....................................................................................................... 64 
+5.1.4 Sequence of synchronization ................................................................................................. 65 
+5.1.5 Requirements for configuration .............................................................................................. 66 
+5.1.6 Configuring isochronous mode .............................................................................................. 67 
+5.1.7 Diagnostics and interrupt functions ........................................................................................ 70 
+5.1.8 Parameter settings for isochronous mode ............................................................................. 71 
+5.1.8.1 Viewing isochronous mode parameters ................................................................................. 71 
+5.1.8.2 Change parameters ............................................................................................................... 72 
+5.2 Acyclical data exchange ........................................................................................................ 74 
+5.3 SYNC/FREEZE groups .......................................................................................................... 75 
+5.4 Interrupts ................................................................................................................................ 77 
+5.5 Intelligent DP slaves (I-slaves) ............................................................................................... 78 
+5.5.1 I- slave functionality ................................................................................................................ 78 
+5.5.2 Data exchange with higher-level DP master .......................................................................... 81 
+5.5.3 Configuring an I-slave ............................................................................................................ 82 
+5.5.4 Configuring transfer areas ..................................................................................................... 84 
+5.5.5 Sample program..................................................................................................................... 85 
+5.5.6 Diagnostics and interrupt behavior ........................................................................................ 89 
+A Service & Support ................................ ................................ ................................ ................................ . 91 
+ Glossary ................................ ................................ ................................ ................................ ...............  94 
+ Index ................................ ................................ ................................ ................................ ....................  99 
+PAGE 7
+ 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 7 
+ Documentation guide 1 
+ 
+ 
+The documentation for the SIMATIC S7-1500 automation system and the SIMATIC 
+ET 200MP, ET 200SP and ET 200AL distributed I/O systems is divided into three areas. 
+This division allows you easier access to the specific information you require.  
+ 
+Basic information 
+System manuals and Getting Started describe in detail the configuration, installation, wiring 
+and commissioning of the SIMATIC S7-1500, ET 200MP, ET 200SP and ET 200AL systems. 
+The STEP 7 online help supports you in the configuration and programming. 
+Device information 
+Product manuals contain a compact description of the module-specific information, such as 
+properties, terminal diagrams, characteristics and technical specifications. 
+General information 
+The function manuals contain detailed descriptions on general topics such as diagnostics, 
+communication, Motion Control, Web server. 
+You can download the documentation free of charge from the Internet 
+(http://w3.siemens.com/mcms/industrial-automation-systems-simatic/en/manual-
+overview/Pages/Default.aspx). 
+Changes and additions to the manuals are documented in product information sheets.  
+PAGE 8
+Documentation guide  
+ 
+ PROFIBUS with STEP 7 V13 
+8 Function Manual, 12/2014, A5E03775446-AC 
+Manual Collections 
+The Manual Collections contain the complete documentation of the systems put together in 
+one file. 
+You will find the Manual Collections on the Internet: 
+● S7-1500/ET 200MP (http://support.automation.siemens.com/WW/view/en/86140384) 
+● ET 200SP (http://support.automation.siemens.com/WW/view/en/84133942) 
+● ET 200AL (http://support.automation.siemens.com/WW/view/en/95242965) 
+My Documentation Manager 
+The My Documentation Manager is used to combine entire manuals or only parts of these to 
+your own manual. 
+You can export the manual as PDF file or in a format that can be edited later.  
+You can find the My Documentation Manager on the Internet 
+(http://support.automation.siemens.com/WW/view/en/38715968). 
+Applications & Tools 
+Applications & Tools supports you with various tools and examples for solving your 
+automation tasks. Solutions are shown in interplay with multiple components in the system - 
+separated from the focus in individual products. 
+You can find Applications & Tools on the Internet 
+(http://support.automation.siemens.com/WW/view/en/20208582). 
+CAx Download Manager 
+The CAx Download Manager is used to access the current product data for your CAx or CAe 
+systems. 
+You configure your own download package with a few clicks. 
+In doing so you can select: 
+● Product images, 2D dimension drawings, 3D models, internal circuit diagrams, EPLAN 
+macro files 
+● Manuals, characteristics, operating manuals, certificates 
+● Product master data 
+You can find the CAx Download Manager on the Internet 
+(http://support.automation.siemens.com/WW/view/en/42455541). 
+PAGE 9
+ Documentation guide 
+ 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 9 
+TIA Selection Tool 
+With the TIA Selection Tool, you can select, configure and order devices for Totally 
+Integrated Automation (TIA). 
+This tool is the successor of the SIMATIC Selection Tool and combines the known 
+configurators for automation technology into one tool. 
+With the TIA Selection Tool, you can generate a complete order list from your product 
+selection or product configuration. 
+You can find the TIA Selection Tool on the Internet 
+(http://w3.siemens.com/mcms/topics/en/simatic/tia-selection-tool). 
+ 
+PAGE 10
+ 
+ PROFIBUS with STEP 7 V13 
+10 Function Manual, 12/2014, A5E03775446-AC 
+ Description 2 
+2.1 Introduction to PROFIBUS 
+What is PROFIBUS?  
+PROFIBUS is a bus system that networks automation systems and field devices that are 
+compatible with PROFIBUS. As communication medium for the field level, PROFIBUS is an 
+important part of Totally Integrated Automation (TIA).  
+The different communication networks can be used independent of one another or they can 
+be combined with each other. 
+PROFIBUS protocols  
+PROFIBUS DP (distributed I/O) is a communication network for the field level according to 
+IEC 61158-2 / EN 61158-2 with the hybrid access protocols token bus and master-slave. The 
+networking takes place by means of two-wire lines or fiber-optic cables. Data transmission 
+rates of 9.6 kbps to 12 Mbps are possible. 
+PROFIBUS PA is the PROFIBUS for process automation (PA). It connects the 
+PROFIBUS DP communication protocol with the MBP (Manchester Bus Powered) 
+transmission technology to IEC 61158-2. 
+PROFIBUS PA networks can be designed based on shielded, twisted two-wire lines 
+intrinsically safe and are therefore suitable for hazardous areas (Ex zones 0 and 1). The data 
+transmission rate is 31.25 kbps. 
+PAGE 11
+ Description 
+ 2.1 Introduction to PROFIBUS 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 11 
+2.1.1 Applications of PROFIBUS DP 
+Introduction 
+The efficiency of control systems is not determined by automation devices alone, but 
+depends to a large extent on the overall configuration of an automation solution. This 
+includes a powerful communication system in addition to plant visualization and operator 
+control and monitoring. 
+The STEP 7 engineering tool supports you during the engineering and configuration of an 
+automation solution.  
+Applications of PROFIBUS DP  
+The PROFIBUS network offers wireless connection of several controllers, components and 
+subnets as electrical network, optical network or by using links. Sensors and actuators are 
+controlled centrally by means of PROFIBUS DP. 
+The following figure shows connection options to PROFIBUS DP: 
+ 
+Figure 2-1 Connection options to PROFIBUS DP 
+PAGE 12
+Description  
+2.1 Introduction to PROFIBUS 
+ PROFIBUS with STEP 7 V13 
+12 Function Manual, 12/2014, A5E03775446-AC 
+Objectives of PROFIBUS DP 
+Distributed automation systems are increasingly used in production and process automation. 
+This means a complex control task is divided up into smaller, more transparent subtasks with 
+distributed control systems. This creates a high demand for communication between the 
+distributed systems.  
+Distributed systems offer the following benefits: 
+● Independent and simultaneous commissioning of individual devices is possible  
+● Small, manageable programs 
+● Parallel processing due to distributed automation systems 
+● Reduced response times 
+● Higher-level structures can take on additional diagnostics and logging functions. 
+● Increased plant availability because the rest of the overall system can continue to work 
+when a subordinate station fails. 
+2.1.2 PROFIBUS terminology 
+Definition: Devices in the PROFIBUS environment  
+In the PROFIBUS environment, "device" is the generic term for: 
+● Automation systems (for example, PLC, PC) 
+● Distributed I/O systems 
+● Field devices (for example, hydraulic devices, pneumatic devices) 
+● Active network components (e.g., diagnostic repeater, optical link module) 
+● Gateways to AS interface or other fieldbus systems 
+PAGE 13
+ Description 
+ 2.1 Introduction to PROFIBUS 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 13 
+Devices with PROFIBUS DP  
+The figure below shows the most important components with PROFIBUS DP. The table 
+below lists the designations of the individual components. 
+ 
+Number PROFIBUS Note 
+① DP master system   
+② DP master  Device used to address the connected DP slaves. The DP master 
+exchanges input and output signals with field devices. 
+The DP master is often the controller on which the automation  
+program runs. 
+③ PG/PC PG/PC/HMI device for commissioning and diagnostics  
+DP master of class 2 
+④ PROFIBUS Network infrastructure 
+⑤ HMI Device for operating and monitoring functions 
+⑥ DP slave  Distributed field device assigned to the DP master, e.g., valve  
+terminals, frequency converters. 
+⑦ I-slave  Intelligent DP slave 
+Figure 2-2 Devices with PROFIBUS 
+PAGE 14
+Description  
+2.1 Introduction to PROFIBUS 
+ PROFIBUS with STEP 7 V13 
+14 Function Manual, 12/2014, A5E03775446-AC 
+Overview of I/O communication  
+I/O communication is the reading or writing of inputs/outputs of the distributed I/O. The figure 
+below gives you an overview of I/O communication using PROFIBUS DP: 
+ 
+Figure 2-3 I/O communication using PROFIBUS DP 
+I/O communication is also available with the communication module (CM) or the interface 
+module (IM) with integrated DP interface. These DP interfaces behave like integrated DP 
+interfaces of the CPU. 
+PAGE 15
+ Description 
+ 2.1 Introduction to PROFIBUS 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 15 
+I/O communication using PROFIBUS DP 
+Table 2- 1 I/O communication using PROFIBUS DP 
+Communication between … Explanation 
+DP master and DP slave The data exchange between a DP master and DP slaves with I/O modules takes place as 
+follows: The DP master queries the DP slaves of its master system one after the other, 
+receives input values from the DP slaves, and transmits output data to the DP slaves  
+(master-slave principle). 
+DP master and I-slave A fixed amount of data is transmitted cyclically between the user programs in CPUs of DP 
+masters and I-slaves.  
+The DP master does not access the I/O modules of the I-slave, but instead accesses  
+configured address areas, called transfer areas, that can be inside or outside the process  
+image of the I-slave CPU. If parts of the process image are used as transfer areas, these 
+may not be used for actual I/O modules.  
+Data transmission takes place with load and transfer operations using the process image or 
+by direct access. 
+DP master and DP master A fixed amount of data is transmitted cyclically between the user programs in CPUs of DP 
+masters. A DP/DP coupler is required as additional hardware. 
+The DP masters mutually access configured address areas, called transfer areas, inside or 
+outside the process image of the CPUs. If parts of the process image are used as transfer 
+areas, these may not be used for actual I/O modules.  
+Data transmission takes place with load and transfer operations using the process image or 
+by direct access. 
+  
+Additional information 
+You can find additional information on the hardware configuration in the STEP 7 online help. 
+PAGE 16
+Description  
+2.1 Introduction to PROFIBUS 
+ PROFIBUS with STEP 7 V13 
+16 Function Manual, 12/2014, A5E03775446-AC 
+2.1.3 PROFIBUS DP interface 
+Properties  
+A PROFIBUS device has at least one PROFIBUS interface with an electrical (RS 485) 
+interface or optical (Polymer Optical Fiber, POF) interface.  
+Table 2- 2 Properties of the PROFIBUS DP interface 
+Standard PROFIBUS: IEC 61158/61784 
+Physical bus/media PROFIBUS cables (twisted two-wire lines RS 485 or  
+fiber-optic cables) 
+Transmission rate 9.6 kbps to 12 Mbps 
+  
+Representation of the PROFIBUS DP interface in STEP 7  
+In the device view of STEP 7, the PROFIBUS DP interfaces for a DP master and a DP slave 
+are highlighted by a purple rectangle: 
+ 
+Figure 2-4 PROFIBUS DP interfaces 
+ 
+PAGE 17
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 17 
+2.2 Structure of PROFIBUS networks 
+Contents of this chapter    
+The following chapter provides background information on building your communication 
+network. 
+● Overview of the most important passive network components: These are network 
+components that forward a signal without the possibility of actively influencing it, for 
+example, cables, connectors. 
+● Overview of the most important active network components: These are network 
+components that actively affect a signal, for example, repeaters, diagnostic repeaters.  
+● Overview of the most common network structures (topologies) 
+Physical connections of industrial networks 
+PROFIBUS devices can be networked in industrial plants in two different physical ways:  
+● By means of electrical signals via copper cables 
+● By means of optical signals via fiber-optic cables 
+PAGE 18
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+18 Function Manual, 12/2014, A5E03775446-AC 
+Selection criteria for networking  
+The table below includes selection criteria for electrical and optical networking of PROFIBUS 
+devices:  
+Table 2- 3 Selection criteria for electrical and optical networking 
+Criteria Electrical 
+PROFIBUS 
+Optical network 
+with OLM 
+Optical network 
+with OBT 
+Transmission 
+medium 
+Shielded two-wire 
+line 
+● – – 
+POF – ● ● 
+PCF – ● ● 
+Glass – ● – 
+Distances Max. network span PROFIBUS DP: 
+9.6 km 
+PROFIBUS PA: 
+1.9 km 
+90 km 9.6 km 
+Between two devices up to 1 km 1) up to 15 km 2) up to 300 m 2) 
+Topology Bus ● – – 
+Linear – ● ● 
+Tree ● ● ● 
+Ring – ● ● 
+Transmission 
+protocols 
+ DP, PA DP, PA DP 
+Connection of 
+devices by means 
+of 
+OLM – ● – 
+Integrated interfaces ● – ● 
+Bus terminal ● – ● 
+Bus connector ● – – 
+Electrical network 
+segments can be 
+connected 
+ ● ● – 
+ ● Suitable 
+– Not relevant for this application 
+1) Depending on data rate and type of service used 
+2) Depending on cable type used 
+Installation guideline for PROFIBUS networks 
+A PROFIBUS segment must be terminated at the start and end; passively with a connector 
+or actively with a bus terminating resistor. 
+The same principles apply to the installation of a PROFIBUS network as described in the 
+SIMATIC NET PROFIBUS networks 
+(http://support.automation.siemens.com/WW/view/en/35222591) manual. 
+PAGE 19
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 19 
+2.2.1 Passive network components for RS 485 networks 
+2.2.1.1 RS 485 cables 
+Introduction  
+The following applies to all RS 485 cables for PROFIBUS from Siemens: 
+● Their double shielding makes them especially suited for laying in industrial environments 
+with electromagnetic interference. 
+● A continuous grounding concept can be implemented by means of the outer shield of the 
+bus cable and the ground terminals of the bus terminals. 
+● The imprinted meter marking makes it easier to determine the length (accuracy ±5%).  
+RS 485 cables for PROFIBUS 
+SIMATIC NET PROFIBUS cables are available in different versions which allow optimum 
+adaptation to different areas of application: 
+● FC Standard Cable GP (bus cable for fixed laying inside buildings) 
+● FC Standard Cable IS GP (bus cable for hazardous area) 
+● FC-FRNC Cable GP (bus cable with halogen-free protective jacket for use inside 
+buildings) 
+● FC Food Cable (bus cable with PE jacket for use in the food and beverage industry)  
+● FC Robust Cable (bus cable with PUR jacket for environments subject to chemical and 
+mechanical stress) 
+● FC Ground Cable (ground cable with PE jacket) 
+● PROFIBUS FC Trailing Cable (trailing cable for tow chains) 
+● PROFIBUS Festoon Cable (bus cable for festoon mounting) 
+● PROFIBUS Torsion Cable (torsion-free bus cable for networking movable plant parts, for 
+example, robots) 
+● PROFIBUS FC Flexible Cable (bus cable for machine parts that are moved infrequently 
+or cabinet doors) 
+● SIENOPYR-FR ship cable (for permanent laying on ships and off-shore units in all rooms 
+and on open deck) 
+● PROFIBUS Hybrid Standard Cable (hybrid cable with 2 power wires (1.5 mm2) for data 
+and power supply of the ET 200pro) 
+● PROFIBUS Hybrid Robust Cable (trailable hybrid cable with 2 power wires (1.5 mm2) for 
+data and power supply of the ET 200pro) 
+PAGE 20
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+20 Function Manual, 12/2014, A5E03775446-AC 
+Maximum cable lengths  
+When using copper cables, the maximum size of a PROFIBUS segment depends on the 
+transmission rate. 
+If these lengths are not sufficient for your application, you can expand the network by using 
+repeaters. You can achieve a maximum size by cascading up to nine repeaters.  
+Table 2- 4 Maximum cable lengths 
+Transmission rate  Maximum cable length of a bus 
+segment 
+Maximum distance between two 
+stations 
+9.6 to 187.5 kbps 1000 m 10000 m 
+500 kbps 400 m 4000 m 
+1.5 Mbps 200 m 2000 m 
+3 to 12 Mbps 100 m 1000 m 
+  
+2.2.1.2 PROFIBUS FastConnect system 
+PROFIBUS FastConnect (FC)  
+PROFIBUS FastConnect is a system for fast and easy fabrication of PROFIBUS copper 
+cables. 
+The system consists of three components: 
+● FastConnect bus cables for quick mounting 
+● FastConnect stripping tool 
+● FastConnect bus connector for PROFIBUS with insulation displacement method  
+FastConnect bus cables and stripping tool 
+The special design of the FastConnect bus cables allows for the use of the FastConnect 
+stripping tool to accurately strip away the protective jacket and the braided shield in one 
+step. The connection of the prepared cables takes place in the FastConnect bus connectors 
+using the insulation displacement method. 
+All PROFIBUS FastConnect bus cables can also be connected to the conventional bus 
+connectors with screw-type terminals. 
+PAGE 21
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 21 
+Area of application 
+You need FastConnect bus connectors for PROFIBUS for the following applications:  
+● Connect devices with an electrical 9-pin D-Sub interface to IEC 61158-2 directly with 
+SIMATIC NET PROFIBUS cables. 
+● Connect electrical segments or individual devices to the Optical Link Module (OLM) and 
+Optical Bus Terminal (OBT). 
+● Connect devices or programming devices to the repeater. 
+Versions 
+The FastConnect bus connector in degree of protection IP20 is available in the following 
+versions: 
+● with integrated terminating resistor and isolating function 
+● with or without PG socket 
+● with a cable outlet of 35°, 90° or 180° 
+● with device category 3G suitable for zone 2 hazardous area 
+ 
+ 
+Figure 2-5 Example for PROFIBUS FastConnect bus connector with PG socket, cable outlet 90° 
+PAGE 22
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+22 Function Manual, 12/2014, A5E03775446-AC 
+Additional information 
+For additional information on the available components visit the Siemens Mall 
+(http://mall.industry.siemens.com). 
+2.2.1.3 PROFIBUS bus connector 
+Area of application  
+You need PROFIBUS bus connectors for the following applications: 
+● Connect devices with a 9-pin D-Sub interface to IEC 61158-2 directly with the  
+SIMATIC NET PROFIBUS cables. 
+● Connect electrical segments or individual devices to the Optical Link Module (OLM) and 
+Optical Bus Terminal (OBT). 
+● Connect devices or programming devices to the repeater. 
+PAGE 23
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 23 
+Versions 
+The PROFIBUS bus connector in degree of protection IP20 is available in the following 
+versions: 
+● with integrated terminating resistor and isolating function 
+● with or without PG socket 
+● with a cable outlet of 35°, 90° or 180° 
+● with device category 3G suitable for zone 2 hazardous area 
+ 
+ 
+Figure 2-6 Example for PROFIBUS bus connector with PG socket, cable outlet 35° 
+Additional information 
+For additional information on the available components visit the Siemens Mall 
+(http://mall.industry.siemens.com). 
+PAGE 24
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+24 Function Manual, 12/2014, A5E03775446-AC 
+2.2.1.4 M12 bus connector 
+Area of application    
+Devices with an electrical M12 interface can use the M12 bus connector for SIMATIC NET 
+PROFIBUS for direct connection with the SIMATIC NET PROFIBUS cables. 
+The M12 bus connector in degree of protection IP65 is available in the following versions:  
+● with screw-type terminals 
+● with insulation displacement termination 
+● with a cable outlet of 180° 
+2.2.1.5 Bus terminals for RS 485 networks 
+Bus terminal RS 485 and bus terminal M12    
+A bus terminal is used for the connection of an individual PROFIBUS station with RS485 
+interface to the PROFIBUS bus cable. 
+Bus terminals in degree of protection IP20 are available in the following versions: 
+● Bus terminal RS 485 with or without PG interface, transmission rate 9.6 kbps to 1.5 Mbps, 
+integrated terminating resistor combination (connectible), with 1.5 m and 3 m connecting 
+cable 
+● Bus terminal M12, transmission rate 9.6 kbps to 12 Mbps, integrated terminating resistor 
+combination with isolating function, with 1.5 m connecting cable 
+2.2.1.6 M12 bus terminating resistor 
+Terminating segment with terminating resistor    
+If there is a station with M12 connection system at the beginning or end of a PROFIBUS 
+segment, you need an M12 bus terminating resistor. 
+The M12 PROFIBUS connection of a device consists of an M12 socket for the infeed and an 
+M12 male connector to loop-through the bus signal.  
+This means you need one bus terminating resistor with male contacts (6GK1905- 0EC00) 
+and with female contacts (6GK1905-0ED00) for each M12 bus cable. 
+PAGE 25
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 25 
+2.2.2 Passive components for optical networks 
+2.2.2.1 Fiber-optic cables 
+Types of fiber-optic cables    
+Data transmission with fiber-optic cables takes place through modulation of electromagnetic 
+waves in the range of visible and invisible light. These cables are made of high- quality plastic 
+fibers and glass fibers: 
+● Plastic and PCF fiber-optic cables (Page 26) 
+● Glass fiber-optic cables (Page 27) 
+The different types of fiber-optic cables provide solutions matched to the operating and 
+environmental conditions for the connection of components with each other.  
+Benefits 
+Fiber-optic cables offer the following benefits when compared with electrical cables:  
+● Galvanic isolation of the devices and segments 
+● No potential equalization currents 
+● No impact on transmission path through external electromagnetic interference  
+● No lightning protection elements required 
+● No noise radiation along the transmission route 
+● Low weight 
+● Depending on the type of fiber you can implement cable lengths up to few kilometers at 
+even higher transmission rates. 
+● No dependency of the maximum permitted distances on the transmission rate  
+Additional information 
+Additional information of the properties and technical specifications of the passive 
+components and connectors for fiber-optic cables is available in the PROFIBUS network 
+manual (http://support.automation.siemens.com/WW/view/en/35222591). 
+ 
+PAGE 26
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+26 Function Manual, 12/2014, A5E03775446-AC 
+2.2.2.2 Plastic and PCF fiber-optic cables 
+Plastic and PCF fiber-optic cables  
+Plastic (POF) and PCF fiber-optic cables are used for the connection of Optical Link modules 
+with connections for plastic fiber-optic cables (OLM/P), Optical Bus Terminal (OBT) and 
+devices with integrated optical interfaces. Under certain conditions, they are an inexpensive 
+alternative to conventional glass fiber-optic cables. 
+Plastic Fiber Optic duplex core 
+The plastic fiber-optic duplex core is a flat dual core with PVC inner jacket without protective 
+jacket. The cable can be easily assembled on-site.  
+The cable is intended for indoor applications with low mechanical loads or inside cabinets. 
+For OLM connections and with integrated optical interfaces you cover a length of up to 50 m 
+between two devices with this cable. 
+Plastic Fiber Optic standard cable 
+The plastic fiber optic standard cable consists of two plastic fibers with robust polyamide 
+inner jacket surrounded by Kevlar tensile elements and a purple PVC protective jacket. The 
+cable can be easily assembled on-site.  
+The robust round cable is suited for indoor applications. The maximum distance that can be 
+covered is 80 m for OLM/P connections and 50 m with integrated optical interfaces and OBT. 
+PCF Standard Cable 
+The pre-assembled PCF Standard Cable consists of two PCF fibers surrounded by Kevlar 
+tensile elements and a purple PVC protective jacket. It is always supplied with a pulling aid 
+installed on one end to pull in the cable channels. 
+The robust round cable is suited for indoor applications with cable lengths up to 400 m 
+(OLM) or 300 m (integrated optical interfaces, OBT) between two devices. 
+PCF Standard Cable GP 
+The PCF Standard Cable GP consists of two PCF fibers surrounded by Aramid tensile 
+elements and a green PVC protective jacket. The cable is pre-assembled and can be 
+ordered by the meter. It is supplied with a pulling aid installed on one end to pull in the cable 
+channels.  
+The robust round cable is suited for indoor and outdoor applications with cable lengths up to 
+400 m (OLM) or 300 m (integrated optical interfaces, OBT) between two devices. 
+PAGE 27
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 27 
+PCF Trailing Cable 
+The PCF Trailing Cable consists of two PCF fibers surrounded by Aramid tensile elements 
+and a green PUR protective jacket. The cable is pre-assembled and can be ordered by the 
+meter. It is supplied with a pulling aid installed on one end to pull in the cable channels.  
+The robust round cable is suited for moving indoor and outdoor applications with cable 
+lengths up to 400 m (OLM) or 300 m (integrated optical interfaces, OBT) between two 
+devices. 
+PCF Trailing Cable GP 
+The PCF Trailing Cable GP consists of two PCF fibers surrounded by Aramid tensile 
+elements and a green PVC protective jacket. The cable is pre-assembled and can be 
+ordered by the meter. It is supplied with a pulling aid installed on one end to pull in the cable 
+channels. 
+The robust round cable is suited for moving indoor and outdoor applications with cable 
+lengths up to 400 m (OLM) or 300 m (integrated optical interfaces, OBT) between two 
+devices. 
+2.2.2.3 Glass fiber-optic cables 
+Glass fiber-optic cables    
+Glass fiber-optic cables are suitable for connection of optical interfaces that work in the 
+wavelength range around 850 nm and around 1300 nm. They include two graded-index 
+multimode fibers of the type 62.5/125 μm. 
+The glass fiber-optic cables are available in different versions which makes for an optimum 
+adaptation to different areas of application: 
+● Fiber Optic standard cable 
+● INDOOR Fiber Optic indoor cable 
+● Flexible Fiber Optic trailing cable 
+Fiber Optic standard cable 
+The standard cable is the universal cable for indoor and outdoor use. 
+INDOOR Fiber Optic indoor cable 
+The indoor cable is intended for weather-proof indoor use. It is halogen-free, non-crush and 
+flame-retardant. 
+PAGE 28
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+28 Function Manual, 12/2014, A5E03775446-AC 
+Flexible Fiber Optic trailing cable 
+The trailing cable was designed for the special application of forced movement, for example, 
+for constantly moved machine parts such as trailing chains. It is mechanically designed for 
+100,000 bending cycles by ±90° (with the specified minimum radius). Integrated dummy 
+elements ensure a round cross-section of the cable. The trailing cable can be used indoors 
+and outdoors.  
+Maximum distances between two optical link modules 
+The following distances may not be exceeded between two OLMs regardless of the optical 
+power budget: 
+● OLM/P11, OLM/P12: 400 m 
+● OLM/G11, OLM/G12, OLM/G12-EEC: 3 km 
+● OLM/G11-1300, OLM/G12-1300: 15 km 
+Additional information 
+All operating instructions 
+(http://support.automation.siemens.com/WW/view/en/10805951/133300) of the 
+SIMATIC NET bus components include information on distances that can be covered with 
+the SIMATIC NET glass fiber-optic cables. You can configure your optical network without 
+any calculations using simple limits. 
+PAGE 29
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 29 
+2.2.3 Active network components 
+2.2.3.1 Network components in electrical networks 
+Active network components  
+The following active network components are available for PROFIBUS in electrical networks:  
+● Repeater RS485 
+● Diagnostics repeater 
+● PROFIBUS Terminator 
+● DP/DP coupler 
+● IE/PB Link PN IO 
+● IWLAN/PB Link PN IO 
+● Active components for the connection of CAN 
+● Active components for the gateway between PROFIBUS and AS-Interface 
+– DP/AS-i LINK Advanced 
+– DP/AS-Interface Link 20E 
+– DP/AS-i F-Link 
+RS485 repeater 
+The RS485 IP20 repeater connects two PROFIBUS bus segments in RS485 technology with 
+up to 32 devices. It provides transmission rates from 9.6 kbps to 12 Mbps. 
+The RS485 repeater refreshes a signal regarding amplitude, signal width and edge 
+steepness between two segments. It is used when more than 32 stations are connected to 
+the bus or the maximum cable length of a segment is exceeded. 
+Bus segments can be operated ungrounded (galvanic isolation of segments) with an RS485 
+repeater. 
+Diagnostics repeater  
+The diagnostic repeater connects three PROFIBUS segments in RS485 technology, two of 
+which are diagnostics-capable segments with 31 devices each. It is designed as DP slave to 
+send diagnostics alarms to the DP master. 
+The diagnostic function provides the location and the cause of cable faults, such as wire 
+break or missing terminating resistors. The fault location is indicated relative to the existing 
+devices. 
+The diagnostics repeater refreshes a signal regarding amplitude, signal width and edge 
+steepness between the segments. The cascading depth between any two PROFIBUS 
+devices is limited to nine diagnostics repeaters. 
+PAGE 30
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+30 Function Manual, 12/2014, A5E03775446-AC 
+PROFIBUS Terminator  
+The PROFIBUS Terminator forms an active bus termination. Bus devices can be s witched 
+off, removed or replaced without affecting data transmission. This is particularly true for bus 
+devices on both ends of the bus cable at which terminating resistors must be connected or 
+supplied. The PROFIBUS Terminator can be mounted on a standard mounting rail. 
+IE/PB Link PN for the connection of a PROFIBUS segment to an Industrial Ethernet network  
+The IE/PB Link PN IO as independent component provides the seamless transition between 
+Industrial Ethernet and PROFIBUS. Through the use of IE/PB Link PN IO as substitute on 
+the Ethernet, the existing PROFIBUS devices can continue to be used and can be integrated 
+into a PROFINET application. 
+A PROFINET IO controller is required for this configuration. The IE/PB Link PN acts as 
+master on the PROFIBUS end. 
+IWLAN/PB Link PN IO as gateway between LAN and PROFIBUS  
+PROFIBUS devices can be coupled to PROFINET IO by means of IWLAN/PB Link PN IO. 
+This means you can integrate existing PROFIBUS configurations into PROFINET.  
+The IWLAN/PB Link PN IO supports the use of IWLAN and WLAN antennas for wireless 
+data transmission, for example, in suspended monorail systems or conveyor systems. 
+Because of the PROFINET support, the numerous PROFIBUS system services, for 
+example, diagnostics by bus, can continue to be used. 
+A PROFINET IO controller is required for this configuration. The IWLAN/PB Link PN IO acts 
+as master on the PROFIBUS end. 
+CANopen module for connection to CAN  
+You can use the CANopen module to easily connect CANopen applications to PROFIBUS.  
+Typical areas of application: 
+● Control of hydraulic valves/hydraulic axes in vehicles 
+● Control of motors in packaging machines and on conveyor belts 
+● Use in wind turbines for detection of angular encoders 
+● Detection of HMI devices on machines, e.g., joysticks 
+● Detection of measured data from displacement transducers, inclination sensors or angle 
+encoders on tower cranes or gantry cranes 
+DP/DP coupler for connection of two PROFIBUS networks  
+The PROFIBUS DP/DP coupler is used to connect two PROFIBUS DP networks. Data  
+(0 to 244 bytes) is transmitted from the DP master of the first network to the DP master of 
+another network and vice versa. 
+The DP/DP coupler comes equipped with two independent DP interfaces that establish the 
+connection to the two DP networks. There is one slave at each DP network. The data 
+exchange between the two DP networks takes place by internal copying in the coupler.  
+PAGE 31
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 31 
+DP/PA bus link for connection of PROFIBUS PA  
+The DP/PA bus link is the connection between PROFIBUS DP and PROFIBUS PA. This 
+means it connects the process control systems with the field devices of the process 
+automation. 
+The following components are available for a DP/PA bus link: 
+● DP/PA coupler Ex [ia] 
+● DP/PA coupler FDC 157-0 
+● Interface module IM 153-2 for establishing a DP/PA link. 
+● Active field distributor AFDiS for hazardous areas 
+Active components for the gateway between PROFIBUS and AS-Interface 
+● DP/AS-i LINK Advanced: 
+The DP/AS-i LINK Advanced is PROFIBUS DPV1 slave (according to 
+IEC 61158-2/EN 61158-2) and AS-Interface master (according to AS-Interface 
+specification V3.0 according to EN 50295) and provides transparent data access to  
+AS-Interface from PROFIBUS DP.  
+PROFIBUS DP masters can cyclically exchange I/O data with the AS-Interface; 
+DP masters with acyclic services can also make AS-Interface master calls. The DP/AS-i 
+LINK Advanced is particularly suited for distributed configurations and for the connection 
+of a subordinate AS-Interface network. 
+The DP/AS-i LINK Advanced in the version as AS-Interface single master is completely 
+sufficient for applications with typical configuration limits. 
+For applications with high configuration limits, the DP/AS-i LINK Advanced is used as 
+AS-Interface double master. In this case, the duplicate configuration limits can be used 
+on two independently running AS-Interface strands. 
+● DP/AS-Interface Link 20E: 
+The DP/AS-Interface Link 20E is PROFIBUS DP slave (in accordance with EN 61158) 
+and AS-Interface master (in accordance with AS-Interface specification V3.0 according to 
+EN 50295) and supports operation of the AS-Interface on PROFIBUS DP. 
+Single PROFIBUS masters can cyclically exchange I/O data with the AS-Interface; 
+masters with acyclic services can exchange I/O data and make master calls.  
+● DP/AS-i F-Link: 
+The DP/AS-i F-Link is PROFIBUS DP-V1 slave (according to EN 61158) and AS-i master 
+(according to AS-Interface specification V3.0 to EN 50295) and provides transparent data 
+access to AS-Interface from PROFIBUS DP. The DP/AS-i F-Link is also the only AS-i 
+master that can forward safety-oriented input data of ASIsafe slaves to a fail-safe CPU 
+with PROFIBUS DP master by means of the PROFIsafe protocol. Additional safety 
+cabling or monitoring is not required (in particular, no AS-Interface safety monitor). 
+Depending on the slave type, you can transmit binary values or analog values. All slaves 
+according to AS-Interface specification V2.0, V2.1 or V3.0 can be operated as AS-i 
+slaves.  
+As fully-featured AS-i master according to specification V3.0, you can use higher 
+configuration limits on the AS-i network (496 inputs and outputs each, up to 62 digital or 
+analog slaves). 
+PAGE 32
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+32 Function Manual, 12/2014, A5E03775446-AC 
+Additional information 
+Information on the components is available in the Siemens Mall 
+(http://mall.industry.siemens.com). 
+Additional information is available in these manuals: 
+● PROFIBUS Network Manual 
+(http://support.automation.siemens.com/WW/view/en/35222591) 
+● Diagnostic repeater (http://support.automation.siemens.com/WW/view/en/7915183) 
+● DP/DP Coupler (http://support.automation.siemens.com/WW/view/en/1179382) 
+● SIMATIC NET Twisted-Pair and Fiber-Optic Networks 
+(http://support.automation.siemens.com/WW/view/en/8763736) 
+● Basics on Setting up an Industrial Wireless LAN 
+(http://support.automation.siemens.com/WW/view/en/9975764) 
+● SIMATIC bus links, DP/PA coupler, active field distributors, DP/PA Link and Y Link 
+(http://support.automation.siemens.com/WW/view/en/1142696) 
+● Information on the CANopen module is available on the Internet  
+(http://www.hms-networks.com/can-for-et200s). 
+● DP/AS-interface LINK Advanced 
+(http://support.automation.siemens.com/WW/view/en/22502958/133300) manual  
+● DP/AS-i F-Link (http://support.automation.siemens.com/WW/view/en/24196041) manual 
+See also 
+Topology with RS485 repeater (Page 35) 
+OLM topology (Page 40) 
+WLAN topology (Page 40) 
+Connecting PROFIBUS to PROFINET (Page 41) 
+PAGE 33
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 33 
+2.2.3.2 Network components in optical networks 
+Active network components   
+The following active network components are available for PROFIBUS in optical networks:  
+● Optical Link Module OLM 
+● Optical Bus Terminal OBT 
+Optical Link Module OLM    
+You can use the PROFIBUS Optical Link Modul OLM to install PROFIBUS networks in line, 
+star structure and redundant ring structure. 
+The transmission rate of a fiber-optic cable line does not depend on the distance and can be 
+9.6 kbps to 12 Mbps. 
+Applications for OLM include, for example, plant buses on PROFIBUS base, networking 
+across buildings using glass fiber-optic cables, mixed networks with electrical and optical 
+segments, large networks (road tunnels, traffic guidance systems) and networks with high 
+demands on availability (redundant ring networks). 
+Optical Link modules can be combined by means of an RS485 interface and individual 
+devices or entire electrical segments can be integrated into the optical PROFIBUS network.  
+The following distances may not be exceeded between two OLMs regardless of the optical 
+power budget: 
+● OLM/P11, OLM/P12: 400 m 
+● OLM/G11, OLM/G12, OLM/G12-EEC: 3 km 
+● OLM/G11-1300, OLM/G12-1300: 15 km 
+Optical Bus Terminal OBT (optical bus terminal)    
+The Optical Bus Terminal connects an individual PROFIBUS device without integrated 
+optical interface or a PROFIBUS RS 485 segment with up to 31 devices to an optical 
+PROFIBUS. 
+An individual PROFIBUS DP device is connected with its RS 485 interface by means of a 
+PROFIBUS cable with integrated terminating resistor, for example, connecting cable 830-1T, 
+to the RS 485 interface of the OBT. The OBT is integrated into the optical line by means of 
+two optical interfaces. 
+The following optical transmission media can be connected to the OBT: 
+● Plastic fiber-optic cable up to 50 m single distance length. They can be assembled on-site 
+with two 2x2 Simplex connectors. 
+● PCF fiber-optic cable up to 300 m single distance length. The cables are delivered  
+pre-assembled. 
+PAGE 34
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+34 Function Manual, 12/2014, A5E03775446-AC 
+Additional information 
+Information on the components is available in the Siemens Mall 
+(http://mall.industry.siemens.com). 
+Additional information is available in these manuals: 
+● PROFIBUS network manual 
+(http://support.automation.siemens.com/WW/view/en/35222591) 
+● SIMATIC NET PROFIBUS, Optical Link Module 
+(http://support.automation.siemens.com/WW/view/de/56606534/0/en) 
+● SIMATC NET Twisted-Pair and Fiber-Optic Networks 
+(http://support.automation.siemens.com/WW/view/en/8763736) 
+PAGE 35
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 35 
+2.2.4 Examples for topology 
+2.2.4.1 Topology with RS485 repeater 
+Configuration options with the RS485 repeater  
+You can operate the RS485 repeater in the following configurations: 
+ 
+Figure 2-7 Segment 1 and segment 2 connected to RS485 repeater 
+ 
+Figure 2-8 Segment 1 and segment 2 looped-through to RS485 repeater 
+ 
+Figure 2-9 Segment 1 connected to RS485 repeater and segment 2 looped-through to RS485 
+repeater 
+① Connect terminating resistor 
+② Do not connect terminating resistor 
+PAGE 36
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+36 Function Manual, 12/2014, A5E03775446-AC 
+Configuration example 
+ 
+Figure 2-10 Configuration example with five RS485 repeaters 
+ 
+① Connect terminating resistor 
+② Do not connect terminating resistor 
+Maximum configuration 
+If you install a PROFIBUS network with RS485 repeaters, you may not connect more than 
+nine RS485 repeaters in series. 
+PAGE 37
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 37 
+2.2.4.2 Topology with diagnostic repeater 
+Diagnostic repeater with three segments   
+You may not exceed the maximum permitted cable length of 100 m per segment that can be 
+monitored for the diagnostic repeater. The segments connected to DP2 and DP3 are 
+diagnostics-capable. The cable length that can be monitored is limited for some cable types. 
+Maximum cascade depth   
+You can connect up to nine diagnostic repeaters in series between any two PROFIBUS 
+stations.  
+ 
+Figure 2-11 Schematic layout of a PROFIBUS network with maximum possible cascade depth at 
+diagnostic repeaters 
+PAGE 38
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+38 Function Manual, 12/2014, A5E03775446-AC 
+Example: Maximum cascade depth exceeded 
+ 
+Figure 2-12 Maximum cascade depth exceeded 
+PAGE 39
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 39 
+Layout with several segments 
+You can increase the number of used diagnostic repeaters by using several segments. The 
+example shows a layout in which the maximum cascade depth is exceeded at two segments.  
+ 
+Figure 2-13 Layout with several segments, maximum cascade depth exceeded 
+Additional information 
+Additional information is available in the Diagnostic Repeater 
+(http://support.automation.siemens.com/WW/view/en/7915183) manual. 
+ 
+PAGE 40
+Description  
+2.2 Structure of PROFIBUS networks 
+ PROFIBUS with STEP 7 V13 
+40 Function Manual, 12/2014, A5E03775446-AC 
+2.2.4.3 OLM topology 
+Combination of electrical and optical networks with OLM  
+Additional distances can be covered by means of the Optical Link Module.  
+Because bus cables across several buildings are particularly vulnerable to damage caused 
+by overvoltage (effect of lightning), the devices in the connected bus segment must be 
+protected against overvoltage. 
+ 
+ 
+Figure 2-14 Combination of electrical and optical networks 
+2.2.4.4 WLAN topology 
+IWLAN/PB Link PN IO as gateway between Industrial Wireless LAN and PROFIBUS  
+The IWLAN/PB Link PN IO supports the use of IWLAN and WLAN antennas for wireless 
+data transmission. This means the numerous PROFIBUS system services, for example, 
+diagnostic by bus, can be used throughout. 
+ 
+Figure 2-15 PROFIBUS and WLAN 
+PAGE 41
+ Description 
+ 2.2 Structure of PROFIBUS networks 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 41 
+2.2.4.5 Connecting PROFIBUS to PROFINET 
+PROFIBUS can be integrated in PROFINET. In this way, you can set up any hybrid systems 
+consisting of fieldbus and Ethernet-based subsystems. This provides a continuous data 
+exchange. 
+Coupling of PROFIBUS and PROFINET     
+With a proxy-capable PROFINET device that is equipped with a PROFIBUS interface in 
+addition to a PROFINET interface, you can integrate existing PROFIBUS configurations into 
+the PROFINET configuration. 
+ 
+Figure 2-16 Connection of PROFIBUS and PROFINET with IE/PB link 
+PROFINET device with proxy functionality   
+The PROFINET device with proxy functionality is the substitute for a PROFIBUS device on 
+Ethernet. The proxy functionality allows a PROFIBUS device to communicate not only with 
+its master but also with all devices on PROFINET. 
+With PROFINET, existing PROFIBUS systems can be integrated into the PROFINET 
+communication with the aid of an IE/PB link. The IE/PB link PN IO then handles 
+communication via PROFINET on behalf of the PROFIBUS components.  
+ 
+PAGE 42
+ 
+ PROFIBUS with STEP 7 V13 
+42 Function Manual, 12/2014, A5E03775446-AC 
+ Parameter assignment/addressing 3 
+ 
+ 
+To set up an automation system, you will need to configure, assign parameters and link the 
+individual hardware components. The work needed for this is undertaken in the STEP  7 
+device, topology and network view. 
+Configuration  
+"Configuring" is understood to mean arranging, setting and networking devices and modules 
+within the device or network view. 
+A PROFIBUS address is automatically assigned to each module. The addresses can be 
+subsequently modified. 
+The CPU compares the preset configuration created in STEP 7 with the actual configuration 
+of the plant. Errors can be detected and signaled immediately this way.  
+The exact procedure for configuring devices is described in detail in the STEP 7 online help. 
+Parameter assignment  
+"Parameter assignment" is understood to mean setting the properties of the components 
+used. The settings for the hardware components and for data exchange are assigned, for 
+example, activating diagnostics, input delay with DI. 
+The parameters are downloaded into the CPU and transferred to the corresponding modules 
+when the CPU starts up. Modules can be replaced with ease because with SIMATIC CPUs 
+the set parameters are automatically downloaded into the new module during each startup.  
+Adjusting the hardware to the project requirements 
+You need to adapt the hardware if you want to set up, expand or change an automation 
+project. To do this, add hardware components to your layout, link them with existing 
+components, and adapt the hardware properties to the tasks. 
+The properties of the automation systems and modules are preset so that in many cases you 
+do not have to assign parameters again.  
+But parameter assignment is required in the following cases: 
+● You want to change the preset parameters of a module. 
+● You want to use special functions. 
+● You want to configure communication connections. 
+PAGE 43
+ Parameter assignment/addressing 
+ 3.1 Assigning the DP slave to a DP master 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 43 
+Basic procedure for creating a PROFIBUS DP system 
+● Configuration 
+– Creating PROFIBUS devices and modules in STEP 7 
+– Assigning the DP slave to a DP master (Page 43) 
+● Optional: Parameter assignment 
+– Assigning the PROFIBUS address (Page 45) 
+– Making network settings (Page 46) 
+– Considering cable configuration (Page 49) 
+– Considering additional network devices (Page 51) 
+– Bus parameters – creating a user-defined profile (Page 52) 
+– Configuring constant bus cycle time  (Page 55) 
+3.1 Assigning the DP slave to a DP master 
+PROFIBUS DP system  
+A PROFIBUS DP system consists of a PROFIBUS DP master and its assigned 
+PROFIBUS DP slaves. Once the devices have been placed in the network view or device 
+view, STEP 7 assigns default parameter values to them. Initially, you only have to assign the 
+DP slaves to one DP master. 
+Requirement 
+● The network view of STEP 7 is open. 
+● A CPU has been placed (e.g., CPU 1516-3 PN/DP). 
+● A DP slave has been placed (e.g., IM151-1 HF). 
+PAGE 44
+Parameter assignment/addressing  
+3.1 Assigning the DP slave to a DP master 
+ PROFIBUS with STEP 7 V13 
+44 Function Manual, 12/2014, A5E03775446-AC 
+Procedure 
+To assign DP slaves to a DP master, follow these steps: 
+1. On the DP slave, use the left mouse button to click on the "Not assigned" link. The 
+"Select DP master" menu opens. 
+2. Select the DP master in the menu to which you want to assign the DP slave. 
+Result: A subnet with a DP system is created on the CPU. The CPU is now the 
+PROFIBUS DP master. The DP slave is assigned to the DP master. 
+3. Repeat steps 1 and 2 for all other DP slaves that you want to assign to the DP master.  
+ 
+Figure 3-1 Assigning the DP slave to a DP master 
+Network overview 
+You can check the communication relationships of the activated interface in the network 
+overview. The network overview is context-sensitive for selection in the network view: 
+● The selection of the CPU shows the DP communication of the CPU. 
+● The selection of the station shows the communication of the entire station. 
+● The selection of the interface shows the DP communication of the interface. 
+PAGE 45
+ Parameter assignment/addressing 
+ 3.2 PROFIBUS address 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 45 
+3.2 PROFIBUS address 
+Devices can be connected to the PROFIBUS subnet that communicate by means of 
+configured connections or that are part of a PROFIBUS DP master system.  
+If the DP slave has already been assigned to a DP master, the PROFIBUS subnet to which 
+the device is connected is automatically displayed under "Interface linked with". 
+In the Inspector window under "PROFIBUS", select the subnet to which the interface is 
+linked or add a new subnet.  
+All devices of a subnet must have different PROFIBUS addresses.  
+ 
+Figure 3-2 PROFIBUS address 
+Rules for address assignment  
+STEP 7 automatically assigns device addresses.  
+You can change the addresses if you observe the following points: 
+● Assign a unique PROFIBUS address to each device in the PROFIBUS network, each DP 
+master and each DP slave in the PROFIBUS network. 
+● Depending on the DP slave, not all permitted PROFIBUS addresses are supported. For 
+devices with BCD switches, it is often the case that only the PROFIBUS addresses 1 to 
+99 are supported. 
+Changing the PROFIBUS address  
+You change the PROFIBUS address under "Parameter". 
+ 
+PAGE 46
+Parameter assignment/addressing  
+3.3 Network settings 
+ PROFIBUS with STEP 7 V13 
+46 Function Manual, 12/2014, A5E03775446-AC 
+3.3 Network settings 
+Highest PROFIBUS address (HSA) 
+Outputs the highest PROFIBUS address of an active device. PROFIBUS addresses greater 
+than HSA are permitted for passive devices, but only up to 126.    
+Profile 
+Depending on the connected device types and the protocols used, different profiles are 
+available on the PROFIBUS. The profiles differ with respect to their setting options and 
+calculation of the bus parameters.  
+The PROFIBUS subnet will only work properly if the bus parameters of all devices have the 
+same values.  
+ 
+Figure 3-3 Network settings 
+Profiles and transmission rates   
+Table 3- 1 Profiles and transmission rates 
+Profiles Supported transmission rates 
+DP 9.6 kbps to 12 Mbps  
+Standard 9.6 kbps to 12 Mbps 
+Universal (DP/FMS)  
+(FMS is not supported) 
+9.6 kbps to 1.5 Mbps 
+User-defined 9.6 kbps to 12 Mbps 
+PAGE 47
+ Parameter assignment/addressing 
+ 3.3 Network settings 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 47 
+DP (recommended profile) 
+Select the "DP" profile if only devices meeting the requirements of the standard 
+EN 61158-6-3 are connected to the PROFIBUS subnet. The setting of the bus parameters 
+has been optimized for these devices. These include devices with DP master and DP slave 
+interfaces of SIMATIC S7 as well as distributed I/O devices from third parties. 
+ 
+ Note 
+Profile for constant bus cycle time and isochronous mode 
+DP is the recommended profile for the configuration of constant bus cycle time and 
+isochronous mode. 
+ 
+Standard 
+Compared with the "DP" profile, the "Standard" profile gives you the option to take into 
+consideration devices of another project or devices that have not been configured here for 
+calculation of the bus parameters. The bus parameters are then calculated with a simple 
+algorithm that was not optimized. 
+Universal (DP/FMS) (FMS is not supported) 
+Select the "Universal (DP/FMS)" profile if individual devices in the PROFIBUS subnet use 
+the FMS service (e.g., CP 343-5, PROFIBUS FMS devices). 
+As with the "Standard" profile, here, too, you have the option to take additional devices into 
+consideration for calculation of the bus parameters. 
+PAGE 48
+Parameter assignment/addressing  
+3.3 Network settings 
+ PROFIBUS with STEP 7 V13 
+48 Function Manual, 12/2014, A5E03775446-AC 
+User-defined   
+The PROFIBUS subnet will only work properly if the parameters for the profile have been 
+synchronized. Select the "User-defined" profile if none of the other profiles "match" for 
+operation of a PROFIBUS device and if you have to adapt the bus parameters for your 
+special layout.  
+You cannot configure all theoretically possible combinations with the user-defined profile 
+either. The PROFIBUS standard prescribes some parameter limits depending on other 
+parameters. It is, for example, not permitted that a responder responds (Min Tsdr) before the 
+initiator is able to receive the frame (Trdy). These standard specifications are also checked 
+in the "User-defined" profile.  
+ 
+ Note 
+User-defined settings 
+Use user-defined settings only if you are familiar with the PROFIBUS parameters. It is 
+usually better to work with the "DP" profile. 
+Contact Customer Support  (Page 91) if you have any questions. 
+The bus parameters that were last valid on the PROFIBUS subnet are automatically set as 
+user-defined. If the "DP" bus profile was valid for the subnet, for example, the bus 
+parameters for "DP" are set in the "User-defined" bus profile. You can modify the parameters 
+based on these settings. 
+ 
+The monitoring times are not automatically recalculated in the "User-defined settings" setting 
+so that the uniformity of the set values is not changed without your knowledge, for example, 
+to configure other configuration tools. 
+You can calculate the monitoring times Ttr and watchdog based on the parameters you have 
+set. To do so, click on the "Recalculate" button. 
+See also 
+Additional network stations (Page 51) 
+PAGE 49
+ Parameter assignment/addressing 
+ 3.4 Cable configuration 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 49 
+3.4 Cable configuration 
+Considering cable configuration  
+Information on the cable configuration can be taken into consideration for calculation of the 
+bus parameters. To do so, select the check box "Take into account the following cable 
+configuration" in the properties of the PROFIBUS subnet. 
+The other information depends on the type of cable used.  
+ 
+Figure 3-4 Cable configuration 
+Cable configuration: Fiber-optic cables/optical ring  
+The calculation depends on the used OLM types. Select the corresponding check box. 
+Multiple selections are possible. 
+PAGE 50
+Parameter assignment/addressing  
+3.4 Cable configuration 
+ PROFIBUS with STEP 7 V13 
+50 Function Manual, 12/2014, A5E03775446-AC 
+Adapting bus parameters in the optical ring  
+With the layout as ring, there is a kind of redundancy because you have the option to 
+address all devices using the ring structure even if the connection between two devices is 
+interrupted. 
+The following configuration conditions must be met in the optical ring: 
+● A free address below HSA (Highest Station Address) 
+● Increase of the retry value to at least 3 
+(Network settings: user-defined profile) 
+● Checking and adapting of the slot time 
+(Network settings: user-defined profile; bus parameters: Tslot parameter: 
+You need short slot time values for OLM / P12, medium slot time values for OLM / G12 
+and OLM / G12-EEC and high slot time values for OLM / G12-1300. This results in a high 
+performance for small networks and a medium to low performance with medium to large 
+networks.  
+Additional information 
+Additional information on adaptation of the retry value and the slot time is available in the 
+PROFIBUS Network Manual 
+(http://support.automation.siemens.com/WW/view/en/35222591). 
+PAGE 51
+ Parameter assignment/addressing 
+ 3.5 Additional network stations 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 51 
+3.5 Additional network stations 
+Communication load - considering additional network stations  
+The bus parameters depend on the communication volume of the active network stations. 
+There are differences between cyclical communication (DP) and connection-oriented, 
+acyclical communication (S7 communication, Send/Receive (FDL)). Contrary to DP, the 
+number and size of the communication jobs (communication load) depends on the user 
+program. This means the communication load cannot always be determined automatically.  
+If you select the check box "Consider the following network stations", you can consider 
+network stations in the calculation of the bus times that were not configured in the project.  
+ 
+Figure 3-5 Additional network stations 
+Calculating the bus times  
+You can specify a network configuration in the parameter group "Additional network stations" 
+for calculation of the bus times that deviates from the configured network configuration.  
+The network configuration is available for the following profiles: 
+● Standard 
+● Universal (DP/FMS) 
+● User-defined 
+PAGE 52
+Parameter assignment/addressing  
+3.6 Bus parameters 
+ PROFIBUS with STEP 7 V13 
+52 Function Manual, 12/2014, A5E03775446-AC 
+Quantification of the communication load  
+The following settings are possible to take the communication load into consideration:  
+● Number of network stations that are not configured 
+● Information on the communication load from the user programs for FDL or S7 
+communication. You can choose from the following levels: 
+– Low: Typical for DP, no larger data communication except DP. 
+– Medium: Typical for mixed operation of DP and other communication services  
+(e.g., S7 communication), if DP has high time requirements and with medium, 
+acyclical communication volume. 
+– High: For mixed operation of DP and other communication services  
+(e.g., S7 communication), if DP has low time requirements and with high, acyclical 
+communication volume. 
+3.6 Bus parameters 
+Introduction   
+Bus parameters control the transmission behavior on the bus. Each device on the bus must 
+correspond with the bus parameters of other devices. 
+ 
+ Note 
+The PROFIBUS subnet will only work properly if the parameters for the bus profile have 
+been synchronized. Change the preset values only if you are familiar with the parameter 
+assignment of the bus profile for PROFIBUS. 
+ 
+PAGE 53
+ Parameter assignment/addressing 
+ 3.6 Bus parameters 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 53 
+Cyclical distribution of the bus parameters 
+If the check box "Activate cyclical distribution of bus parameters" is selected under "Bus 
+parameters" with the selected PROFIBUS subnet in the Inspector window, the bus 
+parameters are sent cyclically during operation by the modules that support this function. 
+This way you can, for example, connect a programming device to the PROFIBUS during 
+operation.  
+Disable this function in the following cases: 
+● In constant bus cycle time mode to minimize the bus cycle. 
+● If third-party devices are connected in the PROFIBUS subnet whose protocol uses the 
+DSAP 63 (Destination Service Access Point) for multicast. 
+ 
+Figure 3-6 Bus parameters 
+PAGE 54
+Parameter assignment/addressing  
+3.6 Bus parameters 
+ PROFIBUS with STEP 7 V13 
+54 Function Manual, 12/2014, A5E03775446-AC 
+Bus parameters for the bus profile of PROFIBUS subnets       
+ 
+ Note 
+Display of offline values 
+The offline values of the bus parameters are always displayed even if they are connected 
+online with the target system. 
+ 
+Table 3- 2 Bus parameters - value ranges 
+Bus parameters Adjustable 1 Limit values 
+Tslot_Init Yes  Max. Tsdr + 15 <= Tslot_Init <= 16.383 t_Bit 
+Max. Tsdr Yes  35 + 2*Tset + Tqui <= Max. Tsdr <= 1,023 t_Bit 
+Min. Tsdr Yes  11 t_Bit <= Min. Tsdr <= MIN(255 t_Bit, ... 
+... Max. Tsdr - 1, 34 + 2*Tset + Tqui) 
+Tset Yes  1 t_bit <= Tset <= 494 t_bit 
+Tqui Yes  0 t_bit <= Tqui <= MIN(31 t_bit, Min. Tsdr - 1) 
+GAP factor Yes 1 <= GAP factor <= 100 
+Retry limit Yes  1 <= Retry limit <= 15 
+Tslot ( slot time) No - 
+Tid2 No Tid2 = Max. Tsdr 
+Trdy No Trdy = Min. Tsdr 
+Tid1 No Tid1 = 35 + 2*Tset + Tqui 
+Ttr (Target Rotation Time) Yes 256 t_Bit <= Ttr <= 16,777,960 t_bit 
+Ttr typical No This time is for information only and is not transmitted to 
+the devices. 
+Watchdog   10 ms <= Watchdog <= 650 s 
+ 1 depending on bus profile 
+User-defined bus profile   
+Use the following settings to create a user-defined bus profile: 
+● minimum Target Rotation Time (Ttr) = 5000x HSA (highest PROFIBUS address of an 
+active device) 
+● minimum watchdog (Watchdog) = 6250x HSA 
+Recalculate 
+Use the button "Recalculate" to recalculate the parameters.  
+ 
+PAGE 55
+ Parameter assignment/addressing 
+ 3.7 Constant bus cycle time 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 55 
+3.7 Constant bus cycle time 
+Constant bus cycle time   
+The DP master addresses its assigned DP slaves cyclically. S7 communication may cause 
+the intervals to vary. You can enable a "bus cycle with constant bus cycle time" to achieve 
+identical intervals. This ensures data transmission at the same (constant bus cycle time) 
+intervals. 
+ 
+Figure 3-7 Enabling a bus cycle with constant bus cycle time 
+Number of OPs/PGs/TDs at the PROFIBUS 
+Here you enter the number of devices that are not configured. 
+PAGE 56
+Parameter assignment/addressing  
+3.7 Constant bus cycle time 
+ PROFIBUS with STEP 7 V13 
+56 Function Manual, 12/2014, A5E03775446-AC 
+Increasing DP cycle time manually   
+The following situation can occur especially with very short DP cycle times:  
+The runtime of the user program is greater than the shortest cycle (see Technical 
+specifications of the CPU, section "Isochronous mode"). You have to manually increase the 
+automatically calculated DP cycle time in this case. 
+See also 
+Configuring isochronous mode (Page 67) 
+ 
+PAGE 57
+ 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 57 
+ Diagnostics 4 
+4.1 Overview 
+Diagnostics options 
+In case of an error you can determine the current status of your automation system and react 
+specifically by using the event-related diagnostics and the evaluation of interrupts. 
+You can use the following options for diagnostics of the PROFIBUS components:  
+● Determine the status of the system using the Lifelist in STEP 7. 
+● Evaluate the module status, error and message texts by using the display of the S7- 1500 
+CPU. 
+● Run cable diagnostics during operation by means of the diagnostics repeater.  
+● Evaluate the diagnostics and interrupt behavior in isochronous mode. (Page 70) 
+● Determine status information for fault localization and fault rectification by using the 
+DP/PA coupler FDC 157-0 configured as PROFIBUS diagnostics slave. 
+Additional information 
+Additional information on diagnostics is available in these manuals: 
+● In the Diagnostics repeater for PROFIBUS-DP 
+(http://support.automation.siemens.com/WW/view/en/7915183) manual for diagnostics 
+with STEP 7, diagnostics in the user program, monitoring function isochronous 
+PROFIBUS, topology display in STEP 7. 
+● In the Diagnostics (http://support.automation.siemens.com/WW/view/en/59192926) 
+function manual for diagnostics options that are available for the SIMATIC systems 
+S7-1500, ET 200MP, ET 200SP and ET 200AL. 
+● In the PROFIBUS Network Manual 
+(http://support.automation.siemens.com/WW/view/en/35222591) system manual for 
+diagnostics of fiber-optic cables. 
+● In the DP/PA Coupler, Active Field Distributors, DP/PA Link and Y Link 
+(http://support.automation.siemens.com/WW/view/en/1142696) operating instructions. 
+● In the Web Server (http://support.automation.siemens.com/WW/view/en/59193560) 
+function manual for diagnostics options (based on the functionality of the CPU). 
+ 
+PAGE 58
+Diagnostics  
+4.2 Diagnostics using the display of the S7-1500 
+ PROFIBUS with STEP 7 V13 
+58 Function Manual, 12/2014, A5E03775446-AC 
+4.2 Diagnostics using the display of the S7-1500 
+Displays   
+Each CPU in the S7-1500 automation system has a front cover with a display and operating 
+buttons. Control and status information is displayed in different menus on the display. You 
+use the operating buttons to navigate through the menus. 
+The following states can be evaluated on the display: 
+● Module status for central and distributed modules 
+● Error and alarm texts (system diagnostics, user-defined alarms) 
+Module status   
+From the station overview you go to the module status for a distributed module via the 
+module overview. 
+ 
+Figure 4-1 Example: Station overview, module overview, module status 
+PAGE 59
+ Diagnostics 
+ 4.2 Diagnostics using the display of the S7-1500 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 59 
+Error and alarm texts  
+ 
+ 
+Figure 4-2 Example: Diagnostic buffer, alarms 
+Additional information 
+Additional information on the topic "Functions and operation of the display" is available in the 
+documentation for the S7-1500 automation system on the Internet 
+(http://support.automation.siemens.com/WW/view/en/59191792). 
+PAGE 60
+Diagnostics  
+4.3 Diagnostics with the diagnostic repeater 
+ PROFIBUS with STEP 7 V13 
+60 Function Manual, 12/2014, A5E03775446-AC 
+4.3 Diagnostics with the diagnostic repeater 
+Introduction  
+The diagnostic repeater is a repeater that can monitor two segments of a RS485- PROFIBUS 
+subnet (copper cable) during operation and signal cable faults to the DP master by sending a 
+diagnostic frame. Fault location and the cause of the fault can be displayed in plain text by 
+means of STEP 7 as well as operator control and monitoring devices (SIMATIC HMI). 
+With its cable diagnostics during operation, the diagnostic repeater allows you to detect and 
+localize cable faults early on. This means plant faults are detected early and plant downtimes 
+can be prevented. 
+Diagnostic functions 
+● The diagnostic function provides the location and the cause of cable faults, such as wire 
+break or missing terminating resistors. The fault location is specified relative to the 
+devices present, for example "Break on signal line A and/or B". 
+● Reading out the saved diagnostic and statistical information. 
+● Monitoring of the isochronous PROFIBUS, e.g., violation of cycle time. 
+● Providing identification data. 
+Additional information 
+Additional information on diagnostics with STEP 7 and for reading out the diagnostics with 
+the user program is available in the Diagnostic repeater for PROFIBUS DP 
+(http://support.automation.siemens.com/WW/view/en/7915183) manual. 
+PAGE 61
+ Diagnostics 
+ 4.4 I&M data (Identification and Maintenance) 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 61 
+4.4 I&M data (Identification and Maintenance) 
+Definition and properties   
+Identification and maintenance data (I&M) is information saved in a module to provide 
+support when: 
+● Checking the plant configuration 
+● Locating hardware changes in a plant 
+Identification data (I data) is module information (some of which may be printed on the 
+module housing) such as the order and serial number. I data is read-only, vendor-specific 
+module information. 
+Maintenance data (M data) is system-specific information such as the installation location 
+and date. M data is generated in the course of configuration and is written to the module 
+memory. 
+The modules can be uniquely identified in online mode by means of the I&M data.  
+Additional information 
+Information if and to what extent a DP device supports I&M data is available in the respective 
+device manual of the device. 
+ 
+ 
+PAGE 62
+ 
+ PROFIBUS with STEP 7 V13 
+62 Function Manual, 12/2014, A5E03775446-AC 
+ Functions 5 
+5.1 Isochronous mode 
+5.1.1 What is isochronous mode? 
+Why isochronous mode?  
+Assuming public transport were to operate at maximum speed while reducing stop times at 
+the passenger terminals to absolute minimum, the last thing many potential passengers 
+would notice of the departing contraption are its red tail lights. The overall travel time is, 
+however, decided by the train, bus or underground clock, because well adjusted timing is 
+essential to a good service. This also applies to distributed automation engineering. Not only 
+fast cycles but also the adaptation and synchronization of the individual cycles result in 
+optimum throughput. 
+Just-In-Time 
+ 
+Figure 5-1 System cycle 
+The high speed and reliable reaction time of a system operating in isochronous mode is 
+based on the fact that all data is provided just-in-time. The constant bus cycle time 
+PROFIBUS DP cycle beats the time here. 
+PAGE 63
+ Functions 
+ 5.1 Isochronous mode 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 63 
+Advantages of isochronous mode 
+The use of isochronous mode provides: 
+● Optimized controls 
+● Determinism 
+● Consistent (simultaneous) reading of input data 
+● Consistent (simultaneous) output of output data 
+5.1.2 Use of isochronous mode 
+The system property "isochronous mode" enables recording of measured values and 
+process data in a defined system cycle. Signal processing takes place in the same system 
+cycle all the way to switching to the "output terminal". This means isochronous mode 
+improves the control quality and provides greater manufacturing precision. Isochronous 
+mode drastically reduces the possible fluctuations of process response times. The time-
+assured processing can be used for a higher machine cycle.  
+Isochronous mode is basically always the choice when acquisition of measured values 
+needs to be synchronized, movements need to be coordinated and process reactions need 
+to be defined and take place simultaneously. This means the areas of applications for 
+isochronous mode are manifold. 
+PAGE 64
+Functions  
+5.1 Isochronous mode 
+ PROFIBUS with STEP 7 V13 
+64 Function Manual, 12/2014, A5E03775446-AC 
+5.1.3 Isochronous applications 
+Example: Isochronous measurement at several measuring points    
+QC requires precise measurement of dimensions within a camshaft production process.  
+ 
+Figure 5-2 Measuring of camshafts 
+Isochronous workflow 
+By using the system property "isochronous mode" and the associated simultaneous 
+measured value acquisition, measurement can be performed continuously and the time 
+required for measurement is reduced. Resultant workflow: 
+● Continuous turning of the camshaft. 
+● During the continuous turning, measure the positions and cam excursion synchronously.  
+● Process the next camshaft. 
+All camshaft positions and the corresponding measured values (red) are measured 
+synchronously within a single rotation of the camshaft. This increases machine output and 
+maintains or enhances precision of the measurement. 
+PAGE 65
+ Functions 
+ 5.1 Isochronous mode 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 65 
+5.1.4 Sequence of synchronization 
+From reading of input data to output of output data  
+The sequence of all components involved in the synchronization is explained in the 
+paragraphs below:  
+● Isochronous reading of input data 
+● Transport of input data by means of the PROFIBUS subnet to the DP master (CPU)  
+● Further processing in the isochronous application of the CPU 
+● Transport of output data by means of the PROFIBUS subnet to the output DP slave 
+● Isochronous output of output data 
+ 
+T_DC Date cycle 
+TI Time for reading the input data 
+TO Time for output of output data 
+Figure 5-3 Time sequence of synchronization 
+ 
+To ensure that all input data is ready for transportation via the PROFIBUS DP line when the 
+next PROFIBUS DP cycle begins, the I/O read cycle has a lead time TI so that it starts 
+earlier. The TI is the "flash gun" for all inputs. This TI is necessary to compensate for analog 
+to digital conversion, backplane bus times, etc. The lead time TI can be configured by 
+STEP 7 or by the user. We recommend that you have TI assigned automatically by STEP 7 . 
+The PROFIBUS DP line transports the input data to the DP master. The synchronous cycle 
+interrupt OB SynchronousCycle is called. The user program in the synchronous cycle 
+interrupt OB decides the process reaction and provides the output data in time for the start of 
+the next data cycle. The length of the data cycle is always configured by the user.  
+PAGE 66
+Functions  
+5.1 Isochronous mode 
+ PROFIBUS with STEP 7 V13 
+66 Function Manual, 12/2014, A5E03775446-AC 
+To is the compensation from the backplane bus and the digital to analog conversion within 
+the slave. The To is the "flash gun" for all outputs. The time To can be configured by STEP 7 
+or by the user. We recommend that you have To assigned automatically by STEP 7. 
+Without isochronous mode, application, data transmission and field devices have their own, 
+unsynchronized processing cycles; these result in a higher total cycle time with high jitter. 
+With isochronous mode, application, data transmission and field device are synchronized 
+resulting in a minimum total cycle with minimum jitter. 
+Isochronous mode and non isochronous mode distributed I/O 
+It is possible to combine isochronous mode distributed I/O with non isochronous mode 
+distributed I/O on one DP master. 
+5.1.5 Requirements for configuration 
+Note the following requirements for configuration of isochronous mode:   
+● Isochronous mode cannot be used in optical PROFIBUS networks. 
+● Constant bus cycle time and isochronous mode are only possible with the bus profiles 
+"DP" and "User-defined". 
+● Isochronous mode is only possible with the DP interfaces integrated in the CPU. 
+Isochronous mode with CPs for PROFIBUS is not possible. 
+● Only the constant bus cycle time master is permitted as active station on the isochronous 
+PROFIBUS DP. OPs and PGs (for example, PCs with PG functionality) influence the time 
+behavior of the isochronous DP cycle and are therefore not permitted. 
+● Isochronous mode is not permitted across lines. 
+● Isochronous I/O can only be processed in process image partitions. Isochronous 
+consistent data transmission is not possible without the use of process image partitions. 
+The adherence to quantity structures is monitored because the number of slaves and 
+bytes on the DP master system is limited for each process image partition. 
+● The addresses of isochronous modules must be located in a process image partition.  
+● Full isochronous mode from "terminal" to "terminal" is only possible if all components 
+involved in the chain support the system property "isochronous mode". 
+Make sure you look for the entry "Isochronous mode" or "Isochronous processing" in the 
+information box of the module when you select it in the catalog. 
+● When you configure isochronous mode, you may not assign a SYNC/FREEZE group to 
+the slave. 
+PAGE 67
+ Functions 
+ 5.1 Isochronous mode 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 67 
+5.1.6 Configuring isochronous mode 
+Introduction 
+A SIMATIC automation solution can be connected to the isochronous PROFIBUS with the 
+isochronous mode function. Isochronous mode guarantees the synchronous reading of input 
+data, the processing and output of output data at the same (isochronous) intervals.  
+Basic procedure for configuration of isochronous mode 
+1. Setting the properties for isochronous mode on the DP slave: 
+– Isochronous DP cycle 
+– Isochronous mode of the modules 
+2. Setting the properties for isochronous mode on the modules: 
+– Synchronous cycle interrupt (SynchronousCycle) 
+– Process image partition 
+– Input delay 
+3. Create user program with access to isochronous I/O 
+Requirement 
+● The network view in STEP 7 is open. 
+● A CPU has been placed (e.g., CPU 1516-3 PN/DP). 
+● An interface module has been placed and networked with the CPU (e.g., IM 151-1 HF). 
+● I/O modules have been placed (e.g., 2DI x DC24V HF and 2DO x DC24V/0,5A HF). 
+PAGE 68
+Functions  
+5.1 Isochronous mode 
+ PROFIBUS with STEP 7 V13 
+68 Function Manual, 12/2014, A5E03775446-AC 
+Configuring isochronous mode on the DP slave 
+1. Select the DP slave in the network view and navigate to the "isochronous mode" area in 
+the Inspector window. 
+2. Enable the option for synchronization to the DP cycle for the DP slave. 
+Default: The DP slaves get the Ti/To values from the subnet which means the values are 
+automatically the same for all DP slaves of the DP master system. 
+3. Enable the "Isochronous mode" option the the "Detail view" for all I/O modules you want 
+to operate in isochronous mode. 
+4. Repeat steps 1 and 3 for all DP slaves that you want to operate in isochronous mode.  
+ 
+Figure 5-4 Configuring isochronous mode on the DP slave 
+PAGE 69
+ Functions 
+ 5.1 Isochronous mode 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 69 
+Configuring synchronous cycle interrupt on the I/O module 
+1. Select an I/O module in the device view and navigate to the "I/O addresses" area in the 
+Inspector window. 
+– The option for isochronous mode is selected. 
+2. Select the synchronous cycle interrupt in the drop-down list. 
+ 
+Figure 5-5 I/O addresses - creating the synchronous cycle interrupt OB 
+3. Assign the process image partition configured in the CPU. 
+ 
+Figure 5-6 I/O addresses - assigning process image partitions 
+4. Repeat steps 1 and 3 for all I/O modules that you want to operate in isochronous mode.  
+PAGE 70
+Functions  
+5.1 Isochronous mode 
+ PROFIBUS with STEP 7 V13 
+70 Function Manual, 12/2014, A5E03775446-AC 
+Programming isochronous mode 
+To operate your plant in isochronous mode, the user program must be structured 
+accordingly. This means you have to add a synchronous cycle interrupt in the STEP  7 
+project tree. 
+You access the isochronous I/O by means of a process image partition, which means the 
+addresses of the isochronous modules must be located in a process image partition. You 
+program access to isochronous I/O with the "SYNC_PI" instructions (updating the process 
+image partitions of the inputs) and "SYNC_PO" (updating the process image partition of the 
+outputs) in the synchronous cycle interrupt OB. 
+You call the "SYNC_PI" instruction at the start of the synchronous cycle interrupt OB, 
+provided you have selected the automatic setting for the delay time. You call the 
+"SYNC_PO" instruction at the end of the synchronous cycle interrupt OB. 
+5.1.7 Diagnostics and interrupt functions 
+The diagnostic and interrupt functions of STEP 7 are available for isochronous mode. These 
+reduce downtimes and simplify localization and elimination of faults.  
+Events, causes of errors and remedies 
+Below, you will find the events for diagnostic and interrupt functions and remedies for the 
+problem.  
+Table 5- 1 Events, causes of errors and remedies 
+Event Cause of the error Remedy 
+• Synchronous cycle interrupt OB is 
+started with the input parameter 
+EventCount > 0 (number of lost OB 
+calls since last OB call) 
+If configured: 
+• Call of the time error OB 
+• Diagnostic buffer entry "Buffer overflow 
+for OB6x events" 
+The synchronous cycle interrupt OB 
+takes too long. 
+• Shorten the synchronous cycle 
+interrupt OB. 
+• Increase the DP cycle. 
+• Reduce the delay time setting  
+(setting with isochronous mode at 
+synchronous cycle interrupt OB). 
+Error (negative RetVals) when updating 
+the isochronous process image partition 
+with SYNC_PI / SYNC_PO: 
+• Consistency warning 
+• Update time is after / before the  
+permitted access window. 
+SYNC_PI / SYNC_PO are not called 
+in the permitted access window in 
+the synchronous cycle interrupt OB, 
+which means they are called or 
+processed during the I/O data  
+transfer on PROFIBUS. 
+• Increase the delay time. 
+• Increase the DP cycle. 
+• Adapt the program. 
+Error when updating the isochronous 
+process image partition with 
+SYNC_PI / SYNC_PO: 
+• Access error 
+DP slave / module does not respond 
+/ is not available. 
+ 
+PAGE 71
+ Functions 
+ 5.1 Isochronous mode 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 71 
+5.1.8 Parameter settings for isochronous mode 
+Parameter changes as task of the field service technician  
+The task of a field service technician is to maintain the production process. 
+In this context the technician has to detect, localize and eliminate errors and performance 
+losses of isochronous mode.  
+All parameters which influence isochronous mode can be checked and configured using the 
+"Isochronous mode" dialog box.  
+Parameters should only be changed by experienced users or service technicians.  
+5.1.8.1 Viewing isochronous mode parameters 
+"Isochronous mode" dialog box  
+1. Select "Properties > Isochronous mode" in the Inspector window. 
+The "isochronous mode" dialog box opens with an overview of parameters which 
+influence isochronous mode.  
+Information on the individual parameters is available under "Detail overview".  
+2. Compare the values shown with the values in the documentation, or with the value 
+specified by a technician. 
+ 
+Figure 5-7 Viewing parameters for isochronous mode 
+PAGE 72
+Functions  
+5.1 Isochronous mode 
+ PROFIBUS with STEP 7 V13 
+72 Function Manual, 12/2014, A5E03775446-AC 
+5.1.8.2 Change parameters 
+Changing parameters for the DP master system 
+You can change the parameters for isochronous mode in the "Constant bus cycle time" 
+dialog box.  
+1. Select the DP master system in the network view. 
+2. Select the section "Constant bus cycle time" in the Inspector window. 
+3. Change the parameters according to the received instructions. 
+ 
+Figure 5-8 Changing parameters for the DP master system 
+PAGE 73
+ Functions 
+ 5.1 Isochronous mode 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 73 
+Adapting the input delay 
+1. Select the input module in the device view. 
+2. Select the section "Inputs" in the Inspector window. 
+3. Adapt the input delay. 
+ 
+Figure 5-9 Adapting the input delay 
+Compile, load and save the changed configuration 
+1. Put the plant out of operation. 
+2. Select the CPU in the project navigator. 
+3. Select "Compile > Hardware" in the shortcut menu. 
+4. Select "Download to device" in the shortcut menu. 
+5. Save the project. 
+ 
+PAGE 74
+Functions  
+5.2 Acyclical data exchange 
+ PROFIBUS with STEP 7 V13 
+74 Function Manual, 12/2014, A5E03775446-AC 
+5.2 Acyclical data exchange 
+Additional functionality with DPV1 devices (DP master/DP slaves)  
+DP masters and DP slaves that support DPV1 have the following additional functions 
+compared to the devices that support only DPV0:  
+● The acyclic data exchange between master and slave is supported. 
+● Interrupts can be set by a DPV1 slave which ensure handling of the interrupt-triggering 
+event in the master CPU. 
+Acyclic data exchange 
+Read/write data record, for example, to change the parameters of a slave during operation. 
+The data records of a module and the structure of these data records is available in the 
+documentation for the respective module.  
+The table below contains the instructions with their functions for access to DPV1 slaves. 
+Detailed information is available in the STEP 7 online help. 
+Table 5- 2 Instructions for access to DPV1 slaves 
+Instructions Function (DPV1) 
+RDREC Read data record 
+WRREC Write data record 
+RALRM Receive interrupt from a DP slave. 
+(The instruction must be called in the OB that triggers the interrupt.) 
+PAGE 75
+ Functions 
+ 5.3 SYNC/FREEZE groups 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 75 
+5.3 SYNC/FREEZE groups 
+Assigning the SYNC/FREEZE group to the DP slave  
+A DP master with the corresponding functionality can send the control commands SYNC 
+and/or FREEZE for synchronization of the DP slaves simultaneously to a group of DP 
+slaves. You must assign SYNC/FREEZE groups to the DP slaves for this purpose.  
+Requirement: A DP master system has been created in the project. 
+Procedure 
+To assign a DP slave to a SYNC/FREEZE group, follow these steps: 
+1. Select the DP interface of the DP slave you want to assign to a group in the device view 
+or network view. 
+2. Select the check boxes for the required SYNC/FREEZE groups under the group 
+"SYNC/FREEZE" in the Inspector window. 
+You can assign each DP slave to only one SYNC/FREEZE group. 
+ 
+Figure 5-10 Assigning the DP slave to a SYNC/FREEZE group  
+PAGE 76
+Functions  
+5.3 SYNC/FREEZE groups 
+ PROFIBUS with STEP 7 V13 
+76 Function Manual, 12/2014, A5E03775446-AC 
+Important information on the control commands SYNC and FREEZE 
+You can use the control commands SYNC and FREEZE in the DP master to synchronize the 
+DP slaves event-controlled. The DP master sends the control commands simultaneously to a 
+group of DP slaves in its master system. It does not take into consideration DP slaves that 
+have failed or are currently sending diagnostic information. 
+Requirement for synchronization using control commands is that you have assigned the DP 
+slaves to SYNC/FREEZE groups. 
+For a S7 CPU use the instruction DPSYC_FR (SFC 11) to synchronize the DP slaves. 
+When you select the DP master, you see a list of the eight SYNC/FREEZE groups under 
+"Properties > DP interface > SYNC/FREEZE" in the Inspector window. 
+ 
+Figure 5-11 SYNC/FREEZE groups on DP master 
+SYNC control command 
+The DP master uses the SYNC control command to cause a group of DP slaves to freeze 
+the states of their outputs to the current value. 
+The DP slaves save the output data of the DP master for the following frames. But the states 
+of the DP slave outputs remain unchanged. 
+Only after each new SYNC control command does the DP slave set its outputs to the values 
+that it has saved as the output data of the DP master. 
+The outputs are not updated cyclically again until the DP master has sent a UNSYNC control 
+command. 
+PAGE 77
+ Functions 
+ 5.4 Interrupts 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 77 
+FREEZE control command 
+After receiving the FREEZE control command from the DP master, the DP slaves  of a group 
+freeze the current status of their inputs. The DP slaves send these frozen input data to the 
+DP master with the following cyclical frames. 
+The DP slaves freeze the current state of their inputs again after each new FREEZE control 
+command. 
+The state of the DP slave inputs is only send to the DP master cyclically again when the DP 
+master sends the UNFREEZE control command. 
+5.4 Interrupts 
+Interrupts and interrupt OBs for DPV1  
+Interrupts can be set by a DPV1 slave which ensure handling of the interrupt-triggering event 
+in the master CPU. The interrupt data is evaluated in the CPU and the diagnostics buffer and 
+the module state are updated even in the "STOP" operating mode. The OB is not processed 
+in STOP. 
+The following DPV1 interrupts are supported: 
+● Status interrupt 
+● Update interrupt 
+● Vendor-specific interrupt 
+Detailed information is available in the descriptions on the OBs. You can use the 
+corresponding OBs that are provided by the operating system of the S7 CPUs for diagnostic 
+interrupts, hardware interrupts, and pull/plug interrupts. 
+OB 55 interrupt - Status interrupt 
+The status interrupt can be triggered when the operating mode of a device or module 
+changes, for example, from RUN to STOP. 
+OB 56 interrupt - Update interrupt 
+An update interrupt can be triggered if the parameters of a slot were changed. This may be 
+caused by local access or partner access to the parameters. 
+OB 57 interrupt - Vendor-specific interrupt  
+The event that triggers the vendor-specific interrupt can be specified by the manufacturer of 
+a DPV1 slave. 
+PAGE 78
+Functions  
+5.5 Intelligent DP slaves (I-slaves) 
+ PROFIBUS with STEP 7 V13 
+78 Function Manual, 12/2014, A5E03775446-AC 
+Additional information 
+A detailed description of the events at which interrupts are triggered is available in the 
+documentation of the respective manufacturer of the DPV1 slave. 
+5.5 Intelligent DP slaves (I-slaves) 
+5.5.1 I-slave functionality 
+I-slave functionality 
+The "I-slave" (intelligent DP slave) functionality of a CPU supports the exchange of data with 
+a DP master and thus allows the CPU to be used, for example, as intelligent preprocessing 
+unit of subprocesses. The I-slave is connected in its role as DP slave to a "higher-level" DP 
+master. 
+The preprocessing is handled by the user program in the I-slave. The process values 
+acquired by the I/O modules are preprocessed by the user program and made available to 
+the DP master. 
+ 
+Figure 5-12 I-slave functionality  
+"I-slave" naming convention 
+In the remainder of this description, a CPU or a CP with I-slave functionality is simply called 
+an "I-slave". 
+PAGE 79
+ Functions 
+ 5.5 Intelligent DP slaves (I-slaves) 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 79 
+Advantages of configurations with I-slaves 
+The I-slave offers the following advantages: 
+● Simple coupling of CPUs with PROFIBUS interface 
+● Real-time communication between CPUs and PROFIBUS interface 
+● Distributed processing 
+A complex automation task can be divided into smaller units/subprocesses. This results 
+in manageable processes which lead to simplified subtasks. 
+● Relieving the DP master by distributing the computing capacity to I-devices 
+● Lower communication load by processing process data locally 
+● Separating subprocesses 
+Complicated, widely distributed and extensive processes can be subdivided into several 
+subprocesses with manageable interfaces by using I-slaves. These subprocesses can be 
+stored in individual STEP 7 projects if necessary, which can later be merged to form one 
+master project.  
+● Separating STEP 7 projects 
+Creators and users of an I-device can have completely separated STEP 7 projects. The 
+GSD file together with the configuration of the transfer areas of the I-slave form the 
+interface between the STEP 7 projects. This allows coupling to standard DP masters via 
+a standardized interface. 
+● Know-how protection 
+Plant units can now only be delivered with a GSD file and the configuration of the transfer 
+areas instead of with a STEP 7 project for the I-slave interface description. This means 
+that you no longer have to disclose the user program know-how. 
+PAGE 80
+Functions  
+5.5 Intelligent DP slaves (I-slaves) 
+ PROFIBUS with STEP 7 V13 
+80 Function Manual, 12/2014, A5E03775446-AC 
+Difference: DP slave - I-slave 
+In the case of a DP slave, the DP master accesses the distributed inputs/outputs directly.  
+In the case of an I-slave, the DP master accesses a transfer area in the I/O address space of 
+the preprocessing CPU instead of accessing the connected inputs/outputs of the I -slave. The 
+user program running on the preprocessing CPU is responsible for ensuring data exchange 
+between the operand area and inputs/outputs. 
+ 
+Figure 5-13 Data access to an I-slave 
+ 
+ Note 
+DP master or DP slave  
+Note: The communication modules of the S7-1500 CPUs/ET 200SP CPUs, for example the 
+CP 1542-5, support the operation as DP master or DP slave only as alternative.  
+ 
+ Note 
+The I/O areas configured for data exchange between the DP master and DP slaves must not 
+be used by I/O modules. 
+ 
+PAGE 81
+ Functions 
+ 5.5 Intelligent DP slaves (I-slaves) 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 81 
+5.5.2 Data exchange with higher-level DP master 
+Introduction  
+The following section describes the data exchange between the I-slave and the higher-level 
+DP master. 
+Transfer areas 
+Transfer areas are an interface to the user program of the I-slave CPU. Inputs are processed 
+in the user program and outputs are the result of the processing in the user program. 
+The data for communication between DP master and I-slave is made available in the transfer 
+areas. A transfer area contains an information unit that is exchanged consistently, in terms of 
+bytes, words or overall, between DP master and I-slave. You can find more information on 
+configuration and use of transfer areas in the section Configuring transfer areas (Page 84). 
+The following figure shows the data exchange between the I-slave and the higher-level DP 
+master. The individual communication relations are explained below based on the numbers.  
+ 
+Figure 5-14 Data exchange with the DP master 
+PAGE 82
+Functions  
+5.5 Intelligent DP slaves (I-slaves) 
+ PROFIBUS with STEP 7 V13 
+82 Function Manual, 12/2014, A5E03775446-AC 
+① Data exchange between higher-level DP master and normal DP slave 
+In this way, the DP master and the DP slave exchange data through PROFIBUS.  
+② Data exchange between higher-level DP master and I-slave 
+In this way, the DP master and the slave exchange data through PROFIBUS. 
+The data exchange between a higher-level DP master and an I-slave is based on the 
+conventional DP master/DP slave relationship.  
+For the higher-level DP master, the transfer areas of the I-slave represent submodules of a 
+DP slave.  
+The output data of the DP master is the input data of the I-slave. Analogously, the input data 
+of the DP master is the output data of the I-slave. 
+③ Transfer relationship between the user program and the transfer area  
+In this way, the user program and the transfer area exchange input and output data.  
+④ Data exchange between the user program and the I/O of the I-slave 
+In this way, the user program and the centralized I/O of the I-slave exchange input and 
+output data.  
+5.5.3 Configuring an I-slave 
+Requirements for configuring an I-slave 
+The I-slave consists of: 
+● A CPU from S7-1500 and a communications module CM 1542-5/CP 1542-5  
+(STEP 7 as of V12) 
+● A CPU from ET 200SP and a communications module CM DP (STEP 7 as of V13 SP1) 
+PAGE 83
+ Functions 
+ 5.5 Intelligent DP slaves (I-slaves) 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 83 
+Procedure for configuring an I-slave 
+This section shows how to configure an I-slave in STEP 7 based on the example of a  
+CPU 1512SP-1 PN. The procedure for the CPUs from S7-1500 with CM 1542-5/CP 1542-5 
+and for the CPU 1510SP-1 PN with CM DP is the same. 
+To configure an I-slave, follow these steps: 
+1. Drag a CPU 1512SP-1 PN from the hardware catalog to the network view. 
+2. Open the device view of the CPU. 
+3. Double-click on the CM DP communications module in the hardware catalog.  
+STEP 7 creates the CM DP in the device view. 
+4. Select the PROFIBUS interface of the CM DP communications module. 
+5. In the Inspector window in the area navigation, select the "Operating mode" entry and 
+enable the "DP slave" check box. 
+6. Now you can select the DP master in the "Assigned DP Master" drop-down list. 
+Once you have selected the DP master, the networking and the DP master system 
+between both devices are displayed in the network view. 
+ 
+Figure 5-15 Configuring an I-slave 
+ 
+  Note 
+Operation using a GSD file 
+If you operate an I-slave using a GSD file, you should not select the "Test, commissioning 
+and routing" check box. 
+Create a DP subnet on the PROFIBUS interface of the I-slave. 
+ 
+Result 
+You have configured an I-slave. 
+PAGE 84
+Functions  
+5.5 Intelligent DP slaves (I-slaves) 
+ PROFIBUS with STEP 7 V13 
+84 Function Manual, 12/2014, A5E03775446-AC 
+5.5.4 Configuring transfer areas 
+Requirements for configuring transfer areas 
+● You have configured an I-slave in STEP 7. 
+● You are in the device view of the I-device and have selected the PROFIBUS interface of 
+the communications module. 
+Procedure for configuring transfer areas 
+To configure transfer areas for an I-slave in STEP 7, follow these steps: 
+1. In the area navigation, go to the section "Operating mode" > "I-slave communication" > 
+"Transfer areas". 
+2. Create transfer areas. Set the properties of the created transfer areas. 
+ 
+① Click in the first cell of the "Transfer area" column. STEP 7 assigns a default name that you 
+can change. 
+② Select the type of communication relation: Currently, you can only select MS for  
+"master-slave communication relation". 
+③ STEP 7 assigns the addresses for the transfer area automatically. Correct the addresses if 
+necessary. 
+④ Set the length of the transfer area. Specify the length of the transfer area in the cell in the 
+following format: [1...64] Byte/Word. 
+Examples: "32 Byte", "64 Word" 
+⑤ Specify whether the transfer area is exchanged in units of bytes or words or consistently 
+over the entire length between the DP master and I-slave. 
+Figure 5-16 Configuring transfer areas 
+A separate entry is created in the area navigation for each transfer area. If you select one of 
+these entries, you can adjust the details of the transfer area, or correct them and comment 
+on them. 
+PAGE 85
+ Functions 
+ 5.5 Intelligent DP slaves (I-slaves) 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 85 
+5.5.5 Sample program 
+Introduction  
+This simple sample program shows how you use the transfer areas of an I-slave. 
+Requirement 
+You have configured an I-slave. 
+Task 
+The result of an "AND logic operation" of two inputs (preprocessing) in the I-slave is to be 
+provided to the higher-level DP master. This result is to be assigned to a local output in the 
+DP master (further processing). 
+Use a transfer area with the following addresses for this purpose: 
+● Address in the I-slave: Q568 
+● Address in the DP master: I68 
+Required steps 
+The following steps are necessary to solve the task: 
+1. Configuring the transfer area 
+2. Programming the I-slave 
+3. Programming the DP master 
+PAGE 86
+Functions  
+5.5 Intelligent DP slaves (I-slaves) 
+ PROFIBUS with STEP 7 V13 
+86 Function Manual, 12/2014, A5E03775446-AC 
+Configuring the transfer area 
+Configure a transfer area with the following properties in the I-slave: 
+ 
+Figure 5-17 Tran sfer area, I-slave sample program 
+PAGE 87
+ Functions 
+ 5.5 Intelligent DP slaves (I-slaves) 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 87 
+Programming the I-slave 
+To program the sample program for the I-slave, follow these steps: 
+1. Using the SCL programming language, create a new function with the name 
+"preprocessing" in the project tree under "Program blocks" > "Add new block". Open the 
+function. 
+2. In the interface of the function "preprocessing", create the following tags: 
+Name Data type Input/output type 
+input 1 bool Input 
+input 2 bool Input 
+result bool Output 
+3. In the instruction window of the function "preprocessing", write the following program 
+code: 
+#result:=#input 1&#input 2; 
+4. Call the function "preprocessing" in a cycle OB, for example, in OB1. 
+5. Wire the function "preprocessing" in the cycle OB as follows: 
+ 
+Figure 5-18 I-slave sample program  
+PAGE 88
+Functions  
+5.5 Intelligent DP slaves (I-slaves) 
+ PROFIBUS with STEP 7 V13 
+88 Function Manual, 12/2014, A5E03775446-AC 
+Programming the DP master 
+To program the sample program for the DP master, follow these steps: 
+1. Using the SCL programming language, create a new function with the name "further 
+processing" in the project tree under "Program blocks" > "Add new block". Open the 
+function. 
+2. In the interface of the function "further processing", create the following tags: 
+Name Data type Input/output type 
+result bool Input 
+output bool Output 
+3. In the instruction window of the function "further processing", write the following program 
+code: 
+#output:=#result; 
+4. Call the function "further processing" in a cycle OB, for example, in OB1. 
+5. Wire the function "further processing" in the cycle OB as follows: 
+ 
+Figure 5-19 DP master sample program 
+Result 
+You mastered the task successfully. 
+PAGE 89
+ Functions 
+ 5.5 Intelligent DP slaves (I-slaves) 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 89 
+5.5.6 Diagnostics and interrupt behavior 
+Diagnostics and interrupt behavior 
+S7 CPUs have numerous diagnostics and interrupt functions that can, for example, report 
+errors/faults or failures of underlying DP systems. These diagnostics alarms reduce 
+downtimes and simplify localization and elimination of problems. 
+Diagnostics options in the higher-level DP master and in the I-slave 
+The following diagnostics mechanisms are available to the higher-level DP master and the  
+I-slave: 
+● OB 82 (diagnostic interrupt) 
+When the I-slave changes mode, the DP master calls OB 82 (diagnostic interrupt). 
+When the DP master changes mode, the I-slave calls OB 82 (diagnostic interrupt). 
+● OB 86 (rack failure) 
+If the bus connection to the I-slave is interrupted, the DP master calls OB 86  
+(rack failure). 
+If the bus connection to the DP master is interrupted, the I-slave calls OB 86  
+(rack failure). 
+● OB 122 (I/O access error) 
+If you have not set the attribute "Handle errors within block" for OB 122, the following 
+applies: 
+– If the bus connection to the I-slave is interrupted, the DP master calls OB 122  
+(I/O access error) if there is direct access to the relevant transfer areas. 
+– If the bus connection to the DP master is interrupted, the I-slave calls OB 122  
+(I/O access error) if there is direct access to the relevant transfer areas. 
+PAGE 90
+Functions  
+5.5 Intelligent DP slaves (I-slaves) 
+ PROFIBUS with STEP 7 V13 
+90 Function Manual, 12/2014, A5E03775446-AC 
+Reaction of the transfer areas to mode changes 
+Table 5- 3 Reaction of the transfer areas to mode changes 
+DP master I-slave Reaction of DP master input transfer areas Reaction of I-slave input transfer areas 
+RUN→STOP RUN No updating of the process image The input transfer areas retain their current 
+values. (no access error) 
+STOP→RUN RUN The input transfer areas are updated by the 
+cyclic user program via the process image. 
+The input transfer areas are updated via the 
+process image. 
+RUN RUN→STOP The I-slave sets the input transfer areas on 
+the DP master to "0". 
+ 
+No updating of the process image 
+RUN STOP→RUN The I-slave sets the input transfer areas on 
+the DP master to "0". 
+After the startup program of the I-slave, the 
+input transfer areas of the DP master are 
+updated via the process image. 
+Prior to processing of the startup program, 
+the input transfer areas are updated via the 
+process image. 
+ 
+ 
+PAGE 91
+ 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 91 
+ Service & Support A 
+ 
+ 
+ 
+The unmatched complete service for the entire life cycle 
+For machine constructors, solution providers and plant operators: The service offering from 
+Siemens Industry Automation and Drive Technologies includes comprehensive services for a 
+wide range of different users in all sectors of the manufacturing and process industry.  
+To accompany our products and systems, we offer integrated and structured services that 
+provide valuable support in every phase of the life cycle of your machine or plant – from 
+planning and implementation through commissioning as far as maintenance and 
+modernization. 
+Our Service & Support accompanies you worldwide in all matters concerning automation and 
+drive technology from Siemens. We provide direct on-site support in more than 100 countries 
+through all phases of the life cycle of your machines and plants. 
+You have an experienced team of specialists at your side to provide active support and 
+bundled know-how. Regular training courses and intensive contact among our employees – 
+even across continents – ensure reliable service in the most diverse areas. 
+PAGE 92
+Service & Support  
+ 
+ PROFIBUS with STEP 7 V13 
+92 Function Manual, 12/2014, A5E03775446-AC 
+Online Support 
+The comprehensive online information platform supports you in all aspects of our Service & 
+Support at any time and from any location in the world. 
+You can find Online Support on the Internet at the following address: Internet 
+(http://www.siemens.com/automation/service&support). 
+Technical Consulting 
+Support in planning and designing your project: From detailed actual-state analysis, 
+definition of the goal and consultation on product and system questions right through to the 
+creation of the automation solution. 
+Technical Support 
+Expert advice on technical questions with a wide range of demand-optimized services for all 
+our products and systems. 
+You can find Technical Support on the Internet at the following address: Internet 
+(http://www.siemens.com/automation/support-request). 
+Training 
+Extend your competitive edge – through practical know-how directly from the manufacturer. 
+You can find the training courses we offer on the Internet at the following address: Internet 
+(http://www.siemens.com/sitrain). 
+Engineering Support 
+Support during project engineering and development with services fine-tuned to your 
+requirements, from configuration through to implementation of an automation project.  
+Field Service 
+Our Field Service offers you services for commissioning and maintenance – to ensure that 
+your machines and plants are always available. 
+Spare parts 
+In every sector worldwide, plants and systems are required to operate with constantly 
+increasing reliability. We will provide you with the support you need to prevent a standstill 
+from occurring in the first place: with a worldwide network and optimum logistics chains.  
+Repairs 
+Downtimes cause problems in the plant as well as unnecessary costs. We can help you to 
+reduce both to a minimum – with our worldwide repair facilities. 
+PAGE 93
+ Service & Support 
+ 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 93 
+Optimization 
+During the service life of machines and plants, there is often a great potential for incr easing 
+productivity or reducing costs. 
+To help you achieve this potential, we are offering a complete range of optimization services.  
+Modernization 
+You can also rely on our support when it comes to modernization – with comprehensive 
+services from the planning phase all the way to commissioning. 
+Service programs 
+Our service programs are selected service packages for an automation and drives system or 
+product group. The individual services are coordinated with each other to ensure smooth 
+coverage of the entire life cycle and support optimum use of your products and systems.  
+The services of a Service Program can be flexibly adapted at any time and used separately.  
+Examples of service programs: 
+● Service contracts 
+● Plant IT Security Services 
+● Life Cycle Services for Drive Engineering 
+● SIMATIC PCS 7 Life Cycle Services 
+● SINUMERIK Manufacturing Excellence 
+● SIMATIC Remote Support Services 
+ 
+Advantages at a glance: 
+● Reduced downtimes for increased productivity 
+● Optimized maintenance costs due to a tailored scope of services 
+● Costs that can be calculated and therefore planned 
+● Service reliability due to guaranteed response times and spare part delivery times  
+● Customer service personnel will be supported and relieved of additional tasks  
+● Complete service from one source: fewer interfaces and more know-how 
+Contact  
+At your service locally, around the globe: your partner for consultation, sales, training, 
+service, support, spare parts... for the entire range of products supplied by Industry 
+Automation and Drive Technologies. 
+You can find your personal contact in our contacts database at: Internet 
+(http://www.siemens.com/automation/partner). 
+ 
+PAGE 94
+ 
+ PROFIBUS with STEP 7 V13 
+94 Function Manual, 12/2014, A5E03775446-AC 
+Glossary  
+ 
+Automation system 
+Programmable logic controller for the open-loop and closed-loop control of process chains of 
+the process engineering industry and manufacturing technology. The automation system 
+consists of different components and integrated system functions according to the 
+automation task. 
+Bus 
+A common transfer route to which all nodes are connected; it has two defined ends.  
+In the case of PROFIBUS, the bus is a two-wire line or a fiber-optic cable. 
+Bus connector 
+Physical connection between the node and bus cable. 
+Bus system 
+All stations physically connected to a bus cable form a bus system. 
+Device 
+In the PROFIBUS environment, "device" is the generic term for: 
+● Automation systems (for example, PLC, PC) 
+● Distributed I/O systems 
+● Field devices (for example, hydraulic devices, pneumatic devices) 
+● Active network components 
+● Gateways to AS interface or other fieldbus systems 
+Device that can send, receive or amplify data via the bus, for example, a DP slave by means 
+of PROFIBUS DP. 
+PAGE 95
+ Glossary 
+ 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 95 
+Device 
+In the PROFIBUS environment, "device" is the generic term for: 
+● Automation systems (for example, PLC, PC) 
+● Distributed I/O systems 
+● Field devices (for example, hydraulic devices, pneumatic devices) 
+● Active network components 
+● Gateways to AS interface or other fieldbus systems 
+Device that can send, receive or amplify data via the bus, for example, a DP slave by means 
+of PROFIBUS DP. 
+Diagnostics 
+Monitoring functions for the recognition, localization, classification, display and further 
+evaluation of errors, faults and alarms. They run automatically during plant operation. This 
+increases the availability of systems/plants by reducing commissioning times and 
+downtimes. 
+DP master 
+CPU or device that conducts the communication with the DP slaves according to a defined 
+algorithm. To do this, the DP master uses the functions for communication with the DP 
+slaves which are defined by PROFIBUS DP. It acts according to standard EN 50170, Part 3. 
+→ Master 
+DP slave 
+Slave in the distributed I/O that is operated on the PROFIBUS with PROFIBUS DP protocol 
+and acts according to standard EN 50170, Part 3. The DP slave is addressed by the DP 
+master and provides it with specified functions (I/O data, diagnostics, etc.). 
+→ Slave 
+DPV1 
+The designation DPV1 refers to the functional extension of acyclic services (to include new 
+interrupts, for example) provided by the DP protocol. The DPV1 functionality is integrated in 
+IEC 61158/EN 50170, Volume 2, PROFIBUS. 
+FDL 
+Fieldbus Data Link (bus access protocol). Step 2 with PROFIBUS. 
+HMI device 
+Human Machine Interface, device for visualization and control of automation processes.  
+PAGE 96
+Glossary  
+ 
+ PROFIBUS with STEP 7 V13 
+96 Function Manual, 12/2014, A5E03775446-AC 
+HSA 
+Highest Station Address. A bus parameter for PROFIBUS. Outputs the highest PROFIBUS 
+address of an active device. PROFIBUS addresses greater than HSA are permitted for 
+passive devices, up to 126. 
+Industrial Ethernet 
+Guideline for setting up Ethernet in an industrial environment. The main difference to the 
+standard Ethernet is the mechanical current carrying capacity and interference immunity of 
+the individual components. 
+I-slave 
+The "I-slave" functionality of a CPU supports the exchange of data with a DP master and can 
+thus be used, for example, as intelligent preprocessing unit of partial processes. The I -slave 
+is connected in its role as DP slave to a "higher-level" DP master. 
+Master 
+A master device that is in possession of the token can send data to other devices and 
+request data from them (= active device). 
+PCF 
+Polymer Cladded Fiber (plastic-covered glass fiber) 
+POF 
+Polymer Optical Fiber (plastic fiber-optic cable made of light-conducting plastics) 
+Process image 
+Address area in the system memory of the DP master. At the start of the cyclic program the 
+signal states of the input modules are transmitted to the process image of the inputs. And the 
+end of cyclic program execution, the process image of the outputs is transmitted to the DP 
+slave as signal state. 
+PROFIBUS 
+PROcess FIeld BUS, in IEC 61158-2 as "Type 3" standardized, bit-serial fieldbus system. 
+The standard specifies functional, electrical and mechanical properties. 
+PROFIBUS is a bus system that networks automation systems and field devices compatible 
+with PROFIBUS at the cell and field level. PROFIBUS is available with the protocols DP 
+(= distributed I/O), FMS (= fieldbus message specification) or PA (process automation). 
+PAGE 97
+ Glossary 
+ 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 97 
+PROFIBUS address 
+Unique identification of a device connected to PROFIBUS. The PROFIBUS address  is 
+transmitted in the frame for addressing a device. A PC or programming device has the 
+PROFIBUS address "0". DP masters and DP slaves have a PROFIBUS address in the range 
+from 1 to 125. 
+PROFIBUS device 
+A PROFIBUS device has at least one PROFIBUS interface with an electrical (RS 485) or 
+optical (Polymer Optical Fiber, POF) interface. 
+PROFIBUS DP 
+A PROFIBUS with DP protocol that complies with EN 50170. DP stands for distributed I/O 
+(fast, real-time capable, cyclic data exchange). From the perspective of the user program, 
+the distributed I/Os are addressed in exactly the same way as the centralized I/Os.  
+PROFINET 
+Open component-based industrial communication system based on Ethernet for distributed 
+automation systems. Communication technology promoted by the PROFIBUS Users 
+Organization. 
+RS 485 
+Asynchronous data transmission process for PROFIBUS DP to ANSI TIA/EIA-RS485-A. 
+RS 485 repeater 
+Equipment for amplifying bus signals and for coupling segments over long distances. 
+Segment 
+The bus line between two terminating resistors forms a bus segment. 
+A bus segment can contain up to 32 bus nodes. Segments can be coupled, for example, by 
+means of RS 485 repeaters or diagnostics repeaters. 
+Slave 
+Distributed device in a fieldbus system that may exchange data with a master after being 
+requested to do so by the master. Slaves are all DP slaves, for example, such asET  200SP, 
+ET 200MP, ET 200AL. 
+PAGE 98
+Glossary  
+ 
+ PROFIBUS with STEP 7 V13 
+98 Function Manual, 12/2014, A5E03775446-AC 
+Standard mounting rail 
+Standardized metal profile to EN 50022. 
+The standard mounting rail is used for quick snap-on installation of network components, 
+such as OLM, repeaters, etc. 
+Subnet 
+Part of a network whose parameters must be synchronized with the devices  
+(e.g., with PROFIBUS). A subnet includes the bus components and all connected stations.  
+SynchronousCycle 
+Name for synchronous cycle interrupt OB in STEP 7. 
+Target-Rotation-Time (Ttr) 
+Bus parameter for PROFIBUS. The token is the send permission for a device on 
+PROFIBUS. A device compares a token rotation time it has measured with the Target -
+Rotation-Time and controls the sending of frames with high priority or low priority based on 
+this comparison. 
+Terminating resistor 
+Component that terminates the ends of a data transmission line to prevent reflections in the 
+transmission medium. 
+Terminator 
+Terminating resistor of bus segments with transmission rates of 9.6 kbps to 12 Mbps. The 
+power supply is separate from the bus nodes. 
+TIA Portal 
+Totally Integrated Automation Portal 
+Topology 
+Structure of a network. Common structures are line topology, ring topology, star topology 
+and tree topology. 
+Transmission rate 
+Specifies the number of bits transmitted per second. 
+Watchdog 
+Mechanism for monitoring the readiness for operation. 
+PAGE 99
+ 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 99 
+ Index  
+ 
+A 
+Acyclic data exchange, 74 
+Address assignment, 45 
+Addressing, 42 
+B 
+Bus connector 
+IP20, 22 
+M12 with IP65, 24 
+Bus parameters 
+Adapting, 50 
+Description, 52 
+Value ranges, 54 
+Bus profile, user-defined, 54 
+Bus terminal 
+M12, 24 
+RS 485, 24 
+C 
+Cable configuration, 49 
+Cables, 19 
+Calculate bus times, 51 
+CANopen module, 30 
+Communication 
+I/O communication, 14 
+Communication load, 51 
+Components, (See network components) 
+Configuration, 42 
+Configuring isochronous mode, 68 
+Basic procedure, 67 
+DP slave, 68 
+Requirements, 66 
+Updating the process image partition, 69 
+Connecting PROFIBUS DP with PROFINET IO, 41 
+Constant bus cycle time, 55 
+D 
+Data exchange between IO systems, 81 
+Diagnostic repeater 
+Cascade depth, 37 
+Diagnostics, 60 
+Topology, 37 
+Diagnostics, 57 
+Display alarms, 58 
+I-slave, 89 
+Isochronous mode, errors and remedies, 70 
+Diagnostics repeater 
+Description, 29 
+Display, diagnostic messages, 58 
+DP master 
+Operated as, 80 
+DP slave, 43 
+Operated as, 80 
+DP/AS-i F-Link, 31 
+DP/AS-i LINK Advanced, 31 
+DP/AS-Interface Link 20E, 31 
+DP/DP coupler, 30 
+DP/PA bus link, 31 
+E 
+Example of isochronous mode, 64 
+F 
+FastConnect system, 20 
+Fiber-optic, 27 
+Fiber-optic cables, 25 
+Glass, 27 
+Optical ring, 49 
+PCF, 26 
+Plastic, 26 
+G 
+GAP factor, 54 
+H 
+Hardware 
+Configuring, 42 
+Parameter assignment, 42 
+PAGE 100
+Index 
+ 
+ PROFIBUS with STEP 7 V13 
+100 Function Manual, 12/2014, A5E03775446-AC 
+I 
+I/O addresses, 69 
+I/O communication, 14 
+Identification and maintenance data (I&M data), 61 
+IE/PB Link PN, 30 
+Increasing DP cycle time, 56 
+Installation, 17 
+Active network components, 29 
+Bus connection, 22 
+Cables, 19 
+FastConnect, 20 
+Topology, 35 
+Interrupt OBs, 77 
+Interrupts 
+DPV1, 77 
+Isochronous mode, 70 
+IO system 
+Data exchange, 81 
+I-slave (intelligent DP slave) 
+Diagnostics, 89 
+Interrupt behavior, 89 
+Isochronous mode 
+Change parameters, 71 
+Description, 62 
+Diagnostics, 70 
+Dialog box for isochronous mode, 71 
+Example, 64 
+Interrupts, 70 
+Sequence, in principle, 65 
+IWLAN/PB Link PN IO, 30, 40 
+M 
+M12 
+Bus connector, 24 
+Bus terminating resistor, 24 
+M12 bus terminating resistor, 24 
+Maximum cable lengths 
+Maximum cable lengths, 20 
+N 
+Network, 18 
+electrical, conducted, 29 
+Optical, 33 
+optical, electrical, 18 
+Selection criteria, 18 
+Topology, 35 
+Network components 
+Bus connections, 20 
+CANopen module, 30 
+Diagnostics repeater, 29 
+DP/AS-i F-Link, 31 
+DP/AS-i LINK Advanced, 31 
+DP/AS-Interface Link 20E, 31 
+DP/DP coupler, 30 
+Fiber-optic cables, 25 
+IE/PB Link PN, 30 
+IWLAN/PB Link PN IO, 30 
+OBT, Optical Bus Terminal, 33 
+OLM, Optical Link Module, 33 
+PROFIBUS terminator, 30 
+RS 485 cables, 19 
+RS485, 29 
+Network settings, 46 
+O 
+Optical Bus Terminal, OBT, 33 
+Optical Link Module, OLM 
+Description, 33 
+Topology, 40 
+Optical ring, 49, 50 
+P 
+Parameter assignment, 42 
+Process image partition, 69 
+PROFIBUS 
+Address, 45 
+Devices, 12 
+Installation, 17 
+PROFIBUS DP, 11 
+Protocols, 10 
+RS 485 cables, 19 
+PROFIBUS address, 45 
+Change, 45 
+HSA, 46 
+PROFIBUS DP 
+Applications, 11 
+Assigning the DP slave, 43 
+Connecting with PROFINET, 41 
+Definition, 10 
+Devices and designations, 13 
+Interface, 16 
+PROFIBUS DP interface 
+Properties, 16 
+Representation in STEP 7, 16 
+PROFIBUS terminator, 30 
+Profiles for network settings 
+DP, Standard, 46 
+User-defined, 48 
+PAGE 101
+ Index 
+ 
+PROFIBUS with STEP 7 V13 
+Function Manual, 12/2014, A5E03775446-AC 101 
+PROFINET Proxy functionality, 41 
+Programming isochronous mode, 70 
+R 
+Retry limit, 50, 54 
+RS 485 cables, 20 
+RS485 repeater 
+Description, 29 
+Topology, 35 
+S 
+Slot time, 50, 54 
+SYNC/FREEZE, 75 
+Synchronization, sequence, 65 
+Synchronous cycle interrupt, 69 
+Synchronous cycle interrupt OB, 
+SynchronousCycle, 70 
+SynchronousCycle, synchronous cycle interrupt OB, 70 
+T 
+Target Rotation Time, 54 
+Topology 
+Connecting PROFIBUS DP with PROFINET, 41 
+OLM, 40 
+RS485 repeater, 35 
+WLAN, 40 
+ 

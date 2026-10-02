@@ -1,0 +1,32 @@
+FIELD NAME FIELD TYPE CARD. DESCRIPTION
+timestamp dateTime 0..1 Optional. The time for which the status is reported. If absent time
+of receipt of the message will be assumed.
+vendorId CiString255Type 0..1 Optional. This identifies the vendor-specific implementation.
+vendorErrorCode CiString50Type 0..1 Optional. This contains the vendor-specific error code.
+6.48. StatusNotification.conf
+This contains the field definition of the StatusNotification.conf PDU sent by the Central System to the Charge
+Point in response to an StatusNotification.req PDU. See also Status Notification
+No fields are defined.
+6.49. StopTransaction.req
+This contains the field definition of the StopTransaction.req PDU sent by the Charge Point to the Central System.
+See also Stop Transaction
+FIELD NAME FIELD TYPE CARD. DESCRIPTION
+idTag IdToken 0..1 Optional. This contains the identifier which requested to stop the charging. It is
+optional because a Charge Point may terminate charging without the presence
+of an idTag, e.g. in case of a reset. A Charge Point SHALL send the idTag if known.
+meterStop integer 1..1 Required. This contains the meter value in Wh for the connector at end of the
+transaction.
+timestamp dateTime 1..1 Required. This contains the date and time on which the transaction is stopped.
+transactionId integer 1..1 Required. This contains the transaction-id as received by the
+StartTransaction.conf.
+reason Reason 0..1 Optional. This contains the reason why the transaction was stopped. MAY only
+be omitted when the Reason is "Local".
+ transactionData MeterValue 0..* Optional. This contains transaction usage details relevant for billing purposes.
+6.50. StopTransaction.conf
+This contains the field definition of the StopTransaction.conf PDU sent by the Central System to the Charge Point
+in response to a StopTransaction.req PDU. See also Stop Transaction
+FIELD NAME FIELD TYPE CARD. DESCRIPTION
+idTagInfo IdTagInfo 0..1 Optional. This contains information about authorization status, expiry and
+parent id. It is optional, because a transaction may have been stopped without
+an identifier.
+72

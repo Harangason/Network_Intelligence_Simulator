@@ -1,0 +1,109 @@
+ID. Precondition Requirements Note
+Q01.FR.02 When Charging Station’s
+ISO15118Ctrlr.Enabled = true and
+V2XChargingCtrlr.Enabled = true AND
+Charging Station starts an ISO 15118-
+20 transaction
+Charging Station SHALL add EVCCID
+to idToken in
+TransactionEventRequest(eventType=
+Started) in
+idToken.additionalInfo.additionalIdTok
+en and with
+idToken.additionalInfo.type set to
+"EVCCID".
+This transaction may become
+bidirectional. This is needed in case
+CSMS uses the EVCCID of vehicle to
+decide whether to allow V2X.
+Q01.FR.03 Q01.FR.02 Charging Station SHALL send a
+NotifyEVChargingNeedsRequest with
+evseId set to the EVSE used for this
+transaction AND
+the requestedEnergyTransfer set to the
+type that has been agreed between EV
+and Charging Station AND
+a list of availableEnergyTransfer that is
+supported by EV AND
+the fields controlMode,
+v2xChargingParameters and optionally
+departureTime, mobilityNeedsMode
+and evEnergyOffer.
+Q01.FR.04 If CSMS does not accept the
+requestedEnergyTransfer
+CSMS SHALL respond with a
+NotifyEVChargingNeedsResponse
+with status = Rejected.
+Q01.FR.05 Q01.FR.04 AND
+ISO15118.ServiceRenegotiationSuppo
+rt = true
+Charging Station SHALL start a
+service renegotiation with EV for a
+different energy transfer service and
+send a new
+NotifyEvChargingNeedsRequest
+This situation should not occur when
+an energy transfer is selected from the
+allowedEnergyTransfer list in the
+AuthorizeResponse.
+Q01.FR.06 Q01.FR.04 AND
+Charging Station did not start a
+service renegotiation
+Charging Station SHALL terminate the
+transaction and send a
+TransactionEventRequest with
+eventType=Ended, triggerReason
+=AbnormalCondition,
+stoppedReason=ReqEnergyTransfe
+rRejected.
+This is an error situation, because
+energy service did not match
+allowedEnergyTransfer.
+Q01.FR.07 If CSMS accepts the
+requestedEnergyTransfer
+CSMS SHALL respond with a
+NotifyEVChargingNeedsResponse
+with status = Accepted if able to
+provide a charging profile
+immediately, or Processing if more
+time is needed to provide a charging
+profile.
+See requirements K18/19.FR.03 and
+K18/19.FR.05.
+Charging station can expect to receive
+a charging profile immediately or
+soon.
+Q01.FR.08 Charging Station’s
+ISO15118Ctrlr.Enabled = true and
+V2XChargingCtrlr.Enabled = true AND
+CSMS receives an AuthorizeRequest
+AND
+CSMS is not able to determine a list of
+allowedEnergyTranfer before sending
+the AuthorizeResponse
+CSMS SHALL omit
+allowedEnergyTransfer from
+AuthorizeResponse.
+This can happen if it could not be
+determined within the short time span
+before the response has to be
+returned, e.g. because a third party
+has to be requested for permission.
+Q01.FR.09 Q01.FR.08 Charging Station SHALL send a
+NotifyEVChargingNeedsRequest with
+evseId set to the EVSE used for this
+transaction and
+requestedEnergyTransfer set to its
+default energy transfer (charging only
+AC/DC) and availableEnergyTransfer
+set to the supported energy transfers.
+Depending on type of EVSE this will be
+AC_single_phase, AC_two_phase,
+AC_three_phase or DC, DC_ACDP
+Device model
+Q01.FR.30 Charging Station SHALL report the
+operation modes that it supports in
+V2XChargingCtrlr
+SupportedOperationModes
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 511/803 Part 2 - Specification

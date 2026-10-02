@@ -1,0 +1,83 @@
+ID Precondition Requirement definition
+M05.FR.06 When a new certificate gets installed AND
+the CertificateEntries.maxLimit is going to be
+exceeded
+The Charging Station SHALL respond with status = Rejected.
+M05.FR.07 M05.FR.01 AND
+The certificate is invalid.
+The Charging Station SHALL indicate rejection by setting status
+to Rejected in the InstallCertificateResponse.
+M05.FR.09 When AdditionalRootCertificateCheck
+is true
+Only one certificate (plus a temporarily fallback certificate) of
+certificateType CSMSRootCertificate is allowed to be installed at
+a time.
+M05.FR.10 When AdditionalRootCertificateCheck
+is true AND
+installing a new certificate of certificateType
+CSMSRootCertificate
+The new CSMS Root certificate SHALL replace the old CSMS
+Root certificate AND the new Root Certificate MUST be signed
+by the old Root Certificate it is replacing
+M05.FR.11 M05.FR.10 AND
+the new CSMS Root certificate is NOT signed by
+the old CSMS Root certificate
+The Charging Station SHALL NOT install the new CSMS Root
+Certificate and respond with status = Rejected.
+M05.FR.12 M05.FR.10 AND
+the new CSMS Root certificate is signed by the
+old CSMS Root certificate
+The Charging Station SHALL install the new CSMS Root
+Certificate AND temporarily keep the old CSMS Root certificate
+as a fallback certificate AND respond with status = Accepted
+M05.FR.13 M05.FR.12 AND
+the Charging Station successfully connected to
+the CSMS using the new CSMS Root certificate
+The Charging Station SHALL remove the old CSMS Root
+(fallback) certificate.
+M05.FR.14 M05.FR.12 AND
+The Charging Station is attempting to reconnect
+to the CSMS (NOT migrating to another CSMS
+with Use Case B10 - Migrate to new CSMS), but
+determines that the server certificate provided
+by the CSMS is invalid when using the new
+CSMS Root certificate to verify it
+The Charging Station SHALL try to use the old CSMS Root
+(fallback) certificate to verify the server certificate.
+M05.FR.15 M05.FR.12 AND
+When the Charging Station is migrating to
+another CSMS with Use Case B10 - Migrate to
+new CSMS, but determines that the server
+certificate provided by the CSMS is invalid when
+using the new CSMS Root certificate to verify it
+The Charging Station SHALL use the
+NetworkProfileConnectionAttempts mechanism as
+described at Use Case B10 - Migrate to new CSMS .
+M05.FR.16 M05.FR.15 AND
+If after the number of attempts the connection
+fails AND
+If it goes back to the old
+NetworkConnectionProfile
+(See B10.FR.03)
+The Charging Station SHALL use the old CSMS Root (fallback)
+certificate to verify the server certificate.
+M05.FR.17 NOT M05.FR.10 AND
+After receiving an InstallCertificateRequest for a
+certificate that is already present in the
+certificate trust store of the Charging Station
+The Charging Station SHALL replace the certificate and respond
+with InstallCertificateResponse with status = Accepted.
+M06 - Get V2G Charging Station Certificate status
+No. Type Description
+1 Name Get V2G Charging Station Certificate status
+2 ID M06
+3 Objective(s) To enable a Charging Station to cache the OCSP certificate status needed for the TLS handshake
+between EV and Charging Station.
+4 Description When the cable gets plugged in and an ISO 15118 supported EV gets connected to the Charging
+Station, the EV requests the Charging Station to prove the validity of the (SubCA) certificates by
+an OCSPResponse. A request needs to be sent per SubCA. Because the timeout constraint in ISO
+15118 is too strict to make the call to an external server, OCPP requires to cache the OCSP
+certificate status of the certificates beforehand. The Charging Station needs to refresh the
+cached OCSP data once a week..
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 444/803 Part 2 - Specification

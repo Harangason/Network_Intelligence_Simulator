@@ -1,0 +1,56 @@
+Description Via this variable, the Charging Station provides the CSMS with the option to
+configure a clock source, if more than 1 are implemented.
+By providing a list of possible sources, the CSO can configure fallback sources.
+Example:
+"NTP,Heartbeat" means, use NTP, but when none of the NTP servers responses,
+use time synchronization via Heartbeat.
+NOTE: RadioTimeTransmitter: At various locations around the globe, low-
+frequency radio transmitters provide accurate local time information e.g. DCF77
+in Germany, MSF in the United Kingdom, JJY in Japan etc. Such a radio time
+clock can be used as a time source for a Charging Station. The Charging Station
+shall convert the broadcasted time to UTC. For this TimeZone, TimeOffset,
+'NextTimeOffsetTransitionDateTime' and 'TimeOffsetNextTransition' can be
+used.
+2.1.31. TimeZone
+Required no
+Component componentNa
+me
+ClockCtrlr
+Variable variableName TimeZone
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+dataType string
+Description Configured current local time zone in the format: "Europe/Oslo", "Asia/Singapore"
+etc.
+When a time zone is used, it is advised not to implement: TimeOffset. If a
+Charging Station has implemented both TimeOffset and TimeZone it is
+RECOMMENDED to not use both at the same time.
+The time zone is for display purposes to show local time and is also used for
+charging profiles that have useLocalTime = true.
+2.1.32. TimeAdjustmentReportingThreshold
+Required no
+Component componentNa
+me
+ClockCtrlr
+Variable variableName TimeAdjustmentReportingThreshold
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+unit s
+dataType integer
+Description When the clock time is adjusted forwards or backwards for more then
+TimeAdjustmentReportingThreshold number of seconds, a
+SecurityEventNotification( "SettingSystemTime" ) is sent by the charging station.
+A reasonable value is 20 seconds.
+2.1.33. CustomImplementationEnabled
+Required no
+Component componentNa
+me
+CustomizationCtrlr
+Edition 4, 2025-12-03 Referenced Components and Variables
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 453/491 Part 2 - Specification

@@ -1,0 +1,54 @@
+TC_C_121_CS: Incremental authorization - increasing enabled
+Test case name Incremental authorization - increasing enabled
+Test case Id TC_C_121_CS
+Use case Id(s) C23
+Requirement(s) C23.FR.01, C23.FR.02
+System under test Charging Station
+Description In order to test that Charging Station supports incremental authorization with increasing enabled.
+Purpose To verify if the Charging Station is able to handle incremental authorization with increasing enabled.
+Prerequisite(s) - Charging Station has an integrated Payment Terminal
+Before (Preparations)
+Configuration State:
+TariffCostCtrlr.Enabled[Tariff] is true
+TariffCostCtrlr.Enabled[Cost] is true
+TariffCostCtrlr.Currency is EUR
+PaymentCtrlr.Enabled is true
+PaymentCtrlr.AuthorizationAmount is 10.00
+PaymentCtrlr.AuthorizeDirectPayment is false
+PaymentCtrlr.SettlementByCSMS is false
+PaymentCtrlr.ReceiptByCSMS is false
+PaymentCtrlr.IncrementalAuthorizationAmount is 5.00
+PaymentCtrlr.IncrementalAuthorizationThreshold is 2.00
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.chargingTime.prices[0].priceMinute 8.0
+tariff.chargingTime.taxRates[0].type MyTax
+tariff.chargingTime.taxRates[0].tax 25
+3. Execute Reusable State AuthorizedPaymentTerminal (Local)
+4. Execute Reusable State EVConnectedPreSession
+5. Execute Reusable State EnergyTransferStarted
+Note(s):
+- When cost reaches 8.00 after around 48 seconds since start of the transaction
+- The Charging Station requests payment terminal to increase the authorization amount to 15.00 EUR
+6. The Charging Station sends a TransactionEventRequest
+7. The Test System responds with a TransactionEventResponse
+Note(s):
+- When cost reaches 13.00 after about 78 seconds since start of the transaction
+- The Charging Station requests payment terminal to increase the authorization amount to 20.00 EUR
+8. The Charging Station sends a TransactionEventRequest
+9. The Test System responds with a TransactionEventResponse
+Note(s):
+- When cost reaches 17.00 after about 102 seconds have passed since start of the transaction
+- The Charging Station requests payment terminal to increase the authorization amount to 25.00 EUR
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 208/1383 Part 6 - Test Cases

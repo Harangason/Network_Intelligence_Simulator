@@ -1,0 +1,71 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 17
+OS81092
+5.0 INIC PROCESSOR
+The OS81092 is a valid network node even without an EHC, due to the on-chip INIC Processor. The INIC Software
+Stack, running on the INIC Processor, provides a message-bas ed interface that is easily implemented in a high-level
+language. This message-based interface not only simplifies the interface between the application and the network, but
+allows the EHC software to be completely driven by message events. Using the INIC API, as described in the OS81092
+INIC API User’s Manual [2], the EHC has access to the same functionality that would be available on a register-based
+interface, but the programmer is spared the effort of making software align with the chip architecture. Much of the INIC
+Software Stack is common across INIC chip s, minimizing the effort of upgradi ng the software for different application
+platforms. The power-up default settings of the INIC Processo r, such as timing-master/tim ing-slave functionality and
+other configuration options, can be changed using OTP memory (see Section 16.6 “Configuration”). The power-up con-
+figuration settings stored in OTP memory are collectively referred to as the INIC Configuration String.
+Partitioning the node architecture between  INIC and the EHC results in an efficient implementation, allowing INIC to
+respond to many network events without intervention by the EHC. Network initialization is optimized, not requiring the
+network transceiver at each node to wait for the Application Layer to respond. Application software runs efficiently since
+the number of interrupts to the EHC is minimized. Interaction between the EHC and INIC can be further reduced if the
+EHC enables notification for INIC properties. Figure 5-1 illustrates the OS81092 INIC Software Stack. 
+FIGURE 5-1: INIC SOFTWARE STACK
+5.1 INIC Message Interface
+Internal OS81092 FIFOs are used for message-based data exchange between INIC and the EHC. Message-based data
+includes: control messages (e.g. MCMs, ICMs) and asynch ronous packets (e.g. MDPs). The Port Message Protocol
+(described in Section 6.0 “Port Message Protocol”) defines the format for all messages passing through the INIC Mes-
+sage Interface.
+Six independent FIFOs support the INIC Message Interface, including:
+• MCM Rx FIFO - used to receive MOST Control Messages (MCMs) from the EHC that are intended for either the 
+local FBlock NBMIN or the MOST Network.
+• MCM Tx FIFO - used to transmit MCMs to the EHC from the local FBlock NBMIN or the MOST Network.
+• ICM Rx FIFO - used to receive INIC Control Messages (ICMs) from the EHC intended only for the local FBlock 
+INIC.
+• ICM Tx FIFO - used to transmit ICMs to the EHC from the local FBlock INIC.
+• MDP Rx FIFO - used to receive MOST Data Packet messages (MDPs) from the EHC that are intended for trans-
+mission onto the MOST Network.
+• MDP Tx FIFO - used to transmit MDPs to the EHC from the MOST Network.
+MOST NetServices MiniKernel
+INIC Message Interface
+FBlocks on chip
+INIC API (Port Message Protocol)
+Socket
+Connection
+Manager
+(SCM)
+MOST
+Processor
+Control
+Service
+(MCS)
+MOST
+Supervisor
+(MSV)
+INIC
+Minimum
+NetBlock
+(NBMIN)
+MOST Network
+INIC
+Segmen-
+tation
+Service
+(ISS)
+Control Message Service
+(CMS)
+Asyn-
+chronous
+Data
+Services
+(ADS)
+MDP FIFOs
+RX TX
+MCM FIFOsICM FIFOs
+RX TX RX TX

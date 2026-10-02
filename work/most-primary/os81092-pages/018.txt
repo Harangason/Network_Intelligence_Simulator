@@ -1,0 +1,24 @@
+OS81092
+DS60001271B-page 18  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+Each type of message-based data targets a specific INIC FIFO based on direction of transport. These FIFOs are used
+for message-based data exchange, regardless of the actual hardware port used for communication.
+The OS81092 INIC supports four external interfaces (INIC Ports) for exchanging messages. Message FIFOs are used
+during transmission and reception of data at each por t. Most ports can be opened and configured using the Open-
+Port() function within the MOST NetServices MiniKernel’s Socket Connection Manager (SCM).
+• MediaLB Port (PortID 0) - The MediaLB Port can be opened by default at power-up/reset based on the INIC 
+Configuration String. If not automatically opened by default, this port can be opened and configured through the 
+Control Port, using the OpenPort() function described in the API manual.
+• Control Port (PortID 1) - The Control Port is not configurable via the API. This port can only be opened at power-
+up/reset based on the INIC Configuration String.
+• Network Port (PortID 2). The Network Port is configurable via the API. This port is always opened by default at 
+power-up/reset.
+• Streaming Port (PortID 3). The Streaming Port is never opened by default at power-up/reset. This port can be 
+opened and configured through the Control Port or MediaLB Port, using the OpenPort() function described in 
+the API manual.
+Note: When the MediaLB Port is automatica lly opened out of reset, one socket
+pair is created for Control message transport between INIC and the EHC. A
+sink socket is assigned ChannelAddress 0004h for EHC to INIC exchange. A
+source socket is assigned ChannelAddress 0002h for INIC to EHC exchange.
+Additional socket pairs for asynchronous and synchronous data transfer
+between the MediaLB Port and the Network Port can be opened by the user
+with the CreateSocket() INIC function.

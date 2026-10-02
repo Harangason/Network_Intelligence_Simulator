@@ -1,0 +1,80 @@
+EMSPs
+Contract Certificate
+Pool 1
+Contract Certificate
+Pool 2 CSMS Charging Station EV
+EMSPs prepare contracts
+Add contract 1 to CCP1
+Add contract 2 to CCP1
+Add contract 3 to CCP2
+EV connects to charging station and requests contract(s)
+EV connects to
+Charging Station
+CertificateInstallationReq
+Get15118EVCertificateRequest(iso15118SchemaVersion,
+action = Install, exiRequest,
+maximumContractCertificateChains=2)
+CSMS fetches contracts at
+all Contract Certificate Pools.
+GetContracts(exiRequest)
+GetContracts(message containing
+2 exiResponses with contract #1 and #2)
+GetContracts(exiRequest)
+GetContracts(message containing
+1 exiResponse with contract #3)
+Get15118EVCertificateResponse(
+exiResponse(contract #1, remaining=1)
+remainingContracts=2)
+Charging Station changes RemainingContractCertificateChains
+(remaining) in the CertificateInstallationRes to the value of the
+OCPP field: remainingContracts (which is determined by CSMS!).
+Charging Station sends fetched contracts from CSMS to EV
+CertificateInstallationRes
+(contract #1, remaining=2)
+CertificateInstallationReq
+Get15118EVCertificateRequest(iso15118SchemaVersion,
+action = Install, exiRequest
+MaximumContractCertificateChains=2)
+Get15118EVCertificateResponse(
+exiResponse(contract #2, remaining=0)
+remainingContracts=1)
+CertificateInstallationRes
+(contract #2, remaining=1)
+CertificateInstallationReq
+Get15118EVCertificateRequest(iso15118SchemaVersion,
+action = Install, exiRequest
+MaximumContractCertificateChains=2)
+Get15118EVCertificateResponse(
+exiResponse(contract #3, remaining=0)
+remainingContracts=0)
+CertificateInstallationRes
+(contract #3, remaining=0)
+MaximumContractCertificateChains has been reached.
+Charging Station stops requesting more at CSMS.
+Figure 158. Getting multiple contract certificates with ISO 15118-20
+Source: ISO15118-1
+M01 - Certificate installation - Requirements
+Table 127. M01 - Requirements
+ID Precondition Requirement definition Note
+M01.FR.01 Upon receiving an ISO
+15118
+CertificateInstallationReq
+The Charging Station SHALL forward the request to
+the CSMS using the Get15118EVCertificateRequest
+message with action = Install.
+The CSMS is responsible for
+forwarding it to the secondary actor
+which will process the
+CertificateUpdateRequest. This could
+be a contract certificate pool as
+outlined in application guide VDE-AR-
+2802-100-1.
+M01.FR.02
+(2.1)
+When EV uses ISO
+15118-2
+Charging Station SHALL NOT include the field
+maximumContractCertificateChains in the
+Get15118EVCertificateRequest message.
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 438/803 Part 2 - Specification

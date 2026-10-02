@@ -1,0 +1,45 @@
+4.1.6. Action
+The Action field in the CALL message MUST be the OCPP message name without the "Request" suffix.
+For example: For a "BootNotificationRequest" the action field will be set to "BootNotification".
+BTW: The CALLRESULT does not contain the action field. A client can match the Response (CALLRESULT) with the Request (CALL)
+via the MessageId field.
+4.1.7. Message Validity
+An message is only valid when:
+• Action is a known Action.
+• The JSON payload is valid JSON
+• All the required field for the Action are present
+• All data is of the correct data type.
+When a message is not valid, the server SHALL respond with a CALLERROR
+4.2. Message structures for different message types
+NOTE
+You may find the Charging Station identity missing in the following paragraphs. The identity is exchanged during
+the WebSocket connection handshake and is a property of the connection. Every message is sent by or directed
+at this identity. There is therefore no need to repeat it in each message.
+4.2.1. CALL
+A CALL always consists of 4 elements: The standard elements MessageTypeId and MessageId, a specific Action that is required on
+the other side and a payload, the arguments to the Action. The syntax of a CALL looks like this:
+[<MessageTypeId>, "<MessageId>", "<Action>", {<Payload>}]
+Table 5. CALL Fields
+Field Datatype Meaning
+MessageTypeI
+d
+integer This is a Message Type Number which is used to identify the type of the message.
+MessageId string[36] This is a unique identifier that will be used to match request and result.
+Action string The name of the remote procedure or action. This field SHALL contain a case-sensitive string.
+The field SHALL contain the OCPP Message name without the "Request" suffix. For example: For
+a "BootNotificationRequest", this field shall be set to "BootNotification".
+Payload JSON JSON Payload of the action, see: JSON Payload for more information.
+For example, a BootNotificationRequest could look like this:
+[2,
+ "19223201",
+ "BootNotification",
+ {
+  "reason": "PowerUp",
+  "chargingStation": {
+      "model": "SingleSocketCharger",
+      "vendorName": "VendorX"
+  }
+ }
+]
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 11/28 Part 4 - JSON over WebSockets implementation guide

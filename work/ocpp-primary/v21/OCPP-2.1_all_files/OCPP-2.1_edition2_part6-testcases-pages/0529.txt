@@ -1,0 +1,44 @@
+TC_K_52_CS: EMS Control - Set / Update External Charging Limit (not on a
+transaction) - ChargingStationExternalConstraints in report
+Test case name EMS Control - Set / Update External Charging Limit (not on a transaction) -
+ChargingStationExternalConstraints in report
+Test case Id TC_K_52_CS
+Use case Id(s) K12
+Requirement(s) K12.FR.05
+System under test Charging Station
+Description A charging schedule or charging limit has been set by an external system on the Charging Station. Such a
+charging limit is represented by a charging profile with purpose ChargingStatioExternalConstraints.
+Purpose To verify if the charging station is able to correctly report an external charging limit as
+ChargingStationExternalConstraints.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+An external charging limit has been submitted to Charging Station.
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+GetChargingProfilesResponse
+1. The Test System sends a GetChargingProfilesRequest with
+chargingProfile.chargingProfilePurpose
+ChargingStationExternalConstraints
+3. The Charging Station sends a ReportChargingProfilesRequest
+4. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If tbc is True at Step 3 then step 3 and 4 will be repeated
+Tool validations
+* Step 2:
+Message GetChargingProfilesResponse
+- status Accepted
+* Step 3:
+Message ReportChargingProfilesRequest
+- requestId Same id as in the request in step 1
+- chargingProfile.chargingProfilePurpose ChargingStationExternalConstraints
+Post scenario validations:
+- All report messages have been received and at least one ChargingStationExternalConstraints is returned.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 527/1383 Part 6 - Test Cases

@@ -1,0 +1,32 @@
+NXP Semiconductors PN7160_PN7161
+Near Field Communication (NFC) controller
+11.5  Reset and download concept
+11.5.1  Resetting PN7160
+To enter reset, the VEN voltage shall be set to low (this is also the Hard Power Down state):
+Reset means resetting the embedded FW execution and the registers values to their default values. Parts of
+these default values are defined from EEPROM data loaded values, others are hardware defined. See ref.[6] to
+know which ones are accessible to tune PN7160 to the application environment.
+To get out of reset:
+• Pulling VEN voltage high with VBAT within its operating range
+Figure 20 shows reset done via VEN pin.
+aaa-024833
+host
+communication
+possible
+tboottWL(VEN)VEN
+VDD(PAD)
+VBAT
+Figure 20. Resetting PN7160 via VEN pin
+See Section 15.2.1 for the timings values.
+11.5.2  Power-up sequences
+PN7160 allows VBAT and VDD(PAD) to be set up independently, therefore different power-up sequences have to
+be considered.
+In all cases, host communication with PN7160 will only be possible after one defined amount of time from the
+different supply sequence setup and VEN reset pin.
+11.5.2.1  VBAT is set up before VDD(PAD)
+This is at least the case when VBAT pin is directly connected to the battery and when PN7160 VBAT is always
+supplied as soon the system is supplied.
+As VEN pin is referred to VBAT pin, VEN shall go high after VBAT has been set.
+PN7160_PN7161 All information provided in this document is subject to legal disclaimers. © 2026 NXP B.V. All rights reserved.
+Product data sheet Rev. 4.2 — 22 July 2026 Document feedback
+32 / 70

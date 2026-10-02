@@ -1,0 +1,111 @@
+ID Precondition Requirement definition Note
+A02.FR.21 When the Charging
+Station receives a
+SignCertificateResponse
+with status Rejected, in
+response to a
+SignCertificateRequest
+with certificateType
+V2GCertificate
+It is RECOMMENDED to turn off
+ISO15118PnCEnabled until the Charging Station
+has been rebooted.
+A02.FR.22
+(2.1)
+A02.FR.02 AND
+requestedMessage =
+SignV2GCertificate
+in
+TriggerMessageRequest
+Charging Station SHALL send a
+SignCertificateRequest message for a V2G
+certificate for ISO 15118-2.
+A02.FR.23
+(2.1)
+A02.FR.02 AND
+requestedMessage =
+SignV2G20Certifica
+te in
+TriggerMessageRequest
+Charging Station SHALL send a
+SignCertificateRequest message for a V2G
+certificate for ISO 15118-20.
+A02.FR.24
+(2.1)
+Charging Station SHOULD add a requestId to
+SignCertificateRequest to be able to match the
+request to the resulting CertificateSignedRequest
+message.
+A02.FR.25
+(2.1)
+When CSMS receives a
+SignCertificateRequest
+with a field requestId
+CSMS SHALL include this requestId in the resulting
+CertificateSignedRequest message.
+A02.FR.26
+(2.1)
+When Charging Station
+receives a
+CertificateSignedRequest
+with an unknown
+requestId
+Charging Station SHALL respond with a
+CertificateSignedResponse with status =
+Rejected.
+A02.FR.27
+(2.1)
+When certificateType in
+SignCertificateRequest is
+SignV2GCertificate
+or
+SignV2G20Certifica
+te
+Charging Station SHOULD include
+hashRootCertificate in SignCertificateRequest with
+the certificate hash of the Root CA to identify the
+Certificate Authority to use.
+A02.FR.28 A02.FR.08 AND
+the charging station was
+not able to successfully
+connect to any of the
+configured entries of
+NetworkConfigurati
+onPriority using the
+new certificate AND
+The Charging Station
+supports either one or
+both reconnection
+mechanisms described
+at requirements;
+B10.FR.07 and
+B10.FR.08.
+The Charging Station SHALL for the reconnection
+mechanism described at B10.FR.07 fallback to the
+old client certificate AND
+for the reconnection mechanism described at
+B10.FR.08 alternate between using the old and
+new client certificate after all
+NetworkConfigurationPriority entries. 
+As described by requirement
+B10.FR.09, the Charging Station
+SHOULD NOT stop trying to reconnect
+to the CSMS. This is to prevent the
+Charging Station from becoming a
+stranded asset.
+A02.FR.29 A02.FR.10 AND
+The Charging Station
+discarded the new client
+certificate.
+The Charging Station SHOULD send a
+SecurityEventNotification
+DiscardedRenewedClientCertificate to the CSMS.
+Otherwise the CSMS is not aware that
+the Charging Station discarded the
+new client certificate and the CSMS
+should again trigger a client certificate
+renewal.
+A03 - Update Charging Station Certificate initiated by the Charging
+Station
+Edition 2, 2025-12-03 A. Security
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 39/803 Part 2 - Specification

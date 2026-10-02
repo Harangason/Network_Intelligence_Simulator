@@ -1,0 +1,46 @@
+TC_Q_101_CS: V2X Authorisation - ISO15118-20 - Processing charging needs
+Test case name V2X Authorisation - ISO15118-20 - Processing charging needs
+Test case Id TC_Q_101_CS
+Use case Id(s) Q01
+Requirement(s) Q01.FR.03, Q01.FR.06, K17.FR.10
+System under test Charging Station
+Description Authorization of an EV by the CSMS to start a V2X power transfer loop.
+Purpose To verify if the Charging Station is able to provide bidirectional charging needs.
+Prerequisite(s) - EV supports V2X power transfer loop
+- EV and charging station support ISO15118-20
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is Iso1511820V2xControlBpt with controlMode ScheduledControl
+State is EVConnectedPreSession
+State is Authorized15118 (for 15118-20)
+Main (Test scenario)
+Charging Station CSMS
+Agree on energy transfer mode
+1. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+Note(s):
+- This step is captured by Authorized15118 (for 15118-20), but
+validated on testcase level.
+2. Test System responds with a
+NotifyEVChargingNeedsResponse with
+status Accepted
+Setting charging profile
+4. The Charging Station responds with a
+SetChargingProfileResponse
+3. The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile
+- transactionId <transactionId>
+- chargingProfilePurpose TxProfile
+5. The Charging station sends a
+NotifyEVChargingScheduleRequest
+6. The Test System responds with a
+NotifyEVChargingScheduleResponse with
+status Accepted
+7. Execute Reusable State EnergyTransferStarted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 812/1383 Part 6 - Test Cases

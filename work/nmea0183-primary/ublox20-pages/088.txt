@@ -1,0 +1,45 @@
+u-blox 20 HPG 2.00 - Interface description
+Comment The receiver ready message is sent when the receiver changes from or to backup mode.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0a 0x21 1 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 X1 flags - - Receiver status ﬂags
+bit 0   U:1 awake - - not in backup mode
+3.14.8 UBX-MON-SPAN (0x0a 0x31)
+3.14.8.1 Signal characteristics
+Message UBX-MON-SPAN
+Signal characteristics
+Type Periodic/polled
+Comment This message is to be used as a basic spectrum analyzer, where it displays one spectrum for each of the
+receiver's existing RF paths. The spectrum is conveyed with the following parameters: The frequency span
+in Hz, the frequency bin resolution in Hz, the center frequency in Hz, and 256 bins with amplitude data.
+Additionally, in order to give further insight on the signal captured by the receiver, the current gain of the
+internal programmable gain ampliﬁer (PGA) is provided.
+This message gives information for comparative analysis rather than absolute and precise spectrum
+overview. Users should not expect highly accurate spectrum amplitude.
+Note that the PGA gain is not included in the spectrum data but is available as a separate ﬁeld. Neither the
+spectrum, nor the PGA gain considers the internal ﬁxed LNA gain or an external third-party LNA.
+The center frequency at each bin, assuming a zero-based bin count, can be computed as
+f(i) = center + span * (i - 127) / 256
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0a 0x31 4 + numRfBlocks·272 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 U1 numRfBlocks - - Number of RF blocks included
+2 U1[2] reserved0 - - Reserved
+Start of repeated group (numRfBlocks times)
+4 + n·272 U1[256] spectrum 2^-2 dB Spectrum data (number of points = span/res) [Uuu.ﬀ
+dB]
+260 + n·272 U4 span - Hz Spectrum span
+264 + n·272 U4 res - Hz Resolution of the spectrum
+268 + n·272 U4 center - Hz Center of spectrum span
+272 + n·272 U1 pga - dB Programmable gain ampliﬁer
+273 + n·272 U1[3] reserved1 - - Reserved
+End of repeated group (numRfBlocks times)
+3.14.9 UBX-MON-SYS (0x0a 0x39)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 88 of 224
+C1-Public

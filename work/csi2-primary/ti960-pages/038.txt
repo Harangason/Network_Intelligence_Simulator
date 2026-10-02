@@ -1,0 +1,54 @@
+frame period is 12 µs (30 bits × 400 ns/bit). As the back channel GPIOs are sampled and sent back by the 
+DS90UB960-Q1 deserializer, the latency and jitter timing are on the order of one back channel frame. The back 
+channel GPIO is effectively sampled at a rate of 1/30 of the back channel rate or 1.67 MHz at f BC = 50 Mbps. 
+TI recommends that the input switching frequency for the back channel GPIO is < 1/4 of the sampling rate or 
+416 kHz at fBC = 50 Mbps. For example, when operating in 4-Gbps synchronous mode with REFCLK = 25 MHz, 
+the maximum recommended GPIO input frequency based on the data rate when linked over the back channel is 
+shown in Table 7-12.
+Table 7-12. Back Channel GPIO Typical Timing
+BACK CHANNEL RATE 
+(Mbps)
+SAMPLING FREQUENCY 
+(kHz)
+MAXIMUM 
+RECOMMENDED BACK 
+CHANNEL GPIO 
+FREQUENCY (kHz)
+TYPICAL LATENCY (µs) TYPICAL JITTER (µs)
+50 1670 416 1.5 0.7
+10 334 83.5 3.2 3
+2.5 83.5 20 12.2 12
+In addition to sending GPIO from pins, an internally generated FrameSync or external FrameSync input signal 
+may be mapped to any of the back channel GPIOs for synchronization of multiple sensors with extremely low 
+skew (see Section 7.4.24).
+In addition to sending GPIO from pins, an internally generated FrameSync signal may be sent on any of the back 
+channel GPIOs.
+For each port, the following GPIO control is available through the BC_GPIO_CTL0 register 0x6E and 
+BC_GPIO_CTL1 register 0x6F.
+7.4.11.5 GPIO Pin Status
+GPIO pin status may be read through the GPIO_PIN_STS register 0x0E. This register provides the status of the 
+GPIO pin independent of whether the GPIO pin is configured as an input or output.
+7.4.11.6 Other GPIO Pin Controls
+Each GPIO pin can has a input disable and a pulldown disable. By default, the GPIO pin input paths are 
+enabled and the internal pulldown circuit in the GPIO is enabled. The GPIO_INPUT_CTL register 0x0F and 
+GPIO_PD_CTL register 0xBE allow control of the input enable and the pulldown, respectively. For most 
+applications, there is no need to modify the default register settings.
+7.4.12 RAW Mode LV / FV Controls
+The Raw modes provide FrameValid (FV) and LineValid (LV) controls for the video framing. The FV is equivalent 
+to a Vertical Sync (VSYNC) while the LineValid is equivalent to a Horizontal Sync (HSYNC) input to the 
+DS90UB913A-Q1 / DS90UB933-Q1 device.
+The DS90UB960-Q1 allows setting the polarity of these signals by register programming. The FV and LV polarity 
+are controlled on a per-port basis and can be independently set in the PORT_CONFIG2 register 0x7C.
+To prevent false detection of FrameValid, FV must be asserted for a minimum number of clocks prior to first 
+video line to be considered valid. The minimum FrameValid time is programmable in the FV_MIN_TIME register 
+0xBC. Because the measurement is in FPD3 clocks, the minimum FrameValid setup to LineValid timing at the 
+Serializer will vary based on operating mode.
+A minimum FV to LV timing is required when processing video frames at the serializer input. If the FV to 
+LV minimum setup is not met (by default), the first video line is discarded. Optionally, a register control 
+(PORT_CONFIG:DISCARD_1ST_ON_ERR) forwards the first video line missing some number of pixels at the 
+start of the line. There is no timing restrictions at the end of the frame.
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+38 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

@@ -1,0 +1,45 @@
+6.2.23. Page 363 - (2026-06) - TC_G_17_CS - Updated tool and post scenario
+validations
+The post scenario validation is not applicable for change availability at a connector level and has therefore been removed.
+Step 7 validations for other status notifications on the same EVSE have been removed. The charging station will not report
+Unavailable for the other connectors of the same EVSE, when a specific connector receives a change availability request.
+Test case name Change Availability Connector - With ongoing transaction
+Test case Id TC_G_17_CS
+…
+Tool validations
+* Step 2:
+Message ChangeAvailabilityResponse
+- status Scheduled
+* Step 7:
+Message: StatusNotificationRequest
+- connectorStatus Unavailable
+- evseId <Configured evseId>
+- connectorId <Configured connectorId>
+- when applicable this is also sent for other connectors of the same EVSE
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Unavailable"
+- eventData[0].component.name "Connector"
+- eventData[0].component.evse not omit
+- eventData[0].component.evse.id <Configured evseId>
+- eventData[0].component.evse.connectorId <Configured connectorId>
+- eventData[0].variable.name "AvailabilityState"
+- when applicable this is also sent for other connectors of the same EVSE
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors.
+N/a
+6.2.24. Page 292 - (2026-06) - TC_E_101_CS - Reusable state
+EnergyTransferStarted set in preparations
+The reusable state EnergyTransferStarted is initiated in the preparations to avoid potentially receiving a TransactionEvent with
+triggerReason ChargingStateChanged while the test system is expecting the triggerReason LimitSet
+Test case name Transactions with fixed cost, energy or time - CSMS calculates costs (through CostUpdatedRequest) and
+CS specifies limit
+Test case Id TC_E_101_CS
+…
+Before (Preparations)
+…
+Reusable State(s):
+State is Authorized
+State is EVConnectedPreSession
+State is   EnergyTransferStarted
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 47/116 Errata 2026-06

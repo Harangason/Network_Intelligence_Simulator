@@ -1,0 +1,61 @@
+No. Type Description
+Scenario description #2 CSMS reads values from event stream
+1. When CSMS receives a NotifyPeriodicEventStream message, it has a basetime and a list
+of StreamDataElementType with the value (v) and time (t), as an offset to basetime, of the
+event.
+2. CSMS combines the data with the information of the monitor of this periodic event stream
+such that it can recreate all required fields that would be present in a NotifyEventRequest.
+This allows a CSMS to use the same processing for events from a periodic event stream
+as for regular NotifyEventRequests.
+NOTE
+One required field of NotifyEventRequest is missing: eventId, because that is
+not present in the periodic event stream data. When needed CSMS can give it
+any value, because it is never communicated back to the Charging Station.
+5 Prerequisite(s) A periodic event stream for the monitor exists.
+6 Postcondition(s)
+7 Error handling Since this message has no reply, there is no way for CSMS to report an error condition back to
+Charging Station. The only way for CSMS to stop with a periodic event stream is by clearing the
+associated monitor.
+8 Remark(s) This message uses the RPC framework message type "SEND" to send an unconfirmed message.
+Unconfirmed messages do not require a response. They were introduced in OCPP 2.1. (See part 4
+"JSON over Websockets Implementation Guide").
+A Charging Station can send a SEND message at any time, i.e. there is need to wait for the
+CALLRESULT of the previous CALL message before sending it.
+Because SEND messages still use the same websocket connection as CALL/CALLRESULT
+messages, the frequent sending of large SEND messages may cause a delay for other messages.
+N15 - Periodic Event Stream - Requirements
+ID Precondition Requirement definition
+N15.FR.01 Charging Station SHALL send a NotifyPeriodicEventStream
+message as a message type "SEND" in the RPC Framework over
+the websocket.
+N15.FR.02 When receiving a message of RPC message
+type "SEND"
+CSMS SHALL NOT confirm the message upon receipt with
+"CALLRESULT" or "CALLERROR".
+N15.FR.03 N15.FR.02 CSMS SHALL associate the following fixed data, that is normally
+present as required fields in a NotifyEventRequest, with the data
+elements of the periodic event stream of type
+StreamDataElementType. (This fixed data is available from the
+monitor in variableMonitoringId):
+• variableMonitoringId,
+• trigger (= Periodic),
+• eventNotificationType,
+• severity,
+• component,
+• variable.
+N15.FR.04 Charging Station SHALL set pending in
+NotifyPeriodicEventStream to the number of data elements that
+is available, but not yet part of this NotifyPeriodicEventStream
+message.
+N15.FR.05 When the value of pending in subsequent
+NotifyPeriodicEventStream messages that
+CSMS receives is growing
+CSMS SHOULD consider adjusting the periodic event stream
+parameters to allow larger or more frequent messages.
+N15.FR.06 If params.interval in a SetMonitoringDataType of
+a monitor is greater than 0
+Charging Station SHALL send a NotifyPeriodicEventStream
+message for the associated monitor every params.interval
+seconds.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 477/803 Part 2 - Specification

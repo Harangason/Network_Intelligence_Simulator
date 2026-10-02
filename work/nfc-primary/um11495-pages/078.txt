@@ -1,0 +1,50 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Command Main Parameters Values
+RF Protocol PROTOCOL_NFC-DEP
+Mode PollRF_DISCOVER_MAP_CMD
+RF Interface NFC-DEP
+PA_BAIL_OUT
+PF_BIT_RATE NCI 1.0 only
+PN_NFC_DEP_SPEED
+PN_NFC_DEP_PSL
+NCI 1.0 only
+NCI 2.0 only
+PN_ATR_REQ_GEN_BYTES
+PN_ATR_REQ_CONFIG
+CORE_SET_CONFIG_CMD
+PACM_BIT_RATE Default is 0x01 for 212 Kbps (NCI 2.0
+only)
+RF Technology and Mode NFC_A_ACTIVE_POLL_MODE
+RF_DISCOVER_CMD
+RF Technology and Mode NFC_F_ACTIVE_POLL_MODE (NCI 1.0
+only)
+Table 86. Configuration sequence for NFC-DEP/NFC-A&F Active Initiator over NFC-DEP RF Interface
+In NCI 2.0, RF technology and mode NFC_F_ACTIVATE_POLL_MODE are not supported. It is replaced by
+the parameter PACM_BIT_RATE which define the activation bit rate. The parameter PF_BIT_RATE is only
+used in NCI 1.0 in order to determine the activation bit rate in technology F. For NCI 2.0, it is replaced by the
+PACM_BIT_RATE parameter.
+Note:  In NCI 2.0, do not use NFC_F_ACTIVE_POLL_MODE neither PF_BIT_RATE but PACM_BIT_RATE.
+9.1.3  LLCP Symmetry RF Interface Extension
+LLCP enables to set up an asynchronous balance mode communication between two NFC-DEP peer-to-peer
+endpoints. Therefore, after a specific timeout, an LLCP symmetric packet is sent by the initiator even if there is
+no data to send. The target can respond with data frames or with an LLCP symmetric packet, if there is no data
+to be sent. After receiving an LLCP symmetric packet or a data packet, the initiator will itself send a data packet
+or send an LLCP symmetric packet, and so one.
+This mechanism is by default supported by the DH, but since NCI 2.0, the LLCP symmetry handling can be
+managed directly by the NFCC on request of the DH. The advantage consists on removing the exchange of
+LLCP symmetric packet between the DH and the NFCC.
+Pre-requisite: the LLCP Symmetry RF interface extension is only available after activation of the NFC-DEP RF
+Interface. Here is the command with the parameters to activate the LLCP symmetry mechanism in P2P mode:
+GID OID Main Parameters Values
+Extension LLCP Symmetry RF Interface Extension
+Start parameter length 2
+0001b 0x0A
+Start parameter 1 byte LLCP-Low Remote Link Timeout
+1 byte LLCP-Low Local Link Timeout
+Table 87. RF_INTF_EXT_START_CMD
+The LLCP symmetry mechanism can be stopped and the DH can hand over the LLCP symmetric packet
+handling with the RF_INTF_EXT_STOP_CMD command.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+78 / 147

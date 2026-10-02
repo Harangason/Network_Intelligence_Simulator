@@ -1,0 +1,44 @@
+TC_E_109_CSMS: Transactions with fixed cost, energy or time - CSMS calculates
+costs and specifies cost limit
+Test case name Transactions with fixed cost, energy or time - CSMS calculates costs and specifies cost limit
+Test case Id TC_E_109_CSMS
+Use case Id(s) E16
+Requirement(s) E16.FR.02, E16.FR.11
+System under test CSMS
+Description CSMS will set a limit the transaction for the specified cost. CS will use central cost calculation.
+Purpose To verify whether the CSMS correctly sends cost when central cost calculation is used.
+Prerequisite(s) - CSMS supports setting cost limits
+- Test System has TxCtrlr.SupportedLimits containing maxCost
+- Test System has TariffCostCtrlr.Enabled[Cost] is false
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System sends a AuthorizeRequest
+With idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+2. The CSMS responds with a AuthorizeResponse
+3. The Test System sends a TransactionEventRequest with
+With eventType is Started
+triggerReason is ChargingStateChanged
+idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+evse.id is <Configured evseId>
+evse.connectorId is <Configured connectorId>
+transactionInfo.transactionId is <transactionId>
+transactionInfo.chargingState is Charging
+4. The CSMS responds with a TransactionEventResponse
+5 The Test System sends a TransactionEventRequest with
+triggerReason is LimitSet
+transactionInfo.transactionLimit.maxCost is 10
+6 The CSMS responds with TransactionEventResponse
+8. The Test System responds with a CostUpdatedResponse
+7. The CSMS sends a CostUpdatedRequest
+Note: Sending a CostUpdatedRequest is not required, but if CSMS does send it, the validation applies.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1092/1383 Part 6 - Test Cases

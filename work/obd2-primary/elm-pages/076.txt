@@ -1,0 +1,76 @@
+Maximum CAN Data Rates (continued)
+processed. You can see from the figure that even for a
+500 kbps message with an 11 bit ID, the ELM327
+finishes with time to spare. Since ISO15765-4
+specifies that messages must be 8 data bytes in length
+(filler bytes are added as needed) these times do
+represent the typical situation, with a 40% bus load.
+Actually, from these numbers the ELM327 should be
+able to handle 100% bus loading (which is not a
+practical situation).
+Once the ELM327 has placed all of the properly
+formatted bytes into the RS232 transmit buffer, it is up
+to the controlling computer to fetch them in a timely
+fashion. If the bytes are removed too slowly, the buffer
+will continue to fill as new OBD messages arrive, and
+the buffer will eventually become full. It does not
+matter how big the buffer is, if the rate of removing
+bytes from the buffer is slower than the rate of putting
+them into the buffer, it will eventually fill up. When it is
+full, you will see a ‘BUFFER FULL’ message, and you
+will have to start over.
+The ELM327 transmit buffer is 512 bytes in size.
+Considering that some bytes will be sent while new
+messages are being queued, this means that you can
+typically store:
+38.4k 115.2k 500k
+11 bit/500k 28 38 –
+29 bit/250k 26 56 –
+messages in the buffer, if the bus loading is at 40%,
+as shown. This storage is more than enough for
+almost all OBD requests – the only time that you might
+get into trouble is if you are monitoring all messages
+on the bus (AT MA) with no filters set. In that case, you
+would need to be sure that you are removing bytes as
+fast as they are being generated.
+The rate at which OBD messages occur depends
+on the ‘bus loading’. This is a utilization factor that is
+very similar to the duty cycle for a square wave signal.
+Ideally, bus loading should be less than about 30%,
+but as vehicles become more complex, this is very
+difficult to do. Some vehicles are reportedly seeing
+70% bus loads.
+The above chart does not show any numbers in
+the 500 k column, as the buffer should never fill up
+when bus loading is 40%. As you increase loading,
+you will eventually reach the limit, but even with very
+busy data busses, we typically see about 150
+messages before a BUFFER FULL is reported. If we
+turn off spaces and Linefeeds (AT S0, AT L0), we
+usually do not see any BUFFER FULL errors, even
+with very busy busses.
+When people ask us then, ‘What data rate can the
+ELM327 support?’ the answer is not easy to provide,
+as it depends on many factors. It depends on the CAN
+message content, the data rate, and whether you have
+selected filters to eliminate irrelevant messages. The
+rate also depends on the RS232 baud rate that you
+have chosen, as it may be the limiting factor if there
+are a great number of messages being retrieved. If
+you are only fetching 10 or 20 messages, however, the
+internal buffer takes care of them for you, and the
+baud rate that you choose does not matter.
+If you are simply fetching PID responses from the
+network, there really is no limitation within the
+ELM327, and it does not matter what the ‘maximum
+CAN data rate’ is. If you are trying to ‘push the
+envelope’, monitoring everything that travels on a very
+busy CAN data bus, then there will be limitations.
+What they are depend to a great deal on what choices
+you make. Hopefully this discussion will have helped
+to give you the necessary background information to
+do so.
+76 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com

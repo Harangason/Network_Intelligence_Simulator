@@ -1,0 +1,46 @@
+Amplitude
+(UI p-p)
+g (MHz)
+A1
+A2
+g1 g2
+Figure 7-3. Input Jitter Tolerance Plot
+Table 7-4. Input Jitter Tolerance Limit
+INTERFACE JITTER AMPLITUDE (UI p-p) FREQUENCY (MHz) (1)
+FPD3
+A1 A2 ƒ1 ƒ2
+1 0.4 FPD3_PCLK / 80 FPD3_PCLK / 15
+(1) FPD3_PCLK frequency is a function of the PCLK, CLK_IN,  or REFCLK  frequency and dependent on the serializer operating MODE:
+CSI-2 synchronous mode: FPD3_PCLK = 4 x REFCLK
+CSI-2 non-synchronous mode: FPD3_PCLK = 2 x CLK_IN
+RAW 10-bit mode: FPD3_PCLK = PCLK / 2
+RAW 12-bit HF mode: FPD3_PCLK = 2 x PCLK / 3
+RAW 12-bit LF mode: FPD3_PCLK = PCLK
+7.4.7 Adaptive Equalizer
+The receiver inputs provide an adaptive equalization filter to compensate for signal degradation from the 
+interconnect components. To determine the maximum cable reach, factors that affect signal integrity such as 
+jitter, skew, ISI, crosstalk, and so forth, must be considered. The equalization status and configuration are 
+selected through AEQ registers 0xD2–0xD5.
+Each RX receiver incorporates an adaptive equalizer (AEQ), which continuously monitors cable characteristics 
+for long-term cable aging and temperature changes. The AEQ attempts to optimize the equalization setting of 
+the RX receiver.
+If the deserializer loses LOCK, the adaptive equalizer will reset and perform the LOCK algorithm again to 
+reacquire the serial data stream being sent by the serializer.
+7.4.7.1 Transmission Distance
+The DS90UB960-Q1 AEQ can compensate for the transmission channel insertion loss of up to –19.2 dB at 2.1 
+GHz. When designing the transmission channel, consider the total insertion loss of all components in the signal 
+path between a serializer and a deserializer. Typically, the transmission channel would consist of a serializer 
+PCB, two or more connectors, one or more cables, and a deserializer PCB as shown in Figure 7-4.
+Serializer PCB Deserializer PCB
+SER DES
+Dacar 462 Dacar 302 Dacar 462
+Figure 7-4. Typical Transmission Channel Components With Coaxial Cables
+Assuming –1.2 dB at 2.1-GHz insertion loss (IL) budget for each serializer and deserializer PCB and 0.1 dB 
+for each connector, it is easy to determine maximum cable reach given the insertion loss characteristic of the 
+cable. For example, Dacar 462 has typical insertion loss of about –1.31 dB/m at 2.1 GHz. With the –19.2-dB total 
+IL budget, the remaining IL budget for the cable is –16.6 dB (–19.2 dB – 2 × (–1.2 dB) – 2 × (–0.1 dB)) after 
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 31
+Product Folder Links: DS90UB960-Q1

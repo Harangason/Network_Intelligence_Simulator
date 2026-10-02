@@ -1,0 +1,136 @@
+"""1-Wire slot/identity/power isolation and preservation regression cases."""
+from copy import deepcopy
+import pytest
+from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.communication.technologies import one_wire as O
+
+def actual(device='DS18B20_REV6',master='REGISTERED',role='MASTER'):
+ x={'ow_'+k:'synthetic-actual-'+k for k in O.REQUIRED}
+ x.update(ow_mode='STANDARD',ow_role=role,ow_device=device,ow_master=master,ow_master_count=1,ow_target_count=1,
+  ow_open_drain=True,ow_lsb_first=True,ow_registered_source='synthetic-explicit-master')
+ if role=='TARGET':
+  # Synthetic identity: CRC independently derived by MSB polynomial0x31
+  # over LSB input bits and reversing the final eight register bits.
+  x.update(ow_rom_hex='28FF641D2F16038C',ow_rom_family=40,ow_rom_bytes=8,ow_rom_crc=0x8C)
+ return x
+
+def check(x):return registry.validate_parameters('one_wire',x)
+def status(x):return check(x)['status']
+def ds2482(mode='STANDARD',device='DS18B20_REV6'):
+ x=actual(device,'DS2482_100_REV11');x.update(ow_mode=mode,ow_slot_style='INCLUDES_RECOVERY',ow_rise_us=.1,
+  ow_host_i2c_bps=100000,ow_host_address=24,ow_host_ad0=0,ow_host_ad1=0,ow_bridge_1ws=0 if mode=='STANDARD'else 1)
+ if mode=='OVERDRIVE':x.update(ow_device='REGISTERED',ow_all_overdrive_capable=True,ow_overdrive_transition=True)
+ for k,values in O.DS2482_TIMINGS[mode].items():x['ow_'+k]=values[1]
+ x['ow_period_us']=x['ow_slot_us'];return x
+
+def test_one_wire_own_slots_not_scalar_can_i2c_rate_or_255_frame():
+ p=registry.profile('one_wire');assert p['default_stack']==['one_wire'];assert p['max_payload_bytes']is None
+ assert p['capacity_evidence']['status']=='MODEL_MISSING';assert status(actual())=='VALID'
+ keys=[f['key']for f in registry.parameter_fields('one_wire')];assert len(keys)==len(set(keys));assert not set(keys)&set(O.REMOVED)
+ for bad in({'bitrate_bps':16300},{'mtu_bytes':1500},{'local_timing_evidence':{}},{'oc_action':'Heartbeat'}):assert status({**actual(),**bad})=='INVALID'
+ assert status({**actual(),'payload_bytes':70000,'ow_data_bytes':300,'ow_data_slots':2400})=='VALID'
+
+@pytest.mark.parametrize('field',registry.parameter_fields('one_wire'),ids=lambda f:f['key'])
+def test_one_wire_every_declared_parameter_type_unit_and_bound(field):
+ bad='not-number'if field['type']=='number'else 1
+ assert status({**actual(),field['key']:bad})=='INVALID'
+ for edge,offset in [('min',-1),('max',1)]:
+  if field.get(edge)is not None:assert status({**actual(),field['key']:field[edge]+offset})=='INVALID'
+
+def test_one_wire_standard_mode_proposal_and_master_timing_source_are_separate():
+ fields={f['key']:f for f in registry.parameter_fields('one_wire')}
+ assert fields['ow_mode']['default']=='STANDARD';assert fields['ow_mode']['default_status']=='PROPOSED'
+ assert fields['ow_nominal_bps']['conditional_defaults'][0]['value']==16300
+ values=fields['ow_slot_us']['conditional_defaults'];assert any(d['value']==69.3 and d['when']=={'ow_master':'DS2482_100_REV11','ow_mode':'STANDARD'}for d in values)
+ assert status(ds2482())=='VALID';assert status({**ds2482(),'ow_slot_us':65})=='INVALID'
+ for k in('ow_rom_hex','ow_target_v','ow_load_pf','ow_rise_us','ow_presence','ow_target_count','payload_bytes'):
+  assert 'default'not in fields[k];assert not fields[k].get('conditional_defaults')
+ a=fields['ow_write_one_us']['conditional_defaults'];assert {(d['when']['ow_master'],d['value'])for d in a if d['when']['ow_mode']=='OVERDRIVE'}=={('SOFTWARE_AN126_TABLE',1),('SOFTWARE_AN126_CODE',1.5),('DS2482_100_REV11',1)}
+
+@pytest.mark.parametrize('device',['DS18B20_REV6','DS1990A_2021','DS1990AA_2021'])
+def test_one_wire_selected_standard_only_devices_do_not_gain_overdrive_from_master(device):
+ x={**actual(device),'ow_mode':'OVERDRIVE','ow_all_overdrive_capable':True,'ow_overdrive_transition':True}
+ assert status(x)=='INVALID';assert status(ds2482('OVERDRIVE'))=='VALID'
+ assert status({**ds2482('OVERDRIVE'),'ow_all_overdrive_capable':False})=='INVALID'
+ x=ds2482('OVERDRIVE');x.pop('ow_overdrive_transition');assert status(x)=='UNVERIFIED'
+
+def test_one_wire_slot_style_recovery_once_and_actual_threshold_settling():
+ x={**actual(),'ow_slot_style':'EXCLUDES_RECOVERY','ow_slot_us':60,'ow_recovery_us':1,'ow_period_us':61,
+  'ow_read_low_us':6,'ow_rise_us':3,'ow_read_sample_us':15};assert status(x)=='VALID'
+ for bad in({'ow_period_us':60},{'ow_recovery_us':0},{'ow_read_sample_us':8.99},{'ow_read_sample_us':15.01}):assert status({**x,**bad})=='INVALID'
+ x.update(ow_slot_style='INCLUDES_RECOVERY',ow_slot_us=61);assert status(x)=='VALID'
+ assert status({**x,'ow_period_us':62})=='INVALID'
+ x.update(ow_device='DS1990AA_2021',ow_recovery_us=1);assert status(x)=='INVALID'
+ x.update(ow_recovery_us=5,ow_slot_us=65,ow_period_us=65);assert status(x)=='VALID'
+
+def test_one_wire_master_is_not_required_to_own_slave_rom_address():
+ assert status(actual(role='MASTER'))=='VALID'
+ x=actual(role='TARGET');assert status(x)=='VALID'
+ x.pop('ow_rom_hex');assert status(x)=='UNVERIFIED'
+
+def test_one_wire_lossless_rom_crc8_and_scratchpad_are_actual_octets_not_scalar_claims():
+ x=actual(role='TARGET');assert status(x)=='VALID'
+ for patch in({'ow_rom_hex':'29FF641D2F16038C'},{'ow_rom_hex':'28FF641D2F16038D'},{'ow_rom_crc':141},{'ow_rom_hex':float(0x28FF641D2F16038C)}, {'ow_rom_hex':'28FF 641D2F16038C'}):assert status({**x,**patch})=='INVALID'
+ # Common DS18B20 85C power-up scratchpad: published algorithm vector.
+ x.update(ow_scratch_hex='50054B467FFF0C101C',ow_scratch_bytes=9,ow_scratch_crc=0x1C);assert status(x)=='VALID'
+ assert status({**x,'ow_scratch_hex':'50054B467FFF0C101D'})=='INVALID'
+ x.update(ow_scratch_crc=0x1D);assert status(x)=='INVALID'
+
+def test_one_wire_rom_read_collision_search_triplets_and_device_command_scope():
+ x={**actual(),'ow_rom_command':'READ_ROM','ow_rom_opcode':0x33};assert status(x)=='VALID'
+ assert status({**x,'ow_target_count':2})=='INVALID';assert status({**x,'ow_rom_opcode':0x55})=='INVALID'
+ x.update(ow_rom_command='SEARCH_ROM',ow_rom_opcode=0xF0,ow_search_passes=2,ow_search_slots=384,ow_target_count=2);assert status(x)=='VALID'
+ assert status({**x,'ow_search_slots':128})=='INVALID'
+ x=actual('DS1990A_2021');x.update(ow_rom_command='MATCH_ROM',ow_function='READ_SCRATCHPAD');assert status(x)=='INVALID'
+ x=actual();x.update(ow_function='READ_SCRATCHPAD',ow_function_opcode=0xBE);assert status(x)=='VALID'
+ assert status({**x,'ow_function_opcode':0x44})=='INVALID'
+
+@pytest.mark.parametrize('bits,bound',[(9,93.75),(10,187.5),(11,375),(12,750)])
+def test_one_wire_ds18b20_conversion_is_resolution_specific_not_wire_baud(bits,bound):
+ x={**actual(),'ow_resolution':bits,'ow_conversion_bound_ms':bound};assert status(x)=='VALID'
+ assert status({**x,'ow_conversion_bound_ms':bound-.001})=='INVALID'
+ assert status({**x,'ow_conversion_bound_ms':bound+1})=='VALID'
+
+@pytest.mark.parametrize('func,waitfield,bound',[('CONVERT_T','ow_conversion_bound_ms',750),('COPY_SCRATCHPAD','ow_copy_bound_ms',10)])
+def test_one_wire_parasitic_hold_requires_power_and_excludes_other_bus_activity(func,waitfield,bound):
+ x={**actual(),'ow_power':'PARASITIC','ow_function':func,'ow_resolution':12,waitfield:bound,
+  'ow_strong_pullup':True,'ow_strong_on_us':10,'ow_strong_hold_ms':bound,'ow_activity_during_hold':False};assert status(x)=='VALID'
+ for bad in({'ow_strong_on_us':10.001},{'ow_strong_hold_ms':bound-.001},{'ow_activity_during_hold':True},{'ow_strong_pullup':False}):assert status({**x,**bad})=='INVALID'
+ x.pop('ow_strong_hold_ms');assert status(x)=='UNVERIFIED'
+
+def test_one_wire_bridge_i2c_pins_speed_config_and_busy_are_not_native_rom_defaults():
+ x=ds2482();x.update(ow_host_address=27,ow_host_ad0=1,ow_host_ad1=1,ow_bridge_config=5,ow_bridge_config_write=165,
+  ow_master_v=3.3,ow_master_temperature_c=85,ow_load_pf=1000,ow_bridge_busy=False,ow_short=False);assert status(x)=='VALID'
+ for bad in({'ow_host_i2c_bps':400001},{'ow_host_address':26},{'ow_bridge_config':7},{'ow_bridge_config_write':5},
+  {'ow_bridge_busy':True},{'ow_short':True},{'ow_load_pf':1000.001},{'ow_master_v':6},{'ow_master_temperature_c':125}):assert status({**x,**bad})=='INVALID'
+ assert status({**actual(),'ow_host_i2c_bps':100000})=='INVALID'
+ x=ds2482('OVERDRIVE');x.update(ow_load_pf=300);assert status(x)=='VALID'
+ assert status({**x,'ow_load_pf':300.001})=='INVALID'
+
+def test_one_wire_device_variant_supply_recovery_and_reset_do_not_use_absolute_limits():
+ for dev,v in [('DS18B20_REV6',3),('DS1990A_2021',2.8),('DS1990AA_2021',3)]:
+  x={**actual(dev),'ow_target_v':v};assert status(x)=='VALID';assert status({**x,'ow_target_v':v-.001})=='INVALID'
+ assert status({**actual(),'ow_target_v':6})=='INVALID'
+ assert status({**actual('DS1990A_2021'),'ow_target_v':6,'ow_reset_low_us':960})=='VALID'
+ assert status({**actual('DS1990AA_2021'),'ow_reset_low_us':640})=='VALID'
+ assert status({**actual('DS1990AA_2021'),'ow_reset_low_us':640.001})=='INVALID'
+ assert status({**actual(),'ow_power':'PARASITIC','ow_reset_low_us':960.001})=='INVALID'
+
+def test_one_wire_resistor_table_has_qualified_scope_and_long_high_idle_is_allowed():
+ x={**actual('DS1990AA_2021'),'ow_pullup_scope':'SINGLE_MIN_RECOVERY','ow_pullup_ohm':2200};assert status(x)=='VALID'
+ for bad in({'ow_pullup_ohm':2200.001},{'ow_target_count':2},{'ow_power':'EXTERNAL'}):assert status({**x,**bad})=='INVALID'
+ x.update(ow_pullup_scope='ACTUAL_QUALIFIED',ow_target_count=2,ow_pullup_ohm=3000,ow_recovery_us=20,
+  ow_slot_style='EXCLUDES_RECOVERY',ow_slot_us=200,ow_period_us=220);assert status(x)=='VALID'
+ x.pop('ow_registered_source');assert status(x)=='UNVERIFIED'
+
+def test_one_wire_nominal_wire_lower_bound_is_not_complete_capacity_or_acceptance():
+ x={**actual(),'ow_slot_style':'INCLUDES_RECOVERY','ow_slot_us':70,'ow_period_us':70,'ow_data_bytes':2,
+  'ow_data_slots':16,'ow_interrupt_bound_us':0,'ow_transfer_bound_us':1120,'ow_presence':True};assert status(x)=='VALID'
+ assert status({**x,'ow_transfer_bound_us':1119.999})=='INVALID'
+ x.update(ow_data_accepted=True,ow_outcome='PENDING');assert status(x)=='INVALID'
+ x.update(ow_outcome='ACCEPTED',ow_age_ms=11,ow_freshness_limit_ms=10);assert status(x)=='INVALID'
+ assert registry.profile('one_wire')['capacity_evidence']['status']=='MODEL_MISSING'
+
+def test_one_wire_confirmed_custom_device_values_survive_rejected_foreign_rate():
+ x={**ds2482(),'ow_resolution':9,'ow_conversion_bound_ms':94,'ow_host_i2c_bps':250000,'ow_rom_hex':'28FF641D2F16038C','ow_nominal_bps':16300,'payload_bytes':300}
+ saved=deepcopy(x);assert status(x)=='VALID';assert status({**x,'bitrate_bps':10000000})=='INVALID';assert x==saved

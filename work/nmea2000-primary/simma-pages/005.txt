@@ -1,0 +1,45 @@
+Chapter 2  Integration of ssNMEA2000 
+ssNMEA2000 User’s Manual   - 5 - 
+Chapter 2 
+ 
+Integration of ssNMEA2000 
+ 
+ 
+ 
+This chapter describes how to integrate ssNMEA2000 into your application.  After this is 
+complete, you will be able to receive and transmit NMEA 2000 messages over CAN.  For 
+implementation details, please see the chapters covering the APIs for ssNMEA2000 and 
+ssCAN. 
+ 
+Integration Steps: 
+ 
+1. Develop or purchase a CAN device driver that adheres to the CAN API specified in 
+Chapter 3. 
+ 
+2. Before using any of the NMEA 2000 module features, make sure the CAN driver has 
+been initialized by calling can_init().  Typically it is called shortly after power-on 
+reset and before the application is started. 
+ 
+3. Before using any of the ssNMEA2000 module features, make sure the ssNMEA2000 
+as been initialized by calling n2000_init().  Typically it is called after can_init() and 
+before the application is started. 
+ 
+4. Call n2000_update at a fixed periodic interval (e.g. every 10 ms).  This provides the 
+time base for the NMEA 2000 module.  It is recommended that this function be 
+called at least every 25 ms. 
+ 
+5. Set N2000CFG_TICK_PERIOD, in n2000cfg.h, to your systems fixed periodic 
+interval described above in step #4. 
+ 
+6. Set N2000CFG_PORTS_NUM, in n2000cfg.h, to the number of CAN ports in use. 
+  
+7. Set your “NAME” and “Product Information” fields with n2000_name_set() and 
+n2000_pinfo_set() set.  See n2000app_init() for an example. 
+ 
+8. As needed adjust the number and size of the transport protocol buffers. 
+ 
+9. As needed place software in the function n2000app_process(), which is located in 
+n2000app.c, to receive and process NMEA 2000 messages. 
+ 
+10. As needed, call n2000_tx_sf(), n2000_tx_tp(), and n2000_tx_fp() to transmit NMEA 
+2000 messages.

@@ -1,0 +1,38 @@
+External Trigger
+CSMS Charging Station
+TxStartPoint = Authorized
+remote start()
+RequestStartTransactionRequest(idToken = ABCD, remoteStartId = 123)
+RequestStartTransactionResponse(status = Accepted)
+opt
+notification
+opt [AuthorizeRemoteStart = true]
+AuthorizeRequest(idToken = ABCD)
+AuthorizeResponse(idTokenInfo)
+Using triggerReason = RemoteStart instead of Authorized! (F02.FR.21)
+TransactionEventRequest(eventType = Started, transactionId = AB1234,
+idToken = ABCD, meterValues,
+triggerReason = RemoteStart, remoteStartId = 123, ...)
+TransactionEventResponse(...)
+alt [within ConnectionTimeOut]
+Plugin cable
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Occupied)
+NotifyEventResponse()
+TransactionEventRequest(eventType = Updated, chargingState = EVConnected,
+evse.id = 1, evse.connectorId = 1, triggerReason = CablePluggedIn, ...)
+TransactionEventResponse(...)
+opt [if cable not permanently
+attached]
+lock connector
+start energy offer
+TransactionEventRequest(eventType = Updated, chargingState = Charging,
+triggerReason = ChargingStateChanged, ...)
+TransactionEventResponse(...)
+[not within ConnectionTimeOut]
+TransactionEventRequest(eventType = Ended, stoppedReason = Timeout,
+triggerReason = EVConnectTimeout...)
+TransactionEventResponse(...)
+Figure 79. Sequence Diagram: Remote Start Transaction - Remote Start First with TxStartPoint=Authorized
+Edition 2, 2025-12-03 F. Remote Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 229/803 Part 2 - Specification

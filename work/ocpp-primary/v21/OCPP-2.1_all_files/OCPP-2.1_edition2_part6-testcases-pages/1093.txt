@@ -1,0 +1,34 @@
+Main (Test scenario)
+8. The Test System sends a TransactionEventRequest with
+eventType Ended
+triggerReason CostLimitReached
+costDetails.totalCost.currency EUR
+costDetails.totalCost.typeOfCost NormalCost
+costDetails.totalCost.chargingTime.inclTax 2.00
+costDetails.totalCost.total.inclTax 2.00
+costDetails.totalUsage.chargingTime 120
+costDetails.totalUsage.idleTime <not omitted>
+9. The CSMS responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: SetDefaultTariffRequest
+- evseId must be <evse id>
+- tariff.tariffId must be <not omitted>
+- tariff.currency must be EUR
+- tariff.chargingTime.prices[0].priceMinute must be 1.00
+* Step 5:
+Message: TransactionEventResponse
+- totalCost must be <omitted>
+- transactionLimit must be <omitted>
+* Step 7:
+Message: TransactionEventResponse
+- totalCost must be <omitted>
+- transactionLimit must be <omitted>
+* Step 9:
+Message: TransactionEventResponse
+- totalCost must be <omitted>
+- transactionLimit must be <omitted>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1091/1383 Part 6 - Test Cases

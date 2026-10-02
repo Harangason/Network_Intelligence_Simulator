@@ -1,0 +1,45 @@
+No. Type Description
+8 Remarks A tariff is returned for the idToken at a point in time where the EVSE to be used may not yet be
+known. In the situation where a Charging Station has a low power and a high power EVSE with
+different pricing, then a tariff with restrictions on min/max power or EVSE type AC/DC needs to be
+used to differentiate the pricing.
+How a driver accepts the tariff is up to user interface of the Charging Station. If the Charging
+Station does not have any method to accept user input (e.g. no buttons), then a work-around can
+be to request the driver to present the idToken once more to confirm.
+EV Driver
+Charging Station CSMS
+TxStartPoint = PowerPathClosed
+(authorizing first)
+User has a driver-specific tariff
+Present charge card AB1234
+AuthorizeRequest(idToken = AB1234)
+CSMS returns driver tariff
+AuthorizeResponse(idTokenInfo.status = Accepted,
+tariff = {"100", "0.55 ct/kWh", ""EUR", energy = {...}})
+Display driver tariff
+description to user
+alt [Accept tariff by plugging-in]
+"Plug-in cable to accept
+charging tariff"
+Plug-in cable
+TransactionEventRequest(eventType = Started, transactionInfo.transactionId = 123,
+idToken = AB1234, evse = 1, transactionInfo.tariffId = "100",
+triggerReason = CablePluggedIn, transactionInfo.chargingState = Charging, ... )
+TransactionEventResponse(idTokenInfo.status = Accepted)
+[Accept tariff explicitly]
+"Accept tariff to
+start charging"
+Plug-in cable
+TransactionEventRequest(eventType = Started, transactionInfo.transactionId = 123,
+idToken = AB1234, evse = 1,
+triggerReason = CablePluggedIn, transactionInfo.chargingState = EVConnected, ... )
+TransactionEventResponse(idTokenInfo.status = Accepted)
+Wait for tariff approval
+Accept tariff
+TransactionEventRequest(eventType = Updated, transactionInfo.transactionId = 123,
+transactionInfo.tariffId = "100",
+triggerReason = ChargingStateChanged, transactionInfo.chargingState = Charging, ... )
+TransactionEventResponse()
+Figure 106. Sequence diagram TxStartPoint = PowerPathClosed, authorize first
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 288/803 Part 2 - Specification

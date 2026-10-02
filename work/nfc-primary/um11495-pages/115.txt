@@ -1,0 +1,41 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+13.3  Download mode command set
+Commands and responses have the following frame format:
+DH <--> PN7160 : [{HEAD1 HEAD2} {CMD/STAT} {DATA[0..N-1]} {CRC1 CRC2}]
+                  |             |          |              |
+                  |             |          |              +-> CRC16    
+                  |             |          +-> payload
+                  |             +-> command opCode or status code
+                  +-> chunk flag & length of the payload
+Example with the Reset command:
+DH ---> PN7160 : [0x00 0x04 0xF0 0x00 0x00 0x00 0x18 0x5B]
+OpCode Command alias Comment
+F0h DL_RESET Perform software reset
+F1h DL_GETVERSION Retrieve FW version currently loaded
+C0h DL_SECWRITE Perform secure write operation
+Table 118. Command set
+The table below lists the possible response to the download commands.
+Status Status alias Comment
+00h DL_OK command passed
+01h DL_INVALID_ADDR address not allowed
+02h DL_GENERIC_ERROR No Version Access
+0Bh DL_UNKNOW_CMD unknown command
+0Ch DL_ABORTED_CMD chunk seq. is too big
+0Dh DL_PLL_ERROR flash not activated
+1Eh DL_ADDR_RANGE_OFL_ERROR address out of range
+1Fh DL_BUFFER_OFL_ERROR the buffer is too small
+20h DL_MEM_BSY no key access
+21h DL_SIGNATURE_ERROR signature mismatch
+24h DL_FIRMWARE_VERSION_ERROR already up to date
+28h DL_PROTOCOL_ERROR protocol error
+2Ah DL_SFWU_DEGRADED degraded state reached
+2Dh PH_STATUS_DL_FIRST_CHUNK first chunk received
+2Eh PH_STATUS_DL_NEXT_CHUNK subsequent chunk received
+C5h PH_STATUS_INTERNAL_ERROR length mismatch
+Table 119. Status codes
+13.3.1  Reset command
+This command resets the PN7160 when is download mode.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+115 / 147

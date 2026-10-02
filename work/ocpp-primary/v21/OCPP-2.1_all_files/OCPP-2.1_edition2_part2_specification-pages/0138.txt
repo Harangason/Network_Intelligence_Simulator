@@ -1,0 +1,33 @@
+C17 - Authorization with prepaid card
+New in OCPP 2.1
+No. Type Description
+1 Name Authorization with prepaid card
+2 ID C17
+3 Objective(s) To enable the Charging Station to request the CSMS to authorize an EV Driver to start charging
+based on a prepaid balance.
+4 Description An EV Driver uses a prepaid card for charging. Charging Station ensures that no more energy is
+charged, than is covered by the prepaid balance.
+Actors Charging Station, CSMS, EV Driver
+Scenario description Authorization causes transaction to start, e.g. TxStartPoint = "Authorized", or "PowerPathClosed"
+and cable is already connected
+1. EV Driver presents an RFID card that is linked to an account with a prepaid balance.
+2. Charging Station sends AuthorizeRequest to CSMS with idToken that is read from the
+card.
+3. If card is not valid, CSMS responds with AuthorizeResponse with idTokenInfo.status =
+Invalid.
+a. Charging station does not start a transaction.
+b. Use case ends.
+4. If card is valid, but prepaid balance is not positive, CSMS responds with
+AuthorizeResponse with idTokenInfo.status = NoCredit and
+idTokenInfo.cacheExpiryDateTime set to now.
+a. Charging station does not start a transaction.
+b. Use case ends.
+5. If card is valid and prepaid balance is positive, CSMS responds with AuthorizeResponse
+with idTokenInfo.status = Accepted and idTokenInfo.cacheExpiryDateTime set to now.
+a. Charging station sends a TransactionEventRequest with eventType = Started,
+with idToken of the prepaid card
+b. CSMS responds with a TransactionEventResponse with transactionLimit.maxCost
+set to amount of credit left in account.
+c. Behavior according to use case E16 - Transactions with fixed cost, energy or time.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 125/803 Part 2 - Specification

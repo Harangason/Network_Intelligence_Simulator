@@ -1,0 +1,52 @@
+(Implementations with a continuously increasing seqNo are still allowed.)
+After each TransactionEventRequest Charging Station SHALL increase the seqNo by 1.
+1.4. Authorization
+To simplify the use cases in this functional block, the way an EV Driver is authorized is not part of these use cases. It will simply be
+called something like: "User authorization successful" or "The EV Driver is authorized by the Charging Station and/or CSMS.". This
+may be any way of authorizing an EV Driver. See functional block: C Authorization for all the options and requirements for
+authorization.
+1.5. Clarification for optional fields in TransactionEventRequest
+This section is informative.
+The TransactionEventRequest contains several optional fields. Some of these fields should only be sent once and should not be
+repeated in every TransactionEventRequest. The following summary points to the requirements related to these optional fields.
+evse
+(E01.FR.16) The field evse is only provided in the first TransactionEventRequest that occurs after the EV has connected. It is
+not repeated in all future TransactionEventRequests.
+idToken
+(E03.FR.01) The field idToken is provided once in the first TransactionEventRequest that occurs after the transaction has
+been authorized.
+(E07.FR.02) The field idToken is provided once in the TransactionEventRequest that occurs when the authorization of the
+transaction has been ended.
+(C12.FR.02) The above is also the case when authorization was granted because the idToken is present in the authorization
+cache with a Accepted status.
+(F02.FR.05): The above is also the case when the idToken is provided by a RequestStartTransactionRequest.
+reservationId
+(E03.FR.03/H01.FR.15) The field reservationId is only provided in the first TransactionEventRequest that occurs when the
+transaction has been authorized by the idToken for which a reservation existed in the charging station.
+(F02.FR.06) The above is also the case when the idToken is provided by a RequestStartTransactionRequest.
+meterValue
+(E02.FR.09) The TransactionEventRequest(eventType=Started) must contain the meter values that have been configured
+in SampledDataCtrlr.TxStartedMeasurands.
+(E02.FR.10) A TransactionEventRequest(eventType=Updated) must be sent at every interval configured in
+SampledDataCtrlr.TxUpdatedInterval and contain the meter values that have been configured in
+SampledDataCtrlr.TxUpdatedMeasurands. If TxUpdatedInterval == 0, then no meter values are sent.
+(E06.FR.11) The TransactionEventRequest(eventType=Ended) must contain the meter values that have been configured in
+SampledDataCtrlr.TxEndedMeasurands. If SampledDataCtrlr.TxEndedInterval == 0, then only the values taken at start and
+end of the transaction are included.
+transactionInfo.chargingState
+(E02.FR.13) Whenever the charging state changes, the Charging Station must send a TransactionEventRequest containing
+chargingState. This implies that a TransactionEventRequest(eventType = Started) always has a chargingState, because
+the state goes from non-existent to a value.
+If the change of charging state is the only event, then TransactionEventRequest has a triggerReason =
+ChargingStateChanged, but if a change in charging state occurs together with other events, such as those represented
+by triggerReason CablePluggedIn or (Stop)Authorized, for example, then chargingState can simply be reported as
+part of that message.
+A TransactionEventRequest with triggerReason = ChargingStateChanged must contain chargingState.
+transactionInfo.stoppedReason
+(B12.FR.04, B12.FR.08) stoppedReason ImmediateReset is sent when transaction ended as result of a reset.
+(C15.FR.04, C16.FR.08) stoppedReason DeAuthorized or MasterPass
+(E03.FR.05, E05.FR.10, E06.FR.08/09, E07.FR.04/05/06, E15.FR.04, E17.FR.21/22, E18.FR.25) The stoppedReason must be
+provided in the TransactionEventRequest(eventType=Ended), unless the value is Local, in which case it may be omitted.
+(F02.FR.07, F03.FR.03, F04.FR.03) The above also applies to transactions that are stopped by a
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 163/803 Part 2 - Specification

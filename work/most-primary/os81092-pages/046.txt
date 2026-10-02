@@ -1,0 +1,54 @@
+OS81092
+DS60001271B-page 46  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+13.1 Instruction Register
+The JTAG Instruction Register (IR) is a ccessed when the TAP controller is in the Select-IR-scan, Capture-IR, Shift-IR,
+Exit1-IR, Pause-IR, Exit2-IR, or Update-IR state.
+13.2 Identification Register
+The JTAG Identification Register (IDR) is accessed when the TAP controller is in the Select-DR-scan, Capture-DR, Shift-DR,
+Exit1-DR, Pause-DR, Exit2-DR, or Update-DR state.
+REGISTER 13-1: JTAG INSTRUCTION REGISTER (IR)
+Bit Range Bit 3 Bit 2 Bit 1 Bit 0
+3:0 IR[3] IR[2] IR[1] IR[0]
+The 4-bit JTAG Instruction Register (IR) contains the instruction code for t he next operation. Supported instructions
+include:
+bit 3-0 IR[3:0]: EXTEST: Instruction Code - Default: 0001
+0000 = SAMPLE/PRELOAD     Enables EXTEST operation
+0001 = IDCODE Enables SAMPL E or PRELOAD operation
+0010 = BYPASS Enables shifting out of the Manufacturer ID
+1111 = Reserved Enables BYPASS
+All other codes Not supported
+REGISTER 13-2: JTAG IDENTI FICATION REGISTER (IDR)
+Bit Range Bits
+31/23/15/7
+Bits
+30/22/14/6
+Bits
+29/21/13/5
+Bits
+28/20/12/4
+Bits
+27/19/11/3
+Bits
+26/18/10/2
+Bits
+25/17/9/1
+Bits
+24/16/8/0
+31:24 REV[0] REV[1] REV[2] REV[3] rsvd rsvd rsvd rsvd
+23:16 PID[0] PID[1] PID[2] PID[3] PID[4] PID[5] PID[6] PID[7]
+15:8 rsvd rsvd rsvd rsvd MID[ 0] MID[1] MID[2] MID[3]
+7:0 MID[4] MID[5] MID[ 6] MID[7] MID[8] MID[9] MID[10] -
+The JTAG IDR register is read out lsb first, bit 0 to bit 31. The bits below are listed in reverse order from
+the way they are read out.
+bit 31-28 REV[3:0]: 4-bit Hardware Revision code †
+0001 = Revision A
+0010 = Revision B
+0011 = Revision C – The data sheet is applicable to this hardware revision.
+bit 27-24 rsvd: Reserved - Default: 0000
+bit 23-16 PID[7:0]: 8-bit Part Identifier - Default: 00011000
+82h = OS81092
+bit 15-12 rsvd: Reserved - Default: 0000
+bit 11-1 MID[10:0]: 11-bit Manufacturer ID - Default: 01000100010
+222h = Microchip Manufacturer ID
+bit 0 Least significant bit (must be set per  IEEE 1149.1 specification) - Default: 1
+† The default value of REV[3:0] is dependent on the actual hardware revision.

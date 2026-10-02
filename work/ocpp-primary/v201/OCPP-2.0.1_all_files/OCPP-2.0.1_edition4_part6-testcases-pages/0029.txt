@@ -1,0 +1,46 @@
+TC_A_22_CS: Upgrade Charging Station Security Profile - Downgrade security
+profile - Rejected
+Test case name Upgrade Charging Station Security Profile - Downgrade security profile - Rejected
+Test case Id TC_A_22_CS
+Use case Id(s) A05, B09
+Requirement(s) B09.FR.04
+System under test Charging Station
+Description The CSMS is able to change the connectionData at the Charging Station. It tries to downgrade the
+connection to security profile 1.
+Purpose To verify if the Charging Station is able to reject downgrading to security profile 1.
+Prerequisite(s) - The Test System connectionData configuration for SUT Charging Station only allows for ip addresses the
+Test System is able to bind.
+- The Charging Station supports security profile 2 and/or 3.
+- The Charging Station has a connection using security profile 2 or 3.
+- When starting this testcase the Test System will start another webSocket server for the second
+connectionData slot.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetNetworkProfileResponse
+1. The Test System sends a SetNetworkProfileRequest with:
+-configurationSlot is <Configured configurationSlot> or
+<Configured configurationSlot2> depending on which one is
+already in use
+- connectionData.messageTimeout <Configured
+messageTimeout2>
+- connectionData.ocppCsmsUrl <ocppCsmsUrl that is not
+currently active>
+- connectionData.ocppInterface <Configured ocppInterface2>
+- connectionData.ocppVersion OCPP20
+- connectionData.securityProfile 1
+Tool validations
+* Step 2:
+Message SetNetworkProfileResponse
+- status Rejected
+Post scenario validations:
+- N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 27/914 Part 6 - Test Cases

@@ -1,0 +1,34 @@
+3.40. Page 56, section: 5.18: TriggerMessage(BootNotification) not allowed after
+BootNotificationResponse(Accepted)
+Added in errata sheet v4.0
+Add the following note at the end of this section:
+
+Once a CSMS has sent a BootNotification.conf message with status registrationStatus =
+Accepted to the Charge Point, then CSMS SHALL not send a TriggerMessage to request for a
+new BootNotification until the Charge Point sends a BootNotification.req message.
+3.41. Page 58, section: 5.16.2: RemoteStart with ChargingProfile: TransactionId
+should not be set
+It is not clear that in a remoteStartTransaction.req with ChargingProfile, the transactionId should not be set.
+Old text If the Central System includes a ChargingProfile, the ChargingProfilePurpose MUST be set to TxProfile.
+New text If the Central System includes a ChargingProfile, the ChargingProfilePurpose MUST be set to TxProfile and the transactionId SHALL NOT
+be set.
+3.42. Page 58, section: 5.16.2: Meaning of note on RemoteStart with ChargingProfile
+is not clear
+In the description of RemoteStartTransaction with a ChargingProfile there is a note, but the meaning of the note
+is not clear.
+Old text The Charge Point SHOULD add the TransactionId to the received profile once the transaction is reported to the central system.
+New text The Charge Point SHALL apply the given profile to the newly started transaction. This transaction will get a transactionId assigned by
+Central System via a startTransaction.conf.
+When the Charge Point receives a setChargingProfile.req, with the transactionId for this transaction, with the same StackLevel as the
+profile given in the remoteStartTransaction.req, the Charge Point SHALL replace the existing charging profile, otherwise it SHALL
+install/stack the profile next to the already existing profile(s).
+3.43. Page 58, Section 5.16.4: Smart Charging fall back to default unclear
+Added in errata sheet v3.0
+Old text When recurrencyKind is used in combination with a chargingSchedule duration shorter than the recurrencyKind period, the Charge Point
+SHALL fall back to default behavior after the chargingSchedule duration ends.
+New text When recurrencyKind is used in combination with a chargingSchedule duration shorter than the recurrencyKind period, the Charge Point
+SHALL fall back to default behavior after the chargingSchedule duration ends. This fall back means that the Charge Point SHALL use a
+ChargingProfile with a lower stackLevel if available. If no other ChargingProfile is available, the Charge Point SHALL allow
+charging as if no ChargingProfile is installed. If the chargingSchedulePeriod and/or duration is longer than the recurrencyKind
+period, the remainder periods SHALL NOT be executed.
+17

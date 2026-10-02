@@ -1,0 +1,54 @@
+ID Precondition Requirement definition Note
+M04.FR.08 M04.FR.02 AND
+Certificate to delete is a sub-CA or
+root certificate
+Charging Station MAY also delete all child
+certificates.
+Else these child certificates remain
+as unusable orhan certificates that
+can no longer be deleted.
+M05 - Install CA certificate in a Charging Station
+No. Type Description
+1 Name Install CA certificate in a Charging Station
+2 ID M05
+3 Objective(s) To facilitate the management of the Charging Station’s installed certificates, a method to install a
+new CA certificate.
+4 Description The CSMS requests the Charging Station to install a new CSMS root certificate, an eMobility
+Operator root certificate, Manufacturer root certificate, or a V2G root certificate.
+Actors Charging Station, CSMS
+Scenario description 1. The CSMS requests the Charging Station to install a new certificate by sending an
+InstallCertificateRequest.
+2. The Charging Station responds with an InstallCertificateResponse.
+5 Prerequisite(s) n/a
+6 Postcondition(s) The new certificate was installed in the Charging Station trust store.
+7 Error handling n/a
+8 Remark(s) Even though the messages CertificateSignedRequest (see use cases A02 - Update Charging
+Station Certificate by request of CSMS and A03 - Update Charging Station Certificate initiated by
+the Charging Station) and InstallCertificateRequest (use case M05) are both used to send
+certificates, their purposes are different. CertificateSignedRequest is used to return the the
+Charging Stations own public certificate and V2G certificate(s) signed by a Certificate Authority.
+InstallCertificateRequest is used to install Root certificates.
+For installing the (V2G) Charging Station Certificate, see use cases A02 - Update Charging Station
+Certificate by request of CSMS and A03 - Update Charging Station Certificate initiated by the
+Charging Station. The V2G certificate chain SHOULD NOT include the V2GRootCertificate. This
+SHOULD be installed using this use case. 
+It is allowed to have multiple certificates of the same type installed.
+CSMS Charging Station
+InstallCertificateRequest(certificateType, certificate)
+InstallCertificateResponse(installCertificateStatus)
+Figure 162. Install CA certificate in a Charging Station
+M05 - Install CA certificate in a Charging Station - Requirements
+Table 131. M05 - Requirements
+ID Precondition Requirement definition
+M05.FR.01 After receiving an InstallCertificateRequest The Charging Station SHALL attempt to install the certificate and
+respond with an InstallCertificateResponse.
+M05.FR.02 M05.FR.01 AND
+The installation was successful
+The Charging Station SHALL indicate success by setting status
+to Accepted in the InstallCertificateResponse.
+M05.FR.03 M05.FR.01 AND
+The installation failed
+The Charging Station SHALL indicate failure by setting status to
+Failed in the InstallCertificateResponse.
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 443/803 Part 2 - Specification

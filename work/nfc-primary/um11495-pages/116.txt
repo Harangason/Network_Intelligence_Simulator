@@ -1,0 +1,30 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+OpCode Length Parameter
+F0h 0 -
+Table 120. Reset command
+This command trigger software reset action when it is correct and provide a response only in case of error.
+DH ---> PN7160 : [0x00 0x04 0xF0 0x00 0x00 0x00 0x18 0x5B]
+DH <--- PN7160 : [0x00 0x04 STAT 0x00 0x00 0x00 CRC1 CRC2] 
+STAT is the return status in case of error.
+13.3.2  Get version command
+This command allows retrieving current PN7160 HW and FW version.
+OpCode Length Parameter
+F1h 0 -
+Table 121. Get version command
+DH ---> PN7160 : [0x00 0x04 0xF1 0x00 0x00 0x00 0x6E 0xEF]
+DH <--- PN7160 : [0x00 0x0A STAT HW_V ROMV RFU1 RFU2 RFU3 RFU4 RFU5 MAJV MINV CRC1 CRC2] 
+STAT is the return status.
+HW_V is the HW version.
+ROMV is the ROM code version.
+MAJV is the major FW version.
+MINV is the minor FW version.
+The PN7160 FW version is usually defined as ROMV.MAJV.MINV, for instance 12.50.05.
+13.3.3  Secure write command
+This command is used in the sFWu procedure to write Flash and EEPROM internal memory.
+OpCode Length Parameter
+C0h Parameter length See Figure 68
+Table 122. Secure write command
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+116 / 147

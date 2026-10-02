@@ -1,0 +1,219 @@
+--- before/backend/communication/technologies/profinet.py
++++ after/backend/communication/technologies/profinet.py
+@@ -0,0 +1,216 @@
++"""Source-qualified PROFINET IO parameters; configuration is not capacity proof."""
++PI='https://cl.profibus.com/fileadmin/media/downloadsection/technical_description_&_books/PROFINET_System_Description_engl_2018_Update.pdf'
++SI='https://cache.industry.siemens.com/dl/files/439/109820439/att_1139619/v1/Communication_Fct_en-US.pdf'
++REV='ca4f37c5d66b5378a8cf9349b9084df0612043da'
++PN='https://raw.githubusercontent.com/rtlabs-com/p-net/'+REV+'/src/device/pf_cmdev.c'
++PPM='https://raw.githubusercontent.com/rtlabs-com/p-net/'+REV+'/src/common/pf_ppm.c'
++API='https://raw.githubusercontent.com/rtlabs-com/p-net/'+REV+'/include/pnet_api.h'
++NAME='https://raw.githubusercontent.com/rtlabs-com/p-net/'+REV+'/src/device/pf_cmina.c'
++DCP='https://raw.githubusercontent.com/rtlabs-com/p-net/'+REV+'/src/common/pf_dcp.c'
++SOURCES={PI:'PI System Description November2018 order4.132 pp8-16/23-24; conventional100M/full duplex, IO mapping, RT/IRT capability and optional fast cycles.',
++ SI:'SIMOTION Communication04/2023 A5E33436509B pp46-50/137-139; hardware-qualified clock factors, update periods and1ms manufacturer preset, not universal fastest/default timing.',
++ PN:'p-net pinned '+REV+' pf_cmdev_check_iocr_param, PNIO2.4 wire bounds; accepted enum/range is not proof of implemented runtime.',
++ PPM:'p-net pinned '+REV+' PPM frame allocation/layout and cycle-counter helpers; NIC buffer excludes FCS, not whole physical frame.',
++ API:'p-net pinned '+REV+' pnet_api.h IOXS/DataStatus and RTC3ready not implemented; explicit selected public-stack behavior.',
++ NAME:'p-net pinned '+REV+' PNIO2.4 station-name declared grammar; declaration applied rather than copying empty-label/port-prefix parser bugs.',
++ DCP:'p-net pinned '+REV+' DCP service frame identifiers; commissioning is distinct cyclic IO operation.'}
++DECLARATIONS=[]
++def d(k,t,meaning,lo=None,hi=None,unit=None,options=None,source=PN,integer=False):
++ DECLARATIONS.append(dict(key='pn_'+k,type=t,description=meaning,min=lo,max=hi,unit=unit,options=options,integer=integer,source=source,source_revision=SOURCES[source]))
++for k,meaning,opts,src in [
++ ('wire_profile','Actual reviewed PNIO2.4 wire schema or another independently registered edition.',['PNIO_2_4','REGISTERED_ACTUAL'],PN),
++ ('clock_profile','Actual controller clock policy; manufacturer preset must not become universal.',['PNIO_2_4','SIMOTION_2023_EVEN','REGISTERED_ACTUAL'],SI),
++ ('implementation','Actual firmware/stack with its own supported services.',['P_NET_PUBLIC_PINNED','REGISTERED_ACTUAL'],API),
++ ('phy','Actual conventional100Mbps PHY versus separately sourced physical realization.',['100BASE_TX','100BASE_FX','REGISTERED_ACTUAL'],PI),
++ ('duplex','Actual point-to-point full duplex, no CAN arbitration.',['FULL'],PI),
++ ('conformance','Actual independently certified functionality class; class D requires own TSN registration.',['CC_A','CC_B','CC_C','CC_D_REGISTERED'],PI),
++ ('role','Actual IO entity role, independent of industry template.',['IO_CONTROLLER','IO_DEVICE','IO_SUPERVISOR'],PI),
++ ('rt_class','Actual cyclic IOCR transport class, not a universal runtime implementation.',['RTC1','RTC2','RTC3','UDP','STREAM'],PN),
++ ('startup','Actual IOCR startup mode; advanced startup excludes RTC1.',['LEGACY','ADVANCED'],PN),
++ ('iocr_type','Actual input/output/multicast IO communication relationship.',['INPUT','OUTPUT','MC_PROVIDER','MC_CONSUMER'],PN),
++ ('service','Actual cyclic IO versus acyclic record/alarm/DCP/LLDP service.',['CYCLIC_IO','RECORD','ALARM','DCP','LLDP'],PI),
++ ('state','Actual configured AR/application state; valid Ethernet link alone is not running IO.',['COMMISSIONING','CONNECTING','APPLICATION_READY','DATA_EXCHANGE','ABORTED'],PI),
++ ('offset_kind','Actual best-effort UInt32 sentinel versus scheduled nanosecond offset.',['BEST_EFFORT','SCHEDULED'],PN),
++ ('dcp_service','Actual DCP link-layer commissioning service, not cyclic output data.',['HELLO','GET_SET','IDENTIFY_REQUEST','IDENTIFY_RESPONSE'],DCP),
++ ('outcome','Actual correlated functional consumer acceptance.',['ACCEPTED','REJECTED','PENDING','UNKNOWN'],API)]:d(k,'select',meaning,options=opts,source=src)
++for k,meaning,src in [
++ ('device_source','Actual firmware/GSDML module/submodule/IOCR lengths and minimum device interval.',PI),
++ ('physical_source','Actual PHY/cable/ports/link rates/full duplex and bridge behavior.',PI),
++ ('schedule_source','Actual per-port competing load/reserved phases/clock synchronization/topology and watchdog.',SI),
++ ('mapping_source','Actual API/slot/subslot/AR ownership and application encoded bytes/status map.',PI),
++ ('acceptance_source','Actual consumer IOXS/DataStatus/counter/freshness/application result.',API),
++ ('address_source','Actual unique station name/MAC and commissioning/IP configuration evidence.',NAME),
++ ('registered_source','Actual alternate edition/device/physical/clock/TSN profile source and limitations.',PI),
++ ('station_name','Actual configured PNIO ASCII station name; empty is commissioning only, labels1..63,total<=240.',NAME),
++ ('controller_id','Actual owning IO controller identity, not arbitrary allocation.',PI),
++ ('ar_id','Actual correlated application relationship UUID/identifier.',PI),
++ ('sync_domain','Actual IRT synchronization domain and master, not arbitrary default.',SI),
++ ('irt_source','Actual IRT hardware/topology/phase/sync plan and supported fastest cycle.',SI),
++ ('optional_source','Actual DFP/MRP/MRPD/fast-cycle/shared-device capability and selected configuration.',PI),
++]:d(k,'text',meaning,source=src)
++for k,meaning,lo,hi,unit,src in [
++ ('ethertype','Actual L2 PN0x8892 or UDP IPv4 EtherType0x0800.',0,65535,None,PN),
++ ('vlan_id','Reviewed IOCR priority tag VID0; generic VLAN1 must not leak into native wire schema.',0,4095,None,PN),
++ ('priority','Reviewed cyclic IOCR IEEE802.1Q priority6.',0,7,None,PN),
++ ('frame_id','Actual16-bit FrameID service/type/class range; output range not inferred from input checker.',0,65535,None,PN),
++ ('api_count','Actual configured application process identifiers in IOCR.',1,65535,None,PN),
++ ('api_id','Actual32-bit application process identifier;0 is a legitimate API.',0,4294967295,None,PI),
++ ('slot','Actual16-bit module slot, not a physical port index.',0,65535,None,PI),
++ ('subslot','Actual16-bit submodule slot within module.',0,65535,None,PI),
++ ('csdu_bytes','Actual cyclic service data unit includes IO data,IOPS,IOCS and padding; excludes FrameID/APDU.',12,1440,'byte',PN),
++ ('io_data_bytes','Actual aggregate cyclic data encoded bytes, not whole application message size.',0,1440,'byte',PPM),
++ ('iops_bytes','Actual provider-status bytes in mapped CSDU.',0,1440,'byte',PPM),
++ ('iocs_bytes','Actual consumer-status bytes in mapped CSDU.',0,1440,'byte',PPM),
++ ('padding_bytes','Actual cyclic CSDU padding distinct useful data.',0,1440,'byte',PPM),
++ ('buffer_bytes','Actual NIC buffer; tagged L2=24+CSDU without FCS; UDP needs own registered overhead.',0,None,'byte',PPM),
++ ('mac_bytes','Actual full MAC frame inclFCS; tagged L2=28+CSDU; preamble/IFG separate.',0,None,'byte',PPM),
++ ('mac_bits','Actual MAC bytes times8, not CAN bit stuffing or UART11bit; UDP overhead separate.',0,None,'bit',PPM),
++ ('send_clock_factor','Actual basic send clock in31.25us units; supported sets depend on source/device.',1,128,None,PN),
++ ('reduction_ratio','Actual update interval/send-clock ratio; UDP wire bound differs native L2.',1,16384,None,PN),
++ ('phase','Actual cyclic phase1..reduction ratio.',1,16384,None,PN),
++ ('min_device_interval','Actual GSDML MinDeviceInterval in31.25us units, not invented fastest1.',1,65535,None,PN),
++ ('data_hold_factor','Actual number of update intervals before data-hold expiration, protocol max7680.',1,7680,None,PN),
++ ('frame_send_offset_ns','Actual UInt32 scheduled offset or FFFFFFFF best-effort sentinel; not an application latency.',0,4294967295,'ns',PN),
++ ('cycle_counter','Actual APDU16-bit31.25us background counter, not packet number.',0,65535,None,PPM),
++ ('previous_counter','Actual preceding counter for selected normalization/increment formula.',0,65535,None,PPM),
++ ('next_counter','Actual normalized next counter modulo65536, distinct monitor deadline.',0,65535,None,PPM),
++ ('data_status','Actual APDU DataStatus octet; bits/acceptance depend on actual consumer.',0,255,None,API),
++ ('transfer_status','Actual APDU transfer status; selected public PPM emits0.',0,255,None,PPM),
++ ('iops','Actual selected public-stack IOXS BAD0/GOOD128, not arbitrary PA quality range.',0,255,None,API),
++ ('iocs','Actual selected public-stack consumer IOXS BAD0/GOOD128.',0,255,None,API),
++]:d(k,'number',meaning,lo,hi,unit,source=src,integer=True)
++for k,meaning,lo,hi,unit,src in [
++ ('send_clock_us','Actual basic clock=factor*31.25us, not device application update period.',31.25,4000,'us',PN),
++ ('update_us','Actual cyclic interval=send clock*reduction ratio; device and source bounds apply.',31.25,65536000,'us',PN),
++ ('data_hold_us','Actual communication supervision interval=update*data hold factor, not functional deadline.',31.25,61440000,'us',PN),
++ ('red_phase_us','Actual reserved IRT phase duration, not generic reserved bandwidth percentage.',0,4000,'us',SI),
++ ('open_phase_us','Actual remaining RT/IP phase of IRT cycle.',0,4000,'us',SI),
++ ('serialization_us','Actual full MAC frame serialization only; competing traffic/sync/queues/IFG separate.',0,None,'us',PPM),
++ ('age_us','Actual correlated application sample age.',0,None,'us',API),
++ ('freshness_us','Actual application functional freshness limit, not borrowed CAN500ms watchdog.',0,None,'us',API),
++ ('record_timeout_ms','Actual device/stack acyclic RPC timeout, not cyclic data hold.',0,None,'ms',PI),
++ ('alarm_timeout_ms','Actual selected alarm relationship supervision, distinct cyclic update.',0,None,'ms',PI),
++]:d(k,'number',meaning,lo,hi,unit,source=src)
++for k,meaning,src in [
++ ('frame_valid','Actual address/type/length/APDU/FCS checks passed; source-filled fields do not prove reception.',PPM),
++ ('mapping_valid','Actual GSDML/modules/status layout and AR ownership verified.',PI),
++ ('data_accepted','Actual functional consumer acceptance, not link-up or watchdog settings.',API),
++ ('lldp_local_only','Actual LLDP link-local nonforwarding policy on bridges.',PI),
++ ('irt_hardware','Actual IRT-capable devices and switches, not inferred from RTC3 enum.',SI),
++ ('sync_verified','Actual synchronized IRT domain evidence.',SI),
++ ('topology_verified','Actual per-port IRT topology and planned timing verified.',SI),
++ ('fast_cycle_capable','Actual optional31.25us fast-cycle support, not every CCCdevice.',PI),
++ ('dfp_enabled','Actual optional dynamic frame packing, not automatically enabled.',PI),
++ ('mrp_enabled','Actual optional media redundancy configuration.',PI),
++ ('shared_device','Actual submodule-specific ownership by different ARs/controllers.',PI),
++]:d(k,'boolean',meaning,source=src)
++REQUIRED=['wire_profile','clock_profile','implementation','phy','duplex','role','service','device_source','physical_source','schedule_source','mapping_source','acceptance_source','address_source']
++REMOVED={k:'Generic '+k+' replaced by source-qualified PNIO IOCR/phase/status/ownership parameters; no CAN/Ethernet queue or payload fallback.'for k in('mtu_bytes','duplex','vlan_id','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','rate_limit_bit_s','retry_limit','retransmission_enabled','retransmission_rate','retransmission_delay_ms','recovery_ms','link_fault_detect_ms','failover_ms','restore_delay_ms','mtbf_ms','sync_method')}
++DEFAULTS={'vlan_id':0,'priority':6,'transfer_status':0}
++def semantics():
++ rules=[]
++ def r(k,w=None,source=PN,**kw):
++  key=k if k in('bitrate_bps','local_timing_evidence')else'pn_'+k
++  rules.append(dict(parameter=key,when={'pn_'+a:b for a,b in(w or{}).items()},source=source,source_revision=SOURCES[source],**kw))
++ for k in REQUIRED:r(k,required=True)
++ for k in('rt_class','startup','iocr_type'):r(k,{'service':'CYCLIC_IO'},required=True)
++ r('local_timing_evidence',allowed=[])
++ for k in('wire_profile','clock_profile','implementation','phy'):r('registered_source',{k:'REGISTERED_ACTUAL'},required=True)
++ r('registered_source',{'conformance':'CC_D_REGISTERED'},required=True,source=PI)
++ for phy in('100BASE_TX','100BASE_FX'):r('bitrate_bps',{'phy':phy},allowed=[100000000],source=PI)
++ r('rt_class',{'startup':'ADVANCED'},allowed=['RTC2','RTC3','UDP','STREAM'])
++ for rt in('RTC1','RTC2','RTC3','STREAM'):
++  w={'wire_profile':'PNIO_2_4','rt_class':rt}
++  r('ethertype',w,allowed=[0x8892]);r('csdu_bytes',w,minimum=40)
++  if rt!='STREAM':
++   r('reduction_ratio',w,maximum=512);r('data_hold_us',w,maximum=1920000)
++   r('data_hold_factor',w,bounded_product_parameters=[{'parameter':'pn_send_clock_factor'},{'parameter':'pn_reduction_ratio'},{'parameter':'pn_data_hold_factor'}],maximum_product=61440)
++ r('registered_source',{'rt_class':'STREAM'},required=True)
++ r('ethertype',{'wire_profile':'PNIO_2_4','rt_class':'UDP'},allowed=[0x0800])
++ r('data_hold_us',{'wire_profile':'PNIO_2_4','rt_class':'UDP'},maximum=61440000)
++ r('data_hold_factor',{'wire_profile':'PNIO_2_4','rt_class':'UDP'},bounded_product_parameters=[{'parameter':'pn_send_clock_factor'},{'parameter':'pn_reduction_ratio'},{'parameter':'pn_data_hold_factor'}],maximum_product=1966080)
++ for k in('vlan_id','priority'):r(k,{'wire_profile':'PNIO_2_4'},allowed=[DEFAULTS[k]])
++ r('transfer_status',{'implementation':'P_NET_PUBLIC_PINNED'},allowed=[0],source=PPM)
++ for k in('iops','iocs'):r(k,{'implementation':'P_NET_PUBLIC_PINNED'},allowed=[0,128],source=API)
++ r('rt_class',{'implementation':'P_NET_PUBLIC_PINNED'},allowed=['RTC1','UDP'],source=API)
++ clocks=[1,2,4,8,16,32,64,128]
++ r('send_clock_factor',{'clock_profile':'PNIO_2_4'},allowed=clocks)
++ r('send_clock_factor',{'clock_profile':'SIMOTION_2023_EVEN'},allowed=[8,16,32,64,128],source=SI)
++ r('reduction_ratio',{'clock_profile':'SIMOTION_2023_EVEN'},allowed=[1,2,4,8,16,32,64,128,256,512],source=SI)
++ for factor,limit in((64,256),(128,128)):r('reduction_ratio',{'clock_profile':'SIMOTION_2023_EVEN','send_clock_factor':factor},maximum=limit,source=SI)
++ r('send_clock_us',equal_expression={'product':['pn_send_clock_factor',31.25]})
++ r('update_us',equal_expression={'product':['pn_send_clock_factor','pn_reduction_ratio',31.25]})
++ r('data_hold_us',equal_expression={'product':['pn_send_clock_factor','pn_reduction_ratio','pn_data_hold_factor',31.25]})
++ for k in('send_clock_factor','reduction_ratio'):r(k,when_present=['pn_data_hold_factor'],required=True)
++ r('phase',maximum_parameter='pn_reduction_ratio')
++ r('min_device_interval',maximum_expression={'product':['pn_send_clock_factor','pn_reduction_ratio']})
++ for rt in('RTC1','RTC2','RTC3'):
++  r('send_clock_factor',{'wire_profile':'PNIO_2_4','rt_class':rt},when_ranges={'pn_reduction_ratio':[256,511]},maximum=64)
++  r('send_clock_factor',{'wire_profile':'PNIO_2_4','rt_class':rt,'reduction_ratio':512},maximum=32)
++ r('send_clock_factor',{'wire_profile':'PNIO_2_4','rt_class':'UDP'},when_ranges={'pn_reduction_ratio':[8192,16383]},maximum=64)
++ r('send_clock_factor',{'wire_profile':'PNIO_2_4','rt_class':'UDP','reduction_ratio':16384},maximum=32)
++ r('frame_send_offset_ns',{'offset_kind':'BEST_EFFORT'},allowed=[4294967295])
++ r('frame_send_offset_ns',{'offset_kind':'SCHEDULED'},exclusive_maximum=4000000,exclusive_maximum_expression={'product':['pn_send_clock_factor',31250]})
++ for k in('send_clock_factor','offset_kind'):r(k,when_present=['pn_frame_send_offset_ns'],required=True)
++ for target,refs in [('send_clock_us',['send_clock_factor']),('update_us',['send_clock_factor','reduction_ratio']),
++  ('data_hold_us',['send_clock_factor','reduction_ratio','data_hold_factor']),('phase',['reduction_ratio']),
++  ('min_device_interval',['send_clock_factor','reduction_ratio'])]:
++  for k in refs:r(k,when_present=['pn_'+target],required=True)
++ for rt,low,high in [('RTC1',0xc000,0xf7ff),('UDP',0xc000,0xf7ff),('RTC2',0x8000,0xbbff),('RTC3',0x0100,0x7fff)]:
++  r('frame_id',{'wire_profile':'PNIO_2_4','service':'CYCLIC_IO','iocr_type':'INPUT','rt_class':rt},minimum=low,maximum=high)
++ for kind in('MC_PROVIDER','MC_CONSUMER'):
++  for rt,low,high in [('RTC1',0xf800,0xfbff),('UDP',0xf800,0xfbff),('RTC2',0xbc00,0xbfff),('RTC3',0x0100,0x7fff)]:
++   r('frame_id',{'wire_profile':'PNIO_2_4','service':'CYCLIC_IO','iocr_type':kind,'rt_class':rt},minimum=low,maximum=high)
++ for service,fid in [('HELLO',0xfefc),('GET_SET',0xfefd),('IDENTIFY_REQUEST',0xfefe),('IDENTIFY_RESPONSE',0xfeff)]:
++  r('frame_id',{'service':'DCP','dcp_service':service},allowed=[fid],source=DCP)
++ w={'wire_profile':'PNIO_2_4'}
++ r('csdu_bytes',w,equal_expression={'sum':['pn_io_data_bytes','pn_iops_bytes','pn_iocs_bytes','pn_padding_bytes']},source=PPM)
++ for k in('io_data_bytes','iops_bytes','iocs_bytes','padding_bytes'):r(k,w,when_present=['pn_csdu_bytes'],required=True,source=PPM)
++ for rt in('RTC1','RTC2','RTC3','STREAM'):
++  q={**w,'rt_class':rt};r('buffer_bytes',q,equal_expression={'sum':['pn_csdu_bytes',24]},source=PPM)
++  r('mac_bytes',q,equal_expression={'sum':['pn_csdu_bytes',28]},source=PPM)
++  for k in('buffer_bytes','mac_bytes'):r('csdu_bytes',q,when_present=['pn_'+k],required=True,source=PPM)
++ r('mac_bits',equal_expression={'product':['pn_mac_bytes',8]},source=PPM)
++ r('mac_bytes',when_present=['pn_mac_bits'],required=True,source=PPM)
++ r('serialization_us',equal_ratio={'numerator_parameter':'pn_mac_bits','denominator_offset':1,'denominator_product':['bitrate_bps'],'factor':1000000},source=PPM)
++ r('mac_bits',when_present=['pn_serialization_us'],required=True,source=PPM)
++ next_count={'integer_remainder':[{'product':[{'sum':[{'floor':[{'product':['pn_previous_counter',{'power':[{'product':['pn_send_clock_factor','pn_reduction_ratio']},-1]}]}]},1]},'pn_send_clock_factor','pn_reduction_ratio']},65536]}
++ r('next_counter',equal_expression=next_count,source=PPM)
++ for k in('previous_counter','send_clock_factor','reduction_ratio'):r(k,when_present=['pn_next_counter'],required=True,source=PPM)
++ r('open_phase_us',{'rt_class':'RTC3'},equal_expression={'subtract':['pn_send_clock_us','pn_red_phase_us']},source=SI)
++ for k in('irt_hardware','sync_verified','topology_verified'):r(k,{'rt_class':'RTC3'},required=True,allowed=[True],source=SI)
++ for k in('irt_source','sync_domain'):r(k,{'rt_class':'RTC3'},required=True,source=SI)
++ for k in('dfp_enabled','mrp_enabled','shared_device','fast_cycle_capable'):r('optional_source',{k:True},required=True,source=PI)
++ for state in('APPLICATION_READY','DATA_EXCHANGE'):r('station_name',{'state':state},required=True,source=NAME)
++ # PNIO ASCII baseline; punycode/other names need independently registered grammar.
++ label=r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?'
++ r('station_name',{'wire_profile':'PNIO_2_4'},pattern=r'(?=.{1,240}$)(?![0-9]{1,3}(?:\.[0-9]{1,3}){3}$)(?!port-[0-9]{3}(?:-[0-9]{5})?(?:\.|$))(?!.*--)(?:'+label+r')(?:\.'+label+r')*',source=NAME)
++ r('age_us',maximum_parameter='pn_freshness_us',source=API);r('freshness_us',when_present=['pn_age_us'],required=True,source=API)
++ w={'data_accepted':True}
++ for k,allowed in [('outcome',['ACCEPTED']),('frame_valid',[True]),('mapping_valid',[True]),('state',['DATA_EXCHANGE'])]:r(k,w,required=True,allowed=allowed,source=API)
++ r('data_status',w,required=True,forbidden_bit_mask=128,source=API)
++ # DataValid and ProviderRun are distinct bits, both required before accepting this ordinary cyclic path.
++ for bit in(4,16):
++  r('data_status',w,equal_expression={'sum':[{'product':[{'floor':[{'product':['pn_data_status',1/(bit*2)]}]},bit*2]},bit,
++    {'integer_remainder':['pn_data_status',bit]}]},source=API)
++ r('iops',{'data_accepted':True,'implementation':'P_NET_PUBLIC_PINNED'},required=True,allowed=[128],source=API)
++ return dict(rate_model={'type':'SINGLE_BITRATE','fields':['bitrate_bps'],'minimum_bps':1},
++  required_parameters=['pn_'+k for k in REQUIRED],native_parameter_prefixes=['pn_'],parameter_constraints=rules,
++  parameter_evidence_scope='EXPLICIT_LAYER',physical_layer_profile_id='explicit_profinet_io',
++  medium_access_model='PNIO_CYCLIC_IOCR_AND_EXPLICIT_ETHERNET_PHASES',arbitration_model_id='ACTUAL_RT_QUEUES_OR_IRT_DOMAIN_PLAN',
++  mechanisms={'framing':['CSDU_IO_DATA_IOPS_IOCS_APDU_NOT_APPLICATION_MTU'],'integrity':['ETHERNET_FCS'],
++   'discovery':['PROFINET_DCP'],'addressing':['MAC_ADDRESS','STATION_NAME','IP_ADDRESS_FOR_EXPLICIT_IP_SERVICES'],
++   'qualification':['SOURCE_QUALIFIED_CLOCK_FACTORS','PUBLIC_CODEC_NOT_FULL_RUNTIME','IOXS_AND_APPLICATION_ACCEPTANCE_SEPARATE']})
++def fields():
++ result=[]
++ for spec in DECLARATIONS:
++  k=spec['key'][3:];v={a:b for a,b in spec.items()if b is not None}
++  v.update(label=k.replace('_',' '),category='timing'if spec.get('unit')in('us','ms','ns')else'communication',scope='route',editable=True,
++   required=k in REQUIRED,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
++  if k in DEFAULTS:
++   condition={'pn_implementation':'P_NET_PUBLIC_PINNED'}if k=='transfer_status'else{'pn_wire_profile':'PNIO_2_4'}
++   v.update(default_status='PROPOSED_CONDITIONAL',conditional_defaults=[dict(when=condition,value=DEFAULTS[k],source=spec['source'],source_revision=spec['source_revision'])])
++  if k=='send_clock_factor':v.update(default_status='PROPOSED_CONDITIONAL',conditional_defaults=[dict(when={'pn_clock_profile':'SIMOTION_2023_EVEN'},value=32,source=SI,source_revision=SOURCES[SI])])
++  if k=='send_clock_us':v.update(default_status='PROPOSED_CONDITIONAL',conditional_defaults=[dict(when={'pn_clock_profile':'SIMOTION_2023_EVEN'},value=1000,source=SI,source_revision=SOURCES[SI])])
++  result.append(v)
++ return result

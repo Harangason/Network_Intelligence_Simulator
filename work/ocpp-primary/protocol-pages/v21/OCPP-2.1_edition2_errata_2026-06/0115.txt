@@ -1,0 +1,37 @@
+Main (Test scenario)
+Setting charging profile
+4. The Test System responds with a
+SetChargingProfileResponse with
+status Accepted
+3. The CSMS sends a SetChargingProfileRequest
+Manual Action: Trigger CSMS to allow V2X after initial start
+6. The Test System sends a
+NotifyAllowedEnergyTransferResponse with
+status   Accepted
+5. The CSMS sends a NotifyAllowedEnergyTransferRequest
+7.  The Test System sends a       NotifyEVChargingNeedsRequest 
+with
+ evseId   <Configured evseId> 
+ chargingNeeds.requestedEnergyTransfer  one of bidirectional   
+mode in   <allowedEnergyTransferModes>  received in  
+NotifyAllowedEnergyTransferRequest
+ chargingNeeds.availableEnergyTransfer   [AC_single_phase,
+AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]    
+ chargingNeeds.controlMode   ScheduledControl
+ chargingNeeds.v2xChargingParameters.maxChargePower 
+1234W
+ chargingNeeds.v2xChargingParameters.maxDischargePower 
+1234W
+8.  The CSMS responds with a       NotifyEVChargingNeedsResponse
+Setting charging profile  
+10.  The Test System responds with a      
+SetChargingProfileResponse  with 
+ status   Accepted
+9.  The CSMS sends a      SetChargingProfileRequest
+11.  The Test System sends a       TransactionEventRequest  with 
+ eventType   Updated
+ triggerReason   OperationModeChanged
+ transactionInfo.transactionId   <transactionId>
+ transactionInfo.operationMode   <Operation mode from step 9>      
+12.  The CSMS responds with a       TransactionEventResponse
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 111/116 Errata 2026-06

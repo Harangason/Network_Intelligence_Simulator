@@ -24,3 +24,13 @@ belegter Einzelakte und bestandener Regression eine Technologie abschließen.
 
 Alle bestehenden Korrekturen bewahren. Vollständiges Release-Gate und exakt
 geprüftes Image produktiv ausliefern, dort Identität und Funktion kontrollieren.
+
+## README nach Abschluss der Prüfung
+
+Zusätzlicher Nutzerauftrag am 02.10.2026: README.md im Anschluss um die
+verifizierten Fähigkeiten und unterstützten Verbindungstypen aktualisieren.
+Die Darstellung bleibt industrieneutral und nennt den individuellen Support-
+und Prüfstatus, ausdrückliche Transportpfade sowie Einschränkungen. Registrierung,
+lokale Quellenprüfung, ausführbare Modelle, E2E-Nachweis und tatsächlich geprüfte
+produktive Auslieferung müssen als unterschiedliche Nachweise erkennbar bleiben.
+Die README-Aktualisierung gehört zum Abschluss dieses Auftrags.

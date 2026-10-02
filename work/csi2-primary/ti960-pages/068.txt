@@ -1,0 +1,52 @@
+When the PASS_PARITY_ERR control is set in the PORT_PASS_CTL register, the Receiver will clear the Pass 
+indication on receipt of a parity error on the FPD-Link III interface. The valid frame counter will also be cleared 
+on the parity error event. When PASS_PARITY_ERR is set to 1, TI also recommends that the designer set the 
+PASS_THRESHOLD to 2 or higher to ensure at least one good frame occurs following a parity error.
+7.5.11 Timestamp – Video Skew Detection
+The DS90UB960-Q1 implements logic to detect skew between video signaling from attached sensors. For 
+each input port, the DS90UB960-Q1 provides the ability to capture a time-stamp for both a start-of-frame and 
+start-of-line event. Comparison of timestamps can provide information on the relative skew between the ports. 
+Start-of-frame timestamps are generated at the active edge of the Vertical Sync signal in Raw mode. Start-of-line 
+timestamps are generated at the start of reception of the Nth line of video data after the Start of Frame for either 
+mode of operation. The function does not use the Line Start (LS) packet or Horizontal Sync controls to determine 
+the start of lines.
+The skew detection can run in either a FrameSync mode or free-run mode.
+Skew detection can be individually enabled for each RX port.
+For start-of-line timestamps, a line number must be programmed. The same line number is used for all 4 
+channels. Prior to reading timestamps, the TS_FREEZE bit for each port that will be read should be set. This 
+will prevent overwrite of the timestamps by the detection circuit until all timestamps have been read. The freeze 
+condition will be released automatically once all frozen timestamps have been read. The freeze bits can also be 
+cleared if it does not read all the timestamp values.
+The TS_STATUS register includes the following:
+• Flags to indicate multiple start-of-frame per FrameSync period
+• Flag to indicate Timestamps Ready
+• Flags to indicate Timestamps valid (per port) – if ports are not synchronized, all ports may not indicate valid 
+timestamps
+The Timestamp Ready flag will be cleared when the TS_FREEZE bit is cleared.
+7.5.12 Pattern Generation
+The deserializer supports internal pattern generation feature to provide a simple way to generate video test 
+patterns for the CSI-2 transmitter output s. CSI-2 port 0 and port 1 each have their  own pattern generator. Two 
+types of patterns are supported: Reference Color Bar pattern and Fixed Color patterns and accessed by the 
+Pattern Generator page 0 in the indirect register set.
+Prior to enabling the Packet Generator, the following should be done:
+1. Set the TX_WRITE_PORT bit in CSI_PORT_SEL (reg 0x32).
+2. Disable video forwarding by configuring bits [7:4] of the FWD_CTL1 register.
+3. Configure CSI-2 Transmitter operating speed using the CSI_PLL_CTL register.
+4. Enable the CSI-2 Transmitter using the CSI_CTL register.
+7.5.12.1 Reference Color Bar Pattern
+The Reference Color Bar Patterns are based on the pattern defined in Appendix D of the mipi_CTS_for_D-
+PHY_v1-1_r03 specification. The pattern is an eight color bar pattern designed to provide high, low, and medium 
+frequency outputs on the CSI-2 transmit data lanes.
+The CSI-2 Reference pattern provides eight color bars by default with the following byte data for the color bars: 
+X bytes of 0xAA (high-frequency pattern, inverted) X bytes of 0x33 (mid-frequency pattern) X bytes of 0xF0 
+(low-frequency pattern, inverted) X bytes of 0x7F (lone 0 pattern) X bytes of 0x55 (high-frequency pattern) X 
+bytes of 0xCC (mid-frequency pattern, inverted) X bytes of 0x0F (low-frequency pattern) Y bytes of 0x80 (lone 1 
+pattern) In most cases, Y will be the same as X. For certain data types, the last color bar may need to be larger 
+than the others to properly fill the video line dimensions.
+The Pattern Generator is programmable with the following options:
+• Number of color bars (1, 2, 4, or 8)
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+68 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

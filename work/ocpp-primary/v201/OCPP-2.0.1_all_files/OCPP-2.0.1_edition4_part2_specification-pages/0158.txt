@@ -1,0 +1,38 @@
+S6 Scenario objective Stop a transaction when energy transfer stops. This will also mean the transaction stops when
+the EV stops taking energy, for example when the battery is too hot.
+Scenario description 1. The energy transfer between EV and the Charging Station stops (for example: EV stops
+charging).
+2. The Charging Station sends a TransactionEventRequest (eventType = Ended) notifying the
+CSMS about a transaction that has ended.
+3. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+Prerequisite(s) A transaction is ongoing.
+Configuration Variable: TxStopPoint contains: EnergyTransfer
+Postcondition(s) Successful postcondition:
+The transaction is ended and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is still ongoing. or
+The CSMS is not informed.
+EV
+Charging Station CSMS
+A transaction is ongoing.
+energy transfer stopped
+stop energy offer
+TransactionEventRequest(eventType = Ended, ...)
+TransactionEventResponse()
+Figure 52. Sequence Diagram: Stop Transaction options - EnergyTransfer
+S7 Scenario objective Stop a transaction when EV driver ends authorization
+Scenario description 1. The EV drivers presents an IdToken to end the charging.
+2. The Charging Station sends a TransactionEventRequest (eventType = Ended) notifying the
+CSMS about a transaction that has ended.
+3. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+Prerequisite(s) A transaction is ongoing.
+Configuration Variable: TxStopPoint contains: Authorized (or PowerPathClosed).
+Postcondition(s) Successful postcondition:
+The transaction is ended and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is still ongoing. or
+The CSMS is not informed.
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 148/491 Part 2 - Specification

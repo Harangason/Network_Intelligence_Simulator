@@ -1,0 +1,53 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 30
+OS81050
+5.2  Reading from the Control Port
+The beginning of transmission is marked by a start condition. The first byte specifies the chip address, as
+well as whether the operation is a read or a wr ite. The OS81050 address (Factory default of 0100000)
+occupies the upper seven bits of the first byte; the R/W  bit is the LSB.
+When the Control Port receives the address byte of 41h (Factory default OS81050 address and R/W  bit
+set), it acknowledges reception of the byte through an acknowledge bit and the rest of the data is read from
+the Control Port. The read data is defined as the Port Message (PM) and can be one of the following:
+/square6 FIFO Data (Read) message
+/square6 FIFO Status (Read) message
+Figure 5-4 illustrates the I 2C transmission read sequence. The characters “S” and “P” represent the start
+and stop conditions for messages.
+The INT pin going low indicates that a Port Message is available in at least one of the message FIFOs.
+Once a message starts being read, the INT pin is de-asserted. If other messages are pending (waiting to
+be read), the INT pin will be assert ed again. This pending interrupt can occur as soon as the last byte of
+the current Port Message is read.
+If a Port Message is not fully read (stop or repeated start bit received before the end of the message), INT
+will be reasserted and the next read command will start reading from the beginning of the disrupted mes-
+sage, not the position where the read was previously terminated.
+Ideally, the EHC reads the entire length of the Port Message in one Control Port r ead cycle, where the total
+number of bytes read is extracted from the Port  Message Length (PML) duri ng the read cycle. For I2C driv-
+ers that are not able to decipher the message length during a single read cycle, other methods of reading
+the Port Message are feasible, including the following:
+/square6 Example 1: The EHC may issue two consecutive Control Port reads. The first cycle reads two bytes of 
+the Port Message, where PML is extracted. Based on the message length obtained from PML in this 
+first read cycle, a second cycle reads the entire Port Message (including the first two bytes again).
+/square6 Example 2: The EHC may issue read cycles that always read the maximum length of a Port Message, 
+regardless of the actual PML. Once the Port Message is read, application software can later determine 
+the relevant portion of the read data using the actual PML. The OS81050 returns 00h data when a 
+read cycle extends beyond the actual length of the Port Message.
+External
+System:
+Control Port:
+Start bit
+Part Address
+Read
+Acknowledge
+R/W
+A Data1 DataN P
+Acknowledge
+Stop bit
+S 01000 1A
+No Acknowledge
+SDA 00 D a t a 2
+Acknowledge
+A
+Port Message (PM)
+FIFO Data BodyPML PMHL FDHFPH
+FIFO Status ReadPML PMHL FPHFIFO Status Read message:
+FIFO Data Read message:
+Figure 5-4: Control Port Read Sequence

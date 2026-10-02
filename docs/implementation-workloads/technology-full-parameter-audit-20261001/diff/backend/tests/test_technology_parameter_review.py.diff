@@ -1,0 +1,67 @@
+--- before/backend/tests/test_technology_parameter_review.py
++++ after/backend/tests/test_technology_parameter_review.py
+@@ -3,6 +3,13 @@
+ from backend.engineering.capacity.service import parameters_for_protocol
+ from backend.engineering.workflow.service import WorkflowStatusService
+ from backend.engineering.project_context import current_project_id
++
++
++LIN_CONTEXT={**{'lin_'+key:'synthetic-actual-'+key for key in
++    ('revision','device_source','binding_source','physical_source','ldf_source','encoding_source',
++     'schedule_source','capacity_source','acceptance_source','commander_node_id')},
++    'lin_edition':'LIN_2_2A_2010','lin_physical_profile':'LIN_2_2A_SINGLE_WIRE',
++    'lin_node_role':'COMMANDER','lin_frame_kind':'UNCONDITIONAL','lin_bitrate_bps':19200}
+ 
+ 
+ def reviewed(values):
+@@ -25,7 +32,7 @@
+ 
+ 
+ def test_confirmed_lin_group_does_not_change_can_fd_or_ethernet():
+-    p = mixed(); p['technology_parameters'] = {'lin': reviewed({'bitrate': 19200, 'cycle_ms': 50})}
++    p = mixed(); p['technology_parameters'] = {'lin': reviewed({**LIN_CONTEXT, 'cycle_ms': 50})}
+     lin = parameters_for_protocol('LIN', p, network_id='lin-1', confirmed_parameters=p)
+     assert lin['bitrate'] == 19200 and lin['cycle_ms'] == 50 and lin['_rate_evidenced']
+     assert parameters_for_protocol('CAN_FD', p, confirmed_parameters=p)['bitrate'] == 2_000_000
+@@ -33,16 +40,16 @@
+ 
+ 
+ def test_modified_or_proposed_group_cannot_reuse_old_confirmation():
+-    p = mixed(); p['technology_parameters'] = {'lin': reviewed({'bitrate': 19200})}
+-    p['technology_parameters']['lin']['values']['bitrate'] = 9600
++    p = mixed(); p['technology_parameters'] = {'lin': reviewed(dict(LIN_CONTEXT))}
++    p['technology_parameters']['lin']['values']['lin_bitrate_bps'] = 9600
+     assert not parameters_for_protocol('LIN', p, confirmed_parameters=p)['_rate_evidenced']
+-    p['technology_parameters']['lin']['provenance']['bitrate']['value'] = 9600
+-    p['technology_parameters']['lin']['provenance']['bitrate']['status'] = 'REVIEW_REQUIRED'
++    p['technology_parameters']['lin']['provenance']['lin_bitrate_bps']['value'] = 9600
++    p['technology_parameters']['lin']['provenance']['lin_bitrate_bps']['status'] = 'REVIEW_REQUIRED'
+     assert not parameters_for_protocol('LIN', p, confirmed_parameters=p)['_rate_evidenced']
+ 
+ 
+ def test_explicit_network_rate_overrides_the_confirmed_group():
+-    p = mixed(); p['technology_parameters'] = {'lin': reviewed({'bitrate': 19200})}; p['networks'][0]['bitrate'] = 9600
++    p = mixed(); p['technology_parameters'] = {'lin': reviewed(dict(LIN_CONTEXT))}; p['networks'][0]['lin_bitrate_bps'] = 9600
+     assert parameters_for_protocol('LIN', p, network_id='lin-1', confirmed_parameters=p)['bitrate'] == 9600
+ 
+ 
+@@ -55,16 +62,16 @@
+ def test_valid_group_roundtrip_preserves_inventory_and_invalidates_dependents():
+     service = WorkflowStatusService(current_project_id()); base = mixed(); service.save_parameters(base)
+     service.mark_changed('capacity_timing', 'Testberechnung vorhanden', status='COMPLETE')
+-    changed = deepcopy(base); changed['technology_parameters'] = {'lin': reviewed({'bitrate': 19200})}
++    changed = deepcopy(base); changed['technology_parameters'] = {'lin': reviewed(dict(LIN_CONTEXT))}
+     saved = service.save_parameters(changed)
+     assert saved['parameters']['networks'] == base['networks']
+     assert saved['parameters']['technology'] == 'can_fd'
+-    assert service.get()['parameters']['technology_parameters']['lin']['values']['bitrate'] == 19200
++    assert service.get()['parameters']['technology_parameters']['lin']['values']['lin_bitrate_bps'] == 19200
+     assert saved['statuses']['capacity_timing'] == 'OUTDATED'
+ 
+ 
+ def test_unconfirmed_group_cannot_be_saved_as_confirmed():
+-    p = mixed(); p['technology_parameters'] = {'lin': {'values': {'bitrate': 19200}, 'provenance': {}}}
++    p = mixed(); p['technology_parameters'] = {'lin': {'values': dict(LIN_CONTEXT), 'provenance': {}}}
+     with pytest.raises(ValueError, match='bestätigt'): WorkflowStatusService._validate_parameter_reviews(p, mixed())
+ 
+ 

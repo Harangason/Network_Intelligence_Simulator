@@ -1,0 +1,48 @@
+Basic home charger example configuration
+RadioLink ControlMetering PlugRetentionLock
+TokenReader OverCurrentBreaker
+Controller RCD
+ChargingStatusIndicator
+Public Charging Station example configuration
+ChargingStation tier EVSE tier Connector tier
+ChargingStation (itself, as a whole) EVSE (itself, as a whole) Connector (itself, as a whole)
+ElectricalFeed ElectricalFeed AccessProtection
+TokenReader TokenReader PlugRetentionLock
+Display Display
+FiscalMetering FiscalMetering
+Clock ControlMetering
+Controller OverCurrentBreaker
+RCD
+ChargingStatusIndicator
+3.2. Variables
+Every component has a number of variables, that can, as appropriate, be used to hold, set, read, and/or report on all (externally
+visible) data applicable to that component, including configuration parameters, measured values (e.g. a current or a temperature)
+and/or monitored changes to variable values.
+Although many components can have associated variables that are, by their nature, specific to the component type (e.g.
+ConnectorType for a Connector component), there is a minimal set of standardized variables that is used to provide standardized
+high level event notification and state/status reporting (e.g. Problem, Active) on a global and/or selective basis, and also to report
+component presence, availability, etc. during the inventorying/discovery process (e.g. Available, Enabled).
+A Charging Station is not required to report the base variables: Present, Available and Enabled when they are readonly and set to
+true. When a Charging Station does not report: Present, Available and/or Enabled the Central System SHALL assume them to be
+readonly and set to true
+Variables can be any of a range of common general-purpose data types (boolean, integer, decimal, date-time, string), but also can
+have their allowable values constrained to particular ranges, enumeration lists, sets, or ordered lists.
+To support complex components, there can be more than one instance of any given variable name associated with any component
+(e.g. power converter modules reporting temperature, current, or voltage at multiple points).
+Each distinct variable instance is uniquely identified by an (optional) variableInstance addressing key string value. It is allowed for a
+variable to exist without an instance and at same time also with one or more instances. When no variableInstance is provided, then
+the variable without an instance is referenced.
+3.3. Characteristics and Attributes
+Each variable, in addition to its primary ("Actual") value, can have a set of associated secondary data that is linked to the same
+primary variable name and variableInstance.
+This greatly avoids cluttering the variables namespace with confusing clusters of ancillary variable names (e.g. FanSpeed,
+FanSpeedUnits, MinimumFanSpeed, BaseFanSpeed) that lack consistence and discoverability.
+The ancillary variable data includes:
+• Variable characteristics meta-data (read-only)
+◦ Unit of measure (V,W,kW,kWh, etc.)
+◦ Data type (Integer, Decimal, String, Date, OptionList, etc.)
+◦ Lower limit
+◦ Upper limit
+◦ List of allowed values for enumerated variables
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 6/22 Part 1 - Architecture & Topology

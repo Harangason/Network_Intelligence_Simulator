@@ -1,0 +1,26 @@
+6. Connection
+6.1. Compression
+In cases where bandwidth needs to be reduced, a communicating party can use of the HTTP capability
+of compressing data. HTTP defines a ‘Content-Encoding’ header, which contains the compression
+method.
+The Charge Point and Central System MAY use HTTP compression. Compression can be performed on a
+HTTP request and/or response.
+The Charge Point and Central System MUST support the ‘gzip’ and ‘deflate’ compression methods.
+These are the most common compression methods.
+When using compression, one should take great care if indeed the message size decreases. If the
+message is small, then it‘s possible that the compression will increase the size.
+6.2. Security
+To avoid exposure of private sensitive data, the transport of SOAP messages SHOULD be secured with
+SSL/TLS (e.g. HTTPS).
+For a receiving party to trust a received message, the sending party SHOULD use a client certificate.
+7. SOAP specific OCPP requirements
+7.1. BootNotification
+If the SOAP connection to the Central System is lost, the Charge Point SHALL re-establish it. If the
+Charge Point is not sure that its IP Address has not changed, it SHOULD send a new BootNotification to
+the Central Server. In other words: If the IP Address of the Charge Point can have changed, the Charge
+Point SHOULD send a new BootNotification. The Central System needs the new IP Address, to be able to
+send Central System initiated messages to the Charge Point.
+8. WSDL
+The following table lists the applicable urn’s for the different versions of OCP:
+Table 2: OCPP URNs
+11

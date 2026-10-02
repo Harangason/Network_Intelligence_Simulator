@@ -1,0 +1,137 @@
+ID Precondition Requirement definition Note
+K01.FR.95
+(2.1)
+When a
+SetChargingProfileRequest
+is received from CSMS with
+chargingProfilePurpose that
+is NOT (TxProfile or
+TxDefaultProfile) AND
+a chargingSchedule with a
+randomizedDelay greater
+than 0
+Charging Station SHALL respond with
+SetChargingProfileResponse with status Rejected and
+optionally a reasonCode = "InvalidSchedule".
+From CSMS only
+Tx(Default)Profiles can
+have randomized delay.
+A
+ChargingStationExternalCon
+straints charging profile
+from an external system
+may also have a
+randomized delay.
+K01.FR.96
+(2.1)
+CSMS SHALL support sending a
+SetChargingProfileRequest with a chargingSchedule that
+contains fields useLocalTime = true and/or
+randomizedDelay > 0
+K01.FR.97
+(2.1)
+K01.FR.93 AND
+startPeriod + <random
+delay> of
+chargingSchedulePeriod[i] is
+greater/equal than
+startPeriod + <random
+delay> of
+chargingSchedulePeriod[i+1]
+or greater/equal than
+chargingSchedule.duration
+chargingSchedulePeriod[i] is skipped from the
+randomized charging schedule.
+chargingSchedulePeriod[i] is
+skipped because its
+randomized start would
+take place after the
+randomized start of
+chargingSchedulePeriod[i+1]
+or after end of charging
+schedule. This is basically
+means that
+chargingSchedulePeriod[i-1]
+continues until
+(randomized) start of
+chargingSchedulePeriod[i+1]
+or until charging schedule
+end if this is the last period.
+Limit Beyond SoC / Offline validity
+K01.FR.100
+(2.1)
+When limitAtSoC is present
+in ChargingScheduleType
+and the state of charge of
+the EV is greater than or
+equal to limitAtSoC.soc
+Charging Station SHALL cap the limit or setpoint in the
+ChargingSchedulePeriodType by the value of
+limitAtSoC.limit.
+This allows to reduce
+charging power to EVs
+above a certain SoC. When
+absent or if SoC
+measurements are
+unavailable, Charging
+Station shall apply the
+charging schedule without
+additional limits. Unit of the
+limit is defined by
+chargingRateUnit.
+K01.FR.101
+(2.1)
+When field
+maxOfflineDuration is
+present in
+ChargingProfileType AND
+Charging Station is offline
+for more than
+maxOfflineDuration seconds
+Charging Station SHALL consider this
+ChargingProfileType to be not valid as long as it remains
+offline
+If a valid charging profile
+with a lower stack level
+exists for which
+maxOfflineDuration has not
+yet expired or is not set,
+then that will be selected to
+be used instead.
+K01.FR.102
+(2.1)
+When Charging Station’s
+connection is restored
+Charging Station SHALL consider the
+ChargingProfileTypes that had been invalid while offline
+to be (potentially) valid again, unless it has
+invalidAfterOfflineDuration = true, and recalculate which
+ChargingSchedulePeriodType to execute
+It is possible that some
+charging profiles may have
+expired during the offline
+period.
+A missing
+invalidAfterOfflineDuration is
+the same as
+invalidAfterOfflineDuration =
+false.
+K01.FR.103
+(2.1)
+When field
+maxOfflineDuration is not
+present in
+ChargingProfileType
+Charging Station SHALL NOT consider this
+ChargingProfileType to be invalid during an offline
+situation.
+There may be other reasons
+why the charging profile
+becomes invalid, though.
+K01.FR.104
+(2.1)
+CSMS SHALL support sending a
+SetChargingProfileRequest with a maxOfflineDuration > 0
+and invalidAfterOfflineDuration = true or false.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 336/803 Part 2 - Specification

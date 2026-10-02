@@ -1,0 +1,28 @@
+The following settings can be set via SetDERControlRequest:
+1. Voltage trip curves
+2. Frequency trip curves
+3. Enter service parameters
+4. Reactive power curves and parameters
+5. Active power curves and frequency droop
+Frequency droop is a parameterized form of the Freq-Watt curve that is determined by slope and a dead-band parameters.
+Figure 200. Example Frequency Droop curve from IEEE 1547-2018
+Curves
+DER curves describe behavior that a charging station must perform autonomously in case of a grid anomaly. Such curves are
+configured on the charging station via the OCPP SetDERControlRequest messages.
+While only one curve per curve-type can be active at the same time, different curve-types can be active at the same time if they do
+not conflict. These curves are used to provide autonomous control in a predictable fashion. For example, assuming a volt-watt
+curve is active; if the inverter senses an over-voltage situation a volt-watt curve would direct the inverter to lower its power output
+during discharging. Likewise, in an under-voltage situation, the same curve would likely direct the DER to increase its output during
+discharging.
+Trip and ride-through curves
+A ride-through curve describes how long a DER must stay connected when frequency of voltage deviates from nominal. A trip curve
+describes after how many seconds a DER must disconnect when frequency of voltage deviates from nominal. Both curves are
+called "trip curves" in this document, where a "may trip" curve defines the ride-through behavior and a "must trip" curve defines the
+trip behavior.
+Trip curves exist for high and low frequency or voltage anomalies:
+1. High Frequency Must/May Trip
+2. Low Frequency Must/May Trip
+3. High Voltage Must/May Trip and Momentary Cessation
+4. Low Voltage Must/May Trip and Momentary Cessation
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 544/803 Part 2 - Specification

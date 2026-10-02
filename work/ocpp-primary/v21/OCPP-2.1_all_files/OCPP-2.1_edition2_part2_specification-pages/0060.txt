@@ -1,0 +1,77 @@
+ID Precondition Requirement definition
+A05.FR.02 The Charging Station receives SetVariablesRequest for
+NetworkConfigurationPriority containing a
+profile slot for a NetworkConnectionProfile with a
+'securityProfile' value higher than the current value
+AND
+new value is 2 or 3
+AND
+No valid CSMSRootCertificate installed
+The Charging Station SHALL respond with
+SetVariablesResponse(Rejected), and not update the
+value for SecurityProfile and/or reconnect to the
+CSMS.
+A05.FR.03 The Charging Station receives SetVariablesRequest for
+NetworkConfigurationPriority containing a
+profile slot for a NetworkConnectionProfile with a
+'securityProfile' value higher than the current value
+AND
+new value is 3
+AND
+No valid ChargingStationCertificate installed
+The Charging Station SHALL respond with
+SetVariablesResponse(Rejected), and not update the
+value for SecurityProfile and/or reconnect to the
+CSMS.
+A05.FR.04 The Charging Station receives SetVariablesRequest for
+NetworkConfigurationPriority containing profile
+slots for NetworkConnectionProfiles with a
+'securityProfile' value equal to or higher than the current
+value
+AND
+all prerequisites are met
+The Charging Station SHALL respond with
+SetVariablesResponse(Accepted)
+A05.FR.05 A05.FR.04 AND
+After a reboot
+The Charging Station SHALL begin connecting to the first
+entry of NetworkConfigurationPriority
+A05.FR.06 A05.FR.05 AND
+The Charging Station successfully connected to the
+CSMS using the (new) NetworkConnectionProfile
+The Charging Station SHALL update the value of the
+configuration variable SecurityProfile AND it SHALL
+remove all NetworkConnectionProfiles with a lower
+securityProfile than stored at SecurityProfile AND
+update NetworkConfigurationPriority
+accordingly.
+A05.FR.07 A05.FR.06 The CSMS SHALL NOT allow the Charging Station to
+connect with a lower security profile anymore.
+A05.FR.08 The variable AllowSecurityProfileDowngrade is
+implemented and set to true AND
+The currently active 'SecurityProfile' is 3 AND
+The Charging Station receives SetVariablesRequest for
+NetworkConfigurationPriority containing profile slots for
+NetworkConnectionProfiles with a 'securityProfile' value
+equal to 2.
+The Charging Station SHALL respond with
+SetVariablesResponse(Accepted)
+A05.FR.09 The variable AllowSecurityProfileDowngrade is
+implemented and set to true AND
+The currently active 'SecurityProfile' is higher than 1 AND
+The Charging Station receives SetVariablesRequest for
+NetworkConfigurationPriority containing profile slots for
+NetworkConnectionProfiles with a 'securityProfile' value
+equal to 1.
+The Charging Station SHALL respond with
+SetVariablesResponse(Rejected)
+A05.FR.10 The variable AllowSecurityProfileDowngrade is not
+implemented or implemented and set to false AND
+The Charging Station receives SetVariablesRequest for
+NetworkConfigurationPriority containing profile slots for
+NetworkConnectionProfiles with a 'securityProfile' value
+lower than the currently active security profile
+The Charging Station SHALL respond with
+SetVariablesResponse(Rejected)
+Edition 2, 2025-12-03 A. Security
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 47/803 Part 2 - Specification

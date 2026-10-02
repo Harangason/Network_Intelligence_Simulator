@@ -1,0 +1,27 @@
+Tool validations
+* Step 1:
+Message: TransactionEventRequest of Authorized15118 step 3
+- eventType must be Updated or Started
+- triggerReason must be Authorized
+* Step 2:
+Message: NotifyEVChargingNeedsRequest
+IF chargingNeeds.acChargingParameters is <omitted> THEN
+chargingNeeds.dcChargingParameters must be <not omitted>
+END IF
+IF chargingNeeds.dcChargingParameters is <omitted> THEN
+chargingNeeds.acChargingParameters must be <not omitted>
+END IF
+* Step 5:
+Message: SetChargingProfileResponse
+- status must be Accepted
+* Step 6:
+Message: NotifyEVChargingScheduleRequest
+- chargingSchedule must be within bounds of chargingSchedule of step 4
+* Step 8:
+Message: TransactionEventRequest
+- triggerReason must be ChargingStateChanged
+- transactionInfo.chargingState must be Charging
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 382/914 Part 6 - Test Cases

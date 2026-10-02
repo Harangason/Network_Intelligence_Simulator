@@ -1,0 +1,90 @@
+57 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+To see the exact same response, you can also
+Monitor for PGN 00FECA (which is the code for DM1):
+>AT MP 00FECA
+Note that the ELM327 requires that you send hex
+digits for all data, as shown above (and as used by all
+other protocols). Many of the PGN numbers are listed
+in the J1939 standard as both a decimal and a hex
+number, so choose the hex version.
+You will likely find in your testing that the PGNs
+you encounter often begin with a 00 byte as above. To
+simplify matters for you, the ELM327 has a special
+version of the MP command that will accept a four digit
+PGN, and assumes that the missing byte should be
+00. An equivalent way to ask for 00FECA is then:
+>AT MP FECA
+which is a little more convenient.
+One feature of the ELM327 is the ability to tell the
+IC how many messages to retrieve when monitoring
+for PGNs. For example, to see only two responses to
+the MP FECA command, send:
+>AT MP FECA 2
+This saves having to send a character to stop the
+flow of data, and also is very convenient when dealing
+with multiline messages. While the standard OBD
+requests allow you to define how many frames (ie
+lines) of information are to be printed with a similar
+single digit, the single digit with the MP command
+actually defines how many complete messages to
+obtain. For example, if the DM1 message is 33 lines
+long, then sending AT MP FECA 1 will cause the
+ELM327 to show all 33 lines, then stop monitoring and
+print a prompt character.
+By default, all J1939 messages have the ‘header’
+information hidden from view. In order to see this
+information (actually the ID bits), you will need to turn
+the header display on:
+>AT H1
+A single response to FECA might then look like:
+>AT MP FECA 1
+6 0FECA 00 00 FF 00 00 00 00 FF FF
+Notice that the ELM327 separates the priority bits
+from the PGN information. The ELM327 also uses only
+one digit to represent the two extra PGN bits, both of
+which may seem unusual if you are used to different
+software. We find this a convenient way to show the
+actual J1939 information in the header.
+If you prefer to see the ID bits separated into bytes
+instead, simply turn off the J1939 header formatting
+with:
+>AT JHF0
+Repeating the above request would then result in
+a response of this type:
+>AT MP FECA 1
+18 FE CA 00 00 FF 00 00 00 00 FF FF
+The differences are clearly seen. If displaying the
+information in this manner, remember that the first
+‘byte’ shown actually represents five bits, and of them,
+the leftmost three are the priority bits.
+The MP command is very useful for getting
+information in a J1939 system, but not all information
+is broadcast. Some information must be obtained by
+making a query for it. Just like the other OBD requests
+where you specify the information that you need (with
+a mode and a PID), to make a query in a J1939
+system, you provide the PGN number and the system
+responds with the required data.
+For example, to request the current value of the
+engine coolant temperature (which is part of PGN
+00FEEE), you would send a request for PGN 00FEEE,
+and extract the data. To do this, send:
+>00FEEE
+to which you might receive:
+6 0FEEE 00 8C FF FF FF FF FF FF FF
+if the headers were on. Note that if you request a PGN
+that is already being broadcast, you may very well
+receive many replies, as the ELM327 configures itself
+to receive anything that is related to the PGN
+requested.
+If you are familiar with the J1939 standard, you will
+be aware that it actually specifies a reverse order for
+the sending of the data bytes of a PGN request. That
+is, the data bytes for the above request are actually
+sent as EE FE 00, and not as 00 FE EE. Since it can
+be very confusing to have to reverse some numbers
+and not others, the ELM327 automatically handles this
+for you, reversing the bytes provided. In this way, you
+Using J1939 (continued)

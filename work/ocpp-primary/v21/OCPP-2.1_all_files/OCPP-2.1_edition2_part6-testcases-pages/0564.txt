@@ -1,0 +1,55 @@
+Main (Test scenario)
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+chargingProfile.chargingProfilePurpose TxProfile
+chargingProfile.transactionId <Provided transactionId from
+before>
+chargingProfile.chargingSchedule[0].id 1
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 8 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule[1].id 2
+chargingProfile.chargingSchedule[1].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[1].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[1].chargingSchedulePeriod[0
+].limit 7 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule[2].id 3
+chargingProfile.chargingSchedule[2].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[2].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[2].chargingSchedulePeriod[0
+].limit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Manual Action: Use EV to select charging schedule 2 and calculate a charging schedule within bounds of the selected charging
+schedule
+3. The Charging Station sends a
+NotifyEVChargingScheduleRequest. 4. The Test System responds with a
+NotifyEVChargingScheduleResponse.
+With status Accepted
+Tool validations
+* Step 2:
+Message: SetChargingProfileResponse
+- status must be Accepted
+The EV must indicate that the Charging Station has initiated charging schedule renegotiation.
+* Step 3:
+Message: NotifyEVChargingScheduleRequest
+- evseId must be <Configured evseId>
+- selectedChargingScheduleId SHOULD be 2
+- chargingSchedule must fit in <chargingSchedule[2]>
+Note: K16.FR.04 for selectedChargingProfile is a SHOULD requirement and only triggers a warning
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 562/1383 Part 6 - Test Cases

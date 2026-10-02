@@ -1,0 +1,43 @@
+No. Type Description
+Scenario description 1. After authorization the Charging Station will set a maximum current, that an EV might draw via
+the Control Pilot signal. This limit is based on (default) ChargingProfiles that the Charging Station
+previously received from the CSMS.
+2. The EV starts charging and a TransactionEventRequest is sent to the CSMS.
+3. The CSMS responds with a TransactionEventResponse.
+4. In response to a TransactionEventRequest the CSMS MAY choose to set charging limits to the
+transaction using a SetChargingProfileRequest.
+5. The Charging Station responds with a SetChargingProfileResponse.
+6. While charging is in progress the EVSE will continuously adapt the maximum current or power
+according to the installed ChargingProfiles.
+Alternative scenario(s) K03 - Local Smart Charging
+K04 - Internal Load Balancing
+5 Prerequisite(s) The Functional Block Smart Charging is installed.
+6 Postcondition(s) Successful postcondition:
+The Charging Station Successfully influences the charging power or current of a specific EV,
+following the SetChargingProfileRequest sent by the CSMS.
+Failure postcondition:
+The Charging Station was not able to influence the charging power or current of a specific EV,
+following the SetChargingProfileRequest sent by the CSMS.
+7 Error handling n/a
+8 Remark(s) The CSMS determines the constraints on ChargingSchedule per transaction.
+The CSMS imposes charging limits on EVSEs. In response to a TransactionEventRequest the
+CSMS may choose to set charging limits to the transaction using the TxProfile. It is
+RECOMMENDED to check the offline flag in TransactionEventRequest prior to sending a
+charging profile to check if the transaction is likely to be still ongoing, the
+TransactionEventRequest might have been cached during an Offline period.
+The final schedule constraints that apply to a transaction are determined by merging the profiles
+as described in requirement SC.01 in Chapter 4. Smart Charging Signals to a Charging Station
+from Multiple Actors.
+It is recommended to omit the duration field of the ChargingSchedule from a TxProfile, so that it
+automatically lasts until the end of the transaction. If the TxProfile expires before the transaction
+ends, it falls back to the lowest limit of the active TxDefaultProfile and
+ChargingStationMaxProfile. If there are no other active profiles, it falls back to the local limit of
+the Charging Station.
+The scenario description and sequence diagram above are not based on a specific
+TxStartPoint.
+The TxStopPoint is: EVConnected
+This use-case is also valid for other configurations, but then the transaction might start/stop at
+another moment, which might change the sequence in which message are send. For more details
+see the use case: E01 - Start Transaction options.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 340/803 Part 2 - Specification

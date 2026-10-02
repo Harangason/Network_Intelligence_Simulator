@@ -1,0 +1,36 @@
+TC_G_02_CS: Connector status Notification - Occupied to Available
+Test case name Connector status Notification - Occupied to Available
+Test case Id TC_G_02_CS
+Use case Id(s) G01, N07
+Requirement(s) G01.FR.01, N07.FR.19
+System under test Charging Station
+Description A Charging Station sends a notification to the CSMS to inform the CSMS about a Connector status change.
+This can be done in two ways. Via a StatusNotificationRequest or a NotifyEventRequest from the device
+model.
+Purpose To verify whether the Charging Station is able to report that its connector is Available_.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Disconnect the EV and EVSE.
+3. The Charging Station notifies the CSMS about the current
+state of the connector. 4. The Test System responds accordingly.
+Tool validations
+* Step 3:
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Available"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 256/914 Part 6 - Test Cases

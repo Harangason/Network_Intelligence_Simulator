@@ -1,0 +1,50 @@
+Chapter 6  Examples 
+ssNMEA2000 User’s Manual   - 27 - 
+6.2 Transmit NMEA 2000 Message Example - Single Frame: 
+ 
+void 
+n2000_transmit_example ( void ) 
+{ 
+   n2000_t  msg; 
+   uint8_t buf[8] = {0,1,2,3,4,5,6,7}; 
+ 
+   /* load message */ 
+   msg.pgn = 65215; 
+   msg.buf = buf; 
+   msg.buf_len = 8; 
+   msg.dst = 255; 
+   msg.pri = 7; 
+   msg.port = 0; 
+   
+   /* transmit message */ 
+   if( n2000_tx_sf(&msg ) == 0 ) 
+      printf("Message transmitted\n"); 
+   else 
+      printf("Message not transmitted\n"); 
+} 
+ 
+6.3 Transmit NMEA 2000 Message: Fast Packet 
+ 
+void 
+n2000_transmit_example ( void ) 
+{ 
+   n2000_t  msg; 
+   static uint8_t seq = 0; 
+   uint8_t buf[16] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15}; 
+ 
+   /* load message */ 
+   msg.pgn = 65215; 
+   msg.buf = buf; 
+   msg.buf_len = 16; 
+   msg.pri = 7; 
+   msg.port = 0; 
+ 
+   /* 255 sends a  to global */ 
+   msg.dst = 255; 
+   
+   /* transmit message */ 
+   if( n2000_tx_fp(&msg, 0) == 0 ) 
+      seq++, printf("Message transmitted\n"); 
+   else 
+      printf("Message not transmitted\n"); 
+} 

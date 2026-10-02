@@ -1,0 +1,46 @@
+B10 - Migrate to new CSMS
+No. Type Description
+1 Name Migrate to new CSMS, using a different NetworkConnectionProfile.
+2 ID B10
+3 Objective(s) After completion of this use case, the Charging Station connects to a new CSMS.
+4 Description This use case describes how a Charging Station can be instructed to connect to a new CSMS, by
+changing the order of NetworkConnectionProfiles in NetworkConfigurationPriority.
+Actors Charging Station, CSMS 1, CSMS 2
+Scenario description A Charging Station supports at least two network configuration slots, that are identified by a
+number. The available slot numbers are reported by the Charging Station in the valuesList of
+variable NetworkConfigurationPriority.
+For example: valuesList = "0,1,2" in the base report tells CSMS that three configuration slots,
+numbered 0, 1 and 2, are available (but not necessarily set).
+The value of NetworkConfigurationPriority reports the order in which network configurations are
+tried to make a connection.
+For example: value = "1,0" means that Charging Station will first try configuration slot 1 and if that
+fails after the number of attempts configured in NetworkProfileConnectionAttempts, it will try to
+connect with configuration slot 0.
+1. CSMS 1 sets a new value for the NetworkConfigurationPriority Configuration Variable
+via SetVariablesRequest, such that the NetworkConnectionProfile for CSMS 2 becomes first in the
+list and the existing connection to CSMS 1 becomes second in the list.
+2. The Charging Station responds with a SetVariablesResponse with status Accepted
+3. CSMS 1 instructs the Charging Station to perform a Reset OnIdle.
+4. The Charging Station reboots and connects via the new primary NetworkConnectionProfile to
+CSMS 2.
+5 Prerequisites Use case B09 - Setting a new NetworkConnectionProfile was executed successfully prior to this
+use case
+The data supplied by the CSMS matches the Charging Station’s capabilities
+6 Postcondition(s) The Charging Station is connected via a different NetworkConnectionProfile.
+7 Error Handling n/a
+8 Remarks As in line with B12 - Reset - With Ongoing Transaction, when there are ongoing transactions, the
+Charging Station waits for these to be finished before performing the Reset and then connecting
+to a different CSMS.
+When an operator wants to perform an immediate switch, he should stop the transactions first.
+Operator CSMS 1 CSMS 2 Charging Station
+Change Network Config
+SetVariablesRequest(NetworkConfigurationPriority)
+SetVariablesResponse(status: RebootRequired)
+ResetRequest(OnIdle)
+ResetResponse(Accepted)
+Reboot
+BootNotificationRequest(...)
+BootNotificationResponse(...)
+Figure 19. Sequence Diagram: Migrate to new ConnectionProfile
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 74/803 Part 2 - Specification

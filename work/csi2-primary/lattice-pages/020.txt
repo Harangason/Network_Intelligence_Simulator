@@ -1,0 +1,70 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  20 
+pixel 1
+pixel 2
+pixel 3
+96
+88
+80
+72
+64
+56
+48
+32
+40
+24
+16
+F0 F0 F0 F0 F0 F0 F0 F0 F1 F1 F1 F1H.Blanking H.Blanking V.Blanking H.Blanking
+tvalid
+tdata
+tlast
+tuser[0]
+tuser[1]
+Example Configuration:
+Interlaced video
+PPC = 4
+BPC = 8
+RGB
+tready
+end of 
+active lineactive line
+start of field
+interlaced F1
+R0
+G0
+B0
+R1
+G1
+B1
+R2
+G2
+B2
+R3
+G3
+B3
+0
+8pixel 0
+ 
+Figure 2.11. Unified Video Streaming Timing Diagram 
+The fundamental signaling rules of UVSI are consistent for both the TX and RX paths. Data movement is governed by 
+the same AXI4-Stream based handshake, ensuring reliable and flow-controlled transfer between the source and the 
+sink. These common rules ensure predictable behavior whether the IP is transmitting or receiving video frames.  
+2.4.1.1. TDATA Mapping 
+Key definitions in TDATA mapping are as follows: 
+• Colors per Pixel (CPP)—Number of color components per pixel. For example, 1 for RAW, 3 for RGB. 
+• Bits per Color (BPC)—Configured bit width for each color component. 
+• Bits per Pixel (BPP)—Total bits per pixel = CPP × BPC. 
+• TDATA width per pixel—Width of UVSI TDATA allocated for one pixel, rounded up to the nearest byte boundary  = 
+ceil(BPP/8) × 8. 
+• TDATA_WIDTH—Total width of the AXI4-Stream TDATA bus for all pixels in a clock cycle = TDATA width per pixel × 
+PPC. 
+RGB565 
+• CPP: 3 
+• BPC: 8 (actual: 5, 6) 
+• BPP: 3 × 8 = 24 bits 
+• TDATA width per pixel: ceil(24/8) × 8 = 24 bits 

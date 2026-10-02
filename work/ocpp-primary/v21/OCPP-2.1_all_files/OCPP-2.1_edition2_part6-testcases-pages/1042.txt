@@ -1,0 +1,51 @@
+TC_C_120_CSMS: Settlement - is rejected or fails - Rejected
+Test case name Settlement - is rejected or fails - Rejected
+Test case Id TC_C_120_CSMS
+Use case Id(s) C22
+Requirement(s) …
+System under test CSMS
+Description To inform the CSMS that the transaction settlement has been rejected or otherwise failed to be
+successfully settled.
+Purpose To verify if the CSMS is able to handle if the settlement is rejected according the Charging Station.
+Prerequisite(s) - CSMS supports Charging Stations with integrated payment terminals. - Test System has
+PaymentCtrlr.Enabled is true
+- Test System has PaymentCtrlr.AuthorizationAmount = 50.00
+- Test System has PaymentCtrlr.PaymentDetails = "CardLast4Digits"
+- Test System has PaymentCtrlr.SettlementByCSMS is false
+- Test System has PaymentCtrlr.ReceiptByCSMS is false
+- Test System has PaymentCtrlr.AuthorizeDirectPayment is false
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System sends a TransactionEventRequest with
+eventType Started
+idToken <configured PspRef>
+idToken.type DirectPayment
+transactionInfo.transactionId <transactionId>
+idToken.additionalInfo[0].additionalIdToken = <not omitted>
+idToken.additionalInfo[0].type = CardLast4Digits
+transactionInfo.transactionLimit.maxCost 50.00
+2. The CSMS responds with a TransactionEventResponse
+3. The Test System sends a TransactionEventRequest with
+eventType Ended
+idToken <configured PspRef>
+idToken.type DirectPayment
+transactionInfo.transactionId <transactionId>
+costDetails.totalCost.currency EUR
+costDetails.totalCost.fixed.exclTax 15.00
+costDetails.totalCost.fixed.inclTax 18.15 EUR
+costDetails.totalCost.fixed.taxRate.type MyTax
+costDetails.totalCost.fixed.taxRate.tax 21
+costDetails.totalUsage.energy 123
+costDetails.totalUsage.chargingTime 5
+costDetails.totalUsage.idleTime 0
+costDetails.chargingPeriods is <omitted>
+4. The CSMS responds with a TransactionEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1040/1383 Part 6 - Test Cases

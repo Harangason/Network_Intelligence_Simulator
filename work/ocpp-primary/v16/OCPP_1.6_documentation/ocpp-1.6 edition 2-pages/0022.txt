@@ -1,0 +1,38 @@
+3.7. Transaction-related messages
+This section is normative.
+The Charge Point SHOULD deliver transaction-related messages to the Central System in chronological order as
+soon as possible. Transaction-related messages are StartTransaction.req, StopTransaction.req and periodic or
+clock-aligned MeterValues.req messages.
+When offline, the Charge Point MUST queue any transaction-related messages that it would have sent to the
+Central System if the Charge Point had been online.
+In the event that a Charge Point has transaction-related messages queued to be sent to the Central System, new
+messages that are not transaction-related MAY be delivered immediately without waiting for the queue to be
+emptied. It is therefore allowed to send, for example, an Authorize request or a Notifications request before the
+transaction-related message queue has been emptied, so that customers are not kept waiting and urgent
+notifications are not delayed.
+The delivery of new transaction-related messages SHALL wait until the queue has been emptied. This is to
+ensure that transaction-related messages are always delivered in chronological order.
+When the Central System receives a transaction-related message that was queued on the Charge Point for some
+time, the Central System will not be aware that this is a historical message, other than by inference given that
+the various timestamps are significantly in the past. It SHOULD process such a message as any other.
+3.7.1. Error responses to transaction-related messages
+It is permissible for the Charge Point to skip a transaction-related message if and only if the Central System
+repeatedly reports a `failure to process the message'. Such a stipulation is necessary, because otherwise the
+requirement to deliver every transaction-related message in chronological order would entail that the Charge
+Point cannot deliver any transaction-related messages to the Central System after a software bug causes the
+Central System not to acknowledge one of the Charge Point’s transaction-related messages.
+What kind of response, or failure to respond, constitutes a `failure to process the message' is defined in the
+documents OCPP JSON Specification and OCPP SOAP Specification.
+The number of times and the interval with which the Charge Point should retry such failed transaction-related
+messages MAY be configured using the TransactionMessageAttempts and
+TransactionMessageRetryInterval configuration keys.
+When the Charge Point encounters a first failure to deliver a certain transaction-related message, it SHOULD
+send this message again as long as it keeps resulting in a failure to process the message and it has not yet
+encountered as many failures to process the message for this message as specified in its
+TransactionMessageAttempts configuration key. Before every retransmission, it SHOULD wait as many
+seconds as specified in its TransactionMessageRetryInterval key, multiplied by the number of preceding
+transmissions of this same message.
+As an example, consider a Charge Point that has the value "3" for the TransactionMessageAttempts
+configuration key and the value "60" for the TransactionMessageRetryInterval configuration key. It sends a
+StopTransaction message and detects a failure to process the message in the Central System. The Charge Point
+17

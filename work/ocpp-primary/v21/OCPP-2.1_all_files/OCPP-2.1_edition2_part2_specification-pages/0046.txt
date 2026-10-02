@@ -1,0 +1,42 @@
+Chapter 2. Use cases & Requirements
+A01 - Update Charging Station Password for HTTP Basic Authentication
+Deprecated in OCPP 2.1
+(2.1) This use case is deprecated, but remains for backwards compatibility. Please refer to use case B09 - Setting a new
+NetworkConnectionProfile instead to update/set the BasicAuthPassword.
+No. Type Description
+1 Name Update Charging Station Password for HTTP Basic Authentication
+2 ID A01
+3 Objective(s) This use case defines how to use the BasicAuthPassword, the password used to authenticate
+Charging Stations in the Basic and TLS with Basic Authentication security profiles.
+4 Description To enable the CSMS to configure a new password for HTTP Basic Authentication, the CSMS can
+send a new value for the BasicAuthPassword Configuration Variable.
+Actors Charging Station, CSMS
+Scenario description 1. The CSMS sends a SetVariablesRequest(ComponentName=SecurityCtrlr,
+VariableName=BasicAuthPassword) to the Charging Station.
+2. The Charging Station responds with SetVariablesResponse and the status Accepted.
+3. The Charging Station disconnects its current connection. (Storing any queued messages)
+4. The Charging Station connects to the CSMS with the new password.
+5 Prerequisite(s) Security Profile: Basic Security Profile or TLS with Basic Authentication in use.
+6 Postcondition(s) Successful postcondition:
+The Charging Station has reconnected to the CSMS with the new password.
+Failure postcondition:
+If the Charging Station responds to the SetVariablesRequest with a SetVariablesResponse with a
+status other than Accepted, the Charging Station will keep using the old credentials. The CSMS
+might treat the Charging Station differently, e.g. by not accepting the Charging Station’s boot
+notifications.
+7 Error handling n/a
+8 Remark(s) n/a
+CSMS Charging Station
+SetVariablesRequest(BasicAuthPassword)
+SetVariablesResponse(status = Accepted)
+disconnect
+connect (using new password)
+Figure 5. Update Charging Station Password for HTTP Basic Authentication (happy flow)
+A01 - Update Charging Station Password for HTTP Basic Authentication -
+Requirements
+Table 26. A01 - Requirements
+ID Precondition Requirement definition
+A01.FR.01 The password SHALL be stored in the configuration variable
+BasicAuthPassword.
+Edition 2, 2025-12-03 A. Security
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 33/803 Part 2 - Specification

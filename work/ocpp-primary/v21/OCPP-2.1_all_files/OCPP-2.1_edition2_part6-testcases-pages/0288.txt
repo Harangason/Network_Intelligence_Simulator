@@ -1,0 +1,37 @@
+TC_E_43_CS: Offline Behaviour - Transaction during offline period
+Test case name Offline Behaviour - Transaction during offline period
+Test case Id TC_E_43_CS
+Use case Id(s) E12
+Requirement(s) E12.FR.01,E12.FR.02,E12.FR.06
+System under test Charging Station
+Description The Charging Station queues TransactionEvent messages to inform the CSMS that a transaction occurred
+while the Charging Station was Offline.
+Purpose To verify if the Charging Station is able to queue TransactionEvent messages while it was offline.
+Prerequisite(s) The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is TransactionEventsInQueueEnded
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Stations sends a TransactionEventRequest
+Note(s):
+- The Charging Station will empty its Transaction message queue.
+This will contain one or more TransactionEventRequest messages
+2. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+All messages: TransactionEventRequest
+- offline must be true
+One of the messages: TransactionEventRequest
+- eventType Started
+One of the messages: TransactionEventRequest
+- eventType Ended
+Post scenario validations:
+N/a
+NOTE If the Charging Station supports ISO15118, this testcase needs to be executed using EIM.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 286/1383 Part 6 - Test Cases

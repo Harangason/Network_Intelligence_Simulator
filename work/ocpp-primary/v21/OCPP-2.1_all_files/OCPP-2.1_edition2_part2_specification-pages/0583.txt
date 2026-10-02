@@ -1,0 +1,50 @@
+Chapter 3. Use cases for Battery Swapping
+S01 - Battery Swap Local Authorization
+No. Type Description
+1 Name Battery Swap Local Authorization
+2 ID S01
+3 Objective(s) To show how a battery swap action is authorized locally at the swap station.
+4 Description EV Driver authorizes locally at the swap station by presenting an RFID card.
+Actors Charging Station, CSMS
+Scenario description 1. EV Driver authorizes at swap station by presenting a valid RFID card.
+2. Charging Station (swap station) sends an AuthorizeRequest with idToken to CSMS.
+a. CSMS grants authorization to swap in the AuthorizeResponse with
+idTokenInfo.status = Accepted.
+3. Charging Station opens or indicates empty slot(s) where the set of empty batteries can be
+inserted.
+5 Prerequisite(s) EV Driver has a valid contract for swapping.
+6 Postcondition(s) When successful, use case S03 - Battery Swap In/Out starts.
+7 Error handling When Charging Station has not enough batteries available for swapping, the swap action is
+refused and use case ends.
+8 Remark(s) Authorization of EV Driver using an RFID card follows the process of use case C01 - EV Driver
+Authorization using RFID.
+Since the authorization for battery swapping is not used to start a transaction, any requirements
+in C01 that are about behavior of authorization when a transaction for the idToken is in progress,
+are not relevant, because the situation does not occur.
+User Charging Station (BSS) CSMS
+present idToken
+AuthorizeRequest(idToken=<idToken>)
+AuthorizeResponse(Accepted)
+accept battery for swapping
+Figure 211. Sequence diagram for local authorization
+S01 - Battery Swap Local Authorization - Requirements
+ID Precondition Requirement definition Note
+S01.FR.01 Upon successful authorization of
+AuthorizeRequest for an idToken AND
+when enough batteries are available
+for a swap
+Charging Station (swap station) SHALL open or
+indicate an empty slot(s) where returned batteries
+can be inserted.
+S01.FR.02 When an idToken has been authorized
+and the EV Driver does not insert a
+battery into a slot before the timeout
+set by the Configuration Variable:
+BatterySwapInTimeout
+Charging Station SHALL end the authorization of
+idToken and abort the battery swap process.
+At this point no
+BatterySwapRequest has
+been sent yet.
+Edition 2, 2025-12-03 S. Battery Swapping
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 570/803 Part 2 - Specification

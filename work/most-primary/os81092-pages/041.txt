@@ -1,0 +1,41 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 41
+OS81092
+11.0 CLOCK MANAGER
+The Clock Manager generates internal clocks and optionally drives the RMCK external clock. The RMCK output clock
+supports synchronization of external devices to a clock multiple synchronous to the network frame rate.
+11.1 PLL Lock Status
+After power-up, the internal PLL locks to an external clock reference (XTI/XTO) and provides the primary timebase for
+the OS81092. Clock and data recovery is performed at the Ne twork Port. For proper data and clock recovery of the
+incoming network bitstream, a valid reference clock must always be available.
+When network lock is initially achieved, it takes three frames to synchronize streaming data. Therefore, streaming data
+will not be transferred properly between the network and any open source or sink ports for three frames when going
+from the unlock to lock state. While the PLL is un locked, only control messages  targeting the local FBlock INIC or
+NBMIN can be transferred (via the Control Port or MediaLB Port).
+Network lock/unlock events can affect the behavior of the ERR/BOOT pin, based on the MuteMode() setting. For more
+information on the use of ERR/BOOT for lock/unlock detection, refer to the OS81092 INIC API User’s Manual [2].
+11.2 Crystal Pins (XTI/XTO)
+The crystal oscillator should be in a fundamental, parallel resonant mode. Figure 11-1 depicts the external circuitry con-
+nected to the OS81092 oscillator circuit. Since the internal inverter/amplifier is  operated in its linear region, external
+series resistors should not be used, as they will lower the gain and could cause start-up problems. Several factors must
+be considered when selecting a crystal, including load capacitance, oscillator margin, cut, and operating temperature.
+For more information on crystals, see Section 16.7 “Crystal Oscillator Selection”. The crystal frequency must be 384
+times the desired operational network frequency (Fs).
+If an external clock is used in lieu of a crystal oscillator, it must be connected to XTI. The clock must be stable prior to
+the rising edge of RST and remain stable for proper operation. In addition, XTO should float and have minimal capaci-
+tance (see Figure 11-1).
+FIGURE 11-1: CRYSTAL OSCILLATOR INPUT
+Note: A valid and continuous external reference clock (XTI/XTO) must be present for
+normal operation. If the reference clock is disabled during operation, INIC may
+become inoperable and/or the state of the ERR/BOOT pin may become invalid.
+A reset and valid reference clock is required to recover from this condition.
+XTO
+XTI
+C2
+C1 = C2 = 10 - 22 pF
+C1
+XTAL
+XTO
+XTI
+OR
+< 10 pFOS81092 OS81092
+OSC.

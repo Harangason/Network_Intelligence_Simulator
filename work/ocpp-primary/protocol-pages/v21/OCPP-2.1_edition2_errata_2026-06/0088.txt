@@ -1,0 +1,48 @@
+Tool validations
+* Step 1:
+Message: NotifyEVChargingNeedsRequest
+- evseId must be <Configured evseId>
+- chargingNeeds.requestedEnergyTransfer must be one of [AC_single_phase, AC_two_phase, AC_three_phase, DC, DC_ACDP, WPT]
+- chargingNeeds.availableEnergyTransfer must be <not omitted>
+* Step 3 Step 4 :
+Message: SetChargingProfileResponse
+- status must be Accepted
+* Step 6 Step 9 :
+Message: NotifyAllowedEnergyTransferResponse
+- status must be Accepted
+* Step 7 Step 10 :
+Message: NotifyEVChargingNeedsRequest
+- evseId must be <Configured evseId>
+- chargingNeeds.requestedEnergyTransfer must be one of [AC_BPT, DC_BPT]
+- chargingNeeds.availableEnergyTransfer must be <not omitted>
+* Step 13:  
+Message:  SetChargingProfileResponse
+-  status  must be    Accepted
+Post scenario validations:
+N/a
+6.2.56. Page 863/864 - (2026-02) - TC_Q_125_CS - Aligned with other V2X ISO
+15115-20 / CHAdeMO testcases
+Test case name Idle operationMode - Idle, minimizing energy consumption - Idle with EvseSleep
+Test case Id TC_Q_125_CS
+…
+Before (Preparations)
+Configuration State:
+- SampledDataCtrlr.TxUpdatedInterval = 10
+- SampledDataCtrlr.TxUpdatedMeasurands = Energy.Active.Import.Register
+Memory State:
+N/a
+Reusable State(s):
+State is [evconnectedpresession]
+IF <Configured EVProtocol> is CHAdeMO THEN
+State  is   CHAdeMOV2xControlBpt
+State is [authorized]
+State is   [evconnectedpresession]
+ELSE IF <Configured EVProtocol> is     ISO15118  THEN 
+State is Iso1511820V2xControlBpt
+State is   [evconnectedpresession]
+ State is   [authorized15118]  (for 15118-20)  
+END IF
+State EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 84/116 Errata 2026-06

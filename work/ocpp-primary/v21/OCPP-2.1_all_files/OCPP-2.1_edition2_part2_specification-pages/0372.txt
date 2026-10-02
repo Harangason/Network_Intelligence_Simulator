@@ -1,0 +1,61 @@
+External Control System
+(e.g. smart meter) Charging Station CSMS
+loop
+TransactionEventRequest(eventType = Updated, ...)
+TransactionEventResponse(...)
+Set grid limit
+opt
+recalculate charging schedule
+set charging limit(minimum of all known limits)
+opt [if charging limit changed more than: LimitChangeSignificance]
+NotifyChargingLimitRequest(evseId, chargingSchedule, chargingLimit)
+NotifyChargingLimitResponse()
+opt [if charging rate changed more than: LimitChangeSignificance]
+TransactionEventRequest(eventType = Updated, trigger = ChargingRateChanged, ...)
+TransactionEventResponse(...)
+Figure 132. Sequence diagram of the use case "Setting / Updating External Charging Limit with Ongoing Transaction"
+K11 - Set / Update External Charging Limit With Ongoing Transaction -
+Requirements
+Table 107. K11 - Requirements
+ID Precondition Requirements Note
+K11.FR.01
+(2.1)
+When an external charging
+limit/schedule is received
+during an ongoing
+transaction AND
+ExternalConstraintsP
+rofileDisallowed is
+false or absent
+The Charging Station SHALL NOT charge the ongoing
+transaction faster than this given limit/schedule.
+K11.FR.02 K11.FR.01 
+AND
+Charging limit changed by
+more than:
+LimitChangeSignifica
+nce
+The Charging Station SHALL inform the CSMS of the new
+charging limit/schedule imposed by the external system
+by sending a NotifyChargingLimitRequest.
+K11.FR.03 K11.FR.02
+AND
+EnableNotifyCharging
+LimitWithSchedules is
+true
+The NotifyChargingLimitRequest SHALL contain the
+charging limits/schedules as set by the external system.
+K11.FR.04 K11.FR.01 
+AND
+Charging rate changed by
+more than:
+LimitChangeSignifica
+nce
+The Charging Station SHALL send a
+TransactionEventRequest message to the CSMS with
+trigger = ChargingRateChanged
+K11.FR.05 K11.FR.02 The Charging Station SHALL NOT set the
+chargingLimitSource to CSO in the
+NotifyChargingLimitRequest.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 359/803 Part 2 - Specification

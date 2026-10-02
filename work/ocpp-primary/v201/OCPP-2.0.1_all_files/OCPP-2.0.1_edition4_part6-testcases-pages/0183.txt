@@ -1,0 +1,47 @@
+TC_E_16_CS: Stop transaction options - Deauthorized - Invalid idToken
+Test case name Stop transaction options - Deauthorized - Invalid idToken
+Test case Id TC_E_16_CS
+Use case Id(s) E06(S3)
+Requirement(s) E06.FR.04, E06.FR.15, C15.FR.04
+System under test Charging Station
+Description OCPP 2.x.x has a flexible transaction mechanism that allows the transaction start and stop points to be
+configured differently. This test covers one of the start options.
+Purpose To verify if the Charging Station stops a transaction when the transaction gets deauthorized by the status
+from the idTokenInfo at a TransactionEventResponse message and it has been configured to do so.
+Prerequisite(s) - The Charging Station does NOT have the following configuration; The mutability of TxStopPoint is
+ReadOnly AND the value Authorized OR PowerPathClosed is NOT set OR (EnergyTransfer OR DataSigned is
+set).
+- If the mutability of TxStopPoint is ReadWrite, then the value Authorized OR PowerPathClosed must be
+supported.
+- The Charging Station supports local start/stop transaction.
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+If the mutability of TxStopPoint is ReadWrite then TxStopPoint contains PowerPathClosed AND/OR Authorized
+AuthCtrlr.AuthEnabled is true (If implemented AND ReadWrite)
+AuthCtrlr.DisableRemoteAuthorization is false (If implemented)
+OfflineTxForUnknownIdEnabled is true (If implemented)
+StopTxOnInvalidId is true
+Memory State:
+IdTokenCached for <Configured valid idtoken fields> (If implemented)
+IdTokenLocalAuthList for <Configured valid idtoken fields> (If implemented)
+Reusable State(s):
+State is StartOfflineTransaction
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Stations sends a TransactionEventRequest
+Note(s):
+- The Charging Station will empty its Transaction message queue.
+This will contain one or more TransactionEventRequest messages
+2. The Test System responds with a TransactionEventResponse
+Note(s):
+- The Test System will respond to the TransactionEventRequest
+containing the idToken, with idtokenInfo.status Invalid
+3. The Charging Stations sends a TransactionEventRequest
+Note(s):
+- After having emptied its queue, the Charging Station will send a
+TransactionEventRequest in which it reports it deauthorizes the
+transaction.
+4. The Test System responds with a TransactionEventResponse
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 181/914 Part 6 - Test Cases

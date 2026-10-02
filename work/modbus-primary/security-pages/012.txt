@@ -1,0 +1,59 @@
+Modbus.org 
+MB-TCP-Security-v36_2021-07-30 
+                                                  12 
+ 
+ 
+Message Description 
+4:VerifyServerCertSig When peer received certificate of remote peer it will check it by 
+• verifying each certificate’s signature in the chain using 
+public key of the issuer CA 
+• validate the certificate path to a trusted root certificate 
+• check the revocation status of each certificate in the chain 
+5:ServerKeyExchange The TlsServer sends a ServerKeyExchange message to the 
+TlsClient to provide data for setting the pre-master key.  
+6:CertificateRequest The TlsServer sends a Certificate Request message to the 
+TlsClient to obtain the Client Certificate.  
+7:ServerHelloDone The TlsServer sends a ServerHelloDone message to the TlsClient 
+to indicate the end of the ServerHello and associated messages.  
+8:ClientCertificate The TlsClient sends its certificate chain as the payload of a 
+Certificate message.  This chain contains the client device’s 
+domain certificate, as well as the certificate for each issuing CA 
+down to the root CA. This client’s end certificate also contains the 
+role of the client.  This is used by the server to authorize a later 
+application level request. 
+9:VerifyClientCertSig When peer received certificate of remote peer it will check it by 
+• verifying each certificate’s signature in the chain using 
+public key of the issuer CA 
+• validate the certificate path to a trusted root certificate 
+• check the revocation status of each certificate in the chain  
+10:ClientKeyExchange The TlsClient sends a ClientKeyExchange message to the 
+TlsServer. With this message the pre-master secret is set.  
+11:ChangeCipherSpec The TlsClient sends a ChangeCipherSpec message to the 
+TlsServer to indicate that subsequent messages sent by the Client 
+will be sent using newly negotiated cipher spec and keys.  
+12:Finished The TlsClient sends a Finished message to the TlsServer. This 
+message is the first message protected with the just negotiated 
+algorithms, keys, and secrets.  
+13:ChangeCipherSpec The TlsServer sends a ChangeCipherSpec message to the 
+TlsClient to indicate that subsequent messages sent by the Server 
+will be sent using newly negotiated cipher spec and keys.  
+14:Finished The TlsServer sends a Finished message to the TlsClient. This 
+message is protected with the just negotiated algorithms, keys, 
+and secrets. 
+15+n:ApplData() n ::= { 0 .. m} 
+15+n+1:ApplData() n ::= { 0 .. m} 
+ 246 
+TLS [RFC5246] also provides for session resumption. The server side partner caches the last  247 
+security state known, and pairs it the session ID used in the client and server hello. If the client 248 
+caches the security context and sessionId it can present this sessionID to the server on the next 249 
+ClientHello. If this sessionID matches with a cached sessionID on the server, the server will 250 
+immediately change the cipher spec as shown in Figure 7 TLS Resumption and the connection 251 
+will resume. This reduces the TLS negotiation time to 1 application round trip time, and removes 252 
+the public/private key cryptographic function needed to authorize a new peer. This resumption will 253 
+require the server to cache the role associated with the connection’s client certificate and 254 
+associate it with the sessionID. 255 
+ 256 
+If the sessionID presented by the ClientHello does not match a known server session, a new 257 
+sessionID is returned in the serverHello message and a full TLS handshake is performed as in 258 
+Figure 6 TLS Full Handshake Protocol. 259 
+ 260 

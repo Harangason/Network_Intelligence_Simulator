@@ -1,0 +1,58 @@
+Main (Test scenario)
+3. 4.  The Charging Station responds with a
+SetChargingProfileResponse
+4. 3.  The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile.chargingProfilePurpose TxProfile
+chargingProfile.chargingProfileKind Dynamic
+chargingProfile.transactionId <transactionId>
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 6 * <limit multiplier>
+Note: Check [csKSmartChargingChargingProfileLimits] for <limit
+multiplier>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].operationMode ChargingOnly
+5.  The Charging station sends a     
+NotifyEVChargingScheduleRequest
+6.  The Test System responds with a      
+NotifyEVChargingScheduleResponse  with 
+ status   Accepted
+7.  Execute   Reusable State   EnergyTransferStarted
+6. 9.  The Charging Station responds with a
+NotifyAllowedEnergyTransferResponse
+5. 8.  The Test System sends a
+NotifyAllowedEnergyTransferRequest with
+allowedEnergyTransfer [AC_single_phase, AC_BPT, DC, DC_BPT]
+7. 10.  The Charging Station sends a
+NotifyEVChargingNeedsRequest
+8. 11.  The Test System responds with a
+NotifyEVChargingNeedsResponse with
+- status Accepted
+13.  The Charging Station responds with a      
+SetChargingProfileResponse
+12.  The Test System sends a       SetChargingProfileRequest  with 
+ chargingProfile.id   <Same chargingProfileId as step 3>    
+ evseId   <Configured evseId> 
+ chargingProfile.chargingProfilePurpose   TxProfile
+ chargingProfile.chargingProfileKind   Dynamic
+ chargingProfile.transactionId   <transactionId>
+ chargingProfile.chargingSchedule[0].chargingRateUnit 
+<Configured chargingRateUnit> 
+ chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod   0
+ chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].setpoint   -7  *   <limit multiplier> 
+ Note: Check   [csKSmartChargingChargingProfileLimits]  for <limit  
+multiplier>
+ chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].operationMode   CentralSetpoint
+14.  The Charging station sends a     
+NotifyEVChargingScheduleRequest
+15.  The Test System responds with a      
+NotifyEVChargingScheduleResponse  with 
+ status   Accepted
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 83/116 Errata 2026-06

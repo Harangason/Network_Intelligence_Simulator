@@ -1,0 +1,12 @@
+MODBUS over serial line specification and implementation guide V1.02  Modbus.org    
+Modbus.org http://www.modbus.org/ 15/44
+Dec 20, 2006 
+During generation of the CRC, each 8–bit character is exclusive ORed with the register contents. Then the result is shifted in the 
+direction of the least significant bit (LSB), with a zero filled into the most significant bit (MSB) position. The LSB is extra cted and 
+examined. If the LSB was a 1, the register is then exclusive ORed with a preset, fixed value. If the LSB was a 0, no exclusive OR takes 
+place. 
+This process is repeated until eight shifts have been performed. After the last (eight) shift, the next 8–bit byte is exclusive  ORed with 
+the register’s current value, and the process repeats for eight more shifts as described above. The final content of the regist er, after all 
+the bytes of the message have been applied, is the CRC value. 
+When the CRC is appended to the message, the low-order byte is appended first, followed by the high-order byte. A detailed exam ple 
+of CRC generation is contained in Appendix B. 

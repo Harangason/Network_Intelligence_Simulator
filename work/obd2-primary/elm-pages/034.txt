@@ -1,0 +1,91 @@
+Bus Initiation
+Both the ISO 9141-2 and ISO 14230-4 (KWP2000)
+standards require that the vehicle’s OBD bus be
+‘initialized’ before any communications can take place.
+The ISO 9141 standard allows for only a slow (2 to 3
+second) initiation process, while ISO 14230 allows for
+both a slow method, and a faster alternative.
+The ELM327 will perform this bus initiation for you,
+but generally not until a request needs to be sent (but
+you can force one with the FI and SI commands). If the
+bus initiation occurs during an automatic search, you
+will not see any status reporting, but if you have the
+Auto option off (and are set to protocols 3, 4, or 5),
+then you will see a message similar to this:
+BUS INIT: ...
+The three dots appear only as the slow initiation
+process is carried out – a fast initiation does not show
+the dots. This will be followed by either the expression
+‘OK’ to say it was successful, or else an error message
+to indicate that there was a problem. (The most
+common error encountered is in forgetting to turn the
+vehicle’s key to the ‘ON’ position before attempting to
+talk to the vehicle.)
+ Once the bus has been initiated, communications
+must take place regularly (typically at least once every
+five seconds), or the bus will revert to a low-power
+‘sleep’ mode. If you are not sending data requests
+often enough, the ELM327 will generate requests for
+you to ensure that the bus stays ‘awake’. You will
+never see the responses to these, but you may see
+the transmit LED flash periodically as these are being
+sent.
+By default, the ELM327 ensures that these
+‘wakeup’ or ‘idle’ messages are sent every 3 seconds,
+but this is adjustable with the AT SW command. The
+contents of the wakeup message are also user
+programmable with the AT WM command, if you
+should wish to change them. Users generally do not
+have to change either of the above, as the default
+settings work well with most systems.
+34 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Periodic (Wakeup) Messages
+After an ISO 9141 or ISO 14230 connection has
+been established, there needs to be periodic data
+transfers in order to maintain that connection, and
+prevent it from ‘going to sleep.’ If normal requests and
+responses are being sent, that is usually sufficient, but
+the ELM327 occasionally has to create its own
+messages,  to prevent the connection from timing out.
+We term these periodic messages that are created
+the ‘Wakeup Messages’, as they keep the connection
+alive, and prevent the circuitry from going back to an
+idle or sleep mode. (Some texts refer to these
+messages simply as ‘idle messages.’) The ELM327
+automatically creates and sends these for you if there
+appears to be no other activity – there is nothing that
+you need do to ensure that they occur. To see that
+these are being sent, simply watch the OBD transmit
+LED – you will see the periodic ‘blips’ as the ELM327
+sends each one.
+The ELM327 normally sends wakeup messages
+after 3 seconds of no activity (this time is adjustable
+with the AT SW command). This is within the five
+second limit set by the standard.
+ The default content of these messages vary
+depending on the protocol - for ISO 9141, the ELM327
+will send 68 6A F1 01 00, and it sends C1 33 F1 3E for
+ISO 14230 (KWP). If you would prefer that a different
+message be sent, simply use the Wakeup Message
+command to define it.
+For example, if you would like to send the data
+bytes 44 55 with the header bytes set to 11 22 33,
+simply send the command:
+>AT WM 11 22 33 44 55
+and from that point forward, every wakeup message
+that the ELM327 sends will be 11 22 33 44 55 (with a
+checksum byte following). You do not provide the
+checksum byte - it is automatically added for you.
+You can change these as often as you want, the
+only restriction being that every time you do, you must
+provide the complete message – the header bytes and
+the data bytes. The current version of the ELM327
+allows for messages of one to six bytes total, not
+including the checksum.
+The ELM327 does not currently support periodic
+messages for the CAN protocols. If you require that
+function, please consider using our ELM329 CAN
+Interpreter product.

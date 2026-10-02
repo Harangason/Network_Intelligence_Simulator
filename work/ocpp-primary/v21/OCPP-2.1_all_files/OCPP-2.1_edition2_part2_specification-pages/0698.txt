@@ -1,0 +1,45 @@
+Value Description
+TxProfile Profile with constraints to be imposed by the Charging Station on the current transaction, or on a new
+transaction when this is started via a RequestStartTransactionRequest with a ChargingProfile. A profile with
+this purpose SHALL cease to be valid when the transaction terminates.
+PriorityCharging (2.1) This profile is used in place of a Tx(Default)Profile, when priority charging is requested, either locally on
+Charging Station or via a request from CSMS.
+LocalGeneration (2.1) This profile adds capacity from local generation. Its capacity is added on top of other charging profiles.
+3.16. ChargingProfileStatusEnumType
+Enumeration
+Status returned in response to SetChargingProfileRequest.
+ChargingProfileStatusEnumType is used by: setChargingProfile:SetChargingProfileResponse ,
+pullDynamicScheduleUpdate:PullDynamicScheduleUpdateResponse , updateDynamicSchedule:UpdateDynamicScheduleResponse
+Value Description
+Accepted Request has been accepted and will be executed.
+Rejected Request has not been accepted and will not be executed.
+3.17. ChargingRateUnitEnumType
+Enumeration
+Unit in which a charging schedule is defined.
+ChargingRateUnitEnumType is used by: Common:ChargingScheduleType , Common:CompositeScheduleType ,
+getCompositeSchedule:GetCompositeScheduleRequest
+Value Description
+W Watts (power). This is the TOTAL allowed charging power. If used for AC Charging, the phase current should
+be calculated via: Current per phase = Power / (Line Voltage * Number of Phases). The "Line Voltage" used in
+the calculation is not the measured voltage, but the set voltage for the area (hence, 230 of 110 volt). The
+"Number of Phases" is the numberPhases from the ChargingSchedulePeriod. It is usually more convenient to
+use this for DC charging. Note that if numberPhases in a ChargingSchedulePeriod is absent, 3 SHALL be
+assumed.
+A Amperes (current). The amount of Ampere per phase, not the sum of all phases. It is usually more
+convenient to use this for AC charging.
+3.18. ChargingStateEnumType
+Enumeration
+The state of the charging process.
+ChargingStateEnumType is used by: Common:TransactionType
+Value Description
+EVConnected There is a connection between EV and EVSE, in case the protocol used between EV and the Charging Station
+can detect a connection, the protocol needs to detect this for the state to become active. The connection
+can either be wired or wireless.
+Authorization is required to proceed to state Charging.
+Charging The contactor of the Connector is closed and energy is flowing to between EVSE and EV.
+SuspendedEV When the EV is connected to the EVSE and the EVSE is offering energy but the EV is not taking any energy.
+SuspendedEVSE When the EV is connected to the EVSE but the EVSE is not offering energy to the EV, e.g. due to a smart
+charging restrictions or local supply power constraints.
+Idle There is no connection between EV and EVSE.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 685/803 Part 2 - Specification

@@ -1,0 +1,44 @@
+Chapter 1. Introduction
+This Functional Block describes the OCPP Transaction related functionalities. Transactions are started/stopped on the Charging
+Station. Note that at most one transaction can be active on an EVSE at any point in time.
+1.1. Flexible transaction start/stop
+To support as many business cases as possible, and to prevent sending too many messages when not needed for certain business
+cases, OCPP 2.0.1 supports flexible configuration of the start and stop of a transaction.
+For this the following Configuration Variables are defined:
+• TxStartPoint
+• TxStopPoint
+These 2 Configuration Variables make it possible to define when a transaction should start: TransactionEventRequest (eventType =
+Started) and when a transaction should stop: TransactionEventRequest (eventType = Ended)
+With the introduction in OCPP 2.0.1 of flexible start/stop points of a transaction, it is important to provide a definition of a
+transaction.
+A transaction is the portion of a charging session that is recorded by CSMS. It is a single time frame with a start and stop
+time. This information can be used by the operator for billing.
+It is up to the Charging Station Operator to define the values for TxStartPoint and TxStopPoint (unless these are preset as read-only
+values in the charging station), but not all combinations make sense.
+The following three variants are most common:
+• If connection time is billed, then start and stop points should be EVConnected.
+• If time of use is billed, then the start points should be EVConnected, Authorized and the stop point EVConnected.
+(Such that upon authorization first, the charger is already seen as 'in use').
+• If charging time is billed, then start and stop points should be PowerPathClosed. (This starts as soon as charger is ready
+to provide power and stops when authorization is revoked or vehicle disconnected.) Pauses in between (i.e.
+SuspendedEV(SE)) do not end the transaction. Billing on the amount of energy or power can be done based on the meter
+values that are collected during the transaction.
+WARNING
+Certain combinations of start and stop points can lead to a situation where a started transaction is never
+stopped. For example: when the start point is ParkingBayOccupancy and the stop point is EVConnected,
+then a transaction starts when an EV occupies the parking bay, but when the user never connects the EV, but
+simply drives away, then the transaction will remain open, because ParkingBayOccupancy is not
+configured as a stop point.
+1.1.1. Readonly or Read/Write
+OCPP 2.0.1 supports 2 options for the transaction start/stop Configuration Variables. They can either be: RW (read-write) or R
+(read-only).
+When a Charging Station supports RW, the CSO can configure the settings. To support all possible settings, the software in the
+Charging Station has to be more flexible.
+With only R, the settings are fixed in firmware, the CSO can read the settings to learn how a Charging Station will behave, but cannot
+configure it. This makes for a simpler implementation. When the needs of the target market are well known there might be no need
+to implement the flexible model.
+1.1.2. OCPP 1.6 Transaction compatibility
+If transactions similar to OCPP 1.6 are wanted, this section describes how the transaction start and stop point should be
+configured.
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 120/491 Part 2 - Specification

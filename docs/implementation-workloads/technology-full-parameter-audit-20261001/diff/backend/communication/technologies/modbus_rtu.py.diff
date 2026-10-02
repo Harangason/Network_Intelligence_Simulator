@@ -1,0 +1,166 @@
+--- before/backend/communication/technologies/modbus_rtu.py
++++ after/backend/communication/technologies/modbus_rtu.py
+@@ -0,0 +1,163 @@
++"""Modbus RTU V1.02. Only explicitly shared Modbus application/PHY rules are reused."""
++from copy import deepcopy
++from . import modbus_ascii as common
++
++SERIAL, APP = common.SERIAL, common.APP
++SOURCES={**common.SOURCES,SERIAL:'Modbus Serial Line V1.02 December20 2006 sections2.1-2.6/3.2-3.6/5/AppendixB CRC; RTU class/parity/11bit framing and baud-specific t1.5/t3.5'}
++PUBLIC, USER = common.PUBLIC, common.USER
++DIAG = [0, 1, 2, 4, *range(10, 19), 20]  # Subfunction3 changes an ASCII delimiter only.
++
++# These are shared Modbus PDU or serial electrical/addressing declarations,
++# not inherited ASCII framing, checksum, rate or timeout defaults.
++SHARED = set('profile implementation_class role phy parity exchange phase function_kind termination cable word_order '
++ 'revision network_id binding_source device_source rate_source physical_source mapping_source schedule_source capacity_source '
++ 'acceptance_source registered_source timer_source device_limit_source function_source '
++ 'start_bits stop_bits destination_address slave_address active_masters outstanding function request_function exception_code '
++ 'diagnostic mei_type pdu_bytes data_bytes start_address quantity byte_count coil_value register_value register_bits '
++ 'read_quantity write_quantity write_start_address write_byte_count devices device_limit terminations_per_pair '
++ 'polarization_locations tap_derivations response_timeout_ms turnaround_ms tx_baud_bps rx_tolerance_percent '
++ 'trunk_m drop_m termination_ohm termination_w termination_cap_nf termination_cap_v bias_ohm bias_v rs232_cap_pf '
++ 'reply_expected listen_only polarization common shielded four_wire_as_two repeater'.split())
++
++def rebind(value):
++    if isinstance(value, str):
++        return 'mr_' + value[3:] if value.startswith('ma_') else value
++    if isinstance(value, list): return [rebind(v) for v in value]
++    if isinstance(value, dict): return {rebind(k): rebind(v) for k, v in value.items()}
++    return deepcopy(value)
++
++DECLARATIONS = []
++for item in common.DECLARATIONS:
++    key = item['key'][3:]
++    if key in SHARED:
++        native = rebind(item)
++        native['source_revision']=SOURCES[native['source']]
++        if key == 'implementation_class':
++            native['description'] = 'Actual RTU Basic/Regular class: Basic9600 required/19200 recommended; Regular9600/19200 and configurable optional rates.'
++        DECLARATIONS.append(native)
++
++def d(key, kind, meaning, lo=None, hi=None, unit=None, options=None, **kw):
++    DECLARATIONS.append(dict(key='mr_'+key, type=kind, description=meaning, min=lo, max=hi, unit=unit,
++      options=options, source=SERIAL, source_revision=SOURCES[SERIAL], **kw))
++
++d('mode', 'select', 'Actual RTU binary transmission, no ASCII hex/LRC/delimiters.', options=['RTU', 'REGISTERED'])
++d('gap_policy', 'select', 'Actual character-based timers through19200; above19200 recommended fixed750/1750us or documented alternative.',
++  options=['CHARACTER', 'FIXED_RECOMMENDED', 'REGISTERED'])
++d('codec_source', 'text', 'Actual binary address/PDU and CRC16 low-octet-first encoder; no ASCII encoding.')
++d('supports_19200', 'boolean', 'Actual endpoint capability; Basic default19200 if implemented, else9600. Regular must implement19200.')
++d('gap_deviation_source', 'text', 'Actual documented non-recommended high-baud timer policy and receive-driver qualification.')
++d('binary_body_hex', 'text', 'Lossless uppercase hex representation of actual binary address+PDU, excluding CRC; not wire ASCII characters.',
++  pattern=r'(?:[0-9A-F]{2}){2,254}', min_length=4, max_length=508)
++for key, meaning, lo, hi, unit in [
++ ('data_bits', 'Actual RTU8 data bits per asynchronous character.',8,8,'bit'),
++ ('character_bits', 'Actual11 wire bits: start1+data8+parity1+stop1, orNONE+stop2.',11,11,'bit'),
++ ('body_bytes', 'Actual binary address1+PDU1..253 before two CRC bytes.',2,254,'byte'),
++ ('frame_bytes', 'Actual binary serial ADU=address1+PDU+CRC2, maximum256bytes.',4,256,'byte'),
++ ('serial_bits', 'Actual11 asynchronous wire bits per binary frame octet; silent gaps separate.',44,2816,'bit'),
++ ('crc_initial', 'RTU CRC16 initial registerFFFF, no ASCII LRC sum.',65535,65535,None),
++ ('crc_polynomial', 'Actual reflected CRC16 shift polynomialA001, not unreversed8005.',40961,40961,None),
++ ('crc_bits', 'Actual CRC16 width; address/PDU data bits only, no start/parity/stop.',16,16,'bit'),
++ ('crc_value', 'Actual CRC16 of address+PDU, before low/high-octet serialization.',0,65535,None),
++ ('crc_low', 'Actual first transmitted CRC octet is low-order.',0,255,None),
++ ('crc_high', 'Actual second transmitted CRC octet is high-order.',0,255,None),
++]: d(key,'number',meaning,lo,hi,unit,integer=True)
++for key, meaning in [
++ ('character_time_us','Actual11bits divided by baud, excluding silence/processing.'),
++ ('serialization_us','Actual full binary frame bits divided by baud, excluding silence/processing.'),
++ ('interchar_timeout_us','Actual t1.5 threshold:16.5bit-times through19200; recommended750us above19200.'),
++ ('interframe_min_us','Actual t3.5 threshold:38.5bit-times through19200; recommended1750us above19200.'),
++ ('interchar_gap_bound_us','Actual largest inter-character idle; exceedingt1.5 discards partial frame.'),
++ ('interframe_gap_us','Actual silent interval between frames, at leastt3.5.'),
++]:d(key,'number',meaning,0,None,'us')
++
++REQUIRED = ['profile','implementation_class','mode','role','phy','parity','data_bits','start_bits','stop_bits','character_bits',
++ 'revision','network_id','binding_source','device_source','rate_source','physical_source','codec_source','mapping_source',
++ 'schedule_source','capacity_source','acceptance_source']
++REMOVED = {k: 'Modbus RTU has no universal '+k+'; actual serial master/device schedule, timers and separately selected electrical path replace foreign CAN/IP policies.'
++           for k in common.REMOVED}
++
++def _references(value):
++    if isinstance(value,str): return {value} if value.startswith('ma_') else set()
++    if isinstance(value,list): return set().union(*map(_references,value)) if value else set()
++    if isinstance(value,dict): return _references(list(value.keys())) | _references(list(value.values()))
++    return set()
++
++def semantics():
++    allowed = {'ma_'+k for k in SHARED}
++    rules=[]
++    for rule in common.semantics()['parameter_constraints']:
++        if _references(rule) <= allowed and rule.get('parameter') not in {'ma_implementation_class','ma_mode'}:
++            converted=rebind(rule)
++            converted['source_revision']=SOURCES[converted['source']]
++            if converted.get('parameter')=='mr_diagnostic' and 'allowed' in converted:
++                converted['allowed']=[v for v in converted['allowed'] if v!=3]
++            rules.append(converted)
++    def r(key,when=None,source=SERIAL,**kw):
++        rules.append(dict(parameter='mr_'+key,when={'mr_'+k:v for k,v in (when or {}).items()},
++                         source=source,source_revision=SOURCES[source],**kw))
++    r('mode',{'profile':'V1_02'},allowed=['RTU'])
++    r('registered_source',{'mode':'REGISTERED'},required=True)
++    r('registered_source',{'gap_policy':'REGISTERED'},required=True)
++    r('parity',{'implementation_class':'BASIC'},allowed=['EVEN'])
++    r('phy',{'implementation_class':'BASIC'},allowed=['RS485_2W','RS232'])
++    r('supports_19200',{'implementation_class':'REGULAR'},allowed=[True])
++    r('gap_policy',when_present=['mr_interchar_timeout_us'],required=True)
++    r('gap_policy',when_present=['mr_interframe_min_us'],required=True)
++    r('gap_policy',when_ranges={'bitrate_bps':[1,19200]},allowed=['CHARACTER'])
++    r('gap_deviation_source',{'gap_policy':'CHARACTER'},when_greater_than={'bitrate_bps':19200},required=True)
++    for key,value in [('interchar_timeout_us',750),('interframe_min_us',1750)]:
++        r(key,{'gap_policy':'FIXED_RECOMMENDED'},allowed=[value])
++    for key,bits in [('interchar_timeout_us',16.5),('interframe_min_us',38.5)]:
++        r(key,{'gap_policy':'CHARACTER'},equal_expression={'product':[bits,1000000,{'power':['bitrate_bps',-1]}]})
++    r('interchar_gap_bound_us',maximum_parameter='mr_interchar_timeout_us')
++    r('interchar_timeout_us',when_present=['mr_interchar_gap_bound_us'],required=True)
++    r('interframe_gap_us',minimum_parameter='mr_interframe_min_us')
++    r('interframe_min_us',when_present=['mr_interframe_gap_us'],required=True)
++    r('body_bytes',equal_expression={'sum':['mr_pdu_bytes',1]},exact_decimal_equality=True)
++    r('frame_bytes',equal_expression={'sum':['mr_pdu_bytes',3]},exact_decimal_equality=True)
++    for key in ('frame_bytes','body_bytes'):r('pdu_bytes',when_present=['mr_'+key],required=True,source=APP)
++    r('serial_bits',equal_expression={'product':['mr_frame_bytes',11]},exact_decimal_equality=True)
++    r('frame_bytes',when_present=['mr_serial_bits'],required=True)
++    r('character_time_us',equal_expression={'product':[11000000,{'power':['bitrate_bps',-1]}]})
++    r('serialization_us',equal_expression={'product':['mr_serial_bits',1000000,{'power':['bitrate_bps',-1]}]})
++    r('binary_body_hex',hex_bytes_parameter='mr_body_bytes',hex_crc16_modbus_parameter='mr_crc_value',
++      hex_octets=[dict(offset=0,width=1,parameter='mr_destination_address'),dict(offset=1,width=1,parameter='mr_function')])
++    for key in ('destination_address','function'):r(key,when_present=['mr_binary_body_hex'],required=True)
++    r('body_bytes',when_present=['mr_binary_body_hex'],required=True)
++    r('binary_body_hex',when_present=['mr_crc_value'],required=True)
++    r('crc_low',equal_expression={'integer_remainder':['mr_crc_value',256]},exact_decimal_equality=True)
++    r('crc_high',equal_expression={'floor':[{'product':['mr_crc_value',.00390625]}]},exact_decimal_equality=True)
++    for key in ('crc_low','crc_high'):r('crc_value',when_present=['mr_'+key],required=True)
++    rules.append(dict(parameter='bitrate_bps',when={'mr_implementation_class':'BASIC','mr_supports_19200':False},
++                      forbidden=[19200],source=SERIAL,source_revision=SOURCES[SERIAL]))
++    return dict(rate_model={'type':'SINGLE_BITRATE','fields':['bitrate_bps'],'minimum_bps':1},
++      required_parameters=['bitrate_bps',*['mr_'+k for k in REQUIRED]],native_parameter_prefixes=['mr_'],
++      parameter_evidence_scope='EXPLICIT_LAYER',parameter_constraints=rules,
++      mechanisms={'encoding':['BINARY_8_DATA_11_SERIAL_BITS'], 'integrity':['CRC16_INIT_FFFF_A001_LOW_OCTET_FIRST'],
++       'timing':['ONE_MASTER_ONE_TRANSACTION','RTU_T1_5_T3_5_SELECTED_BAUD_POLICY'],
++       'physical':['EXPLICIT_RS485_2W_4W_OR_RS232']})
++
++def fields():
++    common_fields={rebind(v)['key']:rebind(v) for v in common.fields() if v['key'][3:] in SHARED}
++    proposals={'mode':'RTU','data_bits':8,'start_bits':1,'character_bits':11,'active_masters':1,'outstanding':1,
++      'crc_initial':65535,'crc_polynomial':40961,'crc_bits':16,'register_bits':16,'parity':'EVEN'}
++    result=[]
++    for spec in DECLARATIONS:
++        key=spec['key'][3:]
++        item=common_fields.get(spec['key'],{k:v for k,v in spec.items() if v is not None})
++        item.update(source_revision=spec['source_revision'],description=spec['description'],label=key.replace('_',' '),category='physical' if spec['source']==SERIAL else 'encoding',
++          scope='network',editable=True,required=key in REQUIRED,parameter_origin='DEVICE_CONFIGURATION',
++          validation_relevant=True,simulation_relevant=False)
++        if key in proposals:
++            item.update(default_status='PROPOSED_CONDITIONAL',conditional_defaults=[dict(when={'mr_profile':'V1_02'},value=proposals[key],
++                       source=spec['source'],source_revision=spec['source_revision'])])
++        elif 'conditional_defaults'not in item:item['default_status']='UNKNOWN'
++        if key=='gap_policy':
++            item.update(default_status='PROPOSED_CONDITIONAL',conditional_defaults=[
++                dict(when={},when_ranges={'bitrate_bps':[1,19200]},value='CHARACTER',source=SERIAL,source_revision=SOURCES[SERIAL]),
++                dict(when={},when_greater_than={'bitrate_bps':19200},value='FIXED_RECOMMENDED',source=SERIAL,source_revision=SOURCES[SERIAL])])
++        if key in ('interchar_timeout_us','interframe_min_us'):
++            item.update(default_status='PROPOSED_CONDITIONAL',conditional_defaults=[dict(when={'mr_gap_policy':'FIXED_RECOMMENDED'},
++                value=750 if key=='interchar_timeout_us' else 1750,source=SERIAL,source_revision=SOURCES[SERIAL])])
++        result.append(item)
++    return result

@@ -1,0 +1,112 @@
+ID Precondition Requirements Note
+K18.FR.16 K18.FR.07 It is RECOMMENDED to configure the Charging
+Station, such that a TransactionEvent with idToken
+has been sent prior to the
+NotifyEVChargingNeedsRequest Message, so that
+CSMS can take the user into account when creating
+a charging schedule.
+This can be achieved by setting
+TxStartPoint to Authorized,
+EVConnected or
+PowerPathClosed.
+K18.FR.17 When Charging Station receives
+a SetChargingProfileRequest
+immediately after the
+transaction has started and
+before it has sent the
+NotifyEVChargingNeedsReques
+t to CSMS
+The Charging Station SHOULD respond with
+SetChargingProfileResponse with status =
+Rejected and a statusInfo with reasonCode=
+InvalidMessageSequence.
+CSMS sent profile too early. It
+does not harm if CS accepts the
+charging profile instead of
+rejecting it, as long as it sends a
+charging profile again when it
+receives the
+NotifyEVChargingNeedsReques
+t.
+K18.FR.18 K18.FR.03 OR
+K18.FR.05
+CSMS IS RECOMMENDED to use only one
+chargingSchedule in a SetChargingProfileRequest.
+This ensures that there is no
+doubt about which schedule the
+EV will follow, even when no
+NotifyEVChargingScheduleReq
+uest is received.
+K18.FR.19 K18.FR.07
+AND
+EV does not return
+EVPowerProfile
+Charging Station IS RECOMMENDED to return an
+EV charging profile as a chargingSchedule in a
+NotifyEVChargingScheduleRequest message to
+CSMS that matches the charging schedule that was
+selected by the EV (i.e. the OCPP charging schedule
+that is represented by the SelectedScheduleTupleId
+that EV sent in the PowerDeliveryReq.)
+This situation should not occur,
+because EV is required to send
+an EVPowerProfile.
+K18.FR.20 K18.FR.08 The Charging Station SHALL return the charging
+(and optional price) schedule(s) to EV in the
+ScheduleExchangeRes response.
+K18.FR.21 K18.FR.01 AND
+Charging Station is offline
+Charging Station SHOULD add timestamp to the
+NotifyEVChargingNeedsRequest with the time
+when charging needs were received from EV
+This will tell CSMS how old this
+data is, if it was not
+immediately sent because of an
+offline period.
+K18.FR.22 K18.FR.02 AND
+CSMS does not accept the
+requestedEnergyTransfer in
+NotifyEVChargingNeedsReques
+t
+CSMS SHALL respond with
+NotifyEVChargingNeedsResponse with status =
+Rejected.
+Charging station will then stop
+the transaction.
+K18.FR.23 K18.FR.22 Charging Station SHALL terminate the transaction
+and send a TransactionEventRequest with
+eventType = Ended, triggerReason =
+AbnormalCondition, stoppedReason =
+ReqEnergyTransferRejected.
+K18.FR.24 When calculating
+CompositeSchedule(s) to
+create ScheduleTupleTypes for
+ISO 15118-20 to send to EV
+AND
+multiple ChargingProfileTypes
+of chargingProfilePurpose =
+TxProfile with different
+stackLevels are valid AND
+some or all these
+ChargingProfileTypes have
+more than one
+chargingSchedule
+Charging Station SHALL create up to three
+CompositeSchedules as defined in K08.FR.04, by
+combining the first chargingSchedule with the first
+chargingSchedule of other stack levels, the second
+with the second (if existing), the third with the third
+(if existing), based on their order in the
+ChargingProfileTypes.
+This is about a corner case
+when multiple TxProfiles with
+different stack levels and
+multiple charging schedules
+have been sent to the Charging
+Station. (See K15.FR.22)
+K19 - ISO 15118-20 Dynamic Control Mode
+New in OCPP 2.1
+No. Type Description
+1 Name ISO 15118-20 Dynamic Control Mode
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 392/803 Part 2 - Specification

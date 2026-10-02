@@ -1,0 +1,107 @@
+J02 - Sending transaction related Meter Values - Requirements
+Table 93. J02 - Requirements
+ID Precondition Requirement definition Note
+J02.FR.01 The Charging Station MAY sample the energy
+meter (or other sensor/transducer hardware) to
+provide extra information about its Meter Values.
+It is up to the Charging
+Station when it will send
+Meter Values. This can
+be configured using the
+SetVariablesRequest
+message to data
+acquisition intervals and
+specify data to be
+acquired & reported.
+J02.FR.02 If all captured at the same point in
+time.
+Each MeterValue element SHALL contain a set of
+one or more individual SampledValue elements.
+J02.FR.03 The optional measurand field SHALL specify the
+type of value being measured/reported.
+J02.FR.04 The optional context field SHALL specify the
+reason/event triggering the reading.
+J02.FR.05 The optional location field SHALL specify where the
+measurement is taken.
+(e.g. Inlet, Outlet).
+J02.FR.06 The optional phase field SHALL specify to which
+phase or phases of the electric installation the
+value applies.
+J02.FR.07 The Charging Station SHALL report all phase
+number dependent values from the power meter (or
+grid connection when absent) point of view.
+J02.FR.09 When reporting phase rotation of a
+component
+The Charging Station SHALL report the phase
+rotation relative to the grid connection.
+J02.FR.10 If a TransactionEventRequest
+message with eventType = Started or
+eventType = Update contains multiple
+meterValue elements, rather than one
+meterValue with one or more
+sampledValue elements
+All meterValue elements SHALL have a timestamp
+that is within the current sampling interval, i.e.:
+(transaction event timestamp -
+SampledDataTxUpdatedInterval) <
+meterValue.timestamp <= transaction event
+timestamp
+Only for eventType =
+Ended can a
+TransactionEventReques
+t have meter values for
+multiple intervals.
+J02.FR.11 When
+SampledDataTxUpdatedInterval
+> 0
+The Charging Station SHALL send a
+TransactionEventRequest(eventType = Updated
+with triggerReason = MeterValuePeriodic with
+the measurands configured in
+SampledDataCtrlr.TxUpdatedMeasurands in the
+meterValue field at every
+SampledDataCtrlr.TxUpdatedInterval.
+See E02 for sending of
+SampledDataCtrlr.TxStar
+tedMeasurands and
+Ee06 for
+SampledDataCtrlr.TxEnd
+edMeasurands.
+J02.FR.12
+(2.1)
+J02.FR.11 AND
+Charging Station is offline AND
+Charging Station is running low on
+memory
+The Charging Station MAY drop
+TransactionEventRequest(eventType = Updated)
+messages with triggerReason =
+MeterValueClock or MeterValuePeriodic.
+See E12.FR.04 for
+dropping of other
+TransactionEvent
+messages.
+J02.FR.13 J02.FR.12 When dropping TransactionEventRequest
+(eventType = Updated) messages, the Charging
+Station SHALL drop intermediate messages first
+(2nd message, 4th message, 6th message etc.), not
+start dropping messages from the start or stop
+adding messages to the queue.
+J02.FR.14 J02.FR.11
+AND
+Amount of meter data is too much for
+1 TransactionEventRequest
+(eventType = Updated)
+The Charging Station MAY use multiple
+TransactionEventRequest(eventType = Updated)
+messages with the same timestamp to send all
+measurands.
+J02.FR.16 All "Register" values relating to a single charging
+transaction, or a non-transactional consumer (e.g.
+Charging Station internal power supply, overall
+supply) MUST be monotonically increasing in time.
+Except in the case of a
+meter replacement. See
+MeasurandEnumType.
+Edition 2, 2025-12-03 J. Meter Values
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 311/803 Part 2 - Specification

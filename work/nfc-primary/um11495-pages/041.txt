@@ -1,0 +1,46 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Chapter Value Description
+Section 9.1.2 0x03 NFC_A_ACTIVE_POLL_MODE ([PN7160-NCI1.0])
+Section 9.1.2 0x05 NFC_F_ACTIVE_POLL_MODE ([PN7160-NCI1.0])
+Section 7.4 0x06 NFC_15693_POLL_MODE ([PN7160-NCI1.0])
+Section 7.5 0x70 NFC_A_KOVIO_POLL_MODE ([PN7160-NCI)
+0x71-0x7F Reserved for Proprietary Technologies in Poll Mode
+Section 9.1.2 0x83 NFC_A_ACTIVE_LISTEN_MODE ([PN7160-NCI1.0])
+Section 9.1.2 0x85 NFC_F_ACTIVE_LISTEN _MODE ([PN7160-NCI1.0])
+Table 26. Proprietary RF Technology & Mode parameters
+Note:  PN7160 supports full RF Technology & Mode parameters as defined in NCI 2.0 when initialized in NC 2.0
+mode.
+5.5  Tag deactivation in RF frame interface
+In NCI 2.0 mode, when using the NCI command NCI_DEACTIVATE_CMD (Sleep) in Frame RF Interface,
+the NFCC will only change the internal state machine. It is the responsibility of DH to properly handle the tag
+deactivation by sending the appropriate RF commands to the tag.
+5.6  NDEF emulation
+The NFCC provides an NDEF T4T emulation feature compliant with the Type 4 Tag Operation Technical
+Specification. As such, the NFCC embedded an NDEF NFCEE.
+The NDEF T4T emulation supports the following Command-APDU:
+• Select: 0xA4 (Selection of applications, or files)
+• ReadBinary: 0xB0
+• UpdateBinary: 0xD6
+The maximum NDEF message length is 136 bytes.
+5.6.1  NDEF NFCEE discovery
+The feature is disabled by default, the DH shall send a CORE_SET_CONFIG with parameter 0xA095 in
+RF_IDLE_STATE in order to activate the NDEF T4T tag emulation feature.
+The NDEF T4T tag emulation is seen by the DH as an NDEF NFCC using the NFCEE_DISCOVER_CMD.
+Payload Field(s) Length Value/Description
+NFCEE ID 1 byte 0x10 (NDEF NFCEE)
+NFCEE Status 1 byte 0x00 if NDEF NFCEE is enabled, 0x01 if disabled
+Number of Protocol
+Information Entries
+1 byte 1
+Supported NFCEE
+Protocols [0..n]
+1 byte 0x00 (ISO7816-4 APDU protocol)
+Number of NFCEE
+Information TLVs
+1 byte 1
+NFCEE Information 8 bytes • NDEF type: 0x04
+Table 27. NFCEE_DISCOVER_NTF for the NDEF tag emulation
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+41 / 147

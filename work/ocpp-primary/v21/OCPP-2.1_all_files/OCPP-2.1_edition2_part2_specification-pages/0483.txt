@@ -1,0 +1,78 @@
+No. Type Description
+Scenario description 1. The CSMS sends CustomerInformationRequest with the clear flag set to true to the Charging
+Station with a reference to a customer (idToken, customerCertificate or customerIdentifier).
+2. The Charging Station responds with CustomerInformationResponse, indicating whether it will
+send it or not.
+3. If the report flag is set to true, the Charging Station sends one or more
+NotifyCustomerInformationRequest messages to the CSMS.
+4. The CSMS responds with one or more NotifyCustomerInformationResponse messages to the
+Charging Station.
+5 Prerequisite(s) n/a
+6 Postcondition(s) The CSMS has Successfully received a CustomerInformationResponse message with status
+Accepted, the Charging Station has removed the customer information as requested and (if report
+flag was set to true) the CSMS has Successfully received the removed data.
+7 Error handling n/a
+8 Remark(s) n/a
+CSMS Charging Station
+CustomerInformationRequest(report, clear = true)
+CustomerInformationResponse()
+opt [if report = true]
+loop [for each report part]
+NotifyCustomerInformationRequest()
+NotifyCustomerInformationResponse()
+clear customer information
+Figure 174. Sequence Diagram: Clear Customer Information
+N10 - Clear Customer Information - Requirements
+Table 143. N10 - Requirements
+ID Precondition Requirement definition Note
+N10.FR.01 When the Charging Station receives a
+CustomerInformationRequest AND
+it is in a state where it can process
+this request.
+the Charging Station SHALL respond with a
+CustomerInformationResponse message with
+status Accepted .
+N10.FR.02 When the Customer referred to by the
+customer identifier is present in the
+Local Authorization List of a Charging
+Station
+The CSMS SHALL update the Local Authorization
+List using the SendLocalListRequest (see D01 -
+Send Local Authorization List).
+To prevent problems with
+Local Authorization List
+versions.
+N10.FR.03 N10.FR.01 AND
+receiving a
+CustomerInformationRequest with the
+clear flag set to true and the report
+flag set to true AND
+the Charging Station has information
+stored about the customer referred to
+by the customer identifier.
+The Charging Station SHALL remove all customer
+related data for the Customer referred to by the
+customer identifier from the Charging Station,
+except from the LocalList AND the Charging Station
+SHALL send the cleared information via one or
+more NotifyCustomerInformationRequest
+messages to the CSMS.
+To prevent problems with
+LocalList versions only
+the CSMS can change
+the contents of the
+LocalList.
+N10.FR.04 N10.FR.01 AND
+receiving a
+CustomerInformationRequest with the
+clear flag set to true and the report
+flag set to true AND
+the Charging Station has no
+information stored about the
+customer referred to by the customer
+identifier.
+The Charging Station SHALL send one
+NotifyCustomerInformationRequest message to
+the CSMS indicating that no data was found.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 470/803 Part 2 - Specification

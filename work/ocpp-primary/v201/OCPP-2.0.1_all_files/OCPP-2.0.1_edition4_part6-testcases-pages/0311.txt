@@ -1,0 +1,47 @@
+I Tariff and Cost
+TC_I_01_CS: Show EV Driver running total cost during charging  -
+costUpdatedRequest
+Test case name Show EV Driver running total cost during charging - costUpdatedRequest
+Test case Id TC_I_01_CS
+Use case Id(s) I02
+Requirement(s) I02.FR.02
+System under test Charging Station
+Description While a transaction is ongoing, the driver wants to know how much the running total cost is, updated at a
+relevant interval.
+Purpose To verify if the Charging Station is able to correctly display the running total cost as described in the OCPP
+specification.
+Prerequisite(s) - The Charging Station supports Tariff Information
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present valid idToken
+1. The Charging Station sends an AuthorizeRequest
+2. The Test System responds with an AuthorizeResponse with
+- idTokenInfo.status Accepted
+- idTokenInfo.personalMessage.content <Configured Cost>
+3. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed when TxStartPoint contains
+Authorized OR the transaction already started. So in the case
+TxStartPoint contains ParkingBayOccupancy
+4. The Test System responds with a TransactionEventResponse
+with
+- idTokenInfo.status Accepted
+5. Execute Reusable State EnergyTransferStarted
+6. The Charging Station sends an TransactionEventRequest
+7. The Test System responds with an
+TransactionEventResponse with
+- updatedPersonalMessage.content <Configured Cost>
+9. The Charging Station responds with a CostUpdatedResponse
+8. The Test System sends a CostUpdatedRequest with
+- totalCost <Configured Cost2>
+- transactionId <Configured transactionId>
+Note(s): Step 6, 7, 8, and 9 are repeated n times
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 309/914 Part 6 - Test Cases

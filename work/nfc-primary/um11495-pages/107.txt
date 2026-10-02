@@ -1,0 +1,71 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Test ID Measurement
+Description
+Param.
+number Parameter name Length Description Typ.
+value
+1 Wait_Time 1 byte Time to wait (in µs) before capturing the
+AGC value 0xC8
+2 CLIF AGC input
+[7:0]
+1 byte Value to write in CLIF AGC input register,
+bits [7:0] 0x60
+0x02 AGC value reading
+3 CLIF AGC input
+[9:8]
+1 byte The 2 LSbits of parameter 3 are mapped
+on bits [9:8] of CLIF AGC input register.
+The 6 MSbits of parameter 3 have to be
+set to '0'.
+0x03
+1 Wait_Time 1 byte Time to wait (in µs) before capturing the
+AGC value 0x20
+2 CLIF ANA
+NFCLD value
+[3:0]
+1 byte The LSbits of parameter 2 are mapped
+on bits [5:0] of CLIF ANA NFCLD input
+register.
+0x3F0x04
+AGC value reading
+with fixed NFCLD
+level
+3 TxLDO control
+voltage
+1 byte parameter 3 is mapped to PMU TxLDO
+cntrl register and corresponds to TxLdo
+voltage of 2.7 V
+0x08
+0x20 Switch RF Field
+On/Off
+1 RF Field
+Generation
+1 byte '1' => RF Field is generated '0' => RF Field
+is not generated
+Note:  Option 0x20 (Switch RF Field On/
+Off) absolutely requires to first disable
+the Standby mode, thanks to the CORE_
+SET_POWER_MODE_CMD (see
+Section 10.6.1).
+Table 108. Parameters to include in TEST_ANTENNA_CMD depending on the measurement to perform...continued
+GID OID Numbers of
+parameter(s) Description
+1111b 0x3D 5 PN7160 returns individual measurement status code and the result of the
+measurement.
+Table 109. TEST_ANTENNA_RSP
+Parameter Length Value/Description
+1 Status 1 Byte 0x00: STATUS_OK
+0x01: Test execution rejected (PN7160 in wrong state)
+0x04: STATUS_TEST_EXEC_FAILED
+0x09: STATUS_INVALID_PARAM
+Others: RFU
+2 Result_Parameter_1 1 Byte
+3 Result_Parameter_2 1 Byte
+4 Result_Parameter_3 1 Byte
+5 Result_Parameter_4 1 Byte
+Value depending on the measurement performed: see Table 111
+Table 110. TEST_ANTENNA_RSP parameters
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+107 / 147

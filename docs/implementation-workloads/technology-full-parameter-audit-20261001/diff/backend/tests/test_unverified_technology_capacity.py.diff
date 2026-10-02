@@ -1,0 +1,158 @@
+--- before/backend/tests/test_unverified_technology_capacity.py
++++ after/backend/tests/test_unverified_technology_capacity.py
+@@ -15,6 +15,17 @@
+ from backend.engineering.agent_tools.wizard_generation import _technology_contract
+ from backend.engineering.routing.validation import RoutingValidator
+ from backend.app.simulation_service import SimulationService
++
++# Explicit synthetic installation evidence; the clock alone cannot provide it.
++LIN_BUS={**{'lin_'+key:'synthetic-actual-'+key for key in
++    ('revision','device_source','binding_source','physical_source','ldf_source','encoding_source',
++     'schedule_source','capacity_source','acceptance_source','commander_node_id')},
++    'lin_edition':'LIN_2_2A_2010','lin_physical_profile':'LIN_2_2A_SINGLE_WIRE',
++    'lin_node_role':'COMMANDER','lin_frame_kind':'UNCONDITIONAL','lin_bitrate_bps':19200}
++I2C_BUS = {'i2c_profile':'UM10204_STANDARD_LIMITS','i2c_mode':'STANDARD',
++           'i2c_endpoint_role':'CONTROLLER','i2c_controller_id':'master',
++           'i2c_device_source':'synthetic-device','i2c_binding_source':'synthetic-port',
++           'i2c_physical_source':'synthetic-pins','i2c_schedule_source':'synthetic-schedule'}
+ 
+ 
+ @pytest.mark.parametrize("protocol", ["I2C", "SPI", "ETHERCAT", "PROFINET", "RS485", "CAN_XL"])
+@@ -61,11 +72,12 @@
+               'chip_select': 'CS0', 'word_length_bits': 8, 'duplex_mode': 'FULL_DUPLEX',
+               'cpol': 0, 'cpha': 0, 'cs_setup_bound_us': 0, 'inter_transfer_gap_us': 0,
+               'slave_address': 32, 'address_bits': 7, 'i2c_mode': 'STANDARD',
+-              'transfer_direction': 'READ', 'start_stop_bound_us': 1,
++              'transfer_direction': 'READ', 'start_stop_bound_us': 8,
+               'clock_stretch_limit_us': 0, 'multi_master': False}
+     values = ({'local_timing_evidence': serial} if target in {'SPI', 'I2C'} else
+               {'bitrate': 500_000, 'arbitration_bitrate': 500_000, 'data_bitrate': 2_000_000} if target == 'CAN_FD' else
+-              {'bitrate': 19_200})
++              dict(LIN_BUS))
++    if target == 'I2C': values.update(I2C_BUS)
+     parameters, configuration, confirmed = provenance_source_fixture(target, scope, tags, values)
+     resolved = parameters_for_protocol(target, parameters, configuration, 'bus', confirmed)
+     expected = valid and not (not tags and (scope == 'network' or scope == 'global' and target in {'LIN', 'CAN_FD'}))
+@@ -85,8 +97,8 @@
+     # Independent matching physical configuration remains authoritative when
+     # the other source has contradictory, foreign or unknown identity.
+     if scope == 'configuration':
+-        parameters = {'technology': 'LIN', 'bitrate': 19_200}; confirmed = parameters
+-    else: configuration = {'technology': 'LIN', 'bitrate': 19_200}
++        parameters = {'technology': 'LIN', **LIN_BUS}; confirmed = parameters
++    else: configuration = {'technology': 'LIN', **LIN_BUS}
+     resolved = parameters_for_protocol('LIN', parameters, configuration, 'bus', confirmed)
+     assert resolved['_rate_evidenced'] is True
+     assert resolved['bitrate'] == 19_200
+@@ -101,10 +113,12 @@
+               'chip_select': 'CS0', 'word_length_bits': 8, 'duplex_mode': 'FULL_DUPLEX',
+               'cpol': 0, 'cpha': 0, 'cs_setup_bound_us': 0, 'inter_transfer_gap_us': 0,
+               'slave_address': 32, 'address_bits': 7, 'i2c_mode': 'STANDARD',
+-              'transfer_direction': 'READ', 'start_stop_bound_us': 1,
++              'transfer_direction': 'READ', 'start_stop_bound_us': 8,
+               'clock_stretch_limit_us': 0, 'multi_master': False,
+               **{key: target if value == 'TARGET' else value for key, value in tags.items()}}
+-    p, c, confirmed = provenance_source_fixture(target, scope, {'technology': target}, {'local_timing_evidence': serial})
++    values={'local_timing_evidence':serial}
++    if target == 'I2C': values.update(I2C_BUS)
++    p, c, confirmed = provenance_source_fixture(target, scope, {'technology': target}, values)
+     resolved = parameters_for_protocol(target, p, c, 'bus', confirmed)
+     assert resolved['_rate_evidenced'] is valid
+     assert estimate_frame(target, 8, resolved).transmission_time_available is valid
+@@ -113,13 +127,13 @@
+ @pytest.mark.parametrize('scope', ['global', 'configuration', 'network', 'reviewed_values'])
+ @pytest.mark.parametrize('tags,valid', IDENTITY_CASES)
+ def test_field_proof_identity_cannot_contradict_matching_scalar_scope(scope, tags, valid):
+-    p, c, confirmed = provenance_source_fixture('LIN', scope, {'technology': 'LIN'}, {'bitrate': 19_200})
++    p, c, confirmed = provenance_source_fixture('LIN', scope, {'technology': 'LIN'}, dict(LIN_BUS))
+     proof = {key: 'LIN' if value == 'TARGET' else value for key, value in tags.items()}
+     if scope == 'reviewed_values':
+-        confirmed['technology_parameters']['LIN']['provenance']['bitrate'].update(proof)
++        confirmed['technology_parameters']['LIN']['provenance']['lin_bitrate_bps'].update(proof)
+     else:
+         container = p['networks'][0] if scope == 'network' else c if scope == 'configuration' else p
+-        container['parameter_provenance'] = {'bitrate': proof}
++        container['parameter_provenance'] = {'lin_bitrate_bps': proof}
+         if scope == 'global': confirmed = p
+     resolved = parameters_for_protocol('LIN', p, c, 'bus', confirmed)
+     assert resolved['_rate_evidenced'] is valid
+@@ -145,13 +159,18 @@
+     assert resolved['bitrate'] == 100_000
+ 
+ 
+-def test_explicit_secondary_lin_rate_is_evidence_without_inheriting_can_fd_rate():
++def test_explicit_secondary_lin_clock_preserves_data_but_requires_its_own_ldf_profile():
+     confirmed = {"technology": "can_fd", "bitrate": 2_000_000,
+                  "defaults_source": "technology-registry-with-explicit-user-rates",
+                  "explicit_technology_bitrates": {"lin": 19_200}}
+     parameters = parameters_for_protocol("LIN", confirmed, confirmed_parameters=confirmed)
+-    assert parameters["bitrate"] == 19_200
+-    assert parameters["_rate_evidenced"] is True
++    assert parameters['_rate_evidenced'] is False
++    assert confirmed['explicit_technology_bitrates']['lin']==19200
++    assert any(item['code']=='TECHNOLOGY_PARAMETER_MISSING' for item in parameters['_rate_findings'])
++    native={**confirmed,'technology_parameters':{'lin':{'values':dict(LIN_BUS),'provenance':{
++        key:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':value}for key,value in LIN_BUS.items()}}}}
++    resolved=parameters_for_protocol('LIN',native,confirmed_parameters=native)
++    assert resolved['_rate_evidenced']is True and resolved['bitrate']==19200
+ 
+ 
+ def test_registry_rate_remains_unverified_until_explicitly_confirmed():
+@@ -329,7 +348,7 @@
+     profile = DEFAULT_TECHNOLOGY_REGISTRY.profile("i2c")
+     proposal = profile["parameter_proposals"]
+     assert proposal["status"] == "REVIEW_REQUIRED"
+-    assert [option["maximum"] for option in proposal["options"]] == [100_000, 400_000, 1_000_000, 3_400_000]
++    assert [option["maximum"] for option in proposal["options"]] == [100_000, 400_000, 1_000_000, 3_400_000, 5_000_000]
+     assert profile["capacity_evidence"]["status"] == "MODEL_AVAILABLE"
+     assert estimate_frame("I2C", 8, {}).transmission_time_available is False
+     assert estimate_frame("SPI", 8, {}).transmission_time_available is False
+@@ -395,7 +414,9 @@
+ ])
+ def test_confirmed_serial_transaction_gets_technology_specific_capacity_and_schedule(protocol, evidence, expected_us):
+     confirmed = {**evidence, "confirmed": True, "source": "approved device datasheet"}
+-    parameters = parameters_for_protocol(protocol, {}, {"local_timing_evidence": confirmed},
++    configuration={"local_timing_evidence":confirmed}
++    if protocol == 'I2C': configuration.update({**I2C_BUS,'i2c_mode':'FAST'})
++    parameters = parameters_for_protocol(protocol, {}, configuration,
+                                          confirmed_parameters={})
+     assert parameters["_rate_evidenced"] is True
+     frame = estimate_frame(protocol, 8, parameters)
+@@ -446,12 +467,21 @@
+ 
+ 
+ def test_registered_timing_adapters_require_rates_and_match_frame_models():
+-    for technology, rate in (("can", 500_000), ("lin", 19_200), ("ethernet", 100_000_000)):
++    for technology, rate in (("can", 500_000), ("lin", 19_200)):
+         adapter = DEFAULT_TECHNOLOGY_REGISTRY.resolve_stack(technology)["timing_model"]
+         with pytest.raises(ValueError, match="bestätigte Bitrate"):
+             adapter.transmission_time_us(8)
+         expected = estimate_frame(technology, 8, {"bitrate": rate})
+-        assert adapter.transmission_time_us(8, rate) == pytest.approx(expected.transmission_time_s * 1_000_000)
++        native = None
++        if technology=='lin':
++            native={**{'lin_'+key:'synthetic-actual-'+key for key in
++                ('revision','device_source','binding_source','physical_source','ldf_source','encoding_source',
++                 'schedule_source','capacity_source','acceptance_source','commander_node_id')},
++                'lin_edition':'LIN_2_2A_2010','lin_physical_profile':'LIN_2_2A_SINGLE_WIRE',
++                'lin_node_role':'COMMANDER','lin_frame_kind':'UNCONDITIONAL','lin_bitrate_bps':rate}
++            with pytest.raises(ValueError,match='required'):
++                adapter.transmission_time_us(8,rate)
++        assert adapter.transmission_time_us(8, rate,technology_parameters=native) == pytest.approx(expected.transmission_time_s * 1_000_000)
+     fd = DEFAULT_TECHNOLOGY_REGISTRY.resolve_stack("can_fd")["timing_model"]
+     with pytest.raises(ValueError, match="Arbitrierungs- und Datenphasenraten"):
+         fd.transmission_time_us(8, 2_000_000)
+@@ -597,11 +627,11 @@
+ 
+ @pytest.mark.parametrize('declared_technology', ['LIN', 'lin'])
+ def test_matching_network_technology_retains_its_explicit_rate_evidence(declared_technology):
+-    parameters = {'technology': 'CAN', 'networks': [{'id': 'same-id', 'technology': declared_technology, 'bitrate': 19200}]}
++    parameters = {'technology': 'CAN', 'networks': [{'id': 'same-id', 'technology': declared_technology, **LIN_BUS}]}
+     resolved = parameters_for_protocol('LIN', parameters, network_id='same-id', confirmed_parameters=parameters)
+     assert resolved['bitrate'] == 19200 and resolved['_rate_evidenced'] is True
+ 
+ def test_foreign_workflow_network_does_not_override_matching_physical_port_rate():
+     parameters = {'technology': 'CAN', 'networks': [{'id': 'same-id', 'technology': 'CAN', 'bitrate': 500000}]}
+-    resolved = parameters_for_protocol('LIN', parameters, {'technology': 'LIN', 'bitrate': 19200}, 'same-id', parameters)
++    resolved = parameters_for_protocol('LIN', parameters, {'technology': 'LIN', **LIN_BUS}, 'same-id', parameters)
+     assert resolved['bitrate'] == 19200 and resolved['_rate_evidenced'] is True

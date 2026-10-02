@@ -1,0 +1,58 @@
+No. Type Description
+1 Name Dynamic charging profiles from external system
+2 ID K29
+3 Objective(s) To allow a dynamically changing limit in a charging profile from an external system.
+4 Description A dynamic ChargingProfileType consists of a single schedule period in which the limit or setpoint
+can be updated without having to replace the charging profile. operationMode is set to
+ExternalLimits or ExternalSetpoint, which means that the limit or setpoint is set directly
+by an external system, e.g. an energy management system.
+This can be a charging limit or schedule that is received from an energy management system (via
+any interface) and which is represented by Charging Station as a charging profile of purpose
+ChargingStationExternalConstraints.
+If ExternalConstraintsProfileDisallowed is true, then an external system is not allowed
+to set a ChargingStationExternalConstraints profile. In that case CSMS decides when
+the limits from the external system are taken into account by submitting a charging profile of
+purpose TxProfile or TxDefaultProfile with a chargingSchedulePeriod that has
+operationMode = ExternalLimits or ExternalSetpoint.
+Actors Charging Station, CSMS, external system (EMS)
+Scenario description #1 Charging profile from external system with dynamic updates
+1. The external system provides limits, which the Charging Station internally represents as a
+ChargingProfileType with chargingProfilePurpose =
+ChargingStationExternalConstraints, chargingProfileKind = Dynamic and a
+single chargingSchedule with one chargingSchedulePeriod with an operationMode =
+ExternalLimits (or ExternalSetpoint)
+2. Charging Station applies limit (or setpoint) to charging.
+3. Whenever the external system updates the limit (or setpoint), Charging Station applies the
+new limit (or setpoint).
+4. If the charging limit changed by more than LimitChangeSignificance, the Charging
+Station sends a NotifyChargingLimitRequest message to CSMS with optionally the set
+charging limit, as described in use case K11.
+5. If chargingSchedule.duration is set and the setpoint/limit is not updated by External
+System after duration seconds, then the chargingSchedule ends and Charging Station will
+fall back to the next valid charging profile.
+a. If chargingSchedule.duration has not been set, then the chargingSchedule is valid
+indefinitely, until the charging profile is cleared or replaced by External System.
+Scenario description #2 Charging profile from CSMS with dynamic updates from external system
+1. CSMS sends a SetChargingProfileRequest with a ChargingProfileType with
+chargingProfilePurpose = TxProfile (or TxDefaultProfile), chargingProfileKind =
+Dynamic and a single chargingSchedule with one chargingSchedulePeriod with an
+operationMode = ExternalLimits (or ExternalSetpoint), which tells Charging
+Station that an external system (e.g. an EMS) will provide updates to the limit (or setpoint)
+to use in this chargingSchedulePeriod.
+2. Charging Station responds with SetChargingProfileResponse with status = Accepted and
+applies limit to charging.
+3. Whenever the external system updates the limit (or setpoint), Charging Station applies the
+new limit (or setpoint).
+4. If the charging limit changed by more than LimitChangeSignificance, the Charging
+Station sends a NotifyChargingLimitRequest message to CSMS with optionally the set
+charging limit, as described in use case K11.
+5. If chargingSchedule.duration is set and the setpoint/limit/dischargeLimit is not updated by
+External System after duration seconds, then the chargingSchedule ends and Charging
+Station will fall back to the next valid charging profile.
+a. If chargingSchedule.duration has not been set, then the chargingSchedule is valid
+indefinitely, until the charging profile is cleared or replaced by CSMS.
+5 Prerequisites Charging Station supports Dynamic charging profiles, and is able to receive power limits from an
+external system.
+6 Post conditions External system can dynamically update the power limit in the charging profile.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 406/803 Part 2 - Specification

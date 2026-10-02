@@ -1,0 +1,59 @@
+TC_L_08_CS: Secure Firmware Update - InstallVerificationFailed or
+InstallationFailed
+Test case name Secure Firmware Update - InstallVerificationFailed or InstallationFailed
+Test case Id TC_L_08_CS
+Use case Id(s) L01
+Requirement(s) L01.FR.01,L01.FR.10,L01.FR.12,L01.FR.20
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to securely download and install a new firmware by
+sending an UpdateFirmwareRequest with a signingCertificate.
+Purpose To verify if the Charging Station is able to report to the CSMS when the firmware verification fails.
+Prerequisite(s) - A file server has been setup according to the (by the Charging Station) supported file transfer protocol(s),
+indicated by the configuration variable FileTransferProtocols.
+- The at the Test System configured invalid firmware location needs to point to a firmware file that causes
+an InstallVerificationFailed.
+Before (Preparations)
+Configuration State:
+<Configured invalid firmware location> should point to existing firmware that causes an InstallVerificationFailed
+<Configured invalid firmware signingCertificate> should be a trusted signingCertificate
+<Configured invalid firmware signature> should be a real signature
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+UpdateFirmwareResponse
+1. The Test System sends a UpdateFirmwareRequest
+with firmware.installDateTime <Current DateTime - 2 hours>
+firmware.location <Configured invalid firmware location>
+firmware.retrieveDateTime <Current DateTime + <Current
+DateTime - 2 hours>>
+firmware.signingCertificate <Configured invalid firmware
+signingCertificate>
+firmware.signature <Configured invalid firmware signature>
+3. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Downloading
+4. The Test System responds with a
+FirmwareStatusNotificationResponse
+5. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Downloaded
+6. The Test System responds with a
+FirmwareStatusNotificationResponse
+7. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status SignatureVerified
+8. The Test System responds with a
+FirmwareStatusNotificationResponse
+9. The Charging Station notifies the CSMS about the current
+state of all connectors.
+Note(s):
+- This step is optional. The Charging Station may wants to set its
+connectors to Unavailable, before proceeding installing the new
+firmware.
+10. The Test System responds accordingly.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 403/914 Part 6 - Test Cases

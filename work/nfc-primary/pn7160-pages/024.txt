@@ -1,0 +1,46 @@
+NXP Semiconductors PN7160_PN7161
+Near Field Communication (NFC) controller
+• Target mode
+11.2.2.2  SPI-bus configuration options
+In order to select SPI-bus interface for host communication, some EEPROM settings are programmed during
+production.
+The CPOL/CPHA EEPROM settings are fixed as specified in Table 15.
+The selection between interfaces is fused during IC manufacturing so that different ordering numbers for the
+SPI-bus version.
+Connection
+CPHA switch: Clock PHAse: defines the sampling edge of MOSI data
+• CPHA = 0: data are sampled on MOSI on the odd clock edges of SCK after NSS goes low
+CPOL switch: Clock POLarity
+• IFSEL1 = 0: the clock is idle low and the first valid edge of SCK will be a rising one
+Table 15. SPI-bus configuration
+The SPI-bus interface shares 4 pins with the I2C-bus interface. During production of the device, the interface
+is fixed to SPI or I²C and cannot be changed later. The functionality of the interface pins in SPI configuration is
+described in Table 16.
+Pin name Functionality
+HIF1 NSS (Not Target Select)
+HIF2 MOSI (Controller Out Target In)
+HIF3 MISO (Controller In Target Out)
+HIF4 SCK (Serial Clock)
+Table 16. Functionality for SPI-bus interface
+11.2.2.3  SPI-bus functional description
+When a controller device transmits data to PN7160 (target device) via the MOSI line, PN7160 responds by
+sending data to the controller device via the controllers MISO line. This implies full-duplex transmission with
+both data out and data in synchronized with the same clock signal.
+PN7160 starts sampling when receiving a logic low at pin NSS and the clock at input pin SCK. Thus, PN7160 is
+synchronized with the controller. Data from the controller is received serially at the target MOSI line and loads
+the 8-bit shift register. After the 8-bit shift register is loaded, its data is transferred to the read buffer. During a
+write cycle, data is written into the shift register, then PN7160 waits for a clock train from the controller to shift
+the data out on the targets MISO line.
+• Controller In Target Out (MISO)
+The MISO line is configured as an input in a controller device and as an output in a target device. It is used to
+transfer data from the target to the controller, with the most significant bit sent first. The MISO line of a target
+device should be placed in the high impedance state if the target is not selected.
+• Controller Out Target In (MOSI)
+The MOSI line is configured as an output in a controller device and as an input in a target device. It is used to
+transfer data from the controller to a target, with the Most Significant Bit (MSB) sent first.
+• Serial Clock (SCK)
+The serial clock is used to synchronize data movement both in and out of the device through its MOSI and
+MISO lines. The controller and target devices are capable of exchanging a byte of information during a
+PN7160_PN7161 All information provided in this document is subject to legal disclaimers. © 2026 NXP B.V. All rights reserved.
+Product data sheet Rev. 4.2 — 22 July 2026 Document feedback
+24 / 70

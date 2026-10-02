@@ -1,0 +1,29 @@
+4.1.4. The message ID
+The message ID serves to identify a request. A message ID for a CALL message MUST be different from
+all message IDs previously used by the same sender for CALL messages on the same WebSocket
+connection. A message ID for a CALLRESULT or CALLERROR message MUST be equal to that of the
+CALL message that the CALLRESULT or CALLERROR message is a response to.
+Table 3: Unique Message ID
+Name Datatype Restrictions
+messageId string Maximum of 36 characters, to
+allow for GUIDs
+4.2. Message structures for different message types
+NOTE
+You may find the charge point identity missing in the following paragraphs. The
+identity is exchanged during the WebSocket connection handshake and is a property of
+the connection. Every message is sent by or directed at this identity. There is therefore
+no need to repeat it in each message.
+4.2.1. Call
+A Call always consists of 4 elements: The standard elements MessageTypeId and UniqueId, a specific
+Action that is required on the other side and a payload, the arguments to the Action. The syntax of a
+call looks like this:
+[<MessageTypeId>, "<UniqueId>", "<Action>", {<Payload>}]
+Table 4: Call Fields
+Field Meaning
+UniqueId this is a unique identifier that will be used to
+match request and result.
+Action the name of the remote procedure or action. This
+will be a case-sensitive string containing the same
+value as the Action-field in SOAP-based messages,
+without the preceding slash.
+11

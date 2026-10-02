@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+• 11: valid and used, map matching data was
+applied. In case of sensor unavailability map
+matching data enables dead reckoning. This
+requires map matched latitude/longitude or
+heading data.
+7 X1 flags2 - - further information about navigation output
+bits 1…0   U:2 psmState - - power save mode state (not supported for protocol
+versions less than 13.01)
+• 0 = ACQUISITION [or when psm disabled]
+• 1 = TRACKING
+• 2 = POWER OPTIMIZED TRACKING
+• 3 = INACTIVE
+bits 4…3   U:2 spoofDetState - - Spooﬁng detection state (not supported for protocol
+versions less than 18.00)
+• 0: Unknown or deactivated
+• 1: No spooﬁng indicated
+• 2: Spooﬁng indicated
+• 3: Multiple spooﬁng indications
+Note that the spooﬁng state value only reﬂects the
+detector state for the current navigation epoch. As
+spooﬁng can be detected most easily at the transition
+from real signal to spooﬁng signal, this is also where
+the detector is triggered the most. I.e. a value of 1 - No
+spoofing indicated does not mean that the receiver is
+not spoofed, it simply states that the detector was not
+triggered in this epoch.
+bits 7…6   U:2 carrSoln - - Carrier phase range solution status:
+• 0 = no carrier phase range solution
+• 1 = carrier phase range solution with ﬂoating
+ambiguities
+• 2 = carrier phase range solution with ﬁxed
+ambiguities
+8 U4 ttff - ms Time to ﬁrst ﬁx (millisecond time tag)
+12 U4 msss - ms Milliseconds since startup / reset
+3.15.19 UBX-NAV-SVIN (0x01 0x3b)
+3.15.19.1 Survey-in data
+Message UBX-NAV-SVIN
+Survey-in data
+Type Periodic/polled
+Comment This message contains information about survey-in parameters.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x3b 40 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 U1[3] reserved0 - - Reserved
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 109 of 224
+C1-Public

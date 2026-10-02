@@ -1,0 +1,118 @@
+Example Applications (continued)
+83 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+the rest.
+We do caution that the MAX3222E does seem to
+place some extra demands on the 5V power supply. It
+should work fairly well with the 7805 regulator that we
+show in Figure 9, but if you have chosen a lower
+current device like the 78L05 or LP2950, you may
+experience occasional ‘LV RESET’s. If you do, we
+recommend adding two capacitors to the circuit of
+Figure 9. We suggest that a 10 µF 50V capacitor be
+connected in parallel with C1, and also that a 33 µF
+10V unit be installed across C5 (the 5V ‘rail’). This
+should eliminate problems, but if it does not, you may
+also wish to consider a more powerful regulator (such
+as the 7805 that we show in Figure 9) if you do not
+already have one installed.
+The USB interface of Figure 13 provides another
+way to connect the ELM327 to USB systems. It uses a
+Silicon Laboratories (www.silabs.com) CP2102 chip to
+convert between the ELM327’s serial data and USB.
+One of the advantages of going to a USB interface
+is the high serial baud rates that you may experience.
+In order to use these higher rates, you will have to
+program both the USB interface and the ELM327
+interface for them.
+The CP2102 interface baud rate is actually
+configured by driver software. When you set the baud
+rate in your terminal program, the software does what
+is necessary to configure the CP2102 for operation at
+that rate and you do not need to do anything more.
+The ELM327 initially only uses a 38,400 bps rate,
+however, and must be told to use anything different.
+In order to change from the standard 38.4 k baud
+rate, you must first set your software to 38.4 kbps, and
+power up your ELM327 circuit. Make sure that it is
+working, as described in the ‘Communicating with the
+ELM327’ section, before you do anything else. When
+you are confident that all is well, you can then change
+the baud rate. Before doing so, we caution that you
+should check to be sure that your software actually
+supports the desired rate (as several can not handle
+more than about 250 kbps).
+The CP2102 chip is able to support a 115.2 kbps
+rate natively, and almost all software should be able to
+support it as well, so we will use that rate to provide an
+example.
+First, while connected to the ELM327 at 38.4 kbps,
+we need to change the default rate to 115.2 kbps. No
+need to worry that this will affect your communications,
+as it will not take effect until the ELM327 has been
+reset. To change the data rate, simply change the
+Figure 12. A High Speed 
+RS232 Interface (≤ 250 kbps)
+2 (RxD)
+3 (TxD)
+5 (SG)
+1 (DCD)
+4 (DTR)
+6 (DSR)
+7 (RTS)
+8 (CTS)
+0.1µF1
+2
+3
+4
+5
+6
+7
+8
+9
+RS232
+Interface
+(DB9F)
++5V
+0.1µF
+10
+11
+12
+13
+14
+15
+16
+17
+18
++5V
+15161718
+327
+0.47µF
+0.47µF
+0.47µF
++5V
+1516171819
+327
+2 (D-)
+USB
+Interface
+(type ‘B’
+connector)
++5V
+1 (+5)
+4 (SG)
+3 (D+)
+SiLabs
+CP2102
+0.1µF
+5.0V
+TVS
+1µF
+7
+6
+26 25 3
+4
+5
+8
+Figure 13. An Alternative USB Interface

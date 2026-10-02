@@ -1,0 +1,54 @@
+No. Type Description
+Alternative scenario(s) PaymentCtrlr.AuthorizeDirectPayment = true
+1. Payment card of EV Driver has been authorized by the payment service provider and an
+authorization amount has been reserved on the card.
+2. Charging Station sends an AuthorizeRequest for idToken = <PspRef>, type =
+DirectPayment and associated additionalInfo.
+3. CSMS responds with AuthorizeResponse to authorize idToken for charging.
+4. EV Driver decides to cancel the session before the EV is plugged-in, or EV Driver does not
+plug in EV and a EVConnectionTimeout occurs.
+5. Payment terminal requests payment service provider to release the authorization
+reservation on the card.
+6. Charging Station ends authorization of idToken.
+7. Charging Station sends a NotifySettlementRequest with pspRef = idToken and status =
+Canceled to notify CSMS that the previously authorized idToken will not start a
+transaction and payment has been canceled.
+5 Prerequisites The EV Driver has used the payment terminal to authorize. No TransactionEventRequest has yet
+been sent, because TxStartPoint = "PowerPathClosed" or "EVConnected" and EV is not plugged-in.
+6 Postcondition(s) The payment transaction has been canceled.
+7 Error handling
+8 Remark(s) If PaymentCtrlr.AuthorizeDirectPayment is false, then CSMS is not notified of the payment
+canceling, because it will not be aware of the idToken.
+See use case C20 for cancellation when a transaction has already been started.
+EV Driver
+Payment Service
+Provider
+Integrated
+Payment Terminal Charging Station CSMS
+Assuming TxStart/StopPoint
+is PowerPathClosed
+idToken <PspRef> is authorized for adhoc payment
+opt [AuthorizeDirectPayment = true]
+AuthorizeRequest(idToken(id = <PspRef>,
+type = DirectPayment
+additionalInfo([type = CardBin, value=<cardBin>], ...)))
+AuthorizeResponse(idTokenInfo.status = Accepted, ...})
+Cancelling payment
+alt [User cancels payment]
+Stop session
+Cancel payment
+[User fails to connect EV]
+EVConnectionTimeout
+Cancel payment
+Cancel authorization amount
+Authorization amount cancelled
+Cancelled payment
+"Payment has been cancelled."
+opt [AuthorizeDirectPayment = true]
+NotifySettlementRequest(
+pspRef = <idToken>, status = Cancelled,
+settlementTime=...)
+NotifySettlementResponse()
+Figure 40. Sequence diagram of canceling an ad hoc authorization
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 133/803 Part 2 - Specification

@@ -1,0 +1,39 @@
+1.60.2. PublishFirmwareResponse
+This contains the field definition of the PublishFirmwareResponse PDU sent by the Local Controller to the CSMS in response to a
+PublishFirmwareRequest.
+Class
+Field Name Field Type Card. Description
+status GenericStatusEnumType 1..1 Required. Indicates whether the request was accepted.
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+1.61. PublishFirmwareStatusNotification
+1.61.1. PublishFirmwareStatusNotificationRequest
+This contains the field definition of the PublishFirmwareStatusNotificationRequest PDU sent by the Charging Station to the CSMS.
+Class
+Field Name Field Type Card. Description
+status PublishFirmwareStatusEnumType 1..1 Required. This contains the progress status of the
+publishfirmware installation.
+location string[0..2000] 0..* Optional. Required if status is Published. Can be multiple
+URI’s, if the Local Controller supports e.g. HTTP, HTTPS,
+and FTP.
+requestId integer, 0 <= val 0..1 Optional. The request id that was provided in the
+PublishFirmwareRequest which triggered this action.
+statusInfo StatusInfoType 0..1 Optional. (2.1) Detailed status info
+1.61.2. PublishFirmwareStatusNotificationResponse
+This contains the field definition of the PublishFirmwareStatusNotificationResponse PDU sent by the CSMS to the Charging station
+in response to a PublishFirmwareStatusNotificationRequest.
+1.62. PullDynamicScheduleUpdate
+1.62.1. PullDynamicScheduleUpdateRequest
+(2.1) This message is sent by a Charging Station to request an update of setpoints and/or limits of the charging profile with given
+chargingProfileId.
+Class
+Field Name Field Type Card. Description
+chargingProfileId integer 1..1 Required. Id of charging profile to update.
+1.62.2. PullDynamicScheduleUpdateResponse
+(2.1) If no data can be provided by CSMS, then the response will only contain status.
+Class
+Field Name Field Type Card. Description
+status ChargingProfileStatusEnumType 1..1 Required. Result of request.
+scheduleUpdate ChargingScheduleUpdateType 0..1 Optional. Updated charging schedule period values.
+statusInfo StatusInfoType 0..1 Optional. Additional info about status
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 606/803 Part 2 - Specification

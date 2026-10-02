@@ -1,0 +1,120 @@
+ID Precondition Requirements Note
+C25.FR.03 If Charging Station supports
+WebPaymentsCtrlr.URLParameters
+Charging Station SHALL allow input from EV
+Driver for these parameters (e.g. maximum
+time, energy or cost) to be added as query
+parameters to the URL in the QR code.
+This requires that the users
+inputs values before the QR
+code is displayed.
+C25.FR.04 C25.FR.03 AND URL parameter
+"maxtime" is supported
+EV Driver specified a maximum time
+CS SHALL append the query variable
+"maxtime" with the time in seconds to the
+URL and enforce the maximum transaction
+duration.
+This also means that CS will
+add a
+transactionLimit.maxTime for
+this value to the
+TransactionEventRequest
+messages. (See E16).
+C25.FR.05 C25.FR.03 AND URL parameter
+"maxenergy" is supported
+EV Driver specified a maximum
+energy to charge
+CS SHALL append the query variable
+"maxenergy" with the energy in Wh and
+enforce the maximum charging energy.
+This also means that CS will
+add a
+transactionLimit.maxEnergy
+for this value to the
+TransactionEventRequest
+messages. (See E16).
+C25.FR.06 C25.FR.03 AND URL parameter
+"maxcost" is supported
+EV Driver specified a maximum cost
+for charging
+CS SHALL append the query variable
+"maxcost" to the URL and enforce the
+maximum charging cost.
+This also means that CS will
+add a
+transactionLimit.maxCost for
+this value to the
+TransactionEventRequest
+messages. (See E16).
+C25.FR.07 When EV Driver visits the web page of
+CSMS using the URL in the QR code
+CSMS SHALL validate the time-based one-
+time password in the URL
+See description in Validation
+of TOTP.
+C25.FR.08 If the time-based one-time password
+in the URL is not valid
+CSMS SHALL NOT forward EV Driver to a
+web page of PSP to enter payment
+credentials and SHALL NOT authorize EV
+Driver to charge
+No payment is authorized and
+no transaction is started.
+C25.FR.09 If the time-based one-time password
+in the URL is valid
+CSMS SHALL decode the URL parameters as
+defined in URL definition for dynamic QR
+code.
+URL parameters must at least
+include an identity of the
+Charging Station and
+optionally an EVSE number.
+Payment authorization
+C25.FR.20 If URL successfully decoded CSMS SHALL forward EV Driver to a web
+page of PSP to enter payment credentials
+The protocol between PSP
+and CSMS is not specified in
+this document.
+C25.FR.21 C25.FR.20 CSMS MAY send a
+NotifyWebPaymentStartedRequest message
+with evseId having the EVSE number that was
+decoded from the URL and timeout the time
+in seconds that Charging Station may lock
+the EVSE to prevent locally started
+transactions.
+After timeout seconds
+Charging Station should free
+the EVSE again for local
+transactions.
+C25.FR.22 C25.FR.21 Charging Station SHOULD provide feedback
+to EV Driver that the QR code was
+successfully scanned and SHOULD prevent
+further local interactions with the EVSE
+referred to in evseId for as long as timeout
+seconds or until a
+RequestStartTransactionRequest is received
+from CSMS.
+C25.FR.23 When CSMS receives a message
+from Payment Kiosk that payment is
+authorized with authorization
+reference <PspRef> for Charging
+Station with identity <CS> and
+optionally an EVSE <evse>
+CSMS SHALL send a
+RequestStartTransactionRequest to Charging
+Station with identity <CS> and EVSE <evse>
+(when present) and having idToken.idToken =
+<PspRef> and idToken.type =
+DirectPayment
+There is need to include
+additionalInfo elements for
+payment details, like cardBin,
+cardLast4Digits, towards
+Charging Station.
+The protocol between
+Payment Kiosk and CSMS is
+not specified in this
+document.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 150/803 Part 2 - Specification

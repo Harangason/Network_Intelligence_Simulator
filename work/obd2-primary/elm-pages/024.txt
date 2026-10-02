@@ -1,0 +1,95 @@
+24 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+AT Command Descriptions (continued)
+the PP hh SV command will be used where the factory
+default value was before. (All of the programmable
+parameter values are set to their default values at the
+factory, so enabling a programmable parameter before
+assigning a value to it will not cause problems.) The
+actual time when the value for this parameter becomes
+effective is determined by its type. Refer to the
+Programmable Parameters section (page 70) for more
+information on the types.
+Note that ‘PP FF ON’ is a special command that
+enables all of the Programmable Parameters at the
+same time.
+PP hh SV yy [ Prog. Param. hh: Set the Value to yy ]
+A value is assigned to a Programmable Parameter
+using this command. The system will not be able to
+use this new value until the Programmable Parameter
+has been enabled, with PP hh ON.
+PPS [ Programmable Parameter Summary ]
+The complete range of current Programmable
+Parameters are displayed with this command (even
+those not yet implemented). Each is shown as a PP
+number followed by a colon and the value that is
+assigned to it. This is followed by a single digit – either
+‘N’ or ‘F’ to show that it is ON (enabled), or OFF
+(disabled), respectively. See the Programmable
+Parameters section for a more complete discussion.
+R0 and R1 [ Responses off or on ]
+These commands control the ELM327’s automatic
+receive (and display) of the messages returned by the
+vehicle. If responses have been turned off, the IC will
+not wait for a reply from the vehicle after sending a
+request, and will return immediately to wait for the next
+RS232 command (the ELM327 does not print anything
+to say that the send was successful, but you will see a
+message if it was not).
+R0 may be useful to send commands blindly when
+using the IC for a non-OBD network application, or
+when simulating an ECU in a learning environment. It
+is not recommended that this option used for normal
+OBD communications, however, as the vehicle may
+have difficulty if it is expecting an acknowledgement
+and never receives one.
+An R0 setting will always override any ‘number of
+responses digit’ that is provided with an OBD request.
+The default setting is R1, or responses on.
+RA hh [ set the Receive Address to hh ]
+Depending on the application, users may wish to
+manually set the address to which the ELM327 will
+respond. Issuing this command will turn off the AR
+mode, and force the IC to only accept responses
+addressed to hh. Use caution with this setting, as
+depending on what you set it to, you may end up
+accepting (ie. acknowledging with an IFR) a message
+that was actually meant for another module. To turn off
+the RA filtering, simply send AT AR.
+This command is not very effective for use with the
+CAN protocols, as it only monitors for one portion of
+the ID bits, and that is not likely enough for most CAN
+applications - the CRA command may be a better
+choice. Also, this command has no effect on the
+addresses used by the J1939 protocols, as the J1939
+routines derive them from the header values, as
+required by the SAE standard.
+The RA command is exactly the same as the SR
+command, and can be used interchangeably. Note that
+CAN Extended Addressing does not use this value - it
+uses the one set by the AT TA command.
+RD [ Read the Data in the user memory ]
+The byte value stored with the SD command is
+retrieved with this command. There is only one
+memory location, so no address is required.
+RTR [ send an RTR message ]
+This command causes a special ‘Remote Frame’
+CAN message to be sent. This type of message has
+no data bytes, and has its Remote Transmission
+Request (RTR) bit set. The headers and filters will
+remain as previously set (ie the ELM327 does not
+make any assumptions as to what format a response
+may have), so adjustments may need to be made to
+the mask and filter. This command must be used with
+an active CAN protocol (one that has been sending
+and receiving messages), as it can not initiate a
+protocol search. Note that the CAF1 setting normally
+eliminates the display of all RTRs, so if you are
+monitoring messages and want to see the RTRs, you
+will have to turn off formatting, or else turn the headers
+on.
+The ELM327 treats an RTR just like any other
+message sent, and will wait for a response from the
+vehicle (unless AT R0 has been chosen).

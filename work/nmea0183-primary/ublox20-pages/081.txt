@@ -1,0 +1,47 @@
+u-blox 20 HPG 2.00 - Interface description
+30 I2 af1 2^-38 s/s Almanac time polynomial coeﬃcient 1
+32 U1[4] reserved0 - - Reserved
+3.13.8.3 QZSS health assistance
+Message UBX-MGA-QZSS-HEALTH
+QZSS health assistance
+Type Input
+Comment This message allows the delivery of QZSS health assistance to a receiver.
+See section AssistNow Online in the integration manual for details.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x05 12 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 type - - Message type (0x04 for this type)
+1 U1 version - - Message version (0x00 for this version)
+2 U1[2] reserved0 - - Reserved
+4 U1[5] healthCode - - Each byte represents a QZSS SV (1-5). The 6 LSBs
+of each byte contains the 6 bit health code from
+subframes 4/5, data ID = 3, SV ID = 51
+9 U1[3] reserved1 - - Reserved
+3.14 UBX-MON (0x0a)
+The messages in the UBX-MON class are used to report the receiver status, such as hardware status
+or I/O subsystem statistics.
+3.14.1 UBX-MON-COMMS (0x0a 0x36)
+3.14.1.1 Communication port information
+Message UBX-MON-COMMS
+Communication port information
+Type Periodic/polled
+Comment Consolidated communications information for all ports. The size of the message is determined by the number
+of ports that are in use on the receiver. A port is only included if communication, either send or receive, has
+been initiated on that port.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0a 0x36 8 + nPorts·40 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 U1 nPorts - - Number of ports included
+2 X1 txErrors - - TX error bitmask
+bit 0   U:1 mem - - Memory Allocation error
+bit 1   U:1 alloc - - Allocation error (TX buﬀer full)
+bits 4…2   U:3 outputPort - - Output port: Reports the port from which this
+message was output from.
+• 0 = N/A
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 81 of 224
+C1-Public

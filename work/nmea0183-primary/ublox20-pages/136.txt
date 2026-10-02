@@ -1,0 +1,46 @@
+u-blox 20 HPG 2.00 - Interface description
+3.18.3.1 Sourced time veriﬁcation
+Message UBX-TIM-VRFY
+Sourced time veriﬁcation
+Type Periodic/polled
+Comment This message contains veriﬁcation information about previous time received via assistance data or from RTC.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0d 0x06 20 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 I4 itow - ms integer millisecond tow received by source
+4 I4 frac - ns sub-millisecond part of tow
+8 I4 deltaMs - ms integer milliseconds of delta time (current time minus
+sourced time)
+12 I4 deltaNs - ns Sub-millisecond part of delta time
+16 U2 wno - week Week number
+18 X1 flags - - Flags
+bits 2…0   U:3 src - - Aiding time source
+• 0 = no time aiding done
+• 2 = source was RTC
+• 3 = source was assistance data
+19 U1 reserved0 - - Reserved
+3.19 UBX-UPD (0x09)
+The messages in the UBX-UPD class are used to download a ﬁrmware to the receiver and to update
+the ﬁrmware on the ﬂash.
+3.19.1 UBX-UPD-SOS (0x09 0x14)
+3.19.1.1 Poll backup restore status
+Message UBX-UPD-SOS
+Poll backup restore status
+Type Poll request
+Comment Sending this (empty) message to the receiver results in the receiver returning a System restored from backup
+message as deﬁned below.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x09 0x14 0 see below CK_A CK_B
+Payload This message has no payload.
+3.19.1.2 Create backup in ﬂash
+Message UBX-UPD-SOS
+Create backup in ﬂash
+Type Command
+Comment The host can send this message in order to save part of the battery-backed memory (BBR) in a ﬁle in the
+ﬂash ﬁle system. The feature is designed in order to emulate the presence of the backup battery even if it is
+not present; the host can issue the save on shutdown command before switching oﬀ the device supply. It is
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 136 of 224
+C1-Public

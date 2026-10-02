@@ -1,0 +1,68 @@
+64 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+Programming Serial Numbers
+Saving a Data Byte
+A number of our customers have asked for ways
+to uniquely identify a product that uses our ELM327
+integrated circuit. While this is often a request for a
+means to store a ‘serial number’, people have also
+asked for a way to store dates, and version codes, too.
+The @2 and @3 commands were created to assist
+with this.
+If you send the command AT @2 to a new
+ELM327 integrated circuit, you will receive an error.
+That is, you will see a response that looks like this:
+>AT @2
+?
+In the above dialog, the ELM327 is trying to tell
+you that either the chip is very old and does not
+support the @2 command, or that nothing has been
+programmed into these memory locations yet.
+To program characters into the @2 memory, you
+must provide exactly 12 characters using the AT @3
+command. These characters must be in the ASCII
+printable group, in the range from ‘!’ (hex value 21) to
+‘_’ (hex  value 5F). Typically, an AT @3 command use
+would look like:
+>AT @3 MYBOARD_9906
+OK
+This number can never be altered once it is
+entered, so you must be sure that you are entering the
+values properly. If developing code which does this,
+you may find that purchasing an ELM328 IC will save
+the expense of trial and error. The ELM328 does not
+support OBD protocols however, so is not a viable
+option for other uses.
+Once the @3 code is set, it will always be
+available through the @2 command:
+>AT @2
+MYBOARD_9906
+That’s all there is to using the ELM327 device
+identifier.
+The ELM327 provides one memory location that
+can be used to save any single byte of information.
+This location uses special ‘non-volatile’ EEPROM
+memory for storage, so your data is not lost, even if
+you should turn the power off.
+Typically, this memory location is used by the
+controlling software to store the state of flags that were
+set by vehicle conditions, by hardware configurations,
+or by software choices. By storing them in this type of
+memory, the settings will be remembered between
+uses of the scan tool.
+Storing data is easily done with the Save Data
+command - for example, to save the value 7F, simply
+send:
+>AT SD 7F
+OK
+Data is just as easily retrieved using the Read
+Data command:
+>AT RD
+7F
+Since this single byte of data is stored in the
+internal EEPROM array, it is subject to the usual limits
+of EEPROM technology - unlimited reads, but typically
+only about 1 million writes, with a retention time of 40
+years (or more). This should not pose any limits to
+ELM327 users that we are aware of.

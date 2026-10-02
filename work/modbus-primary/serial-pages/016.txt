@@ -1,0 +1,37 @@
+MODBUS over serial line specification and implementation guide V1.02  Modbus.org    
+Modbus.org http://www.modbus.org/ 16/44
+Dec 20, 2006 
+2.5.2 The ASCII Transmission Mode 
+When devices are setup to communicate on a MODBUS serial line using ASCII (American Standard Code for Information 
+Interchange) mode, each 8–bit byte in a message is sent as two ASCII characters. This mode is used when the physical 
+communication link or the capabilities of the device does not allow the conformance with RTU mode requirements regarding timers  
+management.   
+Remark : this mode is less efficient than RTU since each byte needs two characters. 
+/barb4right Example : The byte 0X5B is encoded as two characters : 0x35 and 0x42 ( 0x35 ="5", and 0x42 ="B" in ASCII ). 
+The format ( 10 bits ) for each byte in ASCII mode is : 
+Coding Sy
+stem:  Hexadecimal, ASCII characters 0–9, A–F 
+One hexadecimal character contains 4-bits of data within each ASCII character of the message 
+Bits per Byte:  1 start bit 
+7 data bits, least significant bit sent first 
+1 bit for parity completion; 
+1 stop bit 
+Even parity is required,  other modes ( odd parity, no parity ) may also be used.  In order to ensure a maximum compatibility with 
+other products, it is recommended to support also No parity mode.  The default parity mode must  be Even parity. 
+Remark : the use of no parity requires 2 stop bits.  
+How Characters are Transmitted Serially : 
+Each character or byte is sent in this order (left to right): 
+Least Significant Bit (LSB) . . . Most Significant Bit (MSB) 
+Start
+With Parity Checking
+1 2 3 4 5 6 7 Par Stop
+Figure 15: 
+Bit Sequence in ASCII mode 
+Devices may accept by configuration either Even, Odd, or No Parity checking.  If No Parity is implemented, an additional stop bit is 
+transmitted to fill out the character frame : 
+Start
+Without Parity Checking
+1 2 3 4 5 6 7 Stop Stop
+Figure 16: 
+Bit Sequence in ASCII mode (specific case of No Parity) 
+Frame Checking Field:  Longitudinal Redundancy Checking (LRC) 

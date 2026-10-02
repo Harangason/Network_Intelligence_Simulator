@@ -1,0 +1,59 @@
+u-blox 20 HPG 2.00 - Interface description
+bit 9   U:1 wrongData - - If true, OSNMA data is inconsistent.
+bit 10   U:1 wrongFlxMac - - If true, ﬂexible slots authentication have failed (FLX)
+bit 11   U:1 wrongMaclt - - If true, the tags sequence do not follow the MAC look-
+up table (MACLT).
+4 X1 timSyncReq - - Information related to OSNMA Time Synchronization
+requirement status
+bit 0   U:1 timSyncEnabled - - Flag that indicates if OSNMA must be executed
+applying the Time Synchronization requirement
+bits 3…1   U:3 timSyncStatus - - Indicates if the time synchronization check has been
+applied.
+• 0: Time synchronization is not performed. Default
+to outside authentication epochs or when time
+synchronization is not requested
+• 1: Time synchronization could not be performed,
+trusted time is not available
+• 2: Time synchronization could not be performed,
+the trusted time is not accurate enough
+• 3: Time synchronization check passed
+• 4: Time synchronization check failed, replay
+attack
+5 U1[3] reserved0 - - Reserved
+8 I4 timSyncReq
+Diff
+- ms Time diﬀerence from the Time Synchronization
+requirement.
+The time diﬀerence between the trusted input time
+and the decoded GSTpropagated to the current
+local time from the subframe that contains the
+TESLA key to be authenticated. Note that the time
+synchronization status must pass or fail (timSyncReq
+= 3/4). Otherwise, the the time diﬀerence cannot be
+computed
+12 U1[4] reserved1 - - Reserved
+16 X4 dsm
+Authentication
+- - Information related to the DSM authentication
+bits 5…0   U:6 dsm
+Authentication
+Status
+- - Indicates if the authentication of a Digital Signature
+Message has been performed
+• 0: No DSM authentication
+• 1: DSM-KROOT authenticated, new status and
+conﬁguration accepted
+• 2: DSM-PKR authenticated, new public key
+accepted
+• 3: OSNMA Alert message: All cryptographic data
+is dropped. Connect to GSC OSNMA server
+• 4: DSM-KROOT authentication failed, new status
+and conﬁguration is not accepted
+• 5: DSM-PKR authentication failed, new public key
+is not accepted
+• 6: Authentication not performed: DSM coded with
+unknown public key
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 128 of 224
+C1-Public

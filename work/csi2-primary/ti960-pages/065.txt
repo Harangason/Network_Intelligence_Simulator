@@ -1,0 +1,81 @@
+#  "RX2 status"
+# "################################################"
+WriteReg(0x4C,0x24) # RX2
+PORT_ISR_LO = ReadI2C(0xDB) # readout; cleared by RX_PORT_STS2
+if ((PORT_ISR_LO & 0x40) >> 6):
+    print "# IS_LINE_LEN_CHG INTERRUPT DETECTED "
+if ((PORT_ISR_LO & 0x20) >> 5):
+    print "# IS_LINE_CNT_CHG DETECTED "
+if ((PORT_ISR_LO & 0x10) >> 4):
+    print "# IS_BUFFER_ERR DETECTED "
+if ((PORT_ISR_LO & 0x08) >> 3):
+    print "# IS_CSI_RX_ERR DETECTED "
+if ((PORT_ISR_LO & 0x04) >> 2):
+    print "# IS_FPD3_PAR_ERR DETECTED " # Forward Channel parity errors exceed set threshold 
+if ((PORT_ISR_LO & 0x02) >> 1):
+    print "# IS_PORT_PASS DETECTED "    # RX Port PASS status has changed since last read
+if ((PORT_ISR_LO & 0x01) ) :
+    print "# IS_LOCK_STS DETECTED "     # RX Port LOCK status has changed since last read
+################################################
+PORT_ISR_HI = ReadI2C(0xDA) # readout; cleared by RX_PORT_STS2
+if ((PORT_ISR_HI & 0x04) >> 2):
+    print "# IS_FPD3_ENC_ERR DETECTED "
+if ((PORT_ISR_HI & 0x02) >> 1):
+    print "# IS_BCC_SEQ_ERR DETECTED "
+if ((PORT_ISR_HI & 0x01) ) :
+    print "# IS_BCC_CRC_ERR DETECTED "
+################################################
+RX_PORT_STS1 = ReadI2C(0x4D) # R/COR
+if (  (RX_PORT_STS1 & 0xc0) >> 6) == 3:
+    print "# RX_PORT_NUM = RX3"
+elif ((RX_PORT_STS1 & 0xc0) >> 6) == 2:
+    print "# RX_PORT_NUM = RX2"
+elif ((RX_PORT_STS1 & 0xc0) >> 6) == 1:
+    print "# RX_PORT_NUM = RX1"
+elif ((RX_PORT_STS1 & 0xc0) >> 6) == 0:
+    print "# RX_PORT_NUM = RX0"
+    
+if ((RX_PORT_STS1 & 0x20) >> 5):
+    print "# BCC_CRC_ERR DETECTED "
+if ((RX_PORT_STS1 & 0x10) >> 4):
+    print "# LOCK_STS_CHG DETECTED "
+if ((RX_PORT_STS1 & 0x08) >> 3):
+    print "# BCC_SEQ_ERROR DETECTED "
+if ((RX_PORT_STS1 & 0x04) >> 2):
+    print "# PARITY_ERROR DETECTED "  # Cleared when RX_PAR_ERR_HI/LO registers are cleared
+if ((RX_PORT_STS1 & 0x02) >> 1):
+    print "# PORT_PASS=1 "            # Shows current PASS status at RX Port
+if ((RX_PORT_STS1 & 0x01) ):
+    print "# LOCK_STS=1 "             # Shows current LOCK status at RX Port
+################################################
+RX_PORT_STS2 = ReadI2C(0x4E)
+if ((RX_PORT_STS2 & 0x80) >> 7):
+    print "# LINE_LEN_UNSTABLE DETECTED "
+if ((RX_PORT_STS2 & 0x40) >> 6):
+    print "# LINE_LEN_CHG "
+if ((RX_PORT_STS2 & 0x20) >> 5):
+    print "# FPD3_ENCODE_ERROR DETECTED "
+if ((RX_PORT_STS2 & 0x10) >> 4):
+    print "# BUFFER_ERROR DETECTED "
+if ((RX_PORT_STS2 & 0x08) >> 3):
+    print "# CSI_ERR DETECTED "       # Clears when CSI_RX_STS register is cleared
+if ((RX_PORT_STS2 & 0x04) >> 2):
+    print "# FREQ_STABLE DETECTED "
+if ((RX_PORT_STS2 & 0x02) >> 1):
+    print "# NO_FPD3_CLK DETECTED "
+if ((RX_PORT_STS2 & 0x01) ):
+    print "# LINE_CNT_CHG DETECTED "
+    
+################################################
+# "################################################"
+#  "RX3 status"
+# "################################################"
+WriteReg(0x4C,0x38) # RX3
+PORT_ISR_LO = ReadI2C(0xDB) # readout; cleared by RX_PORT_STS2
+if ((PORT_ISR_LO & 0x40) >> 6):
+    print "# IS_LINE_LEN_CHG INTERRUPT DETECTED "
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 65
+Product Folder Links: DS90UB960-Q1

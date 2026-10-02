@@ -1,0 +1,34 @@
+F07 - Remote start transactions with fixed cost, energy or time - Requirements
+ID Precondition Requirement definition Note
+F07.FR.01 CSMS wishes to start a transaction
+with a limit in cost, energy, SoC or
+time at Charging Station
+CSMS SHALL send a
+RequestStartTransactionRequest message to
+Charging Station
+The limit is sent in the
+TransactionEvent
+messages in accordance
+with E16.
+F07.FR.02 F07.FR.01 AND
+Charging Station sends a
+TransactionEventRequest with
+eventType = Started
+CSMS SHALL respond with a
+TransactionEventResponse with transactionLimit
+set to the required limit.
+transactionLimit uses
+maxCost for cost limit,
+maxEnergy for energy
+limit, maxTime for time
+limit or maxSoC for SoC
+limit.
+F07.FR.03 F07.FR.02 Charging Station SHALL include this limit in the
+field transactionInfo.transactionLimit (once) in the
+next TransactionEventRequest
+F07.FR.04 Charging Station SHALL behave as in use case E16
+- Transactions with fixed cost, energy, SoC or time.
+NOTE Other requirements from F. Remote Control also apply, notably F01 and F02, as well as E16 - Transactions with
+fixed cost, energy, SoC or time.
+Edition 2, 2025-12-03 F. Remote Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 238/803 Part 2 - Specification

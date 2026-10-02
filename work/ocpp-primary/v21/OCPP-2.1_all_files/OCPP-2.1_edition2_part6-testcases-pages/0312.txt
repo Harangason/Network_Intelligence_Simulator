@@ -1,0 +1,50 @@
+Main (Test scenario)
+9 The Charging Station sends a NotifyEventRequest
+Same content as step 7, but with actualValue = false:
+eventData.actualValue = false
+This step is optional: If having reported the problem at step 7, the
+Charging Station reports the problem has been resolved.
+10 The Test System responds with a NotifyEventResponse
+11. The Charging Station sends a TransactionEventRequest
+This step is optional: In some cases, a Charging Station might re-
+detect the cable being plugged in after a reboot.
+12. The Test System responds with a
+TransactionEventResponse
+13. The Charging Station sends a TransactionEventRequest
+14. The Test System responds with a
+TransactionEventResponse
+Tool validations
+* Step 3:
+Message: StatusNotificationRequest
+- evseId not 0
+- connectorId not 0
+Configured EVSE.Connector:
+- connectorStatus Occupied
+Other connectors:
+- connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+Configured EVSE.Connector:
+- eventData[0].actualValue "Occupied"
+Other connectors:
+- eventData[0].actualValue "Available"
+* Step 5:
+Message: SecurityEventNotificationRequest
+- type must be StartupOfTheDevice OR ResetOrReboot
+* Step 11:
+Message TransactionEventRequest
+- eventType = Updated
+- triggerReason = CablePluggedIn
+- transactionInfo.transactionId <transactionId remained the same>
+* Step 13:
+Message TransactionEventRequest
+- eventType = Updated
+- triggerReason = TxResumed
+- transactionInfo.chargingState SuspendedEVSE
+- transactionInfo.transactionId <transactionId remained the same>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 310/1383 Part 6 - Test Cases

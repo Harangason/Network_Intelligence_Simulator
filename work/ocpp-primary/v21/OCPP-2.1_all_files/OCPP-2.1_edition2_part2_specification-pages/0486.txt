@@ -1,0 +1,50 @@
+No. Type Description
+8 Remark(s) This mechanism is meant for monitors that are expected to be triggered frequently, like periodic
+monitors, but it may also be used for delta monitors that are expected to trigger frequently.
+All variableMonitoring settings are persistent across reboot.
+A variableMonitoring setting is persistent after a firmware update, if the monitored variable still
+exists, and it is still monitor-able. Otherwise, the variableMonitoring setting is removed.
+A Charging Station can also open an event stream for hardwired or preconfigured monitors, for
+which no SetVariableMonitoringRequest was issued.
+CSMS Charging Station
+SetVariableMonitoringRequest(setMonitoringData,
+eventStream.maxTime=60)
+SetVariableMonitoringResponse(setMonitoringResult)
+OpenPeriodicEventStreamRequest(constantStreamData)
+OpenPeriodicEventStreamResponse(Accepted)
+loop [every maxTime seconds or when maxItems values available]
+NotifyPeriodicEventStream(periodic values of a monitor)
+N11 - Set Frequent Periodic Variable Monitoring - Requirements
+ID Precondition Requirement definition
+N11.FR.01 Upon receiving a SetVariableMonitoringRequest
+with one or more setMonitoringData elements
+that have a periodicEventStream element
+Charging Station SHALL associate a periodic event stream with
+each of the monitors that have a periodicEventStream element.
+N11.FR.02 N11.FR.01 Charging Station SHALL send a
+OpenPeriodicEventStreamRequest to CSMS with the id of event
+stream, and params set to the event stream flushing parameters
+from periodicEventStream in the SetVariableMonitoringRequest,
+and variableMonitoringId set to the id of the monitor.
+N11.FR.03 When Charging Station wants to use a periodic
+event stream for a HardWired or Preconfigured
+monitor
+Charging Station SHALL send a
+OpenPeriodicEventStreamRequest to CSMS with the id of event
+stream, and params set to the (preconfigured) event stream
+flushing parameters, and variableMonitoringId set to the id of the
+monitor.
+N11.FR.04 N11.FR.02 OR N11.FR.03 CSMS SHALL prepare to receive data of the periodic event
+stream and SHALL associate the data related to the
+variableMonitoringId with the values read from the event stream.
+N11.FR.05 When CSMS is not able to process the periodic
+event stream
+CSMS SHALL respond with a
+OpenPeriodicEventStreamResponse with status = Rejected.
+N11.FR.06 When CSMS accepts the periodic event stream CSMS SHALL respond with a
+OpenPeriodicEventStreamResponse with status = Accepted.
+N11.FR.07 N11.FR.05 Charging Station SHALL refrain from using the periodic event
+stream for this monitor and SHALL revert to using
+NotifyEventRequest message for this monitor.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 473/803 Part 2 - Specification

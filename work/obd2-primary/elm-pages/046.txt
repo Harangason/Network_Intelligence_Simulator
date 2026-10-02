@@ -1,0 +1,88 @@
+46 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Multiple PID Requests
+The SAE J1979 (ISO 15031-5) standard allows
+requesting multiple PIDs with one message, but only if
+you connect to the vehicle with CAN (ISO 15765-4).
+Up to six parameters may be requested at once, and
+the reply is one message that contains all of the
+responses.
+For example, let us say that you need to know
+engine load (04), engine coolant temperature (05),
+manifold pressure (0B), and engine rpm (0C) on a
+regular basis. You could send four separate requests
+for them (01 04, then 01 05, then 01 0B, etc.) or you
+could put them all into one message like this:
+>01 04 05 0B 0C
+to which, a typical reply might be:
+00A
+0: 41 04 3F 05 44 0B
+1: 21 0C 17 B8 00 00 00
+The reply is a multiline one, as was discussed in a
+previous section. Looking at the reply in detail, the first
+line tells us that it is 00A (decimal 10) bytes long, so
+we only pay attention to the first ten bytes of the
+following lines (and ignore the final three 00’s on the
+last line). The first byte is 41, which tells us that the
+message is a response to an 01 request.
+Following the 41 is the actual information, with the
+PID numbers followed by their data bytes. You will
+need to know how many data bytes to expect in order
+to make sense of it in most cases.
+The order in which you ask for the PIDs should not
+matter. For example, the previous request might have
+been sent as:
+>01 0B 04 0C 05
+00A
+0: 41 0B 21 04 3F 0C
+1: 17 B8 05 44 00 00 00
+in which case, the responses might be as shown
+above (but the order in which the PIDs appear in the
+response does not have to match the order in which
+they were requested).
+Using this technique, you can make more efficient
+use of the data bus. The cost is the extra work that you
+must do in creating the requests, and in parsing each
+response. If you are writing software to do this, the
+time initially taken may well be worth it, but if you are
+typing requests at a terminal screen, it is very unlikely
+that this will be of benefit to you.
+Response Pending Messages
+Until the ELM327 v2.1 update, the ELM327 never
+looked at the content of the OBD messages that it
+handled. From version 2.1 on, it now looks at them
+however, specifically looking for ‘response pending’
+replies.
+‘Response Pending’ messages are special ones
+sent by KWP (ISO 14230) , or CAN (ISO 15765) ECUs
+to say “Wait, I’m busy.” When the scan tool receives
+one of these replies, the J1979 standard states that it
+should continue waiting for up to 5 seconds more for
+the requested information to arrive. Further, if more
+‘Response Pending’ messages arrive, the scan tool
+should extend the wait period by another 5 seconds
+each time.
+The Response Pending message will always be of
+the form:
+7F xx 78
+where the xx represents the Mode (or SID) that was
+being requested. There is no feedback as to the PID
+requested. As ECUs get busier, these messages are
+becoming more common, so we decided to provide
+support for them in the ELM327.
+If bit 2 of PP 2A is set (it is by default), the
+ELM327 will automatically change the (AT ST) timeout
+period to 5 seconds for you if it sees a Response
+Pending message. This is only for the CAN and KWP
+(ISO 14230) protocols as per the standard. The CAN
+protocol support is not normally limited to only
+ISO 15765, but may be if you set PP 2A b0 to ‘1’.
+Note that the current implementation of this
+feature does not keep track of multiple ECUs, some of
+which may reply immediately, and some that may reply
+with response pending messages. For this reason,
+there may conceivably be circumstances when you
+may need to filter for only one ECU address when
+receiving a Response Pending reply.

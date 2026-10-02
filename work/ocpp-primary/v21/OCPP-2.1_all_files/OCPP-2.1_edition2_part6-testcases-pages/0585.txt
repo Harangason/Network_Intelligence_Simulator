@@ -1,0 +1,47 @@
+Main (Test scenario)
+10. The Charging Station responds with a
+SetChargingProfileResponse
+9. The Test System sends a SetChargingProfileRequest with
+chargingProfile.id 123
+chargingProfile.chargingProfilePurpose
+ChargingStationMaxProfile
+chargingProfile.chargingProfileKind Relative
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.star
+tPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limi
+t 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+12 The Charging Station responds with a
+UpdateDynamicScheduleResponse
+11 The Test System sends a UpdateDynamicScheduleRequest
+with
+chargingProfileId 123
+scheduleUpdate.limit 8 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Tool validations
+* Step 2: (2 periods)
+Message: SetChargingProfileResponse
+- status must be Rejected
+* Step 4: (2 schedules)
+Message: SetChargingProfileResponse
+- status must be Rejected
+* Step 6: (startPeriod not 0)
+Message: SetChargingProfileResponse
+- status must be Rejected
+* Step 8: (dynUpdateInterval in Relative)
+Message: SetChargingProfileResponse
+- status must be Rejected
+* Step 10: (not Dynamic)
+Message: SetChargingProfileResponse
+- status must be Accepted
+* Step 12: (no Dynamic profile installed)
+Message: UpdateDynamicScheduleResponse
+- status must be Rejected
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 583/1383 Part 6 - Test Cases

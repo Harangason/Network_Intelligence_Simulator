@@ -1,0 +1,55 @@
+Main (Test scenario)
+9. Charging Station responds with a
+AdjustPeriodicEventStreamResponse
+8. Test System sends a AdjustPeriodicEventStreamRequest
+with
+id <OpenPeriodicEventStreamRequest.constantStreamData.id of
+step 3>
+params.interval 15 <Configured Clock Aligned MeterValues   
+Interval> * 3   
+10. Charging Station sends a NotifyPeriodicEventStream using
+RFC framework SEND
+After 15 seconds
+11. Charging Station sends a NotifyPeriodicEventStream using
+RFC framework SEND
+After 15 seconds
+12. Charging Station sends a NotifyPeriodicEventStream using
+RFC framework SEND
+After 15 seconds
+Tool validations
+* Step 2:
+Message: SetVariableMonitoringResponse
+- setMonitoringResult[0].id must be <not omitted>
+- setMonitoringResult[0].status must be Accepted
+- setMonitoringResult[0].type must be Periodic
+- setMonitoringResult[0].severity must be <Configured severity>
+- setMonitoringResult[0].component.name must be <Configured threshold  monitor component>
+- setMonitoringResult[0].component.evse.id must be <Configured evseId>
+- setMonitoringResult[0].variable.name must be <Configured threshold  monitor component variable>
+* Step 3:
+Message: OpenPeriodicEventStreamRequest
+- constantStreamData.id must be <not omitted>
+- constantStreamData.variableMonitoringId must be <SetVariableMonitoringResponse.setMonitoringResult[0].id of step 2>
+- constantStreamData.params.interval must be 10 <Configured Clock Aligned MeterValues Interval> * 2      
+* Step 5:
+Message: NotifyPeriodicEventStream
+- id must be <OpenPeriodicEventStreamRequest.constantStreamData.id of step 3>
+* Step 6:
+Message: NotifyPeriodicEventStream shall be sent about 10 seconds after step 5
+- id must be <OpenPeriodicEventStreamRequest.constantStreamData.id of step 3>
+* Step 7:
+Message: NotifyPeriodicEventStream shall be sent about 10 seconds after step 6
+- id must be <OpenPeriodicEventStreamRequest.constantStreamData.id of step 3>
+* Step 9:
+Message: AdjustPeriodicEventStreamResponse
+- status must be Accepted
+* Step 10:
+Message: NotifyPeriodicEventStream
+- id must be <OpenPeriodicEventStreamRequest.constantStreamData.id of step 3>
+* Step 11:
+Message: NotifyPeriodicEventStream shall be sent about 15 seconds after step 10
+- id must be <OpenPeriodicEventStreamRequest.constantStreamData.id of step 3>
+* Step 12:
+Message: NotifyPeriodicEventStream shall be sent about 15 seconds after step 11
+- id must be <OpenPeriodicEventStreamRequest.constantStreamData.id of step 3>
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 79/116 Errata 2026-06

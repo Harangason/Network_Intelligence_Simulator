@@ -1,0 +1,48 @@
+TC_C_103_CS: Authorization with prepaid card - success
+Test case name Authorization with prepaid card - success
+Test case Id TC_C_103_CS
+Use case Id(s) C17
+Requirement(s) C17.FR.04
+System under test CS
+Description This test case verifies if the CS communicates the transaction limits correctly.
+Purpose
+Prerequisite(s) - Prepaid card is available.
+- TxCtrlr.SupportedLimits contains MaxCost
+Before
+(Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main
+(Test scenario)
+Charging Station CSMS
+Manual Action: EV driver presents prepaid card
+1. The CS sends a AuthorizeRequest
+2. The Test System responds with an AuthorizeResponse with
+- idTokenInfo.status Accepted
+- idTokenInfo.cacheExpiryDateTime <current date/time>
+Note: Only when TxStartPoint does not contain ParkingBayOccupancy or Authorized: 
+- Manual action: Plug cable in
+3. The CS sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+with
+- idTokenInfo.status Accepted
+- idTokenInfo.cacheExpiryDateTime <current date/time>
+- transactionLimit.maxCost = 123.32
+Tool validations
+* Step 1:
+Message AuthorizeRequest
+idToken.idToken <prepaid card id>
+idToken.type = "ISO14443" or "ISO15693"
+* Step 3:
+Message TransactionEventRequest
+- eventType Updated (for TxStartPoint ParkingBayOccupancy) or Started (for all other TxStartPoints)
+- idToken.idToken <prepaid card id>
+- idToken.type = <idTokenType from step 1>
+Post scenario validations:
+- transactionInfo.chargingState must transition to Charging
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 185/1383 Part 6 - Test Cases

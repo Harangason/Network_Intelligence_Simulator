@@ -1,0 +1,36 @@
+Main (Test scenario)
+8. During the TLS handshake the Charging Station validates the
+CSMS certificate. 
+Note(s):
+- This connection attempt fails, because the Charging Station will
+use the new CSMS Root certificate to validate the CSMS
+certificate.
+7. During the TLS handshake the Test System provides a CSMS
+certificate which is signed by the <Configured old CSMS Root
+certificate>
+9. The Charging Station switches back to the previous
+networkprofile configuration and validates the CSMS certificate,
+using the (fallback) CSMS Root certificate. 
+Note(s):
+- This connection attempt succeeds, because the Charging
+Station will now use the (old) CSMS Root certificate to validate
+the CSMS certificate.
+10. Execute Reusable State Booted
+12. The Charging Station responds with a
+GetInstalledCertificateIdsResponse
+11. The Test System sends a GetInstalledCertificateIdsRequest
+with certificateType is CSMSRootCertificate
+Tool validations
+* Step 6:
+Message ResetResponse
+- status Accepted
+* Step 12:
+Message: GetInstalledCertificateIdsResponse
+- status must be Accepted
+- certificateHashDataChain must contain an entry with following values:
+- certificateType is CSMSRootCertificate
+- certificateHashData contains <HashData from configured old CSMS Root certificate>
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 78/1383 Part 6 - Test Cases

@@ -1,0 +1,69 @@
+ID Precondition Requirement definition
+B13.FR.03 When Charging Station receives a ResetRequest
+with type = ImmediateAndResume AND
+Transactions are ongoing on Charging Station
+Charging Station SHALL respond with ResetResponse with
+status = Accepted
+B13.FR.04 B13.FR.03 Charging Station SHALL send TransactionEventRequest with
+eventType = Updated and triggerReason = ResetCommand and
+any other required parameters for each ongoing transaction.
+Reset of EVSE
+B13.FR.10 B13.FR.04 AND
+parameter evseId had a value
+Charging Station SHALL stop energy transfer for the transaction
+on evseId.
+B13.FR.11 B13.FR.10 Charging Station SHALL reset the EVSE matching evseId without
+rebooting the entire Charging Station.
+B13.FR.12 B13.FR.11 AND
+After reset is completed
+Charging Station SHALL resume the transaction in the state it
+had before the reset, even when resetting took longer than
+TxResumptionTimeout.
+B13.FR.13 B13.FR.12 AND
+TxAllowEnergyTransferResumption = true
+Charging Station SHALL allow energy transfer in the resumed
+transaction.
+B13.FR.14 B13.FR.12 AND
+TxAllowEnergyTransferResumption =
+false AND
+transactionInfo.chargingState = Charging
+Charging Station SHALL resume the transaction in the
+chargingState = SuspendedEVSE (i.e. no energy transfer)
+Reset of Charging Station
+B13.FR.20 B13.FR.04 AND parameter evseId is not present Charging Station SHALL stop energy transfer for all transactions
+and unlock the connectors in case of detachable cables.
+B13.FR.21 B13.FR.20 Charging Station SHALL reboot the entire Charging Station.
+B13.FR.22 B13.FR.21 AND
+After reboot is completed
+Charging Station SHALL lock the connectors that had ongoing
+transaction in case of detachable cables.
+B13.FR.23 B13.FR.22 Charging Station SHALL resume each transaction in the state it
+had before the reset, even when resetting took longer than
+TxResumptionTimeout.
+B13.FR.24 B13.FR.23 AND
+TxAllowEnergyTransferResumption = true
+Charging Station SHALL allow energy transfer in resumed
+transactions.
+B13.FR.25 B13.FR.23 AND
+TxAllowEnergyTransferResumption =
+false AND
+transactionInfo.chargingState of a transaction is
+Charging
+Charging Station SHALL resume such a transaction in the
+chargingState SuspendedEVSE (i.e. no energy transfer)
+Signal resumption
+B13.FR.30 B13.FR.12 OR B13.FR.23 Charging Station SHALL send a TransactionEventRequest with
+eventType = Updated and triggerReason = TxResumed for each
+resumed transaction.
+B13.FR.31 B13.FR.30 AND
+CSMS has a charging profile of
+chargingProfilePurpose = TxProfile for
+transactions reported with triggerReason =
+TxResumed AND
+SmartChargingCtrlr.ChargingProfilePersistence
+for instance = "TxProfile" = false or absent
+CSMS SHALL send the SetChargingProfileRequest for
+chargingProfilePurpose = TxProfile for these transactions
+again.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 85/803 Part 2 - Specification

@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+3.14.10.1 Poll receiver and software version
+Message UBX-MON-VER
+Poll receiver and software version
+Type Poll request
+Comment
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0a 0x04 0 see below CK_A CK_B
+Payload This message has no payload.
+3.14.10.2 Receiver and software version
+Message UBX-MON-VER
+Receiver and software version
+Type Polled
+Comment
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0a 0x04 40 + [0..n]·30 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 CH[30] swVersion - - Nul-terminated software version string.
+30 CH[10] hwVersion - - Nul-terminated hardware version string
+Start of repeated group (N times)
+40 + n·30 CH[30] extension - - Extended software information strings.
+A series of nul-terminated strings. Each extension
+ﬁeld is 30 characters long and contains varying
+software information. Not all extension ﬁelds may
+appear.
+Examples of reported information: the software
+version string of the underlying ROM (when the
+receiver's ﬁrmware is running from ﬂash), the
+ﬁrmware version, the supported protocol version, the
+module identiﬁer, the ﬂash information structure
+(FIS) ﬁle information, the supported major GNSS, the
+supported augmentation systems.
+See Firmware and protocol versions for details.
+End of repeated group (N times)
+3.15 UBX-NAV (0x01)
+The messages in the UBX-NAV class are used to output navigation results and data, such as
+position, altitude and velocity in a number of formats, and status ﬂags and accuracy estimate
+ﬁgures, or satellite and signal information. The messages are generated with the conﬁgured
+navigation rate.
+3.15.1 UBX-NAV-CLOCK (0x01 0x22)
+3.15.1.1 Clock solution
+Message UBX-NAV-CLOCK
+Clock solution
+Type Periodic/polled
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 90 of 224
+C1-Public

@@ -1,0 +1,91 @@
+ID Precondition Requirement definition Note
+A02.FR.12 Upon receipt of a
+SignCertificateRequest
+AND
+It is NOT able to process
+the request
+The CSMS SHALL set status to Rejected in the
+SignCertificateResponse.
+A02.FR.13 When using different
+certificates for 15118
+connections and the
+Charging Station to
+CSMS connection
+The Charging Station SHALL set the certificateType
+field in the SignCertificateRequest to the certificate
+for which the update was triggered.
+A02.FR.14 When receiving a
+SignCertificateRequest
+with certificateType
+included
+It is RECOMMENDED for the CSMS to set the
+certificateType field in the CertificateSignedRequest
+to the type of certificate in the
+SignCertificateRequest.
+A02.FR.15 If the Charging Station
+contains more than one
+valid V2G certificate,
+derived from the same
+root certificate.
+The Charging Station SHALL use the newest
+certificate, as measured by the start of the validity
+period.
+A02.FR.16 If the configuration
+variable
+MaxCertificateChainSize
+is implemented AND
+The Charging Station
+receives a
+CertificateSignedRequest
+message with a
+certificate (chain) with a
+size that exceeds the set
+value configured at
+MaxCertificateChainSize
+The Charging Station MAY respond with a
+CertificateSignedResponse message with status
+Rejected .
+A02.FR.17 When the CSMS
+accepted the
+SignCertificateRequest
+for a CSR AND
+the Charging Station did
+not yet receive a
+CertificateSignedRequest
+for this CSR AND
+the number of seconds
+configured at
+CertSigningWaitMinimu
+m has expired
+The Charging Station SHALL send a new
+SignCertificateRequest for the CSR. Optionally, this
+CSR MAY be for a newly generated key pair.
+A02.FR.18 A02.FR.17 The Charging Station SHALL double the previous
+back-off time, starting with the number of seconds
+configured at CertSigningWaitMinimum, every time
+the back-off time expires without having received
+the CertificateSignedRequest for this CSR.
+A02.FR.19
+(2.1)
+A02.FR.18 AND
+CertSigningRepeatTimes
+is reached
+The Charging Station SHALL stop resending the
+SignCertificateRequest, until it is requested by the
+CSMS via a TriggerMessageRequest for
+SignChargingStationCertificate,
+SignV2GCertificate,
+SignV2G20Certificate or
+SignCombinedCertificate.
+A02.FR.20
+(2.1)
+A02.FR.07 The Charging Station SHALL NOT initiate the back-
+off mechanism and resend the
+SignCertificateRequest, until this is requested by
+the CSMS via a TriggerMessageRequest for
+SignChargingStationCertificate,
+SignV2GCertificate,
+SignV2G20Certificate or
+SignCombinedCertificate.
+Edition 2, 2025-12-03 A. Security
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 38/803 Part 2 - Specification

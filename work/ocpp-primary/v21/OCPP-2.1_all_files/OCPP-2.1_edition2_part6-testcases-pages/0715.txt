@@ -1,0 +1,38 @@
+Main (Test scenario)
+2. The Charging Station responds with a
+CustomerInformationResponse
+1. The Test System sends a CustomerInformationRequest with
+- report true AND
+- clear true AND
+- customerCertificate certificate hash data of contract certificate
+3. The Charging Station sends a
+NotifyCustomerInformationRequest 4. The Test System responds with a
+NotifyCustomerInformationResponse
+Note(s):
+- If tbc is True at Step 3 then step 3 and 4 will be repeated
+6. The Charging Station responds with a
+CustomerInformationResponse
+5. The Test System sends a CustomerInformationRequest with
+- report true AND
+- clear false AND
+- customerCertificate certificate hash data of contract certificate
+7. The Charging Station sends a
+NotifyCustomerInformationRequest 8. The Test System responds with a
+NotifyCustomerInformationResponse
+Tool validations
+* Step 2:
+Message CustomerInformationResponse
+- status Accepted
+* Step 3:
+Message NotifyCustomerInformationRequest
+- data empty or Not empty if a customer certificate exists
+* Step 6:
+Message CustomerInformationResponse
+- status Accepted
+* Step 7:
+Message NotifyCustomerInformationRequest
+- data empty
+Post scenario validations:
+- All report parts have been received
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 713/1383 Part 6 - Test Cases

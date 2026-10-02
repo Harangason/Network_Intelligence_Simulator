@@ -1,0 +1,95 @@
+No. Type Description
+8 Remarks This use case is similar for other DER controls.
+Charging station has to store these values persistently.
+The HFMayTrip curve configures ride-through behavior.
+The HFMustTrip curve configures the trip behavior.
+R04 - Configure DER control settings at Charging Station - Requirements
+Table 165. R04 - Requirements
+ID. Precondition Requirements Note
+SetDERControl
+R04.FR.01 Charging Station
+receives a
+SetDERControlRequest
+with a controlType that it
+does not support
+Charging Station SHALL respond with
+SetDERControlResponse with status =
+NotSupported.
+R04.FR.02 Charging Station
+receives a
+SetDERControlRequest
+with isDefault = true and
+a controlType that it
+supports AND
+no default DER control of
+controlType exists
+Charging Station SHALL configure this DER control
+as the new default DER control, and respond with
+SetDERControlResponse with status = Accepted.
+R04.FR.03 Charging Station
+receives a
+SetDERControlRequest
+with isDefault = true and
+a controlType that it
+supports AND
+an existing default DER
+control of controlType
+has a higher value for
+priority
+Charging Station SHALL set the isSuperseded
+attribute of the existing control to true and accept
+the new control as the new default DER control, and
+respond with SetDERControlResponse with status =
+Accepted and supersededId with Id of superseded
+control.
+A lower priority value overrules a
+higher priority value.
+R04.FR.04 ( R04.FR.02 OR
+R04.FR.03 ) AND
+a scheduled DER control
+for controlType is already
+active
+Charging Station SHALL accept this default DER
+control and respond with SetDERControlResponse
+with status = Accepted and continue to execute
+the scheduled DER curve.
+Replacing a default curve while a
+scheduled curve is active (between
+startTime and duration seconds) will
+not affect the scheduled curve.
+R04.FR.05 Charging Station
+receives a
+SetDERControlRequest
+with isDefault = false and
+a controlType that it
+supports AND
+no scheduled DER
+control of controlType
+exists
+Charging Station SHALL accept this DER control,
+and respond with SetDERControlResponse with
+status = Accepted.
+R04.FR.06 Charging Station
+receives a
+SetDERControlRequest
+with isDefault = false and
+a controlType that it
+supports AND
+an existing scheduled
+DER control of
+controlType, that is not
+yet active, has a higher
+value for priority
+Charging Station SHALL set the isSuperseded
+attribute of the existing control to true and accept
+the new control as the new scheduled DER control
+for controlType, and respond with
+SetDERControlResponse with status = Accepted,
+and supersededId with Id of superseded control.
+A lower priority value has preference.
+The existing scheduled DER control is
+immediately superseded, even when
+startTime of the new control is later
+than that of the existing control.
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 559/803 Part 2 - Specification

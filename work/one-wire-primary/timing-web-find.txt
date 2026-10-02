@@ -1,0 +1,437 @@
+DS18B20 - Programmable Resolution 1-Wire Digital Thermometer (https://www.analog.com/media/en/technical-documentation/data-sheets/ds18b20.pdf)
+citeturn549view0 [wordlim: 200] Crawled: today; Content type: application/pdf; Number of pages: 20; Source: find({"ref_id":"https://www.analog.com/media/en/technical-documentation/data-sheets/ds18b20.pdf","pattern":"tCONV"}); Total lines: 1338
+L152@P2: Note 12: See the timing diagrams in Figure 2.
+L153@P2: Note 13: Under parasite power, if tRSTL > 960µs, a power-on reset can occur.
+L154@P2: Figure 1. Typical Performance Curve
+L155@P2: PARAMETER SYMBOL CONDITIONS MIN TYP MAX UNITS
+L156@P2: NV Write Cycle Time tWR 2 10 ms
+L157@P2: EEPROM Writes NEEWR -55°C to +55°C 50k writes
+L158@P2: EEPROM Data Retention tEEDR -55°C to +55°C 10 years
+L159@P2: PARAMETER SYMBOL CONDITIONS MIN TYP MAX UNITS
+L160@P2: Temperature Conversion Time tCONV
+L161@P2: 9-bit resolution
+L162@P2: (Note 12)
+L163@P2: 93.75
+L164@P2: ms
+L165@P2: 10-bit resolution 187.5
+L399@P6: to pull the bus directly to the rail as shown in Figure 6. The
+L400@P6: 1-Wire bus must be switched to the strong pullup within
+L401@P6: 10µs (max) after a Convert T [44h] or Copy Scratchpad
+L402@P6: [48h] command is issued, and the bus must be held high
+L403@P6: by the pullup for the duration of the conversion (tCONV)
+L404@P6: or data transfer (tWR = 10ms). No other activity can take
+L405@P6: place on the 1-Wire bus while the pullup is enabled.
+L406@P6: The DS18B20 can also be powered by the conventional
+L560@P8: bits are initialized to 0. Starting with the least significant
+L561@P8: bit of the ROM code or the least significant bit of byte 0
+L562@P8: in the scratchpad, one bit at a time should shifted into the
+L563@P8: shift register. After shifting in the 56th bit from the ROM or
+L564@P8: the most significant bit of byte 7 from the scratchpad, the
+L565@P8: polynomial generator will contain the recalculated CRC.
+L566@P8: Next, the 8-bit ROM code or scratchpad CRC from the
+L567@P8: DS18B20 must be shifted into the circuit. At this point, if
+L568@P8: the re-calculated CRC was correct, the shift register will
+L569@P8: contain all 0s. Additional information about the Maxim
+L570@P8: 1-Wire cyclic redundancy check is available in Application
+L571@P8: Note 27: Understanding and Using Cyclic Redundancy
+L572@P8: Checks with Maxim iButton Products.
+L573@P8: Figure 10. Configuration Register
+L574@P8: Figure 11. CRC Generator
+L575@P8: Table 2. Thermometer Resolution Configuration
+L576@P8: R1 R0 RESOLUTION
+L577@P8: (BITS) MAX CONVERSION TIME
+L578@P8: 0 0 9 93.75ms (tCONV/8)
+L579@P8: 0 1 10 187.5ms (tCONV/4)
+L580@P8: 1 0 11 375ms (tCONV/2)
+L581@P8: 1 1 12 750ms (tCONV)
+L582@P8: BIT 7 BIT 6 BIT 5 BIT 4 BIT 3 BIT 2 BIT 1 BIT 0
+L583@P8: 0 R1 R0 1 1 1 1 1
+L584@P8: XOR XOR XOR
+L585@P8: INPUT
+L586@P8: MSB LSB
+L587@P8: DS18B20 Programmable Resolution
+L588@P8: 1-Wire Digital Thermometer
+L589@P8-9: www.maximintegrated.com Maxim Integrated │ 91-Wire Bus System
+L590@P9: The 1-Wire bus system uses a single bus master to control one or more slave devices. The DS18B20 is always a
+L591@P9: slave. When there is only one slave on the bus, the system is referred to as a “single-drop” system; the system is
+L592@P9: “multidrop” if there are multiple slaves on the bus.
+L593@P9: All data and commands are transmitted least significant
+L594@P9: bit first over the 1-Wire bus.
+L595@P9: The following discussion of the 1-Wire bus system is
+L596@P9: broken down into three topics: hardware configuration,
+L597@P9: transaction sequence, and 1-Wire signaling (signal types
+L598@P9: and timing).
+L599@P9: Hardware Configuration
+L600@P9: The 1-Wire bus has by definition only a single data line.
+L601@P9: Each device (master or slave) interfaces to the data line
+L602@P9: via an open-drain or 3-state port. This allows each device
+L603@P9: to “release” the data line when the device is not transmitting data so the bus is available for use by another device.
+L604@P9: The 1-Wire port of the DS18B20 (the DQ pin) is open
+L605@P9: drain with an internal circuit equivalent to that shown in
+L606@P9: Figure 12.
+L607@P9: The 1-Wire bus requires an external pullup resistor of
+L608@P9: approximately 5kΩ; thus, the idle state for the 1-Wire
+L609@P9: bus is high. If for any reason a transaction needs to be
+L610@P9: suspended, the bus MUST be left in the idle state if the
+L611@P9: transaction is to resume. Infinite recovery time can occur
+L612@P9: between bits so long as the 1-Wire bus is in the inactive
+L613@P9: (high) state during the recovery period. If the bus is held
+L614@P9: low for more than 480µs, all components on the bus will
+L615@P9: be reset.
+L616@P9: Transaction Sequence
+L617@P9: The transaction sequence for accessing the DS18B20 is
+L618@P9: as follows:
+L619@P9: Step 1. Initialization
+L620@P9: Step 2. ROM Command (followed by any required data
+L621@P9: exchange)
+L731@P10: Convert T [44h]
+L732@P10: This command initiates a single temperature conversion.
+L733@P10: Following the conversion, the resulting thermal data is
+L734@P10: stored in the 2-byte temperature register in the scratchpad memory and the DS18B20 returns to its low-power
+L735@P10: idle state. If the device is being used in parasite power
+L736@P10: mode, within 10µs (max) after this command is issued
+L737@P10: the master must enable a strong pullup on the 1-Wire bus
+L738@P10: for the duration of the conversion (tCONV) as described
+L1215@P17: Tx 44h Master issues Convert T
+L1216@P17: command.
+L1217@P17: Tx
+L1218@P17: DQ line
+L1219@P17: held high by
+L1220@P17: strong pullup
+L1221@P17: Master applies strong pullup
+L1222@P17: to DQ for the duration of the
+L1223@P17: conversion (tCONV).
+L1224@P17: Tx Reset Master issues reset pulse.
+L1225@P17: Rx Presence DS18B20s respond with
+L1226@P17: presence pulse.
+L1227@P17: Tx 55h Master issues Match ROM
+L1228@P17: command.
+L1229@P17: Tx 64-bit ROM
+L1230@P17: code
+L1231@P17: Master sends DS18B20 ROM
+L1232@P17: code.
+L1233@P17: Tx BEh Master issues Read Scratchpad
+L1234@P17: command.
+L1235@P17: Rx 9 data bytes
+L1236@P17: Master reads entire scratchpad
+L1237@P17: including CRC. The master then
+--------------------------------------------------------------------------------
+DS2482-100 - Single-Channel 1-Wire Master (https://www.analog.com/media/en/technical-documentation/data-sheets/DS2482-100.pdf)
+citeturn549view1 [wordlim: 200] Crawled: today; Content type: application/pdf; Number of pages: 24; Source: find({"ref_id":"https://www.analog.com/media/en/technical-documentation/data-sheets/DS2482-100.pdf","pattern":"tSLOT"}); Total lines: 1252
+L417@P6: devices support standard speed (1WS = 0), where the
+L418@P6: transfer of a single bit (tSLOT in Figure 3) is completed
+L419@P6: within 65μs. Many 1-Wire devices can also communicate
+L420@P6: at a higher data rate, called overdrive speed. To change
+L421@P6: from standard to overdrive speed, a 1-Wire device needs
+L422@P6: to receive an Overdrive-Skip ROM or Overdrive-Match
+L423@P6: ROM command, as explained in the 1-Wire device data
+L424@P6: sheets. The change in speed occurs immediately after
+L425@P6: the 1-Wire device has received the speed-changing
+L436@P6: www.analog.com Analog Devices │ 7
+L437@P6: DS2482-100 Single-Channel 1-Wire Master
+L438@P6: DS2482-100 RESISTIVE PULLUP DS2482-100 PULLDOWN DS2482-100 STRONG PULLUP
+L439@P6: VCC
+L440@P6: 0V
+L441@P6: PCTLZ
+L442@P6: WRITE-ZERO CASE
+L443@P6: WRITE-ONE CASE
+L444@P6: tSLOT
+L445@P6: LAST BIT OF 1-Wire WRITE BYTE OR 1-Wire SINGLE BIT FUNCTION
+L446@P6: NEXT
+L447@P6: TIME SLOT
+L448@P6: OR 1-Wire
+L449@P6-7: RESETStatus Register
+L450@P7: The read-only Status Register is the general means for the
+L451@P7: DS2482-100 to report bit-type data from the 1-Wire side,
+L452@P7: 1-Wire busy status, and its own reset status to the host
+L626@P10: Generates a single 1-Wire time slot with a bit value “V” as specified by the bit byte at the 1-Wire line
+L627@P10: (see Table 2). A V value of 0b generates a write-zero time slot (Figure 5); a V value of 1b generates a
+L628@P10: write-one time slot, which also functions as a read-data time slot (Figure 6). In either case, the logic
+L629@P10: level at the 1-Wire line is tested at tMSR and SBR is updated.
+L630@P10: Typical Use To perform single-bit writes or reads at the 1-Wire line when single bit communication is necessary
+L631@P10: (the exception).
+L632@P10: Restriction 1-Wire activity must have ended before the DS2482-100 can process this command.
+L633@P10: Error Response Command code and bit byte are not acknowledged if 1WB = 1 at the time the command code is
+L634@P10: received and the command is ignored.
+L635@P10: Command Duration tSLOT + maximum 262.5ns, counted from the falling SCL edge of the first bit (MSB) of the bit byte.
+L636@P10: 1-Wire Activity Begins maximum 262.5ns after the falling SCL edge of the MSB of the bit byte.
+L637@P10: Read Pointer Position Status Register (for busy polling and data reading).
+L638@P10: Status Bits Affected 1WB (set to 1 for tSLOT), SBR is updated at tMSR, DIR (may change its state).
+L639@P10: Configuration Bits Affected 1WS, APU, SPU apply.
+L640@P10: BIT 7 BIT 6 BIT 5 BIT 4 BIT 3 BIT 2 BIT 1 BIT 0
+L641@P10: V x x x x x x x
+L642@P10: www.analog.com Analog Devices │ 11
+L643@P10: DS2482-100 Single-Channel 1-Wire Master
+L644@P10: PULLUP DS2482-100 PULLDOWN 1-Wire SLAVE PULLDOWN
+L645@P10: VCC
+L646@P10: VIH1
+L647@P10: VIL1
+L648@P10: 0V
+L649@P10: RESET PULSE
+L650@P10: RESISTIVE PULLUP
+L651@P10: PRESENCE PULSE
+L652@P10: APU CONTROLLED
+L653@P10: EDGE
+L654@P10: PRESENCE/SHORT DETECT
+L655@P10: tRSTL
+L656@P10: tSI tMSP
+L657@P10: tRSTH
+L658@P10-11: tF1Figure 5. Write-Zero Time Slot
+L659@P11: Figure 6. Write-One and Read-Data Time Slot
+L660@P11: www.analog.com Analog Devices │ 12
+L661@P11: DS2482-100 Single-Channel 1-Wire Master
+L662@P11: PULLUP (SEE FIGURE 2) DS2482-100 PULLDOWN
+L663@P11: VCC
+L664@P11: VIH1
+L665@P11: VIL1
+L666@P11: 0V
+L667@P11: tSLOT
+L668@P11: tREC0
+L669@P11: tWOL
+L670@P11: tMSR
+L671@P11: tF1
+L672@P11: PULLUP (SEE FIGURE 2) DS2482-100 PULLDOWN 1-Wire SLAVE PULLDOWN
+L673@P11: VCC
+L674@P11: VIH1
+L675@P11: VIL1
+L676@P11: 0V
+L677@P11: tSLOT
+L678@P11: tW1L
+L679@P11: tMSR
+L680@P11: tF1
+L681@P11: NOTE: DEPENDING ON ITS INTERNAL STATE, A 1-Wire SLAVE DEVICE TRANSMITS DATA TO ITS MASTER (e.g. THE DS2482-100). WHEN RESPONDING WITH A 0,
+L682@P11: A 1-Wire SLAVE STARTS PULLING THE LINE LOW DURING tW1L. ITS INTERNAL TIMING GENERATOR DETERMINES WHEN THIS PULLDOWN ENDS AND THE VOLTAGE
+L683@P11: STARTS RISING AGAIN. WHEN RESPONDING WITH A 1, A 1-Wire SLAVE DOES NOT HOLD THE LINE LOW AT ALL, AND THE VOLTAGE STARTS RISING AS SOON AS tW1L
+L684@P11: IS OVER. 1-Wire DEVICE DATA SHEETS USE THE TERM tRL INSTEAD OF tW1L TO DESCRIBE A READ-DATA TIME SLOT. TECHNICALLY, tRL AND tW1L HAVE IDENTICAL
+L685@P11-12: SPECIFICATIONS AND CANNOT BE DISTINGUISHED FROM EACH OTHER.1-Wire Write Byte
+L686@P12: 1-Wire Read Byte
+L687@P12: Command Code A5h
+L688@P12: Command Parameter Data Byte
+L689@P12: Description Writes a single data byte to the 1-Wire line.
+L690@P12: Typical Use To write commands or data to the 1-Wire line. Equivalent to executing eight 1-Wire Single Bit
+L691@P12: commands, but faster due to less I2C traffic.
+L692@P12: Restriction 1-Wire activity must have ended before the DS2482-100 can process this command.
+L693@P12: Error Response Command code and data byte are not acknowledged if 1WB = 1 at the time the command code is
+L694@P12: received and the command is ignored.
+L695@P12: Command Duration 8 x tSLOT + maximum 262.5ns, counted from falling edge of the last bit (LSB) of the data byte.
+L696@P12: 1-Wire Activity
+L697@P12: Begins maximum 262.5ns after falling SCL edge of the LSB of the data byte (i.e., before the data
+L698@P12: byte acknowledge). Note: The bit order on the I2C bus and the 1-Wire line is different (1-Wire: LSB
+L699@P12: first; I2C: MSB first). Therefore, 1-Wire activity cannot begin before the DS2482-100 has received the
+L700@P12: full data byte.
+L701@P12: Read Pointer Position Status Register (for busy polling).
+L702@P12: Status Bits Affected 1WB (set to 1 for 8 x tSLOT).
+L703@P12: Configuration Bits Affected 1WS, SPU, APU apply.
+L704@P12: Command Code 96h
+L705@P12: Command Parameter None
+L706@P12: Description Generates eight read-data time slots on the 1-Wire line and stores result in the Read Data Register.
+L707@P12: Typical Use To read data from the 1-Wire line. Equivalent to executing eight 1-Wire Single Bit commands with
+L708@P12: V = 1 (write-one time slot), but faster due to less I2C traffic.
+L709@P12: Restriction 1-Wire activity must have ended before the DS2482-100 can process this command.
+L710@P12: Error Response Command code is not acknowledged if 1WB = 1 at the time the command code is received and the
+L711@P12: command is ignored.
+L712@P12: Command Duration 8 x tSLOT + maximum 262.5ns, counted from the falling SCL edge of the command code
+L713@P12: acknowledge bit.
+L714@P12: 1-Wire Activity Begins maximum 262.5ns after the falling SCL edge of the command code acknowledge bit.
+L715@P12: Read Pointer Position
+L716@P12: Status Register (for busy polling). Note: To read the data byte received from the 1-Wire line, issue
+L717@P12: the Set Read Pointer command and select the Read Data Register. Then access the DS2482-100 in
+L718@P12: read mode.
+L719@P12: Status Bits Affected 1WB (set to 1 for 8 x tSLOT).
+L720@P12: Configuration Bits Affected 1WS, APU apply.
+L721@P12: www.analog.com Analog Devices │ 13
+L722@P12-13: DS2482-100 Single-Channel 1-Wire Master1-Wire Triplet
+L723@P13: Table 3. Bit Allocation in the Direction Byte
+L724@P13: x = Don’t care.
+L725@P13: Command Code 78h
+L726@P13: Command Parameter Direction Byte
+L727@P13: Description
+L728@P13: Generates three time slots: two read time slots and one write time slot at the 1-Wire line. The type of
+L729@P13: write time slot depends on the result of the read time slots and the direction byte. The direction byte
+L730@P13: determines the type of write time slot if both read time slots are 0 (a typical case). In this case, the
+L731@P13: DS2482-100 generates a write-one time slot if V = 1 and a write-zero time slot if V = 0. See Table 3.
+L732@P13: If the read time slots are 0 and 1, they are followed by a write-zero time slot.
+L733@P13: If the read time slots are 1 and 0, they are followed by a write-one time slot.
+L734@P13: If the read time slots are both 1 (error case), the subsequent write time slot is a write-one.
+L735@P13: Typical Use To perform a 1-Wire Search ROM sequence; a full sequence requires this command to be executed
+L736@P13: 64 times to identify and address one device.
+L737@P13: Restriction 1-Wire activity must have ended before the DS2482-100 can process this command.
+L738@P13: Error Response Command code and direction byte is not acknowledged if 1WB = 1 at the time the command code is
+L739@P13: received and the command is ignored.
+L740@P13: Command Duration 3 x tSLOT + maximum 262.5ns, counted from the falling SCL edge of the first bit (MSB) of the
+L741@P13: direction byte.
+L742@P13: 1-Wire Activity Begins maximum 262.5ns after the falling SCL edge of the MSB of the direction byte.
+L743@P13: Read Pointer Position Status Register (for busy polling).
+L744@P13: Status Bits Affected 1WB (set to 1 for 3 x tSLOT), SBR is updated at the first tMSR, TSB and DIR are updated at the
+L745@P13: second tMSR (i.e., at tSLOT + tMSR).
+L746@P13: Configuration Bits Affected 1WS, APU apply.
+L747@P13: BIT 7 BIT 6 BIT 5 BIT 4 BIT 3 BIT 2 BIT 1 BIT 0
+L748@P13: V x x x x x x x
+L749@P13: www.analog.com Analog Devices │ 14
+L750@P13-14: DS2482-100 Single-Channel 1-Wire MasterI2C Interface
+L751@P14: General Characteristics
+L752@P14: The I2C bus uses a data line (SDA) plus a clock signal
+L753@P14: (SCL) for communication. Both SDA and SCL are bidirectional lines, connected to a positive supply voltage
+L754@P14: through a pullup resistor. When there is no communication, both lines are high. The output stages of devices
+L755@P14: connected to the bus must have an open drain or open
+L756@P14: collector to perform the wired-AND function. Data on the
+L757@P14: I2C bus can be transferred at rates of up to 100kbps in
+L758@P14: standard mode and up to 400kbps in fast mode. The
+L759@P14: DS2482-100 works in both modes.
+L760@P14: A device that sends data on the bus is defined as a
+L761@P14: transmitter, and a device receiving data is defined as a
+L762@P14: receiver. The device that controls the communication is
+L763@P14: called a master. The devices that are controlled by the
+L764@P14: master are slaves. To be individually accessed, each
+L765@P14: device must have a slave address that does not conflict
+L766@P14: with other devices on the bus.
+L767@P14: Data transfers can be initiated only when the bus is not
+L768@P14: busy. The master generates the serial clock (SCL), controls the bus access, generates the START and STOP
+L769@P14: conditions, and determines the number of data bytes
+L770@P14: transferred between START and STOP (Figure 7). Data
+L771@P14: is transferred in bytes with the most significant bit being
+L772@P14: transmitted first. After each byte follows an acknowledge
+L773@P14: bit to allow synchronization between master and slave.
+L774@P14: Slave Address
+L775@P14: The slave address to which the DS2482-100 responds
+L776@P14: is shown in Figure 8. The logic state at the address pins
+L777@P14: AD0 and AD1 determines the value of the address bits A0
+L778@P14: and A1. The address pins allow the device to respond to
+L779@P14: one of four possible slave addresses. The slave address
+L780@P14: is part of the slave address/control byte. The last bit of the
+--------------------------------------------------------------------------------
+DS1990A - Serial Number iButton (https://www.analog.com/media/en/technical-documentation/data-sheets/DS1990A.pdf)
+citeturn549view2 [wordlim: 200] Crawled: yesterday; Content type: application/pdf; Number of pages: 10; Source: find({"ref_id":"https://www.analog.com/media/en/technical-documentation/data-sheets/DS1990A.pdf","pattern":"tREC"}); Total lines: 559
+L112@P1: DS1990A (Notes 3, 4, and 5) 100 800 pF
+L113@P1: DS1990AA (Notes 4 and 5) 1000 pF
+L114@P1: Input Load Current IL
+L115@P1: DS1990A (Note 6) 0.25 µA
+L116@P1: DS1990AA IO pin at VPUP (Note 6) 0.05 1.75 6.7 µA
+L117@P1: Input Low Voltage VIL (Notes 1 and 7) 0.3 V
+L118@P1: Input High Voltage
+L119@P1: VIH DS1990A (Notes 4 and 8) 2.2
+L120@P1: V
+L121@P1: DS1990AA (Notes 4 and 8) 0.75 x
+L122@P1: VPUP
+L123@P1: Output Low Voltage VOL IOL = 4mA 0.4 V
+L124@P1: Recovery Time tREC
+L125@P1: DS1990A (Note 1) 1 µs
+L436@P6: write time slot and how long data is valid during a read
+L437@P6: time slot.
+L438@P6: Master-to-Slave
+L439@P6: For a write-one time slot, the voltage on the data line
+L440@P6: must have risen above VIHMIN after the write-one low
+L441@P6: time tW1LMAX is expired. For a write-zero time slot, the
+L442@P6: voltage on the data line must stay below VILMAX until the
+L443@P6: write-zero low time tW0LMIN is expired. For most reliable
+L444@P6: communication, the voltage on the data line should not
+L445@P6: exceed VILMAX during the entire tW0L window. After the
+L446@P6: voltage has risen above VIHMIN, the DS1990A needs a
+L447@P6: recovery time tREC before it is ready for the next time slot.
+L448@P6: Figure 6. Initialization Procedure: Reset and Presence Pulses
+L449@P6: www.analog.com Analog Devices │ 7
+L450@P6: DS1990A Serial Number iButton
+L451@P6: RESISTOR MASTER DS1990A
+L452@P6: tRSTL tPDL
+L453@P6: tRSTH
+L454@P6: tPDH
+L455@P6: MASTER Tx "RESET PULSE" MASTER Rx "PRESENCE PULSE"
+L456@P6: VPUP
+L457@P6: VIHMIN
+L458@P6: VILMAX
+L459@P6: 0V
+L460@P6: ε
+L461@P6: tF
+L462@P6: tREC
+L463@P6-7: tMSPFigure 7. Read/Write Timing Diagram
+L464@P7: www.analog.com Analog Devices │ 8
+L465@P7: DS1990A Serial Number iButton
+L466@P7: RESISTOR MASTER
+L467@P7: RESISTOR MASTER
+L468@P7: RESISTOR MASTER DS1990A
+L469@P7: ε
+L470@P7: ε
+L471@P7: δ
+L472@P7: VPUP
+L473@P7: VIHMASTER
+L474@P7: VIHMIN
+L475@P7: VILMAX
+L476@P7: 0V
+L477@P7: tF
+L478@P7: VPUP
+L479@P7: VIHMASTER
+L480@P7: VIHMIN
+L481@P7: VILMAX
+L482@P7: 0V
+L483@P7: tF
+L484@P7: VPUP
+L485@P7: VIHMASTER
+L486@P7: VIHMIN
+L487@P7: VILMAX
+L488@P7: 0V
+L489@P7: tF
+L490@P7: tSLOT
+L491@P7: tW1L
+L492@P7: tREC
+L493@P7: tSLOT
+L494@P7: tSLOT
+L495@P7: tW0L
+L496@P7: tREC
+L497@P7: MASTER
+L498@P7: SAMPLING
+L499@P7: WINDOW
+L500@P7: tRL
+L501@P7: tMSR
+L502@P7: WRITE-ONE TIME SLOT
+L503@P7: WRITE-ZERO TIME SLOT
+L504@P7-8: READ-DATA TIME SLOTSlave-to-Master
+L505@P8: A read-data time slot begins like a write-one time slot. The
+L506@P8: voltage on the data line must remain below VILMAX until
+L507@P8: the read low time tRL is expired. During the tRL window,
+L508@P8: when responding with a 0, the DS1990A starts pulling
+L509@P8: the data line low; its internal timing generator determines
+L510@P8: when this pulldown ends and the voltage starts rising
+L511@P8: again. When responding with a 1, the DS1990A does not
+L512@P8: hold the data line low at all, and the voltage starts rising
+L513@P8: as soon as tRL is over.
+L514@P8: The sum of tRL + δ (rise time) on one side and the internal
+L515@P8: timing generator of the DS1990A on the other side define
+L516@P8: the master sampling window (tMSRMIN to tMSRMAX) in
+L517@P8: which the master must perform a read from the data line.
+L518@P8: For most reliable communication, tRL should be as short
+L519@P8: as permissible and the master should read close to but
+L520@P8: no later than tMSRMAX. After reading from the data line,
+L521@P8: the master must wait until tSLOT is expired. This guarantees sufficient recovery time tREC for the DS1990A to get
+L522@P8: ready for the next time slot.
+L523@P8: PACKAGE TYPE PACKAGE CODE OUTLINE NO.
+L524@P8: F3 iButton IB#3NB 21-0252
+L525@P8: F5 iButton IB#5NB 21-0266
+L526@P8: www.analog.com Analog Devices │ 9
+L527@P8: DS1990A Serial Number iButton
+L528@P8: Package Information
+L529@P8: For the latest package outline information and land patterns (footprints), go to www.maximintegrated.com/packages. Note that a “+”,
+L530@P8: “#”, or “-” in the package code indicates RoHS status only. Package drawings may show a different suffix character, but the drawing
+L531@P8-9: pertains to the package regardless of RoHS status.REVISION
+L532@P9: DATE DESCRIPTION PAGESCHANGED
+L533@P9: 033005 Redid the formatting based on newer template style. Also deleted the 0F Read ROM command
+L534@P9: and added a note about presence pulse criteria. 1–8
+L535@P9: 10/08
+L536@P9: Created newer template-style data sheet. All
+L537@P9: Updated Ordering Information with lead-free part numbers. 1
+L538@P9: Deleted Meets UL 913 (4th Edit); Intrinsically Safe Apparatus: Approved Under Entity Concept
+L539@P9: for Use in Class I, Division I, Group A, B, C, and D from the Common iButton Features and
+L540@P9: iButton Can Physical Specification sections.
+L541@P9: 1, 3
+L542@P9: Updated Electrical Characteristics table:
+L543@P9: Deleted Output High Voltage parameter.
+L544@P9: Moved 1-Wire Pullup voltage parameter from table header to table body.
+L545@P9: Changed VILMAX from 0.8V to 0.3V.
+L546@P9: Added Note 14 to the tW0L specification.
+L547@P9: Changed tW1LMAX from 15µs – ε to 15µs.
+L548@P9: 2
+L549@P9: Added the epsilon timing to the Write-Zero Time Slot in Figure 7. 8
+L550@P9: 11/21 Added the DS1990AA part number and related changes 1–6
+L551@P9: DS1990A Serial Number iButton
+L552@P9: Revision History
+L553@P9: www.analog.com Analog Devices │ 10
+

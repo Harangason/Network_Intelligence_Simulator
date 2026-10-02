@@ -1,0 +1,50 @@
+ID Precondition Requirement definition Note
+N10.FR.05 When the Charging Station receives a
+CustomerInformationRequest and is
+in a state where it cannot process this
+request.
+The Charging Station SHALL respond with a
+CustomerInformationResponse with status
+Rejected
+N10.FR.06 N10.FR.01 AND
+receiving a
+CustomerInformationRequest with the
+clear flag set to true, the report flag
+set to false
+The Charging Station SHALL remove all customer
+related data for the Customer referred to by the
+customer identifier from the Charging Station,
+except from the LocalList AND the Charging Station
+SHALL send one
+NotifyCustomerInformationRequest message to
+the CSMS indicating that the data was cleared.
+To prevent problems with
+LocalList versions only
+the CSMS can change
+the contents of the
+LocalList.
+N10.FR.07 When receiving a
+CustomerInformationRequest with
+both the report flag as well as the
+clear flag are set to false
+It is RECOMMENDED to respond with a
+CustomerInformationResponse message with
+status Rejected .
+N10.FR.08 The CSMS SHALL include a reference to a
+customer by including either an idToken,
+customerCertificate or customerIdentifier in the
+CustomerInformationRequest.
+N10.FR.09 When clearing user information
+according to the customerCertificate
+The CSMS SHALL use the hashAlgorithm, which
+was used to install the certificate.
+When a new firmware is
+installed it is
+RECOMMENDED that the
+CSMS requests the
+certificate first using
+GetInstalledCertificateIds
+Request to be sure of the
+used hashAlgorithm.
+Edition 4, 2025-12-03 N. Diagnostics
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 341/491 Part 2 - Specification

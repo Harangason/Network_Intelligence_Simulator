@@ -1,0 +1,26 @@
+3.4. Action
+Required: Yes
+The action field contains the type of OCPP message for which the parameters are included in the body.
+The content of this field should always start with a “/”, followed by the name of the message, starting
+with a capital letter. For response messages the action keyword must be extended with “Response”.
+Example:
+<!--- xmlns:se="http://www.w3.org/2003/05/soap-envelope" -->
+<wsa5:Action se:mustUnderstand="true">/Heartbeat</wsa5:Action>
+or
+<!--- xmlns:se="http://www.w3.org/2003/05/soap-envelope" -->
+<wsa5:Action se:mustUnderstand="true">/HeartbeatResponse</wsa5:Action>
+Note that here we also use the mustUnderstand to enforce that messages containing an unknown action
+are not discarded but trigger an error response.
+3.5. MessageID
+Required: Yes
+Each message can be given a unique message ID before sending. The purpose of this field is enable
+matching of an incoming response to a previously sent request.
+At first glance the official 1.0 Web Service Addressing Core specification ( [WSA]) marks this field as
+“/OPTIONAL”. However, in paragraph 3.4 of this spec (Formulating a Reply Message), section 1 (Select
+the appropriate EPR), third bullet it casually states:
+“In either of the above cases, if the related message lacks a [message id] property, the processor MUST
+fault.”
+The mentioned “related message” refers to the request. So, even though it is optional this line makes
+not having it in the request a reason to reject the message and thus implicitly makes it mandatory in a
+request-response context.
+7

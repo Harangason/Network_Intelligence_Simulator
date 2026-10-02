@@ -1,0 +1,53 @@
+Main (Test scenario)
+8. The Charging Station responds with a
+SetChargingProfileResponse
+7. The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile
+- transactionId <transactionId>
+- chargingProfilePurpose TxProfile
+- chargingSchedule.chargingRateUnit W
+- chargingSchedule.chargingSchedulePeriod.operationMode
+Idle
+- chargingSchedule.chargingSchedulePeriod.evseSleep true
+9. The Charging Station sends following
+TransactionEventRequest 10. The Test System responds with a
+TransactionEventResponse
+11. The Charging Station sends following
+TransactionEventRequest 12. The Test System responds with a
+TransactionEventResponse
+Tool validations
+* Step 2:
+Message: SetChargingProfileResponse
+- status must be Accepted
+* Step 3:
+Message: TransactionEventRequest
+- eventType must be Updated
+- transactionInfo.transactionId must be <transactionId>
+- evseSleep must be false | <omitted>
+- meterValue[0].sampledValue[0].measurand must be Energy.Active.Import.Register
+* Step 5:
+Message: TransactionEventRequest
+- eventType must be Updated
+- transactionInfo.transactionId must be <transactionId>
+- evseSleep must be false | <omitted>
+* Step 8:
+Message: SetChargingProfileResponse
+- status must be Accepted
+* Step 9:
+Message: TransactionEventRequest
+- eventType must be Updated
+- eventData.transactionData.transactionId must be <transactionId>
+- evseSleep must be true
+- meterValue[0].sampledValue[0].measurand must be Energy.Active.Import.Register
+* Step 11:
+Message: TransactionEventRequest
+- eventType must be Updated
+- eventData.transactionData.transactionId must be <transactionId>
+- evseSleep must be true
+- meterValue[0].sampledValue[0].measurand must be Energy.Active.Import.Register
+- meterValue[0].sampledValue[0].value must be identical to value in Step 9
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 864/1383 Part 6 - Test Cases

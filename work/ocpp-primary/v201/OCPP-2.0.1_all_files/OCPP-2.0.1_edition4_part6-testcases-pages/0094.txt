@@ -1,0 +1,41 @@
+TC_C_05_CS: Local start transaction - Authorization invalid - Cable lock
+Test case name Local start transaction - Authorization invalid - Cable lock
+Test case Id TC_C_05_CS
+Use case Id(s) C01 OR C04 OR C06
+Requirement(s) C01.FR.02 OR C06.FR.02
+System under test Charging Station
+Description When a Charging Station needs to charge an EV, it needs to authorize the EV Driver first before the charging
+can be started or stopped.
+Purpose To verify whether a Charging Station with a cable lock, which prevents the EV driver to connect the EV and
+EVSE before authorization, is able to handle receiving an invalid idToken.
+Prerequisite(s) - The Charging Station has a cable lock, which prevents the EV driver to connect the EV and EVSE before
+authorization.
+- The Charging Station supports at least one authorization method described at the following Use cases;
+C01, C04, C06.
+- The Charging Station does NOT have the following configuration; TxStartPoint ReadOnly AND value
+Authorized is NOT set.
+Before (Preparations)
+Configuration State:
+AuthCtrlr.AuthEnabled is true (If implemented AND ReadWrite)
+AuthCtrlr.DisableRemoteAuthorization is false (If implemented)
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present idToken.
+1. The Charging Station sends an AuthorizeRequest
+2. The Test System responds with an AuthorizeResponse
+with idTokenInfo.status Invalid
+Note(s):
+- The Charging Station SHALL NOT send a TransactionEventRequest message after the AuthorizeRequest from step 1.
+- The Test System waits <Configured message timeout> seconds, before ending the testcase.
+Tool validations
+* Step 1:
+Message: AuthorizeRequest
+- idToken.idToken <Configured invalid_idtoken_idtoken> - idToken.type <Configured invalid_idtoken_type>
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 92/914 Part 6 - Test Cases

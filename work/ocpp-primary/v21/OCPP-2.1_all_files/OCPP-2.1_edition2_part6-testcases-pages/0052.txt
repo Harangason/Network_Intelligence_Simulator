@@ -1,0 +1,54 @@
+TC_B_16_CS: Get Custom Report - with component criteria
+Test case name Get Custom Report - with component criteria
+Test case Id TC_B_16_CS
+Use case Id(s) B08
+Requirement(s) B08.FR.01, B08.FR.03, B08.FR.04, B08.FR.07, B08.FR.09, B08.FR.10, B08.FR.12, B08.FR.13, B08.FR.14,
+B06.FR.09
+System under test Charging Station
+Description CSMS requests a custom report based on a set of component criteria.
+Purpose To test that Charging Station supports a custom report query.
+Prerequisite(s) Charging Station has implemented custom reporting (use case B08).
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds:
+GetReportResponse
+1. Test System sends GetReportRequest with:
+- requestId = <Generated requestId>
+- componentCriteria = { Enabled }
+3. Charging Station sends NotifyReportRequest with:
+- reportData for all components that have the variable "Enabled"
+set to "true".
+4. Test System responds with NotifyReportResponse
+Steps 3 and 4 may be repeated multiple times until everything has been reported.
+Test System sends a GetVariables for all variables to match results.
+6. Charging Station responds with:
+GetVariablesResponse
+5. Test System sends GetVariablesRequest
+Tool validations
+* Step 2: +2. Message: GetReportResponse with:
+- status = Accepted
+- statusInfo is absent or statusInfo = "NoError"
+* step 3:
+Message: NotifyReportRequest with:
+- requestId = <Generated requestId>
+- generatedAt = <time of generation at charging station>
+- seqNo = 0
+- reportData.variableCharacteristics are present
+- reportData.variable.name is "Enabled"
+- reportData.variableAttribute.value = "true"
+Note: for Enabled there will only be an Actual value.
+It does not make any sense to have a MinSet, MaxSet or Target value for them.
+While tbc = true Message: NotifyReportRequest
+- seqNo is incremented by one
+- reportData.variableCharacteristics are present
+- reportData.variable.name is "Enabled"
+- reportData.variableAttribute.value = "true"
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 50/1383 Part 6 - Test Cases

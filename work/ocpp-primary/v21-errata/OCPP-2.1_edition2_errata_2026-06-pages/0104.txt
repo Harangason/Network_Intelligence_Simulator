@@ -1,0 +1,44 @@
+Main (Test scenario)
+1. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+2. The Test System responds with a
+NotifyEVChargingNeedsResponse with
+- status Rejected
+Renegotiate
+Manual Action: Use EV to communicate EV charging needs:
+For AC charging station:
+requestedEnergyTransfer AC_two_phase
+availableEnergyTransfer [AC_single_phase, AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]
+For DC charging station:
+requestedEnergyTransfer DC
+availableEnergyTransfer [DC, DC_BPT, DC_ACDP, DC_ACDP_BPT]
+controlMode ScheduledControl
+maxChargePower 10000 (W)
+3. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+4. The Test System responds with a
+NotifyEVChargingNeedsResponse with
+- status NoChargingProfile
+6.3.3. Page 944 - (2026-02) - Reusable state Iso1511820V2xControlBpt - BPT
+manual actions updated
+The AC and DC BPT parameters were removed from the initial manual action because they are no longer necessary. Instead, a
+single BPT flag is sufficient, as the AC/DC configuration is determined by the vehicle.
+Iso1511820V2xControlBpt
+State Iso1511820V2xControlBpt
+System under test Charging Station
+…
+Main (Test scenario)
+Charging Station CSMS
+Agree on energy transfer mode
+Manual Action: Use EV to communicate EV charging limits:
+For AC charging station:
+requestedEnergyTransfer AC_BPT
+availableEnergyTransfer [AC_single_phase, AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]
+For DC charging station:
+requestedEnergyTransfer DC_BPT
+availableEnergyTransfer [DC, DC_BPT, DC_ACDP, DC_ACDP_BPT]
+BPT   true
+controlMode DynamicControl or ScheduledControl
+maxChargePower 10000 (W)
+maxDischargePower 5000W (W)
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 100/116 Errata 2026-06

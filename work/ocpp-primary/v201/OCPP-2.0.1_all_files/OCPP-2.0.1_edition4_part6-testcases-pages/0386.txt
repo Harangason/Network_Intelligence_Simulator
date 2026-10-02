@@ -1,0 +1,53 @@
+TC_K_56_CS: Charging with load leveling based on High Level Communication -
+Offline
+Test case name Charging with load leveling based on High Level Communication - Offline
+Test case Id TC_K_56_CS
+Use case Id(s) K15,K17
+Requirement(s) K15.FR.15,K17.FR.15
+System under test Charging Station
+Description ISO15118-1 E1 AC Charging with load leveling based on High Level Communication, and E4 DC charging
+with load leveling based on High Level Communication.
+Purpose To verify if the Charging Station is able to perform load leveling when it receives charging needs from the
+EV and it is offline.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+RetryBackOffWaitMinimum is <Configured RetryBackOffWaitMinimum>
+Memory State:
+SetChargingProfile with
+ChargingProfile:
+chargingProfilePurpose is TxDefaultProfile
+chargingProfileKind should be Absolute
+stackLevel should be 0
+evseId <Configured evseId>
+validFrom <current dateTime - <Configured max time deviation> seconds>
+validTo <current dateTime + <Configured max time deviation> + 401 seconds>
+startSchedule <current dateTime - <Configured max time deviation> seconds>
+numberPhases <Configured numberPhases>
+ChargingSchedule:
+duration 400
+chargingRateUnit <Configured chargingRateUnit>
+startPeriod 0, limit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Reusable State(s):
+State is EVConnectedPreSession
+State is Authorized15118
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does
+not accept a reconnect.
+2. The Test System accepts the reconnection attempt from the
+Charging Station, after 90 seconds.
+3. The Charging Station sends a
+NotifyEVChargingScheduleRequest.
+Note(s):
+- This step is optional.
+- It is allowed to execute this step either before or after the
+TransactionEventRequest from step 5.
+4. The Test System responds with a
+NotifyEVChargingScheduleResponse.
+With status Accepted
+5. The Charging Station sends a TransactionEventRequest.
+6. The Test System responds with a TransactionEventResponse.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 384/914 Part 6 - Test Cases

@@ -1,0 +1,47 @@
+4.1.2. Message validity and Character encoding
+The whole message consisting of wrapper and payload MUST be valid JSON encoded with the UTF-8 (see [RFC3629]) character
+encoding. Furthermore, the Charging Station and CSMS have the right to reject messages which are not conform the JSON
+schemas.
+Note that all valid US-ASCII text is also valid UTF-8, so if a system sends only US-ASCII text, all messages it sends comply with the
+UTF-8 requirement. Non US-ASCII characters SHOULD only be used for sending natural-language text. An example of such natural-
+language text is the MessageType which contains the text of a DisplayMessage in OCPP 2.1
+4.1.3. The message type
+(Updated in OCPP 2.1)
+To identify the type of message one of the following Message Type Numbers MUST be used.
+Table 3. Message types
+MessageType Message
+Type
+Number
+Description
+CALL 2 Request message, i.e. messages ending in "Request"
+CALLRESULT 3 Response message, i.e. message ending in "Response"
+CALLERROR 4 Error response to a request message
+CALLRESULTERROR 5 (2.1) Error response to a response message
+SEND 6 (2.1) Unconfirmed message without response, i.e. messages not ending in
+"Request" or "Response"
+When a system receives a message with a Message Type Number not in this list, it SHALL ignore the message payload. Each
+message type may have additional required fields.
+4.1.4. Message ID
+The message ID serves to identify a request. A message ID for any CALL or SEND message MUST be different from all message
+IDs previously used by the same sender for any other CALL or SEND message on any WebSocket connection using the same
+unique Charging Station identifier. The message ID for a retried message (e.g. when no response was received within timeout) MAY
+be identical to the message ID of the original message.
+A message ID for a CALLRESULT or CALLERROR message MUST be equal to that of the CALL message that the CALLRESULT or
+CALLERROR message is a response to.
+A message ID for a CALLRESULTERROR message MUST be equal to that of the CALLRESULT message that caused the
+CALLRESULTERROR message to be sent.
+Table 4. Unique Message ID
+Name Datatype Restrictions
+messageId string[36] Unique message ID, maximum length of 36 characters, to allow for UUIDs/GUIDs
+4.1.5. JSON Payload
+The Payload of a message is a JSON object containing the arguments relevant to the Action.
+If there is no payload JSON allows for two different notations: null or and empty object {}. Although it seems trivial, we consider it
+good practice to only use the empty object statement. Null usually represents something undefined, which is not the same as
+empty, and also {} is shorter.
+When a field is optional in the OCPP action (0..1 or 0..*) and is left empty for a specific request/response, JSON allows for a couple
+of different ways to put this in a JSON string. But because OCPP is designed for wireless links, OCPP only allows 1 option: Do no
+put the field in the payload (so null, {} or [] are not allowed for an empty field).
+When a field has a cardinality of zero/one to many (0..* or 1..*) and it has been given one entity, than it will still remain a list, but of
+size 1.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 10/28 Part 4 - JSON over WebSockets implementation guide

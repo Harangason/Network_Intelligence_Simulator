@@ -1,0 +1,49 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  28/50 
+5 Currently in Listen Only Mode  
+6 Broadcast Received  
+7 1 
+ Remote device MODBUS Send Event  
+The remote device stores this type of event byte when it finishes processing a request 
+message. It is stored if the remote device returned a normal or exception response, or 
+no response. This event is defined by bit 7 set to a logic ‘0’, with bit 6 set to a ‘1’. The 
+other bits will be set to a logic ‘1’ if the corresponding condition is TRUE. The bit 
+layout is:  
+Bit Contents  
+0 Read Exception Sent (Exception Codes 1 -3) 
+1 Serv er Abort Exception Sent (Exception Code 4)  
+2 Server  Busy Exception Sent (Exception Codes 5 -6) 
+3 Server  Program NAK Exception Sent (Exception Code 7)  
+4 Write Timeout Error Occurred  
+5 Currently in Listen Only Mode  
+6 1 
+7 0 
+ Remote device Entered Listen Only Mode  
+The remote device stores this type of event byte when it enters the Listen Only Mode. 
+The event is defined by a content of 04 hex.  
+ 
+ Remote device Initiated Communication Restart  
+The remote device stores this type of event byte when its communications  port is 
+restarted. The remote device can be restarted by the Diagnostics function (code 08), 
+with sub -function Restart Communications Option (code 00 01).  
+That function also places the remote device into a ‘Continue on Error’ or ‘Stop on 
+Error’ mode. If t he remote device is placed into ‘Continue on Error’ mode, the event 
+byte is added to the existing event log. If the remote device is placed into ‘Stop on 
+Error’ mode, the byte is added to the log and the rest of the log is cleared to zeros.  
+The event is de fined by a content of zero.  
+ 
+MB Server Sends mb_exception_rsp EXIT
+ExceptionCode = 04
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+NO
+YES
+ENTRY
+GetCommEventLog == OK
+MB Server Sends mb_rsp
+NO
+YES
+Function code
+supported
+Request Processing
+ 

@@ -1,0 +1,60 @@
+To this point we have only discussed the contents
+(data portion) of an OBD message, and made only
+passing mention of other parts such as headers and
+checksums, which all messages use to some extent.
+On Board Diagnostics systems are designed to be
+very flexible, providing a means for several devices to
+communicate with one another. In order for messages
+to be sent between devices, it is necessary to add
+information describing the type of information being
+sent, the device that it is being sent to, and perhaps
+which device is doing the sending. Additionally, the
+importance of the message becomes a concern as
+well – crankshaft position information is certainly of
+considerably more importance to a running engine
+than a request for the number of trouble codes stored,
+or the vehicle serial number. So to convey importance,
+messages are also assigned a priority.
+The information describing the priority, the
+intended recipient, and the transmitter are usually
+needed by the recipient even before they know the
+type of request that the message contains. To ensure
+that this information is obtained first, OBD systems
+transmit it at the start (or head) of the message. Since
+these bytes are at the head, they are usually referred
+39 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+to as header bytes. Figure 3 below shows a typical
+OBD message structure that is used by the
+SAE J1850, ISO 9141-2, and ISO 14230-4 standards.
+It uses 3 header bytes as shown, to provide details
+concerning the priority, the receiver, and the
+transmitter. Note that many texts refer to the receiver
+as the ‘Target Address’ (TA), and the transmitter as
+the ‘Source Address’ (SA).
+Another concern when sending any message is
+that errors might occur in the transmission, and the
+received data may be falsely interpreted. To detect
+errors, the various protocols all provide some form of
+check on the received data. This may be as simple as
+a sum calculation (ie a ‘running total’ of byte values)
+that is sent at the end of a message. If the receiver
+also calculates a sum as bytes are received, then the
+two values can be compared and if they do not agree,
+the receiver will know that an error has occurred.
+Since simple sums might not detect multiple errors, a
+more reliable (and more complicated) sum called a
+Cyclic Redundancy Check (or ‘CRC’) is often used. All
+of the protocols specify how errors are to be detected,
+and the various ways of handling them if they occur.
+The OBD data bytes are thus normally
+Figure 3. An OBD Message
+Figure 4. A CAN OBD Message
+up to 7 data bytes checksum3 header bytes
+priority receiver transmitter
+TA SA
+OBD Message Formats
+ID bits (11 or 29) 7 data bytes checksumPCI
+data bytes (8 in total)‘header’ bytes

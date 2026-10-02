@@ -1,11 +1,23 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { booleanParameterValue, conditionalParameterDefault, technologyParameterValues, technologyParameterUnverified, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings } from './technology-parameters.ts';
+import { localEvidenceFieldRequired, booleanParameterValue, conditionalParameterDefault, technologyParameterValues, technologyParameterUnverified, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings } from './technology-parameters.ts';
 const lin = { id: 'lin', parameter_schema: [{ key: 'bitrate', type: 'number', scope: 'network', unit: 'bit/s', default: 19200 }, { key: 'payload_bytes', default: 8 }] };
 const can = { id: 'can_fd', parameter_schema: [{ key: 'arbitration_bitrate', default: 500000 }, { key: 'data_bitrate', default: 2000000 }] };
 const parameters = { technology: 'can_fd', bitrate: 2000000, arbitration_bitrate: 500000, data_bitrate: 2000000,
   technology_defaults: { lin: { bitrate: 19200 } }, defaults_source: 'technology-registry', networks: [{ id: 'lin-1', technology: 'LIN' }, { id: 'lin-2', technology: 'LIN' }, { id: 'can-1', technology: 'CAN_FD' }],
   simulation_scope: { mode: 'ALL' }, spatial_architecture: { id: 'keep' } };
+
+test('device evidence requirements follow controller, target and transaction scopes without inventing facts', () => {
+  const address = {key:'slave_address',required_scopes:['TARGET_PORT','TRANSACTION']};
+  const transaction = {key:'transfer_bits_bound',required_scopes:['TRANSACTION']};
+  assert.equal(localEvidenceFieldRequired(address,{evidence_scope:'CONTROLLER_PORT'}),false);
+  assert.equal(localEvidenceFieldRequired(address,{evidence_scope:'TARGET_PORT'}),true);
+  assert.equal(localEvidenceFieldRequired(transaction,{evidence_scope:'TARGET_PORT'}),false);
+  assert.equal(localEvidenceFieldRequired(transaction,{}),true); // Legacy means transaction, never controller inference.
+  assert.equal(localEvidenceFieldRequired({key:'arbitration_bound_us',optional:true},{multi_master:false}),false);
+  assert.equal(localEvidenceFieldRequired({key:'arbitration_bound_us',optional:true},{multi_master:true}),true);
+  assert.equal(localEvidenceFieldRequired({key:'master_node_id'},{}),true);
+});
 
 test('unknown device boolean is not silently confirmed as false or parsed false as true', () => {
   assert.equal(booleanParameterValue({}, ''), null);

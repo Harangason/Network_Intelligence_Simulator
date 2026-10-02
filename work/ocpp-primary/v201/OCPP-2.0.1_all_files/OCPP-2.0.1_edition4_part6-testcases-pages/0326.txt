@@ -1,0 +1,41 @@
+TC_J_10_CS: Sampled Meter Values - EventType Ended
+Test case name Sampled Meter Values - EventType Ended
+Test case Id TC_J_10_CS
+Use case Id(s) J02 & (E06,E07,E08,E09,E10,E12)
+Requirement(s) J02.FR.01,J02.FR.02,J02.FR.03,J02.FR.04,J02.FR.10,E06.FR.11,
+E07.FR.08,E08.FR.09,E09.FR.05,E10.FR.04,E12.FR.07
+System under test Charging Station
+Description The Charging Station samples the electrical meter or other sensor/transducer hardware to provide
+information about its Meter Values. Depending on configuration settings, the Charging Station will send
+Meter Values.
+Purpose To verify if the Charging Station is able to send sampled Meter Values when a transaction ends at the
+TransactionEventRequest with eventType is Ended, when it is configured to do so.
+Prerequisite(s) The Charging Station has an energy meter.
+Before (Preparations)
+Configuration State:
+SampledDataTxEndedInterval is <Configured sampled_tx_ended_meter_values_interval>
+AlignedDataTxEndedMeasurands is empty string
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State ParkingBayUnoccupied
+Note(s):
+- This step will be executed after the <Configured transaction duration> is reached.
+- This causes the transaction to stop.
+Tool validations
+N/a
+Post scenario validations:
+- The TransactionEventRequest containing eventType Ended contains the MeterValue field.
+- The MeterValue must contain <An element per data collection moment indicated by SampledDataTxEndedInterval. The Test
+System will not validate this.>
+- timestamp <The intervals between the timestamps of the received Meter Value messages must equal the configured value at
+SampledDataTxEndedInterval.>
+- sampledValue[0].context must be Sample.Periodic AND one must have Transaction.End
+- sampledValue must contain <An element per configured measurand at the SampledDataTxEndedMeasurands. The measurand
+field may be omitted when the measurand is "Energy.Active.Import.Register">
+- None of the provided sampledValues shall have location = EV, except when measurand = SoC.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 324/914 Part 6 - Test Cases

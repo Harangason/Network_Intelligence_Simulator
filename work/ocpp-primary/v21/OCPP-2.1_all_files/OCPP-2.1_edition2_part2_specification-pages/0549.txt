@@ -1,0 +1,69 @@
+ID. Precondition Requirements Note
+Q10.FR.03 When chargingSchedulePeriod has
+operationMode = Idle and evseSleep
+= true and SupportsEvseSleep is
+true
+Charging Station SHALL turn off the
+electronics/modules associated with this
+transaction until an event happens that requires
+activation of these electronics/modules.
+Events can be, for
+example, a change of
+operationMode in the
+next
+ChargingSchedulePeriod,
+receiving a new
+ChargingProfile (include
+one with limits of 0 W),
+stopping of the
+transction.
+Q10.FR.04 Q10.FR.03 Charging Station SHALL report the value of
+evseSleep as true when sending
+TransactionEventRequests as long as the EVSE is
+sleeping.
+Q10.FR.05 When chargingSchedulePeriod has
+operationMode = Idle and evseSleep
+= true and
+( SupportsEvseSleep is
+false/absent or EVSE is not able to go
+into sleep mode )
+Charging Station SHALL report the value of
+evseSleep in TransactionEventRequests as false.
+An absent field
+evseSleep is the same as
+having the value false.
+Q11 - Going offline during V2X operation
+New in OCPP 2.1
+No. Type Description
+1 Name Going offline during V2X operation
+2 ID Q11
+3 Objective(s) To describe the amount of time that V2X operations may continue when the Charging Station is
+offline.
+4 Description If a Charging Station goes offline while a V2X operation is in progress, it is the field
+maxOfflineDuration in ChargingProfileType that determines how long the V2X operation may
+continue before the charging profile becomes invalid and Charging Station reverts to the next
+(lower) valid stack level.
+Actors Charging Station, CSMS
+Scenario description 1. The Charging System is online and a V2X operation is active on the Charging System.
+2. The Charging Station looses connection to the CSMS.
+3. The Charging Station detects that it is offline. The maxOfflineDuration value counts from
+at this moment on.
+4. The Charging Station reverts back to the next valid charging profile after
+maxOfflineDuration seconds.
+5. The CSMS should assume that a V2X operation has reverted back to the next valid
+charging profile when it detects an offline situation.
+Note: since CS and CSMS may detect being offline at different moments, the CSMS
+should not try to guess the exact moment based on the maxOfflineDuration timeout value.
+5 Prerequisites The Charging Station must be able to detect an offline situation quickly. Typically, within 30
+seconds.
+6 Post conditions V2X operation has reverted back to the next valid charging profile which has a longer or no
+maxOfflineDuration. (see K01.FR.101)
+7 Error Handling If there is no charging profile to fall back to after maxOfflineDuration seconds, charging continues
+without a charging profile, i.e. in "charging only" mode without limits.
+8 Remarks The next valid charging profile might also be a V2X profile if it has a value of maxOfflineDuration
+that has not yet elapsed.
+Charging profiles with invalidAfterOfflineDuration = true for which maxOfflineDuration has elapsed
+shall not be reactivated when the Charging Station is online again.
+NOTE The requirements for this use case are covered by K01 requirements about maxOfflineDuration.
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 536/803 Part 2 - Specification

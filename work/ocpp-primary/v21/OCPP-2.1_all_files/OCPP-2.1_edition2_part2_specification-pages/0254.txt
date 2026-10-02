@@ -1,0 +1,37 @@
+2.3. Remote Trigger
+F06 - Trigger Message
+No. Type Description
+1 Name Trigger Message
+2 ID F06
+3 Objective(s) To enable the CSMS to request a Charging Station to send a Charging Station-initiated message.
+4 Description This use case describes the use of the TriggerMessageRequest message: how a CSMS can
+request a Charging Station to send Charging Station-initiated messages. In the request the CSMS
+indicates which message it wishes to receive.
+Actors Charging Station, CSMS
+Scenario description 1. The CSMS sends a TriggerMessageRequest to the Charging Station.
+2. The Charging Station responds with a TriggerMessageResponse, indicating whether it will send
+it or not, by returning Accepted, Rejected or NotImplemented.
+3. Message, requested by the CSMS, that the Charging Station marked as Accepted, is being sent.
+5 Prerequisite(s) The Functional Block Remote Trigger is installed.
+6 Postcondition(s) Successful postconditions:
+1. The CSMS has Successfully received a TriggerMessageResponse message.
+2. The CSMS has Successfully received a TriggerMessageResponse message with status
+Accepted AND has Successfully received the requested message. 
+Failure postconditions:
+1. The CSMS has NOT received a TriggerMessageResponse message.
+2. The CSMS has Successfully received a TriggerMessageResponse message with status
+Accepted AND has NOT received the requested message.
+7 Error handling n/a
+8 Remark(s) The TriggerMessage mechanism is not intended to retrieve historic data.
+Charging Station CSMS
+TriggerMessageRequest(requestedMessage, ...)
+TriggerMessageResponse(status)
+Figure 85. Sequence Diagram: Trigger Message
+Charging Station CSMS
+TriggerMessageRequest(RequestedMessage: TransactionEvent, evse.id = 1, ...)
+TriggerMessageResponse(Status: Accepted)
+TransactionEventRequest(eventType = Updated, trigger = Trigger, evse.id = 1, chargingState = Charging, ...)
+TransactionEventResponse(...)
+Figure 86. Sequence Diagram: Trigger Message Example
+Edition 2, 2025-12-03 F. Remote Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 241/803 Part 2 - Specification

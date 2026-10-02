@@ -1,0 +1,45 @@
+Unidirectional (charging)
+1. ChargingOnly
+2. ExternalSetpoint
+3. ExternalLimits
+Bidirectional (charging/discharging)
+1. CentralSetpoint
+2. CentralFrequency
+3. LocalFrequency
+4. LocalLoadBalancing
+5. Idle
+ChargingOnly
+This operation mode allows charging only. This is also the default operation mode when the field operationMode is missing.
+Behavior of a charging schedule in this mode is identical to OCPP 2.0.1.
+The field limit is used to specify the maximum allowed charging limit. The fields dischargeLimit and setpoint are not used.
+ExternalSetpoint
+This control mode tells the charging station that the setpoint parameter is to be determined by some external actor, such as an
+EMS. A setpoint is a charging rate that the EV must try to follow as closely as possible.
+If the information for the charging profile comes from the external actor (possibly via a different protocol) then the charging station
+converts it to a ChargingProfileType with chargingProfilePurpose set to ChargingStationExternalConstraints and setpoint
+set to the received value.
+It is also possible that CSMS submits a Tx(Default)Profile with an operationMode = ExternalSetpoint. In that case the setpoint
+parameter will be empty. Its value should then be received by the charging station from the external system through some other
+means of communication and not via OCPP. How this is done will differ for different applications and is out of scope of OCPP.
+If the chargingProfileKind = Dynamic, then the value of setpoint can be changed by the external actor during the charging schedule
+period without having to submit a new charging profile. Whenever the external actor provides a new setpoint, this value is
+automatically used as the setpoint in the charging schedule period. This is especially suited for rapidly changing conditions.
+Optionally the parameter limit can be set by CSMS as an upper limit of the range of the external setpoint.
+NOTE Only ISO 15118-20 supports the sending of a setpoint to an EV.
+ExternalLimits
+This control mode is similar to ExternalSetpoint with the difference that it is not the setpoint that is controlled, but it is the limit
+parameter that is determined by the external actor, such as an EMS.
+3.5. Stacking charging profiles
+It is allowed to stack charging profiles of the same ChargingProfile purpose in order to describe complex calendars. For example,
+one can define ChargingProfile of purpose TxDefaultProfile with a duration and recurrence of one week that allows full power or
+current charging on weekdays from 23:00h to 06:00h and from 00:00h to 24:00h in weekends and reduced power or current
+charging at other times. On top of that, one can define other TxDefaultProfiles that define exceptions to this rule, for example for
+holidays.
+A ChargingProfile holds a ChargingSchedule that defines limits for a certain time interval. Precedence of ChargingSchedules is
+determined by the stackLevel of their ChargingProfile. When more than one ChargingProfile with the same chargingProfilePurpose
+is valid, then a ChargingSchedule of a ChargingProfile with a higher stack level overrules a ChargingSchedule from a
+ChargingProfile with a lower stack level.
+To avoid conflicts, it is not allowed to have multiple charging profiles with the same stackLevel and same chargingProfilePurpose to
+be valid on the same EVSE at a given time. Note, that a charging profile for EVSE #0 is considered to be active on all EVSEs!
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 321/803 Part 2 - Specification

@@ -1,0 +1,44 @@
+E06 - Stop Transaction options
+No. Type Description
+1 Name Stop Transaction options
+2 ID E06
+3 Objective(s) To inform the CSMS that a transaction at the Charging Station has stopped.
+4 Description This use case describes the different moments a Charging Station can stop a transaction (send
+TransactionEventRequest (eventType = Ended), depending on the configuration of the Charging
+Station.
+5 Actors Charging Station, CSMS, EV Driver
+S1 Scenario objective Stop a transaction when a parking bay occupancy no longer detector detects the EV.
+Scenario description 1. The Charging Stations parking bay occupancy detector stops detecting the EV.
+2. The Charging Station sends a TransactionEventRequest (eventType = Ended) notifying the
+CSMS about a transaction that has ended.
+3. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+Prerequisite(s) A transaction is ongoing.
+Configuration Variable: TxStopPoint contains: ParkingBayOccupancy
+Postcondition(s) Successful postcondition:
+The transaction is ended and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is still ongoing. or
+The CSMS is not informed.
+Charging Station CSMS
+A transaction is ongoing.
+parking bay detector
+no longer detects the EV
+TransactionEventRequest(eventType = Ended,
+triggerReason = EVDeparted, stoppedReason = Local, ...)
+TransactionEventResponse()
+Figure 59. Sequence Diagram: Stop Transaction options - ParkingBayOccupancy
+S2 Scenario objective Stop a transaction when communication between the Charging Station and the EV is lost. (for
+example: cable unplugged)
+Scenario description 1. Communication between Charging Station and the EV is lost (Charging cable is unplugged).
+2. If charging cable unplugged on the Charging Station side: send NotifyEventRequest with
+component.name Connector, variable.name AvailabilityState and actualValue Available to the
+CSMS to inform it about a Connector that became Available
+3. The Charging Station sends a TransactionEventRequest (eventType = Ended) notifying the
+CSMS about a transaction that has ended.
+4. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+Prerequisite(s) A transaction is ongoing.
+Configuration Variable: TxStopPoint contains: EVConnected
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 186/803 Part 2 - Specification

@@ -1,0 +1,36 @@
+TC_I_104_CS: Set Default Tariff - transaction with default tariff
+Test case name Set Default Tariff - transaction with default tariff
+Test case Id TC_I_104_CS
+Use case Id(s) I07
+Requirement(s) I07.FR.10, I07.FR.14, I07.FR.32
+System under test Charging Station
+Description To set the default tariff on the charging station, for example for ad hoc charging, or when there is no driver-
+specific tariff.
+Purpose To verify if the Charging Station correctly reports the default tariff when a transaction is started.
+Prerequisite(s) - The Charging Station supports local cost calculation using the Tariff mechanism
+(TariffCostCtrlr.Enabled[Tariff] exists and ReadWrite or is true and ReadOnly).
+Before (Preparations)
+Configuration State:
+- TariffCostCtrlr.Enabled[Tariff] is true
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.energy.prices[0].priceKwh 2.00
+3. Execute Reusable State EnergyTransferStarted
+Tool validations
+* Step 2:
+Message SetDefaultTariffResponse
+- status must be Accepted
+Post scenario validations:
+- One of the received TransactionEventRequest messages must contain transactionInfo.tariffId = Test System1
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 414/1383 Part 6 - Test Cases

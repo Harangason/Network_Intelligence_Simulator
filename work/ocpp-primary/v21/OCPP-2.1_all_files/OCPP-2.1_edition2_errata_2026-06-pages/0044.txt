@@ -1,0 +1,47 @@
+Tool validations
+* Step 1:
+Message: StatusNotificationRequest
+- connectorStatus must be Occupied
+Message: NotifyEventRequest
+- eventData[0].trigger must be Delta
+- eventData[0].actualValue must be Occupied
+- eventData[0].component.name must be Connector
+- eventData[0].variable.name must be AvailabilityState
+* Step 3:
+All Message(s): TransactionEventRequest
+- offline must be true
+One of the Message(s):     TransactionEventRequest
+-  chargingState  must be    Charging
+* Step 4:
+One of the Message(s): TransactionEventRequest
+- chargingState must be SuspendedEVSE
+* Step 5:  
+ TransactionEventRequest
+-  chargingState  must be    SuspendedEVSE
+Post scenario validations:
+N/a
+6.2.15. Page 184 - (2026-02) - TC_C_100_CS - Test case removed
+This testcases has been removed, because it duplicates TC_E_05_CS.
+6.2.16. Page 185 - (2026-02) - TC_C_103_CS - Test updated
+This test case has been updated to always execute until transactionInfo.chargingState Charging has been reached in accordance
+with C17.FR.04. Additionally, reusable states were implemented where applicable.
+Test case name Authorization with prepaid card - success
+Test case Id TC_C_103_CS
+…
+Main
+(Test scenario)
+Charging Station CSMS
+Manual Action: EV driver presents prepaid card
+1. The CS sends a AuthorizeRequest +
+2. The Test System responds with an AuthorizeResponse with +
+- idTokenInfo.status Accepted
+- idTokenInfo.cacheExpiryDateTime <current date/time>
+1.  Execute   Reusable State   Authorized  (prepaid card) with   
+ AuthorizeResponse :
+-  idTokenInfo.status   Accepted
+-  idTokenInfo.cacheExpiryDateTime   <current date/time> 
+Note: Only when TxStartPoint does not contain ParkingBayOccupancy or Authorized: 
+- Manual action: Plug cable in
+2.  Execute   Reusable State   EVConnectedPreSession
+3.  Execute   Reusable State   EnergyTransferStarted
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 40/116 Errata 2026-06

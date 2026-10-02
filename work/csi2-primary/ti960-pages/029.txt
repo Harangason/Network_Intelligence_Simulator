@@ -1,0 +1,43 @@
+RHIGH 
+MODE 
+or IDX
+Deserializer
+RLOW 
+GND
+VTARGET 
+VDD18 
+Figure 7-2. Strap Pin Connection Diagram
+Table 7-2. Strap Configuration Mode Select
+NO.
+VMODE VOLTAGE RANGE VIDX TARGET 
+VOLTAGE
+SUGGESTED STRAP RESISTORS 
+(1% TOL) RX MODE
+VMIN VTYP VMAX VDD18 = 1.80 V RHIGH ( kΩ ) RLOW ( kΩ )
+0 0 0 0.131 × V(VDD18) 0 OPEN 10.0 CSI-2 Non-Synchronous Mode
+1 0.179 × V(VDD18) 0.213 × V(VDD18) 0.247 × V(VDD18) 0.374 88.7 23.2 RAW12 LF
+2 0.296 × V(VDD18) 0.330 × V(VDD18) 0.362 × V(VDD18) 0.582 75.0 35.7 RAW12 HF
+3 0.412 × V(VDD18) 0.443 × V(VDD18) 0.474 × V(VDD18) 0.792 71.5 56.2 RAW10
+4 0.525 × V(VDD18) 0.559 × V(VDD18) 0.592 × V(VDD18) 0.995 78.7 97.6 CSI-2 Synchronous Mode
+5 0.642 × V(VDD18) 0.673 × V(VDD18) 0.704 × V(VDD18) 1.202 39.2 78.7 RAW12 LF
+6 0.761 × V(VDD18) 0.792 × V(VDD18) 0.823 × V(VDD18) 1.420 25.5 95.3 RAW12 HF
+7 0.876 × V(VDD18) V(VDD18) V(VDD18) 1.8 10.0 OPEN RAW10
+The strapped values can be viewed and/or modified in the following locations:
+• RX Mode – Port Configuration FPD3_MODE Register 0x6D[1:0] bits
+7.4.4 REFCLK
+A valid 23-MHz to 26-MHz reference clock is required on the REFCLK pin 5 for precise frequency operation. The 
+REFCLK frequency defines all internal clock timers, including the back channel rate, I2C timers, CSI-2 datarate, 
+FrameSync signal parameters, and other timing critical internal circuitry. REFCLK input must be continuous. If 
+the REFCLK input does not detect a transition more than 20 µs, this may cause a disruption in the CSI-2 output. 
+REFCLK should be applied to the DS90UB960-Q1 only when the supply rails are above minimum levels (see 
+Figure 8-18). At start-up, the DS90UB960-Q1 defaults to an internal oscillator to generate an backup internal 
+reference clock at nominal frequency of 25 MHz ±10%.
+As an option for mitigating EMI / EMC, the DS90UB960-Q1 is capable of tolerating a REFCLK with spread-
+spectrum clocking (SSC) profile with up to ±0.5% amplitude deviations (center spread) or up to 1% amplitude 
+deviations (down spread) and up to 33-kHz frequency modulation from a clock source.
+The REFCLK LVCMOS input oscillator specifications are listed in Table 7-3.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 29
+Product Folder Links: DS90UB960-Q1

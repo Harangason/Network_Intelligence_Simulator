@@ -1,0 +1,54 @@
+TC_N_109_CS: Set Variable Monitoring - Adjust Periodic Event Streams
+Test case name Set Variable Monitoring - Adjust Periodic Event Streams
+Test case Id TC_N_109_CS
+Use case Id(s) N11, N14, N15
+Requirement(s) N11.FR.01, N11.FR.02, N14.FR.03, N15.FR.01, N15.FR.04
+System under test Charging Station
+Description To adjust the transmission rate of a periodic event stream
+Purpose To test that Charging Station supports adjust periodic event streams.
+Prerequisite(s) N/a.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+This test requires the Monitoring Base to be set to All.
+- SetMonitoringBaseRequest with monitoringBase = All.
+This test requires the existence of a Periodic monitor on a (numerical) variable. It is not mandated which variables are required to
+be monitored. This test uses the variable "Power" of component "EVSE", which is most likely to be available for monitoring.
+Reusable State(s): N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with a
+SetVariableMonitoringResponse
+1. Test System sends a SetVariableMonitoringRequest with
+setMonitoringData[0].value 1
+setMonitoringData[0].type Periodic
+setMonitoringData[0].severity <Configured severity>
+setMonitoringData[0].component.name <Configured monitor
+component>
+setMonitoringData[0].component.evse.id <Configured evseId>
+setMonitoringData[0].variable.name <Configured monitor
+component variable>
+setMonitoringData[0].periodicEventStream.interval 10
+3. Charging Station sends a OpenPeriodicEventStreamRequest
+4. Test System responds with a
+OpenPeriodicEventStreamResponse with
+status Accepted
+5. Charging Station sends a NotifyPeriodicEventStream using
+RFC framework SEND
+After 10 seconds
+6. Charging Station sends a NotifyPeriodicEventStream using
+RFC framework SEND
+After 10 seconds
+7. Charging Station sends a NotifyPeriodicEventStream using
+RFC framework SEND
+After 10 seconds
+9. Charging Station responds with a
+AdjustPeriodicEventStreamResponse
+8. Test System sends a AdjustPeriodicEventStreamRequest
+with
+id <OpenPeriodicEventStreamRequest.constantStreamData.id of
+step 3>
+params.interval 15
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 757/1383 Part 6 - Test Cases

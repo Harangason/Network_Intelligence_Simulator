@@ -1,0 +1,55 @@
+Table 7-80. AEQ_CTL Register Field Descriptions (continued)
+Bit Field Type Reset Description
+2 AEQ_2STEP_EN R/W 0x0 AEQ 2-step enable
+This bit enables a two-step operation as part of the Adaptive EQ 
+algorithm. If disabled, the state machine will wait for a programmed 
+period of time, then check status to determine if setting is valid. 
+If enabled, the state machine will wait for 1/2 the programmed 
+period, then check for errors over an additional 1/2 the programmed 
+period. If errors occur during the 2nd step, the state machine will 
+immediately move to the next setting.
+0: Wait for full programmed delay, then check instantaneous lock 
+value
+1: Wait for 1/2 programmed time, then check for errors over 
+1/2 programmed time. The programmed time is controlled by the 
+ADAPTIVE_EQ_RELOCK_TIME field in the AEQ_TEST register
+1 AEQ_OUTER_LOOP R/W 0x0 AEQ outer loop control
+This bit controls whether the Equalizer or SFILTER adaption is the 
+outer loop when the AEQ adaption includes SFILTER adaption.
+0: AEQ is inner loop, SFILTER is outer loop
+1: AEQ is outer loop, SFILTER is inner loop
+0 AEQ_SFILTER_EN R/W 0x1 Enable SFILTER Adaption with AEQ
+Setting this bit allows SFILTER adaption as part of the Adaptive 
+Equalizer algorithm.
+7.6.1.59 AEQ_ERR_THOLD Register (Address = 0x43) [Reset = 0x01] 
+AEQ_ERR_THOLD is shown in Table 7-81.
+Return to the Summary Table.
+Table 7-81. AEQ_ERR_THOLD Register Field Descriptions
+Bit Field Type Reset Description
+7:0 AEQ_ERR_THRESHOLD R/W 0x1 AEQ Error Trheshold
+This register controls the error threshold to determine when to re-
+adapt the EQ settings. This register must not be programmed to a 
+value of 0.
+7.6.1.60 BCC_ERR_CTL Register (Address = 0x46) [Reset = 0x20] 
+BCC_ERR_CTL is shown in Table 7-82.
+Return to the Summary Table.
+RX port-specific register. The FPD-Link III Select register 0x4C configures which unique Rx port registers can be 
+accessed by I2C read and write commands.
+Table 7-82. BCC_ERR_CTL Register Field Descriptions
+Bit Field Type Reset Description
+7 BCC_ACK_REMOTE_RE
+AD
+R/W 0x0 Enable Control Channel to acknowledge start of remote read.
+When operating with a link partner that supports Enhanced Error 
+Checking for the Bidirectional Control Channel, setting this bit allows 
+the Deserializer to generate an internal acknowlege to the beginning 
+of a remote I2C target read. This allows additional error detection 
+at the Serializer. This bit should not be set when operating with 
+Serializers that do not support Enhanced Error Checking.
+0: Disable
+1: Enable
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+106 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

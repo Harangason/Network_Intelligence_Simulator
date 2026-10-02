@@ -1,0 +1,32 @@
+For example, a BootNotification response could look like this:
+[3,
+ "19223201",
+ {"status":"Accepted", "currentTime":"2013-02-01T20:53:32.486Z", "heartbeatInterval":300}
+]
+4.2.3. CallError
+We only use CallError in two situations:
+1. An error occurred during the transport of the message. This can be a network issue, an availability
+of service issue, etc.
+2. The call is received but the content of the call does not meet the requirements for a proper
+message. This could be missing mandatory fields, an existing call with the same unique identifier is
+being handled already, unique identifier too long, etc.
+A CallError always consists of 5 elements: The standard elements MessageTypeId and UniqueId, an
+errorCode string, an errorDescription string and an errorDetails object. The syntax of a call looks like
+this:
+[<MessageTypeId>, "<UniqueId>", "<errorCode>", "<errorDescription>", {<errorDetails>}]
+Table 6: CallError Fields
+Field Meaning
+UniqueId This must be the exact same id that is in the call
+request so that the recipient can match request
+and result.
+ErrorCode This field must contain a string from the
+ErrorCode table below.
+ErrorDescription Should be filled in if possible, otherwise a clear
+empty string “”.
+ErrorDetails This JSON object describes error details in an
+undefined way. If there are no error details you
+MUST fill in an empty object \{}.
+Table 7: Valid Error Codes
+Error Code Description
+NotImplemented Requested Action is not known by receiver
+13

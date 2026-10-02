@@ -1,0 +1,1135 @@
+PAGE 108
+Page 108
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+On entering this state TRR (Real Rotation Time) shall be read from the Token Ro-
+tation Timer and the timer shall be restarted. One high priority message cycle
+is always possible. A further high priority or low priority message cycle or
+generally a low priority message cycle may only be carried out if T RR < T TR
+(Target Rotation Time) at the instant of execution.
+After each transmitted action frame the FDL shall enter the "Await_Data_
+Response" state and start the Slot Timer (see subclause 4.4). It may return to
+the "Use_Token" state as soon as the frame transmitted before has been confirmed
+to the user.
+The FDL shall enter the "Check_Access_Time" state, if at the beginning of
+"Use_Token" no high priority message cycle is to be performed, or after the com-
+pletion of a high priority or low priority message cycle.
+Await_Data_Response
+This state shall be entered after the transmission of an action frame. The FDL
+waits one Slot Time for the receipt of the acknowledgement or response frame.
+In the case of a SDN service (Send Data with No Acknowledge) no acknowledgement
+is awaited. The FDL re-enters the "Use_Token" state in order to process poten-
+tial further requests. In the case of a request with acknowledgement or response
+the FDL shall wait for one of the following events:
+a) a valid acknowledgement frame or valid response frame addressed to the
+request's initiator.
+b) any other valid frame (e.g. token frame or action frame)
+c) invalid frame (start-, end-, length-, FCS-byte error; start-, stop-, parity-
+bit error or slip error) or Slot Time expired (see subclause 4.1.7).
+After receiving and processing an acknowledgement or response frame, the FDL
+shall re-enter the "Use_Token" state in order to process potential further
+service requests.
+Receipt of another valid frame indicates that an error has occurred. The FDL
+shall enter the "Active_Idle" state and discard the received frame.
+If an invalid frame is received or the Slot Time expires, the FDL shall retry
+the transmission of the action frame. If after the retry (retries) no valid
+acknowledgement or response is received, the FDL shall notify the user accord-
+ingly and re-enter the "Use_Token" state. Further requests to this station are
+not repeated in case of errors, until a correct message cycle (Send/Request
+Data) has been performed.
+Check_Access_Time
+In this state the available Token Holding Time shall be computed by means of the
+difference TTR - TRR. Only if there is still Token Holding Time available, the
+FDL may re-enter the "Use_Token" state. Otherwise the FDL shall enter the
+"Pass_Token" state.
+Pass_Token
+In the "Pass_Token" state the FDL shall try to pass the token to the next sta-
+tion (NS) in the logical ring. When transmitting the token frame, the FDL shall
+PAGE 109
+Page 109
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+check by simultaneous monitoring if the transceiver is working correctly. If it
+does not receive its own token frame, there is a fatal error in the transmit or
+receive channel. The FDL shall stop its activity in the logical ring, enter the
+"Offline" state and notify management (FMA1/2).
+If the FDL receives its own token frame corrupted, this may be caused by a tem-
+porarily defective transmitter, receiver, or by the bus line. This error condi-
+tion does not result in stopping activities in the first instance, instead the
+FDL shall enter the "Check_Token_Pass" state as after receiving the token frame
+correctly. Only after the token frame has been retransmitted (due to no reaction
+from NS) and monitored as incorrect, shall the FDL stop its activity in the
+logical ring, enter the "Listen_Token" state and notify the management (FMA1/2).
+When the GAP Update Time has expired, but there is still Token Holding Time T TH
+available, before passing the token the FDL shall try to record one possible new
+station in the GAP, in order to include it in the logical ring, if necessary.
+For that purpose FDL transmits a "Request FDL Status" and enters the "Await_Sta-
+tus_Response" state. If then a new master station acknowledges that it wants to
+be included in the logical ring, the FDL shall pass the token to this station.
+After the token has been successfully passed, the own GAP is shortened to the
+new station.
+If a status request is answered by a new slave station or a master station that
+does not want to be included in the ring, that station shall be entered in the
+GAPL. If an existing station does not answer even after a retry, it shall be de-
+leted from the GAPL, i.e. be marked as an unused address.
+If during GAP maintenance no new master station answers, the FDL shall pass the
+token to its original NS and enter the "Check_Token_Pass" state. Only if no suc-
+cessor is known, i.e. the FDL is at the moment the only active station on the
+bus, it shall pass the token to itself and then re-enter the "Use_Token" state.
+Check_Token_Pass
+"Check_Token_Pass" is the state in which the FDL waits one Slot Time for a reac-
+tion of the station to which it has passed the token. This waiting time allows
+for the delay between the receipt of the token frame and the ensuing transmis-
+sion reaction of the addressed station.
+If the FDL detects a valid frame header within one Slot Time, it shall assume
+that the token passing was successful. The frame shall be processed as if it
+were received in the "Active_Idle" state, i.e. the FDL shall enter this state.
+If an invalid frame is detected within the Slot Time, the FDL shall assume that
+another station is active and therefore also enter the "Active_Idle" state.
+If the FDL does not receive any frame within one Slot Time, it shall re-enter
+the "Pass_Token" state and react as described in subclause 4.1.1.1.
+Await_Status_Response
+This state is entered from the "Pass_Token" state after it has been decided that
+a successor is not known, as e.g. during initialization or GAP maintenance. In
+this state the FDL shall wait one Slot Time for an acknowledgement frame. If
+nothing or a corrupted frame is received, the FDL shall re-enter the "Pass_
+Token" state, in order to repeat either the request or to pass the token to
+itself or to its successor.
+PAGE 110
+Page 110
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+If the FDL receives any other frame instead of an acknowledgement frame
+(indicates that multiple tokens may exist), it shall enter the "Active_Idle"
+state.
+                            +---------+
+            +-------------->!Claim_Tok!------------------------+
+            !               !    3    !---------+              !
+            !               +---------+         !              !
+  PON       !                     ^             !              !
+   !        !                     !             !              !
+   !        ! +-+            +-+  !             !     +-+      !
+   V        ! ! V            ! V  !             V     ! V      !
++-----+    +-----+         +-----------+     +------------+    !
+! Off !--->!Li_To!-------->!  A_Idle   !---->!  Use_Token !<-+ !
+!  0  !<---!  1  !<--------!     2     !<----!     4      !  ! !
++-----+    +-----+         +-----------+     +------------+  ! !
+ ! ^ ^        ^              ^   ^   ^        ! ^      ! ^   ! !
+ ! ! !        !              !   !   !        ! !      ! !   ! !
+ ! ! !        !              !   !   !        V !      V !   ! !
+ V ! +-----+  !              !   !   !      +-----+  +-----+ ! !
++------+   !  !      +-------+   !   +------!Await!  !Check! ! !
+!P_Idle!   !  !      !           !          !  5  !  !  6  ! ! !
+!  10  !   !  !      !           !          +-----+  +-----+ ! !
++------+   !  !      !        +-----+         ! ^      ^ !   ! !
+  !  ^     !  !      !     +->!Ch_To!         +-+      ! !   ! !
+  +--+     !  !      !     +--!  8  !                  ! !   ! !
+           !  !      !        +-----+                  ! !   ! !
+           !  !      !          ! ^                    ! !   ! !
+           !  !      !          ! !                    ! !   ! !
+           !  !      !          V !                    ! !   ! !
+           !  !   +-----+     +-----+                  ! !   ! !
+           !  !   !Aw_St!<----!Pass_!------------------+ !   ! !
+           !  !   !  9  !---->!Token!<-------------------+   ! !
+           !  !   +-----+     !  7  !------------------------+ !
+           !  !     ! ^       !     !<-------------------------+
+           !  !     +-+       +-----+
+           !  !                 ! !
+           !  +-----------------+ !
+           +----------------------+
+PON  Power On/Reset FDL
+0: Offline                5: Await_Data_Response
+1: Listen_Token           6: Check_Access_Time
+2: Active_Idle            7: Pass_Token
+3: Claim_Token            8: Check_Token_Pass
+4: Use_Token              9: Await_Status_Response
+                         10: Passive_Idle
+Figure 2. FDL State Diagram
+4.1.6 FDL Initialization
+After power on (PON) the FDL Controller of master and slave stations shall enter
+the "Offline" state. Within this state the FDL Controller does not receive or
+transmit any signals (frames) from or to the bus line respectively.
+The FDL Controller may enter the "Passive_Idle" or "Listen_Token" state from the
+"Offline" state only, if the operating parameters (FDL Variables) have been set
+for correct protocol handling (see Part 3, subclause 5.2.3, Set Value FDL). The
+following operating parameters shall be provided by management (FMA1/2):
+PAGE 111
+Page 111
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+Table 2. Operating Parameters
++---------+-----------------------------------------------------+
+! Ser. No !                     Name                            !
++---------+-----------------------------------------------------+
+!   1     ! Station Address TS                                  !
+!   2     ! Data Signalling Rate (Baud_rate; kbit/s)            !
+!   3     ! Single/Redundant Media available                    !
+!   4     ! Release of Hardware and Software                    !
+!   5     ! Slot Time TSL                                       !
+!   6     ! Station Delay Time min TSDR                         !
+!   7  *) ! Station Delay Time max TSDR                         !
+!   8  *) ! Transmitter fall/Repeater switch Time TQUI          !
+!   9  *) ! Setup Time TSET                                     !
+!  10  *) ! Target Rotation Time TTR                            !
+!  11  *) ! GAP Update Factor G                                 !
+!  12  *) ! Master Station enter/leave the Logical Ring         !
+!  13  *) ! Highest Station Address (HSA)                       !
+!  14  *) ! Maximum Number of Retries (max_retry_limit)         !
++---------+-----------------------------------------------------+
+!      *) applies only to Master Stations                       !
++---------------------------------------------------------------+
+4.1.7 Timer Operation
+The following times T are measured in bits. A time t in seconds (s) shall there-
+fore be divided by the bit time tBIT.
+Bit Time tBIT:
+The Bit Time tBIT  is the time which elapses during the transmission of one bit.
+It is equivalent to the reciprocal value of the transmission rate:
+tBIT  =  1 / Transmission Rate in bit/s. (2)
+Syn Time TSYN:
+The Synchronization Time T SYN is the minimum time interval during which each
+station shall receive idle state (idle = binary "1") from the transmission
+medium before it may accept the beginning of an action frame (request or send/
+request frame) or token frame. The Syn Time equals:
+TSYN  =  33 bit                                               (3)
+Syn Interval Time TSYNI:
+The Synchronization Interval Time T SYNI serves the supervision of the maximum
+allowed time interval between two consecutive Syn Times or receiver synchroniza-
+tions. This time comprises two complete message cycles, each of which consists
+of two frames of maximum length and the related Syn Times. A transmission dis-
+turbance is permitted in one of those Syn Times:
+TSYNI  =
+2 . (2 . (33 bit + 255 . 11 bit)) + 33 bit = 11 385 bit       (4)
+Station Delay Time TSDx:
+The Station Delay Time T SDx is the period of time which may elapse between the
+transmission or receipt of a frame's last bit until the transmission or receipt
+of a following frame's first bit (with respect to the transmission medium, i.e.
+including line receiver and transmitter). The following three station delays are
+defined:
+PAGE 112
+Page 112
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+1) Station Delay of Initiator (station transmitting action or token frame):
+    TSDI  =  tSDI / tBIT (5)
+2) Minimum Station Delay of Responders (stations which acknowledge or respond):
+    min TSDR  =  min tSDR / tBIT (6)
+3) Maximum Station Delay of Responders:
+    max TSDR  =  max tSDR / tBIT (7)
+When transposing the NRZ signals into a different signal coding, the transmitter
+fall time after switching off the transmitter (at the initiator) shall be taken
+into account if it is greater than T SDR. During this Quiet Time T QUI transmis-
+sion and receipt of frames shall be disabled. This shall also be taken into ac-
+count when using self-controlled repeaters, whose switching time shall be taken
+into consideration. For TQUI:
+TQUI  <  min TSDR (8)
+In order to fulfil condition (8), it may be necessary to prolong TSDR.
+Ready Time TRDY:
+The Ready Time TRDY is the time within which a master station shall be ready to
+receive an acknowledgement or response after transmitting a request. The Ready
+Time is defined as follows:
+TRDY  <  min TSDR (9)
+In order to fulfil this condition it may be necessary to prolong TSDR.
+When transposing NRZ signals into a different signal coding, the Quiet Time
+shall also be taken into consideration when switching off the transmitter. The
+receiver shall not be enabled before this time:
+TQUI  <  TRDY (10)
+In order to fulfil this condition, it may be necessary to prolong T RDY and thus
+TSDR accordingly.
+Safety Margin TSM:
+The following time interval is defined as Safety Margin TSM:
+TSM  =  2 bit +  2 . TSET  +  TQUI (11)
+TSET is the set-up time which expires from the occurrence of an event (e.g.
+interrupt: last octet sent or Syn Time expired) until the necessary reac-
+tion is performed (e.g. to start Syn Time or to enable the receiver):
+TSET  =  tSET / tBIT (12)
+PAGE 113
+Page 113
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+Idle Time TID:
+The Idle Time TID is the time which expires at the initiator after receipt of a
+frame's last bit (measured at the line receiver)  as idle = binary "1"  on the
+transmission medium, until a new frame's first bit is transmitted on the medium
+(including line transmitter). The Idle Time is also the time which expires be-
+tween transmitting the last bit of a frame which is not to be acknowledged and
+transmitting the first bit of the next frame. The Idle Time shall be least the
+Syn Time plus the Safety Margin T SM (see Fig. 3 and Fig. 4, case a)). At high
+transmission rates (see Fig. 3 and Fig. 4, case b)and c)) the Syn Time is very
+short, hence the station delays become significant and shall be taken into con-
+sideration. Two Idle Times are distinguished. After an acknowledgement, response
+or token frame the Idle Time is defined as follows:
+           Ack./Res./Token
+Responder: +=============+
+                 !
+                  !
+                   !                TID1         Send/Req./Token
+Initiator:   +=============+------------------->+===============+
+                       a)  +-:-:>- - ->---->:::>
+                         minTSDR<TSDI<(TSYN +TSM)
+                    or b)  +---->:::>-:-:>- - ->
+                         (TSYN +TSM)<minTSDR<TSDI
+                    or c)  +---->:::>- - ->-:-:>
+                         (TSYN +TSM)<TSDI<minTSDR
+TID1  =  max (TSYN + TSM , min TSDR , TSDI)*) (13)
+*) the maximum of the three values.
+Figure 3. Idle Time T ID1
+The parameter min TSDR is extreme short to define because of the dynamic of the
+system, but to select greater than the Ready Time T RDY. If the necessary delay
+time cannot be reached with the range of value of T SET, than the min TSDR shall
+be made longer.
+After an action frame, which is not to be acknowledged (Send Data with No
+Acknowledge, SDN) the Idle Time is defined as:
+PAGE 114
+Page 114
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+                 SDN              TID2         Send/Req./Token
+Initiator: +=============+------------------->+===============+
+                     a)  +- - - ->------>::::>
+              !         max TSDR < (TSYN +TSM)               !
+                  or b)  +------>::::>- - - ->
+               !          (TSYN +TSM) < max TSDR              !
+                !        a)  max TSDR                          !
+Receiver:    +=============+- - - ->- - - - - ->+===============+
+                                  or b)  max TSDR
+TID2  =  max (TSYN + TSM , max TSDR)*) (14)
+*) the maximum of the two values.
+Figure 4. Idle Time T ID2
+Transmission Delay Time TTD:
+The Transmission Delay Time T TD is the maximum time which elapses on the trans-
+mission medium between transmitter and receiver when a frame is transmitted.
+Delay times of repeaters shall be considered, if necessary. The Transmission
+Delay Time is defined as follows:
+TTD  =  tTD / tBIT (15)
+e.g. given a line length of 200 m without repeaters, t TD is approx. 1 µs and
+thus at 500 kbit/s TTD = 0,5 bit.
+Slot Time TSL:
+The Slot Time T SL is the maximum time the initiator waits for the complete
+receipt of the first frame character (see subclause 4.5.1, UART Character, 1 UC
+= 11 bits) of the immediate acknowledgement or response, after transmitting the
+last bit of an action frame (including the line transmitter). Furthermore, T SL
+is the maximum time the initiator waits for the token receiver's first frame
+character after transmitting a token frame. Theoretically two Slot Times are
+distinguished. After an action frame (request or send/request) the Slot Time is
+calculated as follows:
+PAGE 115
+Page 115
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+                                 TSL1
+                       +----------------------------->
+                                                 ::::> TSM
+               Send/Req.                     1.UC
+Initiator: +===========+                    +====+==============+
+                       !                    !
+                        !                  !
+                         TTD              TTD
+                          !              !
+                           !            !
+Responder:     +===========+- - - - - ->+====+==============+
+                             max TSDR         Ack./Res.
+TSL1  =   2 . TTD  +  max TSDR  +  11 bit +  TSM (16)
+Figure 5. Slot Time T SL1
+After a token frame the Slot Time is calculated as follows:
+                               TSL2
+                   +--------------------------------->
+                                                 ::::> TSM
+               Token                         1.UC
+Initiator: +=======+----->                  +====+==============+
+                   !  TSYN                  !
+                    !                      !
+                     TTD                  TTD
+                      !                  !
+                       !                !
+Responder:     +=======+- - - - - - - ->+====+==============+
+                          max TID1          Send/Req./Token
+TSL2  =  2 . TTD  +  max TID1  +  11 bit +  TSM (17)
+Figure 6. Slot Time T SL2
+In order to simplify the realization, only one Slot Time, the longer one, is
+used in the system. This does not influence the system reaction time negatively,
+as the Slot Time is a pure monitoring time.
+TSL  =  max (TSL1 , TSL2)*) (18)
+*) the larger value shall be chosen
+Time-out TTO:
+The time-out TTO serves to monitor the master and slave station's bus activity
+and Idle Time. Monitoring starts after PON, immediately in the "Listen_Token" or
+"Passive_Idle" state or later after receiving the last bit of a frame. It ends
+after receiving the first bit of a following frame. If the Idle Time reaches
+time-out, the bus is regarded as inactive (error, e.g. due to lost token). The
+time-out is defined as follows:
+PAGE 116
+Page 116
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+TTO  =  6 . TSL  +  2 . n . TSL (19)
+For master stations:  n = station address (0 to 126)
+For slave stations:   n = 130, independent of its station address
+The first term makes sure that there is sufficient difference to the maximum
+possible Idle Time between two frames. The second term ensures that not all
+master stations claim the token at the same moment after an error has occurred.
+GAP Update Time TGUD:
+The GAP Update Time TGUD serves the master station for initializing GAP mainte-
+nance. After the first generation of the GAPL, updating the GAP image is cycli-
+cally initialized after every interval T GUD. This initialization takes place at
+the next possible token receipt, if there is still Token Holding Time available
+after the regular message cycles, or during later token holding phases. The GAP
+Update Time is a multiple of the Target Rotation Time TTR and is defined as fol-
+lows:
+TGUD  =  G . TTR       1  ≤  G  ≤  100 (20)
+TTR is the predefined Target Rotation Time (see subclause 4.1.1.4).
+4.2 Cycle and System Reaction Times
+4.2.1 Token Cycle Time
+The base load in a system with several master stations, i.e. the bus load caused
+by medium access control (token frames) and not by regular message cycles, is
+determined by the Token Cycle TC. The total base load per token rotation results
+from na (number of master stations) token cycles. The cycle time T TC is composed
+of the Token Frame Time T TF, the Transmission Delay Time T TD and the Idle Time
+TID. TID results from the Station Delay Time T SD or the Syn Time T SYN respec-
+tively. TTC is measured in bits:
+Master          +-----------+
+Station k       !  Token k  !------+
+                +-----------+      !
+                    TTF   TTD      !
+                                   !
+                                  TID
+                                   !
+Master                             !      +-----------+
+Station k+1                        +----->! Token k+1 !--------+
+                                          +-----------+        !
+                                          (or Send/Req.)       !
+                                                               !
+                   Token Cycle Time TTC                        V
+                +<----------------------->+
+             TTC  =  TTF + TTD + TID (21)
+Figure 7. Token Cycle
+PAGE 117
+Page 117
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+The Token Frame Time T TF is determined by the number of frame characters UC
+(UART character). A frame character always consists of 11 bits (see subclause
+4.5.1) and hence the token frame comprises altogether 33 bits. The Transmission
+Delay Time TTD depends on the line length (about 5 ns/m without repeater) and is
+mostly substantially less than the other times. The Idle Time TID, which elapses
+between the token frames, contains the Station Delay Time T SDI of the token
+receiver on the one hand, on the other hand the Syn Time T SYN + T SM shall be
+used, if this sum is larger than T SDI (see subclause 4.1.7). This mainly occurs
+at low transmission rates (< 100 kbit/s).
+4.2.2 Message Cycle Time
+A message cycle MC consists of the action frame (request or send/request frame)
+and the reply frame (acknowledgement or response frame). The cycle time is com-
+posed of the frame transmission times, the transmission delay times and the sta-
+tion delay times.
+The Station Delay Time T SDR elapses between request and acknowledgement or
+response. This time is needed for decoding the request and assembling the
+acknowledgement or response frame. It depends on the protocol implementation in
+the station and is mostly substantially greater than the Transmission Delay Time
+TTD. The Idle Time T ID, which elapses between acknowledgement or response and
+new request, contains also the Station Delay Time (see subclause 4.1.7).
+However, TSYN + TSM shall be used, if this sum is greater than TSDI.
+Master   +----------+                                +----------+
+Station  ! Send/Req.!--+                         +-->! Send/Req.!
+         +----------+  !                         !   +----------+
+            TS/R  TTD  !                         !   (or Token)
+                       !                         !
+                      TSDR                      TID
+                       !                         !
+                       !    +----------------+   !
+Master/Slave           +--->!  Ack./Response !---+
+Station                     +----------------+
+                                 TA/R      TTD
+                    Message Cycle Time TMC
+         +<----------------------------------------->+
+          TMC  =  TS/R + TSDR + TA/R + TID + 2 . TTD (22)
+Figure 8. Message Cycle
+At transmission rates < 100 kbit/s decoding and evaluation of frames may par-
+tially keep pace with their reception. Station delay times become considerably
+shorter then.
+The frame transmission times (TS/R , TA/R) are determined by the number of frame
+characters (UC). Thus they are calculated as follows:
+TS/R  =  a . 11 bit a  No. of UC in Send/Request Frame
+TA/R  =  b . 11 bit b  No. of UC in Ack./Response Frame
+PAGE 118
+Page 118
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+EXAMPLE:
+a = 6    for the request frame:
+TS/R  =  66 bit
+b = 59   for the response frame (50 octet DATA_UNIT):
+TA/R  =  649 bit
+4.2.3 System Reaction Times
+The message rate RSYS in the system equals the possible number of message cycles
+per second:
+RSYS = 1 / tMC ;t MC  =  TMC . tBIT (23)
+The maximum system reaction time T SR in a system with one master station and n
+slave stations (master slave system) in pure polling mode is calculated from the
+message cycle time and the number of slave stations. If message retries are al-
+lowed for, TSR is calculated as follows:
+TSR  =  np . TMC  +  mp . RET TMC (24)
+where:
+np number of slave stations
+mp number of message retry cycles per Poll Cycle
+RET TMC message retry cycle time
+The maximum System Reaction Time in a system with several master stations and
+slave stations equals the Target Rotation Time:
+TSR  =  TTR    (see subclause 4.1.1.4) (25)
+4.3 Error Control Procedures
+Line protocol errors, such as e.g. frame errors, overrun errors and parity er-
+rors, and transmission protocol errors, such as e.g. faulty start delimiters,
+frame check octets and end delimiters, invalid frame length, response times,
+etc., result in the following station reactions:
+An action frame (request, send/request or token) that has been received incor-
+rectly by a station shall not be processed, acknowledged or answered. The in-
+itiator shall retry the request after expiration of the Slot Time. The request
+shall also be retried if the acknowledgement or response was corrupted. The in-
+itiator shall complete a request only after having received a valid response or
+if the retry (retries) was not (were not) successful (see subclause 4.1.6,
+operating parameters). This means that a "Send/Request" shall be kept until the
+responder confirms
+its correct receipt by an acknowledgement or response or the retry (retries) was
+not (were not) successful. In the same way, a responder shall terminate a
+"Request" or "Send/Request" only if a new request with altered Frame Count Bit
+is received or another station is addressed (see subclause 4.7.3, FCB).
+If a station does not acknowledge or respond in cyclic or acyclic mode after re-
+try (retries), it is marked as "non operational". When processing the following
+PAGE 119
+Page 119
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+requests, the initiator transmits the request to this station without retry
+(retries), until the station acknowledges or responds correctly again. After
+positive acknowledgement the initiator marks again the addressed station as
+"operational". When processing the next request, the initiator continues the
+original mode of operation with this station.
+4.4 Timers and Counters
+In order to measure the token rotation time and to realize the supervisory times
+the following timers are necessary:
+Token Rotation Timer, Idle Timer, Slot Timer, Time-out Timer, Syn Interval Timer
+and GAP Update Timer.
+Token Rotation Timer:  When a master station receives the token, this timer is
+loaded with the Target Rotation Time TTR and decremented each bit time. When the
+station again receives the token, the timer value, the remaining time or Token
+Holding Time T TH, is read and the timer reloaded with T TR. The Real Rotation
+Time TRR results from the difference T TR - TTH. Low priority message cycles may
+be processed if at the instant of processing TRR < TTR.
+Idle Timer: This timer monitors the idle state (binary "1"), the Syn Time, imme-
+diately on the bus line. The Syn Time preceding each request is necessary for
+unambiguous receiver synchronization. The Idle Timer of slave stations and
+master stations "without token" is loaded with T SYN after the transmission or
+receipt of a frame's last bit and then decremented each bit time. The receiver
+shall be enabled immediately after the timer has expired. The timer of a master
+station "with token" is loaded according to the data transmission service with
+TID1 or T ID2 (see subclause 4.1.7). A new request or token frame may only be
+transmitted after expiration of the timer. When the signalling level is binary
+"0", the timer is always reloaded.
+Slot Timer: This timer in a master station monitors after a request or token
+pass whether the receiving station responds or becomes active within the prede-
+fined time T SL, the Slot Time. After transmission of a frame's last bit this
+timer is loaded with T SL and decremented each bit time as soon as the receiver
+is enabled. If the timer expires before a frame's first bit is received, an er-
+ror has occurred. Then a retry or a new message cycle is initiated.
+Time-out Timer: This timer monitors bus activity in master and slave stations.
+After the transmission or receipt of a frame's last bit the timer is loaded with
+a multiple of the Slot Time (see subclause 4.1.7) and decremented each bit time
+as long as no new frame is received. If the timer expires, a fatal error has
+occurred, which for the master station causes a (re)initialization. The FMA1/2
+User of the slave and master station receives a time-out notification (see
+Part 3, subclause 4.2.3.3).
+Syn Interval Timer:  Master and slave stations use this timer to monitor the
+transmission medium as to whether a receiver synchronizing (T SYN, idle state,
+idle = binary "1") occurs within T SYNI. Each time the receiver is synchronized,
+the timer is loaded with T SYNI (see subclause 4.1.7). From the beginning of a
+frame (first start bit) the timer is decremented each bit time as long as no new
+TSYN is detected. If the timer expires, an error has occurred on the
+transmission medium, e.g. stuck at "0" or permanent "0" / "1" edges. The FMA1/2
+User is notified accordingly (see Part 3, subclause 4.2.3.3).
+PAGE 120
+Page 120
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+GAP Update Timer: Only master stations need this timer. Its expiration indicates
+the moment for GAP maintenance. After a complete GAP check, which may last sev-
+eral token rotations (segmented; see subclause 4.1.1.2), the timer is loaded
+with a multiple of the Target Rotation Time TTR (see subclause 4.1.7).
+When a master station enters the "Listen_Token" state, the Idle Timer is loaded
+with TSYN, the Time-out Timer with T TO, the Syn Interval Timer with T SYNI and
+the other timers are cleared. When a slave station enters the "Passive_Idle"
+state, the Time-out Timer is loaded with T TO and the Syn Interval Timer with
+TSYNI.
+For installation and maintenance the following counters (FDL variables) are
+optionally defined in pairs:
+For master stations:
+- counter for transmitted frames (Frame_sent_count for Request frames) except
+for SDN service and FDL status
+- counter for transmitted frame retries (Retry_count)
+For slave and master stations:
+- counter for received valid start delimiters (SD_count)
+- counter for received invalid start delimiters (SD_error_count)
+When a station enters the "Listen_Token" or "Passive_Idle" state, the counters
+are cleared and enabled. If a counter reaches its maximum (see Part 3, subclause
+5.2.3.2, table "Additional FDL Variables"), counting of this counter as well as
+of the related comparative counter is stopped. When clearing a counter the
+related comparative counter is also cleared and they are enabled again. The
+FMA1/2 user may access these counters using the Set/Read Value FMA1/2 services
+(see Part 3, clause 4.2).
+In relation to stations multiple counters (statistics) are possible (optional,
+see part 8).
+PAGE 121
+Page 121
+PROFIBUS-Specification-Normative-Parts-4:1997
+ Copyright by PNO 1997 - all rights reserved
+4.5 Frame Structure
+4.5.1 Frame Character (UART Character)
+Each frame consists of a number of frame characters, the UART characters. The
+UART character (UC) is a start-stop character for asynchronous transmission and
+is structured as follows:
+Transmitted
+Bit Sequence 1st 2   3   4   5   6   7   8   9  10  11th
+Information      20                          27
+sig. Bits       LSB                         MSB
+        ---+   +---+---+---+---+---+---+---+---+---+---+---
+           ! 0 ! b1! b2! b3! b4! b5! b6! b7! b8! P ! 1 !
+           +---+---+---+---+---+---+---+---+---+---+
+Start bit----! !                               ! !   !---Stop bit
+(ST)           !             Octet             ! !       (SP)
+               +<----------------------------->+ !
+                                                 !-----Parity bit
+                                                       even
+Figure 9. UART Character
+The presentation of UART characters is based on the following standards: ISO
+1177, ISO 2022.
+Transmission Rule
+Each UART character consists of 11 bits: a start bit (ST) which is always binary
+"0", 8 information bits (I) which may be binary "0" or binary "1", an even par-
+ity bit (P) which is binary "0" or binary "1" and a stop bit (SP) which is
+always binary "1".
+4.5.2 Bit Synchronizing
+The receiver's bit synchronizing always starts with the falling edge of the
+start bit, i.e. at the transition from binary "1" to binary "0". The start bit
+and all consecutive bits are scanned in the middle of the bit time. The start
+bit shall be binary "0" in the middle of the bit, otherwise the synchronizing
+fails and is stopped. The synchronizing of the UART character ends with the stop
+bit being binary "1". If a binary "0" bit is encountered instead of the stop
+bit, a synchronizing error or UART character error is assumed and reported and
+the next leading edge of a start bit is waited for.
+A maximum deviation of ± 0,3 % of the nominal signalling rate for transmission
+and receipt is allowed (see Part 2, subclause 4.1.1, Data Signalling Rate).
+4.6 Frame Formats
+The figures contained in the following clauses do not show sequences (request →
+acknowledgement or response), but frame formats of the same category (Hd = 4,
+fixed length without/with data field and variable length), i.e. the action
+frames may be followed by different acknowledgement or response frames (see
+clause 4.8).
+PAGE 896
+Page 896
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+TSYN = TPTG = Post-transmission Gap Time = TQUI
+TSYN = 4 to 32 bit (2)
+      Ack./Res./Token             Send/Req./Token
++===============+---------->+===============+
+TSYN =
+TPTG =
+TQUI
+Figure 4: Syn-Time TSYN
+Syn Interval Time TSYNI:
+The Synchronization Interval Time T SYNI  serves to monitor the maximum allowed
+time interval between two consecutive receptions of Ph-DATA indication
+primitives of the classes: START-OF-ACTIVITY and END-OF-ACTIVITY (or END-OF-
+DATA-AND-ACTIVITY), in order to detect "permanent transmitters".
+This time comprises two complete message sequences, each of  which consists of
+two PDUs of maximum length and the associated maximum Physical Layer Control
+Information (PhPCI: Preamble, Start Delimiter, End Delimiter) and the maximum
+Syn Time (post-transmission gap).
+Three Ph-Data indications of class END-OF-ACTIVITY (or END-OF-DATA-AND-ACTIVITY)
+may fail thereby.
+TSYNI = 2 · ( 2 · (TSYN + PhPCI + TFDL)) +64*) (3)
+*) The constant 64 constitutes a safety margin.
+TFDL = maximum length of a FDL frame (see clauses 8.5 and 8.6 of this part)
+TSYNI = 2 · ( 2 · (32 + 80 + 255 · 8))+64 = 8 672 bit (4)
+Station Delay Time TSDx:
+The Station Delay Time TSDX  is the period of time which may elapse between a Ph-
+DATA request primitive (class: END-OF-DATA-AND-ACTIVITY) or Ph-DATA indication
+primitive (class: END-OF-ACTIVITY or END-OF-DATA-AND-ACTIVITY) until the
+following Ph-DATA request primitive (class: START-OF-ACTIVITY) or a Ph-DATA
+indication primitive (class: START-OF-ACTIVITY) (relative to the transmission
+medium, i.e. including the Physical Layer Entity).
+The following three station delays are defined:
+1) Station Delay of Initiator (station transmitting request or token frame)
+TSDI = tSDI / tBIT (5)
+2) Minimum Station Delay of Responders (station that acknowledges or responds)
+min TSDR = min tSDR / tBIT (6)
+PAGE 897
+Page 897
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+3) Maximum Station Delay of Responders
+max TSDR = max tSDR / tBIT (7)
+Quiet Time TQUI = TPTG:
+The Transmitter Fall Time or Repeater Switch Time corresponds to the Post-
+transmission Gap Time (TSYN). The following shall apply:
+TQUI = TPTG = TSYN (8)
+Ready Time TRDY:
+The Ready Time TRDY is the time within which a master station shall be ready to
+receive an acknowledgment or response after transmitting a request. The Ready
+Time is defined as follows:
+TRDY < min TSDR (9)
+In order to fulfill this condition it may be necessary to prolong TSDR.
+While disconnecting the transmitter the Quiet Time shall be considered. The
+readiness may start only after this time:
+TQUI = TPTG = TSYN < TRDY (10)
+In order to fulfill this condition the T SDR  shall be increased according to
+equation (9) if necessary.
+Safety Margin TSM:
+The following time interval is defined as Safety Margin TSM:
+TSM = 2 bit + 2 · TSET (11)
+TSET is the set-up time which expires from the occurrence of an event
+(e.g. Ph-Data confirm) until the execution of the necessary reaction:
+TSET = tSET / tBIT (12)
+Idle Time TID:
+The Idle Time T ID is the time which expires at the initiator after a Ph-DATA
+indication primitive (class: END-OF-ACTIVITY or END-OF-DATA-AND-ACTIVITY) until
+reception of a new frame with Ph-DATA request primitive (class: START-OF-
+ACTIVITY) or after passing a Ph-DATA request primitive (class: END-OF-DATA-AND-
+ACTIVITY) with a Ph-DATA confirm primitive to transmit a frame which is not to
+be acknowledged until passing a new Ph-DATA request primitive (class: START-OF-
+ACTIVITY) for transmitting the next frame. The Idle Time shall be at least the
+Syn Time plus the Safety Margin T SM  (see description of Idle Time in subclause
+4.1.7 of Part 4).
+After an acknowledgment, response or token frame the Idle Time is defined as
+follows:
+PAGE 898
+Page 898
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+           Ack./Res./Token
+Responder: +=============+
+                  !
+                   !
+                    !                           Send/Req./Token
+Initiator:  +=============+-------------------->+============+
+                       a) +-:-:->- - ->----->::::>
+                          min TSDR<TSDI<(TSYN+TSM)
+                    or b) +----->::::>-:-:->- - ->
+                          (TSYN+TSM)<min TSDR<TSDI
+                    or c) +----->::::>- - ->-:-:->
+                          (TSYN+TSM)<TSDI<min TSDR
+TID1 = max (TSYN + TSM, min TSDR, TSDI) (13)
+(The maximum value shall be used in each case)
+Figure 5: Idle Time TID1 (cf Fig. 3 of Part 4)
+After a request frame, which is not to be acknowledged, the following Idle Time
+shall apply (cf also Fig. 4 of Part 4):
+TID2 = max (TSYN + TSM, max TSDR) (14)
+(The maximum value shall be used in each case)
+Transmission Delay Time TTD:
+The Transmission Delay Time T TD is the maximum time which elapses on the
+transmission medium between transmitter and receiver when a frame is
+transmitted. Delay times of repeaters shall be considered if necessary. The
+Transmission Delay Time is defined as follows:
+TTD = tTD / tBIT (15)
+Compliant to IEC 1158-2, clause 11, rule 4, the value of 20 bit times shall not
+be surpassed.
+Slot Time TSL:
+The Slot Time T SL is the maximum time the initiator waits after passing a Ph-
+DATA request primitive (class: END-OF-DATA-AND-ACTIVITY) for transmitting a
+request frame from the Ph-DATA confirm primitive until receiving the first Ph-
+DATA indication primitive (class: DATA) as an indication of receiving the
+immediate acknowledgment or answer. Furthermore, T SL is the maximum time the
+initiator waits for a Ph-DATA indication primitive (class: DATA) after the token
+frame as reaction to receiving a frame from the token receiver. Theoretically
+two Slot Times are distinguished (see description of Slot Time in subclause
+4.1.7 of the Part 4, Fig. 5 and Fig. 6). After a request frame (request or
+send/request) the following Slot Time shall apply:
+PAGE 899
+Page 899
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+TSL1 = 2 · TTD + max TSDR  + TPRE + 16 bit + TSM (16)
+After a token frame the following Slot Time shall apply:
+TSL2 = 2 · TTD + max TID1  + TPRE + 16 bit + TSM (17)
+TPRE: Preamble period (see IEC 1158-2)
+Note: In order to simplify the realization, only the longer Slot Time is used in
+the system. This does not influence the system reaction time negatively,
+as the Slot Time is merely a monitoring time.
+TSL = max (TSL1, TSL2) (18)
+(The maximum value shall be used in each case)
+Time-out TTO:
+The time-out TTO  serves to monitor the master and slave stations’ line activity
+and Idle Time. Monitoring starts either immediately after the PON, in the
+"Listen_Token" or "Passive_Idle"  state or later after the reception of a Ph-
+DATA indication primitive (class: END-OF-ACTIVITY or END-OF-DATA-AND-ACTIVITY).
+It finishes upon receipt of a Ph-DATA indication primitive (class: START-OF-
+ACTIVITY) for reception of a following frame. If the Idle Time reaches the Time-
+out value, the bus is regarded as inactive (error case, e.g. due to lost token).
+The Time-out is defined as follows (cf also Part 4, subclause 4.1.7 "Time-out"):
+TTO = 6 · TSL + 2 · n · TSL (19)
+For master stations: n = station address (0 to 126)
+For slave stations: n = 130, independent of their station address
+GAP Update Time TGUD:
+The specifications of the subclause 4.1.7 of Part 4 shall apply.
+8.2 Cycle and System Reaction Times
+8.2.1 Token Cycle Time
+Similar to PROFIBUS Specification "Medium Access Methods" and "Transmission
+Protocol", the following shall apply for the Token Cycle Time TTC:
+TTC = TTF + TTD + TID (20)
+Due to the frame character (cf subclause 9.5.1 of this part) and the changed
+frame format (cf subclauses 8.6 and 8.7), the Token Frame Time T TF is 64 bit
+with a preamble of 8 bit.
+Furthermore, it shall be noted that only the transmission speed 31.25 kbit/s may
+be selected.
+PAGE 900
+Page 900
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+8.2.2 Message Cycle Time
+The following shall apply for the Message Cycle Time TMC :
+TMC = TS/R + TSDR + TA/R + TID + 2 · TTD (21)
+The specifications for the Message Cycle Time stipulated in the subclause 4.2.2
+of the Part 4 shall apply except for the following cases:
+The PDU transmission times (T S/R, T A/R) are determined by the number of PDU
+octets.
+It follows from this that:
+TS/R = a · 8 bit a = number of octets in Send/Request PDU
+TA/R = b · 8 bit b = number of octets in Ack/Response PDU
+Example:
+a = 9 for the Request PDU (1 octet Preamble):
+TS/R =72 bit
+b = 62 for the Response PDU ( 1 octet Preamble, 50 octet DATA_UNIT):
+TA/R = 496 bit
+8.2.3 System Reaction Times
+The specifications for the System Reaction Times stipulated in the subclause
+4.2.3 of Part 4, shall apply.
+8.3 Error Control Procedures
+As described in Part 4, subclause 4.3, errors in the line protocol (see IEC
+1158-2, clause 9) and in the medium access protocol, such as erroneous start
+octets and CRC octets, frame length, response times etc. may result in the
+specified station reactions.
+8.4 Timers and Counters
+As explained in subclause 4.4 of Part 4, the following timers are needed to
+measure the Token Rotation Time and to realize the monitor timers:
+Token Rotation Timer, Idle Timer, Slot Timer, Time-out Timer, Syn Interval Timer
+and GAP Update Timer.
+Token Rotation Timer: The functionality of this timer is as defined in PROFIBUS
+Specification "Medium Access Methods" and "Transmission Protocol".
+Idle Timer: This timer monitors the idle state T PTG = T SYN = T QUI on the bus
+line. The Idle Timer in the master station with the token is loaded with T ID1 or
+TID2 depending on the data transmission service (cf subclause 9.1.7 of this
+part). The timer is decremented every bit time, when after a Ph-DATA request
+primitive (class: END-OF-DATA-AND-ACTIVITY) either the Ph-DATA confirm primitive
+at the transmitter or the Ph-DATA indication primitive (class: END-OF-ACTIVITY
+or END-OF-DATA-AND-ACTIVITY) at the receiver is transferred. A new request or a
+new token frame may be transmitted only after expiration of the timer.
+Slot Timer: After a request from or a token transfer by a master station, this
+timer of the master station monitors whether the receiving station responds or
+becomes active within the defined Slot Time T SL. The timer is initialized with
+PAGE 901
+Page 901
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+TSL and is decremented every bit time after each transmission of a frame. This
+frame transmission is indicated by a Ph-DATA confirm primitive after transfer of
+a Ph-DATA request primitive (class: END-OF-DATA-AND-ACTIVITY). If the timer
+expires before a frame has been received, as indicated by a Ph-DATA indication
+primitive (class: START-OF-ACTIVITY), an error has occurred. As a result of that
+a retry or a new message cycle is initiated.
+Time-out Timer:  This timer serves to monitor the bus activity at master and
+slave stations. After transfer of a Ph-DATA request primitive (class: END-OF-
+DATA-AND-ACTIVITY) and return of a Ph-DATA confirm primitive or after receiving
+a Ph-DATA indication primitive (class: END-OF-ACTIVITY or END-OF-DATA-AND-
+ACTIVITY), the timer is loaded with a multiple of the Slot Time (cf subclause
+9.1.7 of this part) and is decremented every bit time as long as no Ph-DATA
+indication primitive (class: START-OF-ACTIVITY) has been received. If the timer
+expires, a fatal error has occurred, which for the master station causes a
+(re)initialization. The FMA1/2 User of the slave or master station respectively
+receives a time-out notification (cf subclause 5.2.3.3 of Part 3).
+Syn Interval Timer:  Master and slave stations use this timer to monitor the
+transmission medium for „permanent transmitters“. After every Ph-DATA indication
+primitive (class: START-OF-ACTIVITY) the timer is loaded with the value T SYNI
+(cf subclause 9.1.7 of this part) and decremented every bit time, as long as no
+Ph-DATA indication primitive (class: END-OF-ACTIVITY or END-OF-DATA-AND-
+ACTIVITY) has been received. If the timer expires, an error of the transmission
+medium has occurred. The FMA1/2 User receives a corresponding notification
+(cf subclause 5.2.3.3 of Part 3).
+GAP Update Timer: This timer operates in the same way as described in subclause
+4.4 of Part 4.
+The specifications stipulated in subclause 4.4 of Part 4 shall apply for the
+optional counters.
+8.5 Frame Structure
+Each FDL frame (FDL PDU) consists of a Start Delimiter Data Link, an Information
+Field and a Cyclic Redundancy Check (CRC). The Information Field is divided into
+an Address Field and a Control Field. Additionally, a Data Field may exist. The
+Information Field is Null in the Short-Acknowledgment.
+PAGE 902
+Page 902
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+SDF DA/SA FC DATA_UNIT CRC
+Information Field Length = L
+FDL Telegram
+ 1,4       0,2         0,1       0 bis 246            2  Octets
+Notation herein:
+SDF1 Start Delimiter Data Link, Length 1 or 4 octets
+DA Destination Address - Information Field
+SA Source Address - Information Field
+FC Frame Control - Information Field
+DATA_UNIT Data Field, Length (L-3), maximum 246 octets
+CRC Cyclic Redundancy Check, Length 2 octets
+Figure 6: FDL frame format
+8.5.1 Frame Character
+The Start Delimiter Data Link, the Information Field and the CRC consist of a
+number of octets of 8 bit each. Each FDL octet is structured as follows:
+b1 b2 b3 b4 b5 b6 b7 b8
+MSB LSB
+2 7
+2 0
+123 4567 8Transmitted
+Bit Sequence
+Information
+sig. Bit
+Figure 7: Octet Structure (cf Fig. 9 of Part 4, subclause 4.5.1)
+8.6 Frame Formats
+Based on the specifications of subclause 4.6 of Part 4 and its subclauses the
+different frame formats are described according to the frame format explained in
+subclause 9.5 of this part.
+The figures contained in the following clauses do not show any sequences
+(request --> acknowledgment or response) but frame formats of the same category
+(Hd = 4; fixed length with/without data field and variable length), i.e. request
+frames may be followed by different acknowledgment or response frames
+(cf subclause 8.9 of this part).
+                        
+1 The Start Delimiter Data Link may not be confused with the Start Delimiter SD
+of the Physical Layer.
+PAGE 903
+Page 903
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+8.6.1 Frames of fixed Length with no Data Field
+SDL1 Information Field CRC
+L
+A)Request Frame
+SDL1 Information Field CRC
+L
+B)Acknowledgement Frame
+C)Short Acknowledgement Frame
+SDL5 CRC
+Notation herein:
+SDL1 Start octet 1 (Start Delimiter 1 Data Link), Code: 10H
+SDL5 Start octet 5 (Start Delimiter 5 Data Link), Code: E5H
+CRC Cyclic Redundancy Check, 2 octets
+L Information Field Length, fixed number of octets: L = 3
+Information Field cf Part 4, subclause 4.6.1
+Figure 8: Frames of fixed Length with no Data Field (cf Fig. 10 of Part 4)
+Transmission Rules
+Beside the transmission rules of the Ph Layer stipulated in IEC 1158-2,
+clause 9, the receiver shall check the DA/SA- and CRC octets for each frame. If
+the check produces a negative result the whole frame shall be discarded.
+PAGE 904
+Page 904
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+9.6.2 Frames of fixed Length with Data Field
+L
+A)Send/Request Frame
+B)Response Frame
+SDL3 Information Field CRC
+L
+SDL3 Information Field CRC
+Notation herein:
+SDL3 Start Delimiter 3 Data Link, Code: A2H
+CRC Cyclic Redundancy Check, 2 octets
+L Information Field Length, fixed number of octets: L = 11
+Information Field cf Part 4, subclause 4.6.2
+Figure 9: Frames of fixed Length with Data Field (cf Fig. 11 of Part 4)
+Transmission Rules
+The same transmission rules shall apply as for frames of fixed length with no
+Data Field (cf subclause 9.6.1 of this part)
+8.6.3 Frames with variable Data Field Length
+A)Send/Request Frame
+B)Response Frame
+L
+SDL2 Information Field CRCLE LEr SDL2
+L
+SDL2 CRCLE LEr SDL2 Information Field
+Notation herein:
+SDL2 Start Delimiter 2 Data Link, Code: 68H
+LE Length, Value: 4 to 249
+LEr Length (repeated)
+CRC Cyclic Redundancy Check, 2 octets
+L Information Field Length, variable number of octets: L = 4 to 249
+Information Field cf Part 4, subclause 4.6.3
+Figure 10: Frames with variable Data Field Length (cf Fig. 12 of part 4)
+PAGE 905
+Page 905
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+Transmission Rules
+The same transmission rules as for frames of fixed length with no data field
+shall apply (cf subclause 9.6.1 of this part). In addition, the receiver shall
+verify if LE and Ler coincide. The information octets shall be counted from the
+Destination Address (DA) up to the Cycling Redundancy Check and shall be
+compared with LE.
+8.7 Token Frame
+SDL4 DA CRCSA
+Notation herein:
+SDL4 Start Delimiter 4 Data Link, Code: DCH
+DA Destination Address
+SA Source Address
+CRC Cyclic Redundancy Check, 2 octets
+Figure 11: Token Frame (cf Fig. 13 of Part 4)
+Transmission Rules
+The same transmission rules as for frames of fixed length with no data shall
+apply (cf subclause 9.6.1 of this part).
+8.8 Length, Address, Control and Check Octet
+8.8.1 Length Octet (LE)
+The length octet described in subclause 4.7.1 of Part 4 shall apply.
+8.8.2 Address Octet (DA/SA)
+The address octet described in subclause 4.7.2 of Part 4 shall apply.
+8.8.2.1 Link Service Access Point (LSAP)
+The Link Service Access Point (LSAP) described in subclause 4.7.2.2 of Part 4
+shall apply.
+8.8.3 Control Octet (FC)
+The control octet described in subclause 4.7.3 of Part 4 shall apply.
+8.8.4 Check Octet (FCS)
+In contrast to PROFIBUS Specification "Medium Access Methods" and "Transmission
+Protocol" a Cyclic Redundancy Check (CRC) is stipulated for the frames to be
+transmitted. The CRC is realized by calculating and appending a check field of
+16 bit (2 octets). The calculation and analysis of the check field is realized
+as follows:
+PAGE 906
+Page 906
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+on the transmitting side
+the message to be transmitted (without CRC), the polynomial necessary for
+calculating the CRC and the composite message (including CRC) shall be
+considered as vectors M(X), F(X) and D(X) of dimensions k, n-k and n
+respectively.
+The message vector M(X) shall be defined to be
+M(X) = m1Xk-1 + m2Xk-2 + ... + mk-1X1 + mk (22)
+and the check field F(X) shall be defined to be:
+F(X) = f n-k-1Xn-k-1 + ... + f0 (23)
+      = f15X15 + ... + f0
+The composite vector D(X) for the complete message shall be constructed
+from the message and the CRC vector and shall be defined to be:
+D(X) = M(X)X n-k + F(X) (24)
+     = m 1Xn-1+m2Xn-2+ ... +mkXn-k+fn-k-1Xn-k-1+ ... +f0
+     = m 1Xn-1 + m2Xn-2 + ... + mkX16+f15X15+ ... +f0
+The check field is the remainder upon division of F(X) by the generator
+polynomial G(X). The remainder is calculated as follows:
+F(X) = L(X)(Xk+1) + M(X)Xn-k (mod G(X)) (25)
+where G(X) is the generator polynomial defined as:
+G(X) = X n-k + gn-k-1Xn-k-1 + ... + 1 (26)
+= X16 + X12 + X11 + X10 + X8 + X7 + X6 + X3 + X2 + X + 1
+and L(X) is the maximal weight polynomial (all 1s) defined as:
+L(X) = 
+x
+x
+nk− +
++
+1
+1
+= Xn-k-1 + Xn-k-2 + ... + X + 1   (27)
+= X15 + X14 + X13 + X12 + ... + X2 + X + 1
+The Cyclic Redundancy Check defined by means of the generator polynomial
+G(X) enables a Hamming Distance Hd = 4 for message lengths shorter than
+344 octets and Hd = 5 for lengths shorter than 15 octets.
+on the receiver side:
+The received message consists of an octet sequence that is composed of the
+actual message and the check field. It shall be considered as a vector
+V(X) of dimension u :
+PAGE 907
+Page 907
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+V(X) = v1Xu-1 + v2Xu-2 + ... + vu-1X + vu (28)
+The remainder R(X) of V(X) is computed in the same way as for the
+transmission side:
+R(X) = L(X)X u + V(X)Xn-k (mod G(X))  (29)
+= rn-k-1Xn-k-1 + ... + r0
+If no error has occurred during message transmission, R(X) is equal to a
+constant remainder polynomial given by:
+Rok(X) = L(X)Xn-k (mod G(X)) (30)
+ = X15 + X14 + X13 + X9 + X8 + X7 + X4 + X2
+The initial value of the remainder that has to be computed at the receiver
+side shall be the hexadecimal value 0FFFF.
+8.8.5 Data Field (DATA_UNIT)
+The data field described in subclause 4.7.5 of Part 4 shall apply.
+8.9 Transmission Procedures
+The transmission procedures described in subclause 4.8 of Part 4 shall apply.
+9 PROFIBUS Layer 2 Interface
+9.1 FDL User - FDL Interface
+The FDL User - FDL Interface described in subclause 4.1 of Part 3 shall apply.
+9.2 FMA1/2 User - FMA1/2 Interface
+The FMA1/2 User - FMA1/2 Interface described in subclause 4.2 of Part 3 shall
+apply.
+10 Management (FMA1/2)
+10.1 General Description of FMA1/2 Functions
+The general description of FMA1/2 functions described in subclause 5.1 of Part 3
+shall apply.
+10.2 FDL - FMA1/2 Interface
+The FDL - FMA1/2 Interface described in subclause 5.2 of Part 3 shall apply.
+10.2.1 Overview of Services
+The services described in subclause 5.2.1 of Part 3 shall apply.
+PAGE 908
+Page 908
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+10.2.2 Overview of Interactions
+The interactions described in subclause 5.2.2 of Part 3 shall apply.
+10.2.3 Detailed Specification of Services and Interactions
+The specification of services and interactions described in subclause 5.2.3 of
+Part 3 shall apply.
+10.2.3.1 Reset FDL
+The service described in subclause 5.2.3.1 of Part 3 Reset FDL shall apply.
+10.2.3.2 Set Value FDL, Read Value FDL
+Due to the integration of IEC 1158-2, the specifications of the services Set
+Value FDL and Read Value FDL, which are defined in the subclause 5.2.3.2 of Part
+3, shall be extended with the following associated baud rate parameter
+(cf tables 28 and 29 of Part 3):
+- Baud_rate: 31.25 kbit/s
+10.2.3.3 Fault FDL
+The specifications of the service Fault FDL defined in subclause 5.2.3.3 of Part
+3 shall apply.
+10.3 PhL - FMA1/2 Interface
+The interface described in subclause 5.3 of Part 3 shall apply to describe the
+interface between PhL and FMA1/2.
+10.3.1 Overview of Services
+The Ph Layer, as described in IEC 1158-2, clause 6, provides the following
+services to FAM1/2
+- Reset PhL
+- Set Value PhL
+- Get Value PhL
+- Event PhL
+The services shall have the same meaning as described in subclause 5.3.1 of
+Part 3. The Read Value PHY corresponds to the Get Value PhL.
+PAGE 909
+Page 909
+PROFIBUS-Specification-Normative-Parts-9:1997
+ Copyright by PNO 1997 - all rights reserved
+10.3.2 Overview of Interactions
+The following service primitives shall apply at the PhL - FMA1/2 Interface:
+Service Primitive permissible for the following 
+users
+Reset PhL Ph-RESET request Master and Slave
+Set Value PhL Ph-SETVALUE request Master and Slave
+Ph-SETVALUE confirm Master and Slave
+Get Value PhL Ph-GETVALUE request Master and Slave
+Ph-GETVALUE confirm Master and Slave
+Event PhL Ph-EVENT indication Master and Slave
+Temporal Relationships of Service Primitives:
+Master/Slave
+Station 1
+Master/Slave
+Station n
+FMA1/2 PhL
+Ph-RESET req
+Figure 12: Reset - PhL - Service
+Master/Slave
+Station 1
+Master/Slave
+Station n
+FMA1/2 PhL
+Ph-xxxxx req
+Ph-xxxxx con
+Figure 13: Set Value and Get Value PhL Service (cf Fig. 14 of Part 3)

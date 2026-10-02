@@ -1,0 +1,52 @@
+MODBUS over serial line specification and implementation guide V1.02 Modbus.org    
+Modbus.org http://www.modbus.org/ 39/44
+Dec 20, 2006 
+6.2.2 CRC Generation 
+The Cyclical Redundancy Checking (CRC) field is two bytes, containing a 16–bit binary value. The CRC value is calculated by the  
+transmitting device, which appends the CRC to the message. The device that receives recalculates a CRC during receipt of the 
+message, and compares the calculated value to the actual value it received in the CRC field. If the two values are not equal, a n error 
+results. 
+The CRC is started by first preloading a 16–bit register to all 1’s. Then a process begins of applying successive 8–bit bytes o f the 
+message to the current contents of the register. Only the eight bits of data in each character are used for generating the CRC.  Start 
+and stop bits and the parity bit, do not apply to the CRC. 
+During generation of the CRC, each 8–bit character is exclusive ORed with the register contents. Then the result is shifted in the 
+direction of the least significant bit (LSB), with a zero filled into the most significant bit (MSB) position. The LSB is extracted and 
+examined. If the LSB was a 1, the register is then exclusive ORed with a preset, fixed value. If the LSB was a 0, no exclusive OR takes 
+place. 
+This process is repeated until eight shifts have been performed. After the last (eighth) shift, the next 8–bit character is exc lusive ORed 
+with the register’s current value, and the process repeats for eight more shifts as described above. The final content of the r egister, 
+after all the characters of the message have been applied, is the CRC value. 
+A procedure for generating a CRC is: 
+1. Load a 16–bit register w
+ith FFFF hex (all 1’s). Call this the CRC register.
+2. E
+xclusive OR the first 8–bit byte of the message with the low–order byte of the 16–bit CRC register, putting the result in t he
+C
+RC register.
+3. S
+hift the CRC register one bit to the right (toward the LSB), zero–filling the MSB. Extract and examine the LSB.
+4. (If the LS
+B was 0): Repeat Step 3 (another shift).
+(If the LSB was 1): Exclusive OR the CRC register with the polynomial value 0xA001 (1010 0000 0000 0001).
+5. R
+epeat Steps 3 and 4 until 8 shifts have been performed. When this is done, a complete 8–bit byte will have been
+processed.
+6. R
+epeat Steps 2 through 5 for the next 8–bit byte of the message. Continue doing this until all bytes have been processed.
+7
+. T
+he final content of the CRC register is the CRC value.
+8. W
+hen the CRC is placed into the message, its upper and lower bytes must be swapped as described below.
+Placing the CRC into the Message 
+When the 16–bit CRC (two 8–bit bytes) is transmitted in the message, the low-order byte will be transmitted first, followed by the high-
+order byte. 
+For example, if the CRC value is 1241 hex (0001 0010 0100 0001): 
+Addr Func Data
+Count Data Data Data Data CRC
+Lo
+CRC
+Hi
+0x41     0x12
+Figure 30: 
+CRC Byte Sequence 

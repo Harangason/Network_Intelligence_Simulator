@@ -1,0 +1,4084 @@
+PDF_PAGE1
+Product
+Folder
+Order
+Now
+T echnical
+Documents
+Tools &
+Software
+Support &
+Community
+Reference
+Design
+An IMPORTANT NOTICE at the end of this data sheet addresses availability, warranty, changes, use in safety-critical applications,
+intellectual property matters and other important disclaimers. PRODUCTION DATA.
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+TRF7970AMultiprotocolFullyIntegrated13.56-MHzRFIDandNearFieldCommunication
+(NFC)TransceiverIC
+1 Device Overview
+1
+1.1 Features
+1
+• Supports Near Field Communication (NFC)
+Standards NFCIP-1 (ISO/IEC 18092) and NFCIP‑2
+(ISO/IEC 21481)
+• Completely Integrated Protocol Handling for
+ISO/IEC 15693, ISO/IEC 18000-3, ISO/IEC 14443
+A and B, and FeliCa™
+• Integrated Encoders, Decoders, and Data Framing
+for NFC Initiator, Active and Passive Target
+Operation for All Three Bit Rates (106 kbps,
+212 kbps, 424 kbps), and Card Emulation
+• RF Field Detector With Programmable Wake-up
+Levels for NFC Passive Transponder Emulation
+Operation
+• RF Field Detector for NFC Physical Collision
+Avoidance
+• Integrated State Machine for ISO/IEC 14443 A
+Anticollision (Broken Bytes) Operation
+(Transponder Emulation or NFC Passive Target)
+• Input Voltage Range: 2.7 VDC to 5.5 VDC
+• Programmable Output Power: +20 dBm (100 mW),
++23 dBm (200 mW)
+• Programmable I/O Voltage Levels From 1.8 VDC
+to 5.5 VDC
+• Programmable System Clock Frequency Output
+(RF, RF/2, RF/4) from 13.56-MHz or 27.12-MHz
+Crystal or Oscillator
+• Integrated Voltage Regulator Output for Other
+System Components (MCU, Peripherals,
+Indicators), 20 mA (Max)
+• Programmable Modulation Depth
+• Dual Receiver Architecture With RSSI for
+Elimination of "Read Holes" and Adjacent Reader
+System or Ambient In-Band Noise Detection
+• Programmable Power Modes for Ultra Low-Power
+System Design (Power Down <1 µA)
+• Parallel or SPI Interface (With 127-Byte FIFO)
+• Temperature Range: –40°C to 110°C
+• 32-Pin QFN Package (5 mm × 5 mm)
+1.2 Applications
+• Mobile Devices (Tablets, Handsets)
+• Secure Pairing ( Bluetooth®, Wi-Fi®, Other Paired
+Wireless Networks)
+• Public Transport or Event Ticketing
+• Passport or Payment (POS) Reader Systems
+• Short-Range Wireless Communication Tasks
+(Firmware Updates)
+• Product Identification or Authentication
+• Medical Equipment or Consumables
+• Access Control, Digital Door Locks
+• Sharing of Electronic Business Cards
+1.3 Description
+The TRF7970A device is an integrated analog front end (AFE) and multiprotocol data-framing device for a
+13.56-MHz NFC/RFID system supporting all three NFC operation modes – reader/writer, peer-to-peer, and
+card emulation according to ISO/IEC 14443 A and B, Sony FeliCa, ISO/IEC 15693, NFCIP-1
+(ISO/IEC 18092), and NFCIP-2 (ISO/IEC 21481). Built-in programming options make the device suitable
+for a wide range of applications for NFC, proximity, and vicinity identification systems.
+The device is configured by selecting the desired protocol in the control registers. Direct access to all
+control registers allows fine tuning of various reader parameters as needed.
+The TRF7970A device supports data rates up to 848 kbps with all framing and synchronization tasks for
+the ISO protocols onboard. The TRF7970A device also supports reader and writer mode for NFC Forum
+tag types 1, 2, 3, 4, and 5. Other standards and even custom protocols can be implemented by using one
+of the direct modes the device offers. These direct modes let the user fully control the AFE and also gain
+access to the raw subcarrier data or the unframed, but already ISO-formatted, data and the associated
+(extracted) clock signal.
+PDF_PAGE2
+2
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Device Overview Copyright © 2011–2020, Texas Instruments Incorporated
+The receiver system has a dual-input receiver architecture to maximize communication robustness. The
+receivers also include various automatic and manual gain control options. The received signal strength
+from transponders, ambient sources, or internal levels is available in the RSSI register.
+A SPI or parallel interface can be used for the communication between the MCU and the TRF7970A
+device. When the built-in hardware encoders and decoders are used, transmit and receive functions use a
+127-byte FIFO register. For direct transmit or receive functions, the encoders or decoders can be
+bypassed so the MCU can process the data in real time.
+The TRF7970A device supports a wide supply voltage range of 2.7 V to 5.5 V and data communication
+levels from 1.8 V to 5.5 V for the MCU I/O interface.
+The transmitter has selectable output power levels of 100 mW (+20 dBm) or 200 mW (+23 dBm)
+equivalent into a 50-Ω load when using a 5-V supply and supports OOK and ASK modulation with
+selectable modulation depth.
+The built-in programmable auxiliary voltage regulator delivers up to 20 mA to supply an MCU and
+additional external circuits within the reader system.
+Integrated RF field detector with programmable wake-up levels, eight selectable power modes, and ultra-
+low power operation enable easy development of robust and cost-efficient designs for long battery life.
+Start evaluating the TRF7970A multiprotocol transceiver IC with the DLP-7970ABP.
+Device Information
+PART NUMBER PACKAGE BODY SIZE
+TRF7970ARHB VQFN (32) 5 mm × 5 mm
+PDF_PAGE3
+MUX
+RX_IN1
+RX_IN2
+Phase and
+Amplitude
+Detector
+Gain RSSI
+(AUX)
+Logic
+Level Shifter
+State
+Control
+Logic
+(Control
+Registers and
+Command
+Logic)
+127-Byte
+FIFO
+MCU
+Interface
+VDD_I/O
+I/O_0
+I/O_1
+I/O_2
+I/O_3
+I/O_4
+I/O_5
+I/O_6
+I/O_7
+IRQ
+SYS_CLK
+DATA_CLK
+ISO
+Protocol
+Handling Decoder
+RSSI
+(External)
+Gain
+RSSI
+(Main)
+Filter
+and AGC Digitizer
+Bit
+FramingFraming
+Serial
+Conversion
+CRC and Parity
+Transmitter
+Analog Front EndTX_OUT
+VDD_PA
+VSS_PA
+Digital Control
+State Machine
+Crystal or Oscillator
+Timing System
+EN
+EN2
+ASK/OOK
+MOD
+OSC_IN
+OSC_OUT
+Voltage Supply Regulator Systems
+(Supply Regulators and Reference Voltages)
+VSS_A
+VSS_RF
+VDD_RF
+VDD_X
+VSS_D
+VSS
+VIN
+VDD_A
+BAND_GAP
+RF Level
+Detector
+Phase and
+Amplitude
+Detector
+Copyright © 2017, Texas Instruments Incorporated
+3
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Device OverviewCopyright © 2011–2020, Texas Instruments Incorporated
+1.4 Functional Block Diagram
+Figure 1-1 shows the block diagram.
+Figure 1-1. Block Diagram
+PDF_PAGE4
+4
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Table of Contents Copyright © 2011–2020, Texas Instruments Incorporated
+Table of Contents
+1 Device Overview ......................................... 1
+1.1 Features .............................................. 1
+1.2 Applications........................................... 1
+1.3 Description............................................ 1
+1.4 Functional Block Diagram ............................ 3
+2 Revision History ......................................... 5
+3 Device Characteristics.................................. 6
+3.1 Related Products ..................................... 6
+4 Terminal Configuration and Functions.............. 7
+4.1 Pin Diagram .......................................... 7
+4.2 Signal Descriptions ................................... 7
+5 Specifications ............................................ 9
+5.1 Absolute Maximum Ratings .......................... 9
+5.2 ESD Ratings.......................................... 9
+5.3 Recommended Operating Conditions ................ 9
+5.4 Electrical Characteristics ............................ 10
+5.5 Thermal Resistance Characteristics ................ 11
+5.6 Switching Characteristics ........................... 11
+6 Detailed Description ................................... 12
+6.1 Overview ............................................ 12
+6.2 System Block Diagram.............................. 15
+6.3 Power Supplies...................................... 15
+6.4 Receiver – Analog Section .......................... 21
+6.5 Receiver – Digital Section........................... 22
+6.6 Oscillator Section ................................... 27
+6.7 Transmitter – Analog Section ....................... 28
+6.8 Transmitter – Digital Section ........................ 29
+6.9 Transmitter – External Power Amplifier and
+Subcarrier Detector ................................. 30
+6.10 TRF7970A IC Communication Interface ............ 30
+6.11 TRF7970A Initialization ............................. 48
+6.12 Special Direct Mode for Improved MIFARE™
+Compatibility......................................... 49
+6.13 NFC Modes.......................................... 49
+6.14 Direct Commands from MCU to Reader ............ 51
+6.15 Register Description................................. 55
+7 Applications, Implementation, and Layout........ 75
+7.1 TRF7970A Reader System Using SPI With SS
+Mode ................................................ 75
+7.2 Layout Considerations .............................. 76
+7.3 Impedance Matching TX_Out (Pin 5) to 50 Ω ...... 76
+7.4 Reader Antenna Design Guidelines ................ 77
+8 Device and Documentation Support ............... 78
+8.1 Getting Started and Next Steps..................... 78
+8.2 Device Nomenclature ............................... 78
+8.3 Tools and Software ................................. 79
+8.4 Documentation Support ............................. 79
+8.5 Support Resources.................................. 80
+8.6 Trademarks.......................................... 80
+8.7 Electrostatic Discharge Caution..................... 80
+8.8 Glossary ............................................. 80
+9 Mechanical, Packaging, and Orderable
+Information .............................................. 81
+PDF_PAGE5
+5
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Revision HistoryCopyright © 2011–2020, Texas Instruments Incorporated
+2 Revision History
+NOTE: Page numbers for previous revisions may differ from page numbers in the current version.
+Changes from March 28, 2017 to March 11, 2020 Page
+• Removed links to obsolete EVMs in Section 1.3 Description................................................................... 2
+• Removed "(Optional)" from the step that begins "Write the Regulator and I/O Control register (0x0B)..." in
+Section 6.11 TRF7970A Initialization ............................................................................................. 48
+• Updated linked documents in Section 7.4 Reader Antenna Design Guidelines ............................................ 77
+• Removed obsolete EVMs in Section 8.3 Tools and Software................................................................. 79
+PDF_PAGE6
+6
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Device Characteristics Copyright © 2011–2020, Texas Instruments Incorporated
+(1) 848 kbps applies to reader/writer mode only.
+3 Device Characteristics
+Table 3-1 lists the supported modes of operation for the TRF7970A device.
+Table 3-1. Supported Modes of Operation
+P2P INITIATOR OR READER/WRITER CARD EMULATION P2P TARGET
+TECHNOLOGY BIT RATE
+(kbps) TECHNOLOGY BIT RATE
+(kbps) TECHNOLOGY BIT RATE
+(kbps)
+NFC-A and NFC-B
+(ISO/IEC 14443 A and B)
+106, 212, 424,
+848 (1) NFC-A, NFC-B 106 NFC-A 106
+NFC-F (JIS: X6319-4) 212, 424 N/A N/A NFC-F 212, 424
+NFC-V (ISO/IEC 15693) 6.7, 26.7 N/A N/A N/A N/A
+3.1 Related Products
+For information about other devices in this family of products or related products, see the following links.
+Products for TI Wireless Connectivity Connect more with the industry’s broadest wireless connectivity
+portfolio.
+Products for NFC / RFID TI provides one of the industry’s most differentiated NFC and RFID product
+portfolios and is your solution to meet a broad range of NFC connectivity and RFID
+identification needs.
+Companion Products for TRF7970A Review products that are frequently purchased or used with this
+product.
+Reference Designs for TRF7970A The TI Designs Reference Design Library is a robust reference
+design library that spans analog, embedded processor, and connectivity. Created by TI
+experts to help you jump start your system design, all TI Designs include schematic or block
+diagrams, BOMs, and design files to speed your time to market. Search and download
+designs at ti.com/tidesigns.
+PDF_PAGE7
+VDD_A
+VIN
+VDD_RF
+VDD_PA
+TX_OUT
+VSS_PA
+VSS_RX
+RX_IN1
+I/O_7
+RX_IN2VSS BG ASK/OOKIRQ MOD VSS_AVDD_I/O
+Pad
+VDD_XOSC_IN
+OSC_OUT
+VSS_D
+EN
+SYS_CLKDATA_CLK
+EN2
+1
+2
+3
+4
+5
+6
+7
+8
+24
+23
+22
+21
+20
+19
+18
+17
+9 10 11 12 13 14 15 16
+32 31 30 29 28 27 26 25
+I/O_6
+I/O_5
+I/O_4
+I/O_3
+I/O_2
+I/O_1
+I/O_0
+7
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Terminal Configuration and FunctionsCopyright © 2011–2020, Texas Instruments Incorporated
+(1) SUP = Supply, INP = Input, BID = Bidirectional, OUT = Output
+4 Terminal Configuration and Functions
+4.1 Pin Diagram
+Figure 4-1 shows the pinout for the 32-pin RHB package.
+Figure 4-1. 32-Pin RHB Package (Top View)
+4.2 Signal Descriptions
+Table 4-1 describes the signals.
+Table 4-1. Terminal Functions
+TERMINAL
+TYPE (1) DESCRIPTION
+NAME NO.
+VDD_A 1 OUT Internal regulated supply (2.7 V to 3.4 V) for analog circuitry
+VIN 2 SUP External supply input to chip (2.7 V to 5.5 V)
+VDD_RF 3 OUT Internal regulated supply (2.7 V to 5 V), normally connected to VDD_PA (pin 4)
+VDD_PA 4 INP Supply for PA; normally connected externally to VDD_RF (pin 3)
+TX_OUT 5 OUT RF output (selectable output power, 100 mW or 200 mW, with VDD = 5 V)
+VSS_PA 6 SUP Negative supply for PA; normally connected to circuit ground
+VSS_RX 7 SUP Negative supply for RX inputs; normally connected to circuit ground
+RX_IN1 8 INP Main RX input
+RX_IN2 9 INP Auxiliary RX input
+VSS 10 SUP Chip substrate ground
+BAND_GAP 11 OUT Bandgap voltage (VBG = 1.6 V); internal analog voltage reference
+ASK/OOK 12 BID
+Selection between ASK and OOK modulation (0 = ASK, 1 = OOK) for direct mode 0 or 1.
+Can be configured as an output to provide the received analog signal output.
+PDF_PAGE8
+8
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Terminal Configuration and Functions Copyright © 2011–2020, Texas Instruments Incorporated
+Table 4-1. Terminal Functions (continued)
+TERMINAL
+TYPE (1) DESCRIPTION
+NAME NO.
+IRQ 13 OUT Interrupt request
+MOD 14
+INP External data modulation input for direct mode 0 or 1
+OUT Subcarrier digital data output (see registers 0x1A and 0x1B)
+VSS_A 15 SUP Negative supply for internal analog circuits; connected to GND
+VDD_I/O 16 INP Supply for I/O communications (1.8 V to VIN) level shifter. VIN should be never exceeded.
+I/O_0 17 BID I/O pin for parallel communication
+I/O_1 18 BID I/O pin for parallel communication
+I/O_2 19 BID
+I/O pin for parallel communication
+TX enable (in special direct mode)
+I/O_3 20 BID
+I/O pin for parallel communication
+TX data (in special direct mode)
+I/O_4 21 BID
+I/O pin for parallel communication
+Slave select signal in SPI mode
+I/O_5 22 BID
+I/O pin for parallel communication
+Data clock output in direct mode 1 and special direct mode
+I/O_6 23 BID
+I/O pin for parallel communication
+MISO for serial communication (SPI)
+Serial bit data output in direct mode 1 or subcarrier signal in direct mode 0
+I/O_7 24 BID
+I/O pin for parallel communication.
+MOSI for serial communication (SPI)
+EN2 25 INP Selection of power down mode. If EN2 is connected to VIN, then VDD_X is active during power
+down mode 2 (for example, to supply the MCU).
+DATA_CLK 26 INP Data clock input for MCU communication (parallel and serial)
+SYS_CLK 27 OUT
+If EN = 1 (EN2 = don't care) the system clock for MCU is configured. Depending on the crystal
+that is used, options are as follows (see register 0x09):
+13.56-MHz crystal: Off, 3.39 MHz, 6.78 MHz, or 13.56 MHz
+27.12-MHz crystal: Off, 6.78 MHz, 13.56 MHz, or 27.12 MHz
+If EN = 0 and EN2 = 1, then system clock is set to 60 kHz
+EN 28 INP Chip enable input (If EN = 0, then chip is in sleep or power-down mode).
+VSS_D 29 SUP Negative supply for internal digital circuits
+OSC_OUT 30 OUT Crystal or oscillator output
+OSC_IN 31
+INP Crystal or oscillator input
+OUT Crystal oscillator output
+VDD_X 32 OUT Internally regulated supply (2.7 V to 3.4 V) for digital circuit and external devices (for example,
+an MCU)
+Thermal Pad PAD SUP Chip substrate ground
+PDF_PAGE9
+9
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+SpecificationsCopyright © 2011–2020, Texas Instruments Incorporated
+(1) Stresses beyond those listed under Absolute Maximum Ratings may cause permanent damage to the device. These are stress ratings
+only and functional operation of the device at these or any other conditions beyond those indicated under Recommended Operating
+Conditions are not implied. Exposure to absolute-maximum-rated conditions for extended periods may affect device reliability.
+(2) All voltage values are with respect to substrate ground terminal VSS.
+(3) The maximum junction temperature for continuous operation is limited by package constraints. Operation above this temperature may
+result in reduced reliability or lifetime of the device.
+5 Specifications
+5.1 Absolute Maximum Ratings (1) (2)
+over operating free-air temperature range (unless otherwise noted)
+MIN MAX UNIT
+VIN Input voltage range –0.3 6 V
+IIN Maximum current VIN 150 mA
+TJ Maximum operating virtual junction temperature
+Any condition 140 °C
+Continuous operation, long-term reliability (3) 125 °C
+TSTG Storage temperature –55 150 °C
+(1) JEDEC document JEP155 states that 500-V HBM allows safe manufacturing with a standard ESD control process. Pins listed as ±2000
+V may actually have higher performance.
+(2) JEDEC document JEP157 states that 250-V CDM allows safe manufacturing with a standard ESD control process. Pins listed as ±500 V
+may actually have higher performance.
+5.2 ESD Ratings
+VALUE UNIT
+V(ESD) Electrostatic discharge
+Human-body model (HBM), per ANSI/ESDA/JEDEC JS-001, all pins (1) ±2000 V
+Charged-device model (CDM), per JEDEC specification JESD22-C101, all
+pins (2) ±500 V
+Machine model (MM) ±200 V
+5.3 Recommended Operating Conditions
+over operating free-air temperature range (unless otherwise noted)
+MIN TYP MAX UNIT
+VIN Operating input voltage 2.7 5 5.5 V
+TA Operating ambient temperature –40 25 110 °C
+TJ Operating virtual junction temperature –40 25 125 °C
+VIL Input voltage, logic low I/O lines, IRQ, SYS_CLK, DATA_CLK,
+EN, EN2, ASK/OOK, MOD
+0.2 ×
+VDD_I/O
+V
+VIH Input voltage threshold, logic high I/O lines, IRQ, SYS_CLK, DATA_CLK,
+EN, EN2, ASK/OOK, MOD
+0.8 ×
+VDD_I/O
+V
+PDF_PAGE10
+10
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Specifications Copyright © 2011–2020, Texas Instruments Incorporated
+(1) Antenna driver output resistance
+(2) Measured with subcarrier signal at RX_IN1 or RX_IN2 and measured the digital output at MOD pin with register 0x1A bit 6 = 1.
+(3) Depends on the crystal parameters and components
+(4) TI recommends a DATA_CLK speed of 2 MHz. Higher data clock depends on the capacitive load. Maximum SPI clock speed should not
+exceed 10 MHz. This clock speed is acceptable only when external capacitive load is less than 30 pF. MISO driver has a typical output
+resistance of 400 Ω (12-ns time constant when 30-pF load used).
+5.4 Electrical Characteristics
+TYP operating conditions are TA = 25°C, VIN = 5 V, full-power mode (unless otherwise noted)
+MIN and MAX operating conditions are over recommended ranges of supply voltage and operating free-air temperature
+(unless otherwise noted)
+PARAMETER TEST CONDITIONS MIN TYP MAX UNIT
+VOL Low-level output voltage 0.2 ×
+VDD_I/O
+V
+VOH High-level output voltage 0.8 ×
+VDD_I/O
+V
+IPD1 Supply current in power down mode 1
+All building blocks disabled, including
+supply-voltage regulators; measured after
+500-ms settling time (EN = 0, EN2 = 0)
+0.5 5 µA
+IPD2
+Supply current in power down mode 2
+(sleep mode)
+The SYS_CLK generator and VDD_X
+remain active to support external circuitry;
+measured after 100-ms settling time
+(EN = 0, EN2 = 1)
+120 200 µA
+ISTBY Supply current in stand-by mode
+Oscillator running, supply-voltage
+regulators in low-consumption mode
+(EN = 1, EN2 = x)
+1.9 3.5 mA
+ION1
+Supply current without antenna driver
+current
+Oscillator, regulators, RX and AGC
+active, TX is off 10.5 14 mA
+ION2 Supply current, TX (half power) Oscillator, regulators, RX and AGC and
+TX active, POUT = 100 mW 70 78 mA
+ION3 Supply current, TX (full power) Oscillator, regulators, RX and AGC and
+TX active, POUT = 200 mW 130 150 mA
+VPOR Power-on-reset voltage Input voltage at VIN 1.4 2 2.6 V
+VBG Bandgap voltage (pin 11) Internal analog reference voltage 1.5 1.6 1.7 V
+VDD_A
+Regulated output voltage for analog
+circuitry (pin 1) VIN = 5 V 3.1 3.4 3.8 V
+VDD_X Regulated supply for external circuitry Output voltage pin 32, VIN = 5 V 3.1 3.4 3.8 V
+IVDD_Xmax Maximum output current of VDD_X Output current pin 32, VIN = 5 V 20 mA
+RRFOUT Antenna driver output resistance (1) Half-power mode, VIN = 2.7 V to 5.5 V 8 12
+Ω
+Full-power mode, VIN = 2.7 V to 5.5 V 4 6
+RRFIN RX_IN1 and RX_IN2 input resistance 4 10 20 kΩ
+VRF_INmax
+Maximum RF input voltage at RX_IN1
+and RX_IN2 VRF_INmax should not exceed VIN 3.5 Vpp
+VRF_INmin
+Minimum RF input voltage at RX_IN1
+and RX_IN2 (input sensitivity) (2)
+fSUBCARRIER = 424 kHz 1.4 2.5
+mVpp
+fSUBCARRIER = 848 kHz 2.1 3
+fSYS_CLK SYS_CLK frequency In power mode 2, EN = 0, EN2 = 1 25 60 120 kHz
+fC Carrier frequency Defined by external crystal 13.56 MHz
+tCRYSTAL Crystal run-in time Time until oscillator stable bit is set
+(register 0x0F) (3) 3 ms
+fD_CLKmax Maximum DATA_CLK frequency (4) Depends on capacitive load on the I/O
+lines, TI recommends 2 MHz (4) 2 4 10 MHz
+ROUT Output resistance I/O_0 to I/O_7 500 800 Ω
+RSYS_CLK Output resistance RSYS_CLK 200 400 Ω
+PDF_PAGE11
+11
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+SpecificationsCopyright © 2011–2020, Texas Instruments Incorporated
+(1) This data was taken using the JEDEC standard high-K test PCB.
+(2) Power rating is determined with a junction temperature of 125°C. This is the temperature at which distortion starts to increase
+substantially. Thermal management of the final PCB should strive to keep the junction temperature at or below 125°C for best
+performance and long-term reliability.
+5.5 Thermal Resistance Characteristics
+PACKAGE θJC θJA (1) POWER RATING (2)
+TA ≤ 25°C TA ≤ 85°C
+RHB (32 pin) 31°C/W 36.4°C/W 2.7 W 1.1 W
+(1) TI recommends a DATA_CLK speed of 2 MHz. Higher data clock depends on the capacitive load. Maximum SPI clock speed should not
+exceed 10 MHz. This clock speed is acceptable only when external capacitive load is less than 30 pF. MISO driver has a typical output
+resistance of 400 Ω (12-ns time constant when 30-pF load used).
+5.6 Switching Characteristics
+TYP operating conditions are TA = 25°C, VIN = 5 V, full-power mode (unless otherwise noted)
+MIN and MAX operating conditions are over recommended ranges of supply voltage and operating free-air temperature
+(unless otherwise noted)
+PARAMETER TEST CONDITIONS MIN TYP MAX UNIT
+tLO/HI
+DATA_CLK time high or low, one half of DATA_CLK at
+50% duty cycle
+Depends on capacitive load on the
+I/O lines (1) 250 62.5 50 ns
+tSTE,LEAD Slave select lead time, slave select low to clock 200 ns
+tSTE,LAG Slave select lag time, last clock to slave select high 200 ns
+tSTE,DIS
+Slave select disable time, slave select rising edge to
+next slave select falling edge 300 ns
+tSU,SI MOSI input data setup time 15 ns
+tHD,SI MOSI input data hold time 15 ns
+tSU,SO MISO input data setup time 15 ns
+tHD,SO MISO input data hold time 15 ns
+tVALID,SO MISO output data valid time DATA_CLK edge to MISO valid,
+CL ≤ 30 pF 30 50 75 ns
+PDF_PAGE12
+TRF7970A MCU
+(MSP430 or ARM)
+Matching
+VDD_X VDD_I/O
+TX_OUT
+RX_IN 1
+RX_IN2 VSS VIN
+Parallel
+or SPI
+Supply: 2.7 V to 5.5 V
+VDD
+VDD
+Crystal
+13.56 MHz
+XIN
+12
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6 Detailed Description
+6.1 Overview
+6.1.1 RFID and NFC Operation – Reader and Writer
+The TRF7970A is a high-performance 13.56-MHz HF RFID and NFC transceiver IC composed of an
+integrated analog front end (AFE) and a built-in data framing engine for ISO/IEC 15693, ISO/IEC 14443 A
+and B, and FeliCa. This includes data rates up to 848 kbps for ISO/IEC 14443 with all framing and
+synchronization tasks on board (in default mode). The TRF7970A also supports NFC tag type 1, 2, 3, 4,
+and 5 operations. This architecture lets the customer build a complete cost-effective yet high-performance
+multiprotocol 13.56-MHz RFID and NFC system together with a low-cost microcontroller.
+Other standards and even custom protocols can be implemented by using either of the direct modes that
+the device offers. These direct modes (0 and 1) allow the user to fully control the analog front end (AFE)
+and also gain access to the raw subcarrier data or the unframed but already ISO formatted data and the
+associated (extracted) clock signal.
+The receiver system has a dual input receiver architecture. The receivers also include various automatic
+and manual gain control options. The received input bandwidth can be selected to cover a broad range of
+input subcarrier signal options.
+The received signal strength from transponders, ambient sources, or internal levels is available through
+the RSSI register. The receiver output is selectable among a digitized subcarrier signal and any of the
+integrated subcarrier decoders. The selected subcarrier decoder delivers the data bit stream and the data
+clock as outputs.
+The TRF7970A also includes a receiver framing engine. This receiver framing engine performs the CRC
+or parity check, removes the EOF and SOF settings, and organizes the data in bytes for ISO/IEC 14443 A
+and B, ISO/IEC 15693, and FeliCa protocols. Framed data is then accessible to the microcontroller (MCU)
+through a 127-byte FIFO register.
+Figure 6-1. Application Block Diagram
+A parallel or serial interface (SPI) can be used for the communication between the MCU and the
+TRF7970A reader. When the built-in hardware encoders and decoders are used, transmit and receive
+functions use a 127-byte FIFO register. For direct transmit or receive functions, the encoders and
+decoders can be bypassed so that the MCU can process the data in real time. The TRF7970A supports
+data communication voltage levels from 1.8 V to 5.5 V for the MCU I/O interface. The transmitter has
+selectable output-power levels of 100 mW (+20 dBm) or 200 mW (+23 dBm) equivalent into a 50-Ω load
+when using a 5-V supply.
+PDF_PAGE13
+13
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+The transmitter supports OOK and ASK modulation with selectable modulation depth. The TRF7970A also
+includes a data transmission engine that comprises low-level encoding for ISO/IEC 15693, ISO/IEC 14443
+A and B, and FeliCa. Included with the transmit data coding is the automatic generation of Start Of Frame
+(SOF), End Of Frame (EOF), Cyclic Redundancy Check (CRC), and parity bits.
+Several integrated voltage regulators ensure a proper power-supply noise rejection for the complete
+reader system. The built-in programmable auxiliary voltage regulator VDD_X (pin 32), is able to deliver up to
+20 mA to supply a microcontroller and additional external circuits within the reader system.
+6.1.2 NFC Device Operation – Initiator
+The transmitting system includes an RF level detector (programmable level) which is used for initial (or
+response) RF collision avoidance. The RF collision avoidance sequence is started by sending a direct
+command. If successful, the NFC initiator can send the data or commands, the MCU has loaded in the
+FIFO register. The coding of this data is done by hardware coders in ISO/IEC 14443 A and B, or FeliCa
+format. The coders also provide CRC and parity bits (if required) and automatically add preambles, SOF,
+EOF, and synchronization bytes as defined by selected protocol.
+The receiver system offers the same analog features (AGC, AM or PM, bandwidth selection, and so on)
+as described previously in RFID and NFC reader and writer description. The system comprises integrated
+decoders for passive targets (ISO/IEC 14443 A or ISO/IEC 14443 B tag or FeliCa) or active targets
+(ISO/IEC 14443 A or ISO/IEC 14443 B reader or FeliCa). For all this options, the system also supports
+framing including CRC and parity check and removal of SOF, EOF, and synchronization bytes as
+specified by the selected protocol.
+6.1.3 NFC Device Operation – Target
+The activation of NFC target is done when a sufficient RF field level is detected on the antenna. The level
+needed for wake-up is selectable and is stored in a nonvolatile register.
+When the activation occurs, the system performs automatic power-up and waits for the first command to
+be received. Based on this command, the system knows if it should operate as passive or active target
+and at what bit rate. After activation, the receiver system offers the same analog features (for example,
+AGC, AM/PM, and bandwidth selection) as in the case of an RFID reader.
+When used as the NFC target, the chip is typically in a power down or standby mode. If EN2 = H, the chip
+keeps the supply system on. If EN2 = L and EN = L, the chip is in complete power down. To operate as
+NFC target or card emulator, the MCU must load a value different from zero (0) in the Target Detection
+Level register (B0-B2) to enable the RF measurement system (supplied by VEXT, so it can also operate
+during complete power down and consume only 3.5 µA). The RF measurement constantly monitors the
+RF signal on the antenna input. When the RF level on the antenna input exceeds the level defined in the
+in Target Detection Level register, the chip is automatically activated (EN is internally forced high).
+When the voltage supply system and the oscillator are started and are stable, osc_ok goes high (B6 of
+RSSI Level and Oscillator Status register) and IRQ is sent with bit B2 = 1 of IRQ register (field change).
+Bit B7 NFC Target Protocol in register directly displays the status of RF level detection (running constantly
+also during normal operation). This informs the MCU that the chip should start operation as NFC TARGET
+device. When the first command from the INITIATOR is received, another IRQ sent with B6 (RX start) set
+in the IRQ register. The MCU must set EN = H (confirm the power up) in the time between the two IRQs,
+because the internal power-up ends after the second IRQ. The type and coding of the first initiator (or
+reader in the case of a card emulator) command defines the communication protocol type that the target
+must use. Therefore, the communication protocol type is available in the NFC Target Protocol register
+immediately after receiving the first command.
+PDF_PAGE14
+14
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Based on the first command from the INITIATOR, the following actions are taken:
+• If the first command is SENS_REQ or ALL_REQ, the TARGET must enter the SDD protocol for 106-
+kbps passive communication to begin; afterward, the baud rate can be changed to 212 kbps or 424
+kbps, which is determined by the NFC initiator device. If bit B5 in the NFC Target Detection Level
+register is not set, the MCU handles the SDD and the command received is send to FIFO. For
+interoperability purposes, TI recommends allowing the MCU to handle the SDD process rather than
+use the TRF7970A Auto-SDD feature to ensure interoperability with other NFC devices. If the RF field
+is turned off (B7 in NFC Target Protocol register is low) at any time, the system sends an IRQ to the
+MCU with bit B2 (RF field change) in the IRQ register set high. This informs the MCU that the
+procedure was aborted and the system must be reset. The clock extractor is automatically activated in
+this mode.
+• If the command is SENS_REQ or ALL_REQ and the card emulation bit in ISO Control register is set,
+the system emulates an ISO/IEC 14443 A or ISO/IEC 14443 B tag. The procedure does not differ from
+the one previously described for the case of a passive target at 106 kbps. The clock extractor is
+automatically activated in this mode.
+• If the first command is a SENSF_REQ, the system becomes the TARGET in passive communication
+using 212 kbps or 424 kbps. The SDD is relatively simple and is handled by the MCU directly.
+• If the first command is ATR_REQ, the system operates as an active TARGET using the same
+communication speed and bit coding as used by the INITIATOR. Again, all of the replies are handled
+by the MCU. The MCU should handle the timing requirements for collision avoidance. This is done by
+using external RSSI to detect external RF fields before enabling RF on the TRF7970A.
+• If the first command is a SENSB_REQ request and the card emulation bit is set in the ISO Control
+register, the system enters ISO/IEC 14443 B emulation mode. The anticollision must be handled by the
+MCU, and the chip provides all physical level coding, decoding, and framing for this protocol.
+6.1.3.1 Active Target
+If the first command received by the RF interface defines the system as an active target, then the receiver
+selects the appropriate data decoders (ISO/IEC 14443 A or ISO/IEC 14443 B reader or peer-to-peer) and
+framing option. Only the raw (decoded) data is forwarded to the MCU through the FIFO. SOF, EOF,
+preamble, sync bytes, CRC, and parity bytes are checked by the framer and discarded.
+The transmission of a response must occur after RF collision avoidance has been processed. The
+recommended method for RF collision avoidance is to use external RSSI to detect any external RF field. If
+successful, the NFC initiator can send the data that the MCU has loaded in the FIFO register. The coding
+of this data is done by hardware coders either in ISO/IEC 14443 A format (106-kbps system) or in peer-to-
+peer format for (212-kbps and 424-kbps systems). The coders also provide CRC and parity bits (if
+required) and automatically add preambles, SOF, EOF, and synchronization bytes as defined by selected
+protocol.
+6.1.3.2 Passive Target
+If the first command received by the RF interface defines the system as a passive target, then the receiver
+selects the appropriate data decoders (ISO/IEC 14443 A or ISO/IEC 14443 B reader or peer-to-peer) and
+framing option. Again, only the raw (decoded) data is forwarded to the MCU through the FIFO; SOF, EOF,
+preamble, sync bytes, CRC, and parity bytes are checked by the framer and discarded. The receiver
+works same as in the case of an active target.
+The transmit system in passive target mode differs from active target and operates similar to the standard
+tag. There is no RF collision avoidance sequence, and encoders are used to code the data for
+ISO/IEC 14443 A or ISO/IEC 14443 B tag (at 106 kbps, to start) or peer-to-peer (at 212 kbps, to start)
+format. The coding system adds all of the SOF, EOF, CRC, parity bits, and synchronization bytes that are
+required by protocol. The response is transmitted over-the-air with a method known as load modulation.
+PDF_PAGE15
+MUX
+RX_IN1
+RX_IN2
+Phase and
+Amplitude
+Detector
+Gain RSSI
+(AUX)
+Logic
+Level Shifter
+State
+Control
+Logic
+(Control
+Registers and
+Command
+Logic)
+127-Byte
+FIFO
+MCU
+Interface
+VDD_I/O
+I/O_0
+I/O_1
+I/O_2
+I/O_3
+I/O_4
+I/O_5
+I/O_6
+I/O_7
+IRQ
+SYS_CLK
+DATA_CLK
+ISO
+Protocol
+Handling Decoder
+RSSI
+(External)
+Gain
+RSSI
+(Main)
+Filter
+and AGC Digitizer
+Bit
+FramingFraming
+Serial
+Conversion
+CRC and Parity
+Transmitter
+Analog Front EndTX_OUT
+VDD_PA
+VSS_PA
+Digital Control
+State Machine
+Crystal or Oscillator
+Timing System
+EN
+EN2
+ASK/OOK
+MOD
+OSC_IN
+OSC_OUT
+Voltage Supply Regulator Systems
+(Supply Regulators and Reference Voltages)
+VSS_A
+VSS_RF
+VDD_RF
+VDD_X
+VSS_D
+VSS
+VIN
+VDD_A
+BAND_GAP
+RF Level
+Detector
+Phase and
+Amplitude
+Detector
+Copyright © 2017, Texas Instruments Incorporated
+15
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.1.3.3 Card Emulation
+The chip can enter this mode by setting appropriate option bits. The chip can emulate ISO/IEC 14443 A
+and B card types. For ISO/IEC 14443 A and B, the emulation supports 106-kbps data rate to start. For
+ISO/IEC 14443 A, the anticollision algorithm can be performed using an internal state machine, which
+relieves the MCU of any real-time tasks; however, this method can present interoperability challenges with
+other NFC devices due to timing requirements. To ensure best interoperability, TI recommends allowing
+the MCU to manage the anticollision process, instead. The unique ID required for anticollision is provided
+by the MCU after wakeup of the system.
+6.2 System Block Diagram
+Figure 6-2 shows a block diagram of the TRF7970A.
+Figure 6-2. System Block Diagram
+6.3 Power Supplies
+The TRF7970A positive supply input VIN (pin 2) sources three internal regulators with output voltages
+VDD_RF, VDD_A and VDD_X. All regulators use external bypass capacitors for supply noise filtering and must
+be connected as indicated in reference schematics. These regulators provide a high power supply reject
+ratio (PSRR) as required for RFID reader systems. All regulators are supplied by VIN (pin 2).
+The regulators are not independent and have common control bits in register 0x0B for output voltage
+setting. The regulators can be configured to operate in either automatic or manual mode (register 0x0B,
+bit 7). The automatic regulator setting mode ensures an optimal compromise between PSRR and the
+highest possible supply voltage for RF output (to ensure maximum RF power output). The manual mode
+allows the user to manually configure the regulator settings. For applications in which the TRF7970A may
+be subjected to external noise, manually reducing the regulator settings can improve RF performance.
+PDF_PAGE16
+16
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.3.1 Supply Arrangements
+Regulator Supply Input: VIN
+The positive supply at VIN (pin 2) has an input voltage range of 2.7 V to 5.5 V. VIN provides the supply
+input sources for three internal regulators with the output voltages VDD_RF, VDD_A, and VDD_X. External
+bypass capacitors for supply noise filtering must be used (per reference schematics).
+NOTE
+VIN must be the highest voltage supplied to the TRF7970A.
+RF Power Amplifier Regulator: VDD_RF
+The VDD_RF (pin 3) regulator is supplying the RF power amplifier. The voltage regulator can be set for
+either 5-V or 3-V operation. External bypass capacitors for supply noise filtering must be used (per
+reference schematics). When configured for 5-V manual-operation, the VDD_RF output voltage can be set
+from 4.3 V to 5 V in 100-mV steps. In 3-V manual-operation, the output can be programmed from 2.7 V to
+3.4 V in 100-mV steps. The maximum output current capability for 5-V operation is 150 mA and for 3-V
+operation is 100 mA.
+Analog Supply Regulator: VDD_A
+Regulator VDD_A (pin 1) supplies the analog circuits of the device. The output voltage setting depends on
+the input voltage and can be set for 5-V and 3-V operation. When configured for 5-V manual-operation,
+the output voltage is fixed at 3.4 V. External bypass capacitors for supply noise filtering must be used (per
+reference schematics). When configured for 3-V manual-operation, the VDD_A output can be set from 2.7 V
+to 3.4 V in 100-mV steps (see Table 6-2).
+NOTE
+The configuration of VDD_A and VDD_X regulators are not independent from each other. The
+VDD_X output current should not exceed 20 mA.
+Digital Supply Regulator: VDD_X
+The digital supply regulator VDD_X (pin 32) provides the power for the internal digital building blocks and
+can also be used to supply external electronics within the reader system. When configured for 3-V
+operation, the output voltage can be set from 2.7 to 3.4 V in 100-mV steps. External bypass capacitors for
+supply noise filtering must be used (per reference schematics).
+NOTE
+The configuration of the VDD_A and VDD_X regulators are not independent from each other.
+The VDD_X output current should not exceed 20 mA.
+By default, the regulators are set in automatic regulator setting mode. In this mode, the regulators are
+automatically set every time the system is activated by setting EN input High or each time the automatic
+regulator setting bit, B7 in register 0x0B is set to a 1. The action is started on the 0 to 1 transition. This
+means that, if the user wants to rerun the automatic setting from a state in which the automatic setting bit
+is already high, the automatic setting bit (B7 in register 0x0B) should be changed: 1-0-1.
+By default, the regulator setting algorithm sets the regulator outputs to a "Delta Voltage" of 400 mV below
+VIN, but not higher than 5 V for VDD_RF and 3.4 V for VDD_A and VDD_A.
+PDF_PAGE17
+17
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Power Amplifier Supply: VDD_PA
+The power amplifier of the TRF7970A is supplied through VDD_PA (pin 4). The positive supply pin for the
+RF power amplifier is externally connected to the regulator output VDD_RF (pin 3).
+I/O Level Shifter Supply: VDD_I/O
+The TRF7970A has a separate supply input VDD_I/O (pin 16) for the built-in I/O level shifter. The supported
+input voltage ranges from 1.8 V to VIN, not exceeding 5.5 V. Pin 16 is used to supply the I/O interface pins
+(I/O_0 to I/O_7), IRQ, SYS_CLK, and DATA_CLK pins of the reader. In typical applications, VDD_I/O is
+directly connected to VDD_X, while VDD_X also supplies the MCU. This ensures that the I/O signal levels of
+the MCU match the logic levels of the TRF7970A.
+Negative Supply Connections: VSS, VSS_TX, VSS_RX, VSS_A, VSS_PA
+The negative supply connections VSS_X of each functional block are all externally connected to GND.
+The substrate connection is VSS (pin 10), the analog negative supply is VSS_A (pin 15), the logic negative
+supply is VSS_D (pin 29), the RF output stage negative supply is VSS_PA (pin 6), and the negative supply for
+the RF receiver VSS_RX (pin 7).
+PDF_PAGE18
+18
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+(1) x = Don't care
+6.3.2 Supply Regulator Settings
+The input supply voltage mode of the reader needs to be selected. This is done in the Chip Status Control
+register (0x00). Bit 0 in register 0x00 selects between 5-V or 3-V input supply voltage. The default
+configuration is 5 V, which reflects an operating supply voltage range of 4.3 V to 5.5 V. If the supply
+voltage is below 4.3 V, the 3-V configuration should be used.
+As VDD_RF is increased, the system can become more susceptible to noise coupling on the RX lines. For
+minimum noise coupling, TI recommends using the value of 0x00. For improved range, higher VDD_RF
+voltages may be set, but complete system testing is required to determine the value which provides
+optimal performance.
+The various regulators can be configured to operate in automatic or manual mode. This is done in the
+Regulator and I/O Control register (0x0B), as shown in Table 6-1 and Table 6-2.
+Table 6-1. Supply Regulator Setting: 5-V System
+REGISTER
+ADDRESS
+(hex)
+OPTION BITS SETTING IN REGULATOR CONTROL REGISTER (1)
+COMMENTS
+B7 B6 B5 B4 B3 B2 B1 B0
+Automatic Mode (default)
+0B 1 x x x x x 0 0 Automatic regulator setting 400-mV difference
+Manual Mode
+0B 0 x x x x 1 1 1 VDD_RF = 5 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 x x x x 1 1 0 VDD_RF = 4.9 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 x x x x 1 0 1 VDD_RF = 4.8 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 x x x x 1 0 0 VDD_RF = 4.7 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 x x x x 0 1 1 VDD_RF = 4.6 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 x x x x 0 1 0 VDD_RF = 4.5 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 x x x x 0 0 1 VDD_RF = 4.4 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 x x x x 0 0 0 VDD_RF = 4.3 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+(1) x = Don't care
+Table 6-2. Supply Regulator Setting: 3-V System
+REGISTER
+ADDRESS
+(hex)
+OPTION BITS SETTING IN REGULATOR CONTROL REGISTER (1)
+COMMENTS
+B7 B6 B5 B4 B3 B2 B1 B0
+Automatic Mode (default)
+0B 1 x x x x x 0 0 Automatic regulator setting 400-mV difference
+Manual Mode
+0B 0 x x x x 1 1 1 VDD_RF = 3.4 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 x x x x 1 1 0 VDD_RF = 3.3 V, VDD_A = 3.3 V, VDD_X = 3.3 V
+0B 0 x x x x 1 0 1 VDD_RF = 3.2 V, VDD_A = 3.2 V, VDD_X = 3.2 V
+0B 0 x x x x 1 0 0 VDD_RF = 3.1 V, VDD_A = 3.1 V, VDD_X = 3.1 V
+0B 0 x x x x 0 1 1 VDD_RF = 3.0 V, VDD_A = 3.0 V, VDD_X = 3.0 V
+0B 0 x x x x 0 1 0 VDD_RF = 2.9 V, VDD_A = 2.9 V, VDD_X = 2.9 V
+0B 0 x x x x 0 0 1 VDD_RF = 2.8 V, VDD_A = 2.8 V, VDD_X = 2.8 V
+0B 0 x x x x 0 0 0 VDD_RF = 2.7 V, VDD_A = 2.7 V, VDD_X = 2.7 V
+The regulator configuration function adjusts the regulator outputs by default to 400 mV below VIN level, but
+not higher than 5 V for VDD_RF, 3.4 V for VDD_A and VDD_X. This ensures the highest possible supply
+voltage for the RF output stage while maintaining an adequate PSRR (power supply rejection ratio).
+PDF_PAGE19
+19
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+(1) X = Don't care
+6.3.3 Power Modes
+The chip has several power states, which are controlled by two input pins (EN and EN2) and several bits
+in the chip status control register (0x00) (see Table 6-3 and Table 6-4).
+Table 6-3. 3.3-V Operation Power Modes (1)
+MODE EN2 EN
+CHIP
+STATUS
+CONTROL
+REGISTER
+(0x00)
+REGULATOR
+CONTROL
+REGISTER
+(0x0B)
+TRANSMITTER RECEIVER SYS_CLK
+(13.56 MHz)
+SYS_CLK
+(60 kHz) VDD_X
+TYPICAL
+CURRENT
+(mA)
+TYPICAL
+POWER
+OUT (dBm)
+Power down 0 0 XX XX OFF OFF OFF OFF OFF <0.001 -
+Sleep mode 1 0 XX XX OFF OFF OFF ON ON 0.120 -
+Standby mode at +3.3 VDC X 1 80 00 OFF OFF ON X ON 2 -
+Mode 1 at +3.3 VDC X 1 00 00 OFF OFF ON X ON 3 -
+Mode 2 at +3.3 VDC X 1 02 00 OFF ON ON X ON 9 -
+Mode 3 (half power) at
++3.3 VDC X 1 30 07 ON ON ON X ON 53 14.5
+Mode 4 (full power) at
++3.3 VDC X 1 20 07 ON ON ON X ON 67 17
+(1) X = Don't care
+Table 6-4. 5-V Operation Power Modes (1)
+MODE EN2 EN
+CHIP
+STATUS
+CONTROL
+REGISTER
+(0x00)
+REGULATOR
+CONTROL
+REGISTER
+(0x0B)
+TRANSMITTER RECEIVER SYS_CLK
+(13.56 MHz)
+SYS_CLK
+(60 kHz) VDD_X
+TYPICAL
+CURRENT
+(mA)
+TYPICAL
+POWER
+OUT (dBm)
+Power down 0 0 XX XX OFF OFF OFF OFF OFF <0.001 -
+Sleep mode 1 0 XX XX OFF OFF OFF ON ON 0.120 -
+Standby mode at +5 VDC X 1 81 07 OFF OFF ON X ON 3 -
+Mode 1 at +5 VDC X 1 01 07 OFF OFF ON X ON 5 -
+Mode 2 at +5 VDC X 1 03 07 OFF ON ON X ON 10.5 -
+Mode 3 (half power) at
++5 VDC X 1 31 07 ON ON ON X ON 70 20
+Mode 4 (full power) at
++5 VDC X 1 21 07 ON ON ON X ON 130 23
+Table 6-3 and Table 6-4 show the configuration for the different power modes when using a 3.3-V or 5-V
+system supply, respectively. The main reader enable signal is pin EN. When EN is set high, all of the
+reader regulators are enabled, the 13.56-MHz oscillator is running and the SYS_CLK (output clock for
+external microcontroller) is also available.
+The input pin EN2 has two functions:
+• A direct connection from EN2 to VIN to ensure the availability of the regulated supply VDD_X and an
+auxiliary clock signal (60 kHz, SYS_CLK) for an external MCU. This mode (EN = 0, EN2 = 1) is
+intended for systems in which the MCU is also being supplied by the reader supply regulator (VDD_X)
+and the MCU clock is supplied by the SYS_CLK output of the reader. This allows the MCU supply and
+clock to be available during sleep mode.
+• EN2 enables the start-up of the reader system from complete power down (EN = 0, EN2 = 0). In this
+case the EN input is being controlled by the MCU (or other system device) that is without supply
+voltage during complete power down (thus unable to control the EN input). A rising edge applied to the
+EN2 input (which has an approximately 1-V threshold level) starts the reader supply system and 13.56-
+MHz oscillator (identical to condition EN = 1).
+When user MCU is controlling EN and EN2, a delay of 1 ms between EN and EN2 must be used. If the
+MCU controls only EN, TI recommends connecting EN2 to either VIN or GND, depending on the
+application MCU requirements for VDD_X and SYS_CLK.
+PDF_PAGE20
+VIN
+EN2
+EN
+5 ms
+6 ms
+VIN
+SS
+EN2
+EN
+2 ms
+5 ms
+6 ms
+20
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-3. Nominal Start-up Sequence Using SPI With SS (MCU Controls EN2)
+Figure 6-4. Nominal Start-up Sequence Using Parallel (MCU Controls EN2)
+This start-up mode lasts until all of the regulators have settled and the 13.56-MHz oscillator has stabilized.
+If the EN input is set high (EN = 1) by the MCU (or other system device), the reader stays active. If the EN
+input is not set high (EN = 0) within 100 µs after the SYS_CLK output is switched from auxiliary clock (60
+kHz) to high-frequency clock (derived from the crystal oscillator), the reader system returns to complete
+Power-Down Mode 1. This option can be used to wake-up the reader system from complete Power Down
+(PD Mode 1) by using a pushbutton switch or by sending a single pulse.
+After the reader EN line is high, the other power modes are selected by control bits within the chip status
+control register (0x00). The power mode options and states are listed in Table 6-3.
+When EN is set high (or on rising edge of EN2 and then confirmed by EN = 1) the supply regulators are
+activated and the 13.56-MHz oscillator is started. When the supplies are settled and the oscillator
+frequency is stable, the SYS_CLK output is switched from the auxiliary frequency of 60 kHz to the 13.56-
+MHz frequency derived from the crystal oscillator. At this point, the reader is ready to communicate and
+perform the required tasks. When this occurs, osc_ok (B6) of the RSSI Level and Oscillator Status register
+is set. The MCU can then program the Chip Status Control register 0x00 and select the operation mode
+by programming the additional registers.
+• Standby Mode (bit 7 = 1 of register 0x00), the reader is capable of recovering to full operation in
+100 µs.
+• Mode 1 (active mode with RF output disabled, bit 5 = 0 and bit 1 = 0 of register 0x00) is a low power
+mode which allows the reader to recover to full operation within 25 µs.
+• Mode 2 (active mode with only the RF receiver active, bit 1 = 1 of register 0x00) can be used to
+measure the external RF field (as described in RSSI measurements paragraph) if reader-to-reader
+anticollision is implemented.
+• Modes 3 and 4 (active modes with the entire RF section active, bit 5 = 1 of register 0x00) are the
+normal modes used for normal transmit and receive operations.
+PDF_PAGE21
+21
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.4 Receiver – Analog Section
+6.4.1 Main and Auxiliary Receivers
+The TRF7970A has two receiver inputs: RX_IN1 (pin 8) and RX_IN2 (pin 9). Each of the input is
+connected to an external capacitive voltage divider to ensure that the modulated signal from the tag is
+available on at least one of the two inputs. This architecture eliminates any possible communication holes
+that may occur from the tag to the reader.
+The two RX inputs (RX_IN1 and RX_IN2) are multiplexed into two receivers - the main receiver and the
+auxiliary receiver. Only the main receiver is used for reception, the auxiliary receiver is used for signal
+quality monitoring. Receiver input multiplexing is controlled by bit B3 in the Chip Status Control register
+(address 0x00).
+After start-up, RX_IN1 is multiplexed to the main receiver which is composed of an RF envelope detection,
+first gain and band-pass filtering stage, second gain and filtering stage with AGC. Only the main receiver
+is connected to the digitizing stage which output is connected to the digital processing block. The main
+receiver also has an RSSI measuring stage, which measures the strength of the demodulated signal
+(subcarrier signal).
+The primary function of the auxiliary receiver is to monitor the RX signal quality by measuring the RSSI of
+the demodulated subcarrier signal (internal RSSI). After start-up, RX_IN2 is multiplexed to the auxiliary
+receiver. The auxiliary receiver has an RF envelope detection stage, first gain and filtering with AGC stage
+and finally the auxiliary RSSI block.
+The default MUX setting is RX_IN1 connected to the main receiver and RX_IN2 connected to the auxiliary
+receiver. To determine the signal quality, the response from the tag is detected by the "main" (pin RX_IN1)
+and "auxiliary" (pin RX_IN2) RSSI. Both values measured and stored in the RSSI Levels and Oscillator
+Status register (address 0x0F). The MCU can read the RSSI values from the TRF7970A RSSI register
+and make the decision if swapping the input- signals is preferable or not. Setting B3 in Chip Status Control
+register (address 0x00) to 1 connects RX_IN1 (pin 8) to the auxiliary received and RX_IN2 (pin 9) to the
+main receiver.
+The main and auxiliary receiver input stages are RF envelope detectors. The RF amplitude at RX_IN1 and
+RX_IN2 should be approximately 3 VPP for a VINsupply level greater than 3.3 V. If the VIN level is lower,
+the RF input peak-to-peak voltage level should not exceed the VINlevel.
+6.4.2 Receiver Gain and Filter Stages
+The first gain and filtering stage has a nominal gain of 15 dB with an adjustable band-pass filter. The
+band-pass filter has programmable 3-dB corner frequencies between 110 kHz to 450 kHz for the high-
+pass filter and 570 kHz to 1500 kHz for the low-pass filter. After the band-pass filter, there is another gain-
+and-filtering stage with a nominal gain of 8 dB and with frequency characteristics identical to the first band-
+pass stage.
+The internal filters are configured automatically depending on the selected ISO communication standard in
+the ISO Control register (address 0x01). If required, additional fine tuning can be done by writing directly
+to the RX Special Setting registers (address 0x0A).
+Table 6-5 shows the various settings for the receiver analog section. Setting B4, B5, B6, and B7 to 0
+results in a band-pass characteristic of 240 kHz to 1.4 MHz, which is appropriate for ISO/IEC 14443 B
+106 kbps, ISO/IEC 14443 A and B data rates of 212 kbps and 424 kbps, and FeliCa 424 kbps.
+PDF_PAGE22
+22
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Table 6-5. RX Special Setting Register (0x0A)
+Function: Sets the gains and filters directly
+Default: 0x40 at POR = H or EN = L, and at each write to the ISO Control register (0x01). When bits B7, B6, B5 and B4 are all zero, the
+filters are set for ISO/IEC 14443 B (240 kHz to 1.4 MHz).
+Bit Name Function Description
+B7 C212 Band-pass 110 kHz to 570 kHz Appropriate for 212-kHz subcarrier system (FeliCa)
+B6 C424 Band-pass 200 kHz to 900 kHz Appropriate for 424-kHz subcarrier used in ISO/IEC 15693
+B5 M848 Band-pass 450 kHz to 1.5 MHz Appropriate for Manchester-coded 848-kHz subcarrier used in
+ISO/IEC 14443 A and B
+B4 hbt Band-pass 100 kHz to 1.5 MHz
+Gain reduced for 18 dB
+Appropriate for highest bit rate (848 kbps) used in high-bit-rate
+ISO/IEC 14443
+B3 gd1 00 = Gain reduction 0 dB
+01 = Gain reduction for 5 dB
+10 = Gain reduction for 10 dB
+11 = Gain reduction for 15 dB
+Sets the RX gain reduction and reduces sensitivity
+B2 gd2
+B1 Reserved
+B0 Reserved
+6.5 Receiver – Digital Section
+The output of the TRF7970A analog receiver block is a digitized subcarrier signal and is the input to the
+digital receiver block, which consists of two sections that partly overlap. The digitized subcarrier signal is a
+digital representation of the modulation signal on the RF envelope. The two sections of the digital receiver
+block are the protocol bit decoder section and the framing logic section.
+The protocol bit decoder section converts the subcarrier coded signal into a serial bit stream and a data
+clock. The decoder logic is designed for maximum error tolerance. This tolerance lets the decoder section
+successfully decode even partly corrupted subcarrier signals that would otherwise be lost due to noise or
+interference.
+The framing logic section formats the serial bit stream data from the protocol bit decoder stage into data
+bytes. During the formatting process, special signals such as the start of frame (SOF), end of frame
+(EOF), start of communication, and end of communication are automatically removed. The parity bits and
+CRC bytes are also checked and removed. The end result is "clean or raw" data that is sent to the 127-
+byte FIFO register where it can be read by the external microcontroller system. Providing the data this
+way, in conjunction with the timing register settings of the TRF7970A, means that the firmware developer
+does not need to know the finer details of the ISO protocols to create a very robust application, especially
+in low-cost platforms in which code space is at a premium and high performance is still required.
+The start of the receive operation (successfully received SOF) sets the IRQ flags in the IRQ Status
+register (0x0C). The end of the receive operation is signaled to the external system MCU by setting pin 13
+(IRQ) to high. When data is received in the FIFO, an interrupt is sent to the MCU to signal that there is
+data to be read from the FIFO. The FIFO Status register (0x1C) should be used to provide the number of
+bytes that should be clocked out during the actual FIFO read. Additionally, an interrupt is sent to the MCU
+when the received data occupies 75% of the FIFO capacity to signal that the data should be removed
+from the FIFO. By default, that interrupt is triggered once the received data packet is longer than 124
+bytes. This setting can be modified in the Adjustable FIFO IRQ Levels register (0x14).
+Any error in the data format, parity, or CRC is detected and notified to the external system by setting pin
+13 (IRQ) to high. The source condition of the interrupt is available in the IRQ Status register (0x0C).
+Section 6.15.3.3.1 describes the bit coding description of this register. The information in the IRQ Status
+register differs if the chip is configured as an RFID reader or as an NFC device (including card emulation).
+Section 6.13 describes NFC operation.
+PDF_PAGE23
+23
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+The framing section also supports bit-collision detection as specified in ISO/IEC 14443 A and
+ISO/IEC 15693. When a bit collision is detected, an interrupt request is sent and a flag is set in the IRQ
+Status register (0x0C). For ISO/IEC 14443 A specifically, the position of the bit collision is written in two
+registers: partly in the Collision Position register (0x0E) and partly in the Collision Position and Interrupt
+Mask register (0x0D) (bits B6 and B7).
+This collision position is presented as sequential bit number, where the count starts immediately after the
+start bit. This means a collision in the first bit of a UID would give the value 00 0001 0000 in these
+registers when their contents are combined after being read (the count starts with 0 and the first 16 bits
+are the command code and the number of valid bits [NVB] byte).
+The receive section also contains two timers.
+The RX wait time timer is controlled by the value in the RX Wait Time register (0x08). This timer defines
+the time interval after the end of the transmit operation during which the receive decoders are not active
+(held in reset state). This prevents false detections resulting from transients following the transmit
+operation. The value of the RX Wait Time register (0x08) defines the time in increments of 9.44 µs. This
+register is preset at every write to the ISO Control register (0x01) according to the minimum tag response
+time defined by each standard.
+The RX no response timer is controlled by the RX No Response Wait Time register (0x07). This timer
+measures the time from the start of the slot in the anticollision sequence until the start of tag response. If
+there is no tag response in the defined time, an interrupt request is sent and a flag is set in the IRQ Status
+register (0x0C). This enables the external controller to be relieved of the task of detecting empty slots. The
+wait time is stored in the register in increments of 37.76 µs. This register is also preset automatically for
+every new protocol selection.
+The main register controlling the digital part of the receiver is the ISO Control register (0x01). By writing to
+this register, the user selects the protocol to be used. With each new write in this register, all related
+registers are preset to their defaults for the protocol, so no further adjustments in other registers are
+needed for proper operation. Table 6-6 describes the bit fields of the ISO Control register (0x01).
+NOTE
+If changes to other registers are needed to fine-tune the system, those changes must be
+made after setting the ISO Control register (0x01).
+PDF_PAGE24
+24
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Table 6-6. Coding of the ISO Control Register
+BIT SIGNAL NAME FUNCTION COMMENTS
+B7 rx_crc_n Receiving without CRC 1 = No RX CRC
+0 = RX CRC
+B6 dir_mode Direct mode type 0 = Output is subcarrier data
+1 = Output is bit stream and clock from decoder selected by ISO bits
+B5 rfid RFID mode 0 = RFID reader mode
+1 = NFC or card emulator mode
+B4 iso_4 RFID protocol, NFC target
+RFID: Mode selection
+NFC:
+0 = NFC target
+1 = NFC initiator
+B3 iso_3 RFID protocol, NFC mode
+RFID: Mode selection (see Table 6-7)
+NFC:
+0 = Passive mode
+1 = Active mode
+B2 iso_2 RFID protocol, Card Emulation
+RFID: Mode selection
+NFC:
+0 = NFC normal modes
+1 = Card emulation mode
+B1 iso_1 RFID protocol, NFC bit rate RFID: Mode selection
+NFC: Bit rate selection or Card Emulation selection (see Table 6-8)
+B0 iso_0 RFID protocol, NFC bit rate RFID: Mode selection
+NFC: Bit rate selection or Card Emulation selection (see Table 6-8)
+PDF_PAGE25
+25
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Table 6-7. Coding of the ISO Control Register For RFID Mode (B5 = 0)
+Iso_4 Iso_3 Iso_2 Iso_1 Iso_0 PROTOCOL REMARKS
+0 0 0 0 0 ISO/IEC 15693 low bit rate, one subcarrier, 1 out of 4
+0 0 0 0 1 ISO/IEC 15693 low bit rate, one subcarrier, 1 out of 256
+0 0 0 1 0 ISO/IEC 15693 high bit rate, one subcarrier, 1 out of 4 Default for RFID IC
+0 0 0 1 1 ISO/IEC 15693 high bit rate, one subcarrier, 1 out of 256
+0 0 1 0 0 ISO/IEC 15693 low bit rate, double subcarrier, 1 out of 4
+0 0 1 0 1 ISO/IEC 15693 low bit rate, double subcarrier, 1 out of 256
+0 0 1 1 0 ISO/IEC 15693 high bit rate, double subcarrier, 1 out of 4
+0 0 1 1 1 ISO/IEC 15693 high bit rate, double subcarrier, 1 out of 256
+0 1 0 0 0 ISO/IEC 14443 A, bit rate 106 kbps
+0 1 0 0 1 ISO/IEC 14443 A high bit rate 212 kbps
+RX bit rate when TX rate
+different from RX rate (see
+register 0x03)
+0 1 0 1 0 ISO/IEC 14443 A high bit rate 424 kbps
+0 1 0 1 1 ISO/IEC 14443 A high bit rate 848 kbps
+0 1 1 0 0 ISO/IEC 14443 B, bit rate 106 kbps
+0 1 1 0 1 ISO/IEC 14443 B high bit rate 212 kbps
+RX bit rate when TX rate
+different from RX rate (see
+register 0x03)
+0 1 1 1 0 ISO/IEC 14443 B high bit rate 424 kbps
+0 1 1 1 1 ISO/IEC 14443 B high bit rate 848 kbps
+1 0 0 1 1 Reserved
+1 0 1 0 0 Reserved
+1 1 0 1 0 FeliCa 212 kbps
+1 1 0 1 1 FeliCa 424 kbps
+Table 6-8. Coding of the ISO Control Register For NFC
+Mode (B5 = 1, B2 = 0) or Card Emulation (B5 = 1,
+B2 = 1)
+Iso_1 Iso_0 NFC (B5 = 1, B2 = 0) CARD EMULATION
+(B5 = 1, B2 = 1)
+0 0 N/A ISO/IEC 14443 A
+0 1 106 kbps ISO/IEC 14443 B
+1 0 212 kbps N/A
+1 1 424 kbps N/A
+PDF_PAGE26
+0
+1
+2
+3
+4
+5
+6
+7
+0 0.25 0.5 0.75 1 1.25 1.5 1.75 2 2.25 2.5 2.75 3 3.25 3.5 3.75 4 4.25
+Input RF Carrier Level (V )PP
+RSSI Levels and Oscillator Status Register Value (0x0F)
+26
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.5.1 Received Signal Strength Indicator (RSSI)
+The TRF7970A incorporates in total three independent RSSI building blocks: Internal Main RSSI, Internal
+Auxiliary RSSI, and External RSSI. The internal RSSI blocks measure the amplitude of the subcarrier
+signal, and the external RSSI block measures the amplitude of the RF carrier signal at the receiver input.
+6.5.1.1 Internal RSSI – Main and Auxiliary Receivers
+Each receiver path has its own RSSI block to measure the envelope of the demodulated RF signal
+(subcarrier). Internal Main RSSI and Internal Auxiliary RSSI are identical however connected to different
+RF input pins. The Internal RSSI is intended for diagnostic purposes to set the correct RX path conditions.
+The internal RSSI values can be used to adjust the RX gain settings or determine which RX path (main or
+auxiliary) provides the greater amplitude and, hence, to determine if the MUX may need to be
+reprogrammed to swap the RX input signal. The measuring system latches the peak value, so the RSSI
+level can be read after the end of each receive packet. The RSSI register values are reset with every
+transmission (TX) by the reader. This ensures an updated RSSI measurement for each new tag response.
+The Internal RSSI has 7 steps (3 bit) with a typical increment of approximately 4 dB. The operating range
+is between 600 mVPP and 4.2 VPP with a typical step size of approximately 600 mV. Both Internal Main
+and Internal Auxiliary RSSI values are stored in the RSSI Levels and Oscillator Status register (0x0F). The
+nominal relationship between the input RF peak level and the RSSI value is shown in Figure 6-5.
+Figure 6-5. Digital Internal RSSI (Main and Auxiliary) Value vs RF Input Level in VPP (V)
+This RSSI measurement is done during the communication to the Tag; this means the TX must be on. Bit
+1 in the Chip Status Control register (0x00) defines if Internal RSSI or the External RSSI value is stored in
+the RSSI Levels and Oscillator Status register (0x0F). Direct command 0x18 is used to trigger an Internal
+RSSI measurement.
+6.5.1.2 External RSSI
+The external RSSI is mainly used to check for any external 13.56-MHz signals at the receiver RX_IN1
+input. The external RSSI measurement should be used before turning on the transmitter to prevent RF
+field collisions. This is especially important for active mode, when both devices emit their own RF field.
+The level of the RF signal received at the antenna is measured and stored in the RSSI Levels and
+Oscillator Status register (0x0F). Figure 6-6 shows the relationship between the voltage at the RX_IN1
+input and the 3-bit code.
+PDF_PAGE27
+0
+1
+2
+3
+4
+5
+6
+7
+0 25 50 75 100 125 150 175 200 225 250 275 300 325
+RF Input Voltage Level at RF_IN1 (mV )PP
+RSSI Levels and Oscillator Status Register Value (0x0F)
+27
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-6. Digital External RSSI Value vs RF Input Level in VPP (mV)
+The relation between the 3-bit code and the external RF field strength (A/m) sensed by the antenna must
+be determined by calculation or by experiments for each antenna design. The antenna Q-factor and
+connection to the RF input influence the result. Direct command 0x19 is used to trigger an external RSSI
+measurement.
+For clarity, to check the internal or external RSSI value independent of any other operation, the user must:
+1. Set transmitter to desired state (on or off) using Bit 5 of Chip Status Control register (0x00) and enable
+receiver using Bit 1.
+2. Check internal or external RSSI using direct commands 0x18 or 0x19, respectively. This action places
+the RSSI value in the RSSI register.
+3. Delay at least 50 µs.
+4. Read the RSSI register using direct command 0x0F; values range from 0x40 to 0x7F.
+5. Repeat steps 1 to 4 as needed. The register is reset when it is read.
+6.6 Oscillator Section
+The 13.56-MHz or 27.12-MHz crystal (or oscillator) is controlled by the Chip Status Control register (0x00)
+and the EN and EN2 terminals. The oscillator generates the RF frequency for the RF output stage as well
+as the clock source for the digital section. The buffered clock signal is available at pin 27 (SYS_CLK) for
+any other external circuits. B4 and B5 inside the Modulation and SYS_CLK register (0x09) can be used to
+divide the external SYS_CLK signal at pin 27 by 1, 2, or 4.
+Typical start-up time from complete power down is in the range of 3.5 ms.
+During Power Down Mode 2 (EN = 0, EN2 = 1) the frequency of SYS_CLK is switched to 60 kHz (typical).
+The crystal needs to be connected between pin 30 and pin 31. The external shunt capacitors values for C1
+and C2 must be calculated based on the specified load capacitance of the crystal being used. The external
+shunt capacitors are calculated as two identical capacitors in series plus the stray capacitance of the
+TRF7970A and parasitic PCB capacitance in parallel to the crystal.
+The parasitic capacitance (CS, stray and parasitic PCB capacitance) can be estimated at 4 to 5 pF
+(typical).
+As an example, using a crystal with a required load capacitance (CL) of 18 pF, the calculation is shown in
+Equation 1.
+PDF_PAGE28
+Crystal
+C1 C2
+CS
+TRF7970A
+Pin 31Pin 30
+28
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+C1 = C2 = 2 × (CL– CS) = 2 × (18 pF – 4.5 pF) = 27 pF (1)
+A 27-pF capacitor must be placed on pins 30 and 31 to ensure proper crystal oscillator operation.
+Figure 6-7. Crystal Block Diagram
+Any crystal used with TRF7970A should meet the minimum characteristics in Table 6-9.
+Table 6-9. Minimum Crystal Recommendations
+PARAMETER SPECIFICATION
+Frequency 13.56 MHz or 27.12 MHz
+Mode of operation Fundamental
+Type of resonance Parallel
+Frequency tolerance ±20 ppm
+Aging < 5 ppm/year
+Operation temperature range –40°C to 85°C
+As an alternative, an external clock oscillator source can be connected to pin 31 to provide the system
+clock; pin 30 can be left open.
+6.7 Transmitter – Analog Section
+The 13.56-MHz oscillator generates the RF signal for the PA stage. The power amplifier consists of a
+driver with selectable output resistance of nominal 4 Ω or 8 Ω. The transmit power level is set by bit B4 in
+the Chip Status Control register (0x00). The transmit power levels are selectable between 100 mW (half
+power) or 200 mW (full power) when configured for 5-V automatic operation. The transmit power levels
+are selectable between 33 mW (half power) or 70 mW (full power) when configured for 3-V automatic
+operation.
+The ASK modulation depth is controlled by bits B0, B1, and B2 in the Modulator and SYS_CLK Control
+register (0x09). The ASK modulation depth range can be adjusted between 7% to 30% or 100% (OOK).
+External control of the transmit modulation depth is possible by setting the ISO Control register (0x01) to
+direct mode. While operating the TRF7970A in direct mode, the transmit modulation is made possible by
+selecting the modulation type ASK or OOK at pin 12. External control of the modulation type is made
+possible only if enabled by setting B6 in the Modulator and SYS_CLK Control register (0x09) to 1.
+In normal operation mode, the length of the modulation pulse is defined by the protocol selected in the
+ISO Control register (0x01). With a high-Q antenna, the modulation pulse is typically prolonged, and the
+tag detects a longer pulse than intended. For such cases, the modulation pulse length needs to be
+corrected by using the TX Pulse Length Control register (0x06).
+If the register contains all zeros, then the pulse length is governed by the protocol selection. If the register
+contains a value other than 0x00, the pulse length is equal to the value of the register multiplied by
+73.7 ns; therefore, the pulse length can be adjusted between 73.7 ns and 18.8 µs in 73.7-ns increments.
+PDF_PAGE29
+29
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.8 Transmitter – Digital Section
+The digital part of the transmitter is a mirror of the receiver. The settings controlled the ISO Control
+register (0x01) are applied to the transmitter just like the receiver. In the TRF7970A default mode the
+TRF7970A automatically adds these special signals: start of communication, end of communication, SOF,
+EOF, parity bits, and CRC bytes.
+The data is then coded to modulation pulse levels and sent to the RF output stage modulation control unit.
+Similar to working with the receiver, this means that the external system MCU must only load the FIFO
+with data, and all the microcoding is done automatically, again saving the firmware developer code space
+and time. Additionally, all of the registers used for transmit parameter control are automatically preset to
+optimum values when a new selection is entered into the ISO Control register (0x01).
+NOTE
+The FIFO must be reset before starting any transmission with direct command 0x0F.
+There are two ways to start the transmit operation:
+• Send the transmit command and the number of bytes to be transmitted first, and then start to send the
+data to the FIFO. The transmission starts when first data byte is written into the FIFO.
+• Load the number of bytes to be sent into registers 0x1D and 0x1E and load the data to be sent into the
+FIFO (address 0x1F), followed by sending a transmit command (see Direct Commands section). The
+transmission then starts when the transmit command is received.
+NOTE
+If the data length is longer than the FIFO, the TRF7970A notifies the external system MCU
+when most of the data from the FIFO has been transmitted by sending an interrupt request
+with a flag in the IRQ register to indicate a FIFO low or high status. The external system
+should respond by loading the next data packet into the FIFO.
+At the end of a transmit operation, the external system MCU is notified by interrupt request (IRQ) with a
+flag in IRQ register (0x0C) indicating TX is complete (example value = 0x80).
+The TX Length registers also support incomplete byte transmission. The high two nibbles in register 0x1D
+and the nibble composed of bits B4 through B7 in register 0x1E store the number of complete bytes to be
+transmitted. Bit B0 in register 0x1E is a flag indicating that there are also additional bits to be transmitted
+that do not form a complete byte. The number of bits is stored in bits B1 through B3 of the same register
+(0x1E).
+Some protocols have options, and there are two sublevel configuration registers to select the TX protocol
+options.
+• ISO/IEC 14443 B TX Options register (0x02). This register controls the SOF and EOF selection and
+EGT selection for the ISO/IEC 14443 B protocol.
+• ISO/IEC 14443 A High Bit Rate Options and Parity register (0x03). This register enables the use of
+different bit rates for RX and TX operations in the ISO/IEC 14443 high bit rate protocol and also
+selects the parity method in the ISO/IEC 14443 A high bit rate protocol.
+The digital section also has a timer. The timer can be used to start the transmit operation at a specified
+time in accordance with a selected event.
+PDF_PAGE30
+30
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+(1) FIFO is not accessible in SPI without SS mode. See the TRF7970A Silicon Errata for detailed information.
+(2) MOSI = master out, slave in
+(3) MISO = master in, slave out
+(4) I/O_5 pin is used only for information when data is put out of the chip (for example, reading 1 byte from the chip). It is necessary first to
+write in the address of the register (8 clocks) and then to generate another 8 clocks for reading out the data. The I/O_5 pin goes high
+during the second 8 clocks. But for normal SPI operations, I/O_5 pin is not used.
+(5) Slave select pin is active low
+6.9 Transmitter – External Power Amplifier and Subcarrier Detector
+The TRF7970A can be used in conjunction with an external TX power amplifier or external subcarrier
+detector for the receiver path. In this case, certain registers must be programmed as shown here:
+• Bit B6 of the Regulator and I/O Control register (0x0B) must be set to 1. This setting has two functions:
+first, to provide a modulated signal for the transmitter if needed, and second, to configure the
+TRF7970A receiver inputs for an external demodulated subcarrier input.
+• Bit B3 of the Modulation and SYS_CLK Control register (0x09) must be set to 1 (see
+Section 6.15.3.2.8). This function configures the ASK/OOK pin for either a digital or analog output
+(B3 = 0 enables a digital output, B3 = 1 enables an analog output). The design of an external power
+amplifier requires detailed RF knowledge. There are also readily designed and certified high-power HF
+reader modules on the market.
+6.10 TRF7970A IC Communication Interface
+6.10.1 General Introduction
+The communication interface to the reader can be configured in two ways: with a eight line parallel
+interface (D0:D7) plus DATA_CLK, or with a 4-wire Serial Peripheral Interface (SPI). The SPI interface
+uses traditional Master Out/Slave In (MOSI), Master In/Slave Out (MISO), Slave Select, and DATA_CLK
+lines.
+These communication modes are mutually exclusive; that is, only one mode can be used at a time in the
+application.
+When the SPI interface is selected, the unused I/O_2, I/O_1, and I/O_0 pins must be hard-wired as shown
+in Table 6-10. At power up, the TRF7970A samples the status of these three pins and then enters one of
+the possible SPI modes.
+The TRF7970A always behaves as the slave device, and the microcontroller (MCU) behaves as the
+master device. The MCU initiates all communications with the TRF7970A, and the TRF7970A makes use
+of the Interrupt Request (IRQ) pin in both parallel and SPI modes to prompt the MCU for servicing
+attention.
+Table 6-10. Pin Assignment in Parallel and Serial Interface Connection or Direct Mode
+PIN PARALLEL PARALLEL (DIRECT MODE) SPI WITH SS SPI WITHOUT SS (1)
+DATA_ CLK DATA_CLK DATA_CLK DATA_CLK from master DATA_CLK from master
+I/O_7 A/D[7] Not used MOSI (2) = data in (reader in) MOSI (2) = data in (reader in)
+I/O_6 A/D[6] Direct mode, data out (subcarrier
+or bit stream) MISO (3) = data out (MCU out) MISO (3) = data out (MCU out)
+I/O_5 (4) A/D[5] Direct mode, strobe – bit clock
+out See (4). See (4).
+I/O_4 A/D[4] Not used SS – slave select (5) Not used
+I/O_3 A/D[3] Not used Not used Not used
+I/O_2 A/D[2] Not used At VDD At VDD
+I/O_1 A/D[1] Not used At VDD At VSS
+I/O_0 A/D[0] Not used At VSS At VSS
+IRQ IRQ interrupt IRQ interrupt IRQ interrupt IRQ interrupt
+PDF_PAGE31
+31
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Communication is initialized by a start condition, which is expected to be followed by an
+Address/Command word (Adr/Cmd). The Adr/Cmd word is 8 bits long, and Table 6-11 shows its format.
+Table 6-11. Address and Command Word Bit Distribution
+BIT DESCRIPTION BIT FUNCTION ADDRESS COMMAND
+B7 Command control bit 0 = Address
+1 = Command 0 1
+B6 Read/Write 0 = Write
+1 = Read R/W 0
+B5 Continuous address mode 1 = Continuous mode R/W 0
+B4 Address/Command bit 4 Adr 4 Cmd 4
+B3 Address/Command bit 3 Adr 3 Cmd 3
+B2 Address/Command bit 2 Adr 2 Cmd 2
+B1 Address/Command bit 1 Adr 1 Cmd 1
+B0 Address/Command bit 0 Adr 0 Cmd 0
+The MSB (bit 7) determines if the word is to be used as a command or as an address. The last two
+columns of Table 6-11 show the function of the separate bits if either address or command is written. Data
+is expected once the address word is sent. In continuous-address mode (Cont. mode = 1), the first data
+that follows the address is written (or read) to (from) the given address. For each additional data, the
+address is incremented by one. Continuous mode can be used to write to a block of control registers in a
+single stream without changing the address; for example, setup of the predefined standard control
+registers from the MCU nonvolatile memory to the reader. In noncontinuous address mode (simple
+addressed mode), only one data word is expected after the address.
+Address Mode is used to write or read the configuration registers or the FIFO. When writing more than 12
+bytes to the FIFO, the Continuous Address Mode should be set to 1.
+Command Mode is used to enter a command resulting in reader action (for example, initialize
+transmission, enable reader, and turn reader on or off).
+The following sections give examples of the expected communications between an MCU and the
+TRF7970A.
+PDF_PAGE32
+32
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.10.1.1 Continuous Address Mode
+Figure 6-8 summarizes the continuous address mode communication. Figure 6-8 and Figure 6-9 show the
+signals between the MCU and the TRF7970A.
+Table 6-12. Continuous Address Mode
+Start Adr x Data(x) Data(x+1) Data(x+2) Data(x+3) Data(x+4) ... Data(x+n) StopCont
+Figure 6-8. Continuous Address Register Write Example Starting With Register 0x00 Using SPI With SS
+Figure 6-9. Continuous Address Register Read Example Starting With Register 0x00 Using SPI With SS
+PDF_PAGE33
+33
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.10.1.2 Noncontinuous Address Mode (Single Address Mode)
+Table 6-13 summarizes the noncontinuous address (single address) mode communication. Figure 6-10
+and Figure 6-11 show the signals between the MCU and the TRF7970A.
+Table 6-13. Noncontinuous Address Mode (Single Address Mode)
+Start Adr x Data(x) Adr y Data(y) ... Adr z Data(z) StopSgl
+Figure 6-10. Single Address Register Write Example of Register 0x00 Using SPI With SS
+Figure 6-11. Single Address Register Read Example of Register 0x00 Using SPI With SS
+PDF_PAGE34
+34
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.10.1.3 Direct Command Mode
+Table 6-14 summarizes the direct command mode communication. Figure 6-12 shows the signals
+between the MCU and the TRF7970A.
+Table 6-14. Direct Command Mode
+Start Cmd x (Optional data or command) Stop
+Figure 6-12. Direct Command Example of Sending 0x0F (Reset) Using SPI With SS
+Section 6.14 describes the other direct command codes from the MCU to the TRF7970A IC.
+6.10.1.4 FIFO Operation
+The FIFO is a 127-byte register at address 0x1F with byte storage locations 0 to 126. FIFO data is loaded
+in a cyclical manner and can be cleared by a reset command (0x0F) (see Figure 6-12 showing this direct
+command).
+Associated with the FIFO are two counters and three FIFO status flags. The first counter is a 7-bit FIFO
+byte counter (bits B0 to B6 in register 0x1C) that tracks the number of bytes loaded into the FIFO. If the
+number of bytes in the FIFO is n, the register value is n (number of bytes in FIFO register). For example, if
+8 bytes are in the FIFO, the FIFO counter (Register 0x1C) has the hexadecimal value of 0x08 (binary
+value of 00001000).
+A second counter (12 bits wide) indicates the number of bytes being transmitted (registers 0x1D and
+0x1E) in a data frame. An extension to the transmission-byte counter is a 4-bit broken-byte counter also
+provided in register 0x1E (bits B0 to B3). Together these counters make up the TX length value that
+determines when the reader generates the EOF byte.
+During transmission, the FIFO is checked for an almost-empty condition, and during reception for an
+almost-full condition. The maximum number of bytes that can be loaded into the FIFO in a single
+sequence is 127 bytes.
+NOTE
+The number of bytes in a frame, transmitted or received, can be greater than 127 bytes.
+PDF_PAGE35
+CLK
+I/O_[7]
+I/O_[6:0]
+a1 [7] d1 [7] a2 [7] d2 [7] aN [7] dN [7]
+a1 [6:0] d1 [6:0] a2 [6:0] d2 [6:0] aN [6:0] dN [6:0]
+50 ns
+Start
+Condition
+StopSmpl
+Condition
+35
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+During transmission, the MCU loads the TRF7970A FIFO (or during reception the MCU removes data
+from the FIFO), and the FIFO counter counts the number of bytes being loaded into the FIFO. Meanwhile,
+the byte counter keeps track of the number of bytes being transmitted. An interrupt request is generated if
+the number of bytes in the FIFO triggers the watermark levels, which are configured in the Adjustable
+FIFO IRQ Levels register (0x14). The default setting is for the interrupt to be triggered when receiving
+124 bytes during RX or having 4 bytes remaining during TX. These watermark levels are used so that
+MCU can send new data or read the data as necessary. The MCU must also validate the number of data
+bytes to be sent, so as to not surpass the value defined in the TX Length Byte registers (0x1D and 0x1E).
+The MCU also signals the transmit logic when the last byte of data is sent or was removed from the FIFO
+during reception.
+Figure 6-13 shows an example of checking the FIFO Status register using SPI with SS.
+Figure 6-13. Example of Checking the FIFO Status Register Using SPI With SS
+6.10.2 Parallel Interface Mode
+In parallel mode, the start condition is generated on the rising edge of the I/O_7 pin while the CLK is high.
+This is used to reset the interface logic. Figure 6-14, Figure 6-15, and Figure 6-16 show the sequence of
+the data, with an 8-bit address word first, followed by data.
+Communication is ended by:
+• The StopSmpl condition, where a falling edge on the I/O_7 pin is expected while CLK is high.
+• The StopCont condition, where the I/O_7 pin must have a successive rising and falling edge while CLK
+is low to reset the parallel interface and be ready for the new communication sequence.
+• The StopSmpl condition is also used to terminate the direct mode.
+Figure 6-14. Parallel Interface Communication With Simple Stop Condition (StopSmpl)
+PDF_PAGE36
+CLK
+I/O_[7]
+I/O_[6:0]
+a0 [7] d0 [7] d1 [7] d2 [7] d3 [7] dN [7]
+a0 [6:0] d0 [6:0] d1 [6:0] d2 [6:0] d3 [6:0] dN [6:0]xx xx
+50 ns
+Start
+Condition
+StopCont
+Continuous Mode
+36
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-15. Parallel Interface Communication With Continuous Stop Condition (StopCont)
+Figure 6-16. Example of Parallel Interface Communication With Continuous Stop Condition
+6.10.3 Reception of Air Interface Data
+At the start of a receive operation (when SOF is successfully detected), B6 is set in the IRQ Status
+register. An RX complete interrupt request is sent to the MCU at the end of the receive operation if the
+receive data string is shorter than or equal to the number of bytes configured in the Adjustable FIFO IRQ
+Levels register (0x14). An IRQ_FIFO interrupt request is sent to the MCU during the receive operation if
+the data string is greater than the level set in the Adjustable FIFO IRQ Levels register (0x14). After
+receiving an IRQ_FIFO or RX complete interrupt, the MCU must read the FIFO Status register (0x1C) to
+determine the number of bytes to be read from the FIFO. Next, the MCU must read the data in the FIFO.
+It is optional but recommended to read the FIFO Status register (0x1C) after reading FIFO data to
+determine if the receive is complete. In the case of an IRQ_FIFO, the MCU should expect either another
+IRQ_FIFO or RX complete interrupt. This is repeated until an RX complete interrupt is generated. The
+MCU receives the interrupt request, then checks to determine the reason for the interrupt by reading the
+IRQ Status register (0x0C), after which the MCU reads the data from the FIFO.
+If the reader detects a receive error, the corresponding error flag is set (framing error, CRC error) in the
+IRQ Status register, indicating to the MCU that reception was not completed correctly.
+PDF_PAGE37
+37
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.10.4 Data Transmission From MCU to TRF7970A
+Before beginning data transmission, the FIFO should always be cleared with a reset command (0x0F).
+Data transmission is initiated with a selected command (see Section 6.14). The MCU then commands the
+reader to do a continuous write command (0x3D) starting from register 0x1D. Data written into register
+0x1D is the TX Length Byte 1 (upper and middle nibbles), while the following byte in register 0x1E is the
+TX Length Byte 2 (lower nibble and broken byte length) (see Table 6-57 and Table 6-58) . Note that the
+TX byte length determines when the reader sends the end of frame (EOF) byte. After the TX length bytes
+are written, FIFO data is loaded in register 0x1F with byte storage locations 0 to 127. Data transmission
+begins automatically after the first byte is written into the FIFO. The loading of TX length bytes and the
+FIFO can be done with a continuous-write command, as the addresses are sequential.
+At the start of transmission, the flag B7 (IRQ_TX) is set in the IRQ Status register, and at the end of the
+transmit operation, an interrupt is sent to inform the MCU that the task is complete.
+6.10.5 Serial Interface Communication (SPI)
+When an SPI interface is used, I/O pins I/O_2, I/O_1, and I/O_0 must be hard wired according to Table 6-
+10. On power up, the TRF7970A looks for the status of these pins and then enters into the corresponding
+mode.
+The serial communications work in the same manner as the parallel communications with respect to the
+FIFO, except for the following condition. On receiving an IRQ from the reader, the MCU reads the
+TRF7970A IRQ Status register to determine how to service the reader. After this, the MCU must to do a
+dummy read to clear the reader's IRQ status register. The dummy read is required in SPI mode because
+the reader's IRQ status register needs an additional clock cycle to clear the register. This is not required in
+parallel mode because the additional clock cycle is included in the Stop condition. When first establishing
+communications with the TRF7970A, the SOFT_INIT (0x03) and IDLE (0x00) commands should be sent
+first from the MCU (see Table 6-19).
+The procedure for a dummy read is as follows (see Figure 6-17 and Figure 6-18):
+1. Start the dummy read:
+1. When using slave select (SS): set SS bit low.
+2. When not using SS: start condition is when Data Clock is high (see Table 6-10).
+2. Send address word to IRQ status register (0x0C) with read and continuous address mode bits set to 1
+(see Table 6-10).
+3. Read 1 byte (8 bits) from IRQ status register (0x0C).
+4. Dummy-read 1 byte from register 0x0D (collision position and interrupt mask).
+5. Stop the dummy read:
+1. When using slave select (SS): set SS bit high.
+2. When not using SS: stop condition when Data Clock is high.
+PDF_PAGE38
+Write Address
+Byte (0x6C)
+No Data Transitions (All High or Low)
+Don’t Care Ignore
+B7 B6 B5 B4 B3 B2 B1 B0
+Slave
+Select
+MISO
+MOSI
+DATA_CLK
+No Data Transitions (All High or Low)
+B7 B6 B5 B4 B3 B2 B1 B0
+Read Data in
+IRQ Status Register Dummy Read
+38
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-17. Procedure for Dummy Read
+Figure 6-18. Example of Dummy Read Using SPI With SS
+6.10.5.1 Serial Interface Mode With Slave Select (SS)
+The serial interface is in reset while the Slave Select signal is high. Serial data in (MOSI) changes on the
+rising edge, and is validated in the reader on the falling edge, as shown in Figure 6-19. Communication is
+terminated when the Slave Select signal goes high.
+All words must be 8 bits long with the MSB transmitted first.
+PDF_PAGE39
+Slave
+Select
+MISO
+MOSI
+DATA_CLK
+Write
+Address Byte
+Read Data
+Byte 1
+Read Data
+Byte n
+Don’t Care
+No Data Transitions (All High or Low) No Data Transitions (All High or Low)B7 B6 B5 B4 B3 B2 B1 B0
+B7 B6 B5 B4 B3 B2 B1 B0 B7 B6 B5 B4 B3 B2 B1 B0
+b0MISO
+MOSI
+DATA_CLK
+Write
+MOSI Transitions on Data Clock
+Rising Edge
+MOSI Valid on Data Clock Falling Edge
+tSTE,LEAD
+b7
+tLO/HI tLO/HI
+b6…b1 b0
+tSU,SI tHD,SI
+1/fUCxCLK
+tSTE,DIS
+b6...b1
+tVALID,SO
+tSTE,LAG
+tHD,SO
+Don’t Care
+Read
+Data Transition is on Data Clock
+Rising Edge
+MISO Valid on Data Clock Falling Edge
+tSU,SO
+b7
+No Data Transitions
+(All High or Low)
+Slave Select
+39
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-19. SPI With Slave Select Timing Diagram
+The read command is sent out on the MOSI pin, MSB first, in the first eight clock cycles. MOSI data
+changes on the rising edge, and is validated in the reader on the falling edge, as shown in Figure 6-19.
+During the write cycle, the serial data out (MISO) is not valid. After the last read command bit (B0) is
+validated at the eighth falling edge of SCLK, valid data can be read on the MISO pin at the falling edge of
+SCLK. It takes eight clock edges to read out the full byte (MSB first). See Section 5.4 for electrical
+specifications related to Figure 6-19.
+Figure 6-20 and Figure 6-21 show the continuous read operation.
+Figure 6-20. Continuous Read Operation Using SPI With Slave Select
+PDF_PAGE40
+40
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-21. Continuous Read of Registers 0x00 to 0x05 Using SPI With SS
+Figure 6-22 shows an example of performing a single slot inventory command. Reader registers (in this example)
+are configured for 5 VDC in and default operation.
+Figure 6-22. Inventory Command Sent From MCU to TRF7970A
+The TRF7970A takes these bytes from the MCU and then send out Request Flags, Inventory Command,
+and Mask over the air to the ISO/IEC 15693 transponder. After these three bytes have been transmitted,
+an interrupt occurs to indicate back to the reader that the transmission has been completed. In the
+example in Figure 6-23, this IRQ occurs approximately 1.6 ms after the SS line goes high after the
+Inventory command is sent out.
+PDF_PAGE41
+41
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-23. IRQ After Inventory Command
+The IRQ status register read (0x6C) yields 0x80, which indicates that TX is indeed complete. This is
+followed by a dummy clock. Then, if a tag is in the field and no error is detected by the reader, a second
+interrupt is expected and occurs (in this example) approximately 4 ms after first IRQ is read and cleared.
+In the continuation of the example (see Figure 6-24), the IRQ Status Register is read using method
+previously recommended, followed by a single read of the FIFO Status register, which indicates that there
+are 10 bytes to be read out.
+Figure 6-24. Read IRQ Status Register After Inventory Command
+This is then followed by a continuous read of the FIFO (see Figure 6-25). The first byte is (and should be)
+0x00 for no error. The next byte is the DSFID (usually shipped by manufacturer as 0x00), then the UID,
+shown here up to the next most significant byte, the MFG code [shown as 0x07 (TI silicon)].
+PDF_PAGE42
+42
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-25. Continuous Read of FIFO After Inventory Command
+TI recommends resetting the FIFO after receiving data. Additionally, the RSSI value of the tag can be read
+out at this point. In the example in Figure 6-26, the transponder is very close to the antenna, so value of
+0x7F is recovered.
+Figure 6-26. Reset FIFO and Read RSSI
+PDF_PAGE43
+Analog Front End (AFE)
+14443A
+ISO Encoders and Decoders
+14443B 15693 FeliCa
+Packetization and Framing
+Microcontroller
+Direct Mode 0:
+Raw RF Subcarrier
+Data Stream
+Direct Mode 1:
+Raw Digital ISO Coded
+Data Without
+Protocol Frame
+ISO Mode:
+Full ISO Framing
+and Error Checking
+(Typical Mode)
+43
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.10.6 Direct Mode
+Direct mode allows the user to configure the reader in one of two ways. Direct mode 0 (bit 6 = 0, as
+defined in ISO Control register) allows the user to use only the front-end functions of the reader,
+bypassing the protocol implementation in the reader. For transmit functions, the user has direct access to
+the transmit modulator through the MOD pin (pin 14). On the receive side, the user has direct access to
+the subcarrier signal (digitized RF envelope signal) on I/O_6 (pin 23).
+Direct mode 1 (bit 6 = 1, as defined in ISO Control register) uses the subcarrier signal decoder of the
+selected protocol (as defined in ISO Control register). This means that the receive output is not the
+subcarrier signal but the decoded serial bit stream and bit clock signals. The serial data is available on
+I/O_6 (pin 23) and the bit clock is available on I/O_5 (pin 22). The transmit side is identical; the user has
+direct control over the RF modulation through the MOD input. This mode is provided so that the user can
+implement a protocol that has the same bit coding as one of the protocols implemented in the reader, but
+needs a different framing format.
+To select direct mode, the user must first choose which direct mode to enter by writing B6 in the ISO
+Control register. This bit determines if the receive output is the direct subcarrier signal (B6 = 0) or the
+serial data of the selected decoder. If B6 = 1, then the user must also define which protocol should be
+used for bit decoding by writing the appropriate setting in the ISO Control register.
+The reader actually enters the direct mode when B6 (direct) is set to 1 in the chip status control register.
+Direct mode starts immediately. The write command should not be terminated with a stop condition (see
+communication protocol), because the stop condition terminates the direct mode and clears B6. This is
+necessary as the direct mode uses one or two I/O pins (I/O_6, I/O_5). Normal parallel communication is
+not possible in direct mode. Sending a stop condition terminates direct mode.
+NOTE
+An additional direct mode known as special direct mode can be used to communicate with
+certain tags not compliant with ISO standards. For full details on how to use this feature, see
+Using Special Direct Mode With the TRF7970A.
+Figure 6-27 shows the different configurations available in direct mode.
+• In mode 0, the reader is used as an AFE only, and protocol handling is bypassed.
+• In mode 1, framing is not done, but SOF and EOF are present. This allows for a user-selectable
+framing level based on an existing ISO standard.
+• In mode 2, data is ISO-standard formatted. SOF, EOF, and error checking are removed, so the
+microprocessor receives only bytes of raw data through a 127-byte FIFO.
+Figure 6-27. User-Configurable Modes
+PDF_PAGE44
+44
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+The steps to enter direct mode are listed below, using SPI with SS communication method only as one
+example, as direct modes are also possible with parallel and SPI without SS. The must enter direct mode
+0 to accommodate card type communications that are not compliant with ISO standards. Direct mode can
+be entered at any time, so if a card type started with ISO standard communications, then deviated from
+the standard after being identified and selected, the ability to go into direct mode 0 is very useful.
+Step 1: Configure Pins I/O_0 to I/O_2 for SPI with SS
+Step 2: Set Pin 12 of the TRF7970A (ASK/OOK pin) to 0 for ASK or 1 for OOK
+Step 3: Program the TRF7970A registers
+The following registers must be explicitly set before going into the direct mode.
+1. ISO Control register (0x01) to the appropriate standard
+– 0x02 for ISO/IEC 15693 High Data Rate
+– 0x08 for ISO/IEC 14443 A (106 kbps)
+– 0x1A for FeliCa 212 kbps
+– 0x1B for FeliCa 424 kbps
+2. Modulator and SYS_CLK register (0x09) to the appropriate clock speed and modulation
+– 0x21 for 6.78 MHz Clock and OOK (100%) modulation
+– 0x20 for 6.78 MHz Clock and ASK 10% modulation
+– 0x22 for 6.78 MHz Clock and ASK 7% modulation
+– 0x23 for 6.78 MHz Clock and ASK 8.5% modulation
+– 0x24 for 6.78 MHz Clock and ASK 13% modulation
+– 0x25 for 6.78 MHz Clock and ASK 16% modulation
+(See register 0x09 definition for all other possible values)
+Example register setting for ISO/IEC 14443 A at 106 kbps:
+• ISO Control register (0x01) to 0x08
+• RX No Response Wait Time register (0x07) to 0x0E
+• RX Wait Time register (0x08) to 0x07
+• Modulator control register (0x09) to 0x21 (or any custom modulation)
+• RX Special Settings register (0x0A) to 0x20
+PDF_PAGE45
+45
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Step 4: Entering Direct Mode 0
+The following registers must be programmed to enter direct mode 0:
+1. Set bit B6 of the Modulator and SYS_CLK Control register (0x09) to 1.
+2. Set bit B6 of the ISO Control (Register 01) to 0 for direct mode 0 (default its 0)
+3. Set bit B6 of the Chip Status Control register (0x00) to 1 to enter direct mode
+4. Send extra eight clock cycles (see Figure 6-28, this step is TRF7970A specific)
+NOTE
+• It is important that the last write is not terminated with a stop condition. For SPI, this
+means that Slave Select (I/O_4) stays low.
+• Sending a Stop condition terminates the direct mode and clears bit B6 in the Chip Status
+Control register (0x00).
+NOTE
+Access to Registers, FIFO, and IRQ is not available during direct mode 0.
+The reader enters the direct mode 0 when bit 6 of the Chip Status Control register (0x00) is set to a 1 and
+stays in direct mode 0 until a stop condition is sent from the microcontroller.
+NOTE
+The write command should not be terminated with a stop condition (for example, in SPI
+mode this is done by bringing the Slave Select line high after the register write), because the
+stop condition terminates the direct mode and clears bit 6 of the Chip Status Control register
+(0x00), making it a 0.
+Figure 6-28. Entering Direct Mode 0
+PDF_PAGE46
+TRF7970A Microcontroller
+Drive the MOD pin
+according to the data coding
+specified by the standard
+Decode the subcarrier
+information according
+to the standard
+MOD
+(Pin 14)
+I/O_6
+(Pin 23)
+46
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Step 5: Transmit Data Using Direct Mode
+The application now has direct control over the RF modulation through the MOD input (see Figure 6-29).
+Figure 6-29. Direct Control Signals
+The microcontroller is responsible for generating data according to the coding specified by the particular
+standard. The microcontroller must generate SOF, EOF, Data, and CRC. In direct mode, the FIFO is not
+used and no IRQs are generated. See the applicable ISO standard to understand bit and frame
+definitions. Figure 6-30 shows an example of what the developer sees when using DM0 in an actual
+application. This figure clearly shows the relationship between the MOD pin being controlled by the MCU
+and the resulting modulated 13.56-MHz carrier signal.
+Figure 6-30. TX Sequence Out in DM0
+Step 6: Receive Data Using Direct Mode
+After the TX operation is complete, the tag responds to the request and the subcarrier data is available on
+pin I/O_6. The microcontroller needs to decode the subcarrier signal according to the standard. This
+includes decoding the SOF, data bits, CRC, and EOF. The CRC then needs to be checked to verify data
+integrity. The receive data bytes must be buffered locally.
+As an example of the receive data bits and framing level according to the ISO/IEC 14443 A standard is
+shown in Figure 6-31 (taken from ISO/IEC 14443 specification and TRF7970A air interface).
+PDF_PAGE47
+/c63
+/c63
+/c63
+128/fc = 9.435 µs = t (106-kbps data rate)
+64/fc = 4.719 µs = t time
+32/fc = 2.359 µs = t time
+b
+x
+1
+t = 9.44b µs t = 4.72 x µs t = 2.48 1 µs
+Sequence Y = Carrier for 9.44 µs Sequence Z = Pause for 2
+Carrier for Remainder of 9.44
+to 3 µs,
+µs
+47
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-31. Receive Data Bits and Framing Level
+PDF_PAGE48
+48
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-32 shows an example of what the developer should expect on the I/O_6 line during the RX
+process while in direct mode 0.
+Figure 6-32. RX Sequence on I/O_6 in DM0 (Analog Capture)
+Step 7: Terminating Direct Mode 0
+After the EOF is received, data transmission is over, and direct mode 0 can be terminated by sending a
+Stop Condition (in the case of SPI, make the Slave Select go high). The TRF7970A is returned to default
+state.
+6.11 TRF7970A Initialization
+To properly initialize the TRF7970A, perform these steps:
+1. Raise the EN, EN2, and SS lines at the correct intervals after power up (for timing diagrams, see
+Figure 6-3 and Figure 6-4).
+2. Issue a Software Initialization direct command (0x03), followed by an Idle direct command (0x00) to
+soft reset the TRF7970A.
+NOTE
+Table 6-21 lists the initial register settings for the TRF7970A after the Software Initialization
+command.
+3. Delay 1 ms to allow the TRF7970A to fully process the soft reset.
+4. Issue a Reset FIFO direct command (0x0F).
+5. Write the Modulator and SYS_CLK Control register (0x09) with the appropriate application-specific
+setting for the crystal and system clock settings.
+6. Write the Regulator and I/O Control register (0x0B) with the appropriate application-specific setting.
+7. Write the NFC Target Detection Level register (0x18) with the value of 0x00. For details on this
+requirement, see the TRF7970A Silicon Errata.
+PDF_PAGE49
+49
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+(1) See the TRF7970A Silicon Errata for details on automatic SDD dependencies.
+6.12 Special Direct Mode for Improved MIFARE™ Compatibility
+See Using Special Direct Mode With the TRF7970A.
+6.13 NFC Modes
+6.13.1 Target
+When used as the NFC target, the chip is typically in a power down or standby mode. If EN2 = H, the chip
+keeps the supply system on. If EN2 = L and EN = L the chip is in complete power down. To operate as
+NFC target or card emulator, the MCU must load a value different from zero (0) in Target Detection Level
+register (b0-b2) which enables the RF measurement system (supplied by VEXT, so it can operate also
+during complete power down and consumes only 3.5 µA). The RF measurement constantly monitors the
+RF signal on the antenna input. When the RF level on the antenna input exceeds the level defined in the
+in Target Detection Level register, the chip is automatically activated (EN is internal forced high). The
+typical RF value that causes power-up for each value of B0 to B2 and the function of Target Detection
+Level register is listed in Table 6-15.
+NFC Target Detection Level Register (0x18) – defines level for RF level for wake-up and gives
+information of NFCID size. This register is directly supplied by VEXT to ensure data retention during
+complete power down.
+Table 6-15. NFC Target Detection Level Register
+BIT SIGNAL NAME FUNCTION COMMENTS
+B7 Id_s1
+NFCID1 size used in 106 kbps passive target SDD
+B6 Id_s0
+B5 Sdd_en 1 = Enables internal SDD protocol Automatic SDD using internal state machine and ID
+stored in NFCID Number register (1)
+B4 N/A
+B3 Hi_rf Extended range for RF measurements
+B2 Rfdet_h2
+RF field level required for system wake-up. If all
+bits are 0, the RF level detection is switched off.
+Comparator output is displayed in NFC Target
+Protocol register B7 (rf_h)B1 Rfdet_h1
+B0 Rfdet_h0
+Default: reset to 00 at POR on VEXT (not on POR based on VDD_X), not reset at EN = 0
+Table 6-16. Bits B0 to B3 of the NFC Target Detection Level Register
+B0 B1 B2 000 001 010 011 100 101 110 111
+B3 = 0 RF Vpp Not active 480 mV 350 mV 250 mV 220 mV 190 mV 180 mV 170 mV
+B3 = 1 RF Vpp Not active 1500 mV 700 mV 500 mV 450 mV 400 mV 320 mV 280 mV
+When the voltage supply system and the oscillator are started and is stable, the osc_ok goes high (B6 of
+RSSI Level and Oscillator Status register) and IRQ is sent with bit B2 = 1 of IRQ register (field change).
+Bit B7 NFC Target Protocol in register directly displays the status of RF level detection (running constantly
+also during normal operation). This informs the MCU that the chip should start operation as an NFC
+TARGET device.
+When the first command from the INITIATOR is received another IRQ sent with B6 (RX start) set in IRQ
+register. The MCU must set EN = H (confirm the power-up) in the time between the two IRQs as the
+internal power-up ends after the second IRQ. The type and coding of the first initiator (or reader in the
+case of a card emulator) command define the communication protocol type which the target must use. So
+the communication protocol type is available in the NFC Target Protocol register immediately after
+receiving the first command. The coding of the NFC Target Protocol register is described next.
+PDF_PAGE50
+50
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+NFC Target Protocol Register (0x19) – displays the bit rate and protocol type (active or passive)
+transmitted by initiator in the first command. It also displays the comparator outputs of both RF level
+detectors.
+Table 6-17. NFC Target Protocol Register
+BIT NAME FUNCTION DESCRIPTION
+B7 Rf_h 1 = RF level is above the set wake-up level The wake-up level is defined by bits b0-b3 of NFC
+Target Detection Level register
+B6 Rf_l 1 = RF level is above the RF collision avoidance level The collision avoidance level is defined by bits b0-
+b2 of NFC Low Field Detection Level register
+B5 N/A
+B4 FeliCa 1 = FeliCa type
+0 = ISO/IEC 14443 A type
+The first initiator command had physical level
+coding like FeliCa or like ISO/IEC 14443 A
+B3 Pas106 Passive target 106 kbps or card emulation The first initiator/reader command was
+SENS_REQ or ALL_REQ
+B2 Pas14443B Card emulation ISO/IEC 14443 B The first reader command was of ISO/IEC 14443 B
+type
+B1 Nfcbr1
+Bit rate of first received command
+00 = N/A
+01 = 106 kbps
+10 = 212 kbps
+11 = 424 kbps
+B0 Nfcbr0
+Default: reset to 00 at POR and EN = L. B0 to B4 are automatically reset after MCU read operation. B6
+and B7 continuously display the RF level comparator outputs.
+Based on the first command from INITIATOR following actions are taken:
+• If the first command is SENS_REQ or ALL_REQ, the TARGET must enter the SDD protocol for 106
+kbps passive communication. If bit B5 in NFC Target Detection Level register is not set, the MCU
+handles the SDD and the command received is send to FIFO. If the RF field is turned off (B7 in the
+NFC Target Protocol register goes low) at any time, the system sends an IRQ to the MCU with bit B2
+(RF field change) in the IRQ register set high. This informs the MCU that the procedure was aborted
+and the system must be reset. The clock extractor is automatically activated in this mode.
+• If the command is SENS_REQ or ALL_REQ and the card emulation bit in the ISO Control register is
+set, the system emulates an ISO/IEC 14443 A card. The procedure does not differ from the one
+previously described for a passive target at 106 kbps. The clock extractor is automatically activated in
+this mode.
+• If the first command is a SENSF_REQ, the system becomes a TARGET in passive communication
+using 212 kbps or 424 kbps. The SDD is relatively simple and is handled by the MCU directly.
+• If the first command is ATR_REQ, the system operates as an active TARGET using the same
+communication speed and bit coding as used by the INITIATOR. Again, all of the replies are handled
+by the MCU. The MCU should check for collision avoidance by checking the external RSSI as
+described in Section 6.5.1.2. When no RF field is detected from the external RSSI result, then the
+MCU can begin the process to send the reply.
+• If the first command is coded as ISO/IEC 14443 B and the card emulation bit is set in the ISO Control
+register, the system enters ISO/IEC 14443 B emulator mode. The anticollision must be handled by the
+MCU, and the chip provides all physical level coding, decoding, and framing for this protocol.
+Table 6-18 shows the function of the IRQ Status register in NFC and card emulation. This register is
+preset to 0 at POR = H or EN = L and at each write to ISO Control. It is also automatically reset at the end
+of read phase. The reset also removes the IRQ flag.
+PDF_PAGE51
+51
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+(1) Displays the cause of IRQ and TX/RX status
+Table 6-18. IRQ Status Register (0x0C) for NFC and Card Emulation Operation (1)
+BIT NAME FUNCTION DESCRIPTION
+B7 Irq_tx IRQ set due to end of TX
+Signals that TX is in progress. The flag is set at the start of
+TX but the interrupt request (IRQ = 1) is sent when TX is
+finished.
+B6 Irg_srx IRQ set due to RX start
+Signals that RX SOF was received and RX is in progress.
+The flag is set at the start of RX but the interrupt request
+(IRQ = 1) is sent when RX is finished.
+B5 Irq_fifo Signals the FIFO level Signals FIFO high or low as set in the Adjustable FIFO IRQ
+Levels (0x14) register
+B4 Irq_err1 CRC error Indicates receive CRC error only if B7 (no RX CRC) of ISO
+Control register is set to 0.
+B3 Irq_err2 Parity error Indicates parity error for ISO/IEC 14443 A
+B2 Irq_err3 Byte framing or EOF error Indicates framing error
+B1 Irq_col Collision error
+Collision error for ISO/IEC 14443 A and ISO/IEC 15693
+single subcarrier. Bit is set if more than 6 or 7 (as defined in
+register 0x10) are detected inside 1 bit period of
+ISO/IEC 14443 A 106 kbps. Collision error bit can also be
+triggered by external noise.
+B0 Irq_noresp No-response time interrupt
+No response within the "No-response time" defined in RX
+No-response Wait Time register (0x07). Signals the MCU
+that next slot command can be sent. Only for
+ISO/IEC 15693.
+6.13.2 Initiator
+The chip is fully controlled by the MCU as in RFID reader operation. The MCU activates the chip and
+writes the mode selection in the ISO Control register. The normal transmit and receive procedure (through
+the FIFO) are used to communicate with the TARGET device as described in Section 6.10.
+6.14 Direct Commands from MCU to Reader
+6.14.1 Command Codes
+Table 6-19 summarizes the command codes.
+Table 6-19. Address and Command Word Bit Distribution
+COMMAND
+CODE COMMAND COMMENTS
+0x00 Idle
+0x03 Software initialization Same as Power on Reset
+0x04 Perform RF collision avoidance Does not function as expected. See the TRF7970A
+Errata for details.
+0x05 Perform response RF collision avoidance Does not function as expected. See the TRF7970A
+Errata for details.
+0x06 Perform response RF collision avoidance (n = 0) Does not function as expected. See the TRF7970A
+Errata for details.
+0x0F Reset FIFO
+0x10 Transmission without CRC
+0x11 Transmission with CRC
+0x12 Delayed transmission without CRC
+0x13 Delayed transmission with CRC
+0x14 End of frame and transmit next time slot Used for ISO/IEC 15693 only
+0x16 Block receiver
+0x17 Enable receiver
+0x18 Test internal RF (RSSI at RX input with TX off)
+PDF_PAGE52
+52
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Table 6-19. Address and Command Word Bit Distribution (continued)
+COMMAND
+CODE COMMAND COMMENTS
+0x19 Test external RF (RSSI at RX input with TX on)
+The command code values from Table 6-19 are substituted in Table 6-20, bits 0 through 4. Also, the most-
+significant bit (MSB) in Table 6-20 must be set to 1. (Table 6-20 is same as Table 6-11, shown here again
+for easy reference).
+Table 6-20. Address and Command Word Bit Distribution
+BIT DESCRIPTION BIT FUNCTION ADDRESS COMMAND
+B7 Command control bit 0 = Address
+1 = Command 0 1
+B6 Read/Write 0 = Write
+1 = Read R/W 0
+B5 Continuous address mode 1 = Continuous mode R/W 0
+B4 Address/Command bit 4 Adr 4 Cmd 4
+B3 Address/Command bit 3 Adr 3 Cmd 3
+B2 Address/Command bit 2 Adr 2 Cmd 2
+B1 Address/Command bit 1 Adr 1 Cmd 1
+B0 Address/Command bit 0 Adr 0 Cmd 0
+The MSB determines if the word is to be used as a command or address. The last two columns of
+Table 6-20 show the function of each bit, depending on whether address or command is written.
+Command mode is used to enter a command resulting in reader action (initialize transmission, enable
+reader, and turn reader on or off).
+6.14.1.1 Idle (0x00)
+This command issues dummy clock cycles. In parallel mode, one cycle is issued. In SPI mode, eight
+cycles are issued. This command should be sent after a Software Initialization command to allow the
+command to finish operation.
+6.14.1.2 Software Initialization (0x03)
+This command starts a power-on reset. After sending this command, the register values change as shown
+in Table 6-21.
+(1) Differs from default at POR
+Table 6-21. Register Values After Sending Software
+Initialization (0x03)
+ADDRESS REGISTER VALUE
+0x00 Chip status control 0x01
+0x01 ISO control 0x21 (1)
+0x02 ISO/IEC 14443 B TX options 0x00
+0x03 ISO/IEC 14443 A high bit rate options 0x00
+0x04 TX timer high byte control 0xC1 (1)
+0x05 TX timer low byte control 0xC1 (1)
+0x06 TX pulse length control 0x00
+0x07 RX no response wait time 0x0E
+0x08 RX wait time 0x07 (1)
+0x09 Modulator and SYS_CLK control 0x91
+0x0A RX special setting 0x10 (1)
+PDF_PAGE53
+53
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Table 6-21. Register Values After Sending Software
+Initialization (0x03) (continued)
+ADDRESS REGISTER VALUE
+(2) Default value may not always be 0x00. See the TRF7970A Errata for
+details.
+0x0B Regulator and I/O control 0x87
+0x0C IRQ status 0x00
+0x0D Collision position and interrupt mask 0x3E
+0x0E Collision position 0x00
+0x0F RSSI levels and oscillator status 0x40
+0x10 Special function 0x00
+0x11 Special function 0x00
+0x12 RAM 0x00
+0x13 RAM 0x00
+0x14 Adjustable FIFO IRQ levels 0x00
+0x15 Reserved 0x00
+0x16 NFC low field detection level 0x00
+0x18 NFC target detection level 0x00 (2)
+0x19 NFC target protocol 0x00
+0x1A Test 0x00
+0x1B Test 0x00
+0x1C FIFO status 0x00
+6.14.1.3 Initial RF Collision Avoidance (0x04)
+See the TRF7970A Errata.
+6.14.1.4 Response RF Collision Avoidance (0x05)
+See the TRF7970A Errata.
+6.14.1.5 Response RF Collision Avoidance (0x06, n = 0)
+See the TRF7970A Errata.
+6.14.1.6 Reset FIFO (0x0F)
+The reset command clears the FIFO contents and FIFO Status register (0x1C). It also clears the register
+storing the collision error location (0x0E).
+6.14.1.7 Transmission With CRC (0x11)
+The transmission command must be sent first, followed by transmission length bytes, and FIFO data. The
+reader starts transmitting after the first byte is loaded into the FIFO. The CRC byte is included in the
+transmitted sequence.
+6.14.1.8 Transmission Without CRC (0x10)
+Same as Section 6.14.1.7 with CRC excluded.
+6.14.1.9 Delayed Transmission With CRC (0x13)
+The transmission command must be sent first, followed by the transmission length bytes, and FIFO data.
+The reader transmission is triggered by the TX timer.
+PDF_PAGE54
+54
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.14.1.10 Delayed Transmission Without CRC (0x12)
+Same as Section 6.14.1.9 with CRC excluded.
+6.14.1.11 Transmit Next Time Slot (0x14)
+When this command is received, the reader transmits the next slot command. The next slot sign is defined
+by the protocol selection. This is used by the ISO/IEC 15693 protocol.
+6.14.1.12 Block Receiver (0x16)
+The block receiver command puts the digital part of receiver (bit decoder and framer) in reset mode. This
+is useful in an extremely noisy environment, where the noise level could otherwise cause a constant
+switching of the subcarrier input of the digital part of the receiver. The receiver (if not in reset) would try to
+catch a SOF signal, and if the noise pattern matched the SOF pattern, an interrupt would be generated,
+falsely signaling the start of an RX operation. A constant flow of interrupt requests can be a problem for
+the external system (MCU), so the external system can stop this by putting the receive decoders in reset
+mode. The reset mode can be terminated in two ways. The external system can send the enable receiver
+command. The reset mode is also automatically terminated at the end of a TX operation. The receiver can
+stay in reset after end of TX if the RX wait time register (0x08) is set. In this case, the receiver is enabled
+at the end of the wait time following the transmit operation.
+6.14.1.13 Enable Receiver (0x17)
+This command clears the reset mode in the digital part of the receiver if the reset mode was entered by
+the block receiver command.
+6.14.1.14 Test Internal RF (RSSI at RX Input With TX ON) (0x18)
+The level of the RF carrier at RF_IN1 and RF_IN2 inputs is measured. Operating range between 300 mVP
+and 2.1 VP (step size is 300 mV). The two values are displayed in the RSSI Levels and Oscillator Status
+register (0x0F). The command is intended for diagnostic purposes to set correct RF_IN levels. Optimum
+RFIN input level is approximately 1.6 VP or code 5 to 6. The nominal relationship between the RF peak
+level and RSSI code is shown in Table 6-22 and in Section 6.5.1.1.
+NOTE
+If the command is executed immediately after power-up and before any communication with
+a tag is performed, the command must be preceded by Enable RX command. The Check RF
+commands require full operation, so the receiver must be activated by Enable RX or by a
+normal Tag communication for the Check RF command to work properly.
+Table 6-22. Test Internal RF Peak Level to RSSI Codes
+RF_IN1 [mVPP] 300 600 900 1200 1500 1800 2100
+Decimal Code 1 2 3 4 5 6 7
+Binary Code 001 010 011 001 101 011 111
+6.14.1.15 Test External RF (RSSI at RX Input with TX OFF) (0x19)
+This command can be used in active mode when the RF receiver is switched on but RF output is switched
+off. This means bit B1 = 1 in Chip Status Control Register. The level of RF signal received on the antenna
+is measured and displayed in the RSSI Levels and Oscillator Status register (0x0F). The relation between
+the 3 bit code and the external RF field strength [A/m] must be determinate by calculation or by
+experiments for each antenna type as the antenna Q and connection to the RF input influence the result.
+The nominal relation between the RF peak to peak voltage in the RF_IN1 input and RSSI code is shown
+in Table 6-23 and in Section 6.5.1.2.
+PDF_PAGE55
+55
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+NOTE
+If the command is executed immediately after power-up and before any communication with
+a tag is performed, the command must be preceded by an Enable RX command. The Check
+RF commands require full operation, so the receiver must be activated by Enable RX or by a
+normal Tag communication for the Check RF command to work properly.
+Table 6-23. Test External RF Peak Level to RSSI Codes
+RF_IN1 [mVPP] 40 60 80 100 140 180 300
+Decimal Code 1 2 3 4 5 6 7
+Binary Code 001 010 011 001 101 011 111
+6.15 Register Description
+6.15.1 Register Preset
+After power up and the EN pin low-to-high transition, the reader is in the default mode. The default
+configuration is ISO/IEC 15693, single subcarrier, high data rate, 1-out-of-4 operation. The low-level option
+registers (0x02 to 0x0B) are automatically set to adapt the circuitry optimally to the appropriate protocol
+parameters. When entering another protocol (by writing to the ISO Control register 0x01), the low-level
+option registers (0x02 to 0x0B) are automatically configured to the new protocol parameters. After
+selecting the protocol, it is possible to change some low-level register contents if needed. However,
+changing to another protocol and then back, reloads the default settings, and so then the custom settings
+must be reloaded.
+The Clo0 and Clo1 register (0x09) bits, which define the microcontroller frequency available on the
+SYS_CLK pin, are the only 2 bits in the configuration registers that are not cleared during protocol
+selection.
+PDF_PAGE56
+56
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.15.2 Register Overview
+Table 6-24 lists the registers.
+Table 6-24. Register Definitions
+ADDRESS REGISTER READ/WRITE SECTION
+Main Control Registers
+0x00 Chip status control R/W Section 6.15.3.1.1
+0x01 ISO Control R/W Section 6.15.3.1.2
+Protocol Subsetting Registers
+0x02 ISO/IEC 14443 B TX options R/W Section 6.15.3.2.1
+0x03 ISO/IEC 14443 A high bit rate options R/W Section 6.15.3.2.2
+0x04 TX timer high byte control R/W Section 6.15.3.2.3
+0x05 TX timer low byte control R/W Section 6.15.3.2.4
+0x06 TX pulse length control R/W Section 6.15.3.2.5
+0x07 RX no response wait time R/W Section 6.15.3.2.6
+0x08 RX wait time R/W Section 6.15.3.2.7
+0x09 Modulator and SYS_CLK control R/W Section 6.15.3.2.8
+0x0A RX special setting R/W Section 6.15.3.2.9
+0x0B Regulator and I/O control R/W Section 6.15.3.2.10
+0x10 Special function register (preset 0x00) R/W Section 6.15.3.3.4
+0x11 Special function register (preset 0x00) R/W Section 6.15.3.3.5
+0x14 Adjustable FIFO IRQ levels R/W Section 6.15.3.3.6
+0x15 Reserved R/W
+0x16 NFC low field level R/W Section 6.15.3.3.7
+0x17 NFCID1 number (up to 10 bytes wide) W Section 6.15.3.3.8
+0x18 NFC target detection level R/W Section 6.15.3.3.9
+0x19 NFC target protocol R/W Section 6.15.3.3.10
+Status Registers
+0x0C IRQ status R Section 6.15.3.3.1
+0x0D Collision position and interrupt mask register R/W Section 6.15.3.3.2
+0x0E Collision position R Section 6.15.3.3.2
+0x0F RSSI levels and oscillator status R Section 6.15.3.3.3
+RAM
+0x12 RAM R/W N/A
+0x13 RAM R/W N/A
+Test Registers
+0x1A Test (preset 0x00) R/W Section 6.15.3.4.1
+0x1B Test (preset 0x00) R/W Section 6.15.3.4.2
+FIFO Registers
+0x1C FIFO status R Section 6.15.3.5.1
+0x1D TX length byte 1 R/W Section 6.15.3.5.2
+0x1E TX length byte 2 R/W Section 6.15.3.5.2
+0x1F FIFO I/O register R/W N/A
+PDF_PAGE57
+57
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.15.3 Detailed Register Description
+6.15.3.1 Main Configuration Registers
+6.15.3.1.1 Chip Status Control Register (0x00)
+Table 6-25 describes the Chip Status Control register.
+Table 6-25. Chip Status Control Register (0x00)
+Function: Control of Power mode, RF on or off, Active or Passive mode, Direct mode
+Default: 0x01, preset at EN = L or POR = H
+Bit Name Function Description
+B7 stby
+1 = Standby mode Standby mode keeps all supply regulators and the 13.56-MHz SYS_CLK
+oscillator running. (Typical start-up time to full operation is 100 µs.)
+0 = Active mode Active mode (default)
+B6 direct
+1 = Direct mode 0 or 1
+Provides user direct access to AFE (direct mode 0) or allows user to add
+custom framing (direct mode 1). Bit 6 of the ISO Control register must be set by
+user before entering direct mode 0 or 1.
+0 = Direct l 2 (default) Uses SPI or parallel communication with automatic framing and ISO decoders
+B5 rf_on
+1 = RF output active Transmitter on, receivers on
+0 = RF output not active Transmitter off
+B4 rf_pwr
+1 = Half output power TX_OUT (pin 5) = 8-Ω output impedance P = 100 mW (20 dBm) at 5 V,
+P = 33 mW (+15 dBm) at 3.3 V
+0 = Full output power TX_OUT (pin 5) = 4-Ω output impedance P = 200 mW (+23 dBm) at 5 V,
+P = 70 mW (+18 dBm) at 3.3 V
+B3 pm_on
+1 = Selects aux RX input RX_IN2 input is used
+0 = Selects main RX input RX_IN1 input is used
+B2 Reserved
+B1 rec_on
+1 = Receiver activated for
+external field measurement
+Forced enabling of receiver and TX oscillator. Used for external field
+measurement.
+0 = Automatic enable Allows enable of the receiver by bit 5 of this register (0x00)
+B0 vrs5_3 1 = 5-V operation
+0 = 3-V operation Selects the VIN voltage range
+(1) Only applicable to ISO/IEC 14443 A and ISO/IEC 15693
+6.15.3.1.2 ISO Control Register (0x01)
+Table 6-26 describes the ISO Control register.
+Table 6-26. ISO Control Register (0x01)
+Function: Controls the selection of ISO standard protocol, direct mode and receive CRC
+Default: 0x02 (ISO/IEC 15693 high bit rate, one subcarrier, 1 out of 4); it is preset at EN = L or POR = H
+Bit Name Function Description
+B7 rx_crc_n CRC Receive selection 0 = RX CRC (CRC is present in the response)
+1 = no RX CRC (CRC is not present in the response) (1)
+B6 dir_mode Direct mode type selection 0 = Direct Mode 0
+1 = Direct mode 1
+B5 rfid RFID / Reserved 0 = RFID mode
+1 = NFC or card emulation mode
+B4 iso_4 RFID / NFC Target
+RFID: See Table 6-27 for B0:B4 settings based on ISO protocol in application
+NFC:
+0 = target
+1 = initiator
+PDF_PAGE58
+58
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Table 6-26. ISO Control Register (0x01) (continued)
+B3 iso_3 RFID / NFC Mode NFC:
+0 = passive mode
+1 = active mode
+B2 iso_2 RFID / Card Emulation NFC:
+0 = NFC Normal Modes
+1 = Card Emulation Mode
+B1 iso_1 RFID / NFC bit rate NFC:
+0 = bit rate selection or card emulation selection, see Table 6-28
+B0 iso_0 RFID / NFC bit rate NFC:
+0 = bit rate selection or card emulation selection, see Table 6-28
+(1) For ISO/IEC 14443 A or B, when bit rate of TX is different from RX, settings can be done in register 0x02 or 0x03.
+Table 6-27. ISO Control Register ISO_x Settings, RFID Mode
+ISO_4 ISO_3 ISO_2 ISO_1 ISO_0 PROTOCOL REMARKS
+0 0 0 0 0 ISO/IEC 15693 low bit rate, 6.62 kbps, one subcarrier, 1 out of 4
+0 0 0 0 1 ISO/IEC 15693 low bit rate, 6.62 kbps, one subcarrier, 1 out of 256
+0 0 0 1 0 ISO/IEC 15693 high bit rate, 26.48 kbps, one subcarrier, 1 out of 4 Default for reader
+0 0 0 1 1 ISO/IEC 15693 high bit rate, 26.48 kbps, one subcarrier, 1 out of 256
+0 0 1 0 0 ISO/IEC 15693 low bit rate, 6.67 kbps, double subcarrier, 1 out of 4
+0 0 1 0 1 ISO/IEC 15693 low bit rate, 6.67 kbps, double subcarrier, 1 out of
+256
+0 0 1 1 0 ISO/IEC 15693 high bit rate, 26.69 kbps, double subcarrier, 1 out of 4
+0 0 1 1 1 ISO/IEC 15693 high bit rate, 26.69 kbps, double subcarrier,
+1 out of 256
+0 1 0 0 0 ISO/IEC 14443 A RX bit rate, 106 kbps RX bit rate (1)
+0 1 0 0 1 ISO/IEC 14443 A RX high bit rate, 212 kbps
+0 1 0 1 0 ISO/IEC 14443 A RX high bit rate, 424 kbps
+0 1 0 1 1 ISO/IEC 14443 A RX high bit rate, 848 kbps
+0 1 1 0 0 ISO/IEC 14443 B RX bit rate, 106 kbps RX bit rate (1)
+0 1 1 0 1 ISO/IEC 14443 B RX high bit rate, 212 kbps
+0 1 1 1 0 ISO/IEC 14443 B RX high bit rate, 424 kbps
+0 1 1 1 1 ISO/IEC 14443 B RX high bit rate, 848 kbps
+1 0 0 1 1 Reserved
+1 0 1 0 0 Reserved
+1 1 0 1 0 FeliCa 212 kbps
+1 1 0 1 1 FeliCa 424 kbps
+Table 6-28. ISO Control Register ISO_x Settings,
+NFC Mode (B5 = 1, B2 = 0) or Card Emulation (B5 = 1, B2 = 1)
+ISO_1 ISO_0 NFC
+(B5 = 1, B2 = 0)
+CARD EMULATION
+(B5 = 1, B2 = 1)
+0 0 N/A ISO/IEC 14443 A
+0 1 106 kbps ISO/IEC 14443 B
+1 0 212 kbps N/A
+1 1 424 kbps N/A
+PDF_PAGE59
+59
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.2 Control Registers – Sublevel Configuration Registers
+6.15.3.2.1 ISO/IEC 14443 TX Options Register (0x02)
+Table 6-29 describes the ISO/IEC 14443 TX Options register.
+Table 6-29. ISO/IEC 14443 TX Options Register (0x02)
+Function: Selects the ISO subsets for ISO/IEC 14443 – TX
+Default: 0x00 at POR = H or EN = L
+Bit Name Function Description
+B7 egt2 TX EGT time select MSB
+Three bit code defines the number of etu (0-7) which separate two characters.
+ISO/IEC 14443 B TX only.B6 egt1 TX EGT time select
+B5 egt0 TX EGT time select LSB
+B4 eof_l0 1 = EOF→ 0 length 11 etu
+0 = EOF→ 0 length 10 etu
+ISO/IEC 14443 B TX only
+B3 sof_l1 1 = SOF→ 1 length 03 etu
+0 = SOF→ 1 length 02 etu
+B2 sof _l0 1 = SOF→ 0 length 11 etu
+0 = SOF→ 0 length 10 etu
+B1 l_egt
+1 = EGT after each byte
+0 = EGT after last byte is
+omitted
+B0 Auto SDD_SAK
+1 = ISO/IEC 14443 A Layer
+4 compliant (in SAK
+response)
+0 = Not Layer 4 compliant
+(in SAK response)
+For use with Auto SDD configuration, makes B6 in ISO/IEC 14443 A response
+1 or 0, indicating Layer 4 compliance (or not), for all other cases, this bit is
+unused
+6.15.3.2.2 ISO/IEC 14443 High-Bit-Rate and Parity Options Register (0x03)
+Table 6-30 describes the ISO/IEC 14443 High-Bit-Rate and Parity Options register.
+Table 6-30. ISO/IEC 14443 High-Bit-Rate and Parity Options Register (0x03)
+Function: Selects the ISO subsets for ISO/IEC 14443 – TX
+Default: 0x00 at POR = H or EN = L, and at each write to ISO Control register
+Bit Name Function Description
+B7 dif_tx_br TX bit rate different from RX
+bit rate enable Valid for ISO/IEC 14443 A or B high bit rate
+B6 tx_br1
+TX bit rate
+tx_br1 = 0, tx_br = 0 → 106 kbps
+tx_br1 = 0, tx_br = 1 → 212 kbps
+tx_br1 = 1, tx_br = 0 → 424 kbps
+tx_br1 = 1, tx_br = 1 → 848 kbps
+B5 tx_br0
+B4 parity-2tx 1 = parity odd except last
+byte which is even for TX
+For ISO/IEC 14443 A high bit rate, coding and decoding
+B3 parity-2rx 1 = parity odd except last
+byte which is even for RX
+B2 Unused
+B1 Unused
+B0 Unused
+PDF_PAGE60
+60
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.2.3 TX Timer High Byte Control Register (0x04)
+Table 6-31 describes the TX Timer High Byte Control register.
+Table 6-31. TX Timer High Byte Control Register (0x04)
+Function: For Timings
+Default: 0xC2 at POR = H or EN = L, and at each write to ISO Control register
+Bit Name Function Description
+B7 tm_st1 Timer Start Condition tm_st1 = 0, tm_st0 = 0 → beginning of TX SOF
+tm_st1 = 0, tm_st0 = 1 → end of TX SOF
+tm_st1 = 1, tm_st0 = 0 → beginning of RX SOF
+tm_st1 = 1, tm_st0 = 1 → end of RX SOF
+B6 tm_st0 Timer Start Condition
+B5 tm_lengthD Timer Length MSB
+B4 tm_lengthC Timer Length
+B3 tm_lengthB Timer Length
+B2 tm_lengthA Timer Length
+B1 tm_length9 Timer Length
+B0 tm_length8 Timer Length LSB
+6.15.3.2.4 TX Timer Low Byte Control Register (0x05)
+Table 6-32 describes the TX Timer Low Byte Control register.
+Table 6-32. TX Timer Low Byte Control Register (0x05)
+Function: For Timings
+Default: 0x00 at POR = H or EN = L, and at each write to ISO Control register
+Bit Name Function Description
+B7 tm_length7 Timer Length MSB
+Defines the time when delayed transmission is started.
+RX wait range is 590 ns to 9.76 ms (1 to 16383)
+Step size is 590 ns
+All bits low = timer disabled (0x00)
+Preset 0x00 for all other protocols
+B6 tm_length6 Timer Length
+B5 tm_length5 Timer Length
+B4 tm_length4 Timer Length
+B3 tm_length3 Timer Length
+B2 tm_length2 Timer Length
+B1 tm_length1 Timer Length
+B0 tm_length0 Timer Length LSB
+PDF_PAGE61
+61
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.2.5 TX Pulse Length Control Register (0x06)
+The length of the modulation pulse is defined by the protocol selected in the ISO Control register 0x01.
+With a high Q antenna, the modulation pulse is typically prolonged, and the tag detects a longer pulse
+than intended. For such cases, the modulation pulse length can be corrected by using the TX Pulse
+Length Control register (0x06). If the register contains all zeros, then the pulse length is governed by the
+protocol selection. If the register contains a value other than 0x00, the pulse length is equal to the value of
+the register in 73.7-ns increments. This means the range of adjustment can be 73.7 ns to 18.8 µs.
+Table 6-33 describes the TX Pulse Length Control register.
+Table 6-33. TX Pulse Length Control Register (0x06)
+Function: Controls the length of TX pulse
+Default: 0x00 at POR = H or EN = L and at each write to ISO Control register.
+Bit Name Function Description
+B7 Pul_p2 Pulse length MSB The pulse range is 73.7 ns to 18.8 µs (1… .255), step size 73.7 ns.
+All bits low (00): pulse length control is disabled.
+The following default timings are preset by the ISO Control register (0x01):
+9.44 µs → ISO/IEC 15693 (TI Tag-It HF-I)
+11 µs → Reserved
+2.36 µs → ISO/IEC 14443 A at 106 kbps
+1.4 µs → ISO/IEC 14443 A at 212 kbps
+737 ns → ISO/IEC 14443 A at 424 kbps
+442 ns → ISO/IEC 14443 A at 848 kbps; pulse length control disabled
+B6 Pul_p1
+B5 Pul_p0
+B4 Pul_c4
+B3 Pul_c3
+B2 Pul_c2
+B1 Pul_c1
+B0 Pul_c0 Pulse length LSB
+6.15.3.2.6 RX No Response Wait Time Register (0x07)
+The RX No Response timer is controlled by the RX NO Response Wait Time Register 0x07. This timer
+measures the time from the start of slot in the anticollision sequence until the start of tag response. If there
+is no tag response in the defined time, an interrupt request is sent and a flag is set in IRQ status control
+register 0x0C. This enables the external controller to be relieved of the task of detecting empty slots. The
+wait time is stored in the register in increments of 37.76 µs. This register is also preset, automatically, for
+every new protocol selection. Sending a Reset FIFO (0x0F) direct command after a TX Complete interrupt
+will disable this feature.
+Table 6-34 describes the RX No Response Wait Time register.
+Table 6-34. RX No Response Wait Time Register (0x07)
+Function: Defines the time when "no response" interrupt is sent; only for ISO/IEC 15693
+Default: 0x0E at POR = H or EN = L and at each write to ISO Control register
+Bit Name Function Description
+B7 NoResp7 No response MSB Defines the time when "no response" interrupt is sent. It starts from the end of
+TX EOF. RX no response wait range is 37.76 µs to 9628 µs (1 to 255), step
+size is: 37.76 µs.
+The following default timings are preset by the ISO Control register (0x01):
+390 µs → Reserved
+529 µs → for all protocols supported, but not listed here
+604 µs → Reserved
+755 µs → ISO/IEC 15693 high data rate (TI Tag-It HF-I)
+1812 µs → ISO/IEC 15693 low data rate (TI Tag-It HF-I)
+B6 NoResp6
+B5 NoResp5
+B4 NoResp4
+B3 NoResp3
+B2 NoResp2
+B1 NoResp1
+B0 NoResp0 No response LSB
+PDF_PAGE62
+62
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.2.7 RX Wait Time Register (0x08)
+The RX-wait-time timer is controlled by the value in the RX wait time register 0x08. This timer defines the
+time after the end of the transmit operation in which the receive decoders are not active (held in reset
+state). This prevents incorrect detections resulting from transients following the transmit operation. The
+value of the RX wait time register defines this time in increments of 9.44 µs. This register is preset at
+every write to ISO Control register 0x01 according to the minimum tag response time defined by each
+standard.
+Table 6-35 describes the RX Wait Time register.
+Table 6-35. RX Wait Time Register (0x08)
+Function: Defines the time after TX EOF when the RX input is disregarded for example, to block out electromagnetic disturbance
+generated by the responding card.
+Default: 0x1F at POR = H or EN = L and at each write toISO control register.
+Bit Name Function Description
+B7 Rxw7
+RX wait time
+Defines the time after the TX EOF during which the RX input is ignored. Time
+starts from the end of TX EOF.
+RX wait range is 9.44 µs to 2407 µs (1 to 255), Step size 9.44 µs.
+The following default timings are preset by the ISO Control register (0x01):
+9.44 µs → FeliCa
+66 µs → ISO/IEC 14443 A and B
+180 µs → Reserved
+293 µs → ISO/IEC 15693 (TI Tag-It HF-I)
+B6 Rxw6
+B5 Rxw5
+B4 Rxw4
+B3 Rxw3
+B2 Rxw2
+B1 Rxw1
+B1 Rxw0
+PDF_PAGE63
+63
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.2.8 Modulator and SYS_CLK Control Register (0x09)
+The frequency of SYS_CLK (pin 27) is programmable by the bits B4 and B5 of this register. The frequency
+of the TRF7970A system clock oscillator is divided by 1, 2 or 4 resulting in available SYS_CLK
+frequencies of 13.56 MHz or 6.78 MHz or 3.39 MHz.
+The ASK modulation depth is controlled by bits B0, B1 and B2. The range of ASK modulation is 7% to
+30% or 100% (OOK). The selection between ASK and OOK (100%) modulation can also be done using
+direct input OOK (pin 12). The direct control of OOK/ASK using OOK pin is only possible if the function is
+enabled by setting B6 = 1 (en_ook_p) in this register (0x09) and the ISO Control Register (0x01, B6 = 1).
+When configured this way, the MOD (pin 14) is used as input for the modulation signal.
+Table 6-36 describes the Modulator and SYS_CLK Control register.
+Table 6-36. Modulator and SYS_CLK Control Register (0x09)
+Function: Controls the modulation input and depth, ASK / OOK control and clock output to external system (MCU)
+Default: 0x91 at POR = H or EN = L, and at each write to ISO control register, except Clo1 and Clo0.
+Bit Name Function Description
+B7 27MHz Enables 27.12-MHz crystal Default = 1 (enabled)
+B6 en_ook_p
+1 = Enables external
+selection of ASK or OOK
+modulation
+0 = Default operation as
+defined in B0 to B2 (0x09)
+Enable ASK/OOK pin (pin 12) for "on the fly change" between any preselected
+ASK modulation as defined by B0 to B2 and OOK modulation:
+If B6 is 1, pin 12 is configured as follows:
+1 = OOK modulation
+0 = Modulation as defined in B0 to B2 (0x09)
+B5 Clo1 SYS_CLK output frequency
+MSB
+Clo1 Clo0
+SYS_CLK Output
+(if 13.56-MHz
+crystal is used)
+SYS_CLK Output
+(if 27.12-MHz
+crystal is used)
+0 0 Disabled Disabled
+0 1 3.39 MHz 6.78 MHz
+B4 Clo0 SYS_CLK output frequency
+LSB
+1 0 6.78 MHz 13.56 MHz
+1 1 13.56 MHz 27.12 MHz
+B3 en_ana
+1 = Sets pin 12 (ASK/OOK)
+as an analog output
+0 = Default
+For test and measurement purpose. ASK/OOK pin 12 can be used to monitor
+the analog subcarrier signal before the digitizing with DC level equal to AGND.
+B2 Pm2 Modulation depth MSB
+Pm2 Pm1 Pm0 Mod Type and %
+0 0 0 ASK 10%
+0 0 1 OOK (100%)
+B1 Pm1 Modulation depth
+0 1 0 ASK 7%
+0 1 1 ASK 8.5%
+1 0 0 ASK 13%
+B0 Pm0 Modulation depth LSB
+1 0 1 ASK 16%
+1 1 0 ASK 22%
+1 1 1 ASK 30%
+PDF_PAGE64
+64
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.2.9 RX Special Setting Register (0x0A)
+Table 6-37 describes the RX Special Setting register.
+Table 6-37. RX Special Setting Register (0x0A)
+Function: Sets the gains and filters directly
+Default: 0x40 at POR = H or EN = L, and at each write to the ISO Control register 0x01. When bits B7, B6, B5 and B4 are all zero, the
+filters are set for ISO/IEC 14443 B (240 kHz to 1.4 MHz).
+Bit Name Function Description
+B7 C212 Band-pass 110 kHz to 570 kHz Appropriate for 212-kHz subcarrier system (FeliCa)
+B6 C424 Band-pass 200 kHz to 900 kHz Appropriate for 424-kHz subcarrier used in ISO/IEC 15693
+B5 M848 Band-pass 450 kHz to 1.5 MHz Appropriate for Manchester-coded 848-kHz subcarrier used in
+ISO/IEC 14443 A and B
+B4 hbt Band-pass 100 kHz to 1.5 MHz
+Gain reduced for 18 dB
+Appropriate for highest bit rate (848 kbps) used in high-bit-rate
+ISO/IEC 14443
+B3 gd1 00 = Gain reduction 0 dB
+01 = Gain reduction for 5 dB
+10 = Gain reduction for 10 dB
+11 = Gain reduction for 15 dB
+Sets the RX gain reduction and reduces sensitivity
+B2 gd2
+B1 Reserved
+B0 Reserved
+NOTE
+The setting of bits B4, B5, B6 and B7 to 0 selects bandpass characteristic of 240 kHz to 1.4
+MHz. This is appropriate for ISO/IEC 14443 B, FeliCa protocol, and ISO/IEC 14443 A higher
+bit rates of 212 kbps and 424 kbps.
+PDF_PAGE65
+65
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.2.10 Regulator and I/O Control Register (0x0B)
+Table 6-38 describes the Regulator and I/O Control register.
+Table 6-38. Regulator and I/O Control Register (0x0B)
+Function: Control the three voltage regulators
+Default: 0x87 at POR = H or EN = L
+Bit Name Function Description
+B7 auto_reg
+0 = Manual settings; see B0
+to B2 in Table 6-39 and
+Table 6-40
+1 = Automatic setting (see
+Table 6-41 and Table 6-42)
+Auto system sets VDD_RF = VIN – 250 mV and VDD_A = VIN – 250 mV and
+VDD_X= VIN – 250 mV, but not higher than 3.4 V.
+B6 en_ext_pa Support for external power
+amplifier
+Internal peak detectors are disabled, receiver inputs (RX_IN1 and RX_IN2)
+accept externally demodulated subcarrier. At the same time ASK/OOK pin 12
+becomes modulation output for external TX amplifier.
+B5 io_low 1 = enable low peripheral
+communication voltage
+When B5 = 1, maintains the output driving capabilities of the I/O pins connected
+to the level shifter under low voltage operation. Should be set 1 when VDD_I/O
+voltage is between 1.8 V to 2.7 V.
+B4 Unused No function Default is 0.
+B3 Unused No function Default is 0.
+B2 vrs2
+Voltage set MSB voltage
+set LSB
+Vrs3_5 = L: VDD_RF, VDD_A, VDD_X range 2.7 V to 3.4 V; see Table 6-39 and
+Table 6-40B1 vrs1
+B0 vrs0
+Table 6-39. Supply-Regulator Setting – Manual 5-V System
+REGISTER
+OPTION BITS SETTING IN CONTROL REGISTER
+ACTION
+B7 B6 B5 B4 B3 B2 B1 B0
+00 1 5-V system
+0B 0 Manual regulator setting
+0B 0 1 1 1 VDD_RF = 5 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 1 1 0 VDD_RF = 4.9 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 1 0 1 VDD_RF = 4.8 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 1 0 0 VDD_RF = 4.7 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 0 1 1 VDD_RF = 4.6 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 0 1 0 VDD_RF = 4.5 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 0 0 1 VDD_RF = 4.4 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+0B 0 0 0 0 VDD_RF = 4.3 V, VDD_A = 3.4 V, VDD_X = 3.4 V
+Table 6-40. Supply-Regulator Setting – Manual 3-V System
+REGISTER
+OPTION BITS SETTING IN CONTROL REGISTER
+ACTION
+B7 B6 B5 B4 B3 B2 B1 B0
+00 0 3-V system
+0B 0 Manual regulator setting
+0B 0 1 1 1 VDD_RF = 3.4 V, VDD_A and VDD_X = 3.4 V
+0B 0 1 1 0 VDD_RF = 3.3 V, VDD_A and VDD_X = 3.3 V
+0B 0 1 0 1 VDD_RF = 3.2 V, VDD_A and VDD_X = 3.2 V
+0B 0 1 0 0 VDD_RF = 3.1 V, VDD_A and VDD_X = 3.1 V
+0B 0 0 1 1 VDD_RF = 3.0 V, VDD_A and VDD_X = 3.0 V
+0B 0 0 1 0 VDD_RF = 2.9 V, VDD_A and VDD_X = 2.9 V
+0B 0 0 0 1 VDD_RF = 2.8 V, VDD_A and VDD_X = 2.8 V
+0B 0 0 0 0 VDD_RF = 2.7 V, VDD_A and VDD_X = 2.7 V
+PDF_PAGE66
+66
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+(1) x = don't care
+Table 6-41. Supply-Regulator Setting – Automatic 5-V System
+REGISTER
+OPTION BITS SETTING IN CONTROL REGISTER
+ACTION
+B7 B6 B5 B4 B3 B2 B1 B0
+00 1 5-V system
+0B 1 x (1) 0 0 Automatic regulator setting 400-mV difference
+(1) x = don't care
+Table 6-42. Supply-Regulator Setting – Automatic 3-V System
+REGISTER
+OPTION BITS SETTING IN CONTROL REGISTER
+ACTION
+B7 B6 B5 B4 B3 B2 B1 B0
+00 0 3-V system
+0B 1 x (1) 0 0 Automatic regulator setting 400-mV difference
+6.15.3.3 Status Registers
+6.15.3.3.1 IRQ Status Register (0x0C)
+Table 6-43 describes the IRQ Status register.
+Table 6-43. IRQ Status Register (0x0C)
+Function: Information available about TRF7970A IRQ and TX/RX status
+Default: 0x00 at POR = H or EN = L, and at each write to the ISO Control Register 0x01. It is also automatically reset at the end of a read
+phase. The reset also removes the IRQ flag.
+Bit Name Function Description
+B7 Irq_tx IRQ set due to end of TX Signals that TX is in progress. The flag is set at the start of TX but the interrupt
+request (IRQ = 1) is sent when TX is finished.
+B6 Irg_srx IRQ set due to RX start Signals that RX SOF was received and RX is in progress. The flag is set at the
+start of RX but the interrupt request (IRQ = 1) is sent when RX is finished.
+B5 Irq_fifo Signals the FIFO level Signals FIFO high or low as set in the Adjustable FIFO IRQ Levels (0x14)
+register
+B4 Irq_err1 CRC error Indicates receive CRC error only if B7 (no RX CRC) of ISO Control register is
+set to 0.
+B3 Irq_err2 Parity error Indicates parity error for ISO/IEC 14443 A
+B2 Irq_err3 Byte framing or EOF error Indicates framing error
+B1 Irq_col Collision error
+Collision error for ISO/IEC 14443 A and ISO/IEC 15693 single subcarrier. Bit is
+set if more then 6 or 7 (as defined in register 0x10) are detected in 1 bit period
+of ISO/IEC 14443 A 106 kbps. Collision error bit can also be triggered by
+external noise.
+B0 Irq_noresp No response time interrupt
+No response within the "No-response time" defined in RX No Response Wait
+Time register (0x07). Signals the MCU that the next slot command can be sent.
+Only for ISO/IEC 15693.
+To reset (clear) the register 0x0C and the IRQ line, the register must be read. During Transmit the
+decoder is disabled, only bits B5 and B7 can be changed. During Receive only bit B6 can be changed, but
+does not trigger the IRQ line immediately. The IRQ signal is set at the end of Transmit and Receive
+phase.
+PDF_PAGE67
+67
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Table 6-44 describes the IRQ Status register when used for NFC and card emulation operation.
+Table 6-44. IRQ Status Register (0x0C) for NFC and Card Emulation Operation
+Function: Information available about TRF7970A IRQ and TX/RX status
+Default: 0x00 at POR = H or EN = L, and at each write to the ISO Control Register 0x01. It is also automatically reset at the end of a read
+phase. The reset also removes the IRQ flag.
+Bit Name Function Description
+B7 Irq_tx IRQ set due to end of TX Signals that TX is in progress. The flag is set at the start of TX but the interrupt
+request (IRQ = 1) is sent when TX is finished.
+B6 Irg_srx IRQ set due to RX start Signals that RX SOF was received and RX is in progress. The flag is set at the
+start of RX but the interrupt request (IRQ = 1) is sent when RX is finished.
+B5 Irq_fifo Signals the FIFO level Signals FIFO high or low as set in the Adjustable FIFO IRQ Levels (0x14)
+register
+B4 Irq_err1 Protocol error Any protocol error
+B3 Irq_sdd SDD completed SDD (passive target at 106 kbps) successfully finished
+B2 Irq_rf RF field change Sufficient RF signal level for operation was reached or lost
+B1 Irq_col RF collision avoidance
+finished
+The system has finished collision avoidance and the minimum wait time is
+elapsed.
+B0 Irq_col_err RF collision avoidance not
+finished successfully
+The external RF field was present so the collision avoidance could not be
+carried out.
+6.15.3.3.2 Interrupt Mask Register (0x0D) and Collision Position Register (0x0E)
+Table 6-45 describes the Interrupt Mask register. Table 6-46 describes the Collision Position register.
+Table 6-45. Interrupt Mask Register (0x0D)
+Default: 0x3E at POR = H and EN = L. Collision bits reset automatically after read operation.
+Bit Name Function Description
+B7 Col9 Bit position of collision MSB Supports ISO/IEC 14443 A
+B6 Col8 Bit position of collision
+B5 En_irq_fifo Interrupt enable for FIFO Default = 1
+B4 En_irq_err1 Interrupt enable for CRC Default = 1
+B3 En_irq_err2 Interrupt enable for Parity Default = 1
+B2 En_irq_err3 Interrupt enable for Framing
+error or EOF Default = 1
+B1 En_irq_col Interrupt enable for collision
+error Default = 1
+B0 En_irq_noresp Enables no-response
+interrupt Default = 0
+Table 6-46. Collision Position Register (0x0E)
+Function: Displays the bit position of collision or error
+Default: 0x00 at POR = H and EN = L. Automatically reset after read operation.
+Bit Name Function Description
+B7 Col7 Bit position of collision MSB
+ISO/IEC 14443 A mainly supported, in the other protocols this register shows
+the bit position of error. Frame, SOF, EOF, parity, or CRC error.
+B6 Col6
+B5 Col5
+B4 Col4
+B3 Col3
+B2 Col2
+B1 Col1
+B0 Col0 Bit position of collision LSB
+PDF_PAGE68
+68
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.3.3 RSSI Levels and Oscillator Status Register (0x0F)
+Table 6-47 describes the RSSI Levels and Oscillator Status register.
+Table 6-47. RSSI Levels and Oscillator Status Register (0x0F)
+Function: Displays the signal strength on both reception channels and RF amplitude during RF-off state. The RSSI values are valid from
+reception start till start of next transmission.
+Bit Name Function Description
+B7 Unused
+B6 osc_ok Crystal oscillator stable
+indicator 13.56-MHz frequency stable (approximately 200 µs)
+B5 rssi_x2 MSB RSSI value of auxiliary
+RX (RX_IN2) Auxiliary channel is by default RX_IN2. The input can be swapped by B3 = 1
+(Chip Status Control register 0x00). If "swapped", the Auxiliary channel is
+connected to RX_IN1 and, hence, the Auxiliary RSSI represents the signal level
+at RX_IN1.
+B4 rssi_x1 Auxiliary channel RSSI
+B3 rssi_x0 MSB RSSI value of auxiliary
+RX (RX_IN2)
+B2 rssi_2 MSB RSSI value of main
+RX (RX_IN1)
+Active channel is default and can be set with option bit B3 = 0 of Chip Status
+Control register 0x00.B1 rssi_1 Main channel RSSI
+B0 rssi_0 LSB RSSI value of main RX
+(RX_IN1)
+RSSI measurement block is measuring the demodulated envelope signal (except in case of direct
+command for RF amplitude measurement described later in direct commands section). The measuring
+system is latching the peak value, so the RSSI level can be read after the end of receive packet. The
+RSSI value is reset during next transmit action of the reader, so the new tag response level can be
+measured. The RSSI levels calculated to the RF_IN1 and RF_IN2 are presented in Section 6.5.1.1 and
+Section 6.5.1.2. The RSSI has 7 steps (3 bits) with 4-dB increment. The input level is the peak-to-peak
+modulation level of RF signal measured on one side envelope (positive or negative).
+6.15.3.3.4 Special Functions Register (0x10)
+Table 6-48 describes the Special Functions register at address 0x10.
+Table 6-48. Special Functions Register (0x10)
+Function: User configurable options for ISO/IEC 14443 A specific operations
+Bit Name Function Description
+B7 Reserved Reserved
+B6 Reserved Reserved
+B5 par43 Disables parity checking for
+ISO/IEC 14443 A
+B4 next_slot_37us 0 = 18.88 µs
+1 = 37.77 µs Sets the time grid for next slot command in ISO/IEC 15693
+B3 Sp_dir_mode Bit stream transmit for
+MIFARE at 106 kbps
+Enables direct mode for transmitting ISO/IEC 14443 A data, bypassing the
+FIFO and feeding the data bit stream directly onto the encoder.
+B2 4_bit_RX 0 = normal receive
+1 = 4-bit receive
+Enable 4-bit replay for example, ACK, NACK used by some cards; for example,
+MIFARE Ultralight
+B1 14_anticoll
+0 = anticollision framing
+(0x93, 0x95, 0x97)
+1 = normal framing (no
+broken bytes)
+Disable anticollision frames for ISO/IEC 14443 A (this bit should be set to 1
+after anticollision is finished)
+B0 col_7_6 0 = 7 subcarrier pulses
+1 = 6 subcarrier pulses
+Selects the number of subcarrier pulses that trigger collision error in
+ISO/IEC 14443 A at 106 kbps
+PDF_PAGE69
+69
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.3.5 Special Functions Register (0x11)
+Table 6-49 describes the Special Functions register at address 0x11.
+Table 6-49. Special Functions Register (0x11)
+Function: Indicate IRQ status for RX operations.
+Bit Name Function Description
+B7 Reserved Reserved
+B6 Reserved Reserved
+B5 Reserved Reserved
+B4 Reserved Reserved
+B3 Reserved Reserved
+B2 Reserved Reserved
+B1 Reserved Reserved
+B0 irg_srx
+Copy of the RX start signal
+(Bit 6) of the IRQ Status
+register (0x0C)
+Signals the RX SOF was received and the RX is in progress. IRQ when RX is
+completed.
+6.15.3.3.6 Adjustable FIFO IRQ Levels Register (0x14)
+Table 6-50 describes the Adjustable FIFO IRQ Levels register.
+Table 6-50. Adjustable FIFO IRQ Levels Register (0x14)
+Function: Adjusts level at which FIFO indicates status by IRQ
+Default: 0x00 at POR = H and EN = L
+Bit Name Function Description
+B7 Reserved Reserved
+B6 Reserved Reserved
+B5 Reserved Reserved
+B4 Reserved Reserved
+B3 Wlh_1
+FIFO high IRQ level (during
+RX)
+Wlh_1
+0
+0
+1
+1
+Wlh_0
+0
+1
+0
+1
+IRQ Level
+124
+120
+112
+96
+B2 Wlh_0
+B1 Wll_1
+FIFO low IRQ level (during
+TX)
+Wll_1
+0
+0
+1
+1
+Wll_0
+0
+1
+0
+1
+IRQ Level
+4
+8
+16
+32
+B0 Wll_0
+PDF_PAGE70
+70
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.3.7 NFC Low Field Level Register (0x16)
+Table 6-51 describes the NFC Low Field Level register.
+Table 6-51. NFC Low Field Level Register (0x16)
+Function: Defines level for RF collision avoidance
+Default: 0x00 at POR = H and EN = L.
+Bit Name Function Description
+B7 Clex_dis Disable clock extractor NFC passive 106-kbps and ISO/IEC 14443 A card emulation
+B6 Hash6 N/A
+B5 Hash5 N/A
+B4 Hash4 N/A
+B3 Hash3 N/A
+B2 Rfdet_I2
+RF field level for RF
+collision avoidance
+Comparator output is displayed in B6 of the NFC Target Protocol register
+(0x19)B1 Rfdet_I1
+B0 Rfdet_I0
+6.15.3.3.8 NFCID1 Number Register (0x17)
+This register is used to hold the ID of the TRF7970A for use during card emulation and NFC peer-to-peer
+target operations.
+The procedure for writing the ID into register 0x17 is the following:
+1. Write bits 5, 6, and 7 in register 0x18 to enable SDD anticollision (bit 5), and set bit 6 and 7 to select
+the ID length of 4, 7, or 10 bytes.
+2. Write the ID into register 0x17. This should be done using write continuous mode with 4, 7, or 10 bytes
+(according to what was set in register 0x18 bits 6 and 7).
+6.15.3.3.9 NFC Target Detection Level Register (0x18)
+Table 6-52 describes the NFC Target Detection Level register.
+Table 6-52. NFC Target Detection Level Register (0x18)
+Function: Defines level for RF wake up, enables automatic SDD and gives NFCID size. This register is supplied by Vin to ensure data
+retention during complete power down.
+Default: 0x00 at POR on Vin (not POR based on VDD_X) and not reset at EN = 0
+Bit Name Function Description
+B7 Id_s1
+NFCID1 size used in 106-
+kbps passive target SDD
+Id_s1 Id_s0 NFCID1 Size
+(bytes)
+0 0 4
+0 1 7
+B6 Id_s0
+1 0 10
+1 1 Not allowed
+B5 Sdd_en Automatic SDD using internal state machine and ID stored in the NFCID1
+Number register (0x17)
+B4 N/A
+B3 Hi_rf Extended range for RF
+measurements
+B2 Rfdet_h2 RF field level required for
+system wakeup. If all bits
+are 0, then the RF level
+detection is off.
+Comparator output is displayed in B7 of the NFC Target Protocol register
+(0x19)B1 Rfdet_h1
+B0 Rfdet_h0
+PDF_PAGE71
+71
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.3.10 NFC Target Protocol Register (0x19)
+This register is used (when read) to display the bit rate and protocol type when an NFC/RFID
+Initiator/Reader is presented. An example use of this scenario would be when the TRF7970A is placed
+into card emulation (Type A or Type B) and another TRF7970A or NFC device (polling for other NFC
+devices) is presented to the TRF7970A in card emulation mode. The IRQ indicates that a field was
+detected (IRQ Status = 0x04) or that Auto SDD has completed (IRQ Status = 0x08, if configured for
+AutoSDD).
+If Auto SDD is set and 0x04 is returned in IRQ status, then this register can be read out to see which
+commands are coming in for gaining knowledge of the polling cycle sequence. Then, when the correct first
+matching command (that is, REQA or REQB) is issued from Reader or Initiator, if AutoSDD is set, the IRQ
+fires and the IRQ Status is 0x08, indicating completion of the SDD. The next IRQ should return 0x40 as
+status, the Register 0x19 can be checked to make sure it is correct value (that is, 0xC9 for Type A at 106
+kbps or 0xC5 for Type B at 106 kbps) indicating there are bytes in the FIFO and a read of the FIFO status
+indicates how many bytes to read out. For example, after AutoSDD is completed, there are four bytes in
+the FIFO, and these should be the RATS command coming in from the reader, which the MCU controlling
+the TRF7970A in Card Emulation mode must respond to. If AutoSDD is not set, as another example with
+the TRF7970A in ISO/IEC 14443 B Card Emulation mode, then the field detect happens as previously
+described and IRQs also fire to indicate RX is complete (0x40). This register must be checked and
+compared against case statement structure that is set up for the value of this register to be 0xC5,
+indicating that an ISO/IEC 14443 B command at 106 kbps was issued. When this register (0x19) is 0xC5,
+then the FIFO Status can be read and should hold a value of 0x03, and when read, be the REQB
+command (0x05, 0x00, 0x00); the controlling MCU must respond with the ATQB response. The next steps
+for either of these examples follow the relevant portions of the ISO/IEC 14443-3 or -4 standards, then the
+NFC Forum specifications, depending on the system use case or application.
+Table 6-53 describes the NFC Target Protocol register.
+Table 6-53. NFC Target Protocol Register (0x19)
+Function: Displays the bit rate and protocol type (active or passive) transmitted by initiator in first command. It also displays the comparator
+outputs of both RF level detectors.
+Default: 0x00 at POR = H and EN = L. B0 to B4 are automatically reset after MCU continuous read operation. B6 and B7 continuously
+display the RF level comparator outputs.
+Bit Name Function Description
+B7 Rf_h RF level is above the wake-
+up level setting
+The wakeup level is defined by bits B0 to B2 in the NFC Target Detection Level
+register (0x18)
+B6 Rf_l
+RF level is above the RF
+collision avoidance level
+setting
+The collision avoidance level is defined by bits B0 – B2 in the register 0x16
+(NFC Low Field Detection Level)
+B5 Reserved Reserved Reserved
+B4 FeliCa 1 = FeliCa
+0 = ISO/IEC 14443 A
+The first initiator command had physical level coding of FeliCa or
+ISO/IEC 14443 A
+B3 Pas_106 Passive target at 106 kbps
+or transponder emulation The first initiator/reader command was SENS_REQ or ALL_REQ
+B2 Pas_14443B ISO/IEC 14443 B
+transponder emulation The first reader command was ISO/IEC 14443 B
+B1 NFCBR1
+Bit rate of first received
+command
+00 = Reserved
+01 = 106 kbps
+10 = 212 kbps
+11 = 424 kbps
+B0 NFCBR0
+PDF_PAGE72
+72
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.4 Test Registers
+6.15.3.4.1 Test Register (0x1A)
+Table 6-54 describes the Test register at address 0x1A.
+Table 6-54. Test Register (0x1A) (for Test or Direct Use)
+Default: 0x00 at POR = H and EN = L.
+Bit Name Function Description
+B7 OOK_Subc_In Subcarrier input OOK pin becomes decoder digital input
+B6 MOD_Subc_Out Subcarrier output MOD pin becomes receiver digitized subcarrier output
+B5 MOD_Direct Direct TX modulation and
+RX reset MOD pin becomes input for TX modulation control by the MCU
+B4 o_sel First stage output selection
+o_sel = L: First stage output used for analog out and digitizing
+o_sel = H: Second Stage output used for analog out and digitizing
+B3 low2 Second stage gain –6 dB,
+HP corner frequency / 2
+B2 low1 First stage gain –6 dB, HP
+corner frequency / 2
+B1 zun Input followers test
+B0 Test_AGC AGC test, AGC level is
+seen on rssi_210 bits
+6.15.3.4.2 Test Register (0x1B)
+Table 6-55 describes the Test register at address 0x1B.
+Table 6-55. Test Register (0x1B) (for Test or Direct Use)
+Default: 0x00 at POR = H and EN = L. When a test_dec or test_io is set IC is switched to test mode. Test Mode persists until a stop
+condition arrives. At stop condition the test_dec and test_io bits are cleared.
+Bit Name Function Description
+B7
+test_rf_level RF level test
+B6
+B5
+B4
+B3 test_io1
+I/O test Not implemented
+B2 test_io0
+B1 test_dec Decoder test mode
+B0 clock_su Coder clock 13.56 MHz For faster test of coders
+PDF_PAGE73
+73
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.5 FIFO Control Registers
+Section 6.15.3.5.1 describes the FIFO Status register.
+6.15.3.5.1 FIFO Status Register (0x1C)
+Table 6-56. FIFO Status Register (0x1C)
+Function: Number of bytes available to be read from FIFO (= N number of bytes, in hexadecimal)
+Bit Name Function Description
+B7 Foverflow FIFO overflow error Bit is set when FIFO has more than 127 bytes presented to it
+B6 Fb6 FIFO bytes fb[6]
+Bits B0:B6 indicate how many bytes are in the FIFO to be read out (= N
+number of bytes, in hex)
+B5 Fb5 FIFO bytes fb[5]
+B4 Fb4 FIFO bytes fb[4]
+B3 Fb3 FIFO bytes fb[3]
+B2 Fb2 FIFO bytes fb[2]
+B1 Fb1 FIFO bytes fb[1]
+B0 Fb0 FIFO bytes fb[0]
+PDF_PAGE74
+74
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6.15.3.5.2 TX Length Byte1 Register (0x1D), TX Length Byte2 Register (0x1E)
+Table 6-57 describes the TX Length Byte1 register. Table 6-58 describes the TX Length Byte2 register.
+Table 6-57. TX Length Byte1 Register (0x1D)
+Function: High 2 nibbles of complete, intended bytes to be transferred through FIFO
+Register default is set to 0x00 at POR and EN = 0. It is also automatically reset at TX EOF
+Bit Name Function Description
+B7 Txl11 Number of complete byte
+bn[11]
+High nibble of complete, intended bytes to be transmitted
+B6 Txl10 Number of complete byte
+bn[10]
+B5 Txl9 Number of complete byte
+bn[9]
+B4 Txl8 Number of complete byte
+bn[8]
+B3 Txl7 Number of complete byte
+bn[7]
+Middle nibble of complete, intended bytes to be transmitted
+B2 Txl6 Number of complete byte
+bn[6]
+B1 Txl5 Number of complete byte
+bn[5]
+B0 Txl4 Number of complete byte
+bn[4]
+Table 6-58. TX Length Byte2 Register (0x1E)
+Function: Low nibbles of complete bytes to be transferred through FIFO; Information about a broken byte and number of bits to be
+transferred from it
+Default: 0x00 at POR and EN = 0. It is also automatically reset at TX EOF
+Bit Name Function Description
+B7 Txl3 Number of complete byte
+bn[3]
+Low nibble of complete, intended bytes to be transmitted
+B6 Txl2 Number of complete byte
+bn[2]
+B5 Txl1 Number of complete byte
+bn[1]
+B4 Txl0 Number of complete byte
+bn[0]
+B3 Bb2 Broken byte number of bits
+bb[2]
+Number of bits in the last broken byte to be transmitted.
+Valid only when broken byte flag is set.B2 Bb1 Broken byte number of bits
+bb[1]
+B1 Bb0 Broken byte number of bits
+bb[0]
+B0 Bbf Broken byte flag B0 = 1 indicates that last byte is not complete 8 bits wide.
+PDF_PAGE75
+75
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Applications, Implementation, and LayoutCopyright © 2011–2020, Texas Instruments Incorporated
+7 Applications, Implementation, and Layout
+NOTE
+Information in the following Applications section is not part of the TI component specification,
+and TI does not warrant its accuracy or completeness. TI's customers are responsible for
+determining suitability of components for their purposes. Customers should validate and test
+their design implementation to confirm system functionality.
+7.1 TRF7970A Reader System Using SPI With SS Mode
+7.1.1 General Application Considerations
+Figure 7-1 shows and application schematic optimized for all TRF7970A modes using the Serial Port
+Interface (SPI). Short SPI lines, proper isolation of radio frequency lines, and a proper ground area are
+essential to avoid interference. The recommended clock frequency on the DATA_CLK line is 2 MHz. This
+figure also shows matching to a 50-Ω port, which allows connecting to a properly matched 50-Ω antenna
+circuit or RF measurement equipment (for example, a spectrum analyzer or power meter).
+7.1.2 Schematic
+Figure 7-1 shows a sample application schematic for SPI with an SS mode MCU interface.
+Figure 7-1. Application Schematic – SPI With SS Mode MCU Interface
+Minimum MCU requirements depend on application requirements and coding style. If only one ISO
+protocol or a limited command set of a protocol needs to be supported, MCU Flash and RAM
+requirements can be significantly reduced. Recursive inventory and anticollision commands require more
+RAM than single slotted operations. For example, an ISO/IEC 15693-only application that supports
+anticollision needs approximately 7KB of flash memory and 500 bytes of RAM. In contrast, a full NFC
+stack that supports peer-to-peer, card emulation, and reader/writer modes needs 65KB of flash memory
+and 4KB of RAM. An MCU that can run its GPIOs at 13.56 MHz is required for direct mode 0 operations.
+PDF_PAGE76
+76
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Applications, Implementation, and Layout Copyright © 2011–2020, Texas Instruments Incorporated
+7.2 Layout Considerations
+Keep all decoupling capacitors as close to the IC as possible, with the high-frequency decoupling
+capacitors (10 nF) closer than the low-frequency decoupling capacitors (2.2 µF).
+Place ground vias as close as possible to the ground side of the capacitors and reader IC pins to minimize
+possible ground loops.
+TI recommends not using any inductor sizes smaller than 0603, as the output power can be compromised.
+If smaller inductors are necessary, output performance must be confirmed in the final application.
+Pay close attention to the required load capacitance of the crystal, and adjust the two external shunt
+capacitors accordingly. Follow the recommendations of the crystal manufacturer for those values.
+There should be a common ground plane for the digital and analog sections. The multiple ground sections
+or islands should have vias that tie the different sections of the planes together.
+Ensure that the exposed thermal pad at the center of the reader IC is properly laid out. It should be tied to
+ground to help dissipate any heat from the package.
+All trace line lengths should be made as short as possible, particularly the RF output path, crystal
+connections, and control lines from the reader to the microprocessor. Proper placement of the TRF7970A,
+microprocessor, crystal, and RF connection or connector help facilitate this.
+Avoid crossing of digital lines under RF signal lines. Also, avoid crossing of digital lines with other digital
+lines when possible. If the crossings are unavoidable, 90° crossings should be used to minimize coupling
+of the lines.
+Depending on the production test plan, consider possible implementations of test pads or test vias for use
+during testing. The necessary pads or vias should be placed in accordance with the proposed test plan to
+enable easy access to those test points.
+If the system implementation is complex (for example, if the RFID reader module is a subsystem of a
+greater system with other modules (Bluetooth, Wi-Fi, microprocessors, and clocks), special considerations
+should be taken to ensure that there is no noise coupling into the supply lines. If needed, special filtering
+or regulator considerations should be used to minimize or eliminate noise in these systems.
+For more information/details on layout considerations, see the TRF796x HF-RFID Reader Layout Design
+Guide.
+7.3 Impedance Matching TX_Out (Pin 5) to 50 Ω
+The output impedance of the TRF7970A when operated at full power out setting is nominally 4 + j0 (4 Ω
+real). This impedance must be matched to a resonant circuit and TI recommends matching circuit from
+4 Ω to 50 Ω, as commercially available test equipment (for example, spectrum analyzers, power meters,
+and network analyzers) are 50-Ω systems. Figure 7-2 shows an impedance-matching reference circuit.
+Figure 7-3 shows a Smith chart simulation based on this circuit. This section explains how the values were
+calculated.
+Starting with the 4-Ω source, the process of going from 4 Ω to 50 Ω can be represented on a Smith Chart
+simulator (available from http://www.fritz.dellsperger.net/). The elements are combined where appropriate
+(see Figure 7-2).
+PDF_PAGE77
+TX_OUT
+Pin 5
+L1 L2
+C2 and C3
+Combination
+C4, C4, and C7
+Combination C8, C9, C10, and C11
+Combination
+50 /c87
+(4.00 + j0.00) at 13.6 MHz/c87
+ZL
+3.0 nF
+150.0 nH
+1.2 nF
+330.0 nH
+256.0 pF
+ZIN
+77
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Applications, Implementation, and LayoutCopyright © 2011–2020, Texas Instruments Incorporated
+Figure 7-2. Impedance Matching Circuit
+Figure 7-3. Smith Chart Simulation
+Resulting power out can be measured with a power meter or spectrum analyzer with power meter function
+or other equipment capable of making a "hot" measurement. Observe maximum power input levels on test
+equipment and use attenuators whenever available to avoid damage to equipment. Expected output
+power levels under various operating conditions are shown in Table 6-25.
+7.4 Reader Antenna Design Guidelines
+For HF antenna design considerations using the TRF7970A, see these documents:
+• Antenna Design Guide for the TRF79xxA
+PDF_PAGE78
+Device Family TRF79 = NFC/RFID Transceiver
+Revision A = Silicon Revision
+Package See Packaging Information
+or www.ti.com/package
+Distribution R = Large Reel
+T = Small Reel
+Feature Set 70 = Feature Set
+TRF79 70 A RHB R
+Device Family
+Feature Set
+Revision
+Package
+Distribution
+78
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Device and Documentation Support Copyright © 2011–2020, Texas Instruments Incorporated
+8 Device and Documentation Support
+8.1 Getting Started and Next Steps
+For more information on the TI NFC/RFID devices and the tools and software that are available to help
+with your development, visit Overview for NFC / RFID.
+8.2 Device Nomenclature
+To designate the stages in the product development cycle, TI assigns prefixes to the part numbers of
+devices. Each commercial family member has one of three prefixes: x, p, or no prefix. These prefixes
+represent evolutionary stages of product development from engineering prototypes (with prefix x) through
+fully qualified production devices (with no prefix).
+Device development evolutionary flow:
+xTRF... – Experimental device that is not necessarily representative of the electrical specifications of the
+final device
+pTRF... – Final device that conforms to the electrical specifications of the final product but has not
+completed quality and reliability verification
+TRF... – Fully qualified production device
+Devices with a prefix of x or p are shipped against the following disclaimer:
+"Developmental product is intended for internal evaluation purposes."
+Production devices have been characterized fully, and the quality and reliability of the device have been
+demonstrated fully. TI's standard warranty applies.
+Predictions show that prototype devices have a greater failure rate than the standard production devices.
+TI recommends that these devices not be used in any production system because their expected end-use
+failure rate still is undefined. Only qualified production devices are to be used.
+TI device nomenclature also includes a suffix with the device family name. This suffix indicates the
+package type and, optionally, the temperature range. Figure 8-1 provides a legend for reading the
+complete device name.
+Figure 8-1. Device Nomenclature
+PDF_PAGE79
+79
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Device and Documentation SupportCopyright © 2011–2020, Texas Instruments Incorporated
+8.3 Tools and Software
+Design Kits and Evaluation Modules
+NFC Transceiver Booster Pack Plug-in Module The third-party provider DLP Design NFC/RFID
+BoosterPack plug-in module (DLP-7970ABP) is an add-on board designed to fit all of TI’s
+MCU LaunchPad development kits. This BoosterPack plug-in module lets the software
+application developer get familiar with the functionality of the TRF7970A multiprotocol fully
+integrated 13.56 MHz NFC and HF RFID IC on their TI embedded microcontroller platform of
+choice without having to worry about developing the RF section.
+8.4 Documentation Support
+The following documents describe the TRF7970A device. Copies of these documents are available on the
+Internet at www.ti.com.
+Receiving Notification of Document Updates
+To receive notification of documentation updates— including silicon errata— go to the product folder for
+your device on ti.com (for example, TRF7970A). In the upper-right corner, click the "Alert me" button. This
+registers you to receive a weekly digest of product information that has changed (if any). For change
+details, check the revision history of any revised document.
+Errata
+TRF7970A Silicon Errata Describes the known exceptions to the functional specifications for the
+TRF7970A.
+Application Notes
+Minimizing TRF79xx Current Use During Power‑‑Down Mode This application report provides
+recommendations on circuit and firmware design to reduce current consumption in power-
+down mode for the TRF79xx family of devices (TRF796x, TRF796xA, and TRF7970A).
+Various designs are considered, and they are analyzed based on their current consumption.
+This application report is particularly targeted for dual-voltage systems that are powered by
+battery.
+NFC/HF RFID Reader/Writer Using the TRF7970A The near field communication (NFC) market is
+emerging into multiple fields including medical, consumer, retail, industrial, automotive, and
+smart grid. Reader/writer is one of the three operational modes supported by the TRF7970A.
+When using reader/writer mode, the user can configure the TRF7970A to read type 2, type
+3, type 4A, type 4B, and type 5 tag platforms, also called transponders. The tags can store
+NFC data exchange format (NDEF) messages or proprietary defined data. This application
+report describes the fundamental concepts of reader/writer mode and how to properly
+configure the TRF7907A transceiver for each supported technology.
+TRF7970A NFC Reader Antenna Multiplexing This application report describes the implementation of
+multiple reader antennas with a single TRF7970A NFC transceiver IC. For demonstration
+purposes, the MSP430F5529 LaunchPad development kit with TRF7970A BoosterPack
+plug-in module are used. The demo supports ISO/IEC 15693, and ISO/IEC 14443 A and B
+communication protocols.
+PDF_PAGE80
+80
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Device and Documentation Support Copyright © 2011–2020, Texas Instruments Incorporated
+NFC/RFID Reader Ultra-Low-Power Card Presence Detect With MSP430 and TRF79xxA NFC and
+RFID reader battery-powered applications must have a defined and limited energy
+consumption budget as well as low cost for a product to be realized. Techniques and
+strategies have emerged over the years for the card presence detection that attempt to
+address both concerns. The intent of this application report is to contribute to these
+techniques and strategies by offering an advancement expressed by adding a simple circuit
+and small firmware control logic loop to an existing design, which offers dramatic
+improvement over previously identified card detection solutions.
+8.5 Support Resources
+TI E2E™ support forums are an engineer's go-to source for fast, verified answers and design help —
+straight from the experts. Search existing answers or ask your own question to get the quick design help
+you need.
+Linked content is provided "AS IS" by the respective contributors. They do not constitute TI specifications
+and do not necessarily reflect TI's views; see TI's Terms of Use.
+8.6 Trademarks
+E2E is a trademark of Texas Instruments.
+Bluetooth is a registered trademark of Bluetooth SIG.
+MIFARE is a trademark of NXP Semiconductors.
+FeliCa is a trademark of Sony Corporation.
+Wi-Fi is a registered trademark of Wi-Fi Alliance.
+8.7 Electrostatic Discharge Caution
+This integrated circuit can be damaged by ESD. Texas Instruments recommends that all integrated circuits be handled with
+appropriate precautions. Failure to observe proper handling and installation procedures can cause damage.
+ESD damage can range from subtle performance degradation to complete device failure. Precision integrated circuits may be more
+susceptible to damage because very small parametric changes could cause the device not to meet its published specifications.
+8.8 Glossary
+SLYZ022 — TI Glossary.
+This glossary lists and explains terms, acronyms and definitions.
+PDF_PAGE81
+81
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Mechanical, Packaging, and Orderable InformationCopyright © 2011–2020, Texas Instruments Incorporated
+9 Mechanical, Packaging, and Orderable Information
+The following pages include mechanical, packaging, and orderable information. This information is the
+most current data available for the designated devices. This data is subject to change without notice and
+revision of this document. For browser-based versions of this data sheet, refer to the left-hand navigation.
+PDF_PAGE82
+PACKAGE OPTION ADDENDUM
+www.ti.com 9-Nov-2025
+PACKAGING INFORMATION
+Orderable part number Status
+(1)
+Material type
+(2)
+Package | Pins Package qty | Carrier RoHS
+(3)
+Lead finish/
+Ball material
+(4)
+MSL rating/
+Peak reflow
+(5)
+Op temp (°C) Part marking
+(6)
+TRF7970ARHBR Active Production VQFN (RHB) | 32 3000 | LARGE T&R Yes NIPDAU Level-2-260C-1 YEAR -40 to 110 TRF
+7970A
+TRF7970ARHBR.B Active Production VQFN (RHB) | 32 3000 | LARGE T&R Yes NIPDAU Level-2-260C-1 YEAR -40 to 110 TRF
+7970A
+TRF7970ARHBT Active Production VQFN (RHB) | 32 250 | SMALL T&R Yes NIPDAU Level-2-260C-1 YEAR -40 to 110 TRF
+7970A
+TRF7970ARHBT.B Active Production VQFN (RHB) | 32 250 | SMALL T&R Yes NIPDAU Level-2-260C-1 YEAR -40 to 110 TRF
+7970A
+ 
+(1) Status:  For more details on status, see our product life cycle.
+ 
+(2) Material type:  When designated, preproduction parts are prototypes/experimental devices, and are not yet approved or released for full production. Testing and final process, including without limitation quality assurance,
+reliability performance testing, and/or process qualification, may not yet be complete, and this item is subject to further changes or possible discontinuation. If available for ordering, purchases will be subject to an additional
+waiver at checkout, and are intended for early internal evaluation purposes only. These items are sold without warranties of any kind.
+ 
+(3) RoHS values:  Yes, No, RoHS Exempt. See the TI RoHS Statement for additional information and value definition.
+ 
+(4) Lead finish/Ball material:  Parts may have multiple material finish options. Finish options are separated by a vertical ruled line. Lead finish/Ball material values may wrap to two lines if the finish value exceeds the maximum
+column width.
+ 
+(5) MSL rating/Peak reflow:  The moisture sensitivity level ratings and peak solder (reflow) temperatures. In the event that a part has multiple moisture sensitivity ratings, only the lowest level per JEDEC standards is shown.
+Refer to the shipping label for the actual reflow temperature that will be used to mount the part to the printed circuit board.
+ 
+(6) Part marking:  There may be an additional marking, which relates to the logo, the lot trace code information, or the environmental category of the part.
+ 
+Multiple part markings will be inside parentheses. Only one part marking contained in parentheses and separated by a "~" will appear on a part. If a line is indented then it is a continuation of the previous line and the two
+combined represent the entire part marking for that device.
+ 
+Important Information and Disclaimer:The information provided on this page represents TI's knowledge and belief as of the date that it is provided. TI bases its knowledge and belief on information provided by third parties, and
+makes no representation or warranty as to the accuracy of such information. Efforts are underway to better integrate information from third parties. TI has taken and continues to take reasonable steps to provide representative
+and accurate information but may not have conducted destructive testing or chemical analysis on incoming materials and chemicals. TI and TI suppliers consider certain information to be proprietary, and thus CAS numbers
+and other limited information may not be available for release.
+ 
+In no event shall TI's liability arising out of such information exceed the total purchase price of the TI part(s) at issue in this document sold by TI to Customer on an annual basis.
+Addendum-Page 1
+PDF_PAGE83
+PACKAGE OPTION ADDENDUM
+www.ti.com 9-Nov-2025
+ 
+Addendum-Page 2
+PDF_PAGE84
+PACKAGE MATERIALS INFORMATION
+  
+www.ti.com 23-Jul-2025
+TAPE AND REEL INFORMATION
+Reel Width (W1)
+REEL DIMENSIONS
+A0
+B0
+K0
+W
+Dimension designed to accommodate the component length
+Dimension designed to accommodate the component thickness
+Overall width of the carrier tape
+Pitch between successive cavity centers
+Dimension designed to accommodate the component width
+TAPE DIMENSIONS
+K0  P1
+B0 W
+A0Cavity
+QUADRANT ASSIGNMENTS FOR PIN 1 ORIENTATION IN TAPE
+Pocket Quadrants
+Sprocket Holes
+Q1 Q1Q2 Q2
+Q3 Q3Q4 Q4 User Direction of Feed
+P1
+Reel
+Diameter
+ 
+*All dimensions are nominal
+Device Package
+Type
+Package
+Drawing
+Pins SPQ Reel
+Diameter
+(mm)
+Reel
+Width
+W1 (mm)
+A0
+(mm)
+B0
+(mm)
+K0
+(mm)
+P1
+(mm)
+W
+(mm)
+Pin1
+Quadrant
+TRF7970ARHBR VQFN RHB 32 3000 330.0 12.4 5.3 5.3 1.5 8.0 12.0 Q2
+TRF7970ARHBT VQFN RHB 32 250 180.0 12.4 5.3 5.3 1.5 8.0 12.0 Q2
+Pack Materials-Page 1
+PDF_PAGE85
+PACKAGE MATERIALS INFORMATION
+  
+www.ti.com 23-Jul-2025
+TAPE AND REEL BOX DIMENSIONS
+Width (mm)
+W L
+H
+ 
+*All dimensions are nominal
+Device Package Type Package Drawing Pins SPQ Length (mm) Width (mm) Height (mm)
+TRF7970ARHBR VQFN RHB 32 3000 353.0 353.0 32.0
+TRF7970ARHBT VQFN RHB 32 250 213.0 191.0 35.0
+Pack Materials-Page 2
+PDF_PAGE86
+www.ti.com
+GENERIC PACKAGE VIEW
+Images above are just a representation of the package family, actual package may vary.
+Refer to the product data sheet for package details.
+VQFN - 1 mm max heightRHB 32
+PLASTIC QUAD FLATPACK - NO LEAD5 x 5, 0.5 mm pitch
+4224745/A
+PDF_PAGE87
+www.ti.com
+PACKAGE OUTLINE
+C
+32X 0.3
+0.2
+3.45 0.1
+32X 0.5
+0.3
+1 MAX
+(0.2) TYP
+0.05
+0.00
+28X 0.5
+2X
+3.5
+2X 3.5
+A 5.1
+4.9
+B
+5.1
+4.9
+(0.1)
+VQFN - 1 mm max heightRHB0032E
+PLASTIC QUAD FLATPACK - NO LEAD
+4223442/B   08/2019
+PIN 1 INDEX AREA
+0.08 C
+SEATING PLANE
+1
+8 17
+24
+9 16
+32 25
+(OPTIONAL)
+PIN 1 ID
+0.1 C A B
+0.05 C
+EXPOSED
+THERMAL PAD
+33 SYMM
+SYMM
+NOTES:
+ 
+1. All linear dimensions are in millimeters. Any dimensions in parenthesis are for reference only. Dimensioning and tolerancing
+    per ASME Y14.5M. 
+2. This drawing is subject to change without notice. 
+3. The package thermal pad must be soldered to the printed circuit board for thermal and mechanical performance.
+SCALE  3.000
+SEE SIDE WALL
+DETAIL
+20.000
+SIDE WALL DETAIL
+OPTIONAL METAL THICKNESS
+PDF_PAGE88
+www.ti.com
+EXAMPLE BOARD LAYOUT
+(1.475)
+0.07 MIN
+ALL AROUND
+0.07 MAX
+ALL AROUND
+32X (0.25)
+32X (0.6)
+( 0.2) TYP
+VIA
+28X (0.5)
+(4.8)
+(4.8)
+(1.475)
+( 3.45)
+(R0.05)
+TYP
+VQFN - 1 mm max heightRHB0032E
+PLASTIC QUAD FLATPACK - NO LEAD
+4223442/B   08/2019
+SYMM
+1
+8
+9 16
+17
+24
+2532
+SYMM
+LAND PATTERN EXAMPLE
+SCALE:18X
+NOTES: (continued)
+ 
+4. This package is designed to be soldered to a thermal pad on the board. For more information, see Texas Instruments literature
+    number SLUA271 (www.ti.com/lit/slua271).
+5. Vias are optional depending on application, refer to device data sheet. If any vias are implemented, refer to their locations shown
+    on this view. It is recommended that vias under paste be filled, plugged or tented.
+33
+SOLDER MASK
+OPENING
+METAL UNDER
+SOLDER MASK
+SOLDER MASK
+DEFINED
+METAL
+SOLDER MASK
+OPENING
+SOLDER MASK DETAILS
+NON SOLDER MASK
+DEFINED
+(PREFERRED)
+PDF_PAGE89
+www.ti.com
+EXAMPLE STENCIL DESIGN
+32X (0.6)
+32X (0.25)
+28X (0.5)
+(4.8)
+(4.8)
+4X ( 1.49)
+(0.845)
+(0.845)(R0.05) TYP
+VQFN - 1 mm max heightRHB0032E
+PLASTIC QUAD FLATPACK - NO LEAD
+4223442/B   08/2019
+NOTES: (continued)
+ 
+6. Laser cutting apertures with trapezoidal walls and rounded corners may offer better paste release. IPC-7525 may have alternate
+   design recommendations. 
+ 
+33
+SYMM
+METAL
+TYP
+SOLDER PASTE EXAMPLE
+BASED ON 0.125 mm THICK STENCIL
+ 
+EXPOSED PAD 33:
+75% PRINTED SOLDER COVERAGE BY AREA UNDER PACKAGE
+SCALE:20X
+SYMM
+1
+8
+9 16
+17
+24
+2532
+PDF_PAGE90
+IMPORTANT NOTICE AND DISCLAIMER
+TI PROVIDES TECHNICAL AND RELIABILITY DATA (INCLUDING DATASHEETS), DESIGN RESOURCES (INCLUDING REFERENCE 
+DESIGNS), APPLICATION OR OTHER DESIGN ADVICE, WEB TOOLS, SAFETY INFORMATION, AND OTHER RESOURCES “AS IS” 
+AND WITH ALL FAULTS, AND DISCLAIMS ALL WARRANTIES, EXPRESS AND IMPLIED, INCLUDING WITHOUT LIMITATION ANY 
+IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE OR NON-INFRINGEMENT OF THIRD 
+PARTY INTELLECTUAL PROPERTY RIGHTS.
+These resources are intended for skilled developers designing with TI products. You are solely responsible for (1) selecting the appropriate 
+TI products for your application, (2) designing, validating and testing your application, and (3) ensuring your application meets applicable 
+standards, and any other safety, security, regulatory or other requirements.
+These resources are subject to change without notice. TI grants you permission to use these resources only for development of an 
+application that uses the TI products described in the resource. Other reproduction and display of these resources is prohibited. No license 
+is granted to any other TI intellectual property right or to any third party intellectual property right. TI disclaims responsibility for, and you fully 
+indemnify TI and its representatives against any claims, damages, costs, losses, and liabilities arising out of your use of these resources.
+TI’s products are provided subject to TI’s Terms of Sale, TI’s General Quality Guidelines, or other applicable terms available either on 
+ti.com or provided in conjunction with such TI products. TI’s provision of these resources does not expand or otherwise alter TI’s applicable 
+warranties or warranty disclaimers for TI products. Unless TI explicitly designates a product as custom or customer-specified, TI products 
+are standard, catalog, general purpose devices.
+TI objects to and rejects any additional or different terms you may propose.
+IMPORTANT NOTICE
+Copyright © 2025, Texas Instruments Incorporated
+Last updated 10/2025

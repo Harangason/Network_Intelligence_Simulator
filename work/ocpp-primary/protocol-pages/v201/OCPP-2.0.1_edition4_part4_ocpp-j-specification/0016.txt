@@ -1,0 +1,28 @@
+4.3. RPC Framework Error Codes
+The following table contains all the allowed error codes for the OCPP RPC Framework.
+Table 8. Valid Error Codes
+ErrorCode Description
+FormatViolation Payload for Action is syntactically incorrect
+GenericError Any other error not covered by the more specific error codes in this table
+InternalError An internal error occurred and the receiver was not able to process the requested Action
+successfully
+MessageTypeNotSupported A message with an Message Type Number received that is not supported by this
+implementation.
+NotImplemented Requested Action is not known by receiver
+NotSupported Requested Action is recognized but not supported by the receiver
+OccurrenceConstraintViolation Payload for Action is syntactically correct but at least one of the fields violates occurrence
+constraints
+PropertyConstraintViolation Payload is syntactically correct but at least one field contains an invalid value
+ProtocolError Payload for Action is not conform the PDU structure
+RpcFrameworkError Content of the call is not a valid RPC Request, for example: MessageId could not be read.
+SecurityError During the processing of Action a security issue occurred preventing receiver from
+completing the Action successfully
+TypeConstraintViolation Payload for Action is syntactically correct but at least one of the fields violates data type
+constraints (e.g. "somestring": 12)
+4.4. Extension fallback mechanism
+Future versions of OCPP might add extra Message Types (other then CALL, CALLRESULT and CALLERROR)
+When an OCPP 2.0.1 implementation receives a message with an unknown message type, it SHALL respond with an CALLERROR
+with errorCode: MessageTypeNotSupported. This SHOULD notify the sending party about the not supported Message Type. The
+Sending Party SHALL then either terminate the connection, or fallback to the known: CALL, CALLRESULT and CALLERROR.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 14/26 Part 4 - JSON over WebSockets implementation guide

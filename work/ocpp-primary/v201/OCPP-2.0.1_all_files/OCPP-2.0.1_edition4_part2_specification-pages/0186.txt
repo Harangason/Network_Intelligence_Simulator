@@ -1,0 +1,55 @@
+EV Driver
+Charging Station CSMS
+Plugin cable
+StatusNotificationRequest(Occupied)
+StatusNotificationResponse()
+TransactionEventRequest(eventType = Started, triggerReason = CablePluggedIn,
+chargingState = EVConnected, transactionId = AB1234,
+evse.id = 1, evse.connectorId = 1, meterValues, ...)
+TransactionEventResponse(...)
+remote start()
+RequestStartTransactionRequest(idToken, remoteStartId = 123)
+RequestStartTransactionResponse(status = Accepted, transactionId = AB1234)
+Match remoteStartId
+with TransactionId()
+opt
+notification
+alt [AuthorizeRemoteStart = true]
+AuthorizeRequest(idToken)
+AuthorizeResponse(idTokenInfo)
+alt [if cable not permanently attached]
+lock connector
+start energy offer
+TransactionEventRequest(eventType = Updated, chargingState = Charging,
+triggerReason = RemoteStart, remoteStartId = 123, ...)
+TransactionEventResponse(...)
+continue regular transaction
+Figure 64. Sequence Diagram: Remote Start Transaction - Cable Plugged in First
+F01 - Remote Start Transaction - Cable Plugin First - Requirements
+Table 75. F01 - Requirements
+ID Precondition Requirement definition Note
+F01.FR.01 Charging Station receives a
+RequestStartTransactionRequest AND
+( AuthorizeRemoteStart = true
+AND
+idToken.type is NOT Central or
+NoAuthorization )
+The Charging Station SHALL behave as if in
+response to a local action at the Charging Station
+to allow energy transfer after successful
+authorization of the IdToken given in
+RequestStartTransactionRequest message.
+Charging Station will first
+respond to the request
+and then try to authorize
+the IdToken, using the
+Local Authorization List,
+Authorization Cache
+and/or an
+AuthorizeRequest.
+Energy transfer is only
+allowed after
+authorization was
+obtained.
+Edition 4, 2025-12-03 F. Remote Control
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 176/491 Part 2 - Specification

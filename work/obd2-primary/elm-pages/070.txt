@@ -1,0 +1,70 @@
+ELM327
+70 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Programmable Parameters (continued)
+rate, or the Carriage Return character, for example,
+and forget what you have set them to. The Carriage
+Return value that is set by PP 0D is the only character
+that is recognized by the ELM327 as ending a
+command, so if you change its value, you may not be
+able to undo your change. In this case, your only
+recourse may be to force all of the PPs off with a
+special hardware trick.
+When the ELM327 first powers up, it looks for a
+jumper between pin 28 (the OBD Tx LED output) and
+circuit common (VSS). If a jumper is in place, it will turn
+off all of the PPs for you, restoring the IC to the factory
+default settings. To use this feature, simply connect a
+jumper to circuit common (which appears in numerous
+places - pins 8 or 19 of the ELM327, pin 5 of an
+RS232 connector, one end of most capacitors, or at
+the OBD connector), then hold the other end of the
+jumper to pin 28 while turning the power on. When you
+see the RS232 Rx LED begin to flash quickly, remove
+the jumper – the flashing LED means that it worked
+and the PPs are all off.
+This feature should only be used when you get
+into serious trouble, and it’s your only choice (since
+putting a jumper into a live circuit might cause damage
+if you put it into the wrong place). Be careful if you
+need to use it.
+0A Linefeed Character 0A R00 to FF
+Programmable Parameter Summary
+The following pages provide a list of the currently
+available Programmable Parameters. The character
+shown in the ‘Type’ column indicates when changes
+will take effect. Possible values are:
+I - the effect is Immediate,
+D - takes effect after Defaults are restored
+(AT D, AT Z, AT WS, MCLR or power off/on)
+R - takes effect after a Reset
+(AT Z, AT WS, MCLR or power off/on)
+P - needs a Power off/on type reset
+(AT Z, MCLR, or power off/on)
+01 Printing of header bytes (AT H default setting) D
+02 Allow long messages (AT AL default setting) D
+03 NO DATA timeout time (AT ST default setting)
+setting = value x 4.096 msec
+00 to FF 32
+(205 msec)
+D
+00 Perform an AT MA command after powerup or reset FF
+(OFF)
+R00 = ON
+FF = OFF
+FF
+(OFF)
+FF
+(OFF)
+00 = ON
+FF = OFF
+00 = ON
+FF = OFF
+PP Description Values Default Type
+06 OBD Source (Tester) Address. Not used for J1939 protocols. F1 R00 to FF
+00 to 02 01 D04 Default Adaptive Timing mode (AT AT setting)
+07 ILast Protocol to try during automatic searches 0901 to 0C
+09 Character echo (AT E default setting) R00
+(ON)
+00 = ON
+FF = OFF

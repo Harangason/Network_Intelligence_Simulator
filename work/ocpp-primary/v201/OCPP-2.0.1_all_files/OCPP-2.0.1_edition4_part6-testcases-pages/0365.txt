@@ -1,0 +1,56 @@
+TC_K_34_CS: Get Charging Profile - EvseId > 0 + chargingLimitSource
+Test case name Get Charging Profile - EvseId > 0 + chargingLimitSource
+Test case Id TC_K_34_CS
+Use case Id(s) K09
+Requirement(s) K09.FR.02, K09.FR.04
+System under test Charging Station
+Description With the GetChargingProfilesRequest message the CSMS can ask a Charging Station to report all, or a
+subset of all the install Charging Profiles from the different possible sources. This can be used for some
+automatic smart charging control system, or for debug purposes by a CSO.
+Purpose To verify if the Charging station is able to successfully report a charging profile with specific
+chargingLimitSource requested for a specific EVSE as described at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+<Configured chargingLimitSource> should be CSO AND
+<Configured chargingLimitSource2> should have no existing profiles AND
+Charging station has a charging profile with:
+- id <Generated Id1>
+- chargingProfilePurpose TxDefaultProfile
+- stackLevel <Configured StackLevel + 1>
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+GetChargingProfilesResponse
+1. The Test System sends a GetChargingProfilesRequest with
+evseId <Configured evseId> AND
+chargingProfile.chargingLimitSource <Configured
+chargingLimitSource>
+3. The Charging Station sends a ReportChargingProfilesRequest
+4. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If tbc is True at Step 3 then step 3 and 4 will be repeated
+6. The Charging Station responds with a
+GetChargingProfilesResponse
+5. The Test System sends a GetChargingProfilesRequest with
+evseId <Configured evseId> AND
+chargingProfile.chargingLimitSource <Configured
+chargingLimitSource2>
+Tool validations
+* Step 2:
+Message GetChargingProfilesResponse
+- status Accepted
+* Step 3:
+Message ReportChargingProfilesRequest
+- requestId Generated Id1
+- chargingProfile <ChargingProfile>
+* Step 6:
+Message GetChargingProfilesResponse
+- status NoProfiles
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 363/914 Part 6 - Test Cases

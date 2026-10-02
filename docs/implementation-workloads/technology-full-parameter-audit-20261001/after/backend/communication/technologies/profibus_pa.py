@@ -1,0 +1,211 @@
+"""PROFIBUS PA MBP profile: independent PHY/power and source-qualified FDL."""
+PI='https://uk.profibus.com/fileadmin/media/downloadsection/PROFIBUS_Systembeschreibung_ENG_web.pdf'
+PNO='https://www.newelec.co.za/wp-content/uploads/2017/05/ProfiBus-Specifications-v1_00.pdf'
+PF='https://files.pepperl-fuchs.com/webcat/navi/productInfo/doct/tdoct1681__eng.pdf'
+EH='https://bdih-download.endress.com/file/2c7dadbefef6c6a4dcbe11ac9b0fad10/BA01691DEN_0324-00.pdf'
+SOURCES={PI:'PI System Description April2016 pp4-5 MBP/MBP-IS, pp6-10 DP/PA coupling and protocol separation.',
+ PNO:'PNO Normative Parts1997 manufacturer-hosted original, Part9 pp890-891/896-907: synchronous MBP31.25k, physical CRC16, octet framing and native timing. Historical scoped layout, not whole current IEC certification.',
+ PF:'Pepperl+Fuchs tdoct1681 application guideline15October2008 pp4-5/22-26: TypeA cable, voltage/current budget, example project limits are NOT universal requirements.',
+ EH:'Endress+Hauser BA01691D/06/EN/03.24-0 ProwirlO200 PA pp64-70/198-201: selected Profile3.02 device module/status/MBP supply/current. Device-specific, not all PA instruments.'}
+DECLARATIONS=[]
+def d(k,t,meaning,lo=None,hi=None,unit=None,options=None,source=PNO,integer=False):
+ DECLARATIONS.append(dict(key='pa_'+k,type=t,description=meaning,min=lo,max=hi,unit=unit,options=options,integer=integer,source=source,source_revision=SOURCES[source]))
+for k,meaning,opts,source in [
+ ('phy','Selected Manchester bus-powered physical path; not DP RS485/UART.',['MBP','MBP_IS'],PI),
+ ('layout','Actual reviewed historical FDL-over-MBP codec versus independently registered layout.',['PNO1997_PART9','REGISTERED_ACTUAL'],PNO),
+ ('device_profile','Actual selected device/application-profile edition; never inferred from bus name.',['EH_O200_3_02','REGISTERED_ACTUAL'],EH),
+ ('coupling','Actual transparent DP/PA coupler versus DP address-aggregating link.',['TRANSPARENT_COUPLER','ADDRESS_AGGREGATING_LINK','NATIVE_MASTER'],PI),
+ ('role','Actual cyclic master, acyclic tool or passive field device; not FF LAS.',['DPM1','DPM2','SLAVE'],PI),
+ ('service','Actual cyclic, acyclic or no-reply global control service.',['CYCLIC','ACYCLIC','GLOBAL_CONTROL'],PI),
+ ('state','Actual parameters/modules/data exchange state, distinct powered segment.',['WAIT_PRM','WAIT_CFG','DATA_EXCHANGE','STOPPED'],PI),
+ ('frame','Actual FDL start-delimiter class inside PHY delimiters; SC also carries CRC2.',['SDL1','SDL2','SDL3','SDL4','SDL5'],PNO),
+ ('encoding','Actual synchronous self-clocking Manchester-Biphase-L;8data bits per octet.',['MANCHESTER_BIPHASE_L'],PNO),
+ ('duplex','Actual shared MBP half-duplex; not Ethernet full duplex.',['HALF'],PNO),
+ ('topology','Actual line/tree or combined trunk and spurs.',['LINE','TREE','LINE_TREE'],PI),
+ ('protection','Actual ordinary or qualified intrinsic-safety design, not an automatic certificate.',['ORDINARY','FISCO','ENTITY','REGISTERED_ACTUAL'],PI),
+ ('module','Actual selected EH module; empty holes must not shift slot meanings.',['AI','TOTAL','AO','DI','DO','SETTOT_TOTAL','SETTOT_MODETOT_TOTAL','EMPTY'],EH),
+ ('quality','Actual PA status quality, independently decoded from status octet.',['BAD','UNCERTAIN','GOOD','REGISTERED_ACTUAL'],EH),
+ ('outcome','Actual correlated consumer acceptance.',['ACCEPTED','REJECTED','PENDING','UNKNOWN'],PI)]:d(k,'select',meaning,options=opts,source=source)
+for k,meaning,source in [
+ ('device_source','Actual GSD/firmware/profile edition/modules/buffers and electrical requirements.',EH),
+ ('physical_source','Actual cable/terminators/conditioned supply/coupler/barrier/voltage/current and noise.',PF),
+ ('schedule_source','Actual PApolling/DPconversion/acyclic/token/retry/controller timing and traffic.',PNO),
+ ('mapping_source','Actual slot/channel/units/module byte layout and Ident_Number.',EH),
+ ('acceptance_source','Actual correlated process quality/consumer freshness/deadline acceptance.',EH),
+ ('address_source','Actual unique station/master/coupler identifiers and bus assignment.',PNO),
+ ('registered_source','Actual independently registered codec/device/protection source where reviewed variants do not apply.',PNO),
+ ('protection_source','Actual equipment certificates/system assessment for selected FISCO/Entity/other IS design.',PF),
+ ('coupler_source','Actual selected DP/PA conversion/buffering/address/configuration and supported timing.',PI)]:d(k,'text',meaning,source=source)
+for k,meaning,lo,hi,unit,source in [
+ ('station','Actual configured field device address;126 commissioning default not operational assignment.',0,126,None,EH),
+ ('master_station','Actual owning cyclic master, not a random allocator.',0,125,None,PNO),
+ ('segment_devices','Actual connected segment devices incl relevant coupler electrical loads; power can reduce32.',2,32,None,PNO),
+ ('segment_device_limit','Actual lower device/power/IS equipment limit, not universal32 guarantee.',2,32,None,PI),
+ ('terminators','Actual two line-end terminators, not every spur endpoint.',2,2,None,PNO),
+ ('data_bits','Eight synchronous bits per FDL byte, no UART start/parity/stop overhead.',8,8,'bit',PNO),
+ ('preamble_bytes','Actual PHY preamble, nominal example1byte; device/PHY may require longer.',1,8,'byte',PNO),
+ ('phy_sd_bytes','Actual PHY start delimiter one octet; separate FDL SDL1/SDL2.',1,1,'byte',PNO),
+ ('phy_ed_bytes','Actual PHY end delimiter one octet, not DP FDL ED16.',1,1,'byte',PNO),
+ ('crc_bytes','Actual MBP frameCRC16 two octets, not DP8-bit FCS.',2,2,'byte',PNO),
+ ('crc_polynomial','Part9 generator lower16 bits: X16+X12+X11+X10+X8+X7+X6+X3+X2+X+1.',7623,7623,None,PNO),
+ ('user_bytes','Actual FDL user bytes after simple LSAP extensions.',0,246,'byte',PNO),
+ ('address_extension_bytes','Actual simple LSAP extensions,0..2; regional bridges require another registered codec.',0,2,'byte',PNO),
+ ('data_unit_bytes','FDL data unit includes extensions, maximum246.',0,246,'byte',PNO),
+ ('le','SDL2 DA+SA+FC+dataunit length4..249.',4,249,'byte',PNO),
+ ('le_repeat','Actual duplicate LE must equal original.',4,249,'byte',PNO),
+ ('fdl_bytes','Actual FDL SDL+information+CRC; excludes PHY preamble/start/end.',3,255,'byte',PNO),
+ ('phy_bytes','Whole physical frame including selected preamble and PHY delimiters, gap separate.',6,265,'byte',PNO),
+ ('wire_bits','Actual eight bits per MBP octet, not eleven UARTbits or doubled Manchester bit rate.',48,2120,'bit',PNO),
+ ('input_bytes','Actual cyclic slave-to-master input bytes, separately244 limit.',0,244,'byte',PI),
+ ('output_bytes','Actual cyclic master-to-slave output bytes, separately244 limit.',0,244,'byte',PI),
+ ('device_input_max','Actual GSD/device input buffer supported size.',0,244,'byte',EH),
+ ('device_output_max','Actual GSD/device output buffer size.',0,244,'byte',EH),
+ ('link_aggregated_bytes','Actual DP/PA LINK cyclic mapping across devices; separate DP-side244 limit.',0,244,'byte',PI),
+ ('slot','Actual selected EH_O200 slot1..13; physical terminal is not GSD slot.',1,13,None,EH),
+ ('value_bytes','Actual module encoded value bytes, not a universal float for discrete controls.',0,4,'byte',EH),
+ ('status_bytes','Actual module status octets; empty module has none.',0,1,'byte',EH),
+ ('module_input_bytes','Actual selected module input bytes including status.',0,5,'byte',EH),
+ ('module_output_bytes','Actual selected module output bytes including controls/status.',0,5,'byte',EH),
+ ('status_octet','Actual full status octet; quality decoded separately and does not certify application.',0,255,None,EH),
+ ('quality_code','Actual two high quality bits,0BAD/1UNCERTAIN/2GOOD; other status editions require registered decoding.',0,3,None,EH),
+ ('ident_number','Actual GSD device/profile Ident_Number.',0,65535,None,EH),
+ ('expected_ident_number','Actual master configured identity.',0,65535,None,EH),
+]:d(k,'number',meaning,lo,hi,unit,source=source,integer=True)
+for k,meaning,lo,hi,unit,source in [
+ ('trunk_m','Actual trunk cable length, not a default example500/700m.',0,1900,'m',PF),
+ ('all_spurs_m','Actual sum of every spur, not just longest spur.',0,1900,'m',PF),
+ ('segment_total_m','Actual trunk plus all spurs,1900m common non-IS TypeA ceiling.',0,1900,'m',PF),
+ ('spur_limit_m','Actual qualified selected equipment/IS/site spur length limit, not universal60m.',0,1900,'m',PF),
+ ('longest_spur_m','Actual longest spur, checked against selected equipment limit.',0,1900,'m',PF),
+ ('impedance_ohm','Actual PA TypeA characteristic impedance100Ohm±20%, distinct DP135..165.',80,120,'ohm',PF),
+ ('loop_ohm_km','Actual cable loop resistance at selected worst temperature;44Ohm/km is20C example.',0,None,'ohm/km',PF),
+ ('capacitance_nf_km','Actual TypeA cable capacitance, guideline200nF/km; not brochure2pF/m typo.',0,200,'nF/km',PF),
+ ('inductance_mh_km','Actual TypeA inductance, guideline1mH/km.',0,1,'mH/km',PF),
+ ('cross_section_mm2','Actual TypeA cable area, baseline0.8mm2, separate selected cable evidence.',.8,None,'mm2',PF),
+ ('supply_v','Actual conditioned source voltage under worst-case load.',0,None,'V',PF),
+ ('path_loop_m','Actual worst device path loop length convention uses one-way route times loop resistance.',0,1900,'m',PF),
+ ('path_current_ma','Actual conservative current traversing evaluated path, not device current alone.',0,None,'mA',PF),
+ ('barrier_drop_v','Actual worst-case coupler/barrier drop on evaluated path.',0,None,'V',PF),
+ ('terminal_v','Actual conservative evaluated device terminal voltage after cable and barrier drops.',0,None,'V',PF),
+ ('device_voltage_min_v','Actual instrument/order-code/display operating minimum, not generic9V guarantee.',9,None,'V',EH),
+ ('device_voltage_max_v','Actual permitted instrument voltage maximum.',9,None,'V',EH),
+ ('device_current_ma','Actual device/order-code current;16mA is EH_O200 only.',0,None,'mA',EH),
+ ('device_currents_total_ma','Actual sum of all participating device maximum currents.',0,None,'mA',PF),
+ ('barrier_current_ma','Actual sum of barriers/couplers/protectors current.',0,None,'mA',PF),
+ ('fault_reserve_ma','Actual selected short-circuit/fault current reserve.',0,None,'mA',PF),
+ ('spare_current_ma','Explicit selected design spare margin, example20% not universal.',0,None,'mA',PF),
+ ('required_current_ma','Actual total device/barrier/fault/spare supply demand.',0,None,'mA',PF),
+ ('supply_capacity_ma','Actual power supply worst-case available current.',0,None,'mA',PF),
+ ('post_gap_bits','Part9TSYN=TPTG=TQUI,4..32bit-times; not DP33 UART synchronization.',4,32,'bit-time',PNO),
+ ('setup_bits','Actual reaction setup time TSET.',0,None,'bit-time',PNO),
+ ('safety_margin_bits','Part9TSM=2+2*TSET, protocol timing margin not safety certification.',2,None,'bit-time',PNO),
+ ('ready_bits','Actual TRDY strictly greater than post gap and less than min responder delay.',0,None,'bit-time',PNO),
+ ('min_tsdr_bits','Actual minimum responder delay includes selected physical primitive behavior.',0,None,'bit-time',PNO),
+ ('max_tsdr_bits','Actual maximum responder delay.',0,None,'bit-time',PNO),
+ ('initiator_delay_bits','Actual TSDI initiator physical delay.',0,None,'bit-time',PNO),
+ ('idle1_bits','Actual max(TSYN+TSM,minTSDR,TSDI), not DP35+2setup+quiet.',0,None,'bit-time',PNO),
+ ('idle2_bits','Actual max(TSYN+TSM,maxTSDR) after unacknowledged request.',0,None,'bit-time',PNO),
+ ('propagation_bits','Actual selected physical/repeater maximum one-way delay, historical Part9<=20bit-times.',0,20,'bit-time',PNO),
+ ('slot_bits','Actual max(request reply supervision, token receiver supervision) native MBP bit-times.',0,None,'bit-time',PNO),
+ ('peer_idle1_max_bits','Actual slowest active peer idle1 bound, no inferred local value.',0,None,'bit-time',PNO),
+ ('serialization_us','Actual complete physical frame wirebits/31250, gap/turnaround separate.',0,None,'us',PNO),
+ ('slot_us','Actual MBP slot bit-time conversion to microseconds.',0,None,'us',PNO),
+ ('conversion_us','Actual DP/PAcoupler/link conversion bound, not a fixed native bus overhead.',0,None,'us',PI),
+ ('poll_interval_ms','Actual device polling cycle, not predetermined from fixedbitrate.',0,None,'ms',PI),
+ ('watchdog_ms','Actual device communication supervision, no universal500ms default.',0,None,'ms',EH),
+ ('age_ms','Actual correlated consumer age.',0,None,'ms',EH),
+ ('freshness_ms','Actual functional freshness requirement.',0,None,'ms',EH),
+]:d(k,'number',meaning,lo,hi,unit,source=source)
+for k,meaning,source in [
+ ('frame_valid','Actual MBP delimiters/CRC/address/length checks pass; not assumed by filled parameters.',PNO),
+ ('mapping_valid','Actual GSD/profile/module slot/channel layout valid.',EH),
+ ('data_accepted','Actual functional consumer accepted data.',EH),
+ ('protection_verified','Actual qualified IS system/certificate evidence, not automatically true.',PF),
+ ('conditioned_supply','Actual bus-power conditioner prevents source from shunting the communication signal.',PF),
+ ('coupler_mapping_valid','Actual link/coupler DP/PA device mapping checked.',PI)]:d(k,'boolean',meaning,source=source)
+REQUIRED=['phy','layout','device_profile','coupling','role','device_source','physical_source','schedule_source','mapping_source','acceptance_source','address_source']
+REMOVED={k:'Generic '+k+' is not PA MBP framing/power/device timing; explicit registered PA path replaces foreign CAN/DP-UART/Ethernet assumptions.'for k in('mtu_bytes','duplex','vlan_id','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','rate_limit_bit_s','retry_limit','retransmission_enabled','retransmission_rate','retransmission_delay_ms','recovery_ms','link_fault_detect_ms','failover_ms','restore_delay_ms','mtbf_ms','sync_method')}
+DEFAULTS={'encoding':'MANCHESTER_BIPHASE_L','duplex':'HALF','data_bits':8,'preamble_bytes':1,'phy_sd_bytes':1,'phy_ed_bytes':1,'crc_bytes':2,'crc_polynomial':7623,'post_gap_bits':4,'terminators':2}
+def semantics():
+ rules=[]
+ def r(k,w=None,source=PNO,**kw):rules.append(dict(parameter=k if k=='local_timing_evidence'else'pa_'+k,when={'pa_'+a:b for a,b in(w or{}).items()},source=source,source_revision=SOURCES[source],**kw))
+ for k in REQUIRED:r(k,required=True)
+ r('local_timing_evidence',allowed=[])
+ for key in('layout','device_profile'):r('registered_source',{key:'REGISTERED_ACTUAL'},required=True)
+ for protection in('FISCO','ENTITY','REGISTERED_ACTUAL'):
+  r('protection_source',{'protection':protection},required=True,source=PF)
+ r('protection_source',{'phy':'MBP_IS'},required=True,source=PF)
+ r('protection',{'phy':'MBP_IS'},required=True,allowed=['FISCO','ENTITY','REGISTERED_ACTUAL'],source=PF)
+ r('segment_devices',maximum_parameter='pa_segment_device_limit',source=PI)
+ r('segment_total_m',equal_expression={'sum':['pa_trunk_m','pa_all_spurs_m']},source=PF)
+ for k in('trunk_m','all_spurs_m'):r(k,when_present=['pa_segment_total_m'],required=True,source=PF)
+ r('longest_spur_m',maximum_parameter='pa_spur_limit_m',source=PF);r('spur_limit_m',when_present=['pa_longest_spur_m'],required=True,source=PF)
+ r('longest_spur_m',maximum_parameter='pa_all_spurs_m',source=PF)
+ voltage={'subtract':['pa_supply_v',{'sum':[{'product':['pa_loop_ohm_km','pa_path_loop_m','pa_path_current_ma',.000001]},'pa_barrier_drop_v']}]}
+ r('terminal_v',equal_expression=voltage,minimum_parameter='pa_device_voltage_min_v',maximum_parameter='pa_device_voltage_max_v',source=PF)
+ for k in('supply_v','loop_ohm_km','path_loop_m','path_current_ma','barrier_drop_v','device_voltage_min_v','device_voltage_max_v'):
+  r(k,when_present=['pa_terminal_v'],required=True,source=PF)
+ r('required_current_ma',equal_expression={'sum':['pa_device_currents_total_ma','pa_barrier_current_ma','pa_fault_reserve_ma','pa_spare_current_ma']},maximum_parameter='pa_supply_capacity_ma',source=PF)
+ for k in('device_currents_total_ma','barrier_current_ma','fault_reserve_ma','spare_current_ma','supply_capacity_ma'):
+  r(k,when_present=['pa_required_current_ma'],required=True,source=PF)
+ r('device_voltage_max_v',{'device_profile':'EH_O200_3_02'},allowed=[32],source=EH)
+ r('device_current_ma',{'device_profile':'EH_O200_3_02'},allowed=[16],source=EH)
+ r('station',{'state':'DATA_EXCHANGE'},maximum=125,source=EH)
+ r('coupler_source',{'coupling':'TRANSPARENT_COUPLER'},required=True,source=PI)
+ r('coupler_source',{'coupling':'ADDRESS_AGGREGATING_LINK'},required=True,source=PI)
+ r('coupler_mapping_valid',{'coupling':'ADDRESS_AGGREGATING_LINK'},required=True,allowed=[True],source=PI)
+ r('input_bytes',maximum_parameter='pa_device_input_max',source=EH);r('output_bytes',maximum_parameter='pa_device_output_max',source=EH)
+ r('ident_number',equal_parameter='pa_expected_ident_number',source=EH)
+ r('address_extension_bytes',{'service':'CYCLIC'},allowed=[0]);r('user_bytes',{'service':'CYCLIC'},maximum=244,source=PI)
+ w={'layout':'PNO1997_PART9'}
+ r('data_unit_bytes',w,equal_expression={'sum':['pa_user_bytes','pa_address_extension_bytes']})
+ for k in('user_bytes','address_extension_bytes'):r(k,w,when_present=['pa_data_unit_bytes'],required=True)
+ r('le',{**w,'frame':'SDL2'},equal_expression={'sum':['pa_data_unit_bytes',3]},equal_parameter='pa_le_repeat')
+ r('fdl_bytes',{**w,'frame':'SDL2'},equal_expression={'sum':['pa_le',6]})
+ for k in('data_unit_bytes','le_repeat'):r(k,{**w,'frame':'SDL2'},when_present=['pa_le'],required=True)
+ for frame,size in [('SDL1',6),('SDL3',14),('SDL4',5),('SDL5',3)]:r('fdl_bytes',{**w,'frame':frame},allowed=[size])
+ r('data_unit_bytes',{**w,'frame':'SDL1'},allowed=[0]);r('data_unit_bytes',{**w,'frame':'SDL3'},allowed=[8])
+ r('phy_bytes',w,equal_expression={'sum':['pa_fdl_bytes','pa_preamble_bytes','pa_phy_sd_bytes','pa_phy_ed_bytes']})
+ for k in('fdl_bytes','preamble_bytes','phy_sd_bytes','phy_ed_bytes'):r(k,w,when_present=['pa_phy_bytes'],required=True)
+ r('wire_bits',w,equal_expression={'product':['pa_phy_bytes',8]});r('phy_bytes',w,when_present=['pa_wire_bits'],required=True)
+ r('serialization_us',w,equal_expression={'product':['pa_wire_bits',32]});r('wire_bits',w,when_present=['pa_serialization_us'],required=True)
+ r('slot_us',w,equal_expression={'product':['pa_slot_bits',32]})
+ r('safety_margin_bits',w,equal_expression={'sum':[2,{'product':[2,'pa_setup_bits']}]})
+ r('ready_bits',w,exclusive_minimum_expression='pa_post_gap_bits',exclusive_maximum_expression='pa_min_tsdr_bits')
+ r('min_tsdr_bits',w,maximum_parameter='pa_max_tsdr_bits')
+ margin={'sum':['pa_post_gap_bits','pa_safety_margin_bits']}
+ r('idle1_bits',w,equal_expression={'maximum':[margin,'pa_min_tsdr_bits','pa_initiator_delay_bits']})
+ r('idle2_bits',w,equal_expression={'maximum':[margin,'pa_max_tsdr_bits']})
+ r('slot_bits',w,equal_expression={'sum':[{'product':[2,'pa_propagation_bits']},
+  {'maximum':['pa_max_tsdr_bits','pa_peer_idle1_max_bits']},{'product':['pa_preamble_bytes',8]},16,'pa_safety_margin_bits']})
+ for k in('propagation_bits','max_tsdr_bits','peer_idle1_max_bits','preamble_bytes','safety_margin_bits'):
+  r(k,w,when_present=['pa_slot_bits'],required=True)
+ w={'device_profile':'EH_O200_3_02'}
+ for module,slots,inp,out,value,sts in [('AI',[1,2,3,4],5,0,4,1),('TOTAL',[5,6,7],5,0,4,1),('AO',[8],0,5,4,1),
+  ('DI',[9,10],2,0,1,1),('DO',[11,12,13],0,2,1,1),('SETTOT_TOTAL',[5,6,7],5,1,4,1),
+  ('SETTOT_MODETOT_TOTAL',[5,6,7],5,2,4,1),('EMPTY',list(range(1,14)),0,0,0,0)]:
+  q={**w,'module':module};r('slot',q,allowed=slots,source=EH)
+  for key,val in [('module_input_bytes',inp),('module_output_bytes',out),('value_bytes',value),('status_bytes',sts)]:r(key,q,allowed=[val],source=EH)
+ r('quality_code',w,equal_expression={'floor':[{'product':['pa_status_octet',.015625]}]},source=EH)
+ for quality,codes,bounds in [('BAD',[0],(0,63)),('UNCERTAIN',[1],(64,127)),('GOOD',[2],(128,191))]:
+  r('quality_code',{**w,'quality':quality},allowed=codes,source=EH)
+  r('status_octet',{**w,'quality':quality},minimum=bounds[0],maximum=bounds[1],source=EH)
+ r('age_ms',maximum_parameter='pa_freshness_ms',source=EH);r('freshness_ms',when_present=['pa_age_ms'],required=True,source=EH)
+ w={'data_accepted':True}
+ for k,allowed in [('outcome',['ACCEPTED']),('frame_valid',[True]),('mapping_valid',[True]),('state',['DATA_EXCHANGE'])]:r(k,w,required=True,allowed=allowed,source=EH)
+ r('quality',w,required=True,allowed=['GOOD'],source=EH)
+ r('status_octet',{'device_profile':'EH_O200_3_02','data_accepted':True},required=True,source=EH)
+ return dict(rate_model={'type':'FIXED_LINK_RATE','fields':['bitrate_bps'],'fixed_bps':31250},required_parameters=['pa_'+k for k in REQUIRED],
+  native_parameter_prefixes=['pa_'],parameter_constraints=rules,parameter_evidence_scope='EXPLICIT_LAYER',physical_layer_profile_id='explicit_profibus_pa_mbp',
+  medium_access_model='PROFIBUS_MBP_MASTER_SLAVE_AND_TOKEN',arbitration_model_id='ACTUAL_PA_POLLING_AND_COUPLER_SCHEDULE',
+  mechanisms={'framing':['MBP_SYNC_MANCHESTER_8_BITS_CRC16_NOT_DP_UART'], 'qualification':['PHYSICAL_POWER_AND_IS_EVIDENCE_SEPARATE','DEVICE_PROFILE_GSD_MODULE_STATUS','NOT_FF_LAS']})
+def fields():
+ result=[]
+ for spec in DECLARATIONS:
+  k=spec['key'][3:];item={a:b for a,b in spec.items()if b is not None}
+  item.update(label=k.replace('_',' '),category='timing'if spec.get('unit')in('us','ms','bit-time')else'communication',scope='route',editable=True,
+   required=k in REQUIRED,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
+  if k in DEFAULTS:
+   item.update(default_status='PROPOSED_CONDITIONAL',conditional_defaults=[dict(when={'pa_layout':'PNO1997_PART9'},value=DEFAULTS[k],source=spec['source'],source_revision=spec['source_revision'])])
+  result.append(item)
+ return result

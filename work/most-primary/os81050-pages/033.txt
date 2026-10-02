@@ -1,0 +1,75 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 33
+The MediaLB protocol supports a set of physical channels for sending data over the Media Local Bus. The
+physical channels (PCn) are four bytes in length (one quadlet) and can be grouped into logical channels.
+Each logical channel represents a unidirectional data path (one or more quadlets in length) and is defined
+by a unique ChannelAddress.
+On each logical channel, the source (transmitter) is a unique location on a Device, with a destination
+(receiver) of one or more Devices. In a system, the ChannelAddresses are generally static and defined at the
+development stage; however, the MediaLB Controller can dynamically define additional ChannelAddresses dur-
+ing operation to communicate with other Devices.
+The MediaLB Controller initiates communication over the Media Local Bus by sending out a ChannelAddress
+on MLBSIG. This indicates to the addressed Device that it can begin transmitting on the logical channel
+associated with that ChannelAddress. The structure of the ChannelAddress is described in the MediaLB Specification
+[3], Link Layer Section.
+The number of ChannelAddresses supported is based on the MediaLB Port speed and the size of the logical
+channels associated with the ChannelAddresses. The total number of physical channels available at a given
+MediaLB Port speed is indicated in Table 6-1. The mapping of specific physical channels into a logical
+channel is arbitrary and managed by the MediaLB Controller. Generally, logical channels are created by
+the EHC using the CreateSocket() INIC function.
+Once per network frame, the MediaLB Controller generates a unique 16-bit FRAMESYNC pattern on the sig-
+nal information line (MLBSIG). The end of the FRAMESYNC pattern defines byte and physical channel bound-
+aries, and indicates that the MediaLB frame boundary occurs one quadlet later. Physical Channel 0 (PC0),
+defined as the first physical channel of the MediaLB frame, is always used as the SystemChannel. The
+FRAMESYNC pattern represents a special ChannelAddress, which grants the MediaLB Controller (OS81050) PC0
+for system administration.
+As illustrated in Figure 6 -2, one quadlet after the ChannelAddress is sent by the Controller, the Device associ-
+ated with that ChannelAddress sends out a MediaLB Command on MLBSIG, while simultaneously sending the
+corresponding data over MLBDAT. All MediaLB Devices, including the OS81050 Controller, compare the
+ChannelAddress to their internal Channel Address table to determine whether they are the intended receiver.
+When the OS81050 Controller is a receiving Device, it places the RxStatus response on MLBSIG one byte
+after the MediaLB Command is sent by the transmitting Device. To accept the data, an RxStatus response of
+ReceiverReady is sent. To reject the data, an RxStatus response of ReceiverBusy is sent.
+MediaLB Speed Quadlets per 
+MediaLB Frame Physical Channels Available 
+Physical Channels*
+Bytes Available
+per Frame*
+256×Fs 8P C 0  -  P C 77 2 8
+512×Fs 16 PC0 - PC15 15 60
+1024×Fs 32 PC0 - PC31 31 124
+* PC0 (first physical channel of the MediaLB frame) is always used as the SystemChannel; therefore, the bytes of this 
+physical channel are not available for application data.
+Table 6-1: Available MediaLB Bandwidth
+MLBSIG
+MLBDAT
+4-byte delay
+(1 quadlet = 1 physical channel) (1 quadlet = 1 physical channel)
+Controller:
+ChannelAddress
+TX Device:
+Command
+RX Device:
+RxStatus
+TX Device:
+Data
+TX Device:
+Data
+TX Device:
+Data
+TX Device:
+Data
+Receiving Device
+accepts or rejects the
+data using the RxStatus
+field.
+Controller grants the
+Transmitting Device access to
+the logical channel associated
+with the ChannelAddress.
+Transmitting Device sends its
+Command and associated data
+on the logical channel associated
+with the ChannelAddress.
+Figure 6-2: MediaLB Data Structure

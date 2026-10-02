@@ -1,0 +1,50 @@
+EnergyTransferStarted
+State EnergyTransferStarted
+System under test Charging Station
+Description This state will prepare the Charging Station, so that the Charging Station is transferring energy between the
+EV and EVSE.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+If State is NOT Authorized then execute Reusable State Authorized
+If connector <configured connectorId> state is not occupied, then execute Reusable State EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step is only executed if TxStartPoint is DataSigned, in which
+case the eventType will be Started.
+2. The Test System responds with a TransactionEventResponse
+3. The Charging Station sends a TransactionEventRequest
+Note(s):
+- Step 3 and 4 are optional.
+4. The Test System responds with a TransactionEventResponse
+5. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step is executed with eventType Started if:
+TxStartPoint contains EnergyTransfer
+OR
+- This step is executed with eventType Updated if:
+TxStartPoint contains ParkingBayOccupancy OR
+TxStartPoint contains Authorized OR
+TxStartPoint contains EVConnected OR
+TxStartPoint contains PowerPathClosed OR
+TxStartPoint contains DataSigned
+6. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- triggerReason must be SignedDataReceived
+* Step 3:
+Message: TransactionEventRequest
+- triggerReason must be ChargingStateChanged
+- transactionInfo.chargingState must be SuspendedEVSE
+* Step 5:
+Message: TransactionEventRequest
+- triggerReason must be ChargingStateChanged
+- transactionInfo.chargingState must be Charging
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 593/914 Part 6 - Test Cases

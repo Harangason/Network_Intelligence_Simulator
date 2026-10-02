@@ -1,0 +1,79 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  41 
+Attribute Selectable Values Description 
+[Pixel Buffer Depth × 
+Number of Pixel per Clock 
+(PPC)] 
+Interface (UVSI) == checked. 
+Byte Buffer Depth3 For PHY Direction == TX, 
+depthN×2, depthN×4, 
+depthN×8, depthN×16, 
+depthN×32, depthN×64 
+ 
+For PHY Direction == RX, 
+depthN, depthN×2, 
+depthN×4 
+PHY Direction == TX:  
+Specifies the depth of the internal byte data buffer. The default 
+minimum setting is depthN. 
+ 
+If TDATA_WIDTH = 32 
+GUI Options: 512, 1024, 2048, 4096, 8192, 16384 
+If TDATA_WIDTH = 64 
+GUI Options: 512, 1024, 2048, 4096, 8192 
+ 
+For both TDATA_WIDTH = 32 and TDATA_WIDTH = 64, the byte 
+buffer FIFO stores the complete MIPI packet, including the packet 
+header, payload, and CRC bytes, along with the required sideband 
+information. Therefore, the maximum supported payload size is 
+equal to the total packet size in bytes minus 8 bytes. 
+ 
+PHY Direction == RX: 
+Specifies the depth of the internal pixel data buffer on the Byte-to-
+Pixel (B2P) block of RX. The default minimum setting, depthN, is 
+optimized to use one EBR. 
+ 
+Nexus EBR size = 18432 bits 
+K = 9 
+If PHY Mode == Soft D-PHY, TDATA_WIDTH = 32. If PHY Mode == Hard 
+D-PHY and Number of D-PHY Lanes == 4, TDATA_WIDTH width is 64, 
+else TDATA_WIDTH width is 32. 
+ 
+depthN = 2
+𝑓𝑙𝑜𝑜𝑟[𝑙𝑜𝑔2( 𝐸𝐵𝑅 𝑠𝑖𝑧𝑒 (𝑏𝑖𝑡𝑠)
+𝑇𝐷𝐴𝑇𝐴_𝑊𝐼𝐷𝑇𝐻+𝑘)]
+ 
+ 
+Example: 
+TDATA_WIDTH = 32 
+depthN = 2^floor[log2(18432/(32+9))] 
+depthN = 256  
+GUI Options: 256, 512, 1024, 2048 
+ 
+This setting is available only when MIPI Byte Streaming Interface == 
+checked. 
+Maximum Buffered Bytes When PHY Direction == 
+TX, Maximum buffered 
+bytes is [4 × Byte Buffer 
+Depth] in all cases, except 
+for PHY Data Width = 16 
+with 4 lanes is [8 × Byte 
+Buffer Depth] 
+For PHY Direction == RX, 
+[Byte Buffer Depth × 6] 
+Indicates the total number of bytes that can be buffered in the FIFO 
+based on Byte Buffer Depth. 
+Not editable. For information only when MIPI Byte Streaming 
+Interface == checked.  
+Enable tINIT Counter checked, unchecked Enables the internal T_INIT counter that ensures the D-PHY TX 
+remains in the LP-11 Stop State for the required initialization period 
+before entering high-speed transmission. When disabled, the TX skips 
+the enforced T_INIT wait time. 
+This setting is available only when PHY Direction is set to TX. 
+tINIT Counter Value 1–65535, 1000 Specifies the number of byte clock cycles the transmitter must 
+remain in the LP-11 Stop State to meet the D-PHY T_INIT initialization 

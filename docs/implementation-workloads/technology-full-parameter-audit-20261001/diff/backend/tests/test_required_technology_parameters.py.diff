@@ -1,0 +1,46 @@
+--- before/backend/tests/test_required_technology_parameters.py
++++ after/backend/tests/test_required_technology_parameters.py
+@@ -13,13 +13,25 @@
+             "implementation_status": "PLANNED", "rate_model": {"fields": []}, **extra}
+ 
+ 
++def test_schema_scope_alternatives_match_exact_types_and_never_silently_borrow_bounds():
++    registry=TechnologyRegistry()
++    registry.register_defaults([profile(parameter_schema={
++        'value':{'type':'number','min':0,'max':10,'schema_when':{'version':['A','B'],'aux_enabled':[False]}}})])
++    for version in ('A','B'):
++        assert registry.validate_parameters('test_bus',{'value':10,'version':version,'aux_enabled':False})['status']=='VALID'
++        assert registry.validate_parameters('test_bus',{'value':11,'version':version,'aux_enabled':False})['status']=='INVALID'
++    for version,enabled in [('A',0),('C',False),('A',True)]:
++        assert registry.validate_parameters('test_bus',{'value':10,'version':version,'aux_enabled':enabled})['status']=='UNVERIFIED'
++
++
+ def test_all_profiles_export_declared_requirements_without_claiming_completeness():
+     for row in REGISTRY.list_all():
+         assert set(row["rate_model"].get("fields", [])) <= set(row["required_parameters"])
+         assert row["required_parameter_completeness"] == "UNVERIFIED"
+         assert row["required_parameter_scope"] == "DECLARED_PROFILE_FIELDS"
+     assert REGISTRY.profile("CANFD")["required_parameters"] == ["data_bitrate_bps", "nominal_bitrate_bps"]
+-    assert REGISTRY.profile("gpio")["required_parameters"] == []
++    assert set(REGISTRY.profile("gpio")["required_parameters"]) == {
++        "gpio_profile", "gpio_pin", "gpio_device_source", "gpio_wiring_source", "gpio_direction"}
+ 
+ 
+ @pytest.mark.parametrize("parameters", [{}, {"station_name": None}, {"station_name": "  "}])
+@@ -75,11 +87,14 @@
+ 
+ 
+ def test_exported_declarations_are_copied_and_http_visible():
++    expected=sorted('lin_'+key for key in ('edition','physical_profile','node_role','frame_kind','revision',
++        'device_source','binding_source','physical_source','ldf_source','encoding_source','schedule_source',
++        'capacity_source','acceptance_source','commander_node_id','bitrate_bps'))
+     row = REGISTRY.profile("lin")
+     row["required_parameters"].append("foreign")
+-    assert REGISTRY.profile("lin")["required_parameters"] == ["bitrate_bps"]
++    assert REGISTRY.profile("lin")["required_parameters"] == expected
+     response = create_app(testing=True).test_client().get('/api/technologies')
+     assert response.status_code == 200
+     profiles = {p["id"]: p for domain in response.get_json()["domains"] for p in domain["technologies"]}
+-    assert profiles["lin"]["required_parameters"] == ["bitrate_bps"]
++    assert profiles["lin"]["required_parameters"] == expected
+     assert profiles["lin"]["required_parameter_completeness"] == "UNVERIFIED"

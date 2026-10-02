@@ -1,0 +1,33 @@
+Main (Test scenario)
+20. The Test System responds with a GetDERControlResponse
+with
+status Accepted
+19. The CSMS sends a GetDERControlRequest
+Manual action: trigger CSMS to send a GetDERControlRequest with a controlId
+22. The Test System responds with a GetDERControlResponse
+with
+status Accepted
+21. The CSMS sends a GetDERControlRequest
+23. The Test System sends a NotifyDERStartStopRequest with
+controlId <SetDERControlRequest.controlId of step 11>
+started true
+timestamp <Current date/time>
+supersededIds [<SetDERControlRequest.controlId of step 9>]
+24. The CSMS responds with a NotifyDERStartStopResponse
+Tool validations
+* Step 1:
+Message: ClearDERControlRequest
+- isDefault true
+* Step 3:
+Message: ClearDERControlRequest
+- isDefault false
+* Step 5:
+Message: SetDERControlRequest
+- isDefault must be true
+- controlType must be FreqDroop
+- freqDroop.priority must be 6
+- freqDroop.startTime must be <omitted>
+- freqDroop.duration must be <omitted>
+- Other optional fields must be omitted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1361/1383 Part 6 - Test Cases

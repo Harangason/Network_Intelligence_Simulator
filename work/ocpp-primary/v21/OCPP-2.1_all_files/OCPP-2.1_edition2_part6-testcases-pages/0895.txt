@@ -1,0 +1,58 @@
+TC_R_104_CS: Configure DER control - Superseding future DER control
+Test case name Configure DER control settings at CS - superseding future DER control
+Test case Id TC_R_104_CS
+Use case Id(s) R04
+Requirement(s) R04.FR.02, R04.FR.03, R04.FR.05, R04.FR.06
+System under test Charging Station
+Description Test System tries to set a DER control which is supported by the CS and no other controls are set on the CS.
+Purpose To check if the CS behaves correctly when setting controlTypes with different priorities.
+Prerequisite(s) EV supports DER Control
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station sends a ClearDERControlResponse
+1. The Test System sends a ClearDERControlRequest with
+isDefault true
+4. The Charging Station sends a ClearDERControlResponse
+3. The Test System sends a ClearDERControlRequest with
+isDefault false
+6. The Charging Station sends a SetDERControlResponse
+5. The Test System sends a SetDERControlRequest with
+controlId control1
+isDefault true
+controlType <CS supported controlType1>
+*.priority 5
+8. The Charging Station sends a SetDERControlResponse
+7. The Test System sends a SetDERControlRequest with
+controlId control2
+isDefault true
+controlType <CS supported controlType1> *.priority 4
+10. The Charging Station sends a GetDERControlResponse
+9. The Test System sends a GetDERControlRequest with
+isDefault true
+11. The Charging Station sends a ReportDERControlRequest
+12. The Test System sends a ReportDERControlResponse
+14. The Charging Station sends a SetDERControlResponse
+13. The Test System sends a SetDERControlRequest with
+controlId control3
+isDefault false
+controlType <CS supported controlType1>
+*.priority 5
+*.startTime <Current DateTime + 2 hours>
+16. The Charging Station sends a SetDERControlResponse
+15. The Test System sends a SetDERControlRequest with
+controlId control4
+isDefault false
+controlType <CS supported controlType1> *.priority 4
+*.startTime <Current DateTime + 4 hours>
+18. The Charging Station sends a GetDERControlResponse
+17. The Test System sends a GetDERControlRequest with
+isDefault false
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 893/1383 Part 6 - Test Cases

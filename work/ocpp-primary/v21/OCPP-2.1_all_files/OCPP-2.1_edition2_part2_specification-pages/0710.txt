@@ -1,0 +1,44 @@
+3.57. LogEnumType
+Enumeration
+LogEnumType is used by: getLog:GetLogRequest
+Value Description
+DiagnosticsLog This contains the field definition of a diagnostics log file
+SecurityLog Sent by the CSMS to the Charging Station to request that the Charging Station uploads the security log.
+DataCollectorLog (2.1) The log of sampled measurements from the DataCollector component.
+3.58. LogStatusEnumType
+Enumeration
+Generic message response status
+LogStatusEnumType is used by: getLog:GetLogResponse
+Value Description
+Accepted Accepted this log upload. This does not mean the log file is uploaded is successfully, the Charging Station
+will now start the log file upload.
+Rejected Log update request rejected.
+AcceptedCanceled Accepted this log upload, but in doing this has canceled an ongoing log file upload.
+3.59. MeasurandEnumType
+Enumeration
+Allowable values of the optional "measurand" field of a Value element, as used in MeterValuesRequest and
+TransactionEventRequest with eventTypes Started, Ended and Updated. Default value of "measurand" is always
+"Energy.Active.Import.Register".
+Note 1: Two measurands (Current.Offered and Power.Offered) are available that are strictly speaking no measured values. They
+indicate the maximum amount of current/power that is being offered to the EV and are intended for use in smart charging
+applications. The measurands with .Setpoint are not measured values, but are a value that should be followed as closely as
+possible.
+Note 2: Import is energy flow from the Grid to the Charging Station, EV or other load. Export is energy flow from the EV to the
+Charging Station and/or from the Charging Station to the Grid. Except in the case of a meter replacement, all "Register" values
+relating to a single charging transaction, or a non-transactional consumer (e.g. Charging Station internal power supply, overall
+supply) MUST be monotonically increasing in time.
+Note 3: The actual quantity of energy corresponding to a reported ".Register" value is computed as the register value in question
+minus the register value recorded/reported at the start of the transaction or other relevant starting reference point in time. For
+improved auditability, ".Register" values SHOULD be reported exactly as they are directly read from a non-volatile register in the
+electrical metering hardware, and SHOULD NOT be re-based to zero at the start of transactions. This allows any "missing energy"
+between sequential transactions, due to hardware fault, meter replacement, mis-wiring, fraud, etc. to be identified, by allowing the
+CSMS to confirm that the starting register value of any transaction is identical to the finishing register value of the preceding
+transaction on the same connector.
+Note 4: Measurands that have a direction as part of the name (.Import or .Export) have non-negative values. Measurands with
+.Setpoint, .Net or .Residual in the name can have negative values.
+Note 5: Measurands starting with Display represent the optional ISO 15118-20 DisplayParameters.
+MeasurandEnumType is used by: Common:SampledValueType
+Value Description
+Current.Export Instantaneous current flow from EV
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 697/803 Part 2 - Specification

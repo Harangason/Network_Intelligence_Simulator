@@ -1,0 +1,58 @@
+No. Type Description
+Alternative scenario TxStartPoint = "Authorized" and not plugged-in
+1. Payment card of EV Driver has been authorized by the payment service provider and an
+authorization amount has been reserved on the card.
+2. Charging Station has authorized idToken for charging.
+3. Charging Station sends a TransactionEventRequest with eventType = Started and
+idToken information and other relevant fields.
+a. CSMS responds with TransactionEventResponse with idTokenInfo.
+4. EV Driver does not plug in EV and a EVConnectionTimeout occurs.
+5. Payment terminal requests payment service provider to release the authorization
+reservation on the card.
+6. Charging Station ends authorization of idToken.
+7. Charging Station sends TransactionEventRequest with eventType = Ended and
+triggerReason = EVConnectTimeout and other relevant fields.
+8. CSMS responds with TransactionEventResponse with totalCost = 0.
+9. Charging Station sends a NotifySettlementRequest with pspRef = idToken and status =
+Canceled to notify CSMS that the previously authorized idToken will not start a
+transaction and payment has been canceled.
+5 Prerequisites The EV Driver has used the payment terminal to authorize. A transaction was started, but no costs
+have been incurred yet.
+6 Postcondition(s) The payment transaction has been canceled and transaction has been ended.
+7 Error handling
+8 Remark(s) See use case C19 for cancellation when a transaction has not yet been started.
+EV Driver
+Payment Service
+Provider
+Integrated
+Payment Terminal Charging Station CSMS
+Assuming TxStart/StopPoint
+is Authorized
+idToken <PspRef> is authorized for adhoc payment
+TransactionEventRequest(Started, transactionId = "123",
+tariffId = "Adhoc", idToken = <PspRef>, type = DirectPayment,
+additionInfo(type = "CardBin", additionalIdToken = "123456",
+transactionInfo.transactionLimit.maxCost = 100, ...)
+TransactionEventRequest(...)
+Cancelling payment
+alt [User cancels payment]
+Stop session
+TransactionEventRequest(Ended, triggerReason = StopAuthorized, ...)
+TransactionEventResponse(totalCost = 0)
+Cancel payment
+[User fails to connect EV]
+EVConnectionTimeout
+TransactionEventRequest(Ended, triggerReason = EVConnectTimeout, ...)
+TransactionEventResponse(totalCost = 0)
+Cancel payment
+Cancel authorization amount
+Authorization amount cancelled
+Cancelled payment
+"Payment has been cancelled."
+NotifySettlementRequest(transactionId = "123",
+pspRef = <idToken>, status = Cancelled,
+settlementTime=...)
+NotifySettlementResponse()
+Figure 41. Sequence diagram of canceling an ad hoc authorization after start of transaction
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 135/803 Part 2 - Specification

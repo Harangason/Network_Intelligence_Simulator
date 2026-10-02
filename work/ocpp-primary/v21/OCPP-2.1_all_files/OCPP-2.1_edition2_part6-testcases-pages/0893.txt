@@ -1,0 +1,48 @@
+TC_R_103_CS: Configure DER control - Validations
+Test case name Configure DER control settings at CS - validations
+Test case Id TC_R_103_CS
+Use case Id(s) R04
+Requirement(s) R04.FR.01, R04.FR.30, R04.FR.36, R04.FR.41, R04.FR.42, R04.FR.43
+System under test Charging Station
+Description Test System tries to set, clear or get DER controls which is not supported, set, or supported by the CS.
+Purpose To check if the CS returns the correct status.
+Prerequisite(s) EV supports DER Control
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station sends a SetDERControlResponse
+1. The Test System sends a SetDERControlRequest with
+controlType <CS Unsupported controlType>
+controlId control1
+priority 6
+4. The Charging Station sends a GetDERControlResponse
+3. The Test System sends a GetDERControlRequest with
+isDefault true
+controlType <CS Unsupported controlType>
+6. The Charging Station sends a ClearDERControlResponse
+5. The Test System sends a ClearDERControlRequest with
+isDefault false
+8. The Charging Station sends a GetDERControlResponse
+7. The Test System sends a GetDERControlRequest with
+isDefault false
+controlType <CS supported controlType1>
+10. The Charging Station sends a ClearDERControlResponse
+9. The Test System sends a ClearDERControlRequest with
+isDefault false
+controlType <CS supported controlType2>
+12. The Charging Station sends a ClearDERControlResponse
+11. The Test System sends a ClearDERControlRequest with
+isDefault false
+controlId 12345
+14. The Charging Station sends a ClearDERControlResponse
+13. The Test System sends a ClearDERControlRequest with
+isDefault false
+controlType <CS Unsupported controlType>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 891/1383 Part 6 - Test Cases

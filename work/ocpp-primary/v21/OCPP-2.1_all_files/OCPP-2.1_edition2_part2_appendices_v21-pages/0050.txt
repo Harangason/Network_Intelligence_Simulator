@@ -1,0 +1,44 @@
+Chapter 6. Standardized additionalInfo types
+(Updated in v2.0)
+Standardized and recommended names (types) for idToken.additionalInfo that can be used to provide additional information
+related to an ID token. For interoperability reasons, these types must be used if the data to be transmitted matches the description.
+additionalInfo consists of:
+• idToken.additionalInfo.type: specifies the type of content
+• idToken.additionalInfo.additionalIdToken: specifies the value
+6.1. Generic
+AdditionalInfo fields can be used to provide additional information about an RFID card.
+additionalInfo.type Description
+EVCCID The EVCCID of EV is added as additionalInfo to an idToken for ISO 15118-20
+sessions.
+ISO14443SubType The subtype of an ISO 14443 RFID card. For example: 'VDE-AR-E-2532-100' (a
+secure variant of ISO 14443).
+6.2. Ad hoc payment
+A number of AdditionalInfo fields are prescribed to be used for ad hoc payment (use case C18). The configuration variable
+PaymentCtrlr.PaymentDetails determines which values the payment terminal provides that need to be included in
+idToken.additionalInfo for an ad hoc authorization.
+additionalInfo.type Description
+PspRef Payment Service Provider reference id for payment session. Only use when
+PspRef is not in idToken.
+SessionRef Payment session reference id from terminal (not the same as pspRef)
+MerchantRef Merchant (CSO) reference id for payment session
+PaymentBrand Brand of ad hoc payment card. See predefined list of values in table below.
+ReadingMethod Contactless / Contact / Magstripe
+PaymentRecognition Credit/debit card or digital wallet. See predefined list of values in table below.
+CardBin Card first 6 digits
+CardLast4Digits Card last 4 digits
+CardExpiryDate The expiry date of the card. Format: YYYY/MM
+HashedCardNr The hashed card number.
+WalletUserId User ID for a digital wallet, e.g. Alipay.
+6.2.1. Predefined values for PaymentBrand
+PaymentBrand Description
+AMEX
+ApplePay
+Bancontact
+BankAxept
+Carnet
+CartesBancaires
+Dankort
+Diners
+Discover
+v2.1, 2025-12-03 Chapter 6. Standardized additionalInfo types
+OCPP 2.1 - © Open Charge Alliance 2025 48/52 Part 2 - Appendices

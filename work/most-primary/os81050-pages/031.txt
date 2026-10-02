@@ -1,0 +1,44 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 31
+6 MediaLB Port
+The Media Local Bus  (MediaLB) Port gives external devices (e.g. the External Host Controller) real-time
+access to all supported types of data on the MOST Network. The MediaLB Port and the Streaming Port
+share some pins; therefore, some Streaming and MediaLB modes are mutually exclusive.
+The MediaLB Port can be configured for one of the following operational modes:
+/square6 MediaLB 3-pin Mode - When configured in this mode, the MediaLB Port provides a 3-pin interface that 
+supports a maximum data rate of 1024 ×Fs (49.152 MHz at Fs=48 kHz). In this mode, the Streaming 
+Port may be configured with up to two serial interfaces for accessing synchronous network data.
+/square6 MediaLB 5-pin Mode - When configured in this mode, the MediaLB Port provides a 5-pin interface that 
+supports a maximum data rate of 512 ×Fs (24.576 MHz at Fs=48 kHz). In this mode, the Streaming 
+Port is not available.
+MediaLB bandwidth is managed in quadlets (4 bytes) and consists of a combination of streaming, packet,
+and control data. The MediaLB Port rate of 256 ×Fs supports up to seven quadlets of data, divided among
+streaming, packet, and control data types. The MediaLB Port rate of 512 ×Fs supports up to 15 quadlets of
+data. The MediaLB Port rate of 1024 ×Fs supports up to 31 quadlets of data. A maximum of 64 bytes can
+be transferred per frame, in either direction, for the Streaming Port and MediaLB Port combined.
+When transmitting data onto the network, the MSB is transmitted first. To comply with the MOST Specifica-
+tion [1], when transmitting multi-byte words, the most significant byte should be transmitted first. In addi-
+tion, when transmitting stereo data, left should be sent before right.
+The MediaLB Port can be enabled by default after power-up/reset based on the INIC Configuration String . If
+the MediaLB Port is not enabled by default at power-up/reset, it can be manually enabled and configured
+via ICMs through the Control Port, if desired. The MediaLB Port is enabled automatically at power-up/reset
+under one of the following two conditions:
+/square6 PortConfiguration.DefPort()  is set to MediaLB, or
+/square6 PortConfiguration.DefPort()  is set to INT_Select and INT is pulled low.
+When the MediaLB Port is enabled at power-up/reset, the Factory default mode and speed is 3-pin mode
+at 512×Fs. This default mode can be changed through the Customer Configuration Interface , as described in
+Section 13.5.
+Although INT is not used for MediaLB communications, if pulled high, it can be used to wake up the EHC
+after a device shut-down. See the ShutDown() function in the OS8105x/6x INIC API User’s Manual  [2] for
+more information.
+After reset, and following MediaLB Port initialization, the first INIC message sent to the EHC indicates the
+OS81050 is initialized and ready to communicate with the EHC.
+AllFIFOs:Status(SyncS, StartUp)
+In common applications, this message is used to instruct the EHC to synchronize its FIFOs. Additionally,
+the EHC may start synchronization of the OS81050 by sending the following message:
+AllFIFOs:Command(SyncC)
+The OS81050 responds to the above message once the synchronization is complete. This procedure
+ensures that OS81050 and the EHC can synchronize communication under various circumstances. The
+status message sent by the OS81050 is:
+AllFIFOs:Status(SyncS, SyncRcvd)

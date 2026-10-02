@@ -1,0 +1,28 @@
+EV Charging Station CSMS
+loop [Charging in progress...]
+alt [if AC Charging]
+ChargingStatusReq()
+ChargingStatusRes()
+[if DC Charging]
+CurrentDemandReq()
+CurrentDemandRes()
+TransactionEventRequest(eventType = Updated,...)
+TransactionEventResponse(...)
+EV proposes new schedule
+PowerDeliveryReq(Renegotiate)
+PowerDeliveryRes(OK) Power delivery may be halted
+ChargeParameterDiscoveryReq(EnergyTransferMode, EVChargeParam)
+NotifyEVChargingNeedsRequest(evseId, chargingNeeds)
+NotifyEVChargingNeedsResponse(Accepted)
+calculate new profile
+SetChargingProfileRequest(evseId, chargingProfile)
+SetChargingProfileResponse(Accepted)
+ChargeParameterDiscoveryRes(SAScheduleList) Charging Station supplies charging profile as SASchedule
+PowerDeliveryReq(Start, ChargingProfile, EVPowerDeliveryParam)
+PowerDeliveryRes(OK) Power delivery continues
+opt [If EV provides a charging schedule]
+NotifyEVChargingScheduleRequest(evseId, chargingSchedule)
+NotifyEVChargingScheduleResponse(Accepted)
+Figure 140. Renegotiation initiated by EV when using ISO 15118-2
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 385/803 Part 2 - Specification

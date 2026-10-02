@@ -1,0 +1,53 @@
+No. Type Description
+Scenario description 1 CSMS sends a SetChargingProfileRequest to the Charging Station.
+2 Charging Station responds with a SetChargingProfileResponse to the CSMS.
+3 When EV sends the next CurrentDemandReq (for DC) or ChargingStatusReq (for AC), the
+Charging Station will respond with evseNotification = ReNegotiation.
+4 EV sends a PowerDeliveryReq with chargeProgress = ReNegotiate to confirm this.
+5 Charging Station responds with a PowerDeliveryRes.
+6 EV sends a ChargeParameterDiscoveryReq.
+7 Charging Station responds with a ChargeParameterDiscoveryRes with an SAScheduleList that
+contains the ChargingSchedule data from the SetChargingProfileRequest.
+8 EV sends a PowerDeliveryReq with chargeProgress = Start (with an optional charging profile)
+to confirm this.
+9 Charging Station responds with PowerDeliveryRes and, if charging was suspended at start of
+the renegotiation, will resume power delivery.
+10 If EV provided a charging profile in the previous step, then Charging Station will send a
+NotifyEVChargingScheduleRequest to the CSMS.
+5 Prerequisites Charging session started according to use case K15.
+6 Postcondition(s) Charging session uses the new charging profile.
+7 Remark(s) Signed SalesTariffs are supported in OCPP 2.1 via the signatureValue field in
+ChargingProfileType.
+Charging with ISO 15118-20 is described in use cases K18 - ISO 15118-20 Scheduled Control
+Mode and K19 - ISO 15118-20 Dynamic Control Mode.
+EV Charging Station CSMS
+loop [Charging in progress...]
+alt [if AC Charging]
+ChargingStatusReq()
+ChargingStatusRes()
+[if DC Charging]
+CurrentDemandReq()
+CurrentDemandRes()
+TransactionEventRequest(eventType = Updated,...)
+TransactionEventResponse(...)
+CSMS sets new schedule
+SetChargingProfileRequest(evseId, chargingProfile)
+SetChargingProfileResponse(Accepted)
+alt [if AC Charging]
+ChargingStatusReq()
+ChargingStatusRes(ReNegotiation)
+[if DC Charging]
+CurrentDemandReq()
+CurrentDemandRes(ReNegotiation)
+PowerDeliveryReq(ReNegotiate)
+PowerDeliveryRes(OK) Power delivery may be halted
+ChargeParameterDiscoveryReq(EnergyTransferMode, EVChargeParam)
+ChargeParameterDiscoveryRes(SAScheduleList) Charging Station supplies charging profile as SASchedule
+PowerDeliveryReq(Start, ChargingProfile, EVPowerDeliveryParam)
+PowerDeliveryRes(OK) Power delivery continues
+opt [If EV provides a charging schedule]
+NotifyEVChargingScheduleRequest(evseId, chargingSchedule)
+NotifyEVChargingScheduleResponse(Accepted)
+Figure 138. Renegotiation initiated by CSMS when using ISO 15118-2
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 381/803 Part 2 - Specification

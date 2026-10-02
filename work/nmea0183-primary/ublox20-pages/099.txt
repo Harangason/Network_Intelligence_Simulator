@@ -1,0 +1,52 @@
+u-blox 20 HPG 2.00 - Interface description
+16 I4 nano - ns Fraction of second, range -1e9 .. 1e9 (UTC)
+20 U1 fixType - - GNSSﬁx Type:
+• 0 = no ﬁx
+• 1 = dead reckoning only
+• 2 = 2D-ﬁx
+• 3 = 3D-ﬁx
+• 4 = GNSS + dead reckoning combined
+• 5 = time only ﬁx
+21 X1 flags - - Fix status ﬂags
+bit 0   U:1 gnssFixOK - - 1 = valid ﬁx (i.e within DOP & accuracy masks)
+bit 1   U:1 diffSoln - - 1 = diﬀerential corrections were applied
+bits 4…2   U:3 psmState - - Power save mode state (see Power management
+section in the integration manual for details.
+• 0 = PSM is not active
+• 1 = Enabled (an intermediate state before
+Acquisition state
+• 2 = Acquisition
+• 3 = Tracking
+• 4 = Power Optimized Tracking
+• 5 = Inactive
+bit 5   U:1 headVehValid - - 1 = heading of vehicle is valid, only set if the receiver is
+in sensor fusion mode
+bits 7…6   U:2 carrSoln - - Carrier phase range solution status:
+• 0 = no carrier phase range solution
+• 1 = carrier phase range solution with ﬂoating
+ambiguities
+• 2 = carrier phase range solution with ﬁxed
+ambiguities
+(not supported for protocol versions less than 20.00)
+22 X1 flags2 - - Additional ﬂags
+bit 5   U:1 confirmedAvai - - 1 = information about UTC Date and Time of Day
+validity conﬁrmation is available (see section Time
+validity in the integration manual for details)
+This ﬂag is only supported in Protocol Versions 19.00,
+19.10, 20.10, 20.20, 20.30, 22.00, 23.00, 23.01, 27 and
+28.
+bit 6   U:1 confirmedDate - - 1 = UTC Date validity could be conﬁrmed (see section
+Time validity in the integration manual for details)
+bit 7   U:1 confirmedTime - - 1 = UTC Time of Day could be conﬁrmed (see section
+Time validity in the integration manual for details)
+23 U1 numSV - - Number of satellites used in Nav Solution
+24 I4 lon 1e-7 deg Longitude
+28 I4 lat 1e-7 deg Latitude
+32 I4 height - mm Height above ellipsoid
+36 I4 hMSL - mm Height above mean sea level
+40 U4 hAcc - mm Horizontal accuracy estimate
+44 U4 vAcc - mm Vertical accuracy estimate
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 99 of 224
+C1-Public

@@ -1,0 +1,76 @@
+Modbus.org 
+MB-TCP-Security-v36_2021-07-30 
+                                                  14 
+ 
+ 
+Message Description 
+3:Finished The TlsClient sends a Finished message to the TlsServer. This 
+message is protected with the just negotiated algorithms, keys, 
+and secrets. 
+4+n:ApplData() n ::= { 0 .. m} 
+4+n+1:ApplData() n ::= { 0 .. m} 
+ 265 
+R-06: mbaps end devices MUST provide mutual authentication when executing the TLS 266 
+Handshake Protocol to create the TLS session.  267 
+R-07: The TlsServer MUST send the CertificateRequest message during the TLS handshake. 268 
+R-08: The TlsClient MUST send a ClientCertificate message upon receiving a request containing 269 
+the Client Certificate Request. 270 
+R-10: If the TlsClient does not send a ClientCertificate message, then the TlsServer MUST send 271 
+a ‘fatal alert’ message to TlsClient and terminate the connection. 272 
+R-11: Per RFC5246-7.2.2, the TLS connection MUST NOT be resumed after a ‘fatal alert’.  273 
+ 274 
+8.3 Cipher suite selection 275 
+ 276 
+The security strength of the resulting TLS session is dependent on the cipher suite negotiated 277 
+between the TLS end points. Cipher suites designate what cryptography will be used by the TLS 278 
+session to provide a certain level of security.  279 
+ 280 
+Only cipher suites registered with IANA and not known to have current weaknesses should be 281 
+used in mbaps. 282 
+ 283 
+R-12: Cipher suites used with TLS for mbaps MUST be listed at the IANA Registry found @ 284 
+https://www.iana.org/assignments/tls-parameters/tls-parameters.xhtml . 285 
+ 286 
+R-13: The cipher allowed for TLS with mbaps MUST accommodate the use of x.509v3 287 
+certificates.  288 
+ 289 
+R-14: mbaps Devices MUST provide at minimum the following TLS v1.2 ciper suites when using 290 
+an RSA private key: 291 
+• TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256 292 
+ 293 
+R-66: Client devices with bulk transport encryption and NULL bulk encryption SHOULD always 294 
+place NULL bulk transport cipher suites last in cipher suite priority 295 
+ 296 
+R-67: Server devices SHOULD have the ability to enable use of the authentication only cipher 297 
+suite TLS_RSA_WITH_NULL_SHA256. 298 
+ 299 
+8.4 mbaps Role-Based Client Authorization 300 
+ 301 
+The mbaps protocol provides the capability to perform role-302 
+based client authorization (AuthZ). The client role data is 303 
+transported in an extension of its x.509v3 domain certificate. 304 
+An example of a certificate with a Role extension is shown in 305 
+Figure 5 Example x.509v3 Certificate with Role Extension. 306 
+ 307 
+ 308 
+ 309 
+Role-Based Client Authorization for mbaps is illustrated in  310 
+Figure 8 Role-Base Client AuthZ. 311 
+ 312 
+ 313 
+ 314 
+ 315 
+Role-based 
+Authorization  
+ 
+• Roles are encoded in 
+x.509v3 Certificate 
+Extension.  
+• Authorization function is 
+vendor specific.  
+• Authorization roles to 
+rights rules are vendor 
+specific and configured 
+into the Authorization 
+function.  
+ 

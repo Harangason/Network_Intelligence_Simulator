@@ -1,0 +1,67 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  53 
+5.2. MIPI CSI/DSI Receiver Register Description 
+Table 5.9. Summary of MIPI CSI/DSI Receiver Registers 
+Offset Address Register Name Description 
+0x000 STATUS_REG Soft or Hard D-PHY status register 
+0x020 CONTROLLER_STATUS_REG D-PHY controller status register 
+0x040 CONVERTER_STATUS_REG Byte-to-Pixel status register 
+0x200 CONFIG_REG Generic configuration register 
+0x210 PHY_CONFIG_REG Soft or Hard D-PHY configuration register 
+ 
+5.2.1. STATUS_REG (0x000) 
+Table 5.10. Soft D-PHY STATUS_REG (0x000) Register 
+Field Name Description Access Default 
+[2:0] MAX_SUPPORTED_LANES Maximum number of lanes supported. 
+0x01: x1 lane 
+0x02: x2 lane 
+0x04: x4 lane 
+RO Number of D-
+PHY Lanes 
+[6:3] RSVD Reserved. RO 0x0 
+[7] DDR_READY Ready output signal indicating the initial DDR 
+synchronization sequence is complete and PHY 
+is ready. When PHY Clock Mode is set to Non-
+Continuous, this signal deasserts when D-PHY 
+clock lane enters LP mode and asserts only 
+when DDR resynchronization is complete. 
+RO 0x0 
+[8] RSVD Reserved. RO 0x0 
+[12:9] SOT_SYNC_ERR SOT synchronization error per lane. 
+This is limited to error detection only and 
+cannot correct 1-bit error detected in the SYNC 
+code. 
+RW1C 0x0 
+[31:13] RSVD Reserved. RO 0x0 
+ 
+Table 5.11. Hard D-PHY STATUS_REG (0x000) Register 
+Field Name Description Access Default 
+[2:0] MAX_SUPPORTED_LANES Maximum number of lanes supported (1–4). 
+0x01: x1 lane 
+0x02: x2 lane 
+0x04: x4 lane 
+RO Number of D-
+PHY Lanes 
+[6:3] SKEWCAL_DET Indicates that skew calibration burst is 
+detected. This is applicable only when Line Rate 
+per Lane > 1.5 Gbps. For other cases, this 
+register is tied to 0x0. 
+RO 0x0 
+[10:7] SKEWCAL_DONE Indicates that skew calibration is complete. RW1C 0x0 
+[14:11] SOT_SYNC_ERR SoT synchronization error per lane. 
+This is asserted when the high-speed SoT 
+leader sequence is corrupted, and 
+synchronization cannot be achieved. 
+RW1C 0x0 
+[18:15] CONTROL_ERR Control error per lane.  
+This bit is asserted when an incorrect state 
+sequence is detected in D-PHY lane. 
+RW1C 0x0 
+[22:19] SOTHS_ERR SoT error per lane 
+This is asserted when the high-speed SoT 
+RW1C 0x0 

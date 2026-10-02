@@ -1,0 +1,49 @@
+TC_I_109_CS: Receive Driver Tariff - Goodflow
+Test case name Receive Driver Tariff - Goodflow
+Test case Id TC_I_109_CS
+Use case Id(s) I08, I09
+Requirement(s) I08.FR.04, I08.FR.05, I08.FR.06, I08.FR.07, I09.FR.03
+System under test Charging Station
+Description To support receiving the driver-specific tariff to enable local cost calculation based on a tariff for this driver.
+Purpose To verify if the Charging Station supports driver tariffs.
+Prerequisite(s) - The Charging Station supports local cost calculation using the Tariff mechanism
+(TariffCostCtrlr.Enabled[Tariff] exists and ReadWrite or is true and ReadOnly).
+Before (Preparations)
+Configuration State:
+- TxCtrlr.EVConnectionTimeOut is <Configured ev_connection_timeout>
+- AuthCtrlr.Enabled = true
+- AuthCtrlr.AuthorizeRemoteStart = true
+- TariffCostCtrlr.Enabled[Tariff] is true
+Memory State:
+N/a
+Reusable State:
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State Authorized
+AuthorizeResponse with:
+idTokenInfo.status Accepted
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.energy.prices[0].priceKwh 2.00
+Manual Action: Accept tariff on Charging Station (This could be automatically accepted).
+2. The Charging Station sends a TransactionEventRequest
+3. The Test System responds with a TransactionEventResponse
+5. The Charging Station responds with GetTariffsResponse
+4. The Test System sends a GetTariffsRequest with
+evseId <Configured evseId>
+6. Execute Reusable State StopAuthorized
+Execute Reusable State EVDisconnected
+Execute Reusable State ParkingBayUnoccupied
+8. The Charging Station responds with GetTariffsResponse
+7. The Test System sends a GetTariffsRequest with
+evseId <Configured evseId>
+9. Execute Reusable State Authorized
+AuthorizeResponse with:
+idTokenInfo.status Accepted
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.energy.prices[0].priceKwh 2.00
+The Test System waits <Configured EV connection timeout> seconds.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 424/1383 Part 6 - Test Cases

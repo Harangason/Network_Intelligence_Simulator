@@ -1,0 +1,47 @@
+u-blox 20 HPG 2.00 - Interface description
+0 U1 ch - - Channel (i.e. EXTINT) upon which the pulse was
+measured
+1 X1 flags - - Bitmask
+bit 0   U:1 mode - - • 0=single
+• 1=running
+bit 1   U:1 run - - • 0=armed
+• 1=stopped
+bit 2   U:1 newFallingEdge - - New falling edge detected
+bits 4…3   U:2 timeBase - - • 0=Time base is Receiver time
+• 1=Time base is GNSS time (the system according
+to the conﬁguration in CFG-TP conﬁguration
+items for tpIdx=0)
+• 2=Time base is UTC (the variant according to the
+conﬁguration in CFG-NAVSPG-* conﬁguration
+items)
+bit 5   U:1 utc - - • 0=UTC not available
+• 1=UTC available
+bit 6   U:1 time - - • 0=Time is not valid
+• 1=Time is valid (Valid GNSS ﬁx)
+bit 7   U:1 newRisingEdge - - New rising edge detected
+2 U2 count - - Rising edge counter
+4 U2 wnR - - Week number of last rising edge
+6 U2 wnF - - Week number of last falling edge
+8 U4 towMsR - ms Tow of rising edge
+12 U4 towSubMsR - ns Millisecond fraction of tow of rising edge in
+nanoseconds
+16 U4 towMsF - ms Tow of falling edge
+20 U4 towSubMsF - ns Millisecond fraction of tow of falling edge in
+nanoseconds
+24 U4 accEst - ns Accuracy estimate
+3.18.2 UBX-TIM-TP (0x0d 0x01)
+3.18.2.1 Time pulse time data
+Message UBX-TIM-TP
+Time pulse time data
+Type Periodic/polled
+Comment This message contains information on the timing of the next pulse at the time pulse output. The
+recommended conﬁguration when using this message is to set both the measurement rate (CFG-RATE) and
+the timepulse frequency (CFG-TP) to 1 Hz.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0d 0x01 16 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 134 of 224
+C1-Public

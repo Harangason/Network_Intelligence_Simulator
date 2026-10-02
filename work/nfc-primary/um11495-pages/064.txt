@@ -1,0 +1,35 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+7.2.2  Access through the aggregated Frame RF interface
+NCI 2.0 allows the data exchange with tags T3T using the Frame Aggregated RF Interface Extension.
+Pre-requisite: the Frame Aggregated RF interface extension is only available after activation of the Frame RF
+Interface with protocol T3T. Here is the command with the parameters to activate the Frame Aggregated RF
+interface mechanism:
+GID OID Main Parameters Values
+Extension Frame Aggregated RF Interface Extension
+Start parameter length 2
+0001b 0x0A
+Start parameter
+1 byte retry count (0-7)
+Note:  The aggregation by the NFCC of several responses
+from the RF End Point is not supported. So if bit 7 of the first
+bye of the start parameter of the RF_INTF_EXT_START_CMD
+is set to 1b, it will be ignored by the NFCC.
+1 byte Command Timeout
+Table 62. RF_INTF_EXT_START_CMD
+After the DH has sent an aggregated list of commands via an NCI data packet, the NFCC will proceed the list
+and execute all command one after the other starting from the first one in the aggregated list of commands.
+After processing a T3T command to the RF End point, the NFCC forwards immediately to the DH T3T response
+received from the RF End Point and processes the next command. If the DH does not fetch T3T response, the
+processing of T3T command will be stalled until the previous T3T response is successfully read by the DH.
+Figure 45. Messaging during Frame Aggregated Rf Interface extension
+The NFCC does not support NCI chaining in NCI data packet after the Frame Aggregated RF interface
+extension has been started.
+Note:  If the DH sends an NCI data packet with the PBF bit set to one, the NCI data packet will be rejected by
+the NFCC.
+If the DH needs to send a collection of commands which does not fit a single NCI data packet payload capacity,
+the commands shall be subdivided per set of commands so that each set fit a single NCI data packet payload
+capacity.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+64 / 147

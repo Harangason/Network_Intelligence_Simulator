@@ -1,0 +1,51 @@
+TC_Q_122_CS: Local V2X control for load balancing - threshold validations
+Test case name Local V2X control for load balancing - threshold validations
+Test case Id TC_Q_122_CS
+Use case Id(s) Q09
+Requirement(s) Q09.FR.02
+System under test Charging Station
+Description To allow the EV to be utilized for locally controlled load balancing.
+Purpose To verify that the Charging Station for which LocalLoadBalancing has not correctly configured, rejects
+charging profiles with operationMode LocalLoadBalancing.
+Prerequisite(s) - EV supports V2X power transfer loop
+- EV and charging station support ISO15118-20 or CHAdeMO
+- V2XChargingCtrlr.SupportedOperationModes contains LocalLoadBalancing
+Before (Preparations)
+Configuration State:
+- V2XChargingCtrlr.V2XLocalLoadBalancing[UpperThreshold] is 2000
+- V2XChargingCtrlr.V2XLocalLoadBalancing[LowerThreshold] is 1000
+- V2XChargingCtrlr.V2XLocalLoadBalancing[UpperOffset] is 200
+- V2XChargingCtrlr.V2XLocalLoadBalancing[LowerOffset] is 300
+Memory State:
+N/a
+Reusable State(s):
+IF <Configured EVProtocol> is CHAdeMO THEN
+State is Authorized
+State is EVConnectedPreSession
+ELSE IF <Configured EVProtocol> is ISO15118 THEN
+State is Iso1511820V2xControlBpt
+State is EVConnectedPreSession
+State is Authorized15118 (for 15118-20)
+END IF
+Main (Test scenario)
+Charging Station CSMS
+Missing UpperThreshold
+2. The Charging Station responds with a SetVariablesResponse
+1. The Test System sends a SetVariablesRequest with
+setVariableData[0].component.name V2XChargingCtrlr
+setVariableData[0].variable.name V2XLocalLoadBalancing
+setVariableData[0].variable.instance UpperThreshold
+setVariableData[0].attributeValue ""
+4. The Charging Station responds with a
+SetChargingProfileResponse
+3. The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile
+- transactionId <transactionId>
+- chargingProfilePurpose TxProfile
+- chargingSchedule.chargingRateUnit W
+- chargingSchedule.chargingSchedulePeriod.operationMode
+LocalLoadBalancing
+Missing LowerThreshold
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 858/1383 Part 6 - Test Cases

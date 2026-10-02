@@ -1,0 +1,97 @@
+ID. Precondition Requirements Notes
+I08.FR.30 When Charging Station receives an
+AuthorizeResponse in which
+idTokenInfo.status = Accepted, but with a
+tariff field which it cannot process
+Charging Station SHALL set device model
+variable TariffCostCtrlr.Problem to "true"
+Set the Problem
+indicator for
+TariffCostCtrlr when
+tariff could not be
+processed.
+I08.FR.31 I08.FR.30 AND
+HandleFailedTariff = "Deauthorize"
+Charging Station SHALL NOT authorize
+idToken for charging.
+Depending on
+TxStartPoint a
+transaction may
+already have started,
+but no energy will be
+delivered.
+I08.FR.32 I08.FR.30 AND
+HandleFailedTariff = "UseDefault"
+Charging Station SHALL authorize idToken for
+charging and SHALL use the default tariff
+This is the same as if
+no tariff had been
+returned in
+AuthorizeResponse.
+I08.FR.33 I08.FR.30 AND
+HandleFailedTariff = "CentralCost"
+Charging Station SHALL authorize idToken for
+charging and SHALL NOT do local cost
+calculation
+Cost will be calculated
+by CSMS.
+I08.FR.34 I08.FR.33 CSMS SHALL do cost calculation for the
+transaction, as described in use cases I02 -
+Show EV Driver Running Total Cost During
+Charging and I03 - Show EV Driver Final Total
+Cost After Charging.
+Cost will be calculated
+by CSMS.
+I08.FR.35 I08.FR.04 AND
+the device model variable
+TariffCostCtrlr.Problem = "true"
+Charging Station SHALL set device model
+variable TariffCostCtrlr.Problem to "false"
+Remove previous
+Problem indicator for
+TariffCostCtrlr when
+tariff successfully
+received.
+I08.FR.36 I08.FR.35 AND
+Charging Station does not have a Delta
+monitor installed on TariffCostCtrlr.Problem
+Charging Station SHALL send a
+NotifyEventRequest with trigger = Alerting,
+eventNotificationType =
+HardWiredNotification, component =
+"TariffCostCtrlr", variable = "Problem",
+actualValue = "false"
+I08.FR.37 I08.FR.30 AND
+Charging Station does not have a Delta
+monitor installed on TariffCostCtrlr.Problem
+Charging Station SHALL send a
+NotifyEventRequest with trigger = Alerting,
+eventNotificationType =
+HardWiredNotification, component =
+"TariffCostCtrlr", variable = "Problem",
+actualValue = "true" and techCode optionally
+set to the applicable reason code from
+Appendix 5, to notify CSMS that it cannot
+support the tariff in the response.
+techCode can be, for
+example, one of
+"TooManyElements",
+"OutOfMemory",
+"InternalError",
+"UnsupportedParam",
+etc.
+NOTE A "driver-specific tariff" is a tariff that was installed via an AuthorizeResponse or
+ChangeTransactionTariffRequest message.
+I09 - Local Cost Calculation - Get Tariffs
+New in OCPP 2.1
+No. Type Description
+1 Name Local Cost Calculation - Get Tariffs
+2 ID I09
+3 Objective(s) To get a list of tariffs (both default and driver-specific) currently in the Charging Station.
+4 Description CSMS requests a list of tariffs from Charging Station. The response lists per EVSE which default
+tariff is installed. (A default tariff that was set on EVSE #0 is installed on every EVSE of the
+Charging Station). Driver-specific tariffs are reported with an idToken (after authorization) and
+also with an EVSE if already associated with a transaction.
+Actors Charging Station, CSMS, EV Driver
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 292/803 Part 2 - Specification

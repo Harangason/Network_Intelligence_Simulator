@@ -1,0 +1,44 @@
+H Reservation
+TC_H_01_CS: Reserve a specific EVSE - Accepted - Valid idToken
+Test case name Reserve a specific EVSE - Accepted - Valid idToken
+Test case Id TC_H_01_CS
+Use case Id(s) H01(S2), H03
+Requirement(s) H01.FR.15, H03.FR.01, H03.FR.09, H03.FR.10
+System under test Charging Station
+Description The CSMS is able to reserve a specific EVSE for a specific IdToken by sending a ReserveNowRequest
+containing an evseId.
+Purpose To verify if the Charging Station is able to reserve a specific EVSE, until the EV Driver with the specified
+IdToken arrives.
+Prerequisite(s) The configuration variable ReservationCtrlr.ReservationAvailable is implemented with value true
+Before (Preparations)
+Configuration State:
+ReservationCtrlr.ReservationEnabled is true (If implemented)
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State Reserved for <Configured evseId>
+2. Execute Reusable State Authorized
+Note(s):
+- <Configured valid idToken fields> are used for the authorization.
+3. Execute Reusable State EnergyTransferStarted
+Tool validations
+* Step 2:
+After authorization, connector status must change from Reserved to Available
+Message: StatusNotificationRequest
+- evseId <configured evseId>
+- connectorId <configured connectorId>
+- connectorStatus must be Available
+Message: NotifyEventRequest
+- eventData[0].trigger must be Delta
+- eventData[0].actualValue must be Available
+- eventData[0].component.name must be Connector
+- eventData[0].variable.name must be AvailabilityState
+- evse.id <configured evseId>
+- connector.id <configured connectorId>
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 280/914 Part 6 - Test Cases

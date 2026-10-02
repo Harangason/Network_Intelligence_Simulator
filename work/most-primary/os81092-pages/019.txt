@@ -1,0 +1,46 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 19
+OS81092
+6.0 PORT MESSAGE PROTOCOL
+All message-based data (includes control messages and asynchronous packets) transferred up or down the INIC Soft-
+ware Stack adheres to the same low-level message format (defined as the Port Message) regardless of the physical
+hardware port used.
+Control messages (e.g. MCMs, ICMs) are used to access the FBlock of a network node. MCMs are typically routed
+through INIC (between the network control channel and the INIC Message Interface), using either the MCM Rx FIFO or
+the MCM Tx FIFO, depending on the direction of transport. ICMs target the FBlock INIC and are exchanged exclusively
+between INIC and the EHC, using either the ICM Rx FIFO or the ICM Tx FIFO, depending on the direction of transport.
+Asynchronous packets (e.g. MDPs) are routed between the network packet channel and the INIC Message Interface,
+using either the MDP Rx FIFO or the MDP Tx FIFO, depending on the direction of transport.
+6.1 Generic Port Messages
+A generic Port Message consists of three main fields:
+• Port Message Length (PML) - This 16-bit field indicates the total number of bytes that follow in the Port Message, 
+including the message overhead and payload.
+• Port Message Header (PMH) - This field contains the Port Message overhead and defines the format of the pay-
+load data that follows.
+• Port Message Body (PMB) - This field contains the message payload whose format is dependent on the preceding 
+header.
+Figure 6-1 illustrates the generic format of the Port Message.
+FIGURE 6-1: GENERIC PORT MESSAGE FORMAT
+Five types of specific Port Messages are defined, each associated with a specific operation to be performed on the tar-
+geted FIFO:
+• FIFO Command - Writes commands to the INIC Message Interface
+• FIFO Status Read - Reads FIFO status information from the INIC Message Interface
+• FIFO Status Write - Sends an acknowledge to the INIC Message Interface when a data message is read
+• FIFO Data Write - Writes a message into a particular FIFO
+• FIFO Data Read - Reads a message out of a particular FIFO
+The following pages outline the basic structure of the Port Messages. For more information on the software- controlled,
+sub-fields of the Port Messages, see the OS81092 INIC API User’s Manual [2].
+6.2 FIFO Status and Command Messages
+FIFO Status and Command messages are comprised of the following fields:
+• Port Message Length (PML) - This 16-bit field specifies the total byte length of the message, not including this 
+field.
+• Port Message Header Length (PMHL) - This single byte field specifies the total byte length of the two fields that 
+follow (FIFO Protocol Header and FIFO Message Field).
+• FIFO Protocol Header (FPH) - Typically one byte in length, this field defines the message type and the FIFO to be 
+targeted by the message. Support for an additional header byte is available.
+• FIFO Data Header (FDH) - Optional field (based on the FPH setting) that supports a one-byte Handle.
+• FIFO Message Field - This field contains the message payload for FIFO Command and Status messages. In FIFO 
+Command messages, this field specifies INIC behavior for failed messages, along with a FIFO synchronization 
+command. In FIFO Status Read messages, this field contains status information about the receive and transmit 
+FIFOs, as well as results of the last message transmitted.
+PML PM Header (PMH) PM Body (PMB)
+Port Message (PM)

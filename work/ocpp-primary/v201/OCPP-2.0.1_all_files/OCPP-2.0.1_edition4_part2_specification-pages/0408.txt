@@ -1,0 +1,54 @@
+Field Name Field Type Card. Description
+startSchedule dateTime 0..1 Optional. Starting point of an absolute or recurring
+schedule.
+duration integer 0..1 Optional. Duration of the charging schedule in seconds. If
+the duration is left empty, the last period will continue
+indefinitely or until end of the transaction if
+chargingProfilePurpose = TxProfile.
+chargingRateUnit ChargingRateUnitEnumType 1..1 Required. The unit of measure Limit is expressed in.
+minChargingRate decimal 0..1 Optional. Minimum charging rate supported by the EV.
+The unit of measure is defined by the chargingRateUnit.
+This parameter is intended to be used by a local smart
+charging algorithm to optimize the power allocation for in
+the case a charging process is inefficient at lower
+charging rates. Accepts at most one digit fraction (e.g.
+8.1)
+chargingSchedulePeriod ChargingSchedulePeriodType 1..102
+4
+Required. List of ChargingSchedulePeriod elements
+defining maximum power or current usage over time. The
+maximum number of periods, that is supported by the
+Charging Station, if less than 1024, is set by device model
+variable SmartChargingCtrlr.PeriodsPerSchedule.
+salesTariff SalesTariffType 0..1 Optional. Sales tariff associated with this charging
+schedule.
+2.13. ChargingStationType
+Class
+The physical system where an Electrical Vehicle (EV) can be charged.
+ChargingStationType is used by: BootNotificationRequest
+Field Name Field Type Card. Description
+serialNumber string[0..25] 0..1 Optional. Vendor-specific device identifier.
+model string[0..20] 1..1 Required. Defines the model of the device.
+vendorName string[0..50] 1..1 Required. Identifies the vendor (not necessarily in a
+unique manner).
+firmwareVersion string[0..50] 0..1 Optional. This contains the firmware version of the
+Charging Station.
+modem ModemType 0..1 Optional. Defines the functional parameters of a
+communication link.
+2.14. ClearChargingProfileType
+Class
+A ChargingProfile consists of a ChargingSchedule, describing the amount of power or current that can be delivered per time
+interval.
+ClearChargingProfileType is used by: ClearChargingProfileRequest
+Field Name Field Type Card. Description
+evseId integer 0..1 Optional. Specifies the id of the EVSE for which to clear
+charging profiles. An evseId of zero (0) specifies the
+charging profile for the overall Charging Station. Absence
+of this parameter means the clearing applies to all
+charging profiles that match the other criteria in the
+request.
+chargingProfilePurpose ChargingProfilePurposeEnumType 0..1 Optional. Specifies to purpose of the charging profiles
+that will be cleared, if they meet the other criteria in the
+request.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 398/491 Part 2 - Specification

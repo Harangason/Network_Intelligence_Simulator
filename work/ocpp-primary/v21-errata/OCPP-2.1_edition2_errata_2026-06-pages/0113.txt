@@ -1,0 +1,55 @@
+6.3.18. Page 1309 - (2026-02) - TC_N_105_CSMS - Install usable monitor and send
+a NotifyPeriodicEventStream
+Test case name Set Variable Monitoring - Set Frequent Periodic Variable Monitoring - Periodic
+Test case Id TC_N_105_CSMS
+…
+Before (Preparations)
+Configuration State:
+CSMS must be configured to accept opening the periodic event stream.
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action :  Request CSMS to install a monitor on:      
+ component.name   EVSE
+ EVSE.id   <Configured evseId> 
+ variable.name   Power
+ type   Periodic
+ severity   8
+ value   5
+ periodicEventStream.interval   5
+ periodicEventStream.values   10
+2.  Test System responds with:    
+Message:  SetVariableMonitoringResponse  with 
+setMonitoringResult[0].status  =   Accepted
+1.  CSMS sends a     SetVariableMonitoringRequest
+1. 3.  Test System sends a OpenPeriodicEventStreamRequest
+with
+constantStreamData.id 2
+constantStreamData.variableMonitoringId 3 <monitor id from  
+step 1> 
+constantStreamData.params.interval 10 5
+constantStreamData.params.values 30 10
+2. 4.  CSMS responds with a
+OpenPeriodicEventStreamResponse
+Note :  The Test System waits 5 seconds.     
+5.  Test System sends a      NotifyPeriodicEventStream  using RFC  
+framework  SEND
+Manual Action: Request the CSMS to reconfigure the periodic event stream to an interval of 15s and values 45
+4. 7.  Test System responds with a
+AdjustPeriodicEventStreamResponse with
+status Accepted
+3. 6.  CSMS sends a AdjustPeriodicEventStreamRequest
+Note :  The Test System waits 10 seconds.     
+5. 8.  Test System sends a NotifyPeriodicEventStream using RFC
+framework SEND
+6. 9.  Test System sends a ClosePeriodicEventStreamRequest
+with
+constantStreamData.id 2
+7. 10.  CSMS responds with a
+ClosePeriodicEventStreamResponse
+Note: The Test System waits 10 seconds, before ending the testcase.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 109/116 Errata 2026-06

@@ -1,0 +1,61 @@
+Chapter 4. Standardized Variables
+This is a non-exhaustive list of Standardized Variables that SHALL be used when the Charging Station and CSMS want to exchange
+information about a Variable. See also Part 1, paragraph 4.5.
+Variables that are specific to a Controller Component are not included in this list, but are part of section 3.1 Controller Components.
+Name DataType Unit Description
+ACCurrent decimal A RMS AC Current (in amperes). For 3-phase circuits, each phase (and
+optional neutral) is represented by a Variable instance equal to a value
+of the PhaseEnumType (e.g. L1,N). Unkeyed values reported for a
+Component declared to be multi-phase are assumed to be an average
+of all per-phase readings and written values are common per-phase
+settings. Example(s): ChargingStation: Total AC current consumption
+(all EVSE’s, ancillaries), EVSE: Total current consumed by EVSE:
+includes losses (AC→DC) and EVSE specific ancillaries (e.g. fans),
+ElectricalFeed: Inflow AC current on feed
+ACPhaseSwitchingSupported boolean If defined and true, this EVSE supports the selection of which phase to
+use for 1 phase AC charging.
+ACVoltage decimal V RMS AC Voltage (in volts). For 3-phase circuits, each phase (and
+optional neutral) is represented by a Variable instance equal to a value
+of the PhaseEnumType (e.g. L1,N). Unkeyed values reported for a
+Component declared to be multi-phase are assumed to be an average
+ofall per-phase readings and written values are common per-phase
+settings. Example(s): ElectricalFeed: Input Voltage
+Active boolean Component is in its non-resting / active state: e.g: On, Engaged,
+Locked. Some Components may have secondary functions that have
+corresponding Active Variables with an explicit Variable instance.,
+Note: Monitoring of changes in the Active state of any Component can
+be specified by setting Delta monitoring on the boolean value with a
+delta values of 1. Setting/clearing an Active Variable activates/stops
+the associated functionality, where remotely controllable. Only
+components that are Available and Enabled can be in the Active state.
+ActiveMonitoringBase OptionList Shows the currently used MonitoringBase.
+ActiveMonitoringLevel integer Shows the currently use MonitoringLevel.
+ActiveNetworkProfile boolean Indicates the configuration profile the station uses to connect to the
+network.
+ActiveTransactionId string Active transaction on charging station or EVSE.
+AdditionalInfoItemsPerMessage integer Maximum number of additionalInfo items that can be sent in one
+message.
+AdditionalRootCertificateCheck boolean When set to true, only one certificate (plus a temporarily fallback
+certificate) of certificateType CSMSRootCertificate is allowed to be
+installed at a time.
+AllowEnergyTransferResumption boolean This variable defines whether energy transfer is allowed to be resumed
+when the transaction is resumed after a reset or power outage.
+AllowNewSessionsPendingFirmwa
+reUpdate
+boolean Indicates whether new sessions can be started on EVSEs, while
+Charging Station is waiting for all EVSEs to become Available in order
+to start a pending firmware update.
+AllowReset boolean Component can be reset. Can be used to announce that an EVSE can
+be reset individually.
+AllowSecurityProfileDowngrade boolean If this variable is implemented and set to true, then the Charging
+Station allows downgrading the security profile from 3 to 2.
+Angle decimal Deg Angle(s) relative to normal/design idle position. Multiple Variable
+instance values may be used to indicate angular position in multiple
+axes (e.g. Left-Right, Forward-Back).
+Attempts integer Number of attempts (INCLUDING the original attempt) in the last
+successful or attempted, cycle of operation. Applies typically to self-
+monitoring motorized electro-mechanical equipment, etc. {Null}:
+Unknown, 0: Not Attempted/Not allowed, 1: Single attempt/No retries
+[allowed], 2-N: [up to] N tries [allowed]
+v2.1, 2025-12-03 Chapter 4. Standardized Variables
+OCPP 2.1 - © Open Charge Alliance 2025 35/52 Part 2 - Appendices

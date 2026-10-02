@@ -1,0 +1,46 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+October 24, 2006 http://www.Modbus.org 24/46
+4.4.1.3 Process MODBUS Confirmation 
+When a response frame is received on a TC P connection, the Transaction Identifier 
+carried in 
+the MBAP header is used to associate the response with the original request 
+previously sent on that TCP connection: 
+ If the Transaction Identifier doesn't refer to any MODBUS pending transaction, the
+response must be discarded. 
+ If the Transaction Identifier refers to a MODBUS pending transaction, the response
+must be 
+parsed in order to send a MODBUS Confirmation to the User Application 
+(positive or negative confirmation) 
+Parsing the response consists in verify ing the MBAP Header and the MODBUS PDU 
+response: 
+ MBAP Header
+After the verification of the Protocol Identif ier that must be 0x0000, the length gives 
+the size of the MODBUS response. 
+If the response comes from a MODBUS serv er device directly connected to the 
+TCP/IP 
+network, the TCP connection identification is sufficient to unambiguously 
+identify the remote server. Therefore, the Unit Identifier carried in the MBAP 
+header is not significant (value 0xFF) and must be discarded. 
+If the remote server is connected on a Serial Line sub-network and the response 
+comes from a bridge, a router or 
+a gateway,  then the Unit Identifier (value != 0xFF) 
+identifies the remote MODBUS server which has originally sent the response. 
+ MODBUS Response PDU
+The function code must be verified and the MODBUS response format analyzed 
+according to the MODBUS Application Protocol: 
+• if the function code is the same as the one used in the request, and if the
+response format is correct, then the MODBUS response is given to the user
+application as a Positive Confirmation .
+• If the function code is a MODBUS exception code (Function code + 80H), the
+MODBUS exception response is give n to the user application as a Positive
+Confirmation.
+• If the function code is different from  the one used in the request (=non
+expected function code), or if the format  of the response is incorrect, then an
+error is signaled to the user application using a Negative Confirmation .
+Remark: A positive confirmation is a confirmation that the command was received and 
+responded to by the server. It does not imply that the server was able to successfully 
+act on the command (failure to successfully act on the command is indicated by the 
+MODBUS Exception response). 
+The following activity diagram describes, more deeply than in Figure 11 MODBUS 
+Client Activity Diagram, the confirmation processing phase. 
+Modbus Organization  

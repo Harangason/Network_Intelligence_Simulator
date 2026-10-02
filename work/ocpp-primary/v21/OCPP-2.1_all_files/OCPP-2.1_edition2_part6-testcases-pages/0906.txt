@@ -1,0 +1,50 @@
+TC_S_105_CS: Battery Swap - Charging - Battery Swap Charging
+Test case name Battery Swap - Charging - Battery Swap Charging
+Test case Id TC_S_105_CS
+Use case Id(s) S01, S04
+Requirement(s) S01.FR.01, S03.FR.01, S03.FR.02, S03.FR.03, S04.FR.01, S04.FR.02, S04.FR.07, S04.FR.06
+System under test Charging Station
+Description Charging station is able to support battery swapping.
+Purpose To verify whether the Charging Station communicates the status changes correctly to the CSMS during the
+charging process.
+Prerequisite(s) Charging Station supports battery swapping (BatterySwapCtrlr.Available is true)
+One battery with less or equal SoC than 96 percent
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with GetVariablesResponse
+1. Test System sends GetVariablesRequest with:
+- variable.name = "SoC"
+- component.name = "BatteryCartridge"
+- component.evse.id = "<i>"
+- attributeType is omitted
+Note: Step 1 and 2 request the SoC for each configured EVSE
+4. The Charging Station responds with GetVariablesResponse
+3. Test System sends SetVariablesRequest with:
+- variable.name = "TargetSoc"
+- component.name = "BatterySwapCtrlr"
+- attributeValue = "<Highest returned SoC value from step 2, that
+is lower than 96 percent + 2>"
+- attributeType is omitted
+6. The Charging Station responds with GetVariablesResponse
+5. Test System sends SetVariablesRequest with:
+- variable.name = "MaxSoc"
+- component.name = "BatterySwapCtrlr"
+- attributeValue = "<Highest returned SoC value from step 2, that
+is lower than 96 percent + 4>"
+- attributeType is omitted
+7. The Charging Station notifies the CSMS about the status
+change of the slot. 8. The Test System responds accordingly.
+Note: Step 7 shall be triggered when the battery’s SoC reaches TargetSoc
+9. The Charging Station sends a TransactionEventRequest
+10. The Test System responds with a
+TransactionEventResponse
+Note: Step 9 shall be triggered when the battery’s SoC reaches the MaxSoc
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 904/1383 Part 6 - Test Cases

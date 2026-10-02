@@ -1,0 +1,1502 @@
+PDF_PAGE 16
+Method of functioning of the PSD  
+2.1 Embedding of the PSD in F-slaves/F-submodules 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+16 Programming Manual, 07/2020, A5E35388472-AC 
+2.1.4 The synchronization interface 
+The following figure shows the sequence of synchronization in cyclic mode: 
+ 
+① The sequence in which the interface functions (Interface Description (Page 29)) of the F-
+application is monitored by the PSD. 
+② Call of the interface function psd_OutTransfer(Instance, FlowValue) 
+③ Call of the interface function psd_OutSync(Instance, FlowValue) 
+④ Call of the interface function psd_InTransfer(Instance, CrcValue) 
+⑤ Call of the interface function psd_InSync(Instance, CrcValue) 
+Figure 2-3 Process of synchronization used by PSD 
+In a first step the PSD uses the transfer functions to send the synchronization data to the 
+respective other channel. You can find a description of the function in the section. Functions 
+to be implemented at the 2-channel generation variant (Page 57). 
+In the second step, the PSD fetches data received in the meantime using the synchronization 
+functions for the flow control or the CRC value. The synchronization function waits time 
+monitored until the data arrive, and the PSD then compares them with the da ta of its own 
+channel. This means that the data from the other channel must be available "in good time", 
+i.e. within a device-specific synchronization timeout. Different data for flow control or a CRC 
+value send the PSD to the PSD_HARD_FAIL state. 
+PDF_PAGE 17
+ Method of functioning of the PSD 
+ 2.2 States of the PSD 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 17 
+Ensure that the buffered data are read out only once respectively (for example by deleting 
+from the buffer after the output). 
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_2_01 
+The F-application must provide a synchronization interface with time monitoring for 2 -
+channel PSD generation. Mirroring (synchronization of a channel with itself) of the data to 
+be exchanged is to be excluded. 
+ 
+2.2 States of the PSD 
+The state machine implemented in the PSD essentially operates with the following states:  
+ 
+Figure 2-4 PSD states in a communication instance 
+PDF_PAGE 18
+Method of functioning of the PSD  
+2.2 States of the PSD 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+18 Programming Manual, 07/2020, A5E35388472-AC 
+2.2.1 Description of the states 
+PSD_OPERATION 
+After successful initialization, the F-slave starts its operation, which is shown above as 
+PSD_OPERATION. This includes the following states relevant for the PROFIsafe 
+communication. 
+PSD_INIT 
+The PSD state is entered when the psd_InitInstance(…) function has been executed for a 
+communication instance without errors. The PSD instance is initialized correctly in this state, 
+but it was not configured or called the psd_FParBuild(...) function with invalid F-parameters. 
+PSD_PARAM 
+The psd_FParBuild(...) function was called with invalid F-parameters. 
+The configuration of the user data lengths must be made in this state with the PSD function 
+psd_Config(…). 
+ A PSD instance is ready for cyclic data exchange when: 
+• Valid F-parameters exist and 
+• A valid configuration of the user data lengths exists. 
+PSD_DATAEX 
+The cyclic data exchange with the F-host has been started. The psd_Run(…) function was 
+called for the communication instance. The cyclic processing of input/output frames begins 
+as soon as the toggle bit changes from 0 to 1 in the control byte of the output frame. New F-
+parameters or a reconfiguration of user data lengths are rejected in this PSD state.  
+PSD_HARD_FAIL 
+The PSD instance has established an inconsistency, probably due to a hardware fault. At a 
+transition to the PSD state PSD_HARD_FAIL the PSD sets the interface variable "psd_SafetyVar" 
+to the value "P_SAFETY_CONST_FALSE". The PSD instance calls the hard_err( …) function of 
+the F-application. With the hard_err(…) function, the F-application sets the safe state (for 
+example, the specific safety values in the output process data and the input frame section) 
+for all communication instances. 
+PDF_PAGE 19
+ Method of functioning of the PSD 
+ 2.2 States of the PSD 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 19 
+2.2.2 Description of the state transitions 
+START → PSD_INIT 
+After PowerOn, the F-application initializes the respective communication instance by calling 
+psd_InitInstance(…). Once it runs error-free, the communication instance is in the PSD_INIT 
+state. 
+F-CYCLE → PSD_HARD_FAIL 
+Any inconsistency or any hardware fault detected by the PSD, always results in the 
+PSD_HARD_FAIL state for all PSD instances. 
+PSD_INIT → PSD_PARAM 
+The stack signals the receipt of F-parameters to the F-application. The F-application then 
+configures the communication instance by calling the psd_FParBuild(…) function. The 
+PSD_PARAM state is reached when valid F-parameters exist. 
+PSD_PARAM → PSD_INIT 
+The stack signals the receipt of F-parameters to the F-application. The F-application then 
+reconfigures the communication instance by calling the psd_FParBuild(…) function. The 
+psd_FParBuild(…) function has detected an invalid F-parameter. 
+PSD_PARAM → PSD_PARAM 
+After receipt of new F-parameters from the stack, the F-application reconfigures the 
+communication instance. The PSD_PARAM state remains as long as valid F -parameters are 
+present. (See section F-input or F-output user data area (Page 77)) 
+PSD_PARAM → PSD_PARAM 
+The lengths for the input and output user data must be set with the psd_Config(...) function 
+for each communication instance. The maximum permissible lengths are set for each 
+instance in p_c_config.h. The optional values passed by the F-application must be less than or 
+equal to the values of p_c_config.h. 
+PSD_PARAM → PSD_DATAEX 
+The stack signaled to the F-application the transition to cyclic data exchange for a particular 
+communication instance with [RUN]. The F-application then calls the psd_Run(…) function. 
+PSD_DATAEX → PSD_PARAM 
+The stack signaled to the F-application the exit from cyclic data exchange for a particular 
+communication instance with [STOP]. The F-application then calls the psd_Stop(…) function. 
+PDF_PAGE 24
+Method of functioning of the PSD  
+2.2 States of the PSD 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+24 Programming Manual, 07/2020, A5E35388472-AC 
+③ In the case of 1 channel the "inverse part" of the F-application calls the 
+psd_SetFInData_Invers(…) function. 
+④ The PSD takes the inverted input data and bit information from the F -application and 
+forms the inverted input frame. 
+⑤ The F-application calls the psd_SendFInTele(…) function to send the input frame. 
+⑥ The PSD checks the input message frame in accordance with the PROFIsafe Profile. It ex-
+tends the input frame with the CRC of the other channel, which it reads in the 2 -channel 
+case with the psd_InSync(…) function. In the case of 1 channel the PSD uses the CRC 
+from its inverse processing. 
+⑦ The PSD uses the psd_GetInputBuffer(…) function to request a send buffer for the input 
+frame from the stack interface. 
+⑧ The PSD requests an interrupt disable from the F-application for consistent filling of the 
+send buffer. 
+⑨ Release of the interrupt disable. 
+⑩ The PSD uses the psd_InputSendAck(…) function to signal to the stack interface that the 
+send buffer is filled and thus ready for sending to the F-host. 
+⑪ In a 1 channel scenario, the "inverse part" of the F-application calls the 
+psd_SendFInTele_Invers(…) function. It compares the program flow control values of 
+the normal and inverted calculation at the end. 
+⑫ The PSD generates the inverted program flow control value in psd_SendFInTele_inv(…). 
+ 
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_07 
+Impermissible return values have to induce the HARD_FAIL state of the F-application. 
+ 
+PDF_PAGE 25
+ 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 25 
+ Files of the PSD 3 
+ 
+ 
+The following tables list all the source files that can be found on the CD ROM for the PSD. The 
+files contain, among other things, the interface functions and bit information on the 
+structure of the status byte, which are briefly described below. You can find a detailed 
+interface description in the sections below. 
+ 
+ 
+ Note 
+Call the input and output functions of the PROFIsafe driver cyclically.  
+• psd_RecvFOutTele(…) 
+• psd_GetFOutData(…) 
+• psd_SetFInData(…) 
+• psd_SendFInTele(…) 
+The above processing order must be adhered to. 
+ 
+3.1 Files that cannot be changed 
+You may not modify the following files (file names and file contents):  
+ 
+File Interface function Task 
+p_crc.c psd_CRC16(…) Calculate a 16-bit CRC across a storage area 
+psd_CRC24(…) Calculate a 24-bit CRC across a storage area 
+psd_CRC32(…) Calculate a 32-bit CRC across a storage area 
+p_init.c psd_InitInstance(…) Initialize a PSD instance 
+psd_SetFID(…) Activate a fault-insertion test 
+p_state.c psd_GetState(…) Output a PSD state 
+psd_GetPSD_Version(…) Output a PSD version 
+psd_Stop(…) Terminate the cyclic data exchange of the PSD 
+psd_Run(…) Set the PSD to the state "PSD_DATAEX" 
+psd_Falsify_InTelCRC(...) Falsifies the CRC value of the F-input frame for communication 
+Instance 
+p_input.c psd_SetFInData(…) Transfer F-input data to the PSD 
+psd_SendFInTele(…) Set up F-input message frame and transfer to the stack inter-
+face 
+p_output.c psd_RecvFOutTele(…) Receive F-output message frame from stack interface and 
+check 
+psd_GetFOutData(…) Pass F-output data and the result of the output telegram test of 
+the F-application 
+psd_GetTraceData(...) Pass diagnostics data of the F-application 
+p_param.c psd_FParBuild(…) Receive F-parameters from stack interface and check 
+PDF_PAGE 26
+Files of the PSD  
+3.1 Files that cannot be changed 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+26 Programming Manual, 07/2020, A5E35388472-AC 
+File Interface function Task 
+psd_GetFPar(…) Pass F_SIL, F_iPar_CRC and the type of passivation (chan-
+nel/module granular) of the F-application 
+psd_Config(…) Configure user data length 
+psd_GetConfig(…) Pass configured length of input and output user data as well as 
+the PROFIsafe trailer length of the F-application 
+p_time.c --- Internal timer management 
+p_64bit.c --- Emulation of the 64-bit arithmetic. Used to calculate the moni-
+toring number for the bit F_Prm_Flag1.F_CRC_Seed = 1 in the 
+F-parameters, if the used C compiler does not support the data 
+type "unsigned long long". 
+p_types.h --- Declaration of the PSD base data types 
+p_api.h --- Declaration of the PSD interface functions 
+p_global.h --- Global type declarations for the F-application 
+p_local.h --- PSD-local type declarations 
+ 
+Additionally for 1-channel generation variant: 
+ 
+File Interface function Task 
+p_invers.c psd_GetFOutData_Invers(…) Return value of the inverse calculation path of the 
+psd_GetFOutData(...) function 
+psd_RecvFOutTele_Invers(…) Return value of the inverse calculation path of the 
+psd_RecvFOutTele(...) function 
+psd_SendFInTele_Invers(…) Return value of the inverse calculation path of the 
+psd_SendFInTele(...) function 
+psd_SetFInData_Invers(…) Return value of the inverse calculation path of the 
+psd_SetFInData(...) function 
+psd_InitInstance_Invers(…) Return value of the inverse calculation path of the 
+psd_InitInstance(...) function 
+psd_FParBuild_Invers(…) Return value of the inverse calculation path of the 
+psd_FParBuild(...) function 
+psd_Config_Invers(…) Return value of the inverse calculation path of the 
+psd_Config(...) function 
+psd_GetState_Invers(…) Return value of the inverse calculation path of the 
+psd_GetState(...) function 
+psd_Stop_Invers(…) Return value of the inverse calculation path of the 
+psd_Stop(...) function 
+psd_Run_Invers(…) Return value of the inverse calculation path of the psd_Run(...) 
+function 
+psd_GetFPar_Invers(…) Return value of the inverse calculation path of the 
+psd_GetFPar(...) function 
+psd_GetConfig_Invers(…) Return value of the inverse calculation path of the 
+psd_GetConfig(...) function 
+ 
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_02 
+You may not change PSD files that are protected with a CRC value. 
+ 
+PDF_PAGE 27
+ Files of the PSD 
+ 3.1 Files that cannot be changed 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 27 
+The crc.exe tool is available to verify that the original PSD sources have been used. The tool 
+calculates a signature for each PSD file as well as a collective signature for all PSD sources.  
+Read the provided "readme.pdf" file /7/ about the installation and use of crc.exe. 
+Table 3- 1 The CRC values of the PSD sources for a 1-channel HW structure 
+No. File CRC 
+1 p_64bit.c 3FB9 694B 
+2 p_crc.c A09D A7A4 
+3 p_init.c 1A2C DB5C 
+4 p_input.c 6689 A9A4 
+5 p_invers.c 10A0 49C3 
+6 p_output.c C677 C3AE 
+7 p_param.c F18B A903 
+8 p_state.c EC01 FA34 
+9 p_time.c 47AA C1EF 
+10 p_api.h 2671 D781 
+11 p_global.h ABF1 CE79 
+12 p_local.h 36FE 4D72  
+13 p_types.h 538F 49A9 
+14 p_fit.h  8F67 F40C 
+   
+15 Total: D89E 0019 
+ 
+Table 3- 2 The CRC values of the PSD sources for a 2-channel HW structure 
+No. File CRC 
+1 p_64bit.c 3FB9 694B 
+2 p_crc.c A09D A7A4 
+3 p_init.c 1A2C DB5C 
+4 p_input.c 6689 A9A4 
+5 p_output.c C677 C3AE 
+6 p_param.c F18B A903 
+7 p_state.c EC01 FA34 
+8 p_time.c 47AA C1EF 
+9 p_api.h 2671 D781 
+10 p_global.h ABF1 CE79 
+11 p_local.h 36FE 4D72 
+12 p_types.h 538F 49A9 
+13 p_fit.h  8F67 F40C 
+   
+14 Total: 5004 4017 
+ 
+PDF_PAGE 28
+Files of the PSD  
+3.2 Files that can be changed 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+28 Programming Manual, 07/2020, A5E35388472-AC 
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_03 
+The CRC values of the PSD files (individual and overall CRC) have to agree with the values of 
+the CRC check tool. 
+ 
+3.2 Files that can be changed 
+You need to adapt these files for the integration of the PSD in your F-application: 
+ 
+File Task 
+p_c_config.h Definition of PSD generation parameters, maximum lengths of the F-input and 
+F-output user data memory attributes 
+p_c_crc_m.h Memory allocation of the CRC table 
+p_c_crc_b.h Restoring of the default memory model 
+p_c_fapplication.c Example code for an F-application that uses the PSD 
+p_c_fapplication.h Function prototypes of the F-application interface and sync interface 
+p_c_si.c Example implementation of functions of the stack interface that invokes the 
+PSD 
+p_c_si.h Function prototypes of the stack interface 
+3.3 Commissioning procedure 
+The following steps are to be carried out in order to use the PSD: 
+• Implement surrounding FW modules (stack interface synchronization interface, F -
+application) so that all functions required by the PSD can be called. 
+• The p_api.h file is included in the F-application 
+• The generation parameters and maximum user data lengths are set in the p_c_config.h 
+file. 
+• The desired memory model and the memory classes are set in the p_c_config.h file, see 
+sections Memory attributes (Page 78) and Memory model for the CRC tables (Page 78). 
+ 
+ Note 
+A pseudocode /3/ is provided to illustrate the PSD integration (files: p_c_pseudo.c, 
+p_c_fapplication.c, p_c_si.c). 
+ 
+PDF_PAGE 29
+ 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 29 
+ Interface Description 4 
+4.1 PSD interface functions 
+The PSD can be used in different system environments. This is achieved with the following 
+features: 
+• You can adapt a specific F-application or stack interface by programming the interface 
+functions from p_c_fapplication.h or p_c_si.h. 
+This procedure does not change the certified source code of the PSD. 
+• The PSD detects the byte order "big endian" or "little endian" of hardware it uses. The PSD 
+is not tested for 2-channel F-slaves, in which the two channels are operated with a 
+different byte order. This must be taken into consideration for the synchronization of the 
+F-application. 
+• With the memory attributes for the memory segment control that be set in p_c_config.h, 
+the storage location of data and code can be configured to match the tool chain.  
+• Additional settings for hardware architecture or memory model can be made with the 
+generation parameters in p_c_config.h. 
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_04 
+You may use only those PSD interface functions that are declared in the p_api.h file.  
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_05 
+You may only use the PSD interface structures that are declared in the p_global.h file.  
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_06 
+You have to use the Defines from p_global.h for the evaluation of the PSD returns  
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_07 
+Impermissible return values have to induce the HARD_FAIL state of the F-application. 
+ 
+PDF_PAGE 30
+Interface Description  
+4.1 PSD interface functions 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+30 Programming Manual, 07/2020, A5E35388472-AC 
+4.1.1 psd_InitInstance(...) 
+Initialize a PSD instance. 
+The "DynamicTeleLenConf" parameter is used to enable or disable dynamic configuration of 
+the user data lengths in the PSD_PARAM state, which is performed with psd_Config(...). If 
+disabled, the maximum user data lengths defined in p_c_config.h are used. 
+ 
+Function: psd_InitInstance(…) 
+Prototype: P_Byte psd_InitInstance 
+(P_Word Inst_ID, 
+P_Byte DynamicTeleLenConf); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+DynamicTeleLenConf DYNAMIC_TELE_LEN_CONF_ON The maximum values must be set in 
+the "p_c_config.h" file. Current data 
+lengths of the instance are set with 
+psd_Config(...). 
+DYNAMIC_TELE_LEN_CONF_OFF Data lengths of the instance are 
+specified in "p_c_config.h" 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte INIT_INSTANCE_OK Initialization successful 
+INIT_INSTANCE_NOT_OK Length of the data types used by the 
+PSD deviates from the expected 
+length.  
+Hard error situation 
+ 
+ 
+ 
+ WARNING 
+Permissible return values 
+From the point of view of the F-application, only the following return values are permitted: 
+• INIT_INSTANCE_OK 
+Requirement: PSD_RQ_0_07 
+Impermissible return values have to induce the HARD_FAIL state of the F-application. 
+ 
+PDF_PAGE 31
+ Interface Description 
+ 4.1 PSD interface functions 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 31 
+4.1.2 psd_FParBuild(...) 
+Parameterization of a PSD instance. 
+The F-parameters are read from the stack interface and via psd_GetFParPtr(…)  in the 
+function and then a plausibility check is performed. 
+The function parameters (source, destination address, SIL) passed in a structure (Fw_FPar), 
+which must be determined independent of the F-parameters by the F-application, are 
+compared with the read F-parameters by the PSD. 
+The structuring of Fw_FPar depends on the "COMPARE_F_SOURCE_ADD" setting in 
+p_c_config.h. The structure additionally contains the F_Source_Address with the Define.  
+The function can be called in the (instance-specific) PSD states PSD_INIT and PSD_PARAM. 
+In the case of invalid F-parameters, the PSD state PSD_INIT is assumed. In the case of valid F-
+parameters, the PSD state PSD_PARAM is assumed. 
+In the state PSD_DATAEX parameterization with F-parameters is rejected. 
+ 
+Function: psd_FParBuild(...) 
+Prototype: P_Byte psd_FParBuild 
+(P_Word Inst_ID, 
+Fw_FPar FwPar, 
+P_Word psd_CRC3); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+FwPar.FSourceAdd 
+FwPar.FDestAdd 
+FwPar.FSil 
+See "Layout of the device parameter 
+structure" below 
+ 
+psd_CRC3 0 - 0xFFFF 16-bit iParameter CRC 
+If "F_Check_iPar" = 1 in the F-
+parameters, the CRC iParameter is 
+included in the calculation of the F-
+Parameter CRC. In this case, 
+psd_CRC3 may not be "0". 
+If "F_Check_iPar" = 0 or "F_Block_ID" 
+= 001 or 011, (F_iPar_CRC is con-
+tained in the F-parameters), 
+psd_CRC3 not evaluated. 
+If IPar CRC = 0, the state machine 
+changes to process data exchange 
+with failsafe values. This special state 
+(FSCP test mode) is described in 
+more detail in the PSD standard 
+section 8.1.7 F_iPar_CRC (value of 
+iPar_CRC across iParameters) . 
+ 
+PDF_PAGE 32
+Interface Description  
+4.1 PSD interface functions 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+32 Programming Manual, 07/2020, A5E35388472-AC 
+ 
+Return parameter: Value range Meaning 
+P_Byte FPAR_BUILD_OK Parameterization successful 
+FPAR_F_DEST_ADD_MISMATCH The configured destination address 
+does not match the destination ad-
+dress of the F-application. 
+FPAR_F_DEST_ADD_NOT_VALID Invalid target address 0 or 0xFFFF) 
+FPAR_F_SOURCE_ADD_MISMATCH The configured source address does 
+not match the source address of the 
+F-application. 
+FPAR_F_SOURCE_ADD_NOT_VALID Invalid source address 0 or 0xFFFF) 
+FPAR_F_WD_TIME_NULL Watchdog time is invalid (= 0) 
+FPAR_F_SIL_ERR Configured SIL class is higher than 
+the SIL class that the F-application 
+has passed to the PSD 
+FPAR_CRC_LENGTH Maximum length of the user data 
+from p_c_config.h does not match 
+the parameterized CRC width 
+FPAR_VERSION_ERR Invalid F-parameter version 
+FPAR_BLOCK_ID_ERR Invalid block ID 
+FPAR_CRC1_ERR F-parameter CRC – error 
+FPAR_BUILD_NOT_POSSIBLE Parameterization (in RUN) not possi-
+ble 
+FPAR_BUILD_NOT_OK Parameterization inconsistent 
+Structure of the device parameters when Define "COMPARE_F_SOURCE_ADD" is set in 
+p_c_config.h: 
+ 
+Code Meaning 
+#ifdef REDUNDANT 
+typedef struct Fw_FPar_t { 
+ P_Word         FSourceAdd 
+ P_Word         FDestAdd 
+ P_Byte         FSil 
+} Fw_FPar; 
+#else 
+typedef struct Fw_FPar_t { 
+ P_Word        FSourceAdd 
+ P_Word        FSourceAdd_inv 
+ P_Word        FDestAdd 
+ P_Word        FDestAdd_inv 
+ P_Byte        FSil 
+ P_Byte        FSil_inv 
+} Fw_FPar; 
+#endif 
+• FSourceAdd: F-host address 
+• FSourceAdd_inv: F-host address inverted 
+• FDestAdd: F-device address 
+• FDestAdd_inv: Inverted F-device address 
+• FSil: max. SIL of the F-application 
+• FSil_inv: Inverted max. SIL of the F-application 
+ 
+PDF_PAGE 33
+ Interface Description 
+ 4.1 PSD interface functions 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 33 
+ 
+ 
+ WARNING 
+Permissible return values 
+From the point of view of the F-application, only the following return values are permitted: 
+• FPAR_BUILD_OK 
+• FPAR_F_DEST_ADD_MISMATCH 
+• FPAR_F_DEST_ADD_NOT_VALID 
+• FPAR_F_SOURCE_ADD_MISMATCH 
+• FPAR_F_SOURCE_ADD_NOT_VALID 
+• FPAR_F_WD_TIME_NULL 
+• FPAR_F_SIL_ERR 
+• FPAR_CRC_LENGTH 
+• FPAR_VERSION_ERR 
+• FPAR_BLOCK_ID_ERR 
+• FPAR_CRC1_ERR 
+• FPAR_BUILD_NOT_POSSIBLE 
+• FPAR_BUILD_NOT_OK 
+Requirement: PSD_RQ_0_07 
+Impermissible return values have to induce the HARD_FAIL state of the F-application. 
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_09 
+The SIL of the F-parameters may not be greater than the SIL of the F-slave. The SIL of the F-
+slave must be determined from the F-parameters independent of the SIL. 
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_10 
+The F-address has to be stored in the F-application. Extraction of the F-address or other 
+values from the F-parameters is not permitted. 
+ 
+PDF_PAGE 34
+Interface Description  
+4.1 PSD interface functions 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+34 Programming Manual, 07/2020, A5E35388472-AC 
+4.1.3 psd_Config(...) 
+Configuration of the I/O data lengths for input and output user data for a PSD instance.  
+The I/O data lengths for the input and output user data can be configured as static or dynamic 
+according to the setting in psd_InitInstance(...). 
+Variant "static" 
+The psd_Config(...) function uses the lengths defined in p_c_config.h 
+(OUTDATA_MAX_LEN_INST_xx / INDATA_MAX_LEN_INST_yy). It is not possible to reconfigure 
+to a smaller length. 
+Variant "dynamic": 
+The psd_Config(...) function uses the lengths from p_c_config.h as maximum values. 
+Reconfiguring to smaller lengths is possible in PSD_PARAM state.  
+When the I/O data lengths are configured, the lengths are read out via the 
+psd_GetConfigPtr(...) function. 
+When a data length exceeds the maximum value set in p_c_config.h, the PSD goes to the 
+instance-global PSD_HARD_FAIL state. 
+The psd_Config(...) function must be called in the PSD_PARAM PSD state. Successful 
+implementation is a prerequisite for the transition to the PSD_DATAEX state, even if the 
+"static" variant was set. psd_FParBuild(...) must have been executed successfully prior to the 
+call. 
+Configuration of the I/O data lengths is rejected in the PSD_DATAEX and PSD_INIT states with 
+FPAR_CONFIG_NOT_POSSIBLE. 
+ 
+Function: psd_Config(…) 
+Prototype: P_Byte psd_Config (P_Word Inst_ID); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte FPAR_CONFIG_OK Configuration successful 
+FPAR_CONFIG_NOT_POSSIBLE Configuration not possible in the 
+PSD_DATAEX and PSD_INIT states 
+FPAR_CONFIG_NOT_OK Hard error situation 
+ 
+PDF_PAGE 35
+ Interface Description 
+ 4.1 PSD interface functions 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 35 
+ 
+ 
+ WARNING 
+Permissible return values 
+From the point of view of the F-application, only the following return values are permitted: 
+• FPAR_CONFIG_OK 
+• FPAR_CONFIG_NOT_POSSIBLE 
+Requirement: PSD_RQ_0_07 
+Impermissible return values have to induce the HARD_FAIL state of the F-application. 
+ 
+The table below shows the structuring of the I/O data lengths, which are read with 
+psd_GetConfigPtr(…) (Page 54): 
+ 
+P_Byte IORange[2] Meaning 
+IORange[0] Number of bytes of the input message frame 
+(At a 3-byte CRC: 4 bytes PROFIsafe trailer + 0..12 user data bytes) 
+(At a 4-byte CRC: 5 bytes PROFIsafe trailer + 0..123 user data bytes) 
+IORange[1] Number of bytes of the output message frame 
+(At a 3-byte CRC: 4 bytes PROFIsafe trailer + 0..12 user data bytes) 
+(At a 4-byte CRC: 5 bytes PROFIsafe trailer + 0..123 user data bytes) 
+PDF_PAGE 36
+Interface Description  
+4.1 PSD interface functions 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+36 Programming Manual, 07/2020, A5E35388472-AC 
+4.1.4 psd_Run(...) 
+Enable cyclic data exchange and change of an instance in the "PSD_DATAEX" state.  
+Condition for changing to the PSD_DATAEX state:  
+psd_FParBuild(...) and psd_Config(...) have been successfully executed. 
+Cyclic data exchange starts as soon as the toggle bit in the PROFIsafe control byte changes 
+from 0 to 1. This test is performed in the context of psd_RecvFOutTele(…). 
+The F-input data from the F-application are received by the PSD in the F-input frame as soon 
+as the cyclic data exchange is started. 
+ 
+Function: psd_Run(…) 
+Prototype: P_Byte psd_Run (P_Word Inst_ID); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte PSD_DATAEX The cyclic data exchange can be 
+started by calling 
+psd_RecvFOutTele(...). 
+PSD_PARAM Cyclic data exchange cannot be 
+started. Configuration of the user 
+data lengths missing. 
+PSD_INIT No F-parameter assignment 
+PSD_HARD_FAIL Inconsistent instance ID, only in 1-
+channel HW structure: Inconsistent 
+program flow control value. 
+ 
+ 
+ 
+ WARNING 
+Permissible return values 
+From the point of view of the F-application, only the following return values are permitted: 
+• PSD_DATAEX 
+• PSD_PARAM 
+• PSD_INIT 
+Requirement: PSD_RQ_0_07 
+Impermissible return values have to induce the HARD_FAIL state of the F-application. 
+ 
+PDF_PAGE 37
+ Interface Description 
+ 4.1 PSD interface functions 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 37 
+4.1.5 psd_Stop(...) 
+Ending the cyclic data exchange of an instance. If the function is called in the "PSD_DATAEX" 
+state, it sets the PSD to the "PSD_PARAM" state. The F-output user data are set by the PSD to 
+0. The F-input user data are not set to 0 by the PSD. 
+If the call is effected from a different state, the current state is retained.  
+ 
+Function: psd_Stop(…) 
+Prototype: P_Byte psd_Stop (P_Word Inst_ID); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte PSD_PARAM Call from PSD_DATAEX: The cyclic 
+data exchange is stopped. PSD is 
+parametered and configured 
+PSD_HARD_FAIL Inconsistent instance ID, only in 1-
+channel HW structure: Inconsistent 
+program flow control value. 
+ 
+ 
+ 
+ WARNING 
+Permissible return values 
+From the point of view of the F-application, only the following return values are permitted: 
+• PSD_PARAM 
+Requirement: PSD_RQ_0_07 
+Impermissible return values have to induce the HARD_FAIL state of the F-application. 
+ 
+PDF_PAGE 38
+Interface Description  
+4.1 PSD interface functions 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+38 Programming Manual, 07/2020, A5E35388472-AC 
+4.1.6 psd_RecvFOutTele(...): 
+ 
+ Note 
+Call this function cyclically in your F-application. 
+ 
+Reception of F-output frame from the F-host in the PSD for the specified instance. 
+The PSD calculates whether or not there is a timeout with the passed 1 -ms time values of the 
+two channels. 
+The function takes the cyclic F-output frame in the PSD OutData buffer. 
+In the 2-channel generation variant, the ClockValue time value is generated by the timer on 
+CPU1 and the ClockValueC2 time value is generated by the timer on CPU2.  
+The two time values (ClockValue, ClockValueC2) must also be generated in the 1 -channel 
+generation variant with two independent hardware timers. 
+The tolerable difference between the two values must be determined and verified by the F -
+application. 
+The PSD uses the psd_GetOutputTelegram(...) function to read the F-output frame and 
+checks that the frame conforms to the rules of the PROFIsafe profile /1/. 
+The acquisition of the output frame is bracketed with the disable_int(...) and enable_int(...) 
+functions in order to ensure consistency. 
+ 
+Function: psd_RecvFOutTele(…) 
+Prototype: P_Byte psd_RecvFOutTele 
+(P_Word Inst_ID, 
+P_Word ClockValue, P_Word ClockValueC2); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ClockValue 0...0xFFFF 1 ms timer value 
+ClockValueC2 0...0xFFFF 1 ms timer value 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte RECV_FOUT_TELE_OK Output message frame applied 
+RECV_FOUT_TELE_NOT_OK Inconsistency detected, Hard Error 
+situation 
+ 
+PDF_PAGE 39
+ Interface Description 
+ 4.1 PSD interface functions 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 39 
+ 
+ 
+ WARNING 
+Time values 
+Independently generated time values. 
+Requirement: PSD_RQ_0_16 
+The two timer values passed by the F-application to the PSD have to be generated 
+independently of each other (2 timers, 2 quartzes, etc.). The tolerable difference between 
+the two values must be determined and verified by the F-application. 
+ 
+ 
+ WARNING 
+Permissible return values 
+From the point of view of the F-application, only the following return values are permitted: 
+• RECV_FOUT_TELE_OK 
+Requirement: PSD_RQ_0_07 
+Impermissible return values have to induce the HARD_FAIL state of the F-application. 
+ 
+4.1.7 psd_RecvFOutTele_Invers(...) 
+ 
+ Note 
+Call this function cyclically in your F-application. 
+ 
+This function is to be used in the 1-channel variant. The function serves to transfer the 
+inverse time values in a 1 ms grid and to generate the inverse data in the internal memory of 
+the PSD for the specified instance. 
+ 
+Function: psd_RecvFOutTele_Invers(…) 
+Prototype: P_Byte psd_RecvFOutTele_Invers 
+(P_Word Inst_ID, 
+P_Word ClockValue_inv, 
+P_Word ClockValueC2_inv); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ClockValue 0...0xFFFF Inverse 1 ms counter value  
+(1's complement) 
+ClockValueC2 0...0xFFFF Inverse 1 ms counter value  
+(1's complement) 
+ 
+PDF_PAGE 40
+Interface Description  
+4.1 PSD interface functions 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+40 Programming Manual, 07/2020, A5E35388472-AC 
+ 
+Return parameter: Value range Meaning 
+P_Byte RECV_FOUT_TELE_OK_INV Inverse data created 
+RECV_FOUT_TELE_NOT_OK_INV Inconsistency recognized 
+ 
+ 
+ 
+ WARNING 
+Permissible return values 
+From the point of view of the F-application, only the following return values are permitted: 
+• RECV_FOUT_TELE_OK_INV 
+Requirement: PSD_RQ_0_07 
+Impermissible return values have to induce the HARD_FAIL state of the F-application. 
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_1_01 
+The return values of the used "inverse" functions are to be evaluated in accordance with the 
+"normal" functions. 
+ 
+4.1.8 psd_GetFOutData(…) 
+ 
+ Note 
+Call this function cyclically in your F-application. 
+ 
+Transfer of the F-output user data, the control byte identifiers and of the error status of the 
+message frame check to the F-application for the specified instance. 
+ 
+Function: psd_GetFOutData(…) 
+Prototype: P_Byte psd_GetFOutData 
+(P_Word Inst_ID, 
+Fw_OutputDataCB P_GLOBDAT_ATTR_POINTER* 
+FwOutputDataCB_Ptr, 
+P_Byte P_GLOBDAT_ATTR_POINTER* OutDataArray, 
+P_Byte OutDataLen); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+FwOutputDataCB_Ptr --- Pointer to a structure of the F-
+application for storing control byte 
+identifiers and other information 
+PDF_PAGE 41
+ Interface Description 
+ 4.1 PSD interface functions 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 41 
+Transfer parameter: Value range Meaning 
+OutDataArray --- Pointer for a data area of the 
+F-application for storing the output 
+user data 
+OutDataLen 0..12 or 0..123 Number of F-output user data bytes 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte F_OUTPUT_OK The toggle bit in the PROFIsafe con-
+trol byte has toggled. 
+F_OUTPUT_OLD_CONSNR The toggle bit in the PROFIsafe con-
+trol byte has not toggled. 
+F_OUTPUT_COMM_ERR An error has been detected in the 
+PROFIsafe communication. The F-
+output user data are passivated. The 
+control byte identifiers are invalid. 
+F_OUTPUT_WD_TIMEOUT A timeout was found in the commu-
+nication. The F-output user data are 
+passivated. 
+F_OUTPUT_PASSIVATED The F-host has set Bit_4 (FV-to-be-
+activated) in the control byte to 1, or 
+the PSD internal error counter that is 
+decreased with each Good message 
+frame is still greater than zero. The F-
+output user data are passivated. 
+F_OUTPUT_NOT_OK Inconsistency found: 
+• Transferred data length unequal 
+to the data length calculated by 
+the PSD 
+• Call not in PSD_DATAEX 
+The F-output user data are passivat-
+ed. 
+ 
+ 
+ Note 
+To avoid using outdated values during the next transition from PSD_PARAM to PSD_DATAEX, 
+the F-application should reset the control byte information in its buffer as follows after the 
+call of psd_Stop(): 
+• CB_B0_iParEN: F_BIT_FALSE 
+• CB_B1_OAReq: F_BIT_FALSE 
+• CB_B4_activate_FV: F_BIT_FALSE 
+• CB_B6_ChF_Ack: F_BIT_FALSE 
+ 
+PDF_PAGE 42
+Interface Description  
+4.1 PSD interface functions 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+42 Programming Manual, 07/2020, A5E35388472-AC 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_11 
+The F-application must ensure the safe condition for the process for the following return 
+values of psd_GetFOutData(...): 
+• F_OUTPUT_COMM_ERR 
+• F_OUTPUT_WD_TIMEOUT 
+• F_OUTPUT_PASSIVATED 
+• F_OUTPUT_NOT_OK 
+ 
+ 
+ WARNING 
+Permissible return values 
+From the point of view of the F-application only the following return values are permitted: 
+• F_OUTPUT_OK 
+• F_OUTPUT_OLD_CONSNR 
+• F_OUTPUT_COMM_ERR 
+• F_OUTPUT_WD_TIMEOUT 
+• F_OUTPUT_PASSIVATED 
+Requirement: PSD_RQ_0_07 
+Impermissible return values have to induce the HARD_FAIL state of the F-application. 
+ 
+ 
+ 
+IDs from the PROFIsafe control byte and further information 
+typedef struct Fw_OutputDataCB_t { 
+P_Byte CB_B0_iParEN 
+P_Byte CB_B1_OAReq 
+P_Byte CB_B4_activate_FV 
+P_Byte CB_B6_ChF_Ack 
+P_Byte TeleStatus_1 
+P_Byte TeleStatus_2 
+P_Byte TeleStatus_3 
+} Fw_OutputDataCB; 
+ 
+ 
+Value range TeleStatus_1 Meaning 
+F_OUTPUT_OK_TEL The PSD has received a fault-free message frame 
+with a new or old sign-of-life. The F-application 
+can output process values. 
+F_OUTPUT_NOT_OK_TEL The PSD has received a corrupt frame or a frame 
+has been passivated by the F-host or by the PSD. 
+The F-application must output fail-safe values. In 
+"Last valid value" mode (optional operating mode 
+of the F-application), the F-application outputs of 
+the last valid process values. 
+ 
+PDF_PAGE 43
+ Interface Description 
+ 4.1 PSD interface functions 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 43 
+ 
+Value range TeleStatus_2 Meaning 
+F_OUTPUT_OK_NEW_TEL The PSD has received a fault-free message frame 
+with a new sign-of-life. The F-application uses this 
+information as a counter for frames with new 
+sign-of-life. 
+F_OUTPUT_NOT_OK_NEW_TEL The PSD has received a corrupt frame and/or it is a 
+frame with an old sign-of-life. 
+ 
+ 
+Value range TeleStatus_3 Meaning 
+F_OUTPUT_COM_STARTED PROFIsafe communication has begun. The PSD 
+has received a frame in which the toggle bit has 
+gone from "0" to "1". 
+F_OUTPUT_COM_NOT_STARTED For the PSD, the PROFIsafe communication starts 
+after calling psd_Run(...) only after the toggle bit 
+is "1" in the control byte. 
+PROFIsafe communication has not yet begun. 
+ 
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_18 
+The F-application has to take suitable measures in order to recognize different F -output user 
+data or control byte identifiers between the two channels (for example due to an error in 
+the output storage area). This can, for example, occur through comparison of the data 
+transferred by the PSD. The test has to be carried before output to the process.  
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_19 
+If the PSD signals a communication error, the received control byte is invalid and the control 
+byte identifiers transferred to the F-application CB_B0_iParEN, CB_B1_OAReq and 
+CB_B6_ChF_Ack are not to be evaluated. 
+ 
+PDF_PAGE 44
+Interface Description  
+4.1 PSD interface functions 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+44 Programming Manual, 07/2020, A5E35388472-AC 
+4.1.9 psd_GetFOutData_Invers(...) 
+ 
+ Note 
+Call this function cyclically in your F-application. 
+ 
+This function is to be used in the 1-channel variant. With this function the inverse F-output 
+user data, the inverse control byte identifiers and the inverse error status of the specified 
+instance are made available to the F-application. 
+ 
+Function: psd_GetFOutData_Invers(…) 
+Prototype: P_Byte psd_GetFOutData_Invers 
+(P_Word Inst_ID, 
+Fw_OutputDataCB P_GLOBDAT_ATTR_POINTER* 
+FFwOutputDataCB_Ptr_inv, 
+P_Byte P_GLOBDAT_ATTR_POINTER* 
+OutDataArray_inv, 
+P_Byte OutDataLen); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+FwOutput-
+DataCB_Ptr_inv 
+--- Pointer to a structure for storing 
+inverse control byte identifiers and 
+further information 
+OutDataArray_inv --- Pointer to a data area for storing the 
+inverse user data 
+OutDataLen 0..12 or 0..123 Number of F-output user data bytes 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte F_OUTPUT_OK_INV F-output message frame is valid. The 
+F-output user data and control byte 
+identifiers can be applied and evalu-
+ated by the F-application. 
+F_OUTPUT_OLD_CONSNR_INV 
+F_OUTPUT_COMM_ERR_INV An error was found in the PROFIsafe 
+communication. The F-output user 
+data are passivated. The control byte 
+identifiers are invalid. 
+F_OUTPUT_WD_TIMEOUT_INV A timeout was found in the commu-
+nication. The F-output user data are 
+passivated. 
+F_OUTPUT_PASSIVATED_INV The F-host has set Bit_4 (FV-to-be-
+activated) in the control byte to 1, or 
+the PSD internal error counter that is 
+decreased with each Good message 
+frame is still greater than zero. The F-
+output user data are passivated. 
+ 
+PDF_PAGE 69
+ Interface Description 
+ 4.5 Optional PSD interface functions 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 69 
+4.5.8 Inverse PSD functions 
+In the 1-channel generation variant the PSD makes a corresponding inverse function available 
+for each main function. The functions described below support a 1 -channel software 
+architecture of the F-application. The functions return the results of the inverse calculation 
+path of the PSD. The meaning of the return values is specified in the main functions.  
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_1_01 
+The return values of the used "inverse" functions are to be evaluated in accordance with the 
+"normal" functions. 
+ 
+4.5.8.1 psd_InitInstance_Invers(...) 
+Functionality corresponds to the normal function psd_InitInstance(...) (Page 30). 
+ 
+Function: psd_InitInstance_Invers(…) 
+Prototype: P_Byte psd_InitInstance_Invers (P_Word Inst_ID); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte INIT_INSTANCE_OK_INV Initialization successful 
+PDF_PAGE 70
+Interface Description  
+4.5 Optional PSD interface functions 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+70 Programming Manual, 07/2020, A5E35388472-AC 
+4.5.8.2 psd_FParBuild_Invers(...) 
+Functionality corresponds to the normal function psd_FParBuild(...) (Page 31). 
+ 
+Function: psd_FParBuild_Invers(…) 
+Prototype: P_Byte  psd_FParBuild_Invers (P_Word Inst_ID); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_0X 
+X < = NOF_INSTANCES 
+Instance ID 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte FPAR_BUILD_OK_INV F-parameter OK 
+FPAR_F_DEST_ADD_MISMATCH_INV Incorrect target address 
+FPAR_F_DEST_ADD_NOT_VALID_INV Invalid target address 
+FPAR_F_SOURCE_ADD_MISMATCH_I
+NV 
+Incorrect source address 
+FPAR_F_SOURCE_ADD_NOT_VALID_I
+NV 
+Invalid source address 
+FPAR_F_WD_TIME_NULL_INV Watchdog time is invalid (0) 
+FPAR_F_SIL_ERR_INV Configured SIL class too high 
+FPAR_CRC_LENGTH_INV CRC width does not match the 
+amount of user data. 
+Maximum length of the user data 
+from p_c_config.h does not match 
+the configured CRC width. 
+FPAR_VERSION_ERR_INV Invalid F-parameter version 
+FPAR_BLOCK_ID_ERR_INV Invalid Block_ID 
+FPAR_CRC1_ERR_INV The CRC of the F-parameters is incor-
+rect 
+FPAR_BUILD_NOT_POSSIBLE_IN_DAT
+AEX_INV 
+F-parameterization in RUN not possi-
+ble 
+FPAR_BUILD_NOT_OK_INV Parameterization inconsistent or 
+HardError situation 
+PDF_PAGE 71
+ Interface Description 
+ 4.5 Optional PSD interface functions 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 71 
+4.5.8.3 psd_Config_Invers(...) 
+Functionality corresponds to the normal function psd_Config(...) (Page 34). 
+ 
+Function: psd_Config_Invers(…) 
+Prototype: P_Byte psd_Config_Invers (P_Word Inst_ID); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte FPAR_CONFIG_OK_INV I/O length configuration successful 
+FPAR_CONFIG_NOT_POSSIBLE_IN_D
+ATAEX_INV 
+Configuration in RUN not possible 
+FPAR_CONFIG_NOT_OK_INV Hard error situation 
+4.5.8.4 psd_Run_Invers(...) 
+Functionality corresponds to the normal function psd_Run(...) (Page 36). 
+ 
+Function: psd_Run_Invers(…) 
+Prototype: P_Byte psd_Run_Invers (P_Word Inst_ID); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte PSD_DATAEX_INV The cyclic data exchange can be 
+started by calling 
+psd_RecvFOutTele_Invers(...). 
+PSD_PARAM_INV Cyclic data exchange cannot be 
+started. Configuration of the user 
+data lengths missing. 
+PSD_HARD_FAIL_INV Inconsistent instance ID, only in 1-
+channel HW structure: Inconsistent 
+program flow control value. 
+PDF_PAGE 72
+Interface Description  
+4.5 Optional PSD interface functions 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+72 Programming Manual, 07/2020, A5E35388472-AC 
+4.5.8.5 psd_Stop_Invers(...) 
+Functionality corresponds to the normal function psd_Stop(...) (Page 37). 
+ 
+Function: psd_Stop_Invers(…) 
+Prototype: P_Byte psd_Stop (P_Word Inst_ID); 
+Meaning: Return of the inverse PSD status of the PSD instance. 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte PSD_PARAM_INV Call from PSD_DATAEX: PSD is pa-
+rametered and configured  
+PSD_HARD_FAIL_INV Inconsistent instance ID, only in 1-
+channel HW structure: Inconsistent 
+program flow control value. 
+4.5.8.6 psd_GetFPar_Invers(...) 
+Functionality corresponds to the normal function psd_GetFPar(...) (Page 64). 
+ 
+Function: psd_GetFPar_Invers(…) 
+Prototype: P_Byte psd_GetFPar_Invers(P_Word Inst_ID); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte GET_FPAR_OK_INV Call correct 
+GET_FPAR_NOT_OK_INV Pointer to the F-parameter structure 
+is 0. 
+PDF_PAGE 73
+ Interface Description 
+ 4.5 Optional PSD interface functions 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 73 
+4.5.8.7 psd_GetConfig_Invers(...) 
+Functionality corresponds to the normal function psd_GetConfig(...) (Page 65). 
+ 
+Function: psd_GetConfig_Invers(…) 
+Prototype: P_Byte psd_GetConfig_Invers(P_Word Inst_ID); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte GET_CONFIG_OK_INV Call correct 
+GET_CONFIG_NOT_OK_INV Pointer to configuration parameter 
+structure is 0. 
+4.5.8.8 psd_GetState_Invers(...) 
+Functionality corresponds to the normal function psd_GetState(...) (Page 63). 
+ 
+Function: psd_GetState_Invers(…) 
+Prototype: P_Byte psd_GetState_Invers (P_Word Inst_ID); 
+ 
+ 
+Transfer parameter: Value range Meaning 
+Inst_ID INST_01…INST_X 
+X < = NOF_INSTANCES 
+Instance ID 
+ 
+ 
+Return parameter: Value range Meaning 
+P_Byte PSD_INIT_INV Initialized 
+PSD_PARAM_INV Assigned 
+PSD_DATAEX_INV Error-free cyclic data exchange 
+ 
+ 
+PDF_PAGE 74
+ 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+74 Programming Manual, 07/2020, A5E35388472-AC 
+ Configuration of the PSD 5 
+ 
+ 
+The generation parameters described below are in the PSD file p_c_config.h. You need to set 
+all generation parameters. 
+5.1 Number of PSD instances 
+#define NOF_INSTANCES 
+Value range: 1 to 32 
+ 
+ Note 
+The length specification of F-output and F-input user data in p_c_config.h is required for each 
+instance used. 
+ 
+ Note 
+Only one instance is possible for 8-bit controllers. Multi-instance operation is not supported 
+for 8-bit controllers. 
+ 
+5.2 Hardware architecture 
+#undef REDUNDANT - 1-channel generation variant 
+Use of the PSD at a 1-channel hardware architecture. The PSD stores all the internal data 
+normally and inversely. The PSD functions calculate with the normal and inverse data with 
+different operations/algorithms. 
+#define REDUNDANT - 2-channel generation variant 
+Use of the PSD at a 2-channel hardware architecture. The processing is carried out on both 
+channels. Data synchronization is carried out through the synchronization interface.  
+PDF_PAGE 75
+ Configuration of the PSD 
+ 5.3 Instance addressing 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 75 
+5.3 Instance addressing 
+#undef INST_ACCESS_POINTER 
+With instances >1, addressing of the PSD instance data is made through array index accesses. 
+Depending on the compiler used this can mean a faster access method. 
+With only one instance, the addressing always made via the array index accesses, wherein 
+the array index "0" is used as a constant. 
+#define INST_ACCESS_POINTER 
+With instances >1, addressing of the PSD instance data is made through pointer accesses. 
+Depending on the compiler used this can mean a faster access method.  
+5.4 Checking of the source address 
+#undef COMPARE_F_SOURCE_ADD 
+The F-source address is not transferred from the F-application to the PSD with the 
+psd_FParBuild(...) function. 
+#define COMPARE_F_SOURCE_ADD 
+The F-source address is transferred from the F-application to the PSD with the 
+psd_FParBuild(...) function. The PSD compares it with the F-source address of the F-
+parameters. 
+5.5 Support of the V1 communication mode 
+#undef V1_MODE 
+The V1 communication mode was defined in the early days of PROFIsafe communication. In 
+the meantime this has been replaced by the V2 communication mode. The V1 mode is not 
+accepted when checking the F-parameters. The cyclic data exchange is thus not possible in 
+V1 mode. 
+#define V1_MODE 
+The V1 mode is accepted when checking the F-parameters. 
+PDF_PAGE 76
+Configuration of the PSD  
+5.6 Selection for using 64 bit arithmetic functions provided compiler -internal or from PSD 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+76 Programming Manual, 07/2020, A5E35388472-AC 
+5.6 Selection for using 64 bit arithmetic functions provided compiler-
+internal or from PSD 
+#undef WITH_64BIT_EMULATION 
+The compiler used supports the 64-bit data type "unsigned long long". The internal compiler 
+functions for 64-bit arithmetic are used. 
+#define WITH_64BIT_EMULATION 
+The compiler used does not support the 64-bit data type "unsigned long long". The functions 
+from the p_64bit.c for 64-bit arithmetic are used. 
+5.7 Integration of fault insertion tests in the PSD OP code 
+#undef FAULT_INSERTION_TEST 
+Fault-insertion tests are not possible. The error code is deactivated by the compiler switch.  
+#define FAULT_INSERTION_TEST 
+The error code is activated by the compiler switch. Fault insertion tests can be activated with 
+the psd_SetFID(...) interface function. 
+ 
+ 
+ WARNING 
+Requirement: PSD_RQ_0_13 
+The fault insertion tests specified in the section Fault insertion test (Page 84) must be 
+performed in accordance with their description. In a release generation, the fault insertion 
+testing must be disabled by disabling the "FAULT_INSERTION_TEST" define in p_c_config.h 
+when no measures are installed in the F-application to prevent accidental activation of a 
+fault insertion test. The measures (for example, password protection when activating the 
+fault insertion tests, time limitation in the activation process of a fault insertion test, etc.) 
+are to be agreed upon together with the competent licensing authority in accordance with 
+the desired safety level. 
+ 
+5.8 Consecutive No. for fault-insertion test activation 
+#define CONS_NR_FOR_FIT_ACTIVATION value 
+A fault insertion test, which has been activated by the psd_SetFID(...) function, is not 
+performed until the PROFIsafe frame has reached the defined consecutive number.  
+• Value range in V1 mode: 1..0xF0 
+• Value range in V2 mode: 1..0x00FFFFF0. 
+PDF_PAGE 77
+ Configuration of the PSD 
+ 5.9 F-input or F-output user data area 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 77 
+5.9 F-input or F-output user data area 
+#define IN- / OUTDATA_MAX_LEN_INST_01 n1  
+...  
+#define IN- / OUTDATA_MAX_LEN_INST_32 n32 
+You use the defines to set the maximum number of cyclic F-input or F-output data bytes for 
+each instance used. Reconfiguration of the lengths with psd_Config(...) beyond these 
+maximum values is not possible in the PSD_PARAM state. A "0" means that no F -input or F-
+output user data are used. 
+Value range: 
+• 0 – 12 bytes for 2-byte CRC in V1 mode 
+• 0 – 12 bytes for 3-byte CRC in V2 mode with F-parameter assignment F_CRC_Seed = 0 
+• 0 – 123 bytes for 4-byte CRC in V1 mode 
+• 0 – 123 bytes for 4-byte CRC in V2 mode with F-parameter assignment F_CRC_Seed = 1 
+5.10 File ID as debug information 
+#define P_CRC 
+#define P_INIT 
+#define P_INVERS 
+#define P_STATE 
+#define P_INPUT 
+#define P_OUTPUT 
+#define P_PARAM 
+#define P_TIME 
+The file ID can be used to identify the file called from the hard_err( …) interface function. 
+PDF_PAGE 78
+Configuration of the PSD  
+5.11 Memory attributes 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+78 Programming Manual, 07/2020, A5E35388472-AC 
+5.11 Memory attributes 
+The memory attributes depend on the tool chain used. The key words are to be used 
+correspondingly. 
+Global variables are defined as follows when using the memory attributes in the PSD:  
+Variable type P_GLOBDAT_ATTR variable name P_GLOBDAT_ATTR_POST;  
+This allows the assignment of a variable to a memory segment to be made. 
+#define P_GLOBDAT_ATTR_POINTER, #define P_GLOBDAT_ATTR_POINTER_POST  
+Memory attribute for pointers, used to access to PSD global variables. 
+ #define P_GLOBDAT_ATTR, #define P_GLOBDAT_ATTR_POST 
+Memory attribute for storing the PSD-global variables. 
+#define P_GLOBDAT_I_ATTR, #define P_GLOBDAT_I_ATTR_POST  
+Memory attribute for storing the PSD-global variables that can be different on both channels. 
+#define CRC_CONST_ATTR, #define CRC_CONST_ATTR_POST 
+Memory attribute for storing the tables with the lengths of the F-inputs and F-output data 
+and the CRC tables. 
+5.12 Memory model for the CRC tables 
+This switch effects the activation / deactivation of a memory model for the CRC tables.  
+The memory attributes depend on the tool chain used. The key words are to be used 
+correspondingly. 
+#define p_crctab_memory 
+The "p_c_crc_m.h" and "p_c_crc_b.h" files are included. 
+The memory model for the specific tool chain can be set for the CRC table in p_c_crc_m.h. 
+In p_c_crc_b.h it is possible to switch back to the memory model for the PSD code. 
+#undef p_crctab_memory 
+The "p_c_crc_m.h" and "p_c_crc_b.h" files are not included. 
+ 
+PDF_PAGE 79
+ 
+PROFIsafe Driver V2.2.3 for F-Slaves 
+Programming Manual, 07/2020, A5E35388472-AC 79 
+ Requirements 6 
+ 
+ 
+The F-application must fulfill the requirements summarized below in order to f ulfill the 
+demands of the corresponding safety level of the PSD. 
+6.1 Requirements independent of the generation variable 
+PSD_RQ_0_01 
+ The normative requirements for HW and FW development and for the implemented HW and 
+FW must be have complied with in accordance with the underlying standards relating to the 
+F-application! 
+The PSD knows no hardware components at all e.g. memory, microcontroller, timer, I/O 
+interface, power supply. It therefore has no background tests implemented, for example, 
+memory tests, command tests, timer tests. 
+The PSD has implemented measures to locate the transmission error, error in its progra m 
+flow and corruption of its variables. 
+The selection of suitable measures for detecting random hardware errors depends on the 
+system architecture used and lies in the responsibility of the F-slave development. 
+PSD_RQ_0_02 
+You may not change PSD files that are protected with a CRC value. 
+PSD_RQ_0_03 
+The CRC values of the PSD files (individual and overall CRC) have to agree with the values of 
+the CRC check tool. 
+PSD_RQ_0_04 
+Only the PSD interface functions that are declared in the p_api.h file may be used.  
+PSD_RQ_0_05 
+Only the PSD interface structures that are declared in the p_global.h file may be used.  
+PSD_RQ_0_06 
+The defines from p_global.h must be used for the evaluation of the PSD returns.  
+PDF_PAGE 80
+Requirements  
+6.1 Requirements independent of the generation variable 
+ PROFIsafe Driver V2.2.3 for F-Slaves 
+80 Programming Manual, 07/2020, A5E35388472-AC 
+PSD_RQ_0_07 
+Impermissible return values have to induce the HARD_FAIL state of the F-application. 
+The following table shows the permitted return values. 
+ 
+Function Permissible return values 
+psd_InitInstance(…) INIT_INSTANCE_OK 
+psd_FParBuild(…) FPAR_BUILD_OK 
+FPAR_F_DEST_ADD_MISMATCH 
+FPAR_F_DEST_ADD_NOT_VALID 
+FPAR_F_SOURCE_ADD_MISMATCH 
+FPAR_F_SOURCE_ADD_NOT_VALID 
+FPAR_F_WD_TIME_NULL 
+FPAR_F_SIL_ERR 
+FPAR_CRC_LENGTH 
+FPAR_VERSION_ERR 
+FPAR_BLOCK_ID_ERR 
+FPAR_CRC1_ERR 
+FPAR_BUILD_NOT_POSSIBLE 
+FPAR_BUILD_NOT_OK 
+psd_Config(…) FPAR_CONFIG_OK 
+FPAR_CONFIG_NOT_POSSIBLE 
+psd_Run(…) PSD_DATAEX 
+PSD_PARAM 
+PSD_INIT 
+psd_Stop(…) PSD_PARAM 
+psd_RecvFOutTele(…) RECV_FOUT_TELE_OK 
+psd_GetFOutData(…) F_OUTPUT_OK 
+F_OUTPUT_NOT_OK 
+F_OUTPUT_OLD_CONSNR 
+F_OUTPUT_PASSIVATED 
+F_OUTPUT_COMM_ERR 
+F_OUTPUT_WD_TIMEOUT 
+psd_SetFInData(…) SET_FIN_DATA_OK 
+psd_SendFInTele(…) SEND_FIN_TELE_OK 
+psd_GetState(…) PSD_INIT 
+PSD_PARAM 
+PSD_DATAEX 
+psd_GetFPar(…) GET_FPAR_OK 
+GET_FPAR_NOT_OK 
+psd_GetConfig(...) GET_CONFIG_OK 
+GET_CONFIG_NOT_OK 
+psd_FalsifyFInTelCRC(...) FALSIFY_IN_TEL_CRC_OK 
+FALSIFY_IN_TEL_CRC_NOT_OK 
+psd_SetFID(...) FIT_ACTIVATED 
+FIT_INVALID 
+psd_GetTraceData(...) GET_TRACE_DATA_OK 
+GET_TRACE_DATA_NOT_OK 
+ The permissible inverse return value areas of the "inverse" functions (only at 1- channel 
+generation variant) correspond to those of the "normal" functions. 

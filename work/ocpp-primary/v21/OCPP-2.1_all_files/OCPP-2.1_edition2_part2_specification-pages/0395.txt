@@ -1,0 +1,64 @@
+EV Charging Station CSMS
+loop [Charging in progress...]
+alt [if AC Charging]
+AC_ChargeLoopReq()
+AC_ChargeLoopRes()
+[if DC Charging]
+DC_ChargeloopReq()
+DC_ChargeloopRes()
+TransactionEventRequest(eventType = Updated,...)
+TransactionEventResponse(...)
+CSMS sets new schedule
+CSMS sends a new charging profile.
+SetChargingProfileRequest(evseId, chargingProfile)
+SetChargingProfileResponse(Accepted)
+AC/DC_ChargeloopReq()
+Charging station triggers renegotiation
+AC/DC_ChargeloopRes(ScheduleRenegotiation)
+ISO15118 in side channel ScheduleRenegotiationPayloadID
+AC/DC_ChargeParameterDiscoveryReq( evChargingParameters, ... )
+AC/DC_ChargeParameterDiscoveryRes( evseChargingParameters, ...)
+ScheduleExchangeReq( DepartureTime, EVTargetEnergyRequest,
+EVEnergyOffer, ... )
+Charging station does not send NotifyEVChargingNeeds.
+Charging station returns chargingProfile to EV.
+ScheduleExchangeRes(Dynamic/Scheduled_SEResControlMode)
+PowerDeliveryReq(ChargeProgress=ScheduleRenegotiation, EVPowerProfile)
+PowerDeliveryRes(OK)
+NotifyEVChargingScheduleRequest(evseId, chargingSchedule)
+NotifyEVChargingScheduleResponse(Accepted)
+Figure 139. Renegotiation initiated by CSMS when using ISO 15118-20
+K16 - Renegotiation initiated by CSMS - Requirements
+ID Precondition Requirements NOTE
+K16.FR.01 CSMS sends a new
+SetChargingProfileReq
+uest
+Charging Station SHALL respond with a
+SetChargingProfileResponse with status =
+Accepted.
+K16.FR.02
+(2.1)
+When the composite
+schedule for the EVSE
+changes
+Charging Station SHALL initiate schedule
+renegotiation with EV.
+This can be caused by a
+Set/ClearChargingProfileRequest or a change
+in
+ChargingStationExternalConstraints/LocalGen
+eration charging profiles.
+In ISO 15118-2 renegotiation is started by
+replying with
+EVSENotification=ReNegotiation to a
+CurrentDemandReq (for DC) or
+ChargingStatusReq (for AC) message.
+In ISO 15118-20 this is done by replying with
+EVSENotification=ScheduleRenegotiation
+in ChargeLoopRes.
+K16.FR.03 K16.FR.02 Charging Station SHALL provide the
+composite schedule(s) to the EV.
+In ISO 15118 this is done in the
+ChargeParameterDiscoverRes message.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 382/803 Part 2 - Specification

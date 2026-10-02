@@ -1,0 +1,50 @@
+Field Name Field Type Card. Description
+relativeTimeInterval RelativeTimeIntervalType 1..1 Required. Defines the time interval the SalesTariffEntry is
+valid for, based upon relative times.
+consumptionCost ConsumptionCostType 0..3 Optional. Defines additional means for further relative
+price information and/or alternative costs.
+2.86. SalesTariffType
+Class
+A SalesTariff provided by a Mobility Operator (EMSP) . NOTE: This dataType is based on dataTypes from ISO 15118-2.
+SalesTariffType is used by: Common:ChargingScheduleType
+Field Name Field Type Card. Description
+id integer, 0 <= val 1..1 Required. SalesTariff identifier used to identify one sales
+tariff. An SAID remains a unique identifier for one
+schedule throughout a charging session.
+salesTariffDescription string[0..32] 0..1 Optional. A human readable title/short description of the
+sales tariff e.g. for HMI display purposes.
+numEPriceLevels integer, 0 <= val 0..1 Optional. Defines the overall number of distinct price
+levels used across all provided SalesTariff elements.
+salesTariffEntry SalesTariffEntryType 1..102
+4
+Required. Encapsulating element describing all relevant
+details for one time interval of the SalesTariff. The
+number of SalesTariffEntry elements is limited by the
+parameter maxScheduleTuples.
+2.87. SampledValueType
+Class
+Single sampled value in MeterValues. Each value can be accompanied by optional fields.
+To save on mobile data usage, default values of all of the optional fields are such that. The value without any additional fields will
+be interpreted, as a register reading of active import energy in Wh (Watt-hour) units.
+SampledValueType is used by: Common:MeterValueType
+Field Name Field Type Card. Description
+value decimal 1..1 Required. Indicates the measured value.
+measurand MeasurandEnumType 0..1 Optional. Type of measurement. Default =
+"Energy.Active.Import.Register"
+context ReadingContextEnumType 0..1 Optional. Type of detail value: start, end or sample.
+Default = "Sample.Periodic"
+phase PhaseEnumType 0..1 Optional. Indicates how the measured value is to be
+interpreted. For instance between L1 and neutral (L1-N)
+Please note that not all values of phase are applicable to
+all Measurands. When phase is absent, the measured
+value is interpreted as an overall value.
+location LocationEnumType 0..1 Optional. Indicates where the measured value has been
+sampled. Default = "Outlet"
+signedMeterValue SignedMeterValueType 0..1 Optional. Contains the MeterValueSignature with
+sign/encoding method information.
+unitOfMeasure UnitOfMeasureType 0..1 Optional. Represents a UnitOfMeasure including a
+multiplier
+2.88. SetMonitoringDataType
+Class
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 662/803 Part 2 - Specification

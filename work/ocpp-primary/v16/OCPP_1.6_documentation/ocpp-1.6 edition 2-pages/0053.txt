@@ -1,0 +1,36 @@
+
+Please note that the charging schedule sent by the charge point is only indicative for that point
+in time. this schedule might change over time due to external causes (for instance, local
+balancing based on grid connection capacity is active and one Connector becomes available).
+If the Charge Point is not able to report the requested schedule, for instance if the connectorId is unknown, it
+SHALL respond with a status Rejected.
+5.8. Get Configuration
+Charge Point Central System
+GetConfiguration.req([key])
+GetConfiguration.conf(configurationKey, [unknownKey])
+Figure 29. Sequence Diagram: Get Configuration
+To retrieve the value of configuration settings, the Central System SHALL send a GetConfiguration.req PDU to the
+Charge Point.
+If the list of keys in the request PDU is empty or missing (it is optional), the Charge Point SHALL return a list of all
+configuration settings in GetConfiguration.conf. Otherwise Charge Point SHALL return a list of recognized keys
+and their corresponding values and read-only state. Unrecognized keys SHALL be placed in the response PDU as
+part of the optional unknown key list element of GetConfiguration.conf.
+The number of configuration keys requested in a single PDU MAY be limited by the Charge Point. This maximum
+can be retrieved by reading the configuration key GetConfigurationMaxKeys.
+5.9. Get Diagnostics
+Charge Point Central System
+GetDiagnostics.req(location, [retries]. [retryInterval], [startTime], [stopTime])
+GetDiagnostics.conf([fileName])
+Uploading diagnostics file...
+DiagnosticsStatusNotification.req( status: Uploading )
+DiagnosticsStatusNotification.conf()
+Uploaded diagnostics file...
+DiagnosticsStatusNotification.req( status: Uploaded )
+DiagnosticsStatusNotification.conf()
+Figure 30. Sequence Diagram: Get Diagnostics
+Central System can request a Charge Point for diagnostic information. The Central System SHALL send a
+GetDiagnostics.req PDU for getting diagnostic information of a Charge Point with a location where the Charge
+Point MUST upload its diagnostic data to and optionally a begin and end time for the requested diagnostic
+information.
+Upon receipt of a GetDiagnostics.req PDU, and if diagnostics information is available then Charge Point SHALL
+48

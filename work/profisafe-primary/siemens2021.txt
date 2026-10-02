@@ -1,0 +1,483 @@
+PDF_PAGE 59
+5.5 Configuring fail-safe DP standard slaves/IO standard devices
+Requirement
+In order to use fail-safe DP standard slaves/IO standard devices, these standard devices must be 
+on PROFIBUS DP or PROFINET IO and support the PROFIsafe bus profile.
+Configuring with GSD/GSDML file 
+As is the case in a standard system, the fail-safe standard slaves are configured based on the 
+device specification in the so-called GSD file (generic station description). 
+• In the GSD file for DP standard slaves
+• In the GSDML file for the IO standard devices 
+For these fail-safe standard devices, portions of the specification are protected by a cyclic 
+redundancy check (CRC).
+The GSD/GSDML files are supplied by the device manufacturers. To operate fail-safe standard 
+devices with S7 F Systems, the supplied GSD/GSDML file must meet the following PROFIsafe 
+specification: 
+• For fail-safe DP standard slaves: PROFIsafe Specification V1.0 or higher 
+• For fail-safe IO standard devices: PROFIsafe Specification as of V2.0 to V2.6.1 
+Ask for confirmation of this from the device manufacturer.
+Import the GSD/GSDML files into your project (see STEP 7 online help). After the import, the 
+corresponding fail-safe standard devices can be selected in the hardware catalog of HW Config.
+Protection of the data structure of the device in GSD/GSDML files
+Starting with PROFIsafe Specification V2.0, the data structure of the device described in the GSD 
+or GSDML file must be protected with a CRC stored in this file ("setpoint" for 
+F_IO_StructureDescCRC).
+Procedure for configuring with GSD/GSDML file
+Import the GSD/GSDML file into your project (see online help for STEP 7).
+1. Select the corresponding fail-safe standard device, e.g. a DP standard slave, in the hardware 
+catalog of HW Config and insert it into your DP master system / PROFINET IO system.
+2. Select the fail-safe DP or IO master.
+3. Open the object properties dialog using the Edit > Object Properties menu command or by 
+double-clicking the slot of the fail-safe component.
+The figure below shows the properties of a DP standard slave as an example. 
+Configuration
+5.5 Configuring fail-safe DP standard slaves/IO standard devices
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+Programming and Operating Manual, 06/2021, A5E50557762-AA 59
+PDF_PAGE 60
+"PROFIsafe" tab
+The parameter texts specified in the GSD/GSDML file are contained on the "PROFIsafe" tab under 
+"Parameter name". The associated current value is shown under "Value". You can modify this 
+value using the "Change value" button.
+The parameters are explained below.
+"F_Check_SeqNr" parameter
+This parameter defines whether the sequence number is to be incorporated in the consistency 
+check (CRC calculation) of the F-User data frame. 
+The "F_Check_SeqNr" parameter must be set to "No check" in the PROFIsafe V1 MODE. Only fail-
+safe DP standard slaves/PA field devices that behave accordingly are supported. 
+"F_CHECK_SeqNr" is irrelevant in PROFIsafe V2 MODE.
+Configuration
+5.5 Configuring fail-safe DP standard slaves/IO standard devices
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+60 Programming and Operating Manual, 06/2021, A5E50557762-AA
+PDF_PAGE 61
+"F_SIL" parameter
+This parameter defines the safety class of the fail-safe DP standard slave/IO standard device/PA 
+field device. The parameter is device-dependent. The "F_SIL" parameter can be set between "No 
+SIL" and "SIL 3" depending on the GSD/GSDML file. 
+"F_CRC_Length" parameter
+A cyclic redundancy check with a length of 2 bytes, 3 bytes or 4 bytes is required, depending on 
+the length of the F-user data (process data) and the PROFIsafe mode. This parameter provides 
+information to the F-CPU on the size of the CRC2 key in the safety message frame.
+In PROFIsafe V1 MODE:
+S7 F Systems only supports a user data length up to and including 12 bytes and "2-byte CRC". The 
+fail-safe DP standard slave/PA field device must behave accordingly.
+In PROFIsafe V2 MODE:
+S7 F Systems supports the following user data length:
+• With F_CRC_Seed = 0: Up to and including 12 bytes and "3-byte CRC". 
+• With F_CRC_Seed = 1 (PROFIsafe V2.6.1 XP): Up to and including 40 bytes and "4-byte CRC". 
+The fail-safe DP standard slave/IO standard device/PA field device must behave accordingly.
+"F_CRC_Seed" parameter
+In principle, the parameter specifies which value is to be taken as the start value ("seed value") 
+for the CRC2 calculation and which values are included in the cyclic calculation.
+• If F_CRC_Seed = 0, the CRC_FP is taken as start value and a counter (sequence number) is 
+cyclically incremented.
+This is the previous behavior, i.e. prior to PROFIsafe V2.6.1.
+• If F_CRC_Seed = 1, a 1 is taken as the start value and a monitoring number based on a 32-bit 
+CRC value is added via F-parameter and code name (source/destination address). 
+This is the behavior for PROFIsafe V2.6.1 XP. 
+The "F_CRC_Seed" parameter influences the "F_CRC_Length" parameter. 
+You can find additional information on these parameters in the PROFIsafe Specification V2.6.1. 
+Table 5-1 Combinations of the F-parameters "F_CRC_Seed" and "F_Passivation" 
+F_CRC_Seed F_Passivation  
+0 1 Not permitted
+1 0/1 Allowed
+The F-parameters "F_CRC_Seed" and "F_Passivation" influence the behavior of a fail-safe IO 
+standard device. They enable configuration according to PROFIsafe version V2.4 or V2.6.1. The 
+combination of the F-parameters cannot be adjusted. Instead, it is determined by selecting an 
+appropriate safety-related (sub)module. 
+If these two parameters are not available, the safety-related data is transferred with the 
+PROFIsafe Loop-back Extension Protocol (LP) V2.4, otherwise with the PROFIsafe Expanded 
+Configuration
+5.5 Configuring fail-safe DP standard slaves/IO standard devices
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+Programming and Operating Manual, 06/2021, A5E50557762-AA 61
+PDF_PAGE 62
+Protocol (XP) V2.6.1. The default setting for the parameter F_CRC_Seed = CRC-Seed32 and for 
+the parameter F_Passivation = Device/Module.
+"F_Passivation" parameter
+The parameter is used for passivation:  
+• F_Passivation = 0: F-(sub)module passivation 
+• F_Passivation = 1: Channel-level passivation
+You can find additional information on these parameters in the PROFIsafe Specification V2.6.1. 
+"F_Block_ID" parameter
+The F_Block_ID parameter has the value 1 if the F_iPar_CRC parameter exists, otherwise it has 
+the value 0.
+The value 1 of the F_Block_ID parameter indicates that the data record for the value of 
+F_iPar_CRC has been extended by 4 bytes. You must not change the parameter.
+"F_Par_Version" parameter
+This parameter identifies the PROFIsafe operating mode. You can identify the operating modes 
+supported by the device from the value range offered.
+For fail-safe IO standard devices, this parameter is set to "1" (PROFIsafe V2 MODE) and cannot be 
+changed. 
+For fail-safe DP standard slaves/PA field devices, you can set this parameter to the following:
+• Set "F_Par_Version" to "1" (PROFIsafe V2 MODE) for a homogenous PROFIBUS DP network, if 
+the device and the F-CPU support this. Otherwise, set it to "0" (PROFIsafe V1 MODE).
+• For a network that consists of PROFIBUS DP and PROFINET IO subnets, "F_Par_Version" must 
+be set to "1" (PROFIsafe V2 MODE).
+Note
+The following F-CPUs support V2 MODE:
+• As of CPU 410-5H (article no. 6ES7410-5HX08-0AB0) 
+• As of CPU 410E (article no. 6ES7410-5HM08-0AB0) 
+• As of CPU 412-5H PN/DP (article no. 6ES7412-5HK06-0AB0)
+• As of CPU 414-5H PN/DP (article no. 6ES7414-5HM06-0AB0) 
+• As of CPU 416-5H PN/DP (article no. 6ES7 416-5HS06-0AB0)
+• As of CPU 417-5H PN/DP (article no. 6ES7417-5HT06-0AB0)
+If you set "F_Par_Version" to "1" for F-CPUs that do not support PROFIsafe V2 MODE, this will 
+result in a communication error during safety-related communication with the device. One 
+of the following diagnostics events is then entered in the diagnostics buffer of the F-CPU:
+• "F-I/O passivated": Check value error (CRC)/Sequence number error ...
+• "F-I/O passivated": F-Monitoring time exceeded at the safety message frame detected in 
+the F-CPU ...
+Configuration
+5.5 Configuring fail-safe DP standard slaves/IO standard devices
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+62 Programming and Operating Manual, 06/2021, A5E50557762-AA
+PDF_PAGE 63
+WARNING
+Devices and "F_Par_Version" parameter for a mixed configuration 
+For a network that consists of PROFIBUS DP and PROFINET IO subnets, "F_Par_Version" must be 
+set to "1" (PROFIsafe V2 MODE). 
+Devices that do not support PROFIsafe V2 MODE must not be used on a PROFINET IO network 
+only or with mixed configurations of PROFIBUS DP and PROFINET IO. 
+FSW-009
+"F_Source_Add" and "F_Dest_Add" parameters
+The PROFIsafe addresses ("F_Source_Add" and "F_Dest_Add" parameters) uniquely identify the 
+source and destination. 
+The "F_Source_Add" and "F_Dest_Add" parameters for fail-safe DP standard slaves/IO standard 
+devices/PA field devices correspond to the "F_source_address" and "F_destination_address" 
+parameters of other F-I/O. Exception: The value range is specified by the GSD/GSDML file and is 
+not limited to 1 to 1022 for the PROFIsafe destination address.
+Therefore, the information about PROFIsafe address assignment provided in section "General 
+information on configuring the F-I/O (Page 49)" is generally applicable to fail-safe DP standard 
+slaves/IO standard devices.
+"F_WD_Time" parameter
+This parameter defines the F-monitoring time in the fail-safe DP standard slave/IO standard 
+device/PA field device.
+A valid current safety message frame must come from the F-CPU within the monitoring time 
+period. This ensures that failures and faults are detected and appropriate reactions are triggered 
+to maintain the fail-safe system in a safe state or bring it to a safe state. 
+On the one hand, you should set the monitoring time high enough that message frame delays 
+due to communication are tolerated. On the other hand, it should be low enough to enable a 
+quick fault reaction function in case of a fault (interruption of the communication connection, 
+for example).
+The "F_WD_Time" parameter can be set in 1 ms increments. The value range of the "F_WD_Time" 
+parameter is specified by the GSD/GSDML file.
+You can find additional information on the F-monitoring time in the section "Run times, F-
+Monitoring times, and response times (Page 455)".
+"F_iPar_CRC" parameter
+CRC via individual device parameters (i-parameter).
+The individual device parameters (i-parameters) of a fail-safe DP standard slave/IO standard 
+device/PA field device are configured using the device manufacturer's own parameterization 
+tool.
+Configuration
+5.5 Configuring fail-safe DP standard slaves/IO standard devices
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+Programming and Operating Manual, 06/2021, A5E50557762-AA 63
+PDF_PAGE 64
+Enter the CRC calculated by the parameterization tool of the device manufacturer (CPD Tool) for 
+protection of the i-parameters. S7 F Systems takes the value into account when calculating the 
+F-parameter CRC (CRC1).
+FB24 serves as an iPar server for fail-safe DP standard slaves / IO standard devices / PA field 
+devices with iPar functionality.
+You can find additional information in the "Industry Online Support; entry ID 45841087 (http://
+support.automation.siemens.com/WW/view/en/45841087)". 
+See also
+Safety engineering in SIMATIC S7 (https://support.industry.siemens.com/cs/ww/en/view/
+12490443)
+Configuration
+5.5 Configuring fail-safe DP standard slaves/IO standard devices
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+64 Programming and Operating Manual, 06/2021, A5E50557762-AA
+PDF_PAGE 65
+5.6 Configuring fail-safe PA field devices
+Fail-safe PA field devices are configured in the same way as fail-safe DP standard slaves. 
+When configuring PA field devices, follow the procedure described in the chapter entitled 
+"Configuring fail-safe DP standard slaves/IO standard devices (Page 59)". 
+Configuration
+5.6 Configuring fail-safe PA field devices
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+Programming and Operating Manual, 06/2021, A5E50557762-AA 65
+PDF_PAGE 455
+A.5 Run times, F-Monitoring times, and response times
+The Excel table S7FTIME.XLSM provides information about the:
+• Execution times of the F-blocks in the various F-CPUs and help on calculation
+• Max. runtime of the F-shutdown group
+• Min. F-monitoring times
+• Max. reaction time of your F-system
+You can find this file on the Internet (http://support.automation.siemens.com/WW/view/en/
+22557362).
+See also
+Safety engineering in SIMATIC S7 System Manual (http://support.automation.siemens.com/WW/
+view/en/12490443)
+F-libraries
+A.5 Run times, F-Monitoring times, and response times
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+Programming and Operating Manual, 06/2021, A5E50557762-AA 455
+PDF_PAGE 456
+F-libraries
+A.5 Run times, F-Monitoring times, and response times
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+456 Programming and Operating Manual, 06/2021, A5E50557762-AA
+PDF_PAGE 457
+Checklist B
+Introduction 
+The table below contains a checklist summarizing all activities in the life cycle of a fail-safe S7 F/
+FH System, including requirements and rules that must be observed in the various phases.  
+Checklist
+Key:
+• Stand-alone section references refer to this documentation.
+• " SM" refers to the "Safety Engineering in SIMATIC S7 (http://
+support.automation.siemens.com/WW/view/en/12490443)" system manual.
+• " F-SMs manual" refers to the "Automation System S7-300 Fail-Safe Signal Modules (http://
+support.automation.siemens.com/WW/view/en/19026151)" manual.
+• " ET 200S manual" refers to the "Distributed I/O System ET 200S, Fail-Safe Modules (http://
+support.automation.siemens.com/WW/view/en/12490437)" manual.
+• " ET 200SP manual" refers to the "SIMATIC ET 200SP Manual Collection (https://
+support.industry.siemens.com/cs/ww/en/view/84133942)" manual collection.
+• " HB ET 200SP HA" refers to the "ET 200SP HA Distributed I/O system (https://
+support.industry.siemens.com/cs/ww/en/view/109781000)" manual.
+• " ET 200pro manual" refers to the "ET 200pro Distributed I/O Device - Fail-Safe Modules (http://
+support.automation.siemens.com/WW/view/en/22098524)" manual.
+• " ET 200eco manual" refers to the "ET 200eco Distributed I/O Station Fail-safe I/O Module 
+(http://support.automation.siemens.com/WW/view/en/19033850)" manual.
+• " ET 200iSP manual" refers to the "ET 200iSP Distributed I/O Device - Fail-safe Modules (http://
+support.automation.siemens.com/WW/view/en/47357221)" manual.  
+Phase Requirement/Rule Reference Check
+Planning  
+Requirement: A specification 
+with the safety requirements 
+must be available for the plan‐
+ned application.
+Process-dependent —  
+Specification of the system ar‐
+chitecture
+Process-dependent —  
+Assignment of functions and 
+subfunctions to the system 
+components
+Process-dependent Section 3
+SM, section 1.5 
+SM, section 2.4
+ 
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+Programming and Operating Manual, 06/2021, A5E50557762-AA 457
+PDF_PAGE 458
+Phase Requirement/Rule Reference Check
+Selection of sensors and actua‐
+tors
+Requirements for actuators SM, section 4.8
+F-SMs manual, section 6.5 
+ET 200S manual, section 4.5
+ET 200SP manual, Basic information
+HB ET 200SP HA
+ET 200pro manual, section 4.4
+ET 200eco manual, section 5.5
+ET 200iSP manual, section 4.5
+ 
+Definition of required safety 
+properties of the components
+IEC 61508:2010 SM, sections 4.7, 4.8  
+Configuring
+Installation of optional package Requirements for installation Section 4.1  
+Selection of S7 components Rules for configuration Section 3.2
+SM, section 2.4 
+F-SMs manual, section 3
+ET 200S manual, section 3
+ET 200SP manual, Basic information
+HB ET 200SP HA
+ET 200pro manual, section 2
+ET 200eco manual, section 3
+ET 200iSP manual, sec. 2.1
+ 
+Configuration of hardware Rules for S7 F/FH Systems
+Verification of utilized hardware compo‐
+nents based on Annex 1 of Certification Re‐
+port
+Section 5
+Annex 1 of Certification Report
+ 
+Configuring the F-CPU Protection level, "CPU contains safety pro‐
+gram"
+Password
+Sections 5.3, 6
+Manual for Standard S7-400(H)
+ 
+Configuring the F-I/O Settings for safety mode
+Configuring the monitoring times
+Module redundancy (optional)
+Defining the type of sensor interconnec‐
+tion/evaluation
+Sections 5.2, 5.4 - 5.8 
+SM, Appendix A
+F-SMs manual, sections 3, 9, 10
+ET 200S manual, sections 2.4, 7
+ET 200SP manual, Device-specific 
+information
+HB ET 200SP HA
+ET 200pro manual, sections 2.4, 8
+ET 200eco manual, sections 3, 8
+ET 200iSP manual, section 2.4
+ 
+Programming
+Defining program design and 
+structure 
+Warnings and notes on programming
+Verifying the utilized software components 
+based on Annex 1 of Certification Report
+Sections 7.1, 7.2, 7.6
+Annex 1 of Certification Report
+ 
+Inserting the CFC charts Rules for the CFC charts of the safety pro‐
+gram
+Sections 7.2.4 ff, 7.3, 7.7  
+Checklist
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+458 Programming and Operating Manual, 06/2021, A5E50557762-AA
+PDF_PAGE 459
+Phase Requirement/Rule Reference Check
+Inserting F-Runtime groups Rules for F‑Runtime groups of the safety 
+program
+Sections 7.2.7, 7.3  
+Defining F-Shutdown groups Rules for F-Shutdown groups of the safety 
+program
+Section 7.2.8  
+Inserting and interconnecting 
+the F blocks
+Rules for F blocks Section 7, Appendix A  
+Rules for F-Channel drivers and module 
+drivers
+Section 8  
+Rules for interconnecting the 
+F-block F_CYC_CO
+Section 7.2.3
+SM, Appendix A
+ 
+Rules for safety-related communication be‐
+tween F-CPUs
+Section 9  
+Configuring the F-Monitoring times Section 7.2.3, Appendix A.6
+SM, Appendix A
+ 
+Startup characteristics Section 7.5  
+Creating F block types Section 7.7  
+Passivation and reintegration Sections 8.3, 8.4  
+Data exchange between F-Shutdown 
+groups
+Section 7.8  
+Data exchange with standard user program Section 7.9  
+Changing F-parameters from one OS Section 10  
+User acknowledgment Section 7.10  
+Compiling the safety program Rules for compiling Section 12.1  
+Installation
+Hardware configuration Rules for mounting
+Rules for wiring
+Section 14.2
+F-SMs manual, sections 5, 6
+ET 200S manual, sections 3, 4
+ET 200SP manual, Basic information
+HB ET 200SP HA
+ET 200pro manual, sections 2, 3
+ET 200eco manual, sections 3, 4
+ET 200iSP manual, section 4
+ 
+Commissioning, Testing
+Powering up Rules for commissioning (in standard case) Manual for Standard S7-400(H)  
+Downloading the safety pro‐
+gram
+Rules for downloading Sections 12.6, 12.8  
+Testing the safety program Rules for deactivating safety mode
+Rules for testing the safety program
+Sections 12.5.1, 12.7  
+Changing the safety program Rules for deactivating safety mode Section 12.5.1  
+Rules for changing the safety program Sections 12.3, 12.8  
+Checklist
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+Programming and Operating Manual, 06/2021, A5E50557762-AA 459
+PDF_PAGE 460
+Phase Requirement/Rule Reference Check
+Check of safety-related param‐
+eters
+Rules for configuration Sections 12.4, 11 
+F-SMs manual, sections 4, 9, 10
+ET 200S manual, sections 2.4, 7
+ET 200SP manual, Basic information
+HB ET 200SP HA
+ET 200pro manual, sections 2.4, 8
+ET 200eco manual, sections 3, 8 
+ET 200iSP manual, section 2.4
+ 
+Acceptance test Rules and notes on the acceptance test
+Generating printouts
+Section 13  
+Operation, Maintenance
+General operation Notes on operation Section 14  
+Access protection  Section 6  
+Diagnostics Responses to faults and events Appendix A  
+Replacement of software and 
+hardware components
+Rules for module replacement
+Rules for updating the operating system of 
+the F-CPU - same as for standard system
+Rules for updating software components
+Notes on IM operating system update
+Notes on preventive maintenance
+Section 14.2, 
+Manual for Standard S7-400(H)
+ 
+Removing, disassembly Notes for removing software components
+Notes for disassembling modules
+Sections 4.2, 14.2  
+Checklist
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+460 Programming and Operating Manual, 06/2021, A5E50557762-AA
+PDF_PAGE 461
+Requirements for virtual environments and remote 
+access C
+C.1 Summary
+SIMATIC S7 F/FH Systems with S7 F Systems V6.0 and higher and Safety Matrix V6.1 SP1 and 
+higher enable use in virtual environments for ES and OS under the following conditions.
+All restrictions and notes in the corresponding releases of S7 F Systems and Safety Matrix, as well 
+as of STEP 7 and PCS 7 continue to be valid for virtual environments and remote access.
+Virtual environments
+In information technology, a virtual machine refers to the emulation of a real computer system 
+(hardware) on an abstraction layer which can execute multiple virtual machines at the same 
+time. The abstraction layer is known as a hypervisor. Well-known manufacturers are Microsoft 
+(Microsoft Hyper-V), VMware (VMware vSphere Hypervisor (ESXi)) and Citrix (XenServer).
+A virtual environment enables, for example, very convenient test environments, simplifies the 
+transfer of systems and saves space.
+Remote Access and Control
+In information technology, "remote access" designates the takeover of a graphical user interface 
+and can be employed for different types of access. In this document, "remote access" refers to the 
+unique access to the graphical user interface and the transfer of keyboard actions and mouse 
+movements of an Engineering Station or Operator Station. Well-known software products 
+include Microsoft Remote Desktop Protocol (RDP) and the RealVNC Open Source Software VNC 
+(RFC 6143).
+Recommended software requirements
+SIMATIC STEP 7 and PCS 7 are released for virtual environments and remote access and can be 
+integrated in your plant under the environment descriptions linked here.
+Products Product news
+PCS 7 V9.0 SP1 and higher:
+• VMware vSphere V6.5
+Industry Online Support, entry ID 109755764 (https://
+support.industry.siemens.com/cs/ww/en/view/109755764) 
+Service Pack 4 for STEP 7 V5.5 and higher*1):
+• VMware vSphere Hypervisor ESX(i) 5.5
+• VMware Workstation 10.0
+• VMware Player 5.02
+• Microsoft Windows Server 2012 Hyper-V
+Industry Online Support, entry ID 93842005 (https://
+support.industry.siemens.com/cs/ww/en/view/93842005)
+*1) Only configuration, programming and operation in STEP 7 Engineering.
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+Programming and Operating Manual, 06/2021, A5E50557762-AA 461
+PDF_PAGE 462
+Note
+Siemens provides preconfigured virtualization solutions with its "SIMATIC Virtualization as a 
+Service".
+You can find additional information under the following entry: Industry Online Support, entry ID 
+3095 (https://support.industry.siemens.com/sc/ww/en/sc/3095)
+Requirements for virtual environments and remote access
+C.1 Summary
+SIMATIC S7 F/FH Systems – Configuring and Programming V6.4
+462 Programming and Operating Manual, 06/2021, A5E50557762-AA

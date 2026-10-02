@@ -1,0 +1,42 @@
+TC_B_27_CSMS: Reset EVSE - With Ongoing Transaction - Immediate
+Test case name Reset EVSE - With Ongoing Transaction - Immediate
+Test case Id TC_B_27_CSMS
+Use case Id(s) B12
+Requirement(s) N/a
+System under test CSMS
+Description This test case covers how the CSMS can remotely request the Charging Station to reset an EVSE by
+sending a ResetRequest during a transaction. When ResetRequest "Immediate" is send the charging
+stations will try to stop all transactions before rebooting.
+This could for example be necessary if the Charging Station is not functioning correctly.
+Purpose To verify if the CSMS is able to perform the reset mechanism as described at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Request the CSMS to reboot the charging EVSE with status Immediate
+2. The Test System responds with a ResetResponse
+with status Accepted
+1. The CSMS sends a ResetRequest
+with status Immediate
+and evseId <Configured evseId>
+3. The Test System sends a TransactionEventRequest.
+- eventType Ended
+- triggerReason ResetCommand
+- transactionInfo.chargingState EVConnected
+- transactionInfo.stoppedReason ImmediateReset
+4. The CSMS responds with a TransactionEventResponse.
+Tool validations
+* Step 1:
+Message ResetRequest
+- type Immediate
+- evseId <Configured evseId>
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 651/914 Part 6 - Test Cases

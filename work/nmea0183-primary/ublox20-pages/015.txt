@@ -1,0 +1,41 @@
+u-blox 20 HPG 2.00 - Interface description
+Some messages use a fourth level of naming, called the message version. One example is the UBX-
+MGA-GPS message for GPS assistance data, which exists in versions for ephemerides (UBX-MGA-
+GPS-EPH) and almanacs (UBX-MGA-GPS-ALM).
+Names of conﬁguration items are of the form CFG-GROUP-ITEM. For example, CFG-NAVSPG-
+DYNMODEL refers to the navigation dynamic platform model the receiver uses. Constants add
+a fourth level to the item name, such as CFG-NAVSPG-DYNMODEL-AUTOMOT for the automotive
+platform model. In the context of describing an item's value, only the last part of the constant name
+can be used (e.g. "set CFG-NAVSPG-DYNMODEL to PORT for portable applications").
+1.5 GNSS, satellite, and signal identiﬁers
+1.5.1 Overview
+Many UBX protocol messages contain infomation about speciﬁc satellites. Any single satellite can
+be identiﬁed by a gnssId ﬁeld indicating the GNSS the satellite is part of and an svId (SV for space
+vehicle) ﬁeld indicating the number of the satellite in that system. Usually, the svId is the native
+number associated with the satellite in the speciﬁc GNSS. For example, the Galileo SV4 is identiﬁed
+as gnssId 2, svId 4, while the GPS SV4 is gnssId 0, svId 4.
+Some legacy UBX protocol messages combine both the satellite number and the GNSS
+identiﬁcation into a one-byte (type U1) ﬁeld. See the single svid mapping in Satellite identiﬁers to
+identify the corresponding GNSS and satellite.
+GLONASS satellites can be tracked before they have been identiﬁed. In UBX messages, the unknown
+satellites are reported with svId 255. In NMEA messages, the unknown satellites are null (empty)
+ﬁelds. Product-related documentation and u-center use R? to label unidentiﬁed GLONASS satellites.
+Signal identiﬁers are used when diﬀerent signals from the same GNSS satellite need to be
+distinguished (e.g. in the UBX-NAV-SIG message). A separate sigId ﬁeld identiﬁes the signal. These
+signal identiﬁers are only valid when combined with a GNSS identiﬁer (gnssId ﬁeld).
+The NMEA protocol (version 4.10 and later) identiﬁes GNSS satellites with a one-digit system ID
+and a two-digit satellite number. u-blox receivers support this method in their NMEA output when
+"strict" SV numbering is selected. In most cases this is the default setting, but it can be checked or
+changed using the Conﬁguration interface (see also NMEA GNSS, satellite, and signal numbering).
+In order to support some GNSS (e.g. BeiDou, Galileo, QZSS), which are not supported by some or
+all NMEA protocol versions, an "extended" SV numbering scheme can be enabled. This uses the
+NMEA-deﬁned numbers where possible but adds other number ranges to support other GNSS. Note
+however that these non-standard extensions require 3-digit numbers, which may not be supported
+by some NMEA parsing software. For example, QZSS satellites use numbers in the range 193 to 202.
+The NMEA standard deﬁnes signal identiﬁers to distinguish diﬀerent signals sent by a single
+GNSS satellite (e.g. L2 CL and CM). u-blox positioning receivers use those identiﬁers for signal
+identiﬁcation, as far as the corresponding standard is supported in a particular product.
+UBXDOC-304424225-19888 - R01
+ 
+1 General information Page 15 of 224
+C1-Public

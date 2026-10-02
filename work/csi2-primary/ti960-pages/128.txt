@@ -1,0 +1,59 @@
+RX port-specific register. The FPD-Link III Port Select register 0x4C configures which unique Rx port registers 
+can be accessed by I2C read and write commands.
+Table 7-132. CSI_ERR_COUNTER Register Field Descriptions
+Bit Field Type Reset Description
+7:0 CSI_ERR_CNT RC 0x0 CSI-2 Error Counter Register
+This register counts the number of CSI-2 packets received with 
+errors since the last read of the counter.
+7.6.1.111 PORT_CONFIG2 Register (Address = 0x7C) [Reset = 0x20] 
+PORT_CONFIG2 is shown in Table 7-133.
+Return to the Summary Table.
+RX port-specific register. The FPD-Link III Port Select register 0x4C configures which unique Rx port registers 
+can be accessed by I2C read and write commands.
+Table 7-133. PORT_CONFIG2 Register Field Descriptions
+Bit Field Type Reset Description
+7:6 RAW10_8BIT_CTL R/W 0x0 Raw10 8-bit mode
+When Raw10 Mode is enabled for the port, the input data is 
+processed as 8-bit data and packed accordingly for transmission 
+over CSI.
+00: Normal Raw10 Mode
+01: Reserved
+10: 8-bit processing using upper 8 bits
+11: 8-bit processing using lower 8 bits
+5 DISCARD_ON_PAR_ERR R/W 0x1 Discard frames on Parity Error
+0: Forward packets with parity errors
+1: Truncate Frames if a parity error is detected
+4 DISCARD_ON_LINE R/W 0x0 Discard frames on Line Size
+0: Allow changes in Line Size within packets
+1: Truncate Frames if a change in line size is detected
+3 DISCARD_ON_FRAME R/W 0x0 Discard frames on change in Frame Size
+When enabled, a change in the number of lines in a frame will 
+result in truncation of the packet. The device will resume forwarding 
+video frames based on the PASS_THRESHOLD setting in the 
+PORT_PASS_CTL register.
+0: Allow changes in Frame Size
+1: Truncate Frames if a change in frame size is detected
+2 AUTO_POLARITY R/W 0x0 Automatic Polarity Detection
+This register enables automatic polarity detection. When this bit 
+is set, polarity of LineValid and FrameValid will be automatically 
+detected from the incoming data. In this mode, at least one initial 
+frame will be discarded to allow for proper detection of the incoming 
+video.
+1: Automatically detect LV and FV polarity
+0: Use LV_POLARITY and FV_POLARITY register settings to 
+determine polarity
+1 LV_POLARITY R/W 0x0 LineValid Polarity
+This register indicates the expected polarity for the LineValid 
+indication received in Raw mode.
+1: LineValid is low for the duration of the video frame
+0: LineValid is high for the duration of the video frame
+0 FV_POLARITY R/W 0x0 FrameValid Polarity
+This register indicates the expected polarity for the FrameValid 
+indication received in Raw mode.
+1: FrameValid is low for the duration of the video frame
+0: FrameValid is high for the duration of the video frame
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+128 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

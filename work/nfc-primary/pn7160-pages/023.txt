@@ -1,0 +1,44 @@
+NXP Semiconductors PN7160_PN7161
+Near Field Communication (NFC) controller
+To enable and ensure data flow control between PN7160 and host controller, additionally a dedicated interrupt
+line IRQ is provided which Active state is programmable. See ref.[6] for more information.
+11.2.1  I2C-bus interface
+The I2C-bus interface implements a target I2C-bus interface with integrated shift register, shift timing generation,
+and target address recognition.
+I2C-bus Standard mode (100 kHz SCL), Fast mode (400 kHz SCL), and High-speed mode (3.4 MHz SCL) are
+supported.
+The main hardware characteristics of the I2C-bus module are:
+• Support target I2C-bus
+• Standard, Fast and High-speed modes supported
+• Wake-up of PN7160 on its address only
+• Serial clock synchronization can be used by PN7160 as a handshake mechanism to suspend and resume
+serial transfer (clock stretching)
+The I2C-bus interface module meets the I2C-bus specification ref.[4] except General call, 10 bit addressing, and
+Fast-mode Plus (Fm+).
+11.2.1.1  I2C-bus configuration
+The I2C-bus interface shares four pins with SPI-bus interface also supported by PN7160. When I2C-bus is
+configured in EEPROM settings, functionality of the interface pins changes as described in Table 13.
+Pin name Functionality
+HIF1 I2C-bus address 0
+HIF2 I2C-bus address 1
+HIF3 [1] I2C-bus data line
+HIF4 [1] I2C-bus clock line
+Table 13. Functionality for I2C-bus interface
+[1] HIF3 and HIF4 are not fail-safe and VDD(pad) shall always be available when using the SCL and SDA lines connected to these pins.
+PN7160 supports 7-bit addressing mode. Selection of the I2C-bus address is done by 2-pin configurations on
+top of a fixed binary header: 0, 1, 0, 1, 0, HIF2, HIF1, R/W.
+HIF2 HIF1 I2C-bus address
+(R/W = 0, write)
+I2C-bus address
+(R/W = 1, read)
+0 0 0x50 0x51
+0 1 0x52 0x53
+1 0 0x54 0x55
+1 1 0x56 0x57
+Table 14. I2C-bus interface addressing
+11.2.2  Serial Peripheral Interface bus (SPI-bus)
+11.2.2.1  Features
+• Synchronous, Serial, Full-Duplex communication, 7 MHz maximum
+PN7160_PN7161 All information provided in this document is subject to legal disclaimers. © 2026 NXP B.V. All rights reserved.
+Product data sheet Rev. 4.2 — 22 July 2026 Document feedback
+23 / 70

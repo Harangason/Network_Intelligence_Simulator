@@ -1,0 +1,34 @@
+A Security
+TC_A_01_CS: Basic Authentication - Valid username/password combination
+Test case name Basic Authentication - Valid username/password combination
+Test case Id TC_A_01_CS
+Use case Id(s) A00, B01
+Requirement(s) A00.FR.202, A00.FR.203, A00.FR.204, A00.FR.205, A00.FR.301, A00.FR.302, A00.FR.304 AND B01.FR.01,
+B01.FR.05, B01.FR.09
+System under test Charging Station
+Description The Charging Station uses Basic authentication to authenticate itself to the CSMS, when using security
+profile 1 or 2.
+Purpose To verify whether the Charging Station is able to authenticate itself to the CSMS using Basic Authentication.
+Prerequisite(s) - The charging station supports security profile 1 and/or 2
+- The active NetworkConnectionProfile uses either security profile 1 OR 2.
+Before (Preparations)
+Configuration State:
+SecurityCtrlr.BasicAuthPassword is <Configured basicAuthPassword>
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State Booted
+Tool validations
+* Step 1:
+The authorization header of the HTTP upgrade request must be formatted as follows:
+AUTHORIZATION: Basic <Base64 encoded(<ChargingStationId>:<Configured basicAuthPassword>)>
+- The ChargingStationId, must equal the ChargingStationId provided at the end of the connection url string of the HTTP request.
+- BasicAuthPassword must consist of minimum 16 and maximum 40 characters
+- BasicAuthPassword may only contain alpha-numeric characters and the special characters allowed by passwordString.
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 4/1383 Part 6 - Test Cases

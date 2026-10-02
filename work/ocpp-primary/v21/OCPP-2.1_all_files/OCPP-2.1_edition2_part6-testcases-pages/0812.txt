@@ -1,0 +1,51 @@
+Main (Test scenario)
+1. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+Note(s):
+- This step is applicable if <Configured EVProtocol> is ISO15118
+and is captured by Authorized15118 (for 15118-20), but validated
+on testcase level.
+2. Test System responds with a
+NotifyEVChargingNeedsResponse with
+status Accepted
+4. The Charging Station responds with a
+SetChargingProfileResponse
+3. The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile
+- transactionId <transactionId>
+- chargingProfilePurpose TxProfile
+-
+chargingSchedule[0].chargingSchedulePeriod[0].operationMod
+e CentralSetpoint
+5. The Charging station sends a
+NotifyEVChargingScheduleRequest
+Note(s):
+- This step is applicable if <Configured EVProtocol> is ISO15118
+6. The Test System responds with a
+NotifyEVChargingScheduleResponse with
+status Accepted
+7. Execute Reusable State EnergyTransferStarted
+8. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step is captured by the reusable states, but validated on
+testcase level.
+9. The Test System responds with a TransactionEventResponse
+The SampledDataCtrlr.TxUpdatedInterval expires
+10. The Charging Station sends a TransactionEventRequest 11. The Test System responds with a
+TransactionEventResponse
+Note(s): The Charging Station receives a SessionStopReq(Terminate) message from the EV.
+IF <Configured EVProtocol> is CHAdeMO THEN
+12a. Execute Reusable State StopAuthorized (local)
+ELSE IF <Configured EVProtocol> is ISO15118 THEN
+12b. Execute Reusable State EnergyTransferSuspended
+13. Execute Reusable State EVDisconnected
+14. Execute Reusable State ParkingBayUnoccupied
+15. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step is captured by the reusable state steps, but an
+additional validation is described on testcase level.
+16. The Test System responds with a
+TransactionEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 810/1383 Part 6 - Test Cases

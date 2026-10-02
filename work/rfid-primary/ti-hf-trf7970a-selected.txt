@@ -1,0 +1,160 @@
+PDF_PAGE11
+11
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+SpecificationsCopyright © 2011–2020, Texas Instruments Incorporated
+(1) This data was taken using the JEDEC standard high-K test PCB.
+(2) Power rating is determined with a junction temperature of 125°C. This is the temperature at which distortion starts to increase
+substantially. Thermal management of the final PCB should strive to keep the junction temperature at or below 125°C for best
+performance and long-term reliability.
+5.5 Thermal Resistance Characteristics
+PACKAGE θJC θJA (1) POWER RATING (2)
+TA ≤ 25°C TA ≤ 85°C
+RHB (32 pin) 31°C/W 36.4°C/W 2.7 W 1.1 W
+(1) TI recommends a DATA_CLK speed of 2 MHz. Higher data clock depends on the capacitive load. Maximum SPI clock speed should not
+exceed 10 MHz. This clock speed is acceptable only when external capacitive load is less than 30 pF. MISO driver has a typical output
+resistance of 400 Ω (12-ns time constant when 30-pF load used).
+5.6 Switching Characteristics
+TYP operating conditions are TA = 25°C, VIN = 5 V, full-power mode (unless otherwise noted)
+MIN and MAX operating conditions are over recommended ranges of supply voltage and operating free-air temperature
+(unless otherwise noted)
+PARAMETER TEST CONDITIONS MIN TYP MAX UNIT
+tLO/HI
+DATA_CLK time high or low, one half of DATA_CLK at
+50% duty cycle
+Depends on capacitive load on the
+I/O lines (1) 250 62.5 50 ns
+tSTE,LEAD Slave select lead time, slave select low to clock 200 ns
+tSTE,LAG Slave select lag time, last clock to slave select high 200 ns
+tSTE,DIS
+Slave select disable time, slave select rising edge to
+next slave select falling edge 300 ns
+tSU,SI MOSI input data setup time 15 ns
+tHD,SI MOSI input data hold time 15 ns
+tSU,SO MISO input data setup time 15 ns
+tHD,SO MISO input data hold time 15 ns
+tVALID,SO MISO output data valid time DATA_CLK edge to MISO valid,
+CL ≤ 30 pF 30 50 75 ns
+PDF_PAGE12
+TRF7970A MCU
+(MSP430 or ARM)
+Matching
+VDD_X VDD_I/O
+TX_OUT
+RX_IN 1
+RX_IN2 VSS VIN
+Parallel
+or SPI
+Supply: 2.7 V to 5.5 V
+VDD
+VDD
+Crystal
+13.56 MHz
+XIN
+12
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+6 Detailed Description
+6.1 Overview
+6.1.1 RFID and NFC Operation – Reader and Writer
+The TRF7970A is a high-performance 13.56-MHz HF RFID and NFC transceiver IC composed of an
+integrated analog front end (AFE) and a built-in data framing engine for ISO/IEC 15693, ISO/IEC 14443 A
+and B, and FeliCa. This includes data rates up to 848 kbps for ISO/IEC 14443 with all framing and
+synchronization tasks on board (in default mode). The TRF7970A also supports NFC tag type 1, 2, 3, 4,
+and 5 operations. This architecture lets the customer build a complete cost-effective yet high-performance
+multiprotocol 13.56-MHz RFID and NFC system together with a low-cost microcontroller.
+Other standards and even custom protocols can be implemented by using either of the direct modes that
+the device offers. These direct modes (0 and 1) allow the user to fully control the analog front end (AFE)
+and also gain access to the raw subcarrier data or the unframed but already ISO formatted data and the
+associated (extracted) clock signal.
+The receiver system has a dual input receiver architecture. The receivers also include various automatic
+and manual gain control options. The received input bandwidth can be selected to cover a broad range of
+input subcarrier signal options.
+The received signal strength from transponders, ambient sources, or internal levels is available through
+the RSSI register. The receiver output is selectable among a digitized subcarrier signal and any of the
+integrated subcarrier decoders. The selected subcarrier decoder delivers the data bit stream and the data
+clock as outputs.
+The TRF7970A also includes a receiver framing engine. This receiver framing engine performs the CRC
+or parity check, removes the EOF and SOF settings, and organizes the data in bytes for ISO/IEC 14443 A
+and B, ISO/IEC 15693, and FeliCa protocols. Framed data is then accessible to the microcontroller (MCU)
+through a 127-byte FIFO register.
+Figure 6-1. Application Block Diagram
+A parallel or serial interface (SPI) can be used for the communication between the MCU and the
+TRF7970A reader. When the built-in hardware encoders and decoders are used, transmit and receive
+functions use a 127-byte FIFO register. For direct transmit or receive functions, the encoders and
+decoders can be bypassed so that the MCU can process the data in real time. The TRF7970A supports
+data communication voltage levels from 1.8 V to 5.5 V for the MCU I/O interface. The transmitter has
+selectable output-power levels of 100 mW (+20 dBm) or 200 mW (+23 dBm) equivalent into a 50-Ω load
+when using a 5-V supply.
+PDF_PAGE17
+17
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Power Amplifier Supply: VDD_PA
+The power amplifier of the TRF7970A is supplied through VDD_PA (pin 4). The positive supply pin for the
+RF power amplifier is externally connected to the regulator output VDD_RF (pin 3).
+I/O Level Shifter Supply: VDD_I/O
+The TRF7970A has a separate supply input VDD_I/O (pin 16) for the built-in I/O level shifter. The supported
+input voltage ranges from 1.8 V to VIN, not exceeding 5.5 V. Pin 16 is used to supply the I/O interface pins
+(I/O_0 to I/O_7), IRQ, SYS_CLK, and DATA_CLK pins of the reader. In typical applications, VDD_I/O is
+directly connected to VDD_X, while VDD_X also supplies the MCU. This ensures that the I/O signal levels of
+the MCU match the logic levels of the TRF7970A.
+Negative Supply Connections: VSS, VSS_TX, VSS_RX, VSS_A, VSS_PA
+The negative supply connections VSS_X of each functional block are all externally connected to GND.
+The substrate connection is VSS (pin 10), the analog negative supply is VSS_A (pin 15), the logic negative
+supply is VSS_D (pin 29), the RF output stage negative supply is VSS_PA (pin 6), and the negative supply for
+the RF receiver VSS_RX (pin 7).
+PDF_PAGE40
+40
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-21. Continuous Read of Registers 0x00 to 0x05 Using SPI With SS
+Figure 6-22 shows an example of performing a single slot inventory command. Reader registers (in this example)
+are configured for 5 VDC in and default operation.
+Figure 6-22. Inventory Command Sent From MCU to TRF7970A
+The TRF7970A takes these bytes from the MCU and then send out Request Flags, Inventory Command,
+and Mask over the air to the ISO/IEC 15693 transponder. After these three bytes have been transmitted,
+an interrupt occurs to indicate back to the reader that the transmission has been completed. In the
+example in Figure 6-23, this IRQ occurs approximately 1.6 ms after the SS line goes high after the
+Inventory command is sent out.
+PDF_PAGE41
+41
+TRF7970A
+www.ti.com SLOS743M – AUGUST 2011 – REVISED MARCH 2020
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed DescriptionCopyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-23. IRQ After Inventory Command
+The IRQ status register read (0x6C) yields 0x80, which indicates that TX is indeed complete. This is
+followed by a dummy clock. Then, if a tag is in the field and no error is detected by the reader, a second
+interrupt is expected and occurs (in this example) approximately 4 ms after first IRQ is read and cleared.
+In the continuation of the example (see Figure 6-24), the IRQ Status Register is read using method
+previously recommended, followed by a single read of the FIFO Status register, which indicates that there
+are 10 bytes to be read out.
+Figure 6-24. Read IRQ Status Register After Inventory Command
+This is then followed by a continuous read of the FIFO (see Figure 6-25). The first byte is (and should be)
+0x00 for no error. The next byte is the DSFID (usually shipped by manufacturer as 0x00), then the UID,
+shown here up to the next most significant byte, the MFG code [shown as 0x07 (TI silicon)].
+PDF_PAGE42
+42
+TRF7970A
+SLOS743M – AUGUST 2011 – REVISED MARCH 2020 www.ti.com
+Submit Documentation Feedback
+Product Folder Links: TRF7970A
+Detailed Description Copyright © 2011–2020, Texas Instruments Incorporated
+Figure 6-25. Continuous Read of FIFO After Inventory Command
+TI recommends resetting the FIFO after receiving data. Additionally, the RSSI value of the tag can be read
+out at this point. In the example in Figure 6-26, the transponder is very close to the antenna, so value of
+0x7F is recovered.
+Figure 6-26. Reset FIFO and Read RSSI

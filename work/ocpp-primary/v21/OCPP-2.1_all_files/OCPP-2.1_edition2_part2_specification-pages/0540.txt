@@ -1,0 +1,43 @@
+EV Charging Station CSMS
+Transaction has started
+alt [15118-20 Scheduled mode]
+Not applicable
+[15118-20 Dynamic mode]
+ScheduleExchangeReq( DepartureTime, EVTargetEnergyRequest,
+Dynamic, ... )
+NotifyEVChargingNeedsRequest(
+DepartureTime, EVTargetEnergyRequest, ... )
+NotifyEVChargingNeedsResponse( Accepted )
+SetChargingProfileRequest( v2xSchedule
+"CentralFrequency" )
+SetChargingProfileResponse( Accepted )
+ScheduleExchangeRes()
+PowerDeliveryReq()
+PowerDeliveryRes()
+loop [Updating setpoint dynamically every schedule period]
+UpdateDynamicScheduleRequest( setpoint )
+UpdateDynamicScheduleResponse()
+Adjust power to setpoint in period
+AC/DC_ChargeLoopReq()
+Continuous charge loop
+AC/DC_ChargeLoopRes( setpoint )
+[CHAdeMO]
+evChargingParameters
+evseChargingParameters
+SoC
+SetChargingProfileRequest( v2xSchedule,
+"Dynamic", "CentralFrequency")
+SetChargingProfileResponse( Accepted )
+loop [Updating power setpoint every schedule period]
+UpdateDynamicScheduleRequest( setpoint )
+UpdateDynamicScheduleResponse()
+Adjust power to value in schedule period
+Available output current (H'108.3)
+Charging current request (H'102.3)
+Figure 192. V2X Operation Mode CentralFrequency
+Q07 - Central V2X control for frequency support - Requirements
+NOTE This use case is a variant of CentralSetpoint from Q04 - Central V2X control with dynamic CSMS setpoint and
+Dynamic charging profiles from K28 - Dynamic charging profiles from CSMS.
+Table 157. Q07 - Requirements
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 527/803 Part 2 - Specification

@@ -1,0 +1,60 @@
+TariffConditionsType is used by: Common:TariffEnergyPriceType , Common:TariffTimePriceType
+Field Name Field Type Card. Description
+startTimeOfDay string 0..1 Optional. Start time of day in local time.
+Format as per RFC 3339: time-hour ":" time-minute 
+Must be in 24h format with leading zeros. Hour/Minute
+separator: ":" Regex: ([0-1][0-9]|2[0-3]):[0-5][0-9]
+endTimeOfDay string 0..1 Optional. End time of day in local time. Same syntax as
+startTimeOfDay.
+If end time < start time then the period wraps around to
+the next day.
+To stop at end of the day use: 00:00.
+dayOfWeek DayOfWeekEnumType 0..7 Optional. Day(s) of the week this is tariff applies.
+validFromDate string 0..1 Optional. Start date in local time, for example: 2015-12-
+24. Valid from this day (inclusive).
+Format as per RFC 3339: full-date 
+Regex: ([12][0-9]{3})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])
+validToDate string 0..1 Optional. End date in local time, for example: 2015-12-27.
+Valid until this day (exclusive). Same syntax as
+validFromDate.
+evseKind EvseKindEnumType 0..1 Optional. Type of EVSE (AC, DC) this tariff applies to.
+minEnergy decimal 0..1 Optional. Minimum consumed energy in Wh, for example
+20000 Wh. Valid from this amount of energy (inclusive)
+being used.
+maxEnergy decimal 0..1 Optional. Maximum consumed energy in Wh, for example
+50000 Wh. Valid until this amount of energy (exclusive)
+being used.
+minCurrent decimal 0..1 Optional. Sum of the minimum current (in Amperes) over
+all phases, for example 5 A. When the EV is charging with
+more than, or equal to, the defined amount of current, this
+price is/becomes active. If the charging current is or
+becomes lower, this price is not or no longer valid and
+becomes inactive.
+This is NOT about the minimum current over the entire
+transaction.
+maxCurrent decimal 0..1 Optional. Sum of the maximum current (in Amperes) over
+all phases, for example 20 A. When the EV is charging
+with less than the defined amount of current, this price
+becomes/is active. If the charging current is or becomes
+higher, this price is not or no longer valid and becomes
+inactive. This is NOT about the maximum current over the
+entire transaction.
+minPower decimal 0..1 Optional. Minimum power in W, for example 5000 W.
+When the EV is charging with more than, or equal to, the
+defined amount of power, this price is/becomes active. If
+the charging power is or becomes lower, this price is not
+or no longer valid and becomes inactive. This is NOT
+about the minimum power over the entire transaction.
+maxPower decimal 0..1 Optional. Maximum power in W, for example 20000 W.
+When the EV is charging with less than the defined
+amount of power, this price becomes/is active. If the
+charging power is or becomes higher, this price is not or
+no longer valid and becomes inactive. This is NOT about
+the maximum power over the entire transaction.
+minTime integer 0..1 Optional. Minimum duration in seconds the transaction
+(charging & idle) MUST last (inclusive). When the duration
+of a transaction is longer than the defined value, this
+price is or becomes active. Before that moment, this
+price is not yet active.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 668/803 Part 2 - Specification

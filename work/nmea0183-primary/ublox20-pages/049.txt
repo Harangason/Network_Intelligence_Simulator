@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+❹ The message structure gives the parameters for the UBX frame structure, notably the message
+class and message ID values and the payload length. For many messages the payload length is
+a ﬁxed number (of bytes). Messages that contain repeated blocks of information (ﬁelds) have a
+variable payload (see UBX repeated ﬁelds).
+❺ The message payload deﬁnition is given as a list of ﬁelds and their parameters. Each ﬁeld starts
+at a speciﬁed oﬀset (in bytes) in the payload (see also UBX structure packing), is of a speciﬁc type
+(see UBX data types), has a unique name (within the message), and a description. Optionally, ﬁelds
+can have a scale and/or a unit (see UBX ﬁelds scale and unit).
+❻ Bitﬁelds ("X" types) are broken down into smaller parts. Each part can be one or more bits wide.
+Values that are two or more bits wide can be unsigned or one of two signed value representation
+(see UBX data types). Note that the ten unused bits 15…6 are not explicitly stated as UBX reserved
+elements.
+❼ Fields can be arrays of values of the same type (see UBX repeated ﬁelds).
+❽ Groups of ﬁelds can be repeated in the payload. The number of repetitions can be given by another
+ﬁeld in the message (this example), a constant number, zero or one times (known as "optional
+group"), or derived from the remaining payload size (labeled as "repeated N times"). See also UBX
+repeated ﬁelds and UBX payload decoding.
+3.8 UBX messages overview
+Message Class/ID Description (Type)
+UBX-ACK – Acknowledgement and negative acknowledgement messages
+UBX-ACK-ACK 0x05 0x01 • Message acknowledged (Output)
+UBX-ACK-NAK 0x05 0x00 • Message not acknowledged (Output)
+UBX-CFG – Conﬁguration and command messages
+UBX-CFG-CFG 0x06 0x09 • Clear, save and load conﬁgurations (Command)
+UBX-CFG-OTP 0x06 0x41 • Write ﬁle 0xA4: receiver conﬁguration items (Set)
+UBX-CFG-RST 0x06 0x04 • Reset receiver / Clear backup data structures (Command)
+UBX-INF – Information messages
+UBX-INF-DEBUG 0x04 0x04 • ASCII output with debug contents (Output)
+UBX-INF-ERROR 0x04 0x00 • ASCII output with error contents (Output)
+UBX-INF-NOTICE 0x04 0x02 • ASCII output with informational contents (Output)
+UBX-INF-TEST 0x04 0x03 • ASCII output with test contents (Output)
+UBX-INF-WARNING 0x04 0x01 • ASCII output with warning contents (Output)
+UBX-LOG – Logging messages
+UBX-LOG-CREATE 0x21 0x07 • Create log ﬁle (Command)
+UBX-LOG-ERASE 0x21 0x03 • Erase logged data (Command)
+UBX-LOG-FINDTIME 0x21 0x0e • Find index of a log entry based on a given time (Input)
+• Response to FINDTIME request (Output)
+UBX-LOG-INFO 0x21 0x08 • Poll for log information (Poll request)
+• Log information (Output)
+UBX-LOG-RETRIEVE 0x21 0x09 • Request log data (Command)
+UBX-LOG-STRING 0x21 0x04 • Store arbitrary string in on-board ﬂash (Command)
+UBX-MGA – GNSS assistance (A-GNSS) messages
+UBX-MGA-ACK 0x13 0x60 • Multiple GNSS acknowledge message (Output)
+UBX-MGA-BDS 0x13 0x03 • BeiDou ephemeris assistance for satellites svId 1..37 (Input)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 49 of 224
+C1-Public

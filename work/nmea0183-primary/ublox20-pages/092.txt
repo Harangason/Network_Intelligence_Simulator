@@ -1,0 +1,44 @@
+u-blox 20 HPG 2.00 - Interface description
+56 R4 velCovED - m^2/s^2 Velocity covariance matrix value v_ED
+60 R4 velCovDD - m^2/s^2 Velocity covariance matrix value v_DD
+3.15.3 UBX-NAV-DOP (0x01 0x04)
+3.15.3.1 Dilution of precision
+Message UBX-NAV-DOP
+Dilution of precision
+Type Periodic/polled
+Comment • DOP values are dimensionless.
+• All DOP values are scaled by a factor of 100. If the unit transmits a value of e.g. 156, the DOP value is
+1.56.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x04 18 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+4 U2 gDOP 0.01 - Geometric DOP
+6 U2 pDOP 0.01 - Position DOP
+8 U2 tDOP 0.01 - Time DOP
+10 U2 vDOP 0.01 - Vertical DOP
+12 U2 hDOP 0.01 - Horizontal DOP
+14 U2 nDOP 0.01 - Northing DOP
+16 U2 eDOP 0.01 - Easting DOP
+3.15.4 UBX-NAV-EOE (0x01 0x61)
+3.15.4.1 End of epoch
+Message UBX-NAV-EOE
+End of epoch
+Type Periodic
+Comment This message is intended to be used as a marker to collect all navigation messages of an epoch. It is output
+after all enabled NAV class messages and after all enabled NMEA messages.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x61 4 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+3.15.5 UBX-NAV-GEOFENCE (0x01 0x39)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 92 of 224
+C1-Public

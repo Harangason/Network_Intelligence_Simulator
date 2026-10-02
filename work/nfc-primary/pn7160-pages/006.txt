@@ -1,0 +1,37 @@
+NXP Semiconductors PN7160_PN7161
+Near Field Communication (NFC) controller
+6   Firmware versions
+6.1  Firmware version and model ID retrieval
+It is possible to identify a dedicated installed firmware version.
+In addition, the product versions PN7160 and PN7161 can be differentiated thanks to the model ID.
+• model ID value 0x61 indicates PN7160
+• model ID value 0x71 indicates PN7161
+The 9th byte of the CORE_RESET_NTF indicates the model ID. The 10th, 11th, and 12th bytes of the
+CORE_RESET_NTF indicate the installed FW version.
+Example:
+The model ID is retrieved from the CORE_RESET_NTF following CORE_RESET_CMD/RSP sequence (first
+NCI exchanges when initializing PN7160/PN7161).
+In the following NCI exchange sequence:
+>> 20 00 01 00 // CORE_RESET_CMD
+<< 40 00 01 00 // CORE_RESET_RSP
+<< 60 00 09 02 00 20 04 04 71 12 50 05 // CORE_RESET_NTF
+The 9th byte of the CORE_RESET_NTF indicates the model ID (0x71 in the example above == PN7161) .
+The 10th, 11th, and 12th bytes od the CORE_RESET_NTF indicate the FW version (0x12, 0x50, 0x05 point to
+FW version 12.50.05).
+6.2  Version 12.50.11
+This firmware version is an update from firmware 12.50.10
+Changes compared to FW 12.50.10:
+• Robust behaviour when wake-up from standby in all dynamic ECP and static ECP conditions.
+6.3  Version 12.50.10
+This firmware version is an update from 12.50.0D - it does not include the changes done for FW 12.50.0E
+Changes compared to FW 12.50.0D:
+• Added the functionality to provide higher voltage level during XTAL startup kick with CLOCK_SEL_CFG API
+(0xA0 0x03) bit b4.
+• Added a configuration API (0xA0 0x6F) to enable/disable the NTF is sent with 0xE9 indicating that the XTAL
+startup kick is retried in case the crystal is not starting as expected.
+6.4  Version 12.50.0E
+Changes in this version:
+• Fixed stability issues during handling of RF_DEACTIVATE_CMD (to IDLE) and RF_DEACTIVATE_RSP.
+PN7160_PN7161 All information provided in this document is subject to legal disclaimers. © 2026 NXP B.V. All rights reserved.
+Product data sheet Rev. 4.2 — 22 July 2026 Document feedback
+6 / 70

@@ -1,0 +1,60 @@
+Table 7-98. BCC_CONFIG Register Field Descriptions (continued)
+Bit Field Type Reset Description
+6 I2C_PASS_THROUGH R/W 0x0 I2C Pass-Through to Serializer if decode matches
+0: Pass-Through Disabled
+1: Pass-Through Enabled
+5 AUTO_ACK_ALL R/W 0x0 Automatically Acknowledge all I2C writes independent of the forward 
+channel lock state or status of the remote Acknowledge
+1: Enable
+0: Disable
+4 BC_ALWAYS_ON R/W 0x1 Back channel enable
+1: Back channel is always enabled independent of 
+I2C_PASS_THROUGH and I2C_PASS_THROUGH_ALL
+0: Back channel enable requires setting of either 
+I2C_PASS_THROUGH and I2C_PASS_THROUGH_ALL
+This bit may only be written via a local I2C controller.
+3 BC_CRC_GENERATOR_
+ENABLE
+R/W 0x1 Back Channel CRC Generator Enable
+0: Disable
+1: Enable
+2:0 BC_FREQ_SELECT R/WStrap X Back Channel Frequency Select (Strap)
+000: 2.5 Mbps (default for DS90UB913A-Q1 / DS90UB933-Q1 
+compatibility)
+001: Reserved
+010: 10 Mbps
+011: Reserved
+100: Reserved
+101: Reserved
+110: 50 Mbps (default for DS90UB953-Q1 compatibility)
+111: Reserved
+Note that changing this setting will result in some errors on the back 
+channel for a short period of time. If set over the control channel, the 
+Deserializer will first be programmed to Auto-Ack operation to avoid 
+a control channel timeout due to lack of response from the Serializer.
+7.6.1.77 DATAPATH_CTL1 Register (Address = 0x59) [Reset = 0x00] 
+DATAPATH_CTL1 is shown in Table 7-99.
+Return to the Summary Table.
+RX port-specific register. The FPD-Link III Port Select register 0x4C configures which unique Rx port registers 
+can be accessed by I2C read and write commands.
+Table 7-99. DATAPATH_CTL1 Register Field Descriptions
+Bit Field Type Reset Description
+7 OVERRIDE_FC_CONFIG R/W 0x0 1: Disable loading of the DATAPATH_CTL registers from the forward 
+channel, keeping locally written values intact
+0: Allow forward channel loading of DATAPATH_CTL registers
+6:2 RESERVED R 0x0 Reserved
+1:0 FC_GPIO_EN R/W 0x0 Forward Channel GPIO Enable
+Configures the number of enabled forward channel GPIOs
+00: GPIOs disabled
+01: One GPIO
+10: Two GPIOs
+11: Four GPIOs
+This field is normally loaded from the remote serializer. It can be 
+overwritten if the OVERRIDE_FC_CONFIG bit in this register is 1.
+7.6.1.78 SER_ID Register (Address = 0x5B) [Reset = 0x00] 
+SER_ID is shown in Table 7-100.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 115
+Product Folder Links: DS90UB960-Q1

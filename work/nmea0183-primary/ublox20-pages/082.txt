@@ -1,0 +1,48 @@
+u-blox 20 HPG 2.00 - Interface description
+• 1 = I2C
+• 2 = UART1
+• 3 = UART2
+• 4 = USB
+• 5 = SPI
+3 U1 reserved0 - - Reserved
+4 U1[4] protIds - The identiﬁers of the protocols reported in the msgs
+array. 0: UBX, 1: NMEA, 2: RTCM2, 5: RTCM3, 6:
+SPARTN, 0xFF: No protocol reported.
+Start of repeated group (nPorts times)
+8 + n·40 U2 portId - - Unique identiﬁer for the port. See section
+Communications ports in the integration manual for
+details.
+10 + n·40 U2 txPending - bytes Number of bytes pending in transmitter buﬀer
+12 + n·40 U4 txBytes - bytes Number of bytes ever sent
+16 + n·40 U1 txUsage - % Maximum usage transmitter buﬀer during the last
+sysmon period
+17 + n·40 U1 txPeakUsage - % Maximum usage transmitter buﬀer
+18 + n·40 U2 rxPending - bytes Number of bytes in receiver buﬀer
+20 + n·40 U4 rxBytes - bytes Number of bytes ever received
+24 + n·40 U1 rxUsage - % Maximum usage receiver buﬀer during the last
+sysmon period
+25 + n·40 U1 rxPeakUsage - % Maximum usage receiver buﬀer
+26 + n·40 U2 overrunErrs - - Number of 100 ms timeslots with overrun errors
+28 + n·40 U2[4] msgs - msg Number of successfully parsed messages for each
+protocol. The reported protocols are identiﬁed through
+the protIds ﬁeld.
+36 + n·40 U1[8] reserved1 - - Reserved
+44 + n·40 U4 skipped - bytes Number of skipped bytes
+End of repeated group (nPorts times)
+3.14.2 UBX-MON-GNSS (0x0a 0x28)
+3.14.2.1 Information message with supported GNSS and signal plans
+Message UBX-MON-GNSS
+Information message with supported GNSS and signal plans
+Type Polled
+Comment
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0a 0x28 4 + numPlans·28 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x01 for this version)
+1 U1 numPlans - - Number of signal plans available
+2 X2 activePlanInfo - - Information about currently active signal plan
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 82 of 224
+C1-Public

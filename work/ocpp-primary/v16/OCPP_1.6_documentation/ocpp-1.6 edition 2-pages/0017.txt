@@ -1,0 +1,35 @@
+Charge Point Central System
+UpdateFirmware.req(location, retrieveDate, [retries], [retryInterval])
+UpdateFirmware.conf()
+Downloading firmware...
+FirmwareStatusNotification.req( status: Downloaded )
+FirmwareStatusNotification.conf()
+Installing...
+FirmwareStatusNotification.req( status: Installed )
+FirmwareStatusNotification.conf()
+Reboot
+BootNotification.req(chargePointModel, chargePointVendor, [chargeBoxSerialNumber],
+[chargePointSerialNumber],[firmwareVersion], [iccid], [imsi],
+[meterSerialNumber], [meterType])
+BootNotification.conf(currentTime, heartbeatInterval, status)
+Figure 2. Sequence Diagram: Example of a firmware update
+When a Charge Point needs to be updated with new firmware, the Central System informs the Charge Point of
+the time at which the Charge Point can start downloading the new firmware. The Charge Point SHALL notify the
+Central System after each step as it downloads and installs the new firmware.
+3.5. Local Authorization & Offline Behavior
+This section is normative.
+In the event of unavailability of the communications or even of the Central System, the Charge Point is designed
+to operate stand-alone. In that situation, the Charge Point is said to be offline.
+To improve the experience for users, a Charge Point MAY support local authorization of identifiers, using an
+Authorization Cache and/or a Local Authorization List.
+This allows (a) authorization of a user when offline, and (b) faster (apparent) authorization response time when
+communication between Charge Point and Central System is slow.
+The LocalAuthorizeOffline configuration key controls whether a Charge Point will authorize a user when
+offline using the Authorization Cache and/or the Local Authorization List.
+The LocalPreAuthorize configuration key controls whether a Charge Point will use the Authorization Cache
+and/or the Local Authorization List to start a transaction without waiting for an authorization response from the
+Central System.
+A Charge Point MAY support the (automatic) authorization of any presented identifier when offline, to avoid
+refusal of charging to bona-fide users that cannot be explicitly authorized by Local Authorization
+List/Authorization Cache entries. This functionality is explained in more detail in Unknown Offline Authorization.
+12

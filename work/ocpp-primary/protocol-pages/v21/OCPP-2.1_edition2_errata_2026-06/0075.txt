@@ -1,0 +1,54 @@
+Main (Test scenario)
+2. Charging Station responds with a
+SetVariableMonitoringResponse
+1. Test System sends a SetVariableMonitoringRequest with
+setMonitoringData[0].value 1 <Configured Clock Aligned  
+MeterValues Interval> 
+setMonitoringData[0].type Periodic
+setMonitoringData[0].severity <Configured severity>
+setMonitoringData[0].component.name <Configured threshold 
+monitor component>
+setMonitoringData[0].component.evse.id <Configured evseId>
+setMonitoringData[0].variable.name <Configured threshold 
+monitor component variable>
+setMonitoringData[0].periodicEventStream.interval 10
+<Configured Clock Aligned MeterValues Interval> * 2      
+setMonitoringData[0].periodicEventStream.values 30
+<Configured Clock Aligned MeterValues Interval> * 4      
+3. Charging Station sends a OpenPeriodicEventStreamRequest
+4. Test System responds with a
+OpenPeriodicEventStreamResponse with
+status Accepted
+6. Charging Station response with a
+GetPeriodicEventStreamResponse
+5. Test System sends a GetPeriodicEventStreamRequest
+Note: Test System waits for 20 seconds
+Note :  Waits <Configured Clock Aligned MeterValues Interval> * 2 + 1 seconds.          
+7. Charging Station sends a NotifyPeriodicEventStream using
+RFC framework SEND
+AND
+SHALL NOT send a     NotifyEventRequest  with 
+-  eventData[0].trigger  must be    Periodic
+-  eventData[0].variableMonitoringId  must be  
+<SetVariableMonitoringResponse.setMonitoringResult[0].id of 
+step 2> 
+-  eventData[0].component.name  must be    <Configured threshold 
+monitor component> 
+-  eventData[0].variable.name  must be    <Configured threshold 
+monitor component variable>   + 
+After 10 seconds
+Note :  Waits <Configured Clock Aligned MeterValues Interval> * 2 + 1 seconds.          
+8 Charging Station sends a NotifyPeriodicEventStream using
+RFC framework SEND
+AND
+SHALL NOT send a     NotifyEventRequest  with 
+-  eventData[0].trigger  must be    Periodic
+-  eventData[0].variableMonitoringId  must be  
+<SetVariableMonitoringResponse.setMonitoringResult[0].id of 
+step 2> 
+-  eventData[0].component.name  must be    <Configured threshold 
+monitor component> 
+-  eventData[0].variable.name  must be    <Configured threshold 
+monitor component variable>   + 
+After another 10 seconds
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 71/116 Errata 2026-06

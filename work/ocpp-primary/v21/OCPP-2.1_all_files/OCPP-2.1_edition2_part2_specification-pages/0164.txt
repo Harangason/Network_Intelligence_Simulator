@@ -1,0 +1,102 @@
+ID Precondition Requirements Note
+C25.FR.24 C25.FR.23 AND
+Charging Station sends a
+TransactionEventRequest with
+eventType = Started
+CSMS SHALL respond with a
+TransactionEventResponse with
+transactionLimit set to the required limit.
+transactionLimit uses
+maxCost for cost limit,
+maxEnergy for energy limit,
+maxTime for time limit or
+maxSoC for SoC limit.
+C25.FR.25 C25.FR.24 Charging Station SHALL include this limit in
+the field transactionInfo.transactionLimit
+(once) in the next TransactionEventRequest
+C25.FR.26 Charging Station SHALL behave as in use
+case E16 - Transactions with fixed cost,
+energy, SoC or time.
+C25.FR.27 Upon receiving a
+NotifyWebPaymentStartedRequest
+Charging Station SHALL respond with a
+NotifyWebPaymentStartedResponse without
+any parameters.
+Settlement
+C25.FR.40 After CSMS received a
+TransactionEventRequest with
+eventType = Ended or the transaction
+CSMS SHALL send a message to PSP to
+settle the cost
+Cost may have been
+calculated locally or centrally.
+C25.FR.41 When CSMS receives receipt
+information or a URL to a receipt from
+PSP
+CSMS MAY send a
+SetDisplayMessageRequest with a URL
+where EV Driver can download the receipt .
+Other methods to find and
+download receipts may also
+be offered by CSO.
+URL requirements for dynamic QR code
+C25.FR.50 The URL template for the dynamic QR code
+SHALL contain the following placeholder for
+URL parameters:
+• {chargingstationid} or
+{roamingevseid}
+• {totp} for the generated TOTP
+• {version} for the TOTPVersion
+C25.FR.51 If the
+WebPaymentsCtrlr.URLTemplate
+contains {chargingstationid}
+Charging Station SHALL replace placeholder
+{chargingstationid} in the URL template by
+the value of SecurityCtrlr.Identity
+C25.FR.52 If the
+WebPaymentsCtrlr.URLTemplate
+contains {evse}
+Charging Station SHALL replace placeholder
+{evse} in the URL template by the number of
+the EVSE for which the payment request is
+done
+C25.FR.53 If the
+WebPaymentsCtrlr.URLTemplate
+contains {roamingevseid}
+Charging Station SHALL replace placeholder
+{roamingevseid} in the URL template by the
+value of WebPaymentsCtrlr.RoamingEvseId
+C25.FR.56 If Charging Station wishes to
+communicate a maximum energy
+amount for the QR code authorization
+Charging Station SHALL add the query
+parameter "maxenergy=XXX" to the URL,
+where XXX is the maximum energy (in Wh) to
+be charged.
+C25.FR.57 If Charging Station wishes to
+communicate a maximum charging
+time for the QR code authorization
+Charging Station SHALL add the query
+parameter "maxtime=XXX" to the URL, where
+XXX is the maximum charging time (in
+seconds).
+C25.FR.58 If Charging Station wishes to
+communicate a maximum cost for
+the QR code authorization
+Charging Station SHALL add the query
+parameter "maxcost=XXX" to the URL, where
+XXX is the maximum cost (in currency of
+tariff at charging station).
+C25.FR.59 CSMS SHALL accept the query parameters
+maxenergy, maxtime and maxcost in a QR
+code authorization URL.
+C25.FR.60 CSMS MAY ignore a non-supported query
+parameter in the QR code authorization URL.
+If a maximum limit was
+provided, Charging Station
+will apply this to the
+transaction, regardless
+whether CSMS has support
+for it.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 151/803 Part 2 - Specification

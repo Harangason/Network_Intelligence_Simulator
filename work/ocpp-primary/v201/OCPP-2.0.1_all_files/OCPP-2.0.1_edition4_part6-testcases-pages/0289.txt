@@ -1,0 +1,42 @@
+TC_H_08_CS: Reserve an unspecified EVSE - Accepted
+Test case name Reserve an unspecified EVSE - Accepted
+Test case Id TC_H_08_CS
+Use case Id(s) H01(S1), H03
+Requirement(s) H01.FR.04,H01.FR.07,H01.FR.15,H03.FR.03
+System under test Charging Station
+Description The CSMS is able to reserve an unspecified EVSE for a specific IdToken by sending a ReserveNowRequest
+without an evseId.
+Purpose To verify if the Charging Station is able to reserve an unspecified EVSE, until the EV Driver with the specified
+IdToken arrives.
+Prerequisite(s) - The configuration variable ReservationCtrlr.ReservationAvailable is implemented with value true
+- The Charging Station has the configuration variable ReservationNonEvseSpecific implemented with value
+true
+Before (Preparations)
+Configuration State:
+ReservationCtrlr.ReservationEnabled is true (If implemented)
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ReserveNowResponse
+1. The Test System sends a ReserveNowRequest
+with evseId is Omitted
+idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+3. The Charging Station notifies the CSMS about the status
+change of the connector.
+Note(s):
+- If the Charging Station has only one EVSE, it sets the
+availabilityState of the EVSE and corresponding connectors to
+Reserved.
+- Reporting the AvailabilityState of the EVSE component itself is
+optional.
+4. The Test System responds accordingly.
+5. Execute Reusable State Authorized
+Note(s):
+- <Configured valid_idtoken_idtoken> is used for the authorization.
+6. Execute Reusable State EnergyTransferStarted
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 287/914 Part 6 - Test Cases

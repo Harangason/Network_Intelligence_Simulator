@@ -1,0 +1,50 @@
+TC_A_05_CS: TLS - server-side certificate - Invalid certificate
+Test case name TLS - server-side certificate - Invalid certificate
+Test case Id TC_A_05_CS
+Use case Id(s) A00
+Requirement(s) A00.FR.309,A00.FR.310,A00.FR.311,A00.FR.412,A00.FR.413,A00.FR.414
+System under test Charging Station
+Description The CSMS uses a server-side certificate to identify itself to the Charging Station, when using security profile
+2 or 3.
+Purpose To verify whether the Charging Station is able to terminate the connection when the received server
+certificate is invalid.
+Prerequisite(s) - The charging station supports security profile 2 and/or 3
+- The active NetworkConnectionProfile uses either security profile 2 OR 3.
+Before (Preparations)
+Configuration State:
+OCPPCommCtrlr.NetworkProfileConnectionAttempts is 3
+OCPPCommCtrlr.NetworkConfigurationPriority only contains <Value from ActiveNetworkProfile>
+SecurityCtrlr.AllowCSMSTLSWildcards is false (If implemented)
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System aborts the connection with the Charging Station.
+2. The Charging Station initiates a TLS handshake and sends a
+Client Hello to the Test System. 3. The Test System responds with a Server Hello
+With a <Configured valid server certificate>
+Note(s):
+- The Test System will use this as an indication of the time it takes
+the Charging Station to reconnect.
+4. The Test System aborts the connection with the Charging Station.
+5. The Charging Station initiates a TLS handshake and sends a
+Client Hello to the Test System. 6. The Test System responds with a Server Hello
+With a <Generated invalid server certificate>
+7. The Charging Station deems the server certificate invalid and
+terminates the connection.
+Note: The Test System will wait two times the measured reconnection time from step 3, before switching the server certificate back
+to the valid server certificate. The reason for this is that the Test System is not always able to detect a failed connection attempt.
+8. The Charging Station initiates a TLS handshake and sends a
+Client Hello to the Test System. 9. The Test System responds with a Server Hello
+With a <Configured valid server certificate>
+Note(s):
+- The Test System will accept the connection to prevent doubling
+of the RetryBackOffWaitMinimum.
+10 The Charging Station sends a
+SecurityEventNotificationRequest
+11 The Test System responds with a
+SecurityEventNotificationResponse
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 7/914 Part 6 - Test Cases

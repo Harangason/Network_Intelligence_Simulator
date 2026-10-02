@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+3.6 GNSS, satellite, and signal numbering
+See GNSS, satellite, and signal identiﬁers for details on how GNSS, satellites and signals are
+numbered in the UBX protocol.
+3.7 UBX message example
+This is an example of the deﬁnition of UBX messages as shown in the following sections.
+Message
+❶
+UBX-DEMO-EXAMPLE
+Example demo message
+Type ❷ Periodic/polled
+Comment
+❸
+This is a comment that describes the use of the demo example message.
+There can be references to other sections in the documentation (such as: UBX protocol).
+☞ Note that there can be important remarks here.
+Header Class ID Length (bytes) Payload ChecksumMessage❹
+Structure 0xb5 0x62 0x01 0x07 16 + numRepeat*4 see below CK_A CK_B
+Payload description: ❺
+Byte offset Type Name Scale Unit Description
+0 U4 aField - - a ﬁeld that contains an unsigned integer with
+no particular scale or unit
+4 I4 anotherField 1e-2 m a ﬁeld that contains a length in meters (m)
+with a scale of 1e-2 (= 0.01), i.e. a length in
+centimeters
+8 X2 bitfield ❻ - - this ﬁeld contains ﬂags or values smaller than
+one byte, whose deﬁnition follows below (bits
+not described are reserved)
+bit 0   U:1 aFieldValid - - the ﬁrst bit in bitfield indicates whether the
+aField is valid or not (see UBX conditional
+values)
+bit 1   U:1 someFlag - - the second bit is a ﬂag (1 = true, 0 = false)
+bits 5…2   U:4 aBitFieldValue - - a 4-bits value (range: 0…15)
+10 U1[5] ❼ reserved0 - - a reserved ﬁeld, whose value shall be ignored
+(in output messages) or set to 0 (in input
+messages)
+15 U1 numRepeat - - number of repetitions in the group of ﬁelds
+below
+Start of repeated group (numRepeat times) ❽
+16 + n*4 I2 someValue - - a signed value in a repeated group of ﬁelds
+18 + n*4 U2 anotherValue - - another value in a repeated group of ﬁelds
+End of repeated group (numRepeat times)
+❶ The ﬁrst line shows the message name (see Message naming). The second line shows a short
+description of the message.
+❷ The message type (see Message types).
+❸ This section contains comments that describe the message. Often links to other related sections
+in the documentation or other related messages are found here.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 48 of 224
+C1-Public

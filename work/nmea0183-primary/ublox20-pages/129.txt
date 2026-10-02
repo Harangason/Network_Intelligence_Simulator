@@ -1,0 +1,56 @@
+u-blox 20 HPG 2.00 - Interface description
+• 7: Authentication not performed: Public key
+decompression failed
+• 8: Authentication successful but new
+conﬁguration is not supported
+• 9: Authentication of a new public key during a
+NMT event cannot be performed. Missing future
+Merkle tree root
+bits 7…6   U:2 hashFunction - - Last authenticated hash function that must be used
+bits 9…8   U:2 macFunction - - Last authenticated MAC function that must be used
+bits 13…10   U:4 pubKeyId - - Last authenticated public key Id that must be used in
+ECDSA veriﬁcation
+bits 21…14   U:8 macLookupTable - - Last authenticated MAC Lookup table index
+bits 25…22   U:4 keySize - - Last authenticated TESLA key size index
+bits 29…26   U:4 macSize - - Last authenticated MAC size index. Add an oﬀset of 5
+to obtain the index as per Table 11 of OSNMA SIS ICD,
+Issue 1.1
+bit 30   U:1 fromNVS - - Last authenticated conﬁguration comes from NVS
+20 X4 teslaKey - - Information related to the TESLA key authentication
+bits 2…0   U:3 teslaKeyAuth
+Status
+- - Indicates if the authentication of an element of the
+TESLA key has been performed and the result thereof
+• 0: No TESLA key authentication performed
+• 1: TESLA key successfully authenticated against
+the root key
+• 2: TESLA key authentication against the root key
+has failed
+• 3: TESLA key authentication on-going:
+Intermediate authentication step
+• 4: TESLA key authentication is not performed:
+Key to authenticate is in the past. Potential
+replayed signals or simulation.
+• 5: TESLA key authentication is not performed:
+The root key is too old
+bits 14…3   U:12 wnSf - - The GST week number of subframe in which the public
+key has been transmitted
+bits 29…15   U:15 towSf 1/30 s Seconds of week of the GST of the subframe in which
+the public key has been transmitted divided by 30s
+(subframe length)
+bits 31…30   U:2 chainId - - Chain Id of the TESLA key that has been
+authenticated
+24 X4 generalAnd
+Timing
+- - Information related to the overall authentication
+process: Timing parameters and summary of data
+authenticated
+bits 5…0   U:6 authSVs - - Total number of SVs for which orbit/clocks data
+authentication has been performed (ADKD types 0 or
+12)
+bits 11…6   U:6 authNumTim - - Total number of timing parameters authentications
+(typically one per SV sending MAC ADKD type 4)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 129 of 224
+C1-Public

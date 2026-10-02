@@ -1,0 +1,63 @@
+B09 - Setting a new NetworkConnectionProfile
+No. Type Description
+1 Name Setting a new NetworkConnectionProfile.
+2 ID B09
+3 Objective(s) To enable the CSMS to update the connection details on the Charging Station.
+4 Description The CSMS updates the connection details on the Charging Station. For instance in preparation of
+a migration to a new CSMS. After completion of this use case, the Charging Station to CSMS
+connection data has been updated.
+Actors Charging Station, CSMS
+Scenario description A Charging Station supports at least two network configuration slots, that are identified by a
+number. The available slot numbers are reported by the Charging Station in the valuesList of
+variable NetworkConfigurationPriority.
+For example: valuesList = "0,1,2" in the base report tells CSMS that three configuration slots,
+numbered 0, 1 and 2, are available (but not necessarily set).
+The configuration slot number that is used for the active connection is reported by variable
+OCPPCommCtrlr.ActiveNetworkProfile.
+1. The CSMS sends a SetNetworkProfileRequest PDU containing an updated connection profile
+and a configurationSlot out of the valuesList of NetworkConfigurationPriority.
+2. The Charging Station receives the PDU, validates the content and stores the new data
+3. The Charging Station responds by sending a SetNetworkProfileResponse PDU, with status
+Accepted
+5 Prerequisites The data supplied by the CSMS matches the Charging Station’s capabilities
+6 Postcondition(s) The Charging Station was able to store the new connection data
+7 Error Handling Activation of a new NetworkConnectionProfile is described in B10 - Migrate to new CSMS. Errors
+during this use-case are not destructive to the current data connection. Error handling is further
+described in B10 - Migrate to new CSMS
+8 Remarks Even when changes are made to the currenctly active NetworkConnectionProfile, these will not
+activated until a reboot has occured, as described in B10 - Migrate to new CSMS.
+CSMS Charging Station
+SetNetworkProfileRequest(configurationSlot, connectionData)
+Set new credentials()
+SetNetworkProfileResponse(status: Accepted)
+Figure 18. Sequence Diagram: Set Network Connection Profile
+B09 - Requirements
+Table 38. B09 - Requirements when using SetNetworkProfileRequest
+ID Precondition Requirement definition Note
+B09.FR.01 On receipt of the
+SetNetworkProfileRequest
+The Charging Station SHALL validate the
+content, store the new data and if successful,
+respond by sending a
+SetNetworkProfileResponse message, with
+status Accepted
+Matches B09.FR.33 for
+NetworkConfiguration.
+B09.FR.02 On receipt of the
+SetNetworkProfileRequest
+The Charging Station SHALL validate the
+content. If the content is invalid, the Charging
+Station SHALL respond by sending a
+SetNetworkProfileResponse message, with
+status Rejected and an optional
+statusInfo.reasonCode.
+Recommended reasonCode to use
+is "InvalidNetworkConf". The field
+additionalInfo is recommended to
+be used to convey which
+configuration parameter is invalid
+and why.
+Matches B09.FR.34 for
+NetworkConfiguration.
+Edition 4, 2025-12-03 B. Provisioning
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 64/491 Part 2 - Specification

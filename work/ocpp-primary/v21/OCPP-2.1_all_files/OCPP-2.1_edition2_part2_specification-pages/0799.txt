@@ -1,0 +1,60 @@
+Variable Unit CHAdeMO value
+Available boolean When true this means an EV is connected.
+When false, all other fields are meaningless and should be empty
+strings.
+Vehicle ID:
+VehicleId string Vehicle ID (H'710 + H'711 + H'712)
+Three times 8 bytes, represented as hexbinary encoded string, e.g.
+"010203040A0B0C0D111213141A1B1C1D212223242A2B2C2D". A
+concatenation of H'710 + H'711 + H'712.
+ProtocolAgreed string Lowest of Chademo protocol number from EV (H'102.0) and charger
+(H'109.0)
+Example for CHAdeMO 2.0.1: "CHAdeMO,3"
+(3 = version reported by CHAdeMO for v2.0.1)
+ProtocolSupportedByEV["1"]
+to
+ProtocolSupportedByEV["20"]
+multi-
+instance
+string
+Chademo protocol number (H'102.0) supported by EV.
+For Chademo only the first instance ProtocolSupportedByEV["1"] is
+used. The other instances have an empty string as value.
+Reported as a string with the following comma-separated items:
+“CHAdeMO,<version>”.
+Example for CHAdeMO 2.0.1:
+- ConnectedEV.ProtocolSupportedByEV["1"] = "CHAdeMO,3"
+Optional variables
+NOTE
+In below table the notation "<variable>(type)" refers to the attributeType <type> of the variable. For example,
+"ACCurrent(MinSet)" refers to value of the attributeType MinSet of the variable ACCurrent. "DCCurrent(Target)
+refers to the value of the attributeType Target of the variable DCCurrent.
+Variable Unit CHAdeMO value
+Voltage and current values:
+ACCurrent(MinSet) A -
+ACCurrent(MaxSet) A -
+ACVoltage(MaxSet) V -
+DCCurrent(MinSet) A Minimum charge current (H'100.0)
+DCCurrent(MaxSet) A -
+DCCurrent(Target) A Charging current request (H'102.3)
+If HighCurrentControl is true, use the value from Charging current
+request (extended) (H'110.1,2).
+DCVoltage(MinSet) V Minimum battery voltage (H'100.2,3)
+DCVoltage(MaxSet) V Maximum battery voltage (H'100.4,5)
+DCVoltage(Target) V Target battery voltage (H'102.1,2)
+Power, energy and time values:
+Power(MaxSet) W -
+EnergyImport(MaxSet) Wh Total capacity of traction battery * 100 (H'101.5,6)
+EnergyImport(Target) Wh -
+DepartureTime dateTime -
+RemainingTimeBulk s -
+RemainingTimeFull(MaxSet) s Maximum charging time * 60 (H'101.2)
+RemainingTimeFull s Estimated charging time * 60 (H'101.3)
+StateOfChargeBulk % -
+StateOfCharge(MaxSet) % Charged rate reference constant (H'100.6)
+StateOfCharge % State of charge (H'102.6)
+ChargingCompleteBulk boolean -
+ChargingCompleteFull boolean -
+Error status values:
+Edition 2, 2025-12-03 Referenced Components and Variables
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 786/803 Part 2 - Specification

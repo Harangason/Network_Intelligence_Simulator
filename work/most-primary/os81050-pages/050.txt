@@ -1,0 +1,44 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 50
+OS81050
+10.1  Instruction Register
+The JTAG Instruction Register (IR) is accessed when the TAP controller is in the Select-IR-scan, Capture-IR, Shift-
+IR, Exit1-IR, Pause-IR, Exit2-IR, or Update-IR state.
+IR JTAG Instruction Register
+IR[3:0] The 4-bit JTAG Instruction Register (IR) contains the instruction code for the next operation. 
+Supported instructions include:
+10.2  Identification Register
+The JTAG Identification Register (IDR) is accessed when the TAP controller is in the Select-DR-scan, Capture-
+DR, Shift-DR, Exit1-DR, Pause-DR, Exit2-DR, or Update-DR state.
+IDR JTAG Identification Register
+The JTAG IDR register is read out lsb first, bit 0 to bit 31. The bits below are listed in reverse order from the
+way they are read out.
+REV[3:0] Hardware Revision.
+0001 – Revision B
+0010 – Revision C
+0011 – Revision D
+0100 – Revision E
+PID[7:0] Part ID number.
+0Fh - OS81050
+MID[10:0] Manufacturer ID.
+222h - SMSC Manufacturer ID
+Bit Label Description Default
+3…0 IR[3:0] Instruction Code 0001
+Table 10-1: JTAG IR Register
+JTAG Instruction IR[3:0] Description
+EXTEST 0000 Enables EXTEST operation
+SAMPLE / PRELOAD 0001 Enables SAMPLE or PRELOAD operation
+IDCODE 0010 Enables shifting out of the Manufacturer ID
+OSSPRI 0110 Register must be set at the beginning of any JTAG 
+sequence.
+BYPASS 1111 Enables BYPASS
+Reserved All other codes Not supported
+Bit Label Description Default
+31…28 REV[0:3] 4-bit Hardware Revision code †
+27…24 rsvd Reserved 0000
+23…16 PID[0:7] 8-bit Part Identifier 11110000
+15…12 rsvd Reserved 0000
+11…1 MID[0:10] 11-bit Manufacturer ID 01000100010
+0 Least sigificant bit (must be set per IEEE 1149.1 specification) 1
+† The default value of REV[0:3] is dependent on the actual hardware revision.
+Table 10-2: IDR Register

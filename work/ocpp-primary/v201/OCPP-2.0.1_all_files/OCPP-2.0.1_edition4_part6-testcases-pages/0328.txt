@@ -1,0 +1,39 @@
+K Smart Charging
+Determine Charging Profile Limit Multiplier
+Not all chargers support setting limits in A or W. This can be configured with the configuration variable <Configured
+chargingRateUnit>. To calculate the limit to be used, the following rules must be followed:
+If <Configured chargingRateUnit> is A, then <limit multiplier> is 1
+If <Configured chargingRateUnit> is W and <Configured numberPhases> is 1, then <limit multiplier> is 230
+If <Configured chargingRateUnit> is W and <Configured numberPhases> is 2, then <limit multiplier> is 460
+If <Configured chargingRateUnit> is W and <Configured numberPhases> is 3, then <limit multiplier> is 690
+Example 1
+Given a test case is configured with:
+<Configured chargingRateUnit> W
+<Configured numberPhases> 2
+When the test case specifies:
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limit 6 * <limit multiplier>
+Then it should set
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limit 2760
+Example 2
+Given a test case is configured with:
+<Configured chargingRateUnit> A
+<Configured numberPhases> 3
+When the test case specifies:
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limit 6 * <limit multiplier>
+Then it should set
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limit 6
+TC_K_01_CS: Set Charging Profile - TxDefaultProfile - Specific EVSE
+Test case name Set Charging Profile - TxDefaultProfile - Specific EVSE
+Test case Id TC_K_01_CS
+Use case Id(s) K01
+Requirement(s) K01.FR.07, K01.FR.15
+System under test Charging Station
+Description To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the entire
+Charging Station over a period of time. The CSMS sends a SetChargingProfileRequest to the Charging
+Station to influence the power or current drawn by EVs. The CSMS calculates a ChargingSchedule to stay
+within certain limits, which MAY be imposed by any external system.
+Purpose To verify if the Charging station is able to accept and successfully change to the TxDefaultProfile charging
+profile sent by the CSMS on a specific EVSE as described at the OCPP specification.
+Prerequisite(s) n/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 326/914 Part 6 - Test Cases

@@ -1,0 +1,35 @@
+Main (Test scenario)
+7. Execute Reusable State EnergyTransferStarted
+9. The Charging Station responds with a
+GetChargingProfilesResponse
+8. The Test System sends a GetChargingProfilesRequest
+with chargingProfile.chargingProfileId <Used chargingProfileId
+at step 1>
+10. The Charging Station sends a
+ReportChargingProfilesRequest 11. The Test System responds with a
+ReportChargingProfilesResponse
+Tool validations
+* Step 2:
+Message: RequestStartTransactionResponse
+- status must be Accepted
+If the transaction has already been started, so if TxStartPoint contains ParkingBayOccupancy OR (<Configured TxStartPoint>
+contains EVConnected AND State pre reusable state execution was EVConnectedPreSession) then
+- transactionId must be <Provided transactionId in first TransactionEventRequest>
+* Step 3:
+Message: AuthorizeRequest
+- idToken.idToken <Configured valid_idtoken_idtoken>
+- idToken.type <Configured valid_idtoken_type>
+* Step 5:
+Message: TransactionEventRequest
+- triggerReason must be RemoteStart
+- transactionInfo.remoteStartId must be present.
+* Step 9:
+(Message: GetChargingProfilesResponse)
+status is Accepted
+* Step 10:
+(Message: ReportChargingProfilesRequest)
+chargingProfile <The Charging Profile set at step 1>
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 370/914 Part 6 - Test Cases

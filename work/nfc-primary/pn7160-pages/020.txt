@@ -1,0 +1,43 @@
+NXP Semiconductors PN7160_PN7161
+Near Field Communication (NFC) controller
+Power state name Description
+Standby The PN7160 is supplied by VBAT within its operating range, VEN voltage is high (by host or SW
+programming) and minimum part of PN7160 is kept supplied to enable configured wake-up
+sources which allow to switch to Active state; RF field, Host interface (if VDD(PAD) is high). The
+system mode is Low-power mode or Full power mode.
+Active The PN7160 is supplied by VBAT within its operating range, VEN voltage is high (by host or SW
+programming), VDD(PAD) is high and the PN7160 internal blocks are supplied. 3 sub-modes are
+defined: Idle, Listener and Poller. The system mode is Full power mode.
+Table 11. PN7160 power states...continued
+At application level, the PN7160 will continuously switch between different states to optimize the current
+consumption (polling loop mode). Refer to Table 1 for targeted current consumption in here described states.
+The PN7160 is designed to allow the host controller to have full control over its functional states.
+11.1.2.1  Hard Power Down (HPD) state
+The Hard Power Down state is entered when VDD(PAD) and VBAT are high by setting VEN voltage < 0.4 V. As
+these signals are under host control, the PN7160 has no influence on entering or exiting this state.
+11.1.2.2  Standby state
+Active state is PN7160’s default state after boot sequence in order to allow a quick configuration of PN7160. It is
+recommended to change the default state to Standby state after first boot in order to save power. PN7160 can
+switch to Standby state autonomously (if configured by host). This state is independent of the VDD(PAD) value.
+In this state, PN7160 most blocks including CPU are disconnected from power supply. Number of wake-up
+sources exist to put PN7160 into Active state (all host-related wake-up events imply that VDD(PAD) is available):
+• Host interface wake-up event (I2C-bus, SPI-bus)
+• Host interface wake-up via WKUP_REQ pin
+• Antenna RF level detector
+• Internal timer event when using polling loop (370 kHz Low-power oscillator is enabled)
+If wake-up event occurs, PN7160 will switch to Active state. Any further operation depends on software
+configuration and/or wake-up source.
+11.1.2.3  Active state
+Within the Active state, the system is acting as an NFC device. The device can be in 3 different power states:
+Idle, Listener and Poller.
+Functional modes Description
+Idle the PN7160 is active and host interface communication is on going. The RF interface is not
+activated. If Standby state is de-activated PN7160 stays in Idle mode even when no host
+communication.
+Listener the PN7160 is active and is listening to external device. The RF interface is activated.
+Poller the PN7160 is active and is in Poller mode. It polls external device. The RF interface is
+activated.
+Table 12. Functional modes in active state
+PN7160_PN7161 All information provided in this document is subject to legal disclaimers. © 2026 NXP B.V. All rights reserved.
+Product data sheet Rev. 4.2 — 22 July 2026 Document feedback
+20 / 70

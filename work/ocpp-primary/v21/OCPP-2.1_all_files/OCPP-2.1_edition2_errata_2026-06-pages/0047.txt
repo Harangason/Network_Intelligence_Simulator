@@ -1,0 +1,46 @@
+Main (Test scenario)
+…
+Tool validations
+…
+Post scenario validations:
+EV is not authorized and shall not charge:
+Charging Station does not send TransactionEventRequest with:
+While offline, the EV is not authorized and shall not charge:          
+Charging Station does not send an       TransactionEventRequest  with: 
+-  offline  =   true
+- triggerReason = Authorized or chargingState = Charging
+6.2.19. Page 214 - (2026-02) - TC_C_124_CS and TC_C_128_CS to TC_C_130_CS  -
+Corrected requirement reference and removed note
+Corrected the requirement reference to E16.FR.03 and removed C24.FR.03 from TC_C_124_CS. The second note was incorrect and
+has been removed, as the first note sufficiently covers the test case.
+6.2.20. Page 282 - (2026-06) - TC_E_41_CS, TC_E_42_CS, TC_E_50_CS and
+TC_E_51_CS - retry mechanism applied to TransactionEventRequest after
+suspending energy transfer on EV side
+Due to the complexity of having different TxStartPoints and Charging Station manufacturers also have the option to combine
+TransactionEvent triggers in some specific cases, it has been decided that it would be easier to test this testcase by using the
+TransactionEventRequest after suspending energy transfer on EV side.
+All:
+Before (Preparations)
+…
+Reusable State(s):
+State is Authorized
+State is EVConnectedPreSession
+State is   EnergyTransferStarted
+Main (Test scenario)
+…
+Tool validations
+* Step 1:
+- triggerReason SignedDataReceived
+* Step 3:
+- triggerReason ChargingStateChanged
+- chargingState SuspendedEVSE
+* Step 5:
+- Needs to be sent a number of times equal to <Configured message_attempts_transaction_event> with an interval of (<Configured
+message_attempts_transaction_event_interval> * the number of preceding transmissions of this same message) +
+OCPPCommCtrlr.MessageTimeout.Default.
+- The Test System waits an additional MessageAttemptsTransactionEvent iteration where the interval is multiplied again, to
+validate if the Charging Station stops resending the TransactionRequest message(s).
+Post scenario validations:
+N/a
+TC_E_41_CS:
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 43/116 Errata 2026-06

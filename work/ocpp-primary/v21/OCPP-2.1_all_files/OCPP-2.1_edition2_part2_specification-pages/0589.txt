@@ -1,0 +1,48 @@
+Charging Station (BSS) CSMS
+Start charging inserted battery.
+TxStart/StopPoint = EVConnected
+TransactionEventRequest(Started, evse = <slot number in>, idToken.type = NoAuthorization,
+triggerReason = CablePluggedIn, chargingState = EVConnected, ...)
+TransactionEventResponse()
+start energy offer
+TransactionEventRequest(Updated, triggerReason = ChargingStateChanged, chargingState = Charging, ...)
+TransactionEventResponse()
+loop [Until charged to maximum SoC, periodically send SoC]
+TransactionEventRequest(Updated, evse = <slot number in>, triggerReason = MeterValuePeriodic,
+chargingState = Charging, metervalue = <SoC sampled value>, ...)
+TransactionEventResponse()
+opt
+When battery sufficiently charged for swapping
+Show slot as available for swapping
+When battery charged to maximum allowed SoC
+TransactionEventRequest(Updated, evse = <slot number in>,
+triggerReason = EnergyLimitReached, chargingState = SuspendedEVSE, ...)
+TransactionEventResponse()
+When battery is extracted
+TransactionEventRequest(Ended, evse = <slot number in>,
+triggerReason = EVCommunicationLost, stoppedReason = EVDisconnected, chargingState = Idle, ...)
+TransactionEventResponse()
+Figure 214. Sequence diagram for charging swapped batteries
+S04 - Battery Swap Charging - Requirements
+ID Precondition Requirement definition Note
+S04.FR.01 When a battery is inserted into a slot Charging Station SHALL initiate the process of
+charging the battery
+The actual energy
+transfer to the battery
+can be delayed, e.g. until
+after the
+BatterySwapResponse
+has been sent, or when
+cheap energy is
+available. This is up to
+the implementation.
+S04.FR.02 S04.FR.01 AND
+BatterySwapIdtoken is set
+Charging Station SHALL send a
+TransactionEventRequest with eventType =
+Started and triggerReason = CablePluggedIn
+and chargingState = EVConnected and
+idToken.idToken = BatterySwapIdtoken and
+idToken.type = Central.
+Edition 2, 2025-12-03 S. Battery Swapping
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 576/803 Part 2 - Specification

@@ -1,0 +1,31 @@
+Prerequisite(s) The specified EVSE of the Charging Station has status Available
+Postcondition(s) Successful postcondition:
+The Charging Station has accepted the ReserveNowRequest
+AND
+sent StatusNotificationRequests with status Reserved.
+Failure postcondition:
+The Charging Station has rejected the ReserveNowRequest
+OR
+The Charging Station has NOT sent StatusNotificationRequests with status Reserved.
+EV Driver
+CSMS Charging Station
+reserve
+ReserveNowRequest(evseId, ...)
+ReserveNowResponse(status = Accepted)
+opt
+notification
+StatusNotificationRequest(status = Reserved, ...)
+StatusNotificationResponse()
+Figure 78. Sequence Diagram: S2 - Reserve a specified EVSE at a Charging Station
+S3 Scenario objective Reserve a connector type at a Charging Station
+Scenario description 1. EV Driver asks the CSMS to reserve a connector type at the Charging Station.
+2. The CSMS sends ReserveNowRequest with a connector type to a Charging Station.
+3. Upon receipt of ReserveNowRequest, the Charging Station responds with
+ReserveNowResponse with status Accepted.
+Prerequisite(s) The Charging Station has at least one available EVSE with the specified connector type
+Postcondition(s) Successful postcondition:
+The Charging Station has accepted the ReserveNowRequest
+Failure postcondition:
+The Charging Station has rejected the ReserveNowRequest
+Edition 4, 2025-12-03 H. Reservation
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 207/491 Part 2 - Specification

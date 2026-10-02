@@ -1,0 +1,82 @@
+Using Higher RS232 Baud Rates (continued)
+* the 75 msec time is adjustable
+    with the AT BRT hh command
+The sequence begins with the PC making a
+request for a new baud rate divisor, with the BRD
+command. For example, to try the 57.6K rate that was
+previously discussed, the controlling PC would send:
+AT BRD 45
+If the ELM327 firmware is a very old version, it will
+not support this command and will return with the
+familiar ‘?’ response. If it does support the command, it
+will respond with ‘OK’, so the software knows whether
+to proceed or not. No prompt character follows the
+‘OK’ reply; it is followed only by a carriage return
+character (and optionally, a linefeed character).
+Having sent the ‘OK’, the ELM327 then switches
+to the new (proposed) baud rate, and then simply
+waits the time set by the BRT command (it is 75 msec
+by default). This period is to allow the PC sufficient
+time to change its baud rate. When the time is up, the
+ELM327 then sends the ID string (currently ‘ELM327
+v2.2’) to the PC at the new baud rate (followed by a
+carriage return character and optionally, a linefeed
+character) and waits for a response.
+Knowing that it should receive the ELM327 ID
+string, the PC software compares what was actually
+received to what was expected. If they match, the PC
+responds with a carriage return character, but if there
+is a problem, the PC sends nothing.  The ELM327 is
+meanwhile waiting for a valid carriage return character
+to arrive. If it does (within 75 msec), the proposed
+baud rate is retained, and the ELM327 says ‘OK’ at
+this new rate. If it does not see a carriage return in the
+75 msec ‘window’, the baud rate will revert back to the
+original rate. Note that the PC might correctly output
+the carriage return at this new rate, but the interface
+circuitry could corrupt the character, and the ELM327
+might not see a valid response, so your software must
+check for an ‘OK’ response before assuming that the
+new rate has been accepted.
+Using this method, a program can quickly try
+several baud rates, and determine the most suitable
+one for the connected hardware. The new baud rate
+will stay in effect until reset by an AT Z, a Power
+off/on, or a MCLR input. It is not affected by the AT D
+(set Defaults), or AT WS (Warm Start) commands.
+Request for a new
+baud rate divisor:
+AT BRD hh ELM327 responds
+with ‘OK’
+(if it is supported)
+ELM327 sends
+the AT I string
+Program switches to
+the new baud rate,
+and waits for input
+ELM327 waits
+up to 75 msec*
+for a carriage return
+If the Rx is good,
+Program sends a
+carriage return
+ELM327 says ‘OK’
+(and remains at the
+new baud setting)
+Baud rate reverts
+to the previous
+baud rate
+PC ELM327
+CR
+received
+?
+yesno
+Print a prompt,
+and wait for the
+next command
+ELM327 switches to
+new baud rate and
+waits for 75 msec*
+ELM327
+52 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com

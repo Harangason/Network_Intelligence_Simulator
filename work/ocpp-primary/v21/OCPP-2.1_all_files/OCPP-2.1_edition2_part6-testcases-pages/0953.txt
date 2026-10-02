@@ -1,0 +1,28 @@
+EVDisconnectedBatterySwapping
+State EVDisconnectedBatterySwapping
+System under test Charging Station
+Description This state will prepare the Charging Station, so that one or more batteries have been taken out from the
+slots.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+IF BatterySwapCtrlr.SwapOrder is In-Out or not implemented AND State is NOT EnergyTransferStartedBatterySwapping
+THEN execute Reusable State EnergyTransferStartedBatterySwapping
+ELSE IF BatterySwapCtrlr.SwapOrder is Out-In AND State is NOT AuthorizedBatterySwapping
+THEN execute Reusable State AuthorizedBatterySwapping
+END
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Take out one or more batteries from slots
+1. The Charging Station notifies the CSMS about the status
+change of the slot. 2. The Test System responds accordingly.
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+Note: Steps 1 through 4 are repeated for each battery taken out
+5. The Charging Station sends a BatterySwapRequest
+6. The Test System responds with a BatterySwapResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 951/1383 Part 6 - Test Cases

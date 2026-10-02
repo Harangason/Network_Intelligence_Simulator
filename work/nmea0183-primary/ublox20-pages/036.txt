@@ -1,0 +1,52 @@
+u-blox 20 HPG 2.00 - Interface description
+Examples $GPTXT,01,01,02,u-blox ag - www.u-blox.com*50\r\n
+$GPTXT,01,01,02,ANTARIS ATR0620 HW 00000040*67\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxTXT string - $GPTXT TXT Message ID (xx = current Talker ID, see NMEA
+Talker IDs table)
+1 numMsg numeric - 01 Total number of messages in this transmission (range:
+1-99)
+2 msgNum numeric - 01 Message number in this transmission (range: 1-
+numMsg)
+3 msgType numeric - 02 Text identiﬁer (u-blox receivers specify the type of the
+message with this number):
+• 00 = Error
+• 01 = Warning
+• 02 = Notice
+• 07 = User
+4 text string - www.u-blo
+x.com
+Any ASCII text
+5 cs hexadecimal - *67 Checksum
+6 CRLF character - - Carriage return and line feed
+2.7.19 VLW
+2.7.19.1 Dual ground/water distance
+Message NMEA-Standard-VLW
+Dual ground/water distance
+Type Output
+Comment The distance traveled, relative to the water and over the ground. This message relates to the odometer feature
+detailed in the integration manual.
+Information Class/ID: 0xf0 0x0f Number of fields: 11
+Structure $xxVLW,twd,twdUnit,wd,wdUnit,tgd,tgdUnit,gd,gdUnit*cs\r\n
+Example $GPVLW,,N,,N,15.8,N,1.2,N*06\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxVLW string - $GPVLW VLW Message ID (xx = current Talker ID, see NMEA
+Talker IDs table)
+1 twd numeric nmi - Total cumulative water distance: null (ﬁxed ﬁeld)
+2 twdUnit character - N Total cumulative water distance units: N (nautical miles,
+ﬁxed ﬁeld)
+3 wd numeric nmi - Water distance since reset: null (ﬁxed ﬁeld)
+4 wdUnit character - N Water distance since reset units: N (nautical miles, ﬁxed
+ﬁeld)
+5 tgd numeric nmi 15.8 Total cumulative ground distance (only available in
+NMEA 4.00 and later)
+6 tgdUnit character - N Total cumulative ground distance units: N (nautical
+miles, ﬁxed ﬁeld, only available in NMEA 4.00 and later)
+7 gd numeric nmi 1.2 Ground distance since reset (only available in NMEA
+4.00 and later)
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 36 of 224
+C1-Public

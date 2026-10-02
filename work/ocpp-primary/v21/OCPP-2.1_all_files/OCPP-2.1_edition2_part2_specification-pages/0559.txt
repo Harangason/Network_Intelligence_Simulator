@@ -1,0 +1,34 @@
+Figure 204. Example power factor curve, cos phi(P), used in Germany (VDE-AR-N 4105)
+2.8. DER alarms
+When a charging station starts to deviate from normal behavior, because it is forced to follow a DER curve or setting, then this will
+be signalled to CSMS, such that the CSO is aware of this situation. Similarly, the charging station will send a signal when this event
+has ended.
+This is supported via the OCPP NotifyDERAlarmRequest message, which tells which DER control is taking over and what caused it.
+The message is sent again with an "ended" flag to signal when the event has ended.
+2.9. Prioritizing of controls
+There are two mechanisms that affect the priority of DER controls. Controls can be DER curves or parameter settings in this
+context. Firstly, there are default DER controls and scheduled ones. Secondly, there are different priorities as defined by the priority
+field of the setting. A priority = 0 is the highest priority.
+Default controls
+Default DER controls are active when there is no scheduled DER control of the same type that is active at that point in time. "Type"
+in this context means a DER control parameter, such as FreqDroop or a DER curve, such as FreqWatt or HFMustTrip. There
+may be scheduled DER controls installed, but they will not become active until their specified startTime, and stop being active after
+duration seconds after startTime, after which the system falls back to the default DER control (if any).
+Priority
+Only one control of a specific type a can be active at any one time. If more than one control of the same type is installed, then the
+one with the highest priority (i.e. the lowest priority value!) will prevail. This applies to default and scheduled DER controls: the
+default control with the lowest priority value will be used as default control, and the scheduled control with the lowest priority value
+will be applied at its start time.
+The prioritization of a scheduled DER controls takes place at the moment when the message is received. When a DER control is
+received with a lower priority value than other controls of the same type, then these other controls become superseded
+immediately, as long as they have not yet started. This happens even when the new control has a much later start time than the
+existing ones. If a to-be-superseded control has already started (i.e. it is past startTime), then it will remain active and only become
+superseded at the startTime of the superseding control. A superseded control will no longer be used, but will remain to exist in the
+charging station until its duration expires.
+This method of scheduling has deliberately been made to match the process for prioritization that is described in [RefCSIP]. The
+following examples from [RefCSIP] illustrate the behavior by describing two very similar overlapping event scenarios that only differ
+in when the charging station receives the controls. In the first case, the charging station receives both DER controls prior to the
+start of either. In this case, the charging station does not execute the lower priority (superseded) control at all. It only executes the
+higher priority control as shown in the figure below.
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 546/803 Part 2 - Specification

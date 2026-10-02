@@ -1,0 +1,100 @@
+45 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+CAN Message Types
+The ISO 15765-4 (CAN) standard defines several
+message types that are to be used with diagnostic
+systems. Currently, there are four that may be used:
+SF - the Single Frame
+FF - the First Frame (of a multiframe message)
+CF - the Consecutive Frame ( ‘    ‘  )
+FC - the Flow Control frame
+The Single Frame message contains storage for
+up to seven data bytes in addition to what is known as
+a PCI (Protocol Control Information) byte. The PCI
+byte is always the first of the data bytes, and tells how
+many data bytes are to follow. If the CAN Auto
+Formatting option is on (CAF1) then the ELM327 will
+create this byte for you when sending, and remove it
+for you when receiving. (If the headers are enabled,
+you will see it in the responses.)
+ If you turn the Auto Formatting off (with CAF0), it
+is expected that you will provide all of the data bytes to
+be sent. For diagnostics systems, this means the PCI
+byte and the data bytes. The ELM327 will not modify
+your data in any way, except to add extra padding
+bytes for you, to ensure that you always send as many
+data data bytes as are required (eight for ISO15765).
+You do not need to set the Allow Long (AT AL) option
+in order to send eight bytes, as the IC overrides it for
+you.
+A First Frame message is used to say that a multi-
+frame message is about to be sent, and tells the
+receiver just how many data bytes to expect. The
+length descriptor is limited to 12 bits, so a maximum of
+4095 byes can be received at once using this method.
+Consecutive Frame messages are sent after the
+First Frame message to provide the remainder of the
+data. Each Consecutive Frame message includes a
+single hex digit ‘sequence number’ that is used to
+determine the order when reassembling the data. It is
+expected that if a message were corrupted and resent,
+it could be out of order by a few packets, but not by
+more than 16, so the single digit is normally more than
+adequate. As seen previously, the serial number for a
+vehicle is often a multiframe response:
+>0902
+014
+0: 49 02 01 31 44 34
+1: 47 50 30 30 52 35 35
+2: 42 31 32 33 34 35 36
+In this example, the line that begins with 0: is the
+First Frame message. The length (014) was actually
+extracted from that message by the ELM327 and
+printed on the first line as shown. Following the First
+Frame line are two Consecutive Frames (that begin
+with 1: and 2:). To learn more details of the exact
+formatting, you may want to send a request such as
+the one above, then repeat the same request with the
+headers enabled (AT H1). This will show the PCI bytes
+that are actually used to send these components of the
+total message.
+The Flow Control frame is one that you do not
+normally have to deal with. When a First Frame
+message is sent as part of a reply, the ELM327 must
+tell the sender some technical things (such as how
+long to delay between Consecutive Frames, etc.) and
+does so by replying immediately with a Flow Control
+message. These are predefined by the ISO 15765-4
+standard, so can be automatically inserted for you. If
+you wish to generate custom Flow Control messages,
+then refer to the ‘Altering Flow Control Messages’
+section, on page 61.
+If a Flow Control frame is detected while
+monitoring, the line will be displayed with ‘FC: ’ before
+the data, to help you with decoding of the information.
+There is a final type of message that is
+occasionally reported, but is not supported by the
+diagnostics standard. The (Bosch) CAN standard
+allows for the transmission of a data request without
+sending any data in the requesting message. To
+ensure that the message is seen as such, the sender
+also sets a special flag in the message (the RTR bit),
+which is seen at each receiver. The ELM327 always
+looks for this flag, or for zero data bytes, and may
+report to you that an RTR was detected while
+monitoring. This is shown by the characters RTR
+where data would normally appear, but only if the CAN
+Auto Formatting is off, or headers are enabled. Often,
+when monitoring a CAN system with an incorrect baud
+rate chosen, RTRs may be seen.
+Note that the CAN system is quite robust with
+several error detecting methods in place, so that
+during normal data transmission you will rarely see
+any errors. When monitoring buses however, you may
+well see errors (especially if the ELM327 is set to an
+incorrect baud rate). As a diagnostic aid, when errors
+do occur, the ELM327 will print all bytes (no matter
+what CAF, etc., is set to), followed by the message
+‘<RX ERROR’.

@@ -1,0 +1,52 @@
+Variable Unit CHAdeMO value
+Power(MaxSet) W -
+EnergyImport(MaxSet) Wh Total capacity of traction battery * 100 (H'101.5,6)
+EnergyImport(Target) Wh -
+DepartureTime dateTime -
+RemainingTimeBulk s -
+RemainingTimeFull(MaxSet) s Maximum charging time * 60 (H'101.2)
+RemainingTimeFull s Estimated charging time * 60 (H'101.3)
+StateOfChargeBulk % -
+StateOfCharge(MaxSet) % Charged rate reference constant (H'100.6)
+StateOfCharge % State of charge (H'102.6)
+ChargingCompleteBulk boolean -
+ChargingCompleteFull boolean -
+Error status values:
+ChargingState
+with a memberlist consisting of the following values:
+* BatteryOvervoltage Battery overvoltage (H'102.4.0)
+* BatteryUndervoltage Battery undervoltage (H'102.4.1)
+* ChargingCurrentDeviation Battery current deviation (H'102.4.2)
+* BatteryTemperature High battery temperature (H'102.4.3)
+* VoltageDeviation Battery voltage deviation (H'102.4.4)
+* ChargingSystemError Charging system error (H'102.5.2)
+* VehicleShiftPosition Vehicle shift position (H'102.5.1)
+* VehicleChargingEnabled Vehicle charging enabled (H'102.5.0)
+* ChargingSystemIncompatibility -
+* ChargerConnectorLockFault -
+NOTE: ChargingState variable reports an error status and is not related to the chargingState in a TransactionEventRequest.
+2.26. Page 792 - (2026-02) - New configuration variable AutoThresholds
+V2XLocalLoadBalancing[AutoThresholds]
+New in OCPP 2.1
+Required no
+Component componentNa
+me
+V2XChargingCtrlr
+evse *
+Variable variableName LocalLoadBalancing
+variableInstanc
+e
+AutoThresholds
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+dataType boolean
+Description When set to true, this will automatically set the value of UpperThreshold to the
+minimum charging power of the EV (minChargePower) and the value of
+LowerThreshold to the minus the minimum discharging rate
+(minDischargePower) from the NotifyEVChargingNeedsRequest message.
+This ensures that the load balancing algorithm will not provide setpoints that
+cannot be achieved by EV.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 23/116 Errata 2026-06

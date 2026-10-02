@@ -1,0 +1,44 @@
+TC_K_37_CSMS: Remote start transaction with charging profile - Success
+Test case name Remote start transaction with charging profile - Success
+Test case Id TC_K_37_CSMS
+Use case Id(s) K05,F01
+Requirement(s) K05.FR.02,F01.FR.08,F01.FR.09,F01.FR.11
+System under test CSMS
+Description The CSMS sets a TxProfile on a specific EVSE inside a RequestStartTransactionRequest message.
+Purpose To verify if the CSMS is able to set a TxProfile on a specific EVSE in a RequestStartTransactionRequest
+message.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Test System responds with a
+RequestStartTransactionResponse
+With status Accepted
+1. The CSMS sends a RequestStartTransactionRequest
+3. The Test System sends a TransactionEventRequest With
+triggerReason RemoteStart
+transactionInfo.remoteStartId is present.
+4. The CSMS responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: RequestStartTransactionRequest
+idToken.idToken <Configured valid idToken>
+idToken.type <Configured valid idToken type>
+evseId <Configured evseId>
+chargingProfile contains:
+chargingProfile.chargingProfilePurpose is TxProfile
+chargingProfile.transactionId is omitted
+chargingProfile.chargingProfileKind is Relative OR Absolute
+If chargingProfileKind is Relative then chargingSchedule.startSchedule must be omitted.
+If chargingProfileKind is Absolute then chargingSchedule.startSchedule must NOT be omitted.
+The received Charging Profile must comply with the requirements defined at part 2 specification.
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1190/1383 Part 6 - Test Cases

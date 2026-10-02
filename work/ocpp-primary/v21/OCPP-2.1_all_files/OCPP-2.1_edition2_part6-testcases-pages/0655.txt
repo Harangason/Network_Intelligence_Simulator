@@ -1,0 +1,41 @@
+TC_M_18_CS: Retrieve certificates from Charging Station - All certificateTypes
+Test case name Retrieve certificates from Charging Station - All certificateTypes
+Test case Id TC_M_18_CS
+Use case Id(s) M03
+Requirement(s) M03.FR.01,M03.FR.03,M03.FR.04
+System under test Charging Station
+Description The CSMS is able to retrieve the certificates installed at the Charging Station using the
+GetInstalledCertificateIdsRequest message.
+Purpose To verify if the Charging Station is able to provide the hashData from all stored certificates
+Prerequisite(s) - The Charging Station supports Security Profile 2 or 3.
+- The Charging Station supports signed firmware updates.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+CertificateInstalled from certificateType CSMSRootCertificate
+CertificateInstalled from certificateType ManufacturerRootCertificate
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+GetInstalledCertificateIdsResponse
+1. The Test System sends a GetInstalledCertificateIdsRequest
+With certificateType is omitted.
+Tool validations
+* Step 2:
+Message: GetInstalledCertificateIdsResponse
+- status must be Accepted
+- certificateHashDataChain must contain the following two entries with following values:
+Note: Order does not matter.
+Entry 1:
+- certificateHashDataChain[0].certificateType is CSMSRootCertificate
+- certificateHashDataChain[0].certificateHashData contains <HashData from configured new CSMS Root certificate>
+Entry 2:
+- certificateHashDataChain[1].certificateType is ManufacturerRootCertificate
+- certificateHashDataChain[1].certificateHashData contains <HashData from configured new Manufacturer Root certificate>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 653/1383 Part 6 - Test Cases

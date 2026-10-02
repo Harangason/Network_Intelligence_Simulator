@@ -1,0 +1,39 @@
+reported (and controlled, where possible) by the OfflineTxForUnknownIdEnabled Configuration Variable. When connection to
+the CSMS is restored, the Charging Station has to send the queued TransactionEventRequest messages. These may contain
+transactions that were authorized offline, as explained in transaction-related message handling. Please refer to C15 - Unknown
+Offline Authorization for the options that the Charging Station has to continue / stop the transaction in this situation.
+1.6. Relationship between authorization and transaction
+This section is informative.
+The purpose of authorization is twofold. It ensures in the first place, that energy is only offered to a known user (represented by the
+idToken), which is essential for billing. In the second place, it ensures that only the user who was authorized in the first place (or a
+member of the same group of users) is allowed to unplug the cable. This is an important safeguard against cable theft in situations
+where the charging station does not have a fixed cable and the user brings its own charging cable.
+Authorization and the duration of the authorization period are not strictly tied to a transaction: it is possible to have transactions
+without explicit authorization, e.g. in the case of a charging station that can be started with a push button. In that case one could
+say that there is a permanent authorization for anyone to charge.
+The start of the authorization period:
+• can take place before a transaction is started (e.g. when a cable is not yet connected), or
+• can cause a transaction to be started (e.g. when authorization is defined as the start of a transaction by setting TxStartPoint
+= Authorized), or
+• can happen after a transaction has already started (e.g. when connection of the cable is defined as the start of a transaction
+by setting TxStartPoint = EVConnected).
+(See chapter E.1.1 "Flexible transaction start/stop" for a description of transaction start and stop points.)
+In any case, authorization (or authorization period) ends when the same idToken is presented again for authorization, or when the
+transaction ends. This means that ending of the authorization period:
+• can happen during a transaction without ending the transaction (e.g. when idToken is presented again, but TxStopPoint =
+EVConnected), or
+• can cause the transaction to end (e.g. when idToken is presented again and TxStopPoint = Authorized), or
+• can be caused by the end of the transaction (e.g. when idToken is not presented for authorization, but the cable is
+disconnected and TxStopPoint = EVConnected), or
+• can be caused by cable plug-out if no transaction was started.
+A Charging Station defines when authorization starts (i.e. upon receiving the AuthorizeResponse, or when authorizing locally via
+authorization cache or local authorization list) and when authorization ends (i.e. when idToken is presented a second time, or when
+the transaction ends). Charging Station notifies CSMS about this, as follows:
+• If authorization occurs before start of the transaction, Charging Station tells CSMS that authorization has taken place, by
+including the idToken in the first TransactionEventRequest of the transaction.
+• If authorization occurs within a transaction or at the start of a transaction, Charging Station reports this by including the
+idToken in TransactionEventRequest together with a triggerReason = Authorized.
+• The end of authorization is reported in a TransactionEventRequest with a triggerReason = StopAuthorized or Deauthorized,
+or by reporting the end of the transaction.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 89/803 Part 2 - Specification

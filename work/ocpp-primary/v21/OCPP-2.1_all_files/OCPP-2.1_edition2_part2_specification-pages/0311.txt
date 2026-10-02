@@ -1,0 +1,55 @@
+No. Type Description
+8 Remarks The running cost sent with a TransactionEventRequest with eventType = Updated serves to
+provide details on running cost during a transaction. CSMS can, for example, communicate these
+values to the driver via an app. The field costDetails when sent as running cost does not contain
+any chargingPeriods to limit data usage during frequent updates.
+EV Driver
+Charging Station CSMS
+TxStartPoint = PowerPathClosed
+User is authorized.
+Tariff is associated with transaction
+Plug-in cable
+TransactionEventRequest(eventType = Started, transactionInfo.transactionId = 123,
+transactionInfo.tariffId = "1", idToken = AB1234, triggerReason = CablePluggedIn, ... )
+TransactionEventResponse(idTokenInfo.status = Accepted)
+opt [Reservation cost involved]
+add price for reservationTime/Fixed to totalCost.reservationTime/Fixed
+par [Cost calculation]
+loop [Every TariffCostCtrlr[Tariff].Interval seconds]
+Calculate and add cost for fixedFee, energy, chargingTime, idleTime to totalCost
+Display running cost
+[Cost reporting]
+loop [Every TariffCostCtrlr[Cost].Interval seconds]
+TransactionEventRequest(eventType = Updated,
+triggerReason = RunningCost, costDetails, ...)
+TransactionEventResponse()
+(costDetails can also be sent as part of other triggerReason)
+User stops charging
+Calculate final cost
+TransactionEventRequest(eventType = Ended,
+triggerReason = StopAuthorized, stopReason = Local,
+costDetails = { "EUR", chargingPeriods = [...], totalCost = 12.34, kWhCost = 12.34}}, ... )
+TransactionEventResponse()
+Figure 112. Sequence diagram for cost details
+I12 - Cost Details of Transaction - Requirements
+ID. Precondition Requirements Notes
+I12.FR.01 When a transaction.transactionInfo.tariffId
+is set AND
+TariffCostCtrlr.Enabled[Cost] = true AND
+TariffCostCtrlr.Enabled[Tariff] = true
+Charging Station SHALL provide a cost
+breakdown in the costDetails field of type
+CostDetailsType in the final
+TransactionEventRequest with eventType =
+Ended of the transaction.
+Tariffs and local cost
+calculation are supported and a
+tariff is associated with
+transaction.
+Tariff can be set by
+SetDefaultTariffRequest,
+AuthorizeResponse or
+ChangeTransactionTariffReque
+st.
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 298/803 Part 2 - Specification

@@ -1,0 +1,61 @@
+TC_K_118_CS: Priority Charging - Requesting priority charging remotely
+Test case name Priority Charging - Requesting priority charging remotely
+Test case Id TC_K_118_CS
+Use case Id(s) K21
+Requirement(s) K21.FR.01, K21.FR.02, K21.FR.03, K21.FR.04, K21.FR.05, K21.FR.06, K21.FR.07, K21.FR.08, K21.FR.09
+System under test Charging Station
+Description To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the entire
+Charging Station over a period of time. The CSMS sends a SetChargingProfileRequest to the Charging
+Station to influence the power or current drawn by EVs. The CSMS calculates a ChargingSchedule to stay
+within certain limits, which MAY be imposed by any external system.
+Purpose To verify if the Charging station supports priority charging initiated from CSMS.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+UsePriorityChargingResponse
+1. The Test System sends a UsePriorityChargingRequest with
+transactionId <unknown transactionId>
+activate true
+4. The Charging Station responds with a
+UsePriorityChargingResponse
+3. The Test System sends a UsePriorityChargingRequest with
+transactionId <transactionId from preparation>
+activate true
+6. The Charging Station responds with a
+SetChargingProfileResponse
+5. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.chargingProfilePurpose PriorityCharging
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.star
+tPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limi
+t 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+8. The Charging Station responds with a
+UsePriorityChargingResponse
+7. The Test System sends a UsePriorityChargingRequest with
+transactionId <transactionId from preparation>
+activate true
+9. The Charging Station sends a NotifyPriorityChargingRequest
+10. The Test System responds with a
+NotifyPriorityChargingResponse
+12. The Charging Station responds with a
+UsePriorityChargingResponse
+11. The Test System sends a UsePriorityChargingRequest with
+transactionId <transactionId from preparation>
+activate false
+13. The Charging Station sends a
+NotifyPriorityChargingRequest 14. The Test System responds with a
+NotifyPriorityChargingResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 570/1383 Part 6 - Test Cases

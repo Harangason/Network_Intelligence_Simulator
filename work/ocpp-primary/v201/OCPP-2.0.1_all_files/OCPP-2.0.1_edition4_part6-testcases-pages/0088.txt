@@ -1,0 +1,52 @@
+TC_B_53_CS: Get Base Report - Test mandatory DM variables via FullInventory
+Test case name Get Base Report - Test mandatory DM variables via FullInventory
+Test case Id TC_B_53_CS
+Use case Id(s) B07
+Requirement(s) Chapter Referenced Components and Variables
+System under test Charging Station
+Description CSMS requests a FullInventory base report.
+Purpose To test that Charging Station supports all required DM variables.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. CS responds with:
+GetBaseReportResponse with status = Accepted
+3. CS sends one or more NotifyReportRequest messages to
+report all its component/variables.
+1. Test System requests a GetBaseReportRequest with:
+reportBase = FullInventory and
+requestId = <Generated requestId>
+4. Test System responds with a NotifyReportResponse for each
+NotifyReportRequest
+Tool validations
+* Step 2:
+Message: GetBaseReportResponse with:
+- status = Accepted
+- statusInfo is absent or statusInfo = "NoError"
+* step 3:
+Message: NotifyReportRequest with:
+- requestId = <Generated requestId>
+- generatedAt = <time of generation at charging station>
+- seqNo = 0
+While tbc = true Message: NotifyReportRequest
+- seqNo is incremented by one
+Post scenario validations:
+The Test System checks that all implemented standardized components / variables are implemented correctly according to the
+OCPP specification:
+- The components / variables that are required according to the OCPP specification are implemented.
+- For each component/variable, where variableCharacteristics.dataType is set to OptionList, SequenceList or MemberList, the
+variableCharacteristics.valuesList is not omitted or empty.
+- For each component/variable, where variableCharacteristics.dataType is OptionList, SequenceList or MemberList, the
+variableAttribute.value is allowed based on the values in the provided variableCharacteristics.valuesList.
+- For variables with mutability set to WriteOnly the variableAttribute.value is omitted in the NotifyReportRequest.
+- For variables with mutability NOT set to WriteOnly the variableAttribute.value is NOT omitted in the NotifyReportRequest. There is
+one exception to this rule and that is for EVSE.Power. This variable only has a maxLimit.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 86/914 Part 6 - Test Cases

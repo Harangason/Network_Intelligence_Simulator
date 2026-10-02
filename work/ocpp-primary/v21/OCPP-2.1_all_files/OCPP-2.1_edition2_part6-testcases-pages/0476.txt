@@ -1,0 +1,53 @@
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId> AND
+chargingProfile.id <Configured chargingProfileId> AND
+chargingProfile.chargingProfilePurpose TxDefaultProfile
+chargingProfile.chargingSchedule.duration <Configured
+duration>
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.star
+tPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limi
+t 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.nu
+mberPhases <Configured numberPhases>
+4. The Charging Station responds with a
+GetChargingProfilesResponse
+3. The Test System sends a GetChargingProfilesRequest with
+chargingProfile.chargingProfileId <Configured
+chargingProfileId> requestId <Generated requestId>
+5. The Charging Station sends a ReportChargingProfilesRequest
+6. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If tbc is True at Step 5 then step 5 and 6 will be repeated
+Tool validations
+* Step 2:
+Message SetChargingProfileResponse
+- status Accepted
+* Step 4:
+Message GetChargingProfilesResponse
+- status Accepted
+* Step 5:
+Message ReportChargingProfilesRequest
+- requestId <Generated requestId>
+- evseId <Configured EVSEId>*
+- chargingProfile <Configured ChargingProfile>
+Post scenario validations:
+- The same profile is reported as send in step 1
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 474/1383 Part 6 - Test Cases

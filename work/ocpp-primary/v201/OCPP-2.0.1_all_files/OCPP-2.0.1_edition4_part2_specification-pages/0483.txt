@@ -1,0 +1,65 @@
+Component componentNa
+me
+AlignedDataCtrlr
+Variable variableName SignUpdatedReadings
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+dataType boolean
+Description If set to true, the Charging Station SHALL include signed meter values in the
+SampledValueType in the TransactionEventRequest(Updated) for those
+measurands configured in AlignedDataMeasurands. This variable only has an
+effect if AlignedDataSignReadings is set to true. 
+When a Charging Station does not support signed meter values, it SHALL NOT
+report this variable.
+2.7.19. AlignedDataTxEndedMeasurands
+Required yes
+Component componentNa
+me
+AlignedDataCtrlr
+Variable variableName TxEndedMeasurands
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+dataType MemberList
+valuesLis
+t
+values from Measurands
+maxLimit The maximum length of the CSV formatted string, to
+be defined by the implementer.
+Description Clock-aligned periodic measurand(s) to be included in the meterValues element
+of TransactionEventRequest (eventType = Ended) for every
+AlignedDataTxEndedInterval of the transaction.
+The Charging Station reports the list of supported Measurands in
+VariableCharacteristicsType.valuesList of this variable. This way the CSMS
+knows which Measurands it can put in the TxEndedAlignedData.
+When left empty, no Clock-aligned measurands SHALL be put into the
+TransactionEventRequest (eventType = Ended).
+2.7.20. AlignedDataTxEndedInterval
+Required yes
+Component componentNa
+me
+AlignedDataCtrlr
+Variable variableName TxEndedInterval
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+unit s
+dataType integer
+Description Size (in seconds) of the clock-aligned data interval, intended to be transmitted in
+the TransactionEventRequest (eventType = Ended) message. This is the size (in
+seconds) of the set of evenly spaced aggregation intervals per day, starting at
+00:00:00 (midnight). For example, a value of 900 (15 minutes) indicates that
+every day should be broken into 96 15-minute intervals.
+All intervals are transmitted (if so enabled) at the end of the transaction in one (1)
+TransactionEventRequest (eventType = Ended) message.
+This is not a recommended practice, since the size of the message can become
+very large.
+Edition 4, 2025-12-03 Referenced Components and Variables
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 473/491 Part 2 - Specification

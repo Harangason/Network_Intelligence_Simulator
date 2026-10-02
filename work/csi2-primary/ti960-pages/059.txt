@@ -1,0 +1,65 @@
+SCL
+SDA
+START STOP
+1 2 6 7 8 9 1 2 8 9
+MSB
+7-bit Target 
+Address
+R/W 
+Direction 
+Bit
+Acknowledge 
+from the Device
+MSB
+Data Byte
+*Acknowledge
+or Not-ACK
+ACK N/ACK
+Repeated for the Lower Data Byte 
+and Additional Data Transfers
+LSB LSB
+Figure 7-26. Basic Operation
+The I2C Controller located at the Deserializer must support I2C clock stretching. For more information on 
+I2C interface requirements and throughput considerations, refer to I2C Communication Over FPD-Link III With 
+Bidirectional Control Channel  (SNLA131) and I2C over DS90UB913/4 FPD-Link III With Bidirectional Control 
+Channel (SNLA222).
+7.5.2 Second I2C Port
+The DS90UB960-Q1 includes a second I2C port that allows bidirectional control channel access to both local 
+registers and remote devices. Remote device access is configured on BCCx_MAP register 0x0C[7:4].
+The second I2C port uses the same I2C address as the primary I2C port. In addition, RX Port I2C IDs are also 
+available for the second I2C port.
+In general, TI recommends that the second I2C port be used in cases where the CSI-2 TX ports are connected 
+to separate processors. The second I2C port allows independent control of the DS90UB960-Q1 as well as 
+remote devices by the second processor. However, Register 0x01 (RESET_CTL) can only be written by the 
+primary I2C port.
+7.5.3 I2C Target Operation
+The DS90UB960-Q1 implements an I2C target capable of operation supporting the Standard, Fast, and Fast-
+plus modes of operation allowing I2C operation at up to 1-MHz clock frequencies. Local I2C transactions to 
+access DS90UB960-Q1 registers can be conducted 2 ms after power supplies are stable and PDB is brought 
+high. For accesses to local registers, the I2C Target operates without stretching the clock. The primary I2C target 
+address is set through the IDx pin. The primary I2C target address is stored in the I2C Device ID register at 
+address 0x0. In addition to the primary I2C target address, the DS90UB960-Q1 may be programmed to respond 
+to up to four other I2C addresses (reg 0xF8-0xFB). The four RX Port ID addresses provide direct access to the 
+Receive Port registers without the need to set the paging controls normally required to access the port registers.
+7.5.4 Remote Target Operation
+The bidirectional control channel provides a mechanism to read or write I2C registers in remote devices over the 
+FPD-Link III interface. The I2C Controller located at the Deserializer must support I2C clock stretching. Accesses 
+to serializer or remote target devices over the bidirectional control channel will result in clock stretching to allow 
+for response time across the link. The DS90UB960-Q1 acts as an I2C target on the local bus, forwards read 
+and write requests to the remote device, and returns the response from the remote device to the local I2C bus. 
+To allow for the propagation and regeneration of the I2C transaction at the remote device, the DS90UB960-Q1 
+will stretch the I2C clock while waiting for the remote response. The I2C address of the currently selected 
+RX Port serializer will be populated in register 0x5B of the DS90UB960-Q1. The BCC_CONFIG register 
+0x58 also must have bit 6, I2C_PASS_THROUGH set to one. If enabled, local I2C transactions with valid 
+address decode will then be forwarded through the bidirectional control channel to the remote I2C bus. When 
+I2C_PASS_THROUGH is set, the deserializer will only propagate messages that it recognizes, such as the 
+registered serializer alias address (SER_ALIAS_ID), or any registered remote target alias attached to the 
+serializer I2C bus (TARGET_ALIAS) assigned to the specific Rx Port. Setting I2C_PASS_THROUGH_ALL and 
+AUTO_ACK_ALL are less common use cases and primarily used for debugging I2C messaging as they will 
+respectively pass all addresses regardless of valid I2C address (I2C_PASS_THROUGH_ALL) and acknowledge 
+all I2C commands without waiting for a response from serializer (AUTO_ACK_ALL).
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 59
+Product Folder Links: DS90UB960-Q1

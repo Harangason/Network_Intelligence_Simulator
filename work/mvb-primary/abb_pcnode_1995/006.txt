@@ -1,0 +1,43 @@
+General description
+2 - 6 MVB Virtual Terminal and PCNode - User Manual and Reference
+MVB frames
+ 3) The Multifunction V ehicle Bus uses two kinds of frames: 
+ The master frame, which is issued only be the bus master 
+(administrator), and
+ The slave frame, which is sent by the source of the data in 
+response to a master frame.
+Telegram A telegram consists of a master frame and the slave frame sent in 
+response to it.
+Reply time  4)The reply time tms is the delay between the end of a master frame 
+and the beginning of the slave frame. This time consists of the sum 
+of twice the propagation delays (line and regenerator), plus 
+decoding and access delay at the slave. For example, the com-
+puted reply time is 4.36 µs for 30 m without repeater, and rises to 
+34 µs for 2 km lines and two repeater links in between. No config-
+uration is allowed in which the expected reply time exceeds 
+42.7 µs, counted in the slowest line when redundant lines are 
+used.
+At the slave side, the response time between end of master frame 
+and start of slave frame must be between 1.4 µs and 4 µs.
+Function code The master frame contains a 4-bit function code which indicates 
+the command and the size of the expected slave frame, and a 12-
+bit field for address or parameters.
+All devices on the bus decode the master frame. The addressed 
+source device replies with its slave frame, which may be read by 
+several other devices. Both the master frame and the slave frame 
+are broadcasted.
+Since data are identified by their source address onl y, the configu-
+ration tools subscribe each device (as a source or destination) to 
+the periodic data it is interested in.
+3 [part 1 / p 43]
+MD MDF Address CS SD Data CS
+Telegram: the master frame followed by the responding slave frame
+22 µs
+4 bit function code
+master frame delimiter
+check sequence
+slave frame delimiter
+16, 32 or 64 bit
+tms
+22, 33, 54, 102 or 198 µs tms
+4 [part 3 / p 43]

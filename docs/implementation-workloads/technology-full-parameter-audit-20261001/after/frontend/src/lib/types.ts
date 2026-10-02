@@ -19,7 +19,10 @@ export type Technology = {
   native_formats?: string[];
   parameter_schema?: TechnologyParameterField[];
   parameter_defaults_review?: { technology: string; rate_profile: string; values: Record<string, number>; basis: string; status: 'REVIEW_REQUIRED'; source: string };
-  local_timing_schema?: Array<{ key: string; label: string; numeric?: boolean; boolean?: boolean; optional?: boolean; default?: string | number | boolean }>;
+  local_timing_schema?: Array<{ key: string; label: string; numeric?: boolean; boolean?: boolean;
+    type?: string; optional?: boolean; default?: string | number | boolean; options?: string[];
+    integer?: boolean; minimum?: number; maximum?: number; description?: string;
+    required_scopes?: string[]; required_when?: Record<string, unknown> }>;
   label?: string;
   domain?: string;
   layer?: "PHYSICAL" | "DATA_LINK" | "NETWORK" | "TRANSPORT" | "APPLICATION" | "INDUSTRY_PROFILE";

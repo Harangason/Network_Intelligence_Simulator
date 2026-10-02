@@ -1,0 +1,53 @@
+Variable Unit CHAdeMO value
+ProtocolAgreed string Lowest of Chademo protocol number from EV (H'102.0) and charger
+(H'109.0)
+Example for CHAdeMO 2.0.1: "CHAdeMO,3"
+(3 = version reported by CHAdeMO for v2.0.1)
+ProtocolSupportedByEV["1"] string Chademo protocol number (H'102.0) supported by EV
+A string with the following comma-separated items:
+“CHAdeMO,<version>”.
+Example for CHAdeMO 2.0.1:
+- ConnectedEV.ProtocolSupportedByEV = "CHAdeMO,3"
+Voltage and current values:
+ACCurrent(MinSet) A -
+ACCurrent(MaxSet) A -
+ACVoltage(MaxSet) V -
+DCCurrent(MinSet) A Minimum charge current (H'100.0)
+DCCurrent(MaxSet) A -
+DCCurrent(Target) A Charging current request (H'102.3)
+If HighCurrentControl is true, use the value from Charging current
+request (extended) (H'110.1,2).
+DCVoltage(MinSet) V Minimum battery voltage (H'100.2,3)
+DCVoltage(MaxSet) V Maximum battery voltage (H'100.4,5)
+DCVoltage(Target) V Target battery voltage (H'102.1,2)
+Power, energy and time values:
+Power(MaxSet) W -
+EnergyImport(MaxSet) Wh Total capacity of traction battery * 100 (H'101.5,6)
+EnergyImport(Target) Wh -
+DepartureTime dateTime -
+RemainingTimeBulk s -
+RemainingTimeFull(MaxSet) s Maximum charging time * 60 (H'101.2)
+RemainingTimeFull s Estimated charging time * 60 (H'101.3)
+StateOfChargeBulk % -
+StateOfCharge(MaxSet) % Charged rate reference constant (H'100.6)
+StateOfCharge % State of charge (H'102.6)
+ChargingCompleteBulk boolean -
+ChargingCompleteFull boolean -
+Error status values:
+ChargingState
+with a memberlist consisting of the following values:
+* BatteryOvervoltage Battery overvoltage (H'102.4.0)
+* BatteryUndervoltage Battery undervoltage (H'102.4.1)
+* ChargingCurrentDeviation Battery current deviation (H'102.4.2)
+* BatteryTemperature High battery temperature (H'102.4.3)
+* VoltageDeviation Battery voltage deviation (H'102.4.4)
+* ChargingSystemError Charging system error (H'102.5.2)
+* VehicleShiftPosition Vehicle shift position (H'102.5.1)
+* VehicleChargingEnabled Vehicle charging enabled (H'102.5.0)
+* ChargingSystemIncompatibility -
+* ChargerConnectorLockFault -
+ConnectedEV for WPT
+The following parameters coming from the WPT_ChargeLoopReq messages can be represented in the ConnectedEV component.
+This information might be useful for troubleshooting, but is not required for normal operation.
+v1.5, 2025-12-03 Chapter 3. Standardized Components
+OCPP 2.0.1 - © Open Charge Alliance 2025 19/46 Part 2 - Appendices

@@ -1,0 +1,67 @@
+S02.FR.04 When CSMS sends a
+RequestBatterySwapRequest for
+idToken AND
+idToken is authorized by CSMS AND
+Charging Station has not enough
+batteries available for swapping
+Charging Station SHALL respond with
+RequestBatterySwapResponse with status =
+Rejected and statusInfo.reasonCode =
+"NoBatteryAvailable"
+More information can be
+provided in field
+additionalInfo.
+S02.FR.05 S02.FR.01 AND the EV Driver does not
+insert a battery into a slot before the
+timeout set by the Configuration
+Variable: BatterySwapInTimeout
+Charging Station SHALL end the authorization of
+idToken and abort the battery swap process.
+At this point no
+BatterySwapRequest has
+been sent yet.
+S03 - Battery Swap In/Out
+No. Type Description
+1 Name Battery Swap In/Out
+2 ID S03
+3 Objective(s) To show how the action of returning the empty battery and accepting a charge battery is
+recorded.
+4 Description This use case refers to a "set of batteries", but the set can consist of only a single battery.
+An EV driver presents an empty battery or set of batteries to be swapped. The battery swap
+station accepts the set of empty batteries and returns set of charged batteries. The swap station
+records parameters, like serial number, state of charge and state of health of the swapped
+batteries.
+Actors Charging Station, CSMS
+Scenario description 1. Charging Station opens or indicates the slot(s) where the set of empty batteries can be
+inserted.
+2. EV Driver (or swapping machinery) inserts set of empty batteries into empty slot(s) of
+swap station.
+3. Charging Station sends a BatterySwapRequest with eventType = BatteryIn and a
+requestId and with idToken set to the authorized idToken, and a batteryData field for each
+returned battery with evseId set to number of the slot where the battery was inserted, and
+the parameters serialNumber, SoC, SoH.
+4. CSMS responds with BatterySwapResponse.
+a. Charging Station sends a NotifyEventRequest for the EVSE(s) corresponding to
+the used slot(s) with variable "AvailabilityState" set to "Occupied".
+NOTE
+If CSMS does not accept this set of batteries (for whatever reason), then this
+cannot be specified as a rejection status in the response, unless the
+customData solution (as described in Error handling) has been implemented.
+6. Charging Station returns a set of batteries to EV Driver to use.
+(The actual method for returning a battery is up to swap station implementation. A battery
+can be presented by station or user can select one.)
+7. If a battery was still charging
+a. Charging Station ends the charging transaction and sends a
+TransactionEventRequest with eventType = Ended.
+8. EV Driver (or swapping machinery) accepts set of batteries and installs it in EV.
+9. Charging Station sends a BatterySwapRequest with eventType = BatteryOut and the
+requestId from the BatteryIn event and a batteryData field with evse set to number of
+the slot where each battery is taken from, and the parameters serialNumber, SoC, SoH.
+a. CSMS responds with BatterySwapResponse.
+b. Charging Station sends a NotifyEventRequest for the EVSE corresponding to the
+slot with variable "AvailabilityState" set to "Available".
+10. EV Driver leaves.
+5 Prerequisite(s)
+6 Postcondition(s) When successful, use case S04 - Battery Swap Charging follows.
+Edition 2, 2025-12-03 S. Battery Swapping
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 572/803 Part 2 - Specification

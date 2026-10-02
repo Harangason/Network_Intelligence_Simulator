@@ -1,0 +1,41 @@
+No. Type Description
+Scenario description #2 A DC bidirectional session using CHAdeMO
+1. EV is authorized and starts a charging session.
+2. EV and Charging Station exchange charge parameters.
+3. CSMS calculates a TxProfile for this session, which may contain periods of discharging,
+and sends it as a SetChargingProfileRequest.
+4. Charging Station will update charging/discharging levels via CHAdeMO messages with EV
+to match the TxProfile schedule.
+5. EV will start discharging according to schedule periods in TxProfile schedule.
+6. DER control is executed by Charging Station:
+a. It will limit discharging power of EVSE inverter to 50% of its rated capacity.
+b. It will adjust power of EVSE inverter according to grid voltage as defined by the
+configured VoltWatt curve.
+Alternative description An AC bidirectional session using ISO 15118-20 AC_BPT
+1. EV and Charging Station start an ISO 15118-20 session.
+2. Upon successful authorization the EV starts service negotiation and selects the AC_BPT
+service.
+The following steps 3 to 9 are identical to the DC_BPT scenario
+10. Inverter is in EV, but DER control is executed by Charging Station:
+a. It will limit discharging power of EV to 50% of its rated capacity during
+ChargeParameterDiscovery by setting the EVSEMaximumDischargePower to 50%
+of reported EVMaximumDischargePower.
+b. It will adjust power according to grid voltage as defined by the configured VoltWatt
+curve by controlling EVSETargetActivePower using ChargeLoop control.
+5 Prerequisites • In advance utility has sent DER control settings to the CSMS of CSO. In this example these
+are a VoltWatt curve and a limitation of discharging power to 50% of the rated power of
+the inverter.
+• The DER controls to configure are supported by the Charging Station and reported in
+DCDERCtrlr.ModesSupported (for DC) or ACDERCtrlr.ModesSupported (for AC).
+• CSMS has conveyed these settings as SetDERControlRequest messages to the Charging
+Station:
+1. SetDERControlRequest(isDefault = true, controlType = VoltWatt, curve = {…})
+2. SetDERControlRequest(isDefault = true, controlType = LimitDischargePower,
+limitMaxDischarge = { pctMaxDischargePower = 50.0} )
+See use cases R04 - Configure DER control settings at Charging Station.
+6 Post conditions The charging session adheres to DER control settings from utility.
+7 Error Handling
+8 Remarks The descriptions using ISO 15118 messages, such the use of ChargeParameterDiscovery and
+ChargeLoop for DER control, are only informative and not prescriptive.
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 549/803 Part 2 - Specification

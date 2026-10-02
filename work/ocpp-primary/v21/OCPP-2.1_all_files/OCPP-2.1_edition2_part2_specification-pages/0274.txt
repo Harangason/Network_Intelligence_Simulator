@@ -1,0 +1,49 @@
+H02 - Cancel Reservation
+No. Type Description
+1 Name Cancel Reservation
+2 ID H02
+3 Objective(s) To cancel a reservation on a Charging Station.
+4 Description This use case describes how an EV Driver can cancel an existing reservation. The CSMS can
+cancel the reservation the EV Driver has on a Charging Station.
+Actors Charging Station, CSMS, EV Driver
+Scenario description 1. EV Driver asks the CSMS to cancel a reservation.
+2. To cancel a reservation, the CSMS sends CancelReservationRequest to the Charging Station.
+3. If the Charging Station has a reservation matching the reservationId in the request PDU, it
+returns the status Accepted.
+4. If needed, the Charging Station sends NotifyEventRequest with variable "AvailabilityState" set to
+"Available" for all the Connectors of EVSEs that became available.
+5. The CSMS responds with a NotifyEventResponse to the Charging Station.
+6. The reservation is canceled.
+5 Prerequisite(s) - The Functional Block Reservation is installed.
+- EV Driver has a reservation at the Charging Station.
+6 Postcondition(s) Successful postcondition:
+The CSMS was able to cancel the EV Driver’s reservation at the Charging Stations.
+Failure postcondition:
+n/a.
+7 Error handling n/a
+8 Remark(s) The Charging Station does not send a ReservationStatusUpdate, because it was explicitly
+canceled by CSMS, so it is already aware of the event.
+Use of StatusNotificationRequest instead of NotifyEventRequest is deprecated, but still allowed.
+User
+CSMS Charging Station
+Cancel reservation
+CancelReservationRequest(reservationId)
+CancelReservationResponse(status = Accepted)
+Figure 95. Sequence Diagram: Cancel Reservation
+H02 - Cancel Reservation - Requirements
+Table 89. H02 - Requirements
+ID Precondition Requirement definition
+H02.FR.01 The Charging Station has received a
+CancelReservationRequest and no matching
+reservationId.
+The Charging Station SHALL return Rejected.
+H02.FR.02 If a Charging Station receives a
+CancelReservationRequest with a valid, known
+reservationId.
+The reservation SHALL be canceled.
+H02.FR.03 H02.FR.02 AND
+If a specific EVSE was reserved for this
+reservation
+The Charging Station SHALL allow charging again on this EVSE.
+Edition 2, 2025-12-03 H. Reservation
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 261/803 Part 2 - Specification

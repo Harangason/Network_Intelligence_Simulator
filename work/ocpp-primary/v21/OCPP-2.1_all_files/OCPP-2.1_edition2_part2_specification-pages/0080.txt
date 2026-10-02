@@ -1,0 +1,92 @@
+ID Precondition Requirement definition
+B08.FR.04 B08.FR.01 AND
+The GetReportRequest contained a requestId
+Every NotifyReportRequest sent for this GetReportRequest
+SHALL contain the same requestId.
+B08.FR.05 B08.FR.01 AND
+componentCriteria and componentVariables are
+NOT both empty.
+Every NotifyReportRequest sent for this GetReportRequest
+SHALL be limited to the set componentCriteria and
+componentVariables.
+B08.FR.06 CSMS SHALL NOT send more componentVariables in one
+GetReportRequest message than is configured in the
+ItemsPerMessageGetReport Configuration Variable
+B08.FR.07 B08.FR.01 AND
+ComponentCriteria contains: Active
+The Charging Station SHALL report every component that has
+the variable Active set to true, or does not have the Active
+variable in a NotifyReportRequest.
+B08.FR.08 B08.FR.01
+AND
+ComponentCriteria contains: Available
+The Charging Station SHALL report every component that has
+the variable Available set to true, or does not have the Available
+variable, in a NotifyReportRequest.
+B08.FR.09 B08.FR.01 AND
+ComponentCriteria contains: Enabled
+The Charging Station SHALL report every component that has
+the variable Enabled set to true, or does not have the Enabled
+variable, in a NotifyReportRequest.
+B08.FR.10 B08.FR.01 AND
+ComponentCriteria contains: Problem
+The Charging Station SHALL report every component that has
+the variable Problem set to true in a NotifyReportRequest.
+B08.FR.11 B08.FR.01 AND
+componentCriteria is absent AND
+componentVariables is NOT empty.
+Every NotifyReportRequest sent for this GetReportRequest is
+limited to the set in componentVariables.
+B08.FR.12 B08.FR.01 The reported variables in NotifyReportRequest SHALL contain
+variableCharacteristics.
+B08.FR.13 B08.FR.01 AND
+More than one componentCriteria is given.
+The Charging Station SHALL report all components that have at
+least one of the given criteria (logical OR).
+B08.FR.14 The sequence number contained in the seqNo field of the
+NotifyReportRequest is incremental per report. So the
+NotifyReportRequest message which contains the first report
+part, SHALL have a seqNo with value 0.
+B08.FR.15 When the Charging Station receives a
+GetReportRequest with a combination of criteria
+which results in an empty result set.
+The Charging Station SHALL respond with a
+GetReportResponse(status=EmptyResultSet).
+B08.FR.16 When the Charging Station is temporarily unable
+to execute a report request
+The Charging Station SHALL send a getBaseReportResponse
+with Rejected.
+B08.FR.17 Charging Station receives a GetReportRequest
+with more ComponentVariableType elements
+than allowed by
+ItemsPerMessageGetReport
+The Charging Station MAY respond with a
+CALLERROR(OccurenceConstraintViolation)
+B08.FR.18 Charging Station receives a GetReportRequest
+with a length of more bytes than allowed by
+BytesPerMessageGetReport
+The Charging Station MAY respond with a
+CALLERROR(FormatViolation)
+B08.FR.20 When Charging Station receives a
+GetReportRequest with componentVariable
+elements in which variable is missing
+The Charging Station SHALL report for every variable of the
+component in componentVariable.
+B08.FR.21 When Charging Station receives a
+GetReportRequest with componentVariable
+elements in which variable is present, but
+instance is missing
+The Charging Station SHALL report for every instance of the
+variable of the component in componentVariable.
+B08.FR.22 B08.FR.11 AND
+When Charging Station receives a
+GetReportRequest with a component in a
+componentVariable element that has a
+component.evse.id, but
+component.evse.connector is missing
+The Charging Station SHALL report the component(s) with this
+component.name, component.instance and component.evse.id
+for every component.evse.connector, whilst taking into account
+B08.FR.24.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 67/803 Part 2 - Specification

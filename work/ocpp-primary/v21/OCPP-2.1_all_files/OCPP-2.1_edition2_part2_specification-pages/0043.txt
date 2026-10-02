@@ -1,0 +1,51 @@
+ID Precondition Requirement definition
+A00.FR.511 For the Charging Station certificate, the subject field SHALL contain a CN
+(commonName) RDN which consists of the unique serial number of the
+Charging Station. This serial number SHALL NOT be in the format of a
+URL or an IP address so that Charging Station certificates can be
+differentiated from CSMS certificates.
+Note: According to RFC 2818, if a subjectAltName extension of type
+dnsName is present, that must be used as the identity. This would be
+incompliant with OCPP and ISO 15118. Therefore it SHOULD NOT be used
+in Charging Station and CSMS certificates.
+It is allowed to use the subjectAltName extension of type dnsName for a
+CSMS, when the CSMS has multiple network paths to reach it (for
+example, via a private APN + VPN using its IP address in the VPN and via
+public Internet using a named URL).
+A00.FR.512 For all certificates the X.509 Key Usage extension [19] SHOULD be used to
+restrict the usage of the certificate to the operations for which it will be
+used.
+A00.FR.513 If the Charging Station Certificate is also used as SECC Certificate in the
+ISO 15118 protocol, the certificate needs to meet the requirements in ISO
+15118-2 or ISO 15118-20 .
+A00.FR.514 For all certificates it is strongly RECOMMENDED NOT to use the X.509
+Extended Key Usage extension, to be compatible with the ISO 15118
+standard. There are alternative mechanisms available.
+1.4.2. Certificate Hierarchy
+This section is normative.
+The OCPP protocol supports the use of two separate certificate hierarchies:
+1. The Charging Station Operator hierarchy which contains the CSMS, and Charging Station certificates.
+2. The Manufacturer hierarchy which contains the Firmware Signing certificate.
+The CSMS can update the CSO root certificates stored on the Charging Station using the InstallCertificateRequest message.
+Table 22. Certificate Hierarchy requirements
+ID Precondition Requirement definition
+A00.FR.601 The Charging Station Operator MAY act as a certificate authority for the
+Charging Station Operator hierarchy
+A00.FR.602 A00.FR.601 The Charging Station Operator MAY for instance follow the certificate
+hierarchy described in Appendices E and F of ISO15118-2 and use the
+CSO Sub-CA 2 certificate to sign the CSMS and Charging Station
+certificates. This could give the advantage that the online verification of
+Charging Station client side certificates can be done within the Charging
+Station Operator’s networks, simplifying the network architecture.
+A00.FR.603 The private keys belonging to the CSO root certificates MUST be well
+protected.
+A00.FR.604 As the Manufacturer is usually a separate organization from the Charging
+Station Operator, a trusted third party SHOULD be used as a certificate
+authority. This is essential to have non-repudiation of firmware images.
+NOTE
+It is not recommended to have preinstalled well-known root CA certificates on a Charging Station like in operating
+systems or browsers, like for example a CA bundle. Only root and intermediate certificates part of the Charging
+Station Operator hierarchy should be used for the OCPP connection, as described by section Certificate
+Hierarchy. Trusting many additional well-known root CA certificates creates security risks.
+Edition 2, 2025-12-03 A. Security
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 30/803 Part 2 - Specification

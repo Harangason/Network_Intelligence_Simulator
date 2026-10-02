@@ -1,0 +1,40 @@
+Length MsgType
+(1 or 3 octets) (1 octet)
+Table 2: Message Header
+5.2.1 Length
+The Length ﬁeld is either 1- or 3-octet long and speciﬁes the total number of octets contained in the message
+(including the Length ﬁeld itself).
+If the ﬁrst octet of the Length ﬁeld is coded “0x01” then the Length ﬁeld is 3-octet long; in this case, the two
+following octets specify the total number of octets of the message (most-signiﬁcant octet ﬁrst). Otherwise, the
+Length ﬁeld is only 1-octet long and speciﬁes itself the total number of octets contained in the message.
+The 3-octet format allows the encoding of message lengths up to 65535 octets. Messages with lengths smaller
+than 256 octets may use the shorter 1-octet format.
+Note that because MQTT-SN does not support message fragmentation and reassembly, the maximum message
+length that could be used in a network is governed by the maximum packet size that is supported by that network,
+and not by the maximum length that could be encoded by MQTT-SN.
+5.2.2 MsgType
+The MsgType ﬁeld is 1-octet long and speciﬁes the message type. It shall be set to one of the values shown in
+Table 3 .
+MsgType Field Value MsgType MsgType Field Value MsgType
+0x00 ADVERTISE 0x01 SEARCHGW
+0x02 GWINFO 0x03 reserved
+0x04 CONNECT 0x05 CONNACK
+0x06 WILLTOPICREQ 0x07 WILLTOPIC
+0x08 WILLMSGREQ 0x09 WILLMSG
+0x0A REGISTER 0x0B REGACK
+0x0C PUBLISH 0x0D PUBACK
+0x0E PUBCOMP 0x0F PUBREC
+0x10 PUBREL 0x11 reserved
+0x12 SUBSCRIBE 0x13 SUBACK
+0x14 UNSUBSCRIBE 0x15 UNSUBACK
+0x16 PINGREQ 0x17 PINGRESP
+0x18 DISCONNECT 0x19 reserved
+0x1A WILLTOPICUPD 0x1B WILLTOPICRESP
+0x1C WILLMSGUPD 0x1D WILLMSGRESP
+0x1E-0xFD reserved 0xFE Encapsulated message
+0xFF reserved
+Table 3: Values of the MsgType ﬁeld
+5.3 Message Variable Part
+The content of the message variable part depends on the type of the message. The following ﬁelds are deﬁned for
+the message variable part.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 7

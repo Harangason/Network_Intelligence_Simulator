@@ -1,0 +1,37 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 26
+OS81050
+4.4  FIFO Message Exchange
+All FIFO Data messages require a status message response from the receiving device. For example, an
+ICM FIFO Data message sent to INIC results in the following status message being sent to the EHC:
+ICM:Status(XmitSuccess)
+This status message indicates the OS81050 received the message successfully. Likewise, when the
+OS81050 sends a FIFO Data message to the EHC (from the network or as a response to a previous
+request), the EHC is required to respond with a status message indicating message reception was suc-
+cessful.
+INIC provides an application watchdog to monitor the Port Message transfer during a predefined time frame.
+The watchdog timer times out under either of the following two cases:
+/square6 a status message response to a data message is not sent by the EHC within the timeout period, or
+/square6 INIC does not receive an MCM or ICM data message from the EHC within the timeout period.
+The watchdog timer is configured through the WatchdogMode() INIC function. For more information on
+configuring the watchdog timer, refer to the OS8105x/6x INIC API User’s Manual [2].
+4.4.1   MOST Control Messages (MCM)
+MOST Control Messages  (MCMs) are transferred between INIC and the EHC on either the MediaLB Port or
+the Control Port. MCMs can target the EHC FBlocks, INIC’s FBlock NBMIN, or FBlocks that exist on the
+MOST Network. Segmented MCM messages are supported.
+The default structure of an MCM sent from INIC to the EHC:
+PML.06.04.TgtDevType.SrcDevID.FBlockID.InstID.FktID.OpType.TelID.Length.Data
+The default structure of an MCM sent from the EHC to INIC:
+PML.05.04.TgtDevID.FBlockID.InstID.FktID.OpType.TelID.Length.Data
+4.4.2   INIC Control Messages (ICM)
+INIC Control Messages  (ICMs) are very similar to MCM messages, with the exception that ICM messages
+are always to/from the local FBlock INIC directly. Unlike MCM messages, ICM messages do not support
+segmentation.
+ICM and MCM messages use separate FIFOs; therefore, ICM messages are never blocked by MCM mes-
+sages that may need to be retried, or fail to get sent altogether. The ICM Rx FIFO and ICM Tx FIFO directly
+interface with the local FBlock INIC (which is always available) and provides faster response time for sys-
+tem-important functions, such as the watchdog timer.
+The default structure of an ICM sent from INIC to the EHC:
+PML.01.14.FktID.OpType.0.Length.Data
+The default structure of an ICM sent from the EHC to INIC:
+PML.01.14.FktID.OpType.0.Length.Data

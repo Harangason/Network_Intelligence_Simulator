@@ -1,0 +1,61 @@
+MODBUS over serial line specification and implementation guide V1.02 Modbus.org    
+Modbus.org http://www.modbus.org/ 9/44
+Dec 20, 2006 
+2.4 Master / Slaves State Diagrams 
+The MODBUS data link layer comprises two separate sub layers :  
+• The Master / slave protocol
+• The transmission mode ( RTU vs ASCII modes)
+The following sections describes the state diagrams of a master and a slave that are independent of  transmission modes used.
+The RTU and ASCII transmission modes are specified in next chapters using two state diagrams. The reception and the sending of a
+frame are described.
+Syntax of state diagram : 
+The following state diagrams are drawn in compliance with UML standard notations.  The notation is briefly recalled below : 
+State_B
+trigger [ guard condition ]
+/ action
+State_A
+When a "trigger" event occurs in a system being in "State_A", system is going into "State_B", only if " guard condition" is true.  An action "action" is then 
+performed. 
+2.4.1 Master State diagram  
+The following drawing explains the Master behavior : 
+Waiting
+for reply
+Idle
+request sent to a
+slave
+/ response time-
+out is started
+Processing
+reply
+Reply reception  [Expected slave]
+/ response time-out is stopped
+End of reply processing
+Processing
+error
+Frame error
+response time-out expiration
+End of error processing
+Waiting
+turnaround
+delay
+Request sent in
+broadcast mode
+/ turnaround delay
+is started
+turnaround delay
+expiration
+Reply reception
+  [Unexpected slave]
+Figure 7: 
+Master state diagram 
+Some explanations about the state diagram above : 
+/square4 State "Idle" = no pending request.  This is the initial state after power-up. A request can only be sent in "Idle" state.  Afte r sending 
+a request, the Master leaves the "Idle" state, and cannot send a second request at the same time 
+/square4 When a unicast request is sent to a slave, the master goes into "Waiting for reply" state, and a “Response Time-out” is started .  It 
+prevents the Master from staying indefinitely in "Waiting for reply" state.  Value of the Response time-out is application 
+dependant. 
+/square4 When a reply is received, the Master checks the reply before starting the data processing.  The checking may result in an error , 
+for example a reply from an unexpected slave, or an error in the received frame.  In case of a reply received from an unexpecte d 
+slave, the Response time-out is kept running.  In case of an error detected on the frame, a retry may  be performed. 
+/square4 If no reply is received, the Response time-out expires, and an error is generated.  Then the Master goes into "Idle" state, ena bling 
+a retry of the request.  The maximum number of retries depends on the master set-up.  

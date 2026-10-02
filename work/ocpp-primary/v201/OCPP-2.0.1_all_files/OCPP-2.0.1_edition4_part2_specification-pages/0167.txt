@@ -1,0 +1,39 @@
+E09 - When cable disconnected on EV-side: Stop Transaction
+No. Type Description
+1 Name When cable disconnected on EV-side: Stop Transaction
+2 ID E09
+Parent use case E07 - Local Stop Transaction
+3 Objective(s) To stop an ongoing transaction when the Charging Cable is unplugged on the EV side.
+4 Description This use case covers how a transaction is stopped when the EV Driver unplugs the cable at the EV
+side. In this use case the Configuration Variable: StopTxOnEVSideDisconnect = true.
+The Charging Cable is unplugged at the EV side. This is detected by the Charging Station. The
+Charging Station stops the transaction and sends a TransactionEventRequest to the CSMS. The
+Charging Cable, if locked and UnlockOnEvSideDisconnect = false, will remain locked at the
+Charging Station until the EV Driver returns and presents his/hers IdToken. Otherwise it will
+unlock the cable.
+Actors Charging Station, CSMS, EV Driver
+Scenario description 1. The cable is unplugged at the EV.
+2. The energy offer is suspended.
+3. The Charging Station sends TransactionEventRequest (eventType = Ended, stoppedReason =
+EVDisconnected) to the CSMS.
+4. The CSMS responds with TransactionEventResponse.
+5. The EV Driver is authorized and unplugs the cable.
+6. The Charging Station sends StatusNotificationRequest to the CSMS with the status Available.
+7. The CSMS responds with StatusNotificationResponse.
+Alternative scenario(s) E10 - When cable disconnected on EV-side: Suspend Transaction
+5 Prerequisite(s) Configuration Variable: StopTxOnEVSideDisconnect = true
+A transaction is ongoing
+6 Postcondition(s) Successful postcondition:
+The Charging Station is in Idle status.
+Failure postcondition:
+n/a
+7 Error handling n/a
+8 Remark(s) When the Charging Cable is plugged back in, the charging will not resume/continue.
+The scenario description and sequence diagram above are based on the Configuration Variable
+for stop transaction being configured as follows.
+TxStopPoint: Authorized
+This use-case is also valid for other configurations, but then the transaction might stop at another
+moment, which might change the sequence in which message are sent. For more details see the
+use case: E06 - Stop Transaction options
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 157/491 Part 2 - Specification

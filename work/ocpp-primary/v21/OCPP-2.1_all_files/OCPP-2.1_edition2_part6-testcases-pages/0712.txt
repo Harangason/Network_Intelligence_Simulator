@@ -1,0 +1,38 @@
+TC_N_32_CS: Clear Customer Information - Clear and no report
+Test case name Clear Customer Information - Clear and no report
+Test case Id TC_N_32_CS
+Use case Id(s) N10
+Requirement(s) N10.FR.01, N10.FR.06
+System under test Charging Station
+Description The CSMS sends a message to the Charging Station to clear (and retrieve) IdToken customer information,
+for example to be compliant with local privacy laws. The Charging Station notifies the CSMS by sending
+one or more reports.
+Purpose To verify if the Charging Station accepts the request and removes all customer related data (except from
+LocalList) and sent one notify as described at the OCPP specification.
+Prerequisite(s) Charging Station has no customer information available of <Configured valid idToken fields>
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+CustomerInformationResponse
+1. The Test System sends a CustomerInformationRequest with
+- report false AND
+- clear true AND
+- idToken <Configured valid idToken fields>
+3. The Charging Station sends a
+NotifyCustomerInformationRequest 4. The Test System responds with a
+NotifyCustomerInformationResponse .
+Tool validations
+* Step 2:
+Message CustomerInformationResponse
+- status Accepted
+Post scenario validations:
+- A message is send indicating that the data is cleared
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 710/1383 Part 6 - Test Cases

@@ -1,0 +1,41 @@
+TC_K_123_CS: Dynamic charging profiles from CSMS - validations
+Test case name Dynamic charging profiles from CSMS - validations
+Test case Id TC_K_123_CS
+Use case Id(s) K28
+Requirement(s) K28.FR.01, K28.FR.02, K28.FR.03, K28.FR.04, K28.FR.11
+System under test Charging Station
+Description To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the entire
+Charging Station over a period of time. The CSMS sends a SetChargingProfileRequest to the Charging
+Station to influence the power or current drawn by EVs. The CSMS calculates a ChargingSchedule to stay
+within certain limits, which MAY be imposed by any external system.
+Purpose To verify if the Charging Station is able to support DynamicControl charging profiles.
+Prerequisite(s) SmartChargingCtrlr.SupportsFeature[DynamicProfiles] is true
+Before (Preparations)
+Configuration State:
+Memory State:
+N/a
+Reusable State(s):
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+chargingProfile.chargingProfilePurpose
+ChargingStationMaxProfile
+chargingProfile.chargingProfileKind Dynamic
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 8 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[1
+].startPeriod 900
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[1
+].limit 4 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 581/1383 Part 6 - Test Cases

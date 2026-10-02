@@ -1,0 +1,61 @@
+ID Precondition Requirement definition Note
+K02.FR.02 After authorization. The EVSE will set a maximum current to use via the
+Control Pilot signal.
+This requirement only
+applies to AC chargers that
+use 61851. The limit may be
+based on a (default)
+charging profile that the
+EVSE previously received
+from the CSMS.
+K02.FR.03 In order to ensure that an updated ChargingProfile
+applies only to the current transaction, the CSMS SHALL
+set the chargingProfilePurpose of the ChargingProfile to
+TxProfile.
+An updated charging profile
+can be sent by the CSMS by
+sending a ChargingProfile
+with the same
+chargingProfileId.
+K02.FR.04 If a transaction-specific
+profile with purpose
+TxProfile is present.
+The TxProfile SHALL overrule the default charging profile
+with purpose TxDefaultProfile for the duration of the
+current transaction only.
+K02.FR.05 K02.FR.04
+After the transaction is
+stopped
+The TxProfile SHALL be deleted.
+K02.FR.06 The optional ChargingSchedule field minChargingRate
+MAY be used by the Charging Station to optimize the
+power distribution between the EVSEs.
+The parameter informs the
+Local Controller that
+charging below
+minChargingRate is
+inefficient, giving the
+possibility to select another
+balancing strategy. (Same
+as K01.FR.21)
+K02.FR.07 The CSMS SHALL NOT set chargingProfilePurpose to
+ChargingStationExternalConstraints in a
+SetChargingProfileRequest.
+This purpose is only used
+when an external system
+has set a charging
+limit/schedule. (Same as
+K01.FR.22)
+K02.FR.08 K02.FR.04 AND
+The charging schedule of
+TxProfile ends, before the
+transaction ends, because
+the set duration or validTo
+period expired
+The Charging Station SHALL fall back to using the lowest
+limit of the active TxDefaultProfile and
+ChargingStationMaxProfile. If there are no other active
+profiles, it falls back to the local limit of the Charging
+Station
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 255/491 Part 2 - Specification

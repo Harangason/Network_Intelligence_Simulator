@@ -1,0 +1,53 @@
+Description This variable represents the status of the door of the battery slot.
+This optional variable can be sent to or monitored by CSMS for information.
+2.19.11.1. Example representation of a battery swap station in device model
+A battery swap station can be mapped onto the standard 3-tier model of a charging station. A battery slot is mapped onto an EVSE.
+The battery slot type is represented by the connector type. Variables associated with the inserted battery cartridge are represented
+by a BatteryCartridge component, which is only Available when a cartridge is inserted. The table below represents a battery swap
+station with two battery slots in which only slot #2 contains a battery cartridge.
+Component Variable VariableAttribute VariableCharacteristics
+name evse
+id
+evse
+conne
+ctorId
+instance name instance type value dataType maxLimit supports
+Monitorin
+g
+ChargingStation Available Actual true boolean false
+ChargingStation AvailabilityState Actual Available boolean true
+BatterySwapCtrlr TargetSoC Actual 70 integer 100 false
+BatterySwapCtrlr MaxSoC Actual 80 integer 100 false
+BatterySwapCtrlr IdToken Actual BSS-001 string false
+EVSE 1 Available Actual true boolean false
+EVSE 1 AvailabilityState Actual Available OptionList true
+EVSE 1 Power Actual 0.0 decimal 22000.0 true
+Connector 1 1 Available Actual true boolean false
+Connector 1 1 ConnectorType Actual bBatterySlot string false
+Connector 1 1 SlotStatus Actual Open OptionList true
+BatteryCartridge 1 1 Available Actual false boolean true
+BatteryCartridge 1 1 Temperature Actual 0 decimal true
+BatteryCartridge 1 1 SoC Actual 0 integer true
+BatteryCartridge 1 1 WorkingMode Actual CC OptionList true
+EVSE 2 Available Actual true boolean false
+EVSE 2 AvailabilityState Actual Occupied optionList true
+EVSE 2 Power Actual 4100.0 decimal 5000.0 true
+Connector 2 1 Available Actual true boolean false
+Connector 2 1 AvailabilityState Actual Occupied optionList true
+Connector 2 1 ConnectorType Actual bBatterySlot string false
+Connector 1 1 SlotStatus Actual Locked OptionList true
+BatteryCartridge 2 1 Available Actual true boolean true
+BatteryCartridge 2 1 Temperature Actual 35 decimal true
+BatteryCartridge 2 1 SoC Actual 51 integer true
+BatteryCartridge 2 1 WorkingMode Actual CC OptionList true
+NOTE
+The BatteryCartridge component a EVSE #1 is absent. As a result the Available variable is false. The other
+variables (like Temperature, SoC) still exist in the device model, but have no meaning when the battery cartridge is
+not present.
+2.20. Device Model hierarchy variables
+New in OCPP 2.1
+See Part 1 "Device Model Hierarchy" for the purpose of these variables.
+The value of a XxxParent variable (Communication/Electrical/Logical/PhysicalParent) is a shorthand notation that points to the
+parent component, as follows:
+Edition 2, 2025-12-03 Referenced Components and Variables
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 801/803 Part 2 - Specification

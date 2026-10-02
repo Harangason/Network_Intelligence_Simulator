@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+3.11.5.1 ASCII output with warning contents
+Message UBX-INF-WARNING
+ASCII output with warning contents
+Type Output
+Comment This message has a variable length payload, representing an ASCII string.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x04 0x01 [0..n] see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+Start of repeated group (N times)
+0 + n CH str - - ASCII Character
+End of repeated group (N times)
+3.12 UBX-LOG (0x21)
+The messages in the UBX-LOG class are used to conﬁgure and report status information of the
+logging and data batching features.
+3.12.1 UBX-LOG-CREATE (0x21 0x07)
+3.12.1.1 Create log ﬁle
+Message UBX-LOG-CREATE
+Create log ﬁle
+Type Command
+Comment This message is used to create an initial logging ﬁle and activate the logging subsystem.
+UBX-ACK-ACK or UBX-ACK-NAK are returned to indicate success or failure.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x21 0x07 8 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 X1 logCfg - - Conﬁg ﬂags
+bit 0   U:1 circular - - Log is circular (new entries overwrite old ones in a full
+log) if this bit set
+2 U1 reserved0 - - Reserved
+3 U1 logSize - - Indicates the size of the log:
+• 0 (maximum safe size) = Ensures that logging will
+not be interrupted and enough space will be left
+available for all other uses of the ﬁlestore
+• 1 (minimum size) =
+• 2 (user-deﬁned) = See 'userDeﬁnedSize' below
+4 U4 userDefined
+Size
+- bytes Sets the maximum amount of space in the ﬁlestore
+that can be used by the logging task.
+This ﬁeld is only applicable if logSize is set to user-
+deﬁned.
+3.12.2 UBX-LOG-ERASE (0x21 0x03)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 57 of 224
+C1-Public

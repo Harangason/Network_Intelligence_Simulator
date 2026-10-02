@@ -1,0 +1,45 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Config
+parameters
+Status on
+PN7160
+Coming from Default value Remark
+NCI 2.0
+NFCC_CONFIG_
+CONTROL
+Full support [NCI]
+NCI 2.0
+0x00
+Table 14. Compliance to [NCI] configuration parameters ...continued
+5.3.6  Compliance to [NCI] data messages
+PN7160 is fully compliant to the [NCI] data messages.
+5.4  Extensions added to [NCI] to allow full control of the PN7160
+The [PN7160-NCI] Extensions section gives a quick overview of the numerous extensions required to [NCI] to
+give full access to all the features available in the PN7160.
+5.4.1  [PN7160-NCI] extensions to [NCI] RF Protocols
+PN7160 supports more protocols than handled today by [NCI].
+It is required to extend the table 132 in NCI 1.0 such that these protocols can be configured in various
+commands/notifications:
+Chapter Value Description
+Section 7.4 0x06 PROTOCOL_15693 (only for [PN7160-NCI1.0])
+Section 7.1 0x80 PROTOCOL_MIFARE_CLASSIC
+Section 7.5 0x81 PROTOCOL_KOVIO
+0x82-0x9F Reserved for Proprietary protocols
+0xA0-0xFD Reserved for Proprietary protocols
+Table 15. Proprietary RF protocols
+5.4.2  [PN7160-NCI] extensions to [NCI] Bit Rates in NFC-F
+PN7160 offers the possibility to poll for NFC-F @ 212 kb/s and NFC-F @ 424 kb/s, unfortunately, [NCI] only
+allows configuring one of these 2-bit rates, but not both in the same discovery sequence. The [NCI] parameter
+used to configure the bit rate in NFC-F is PF_BIT_RATE. By setting PF_BIT_RATE to the value of 0x80
+“NFC_BIT_RATE_212 AND NFC_BIT_RATE_424”, polling is done for both 212 and 424k in the same discovery
+sequence.
+Value Description
+0x80 NFC_BIT_RATE_212 AND NFC_BIT_RATE_424
+Table 16. Proprietary Bit rates
+5.4.3  [PN7160-NCI] [NCI-2.0] Bit Rates in NFC-V
+In NCI 2.0, PN7160 supports the Poll Mode for technology NCI 2.0 defines an appropriate bit rate (26 kb/s) with
+which the NFCC has to report to the DH in the RF_INTF_ACTIVATED_NTF.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+33 / 147

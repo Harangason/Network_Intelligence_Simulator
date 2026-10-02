@@ -1,0 +1,32 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+10.3  [PN7160-NCI] extension: additional technologies not yet supported by the NFC
+Forum
+PN7160 supports more technologies than currently supported by the NFC Forum specifications: P2P Active and
+15693.
+Furthermore, PN7160 offers an additional proprietary value for the configuration parameter PF_BIT_RATE,
+which allows configuring that both 212 kb/s and 424 kb/s are polled for NFC-F in Passive Mode.
+Thanks to the RF_DISCOVER_CMD and the PF_BIT_RATE, the DH has full flexibility to extend the default RF
+Discovery profile as currently defined in the NCI 1.0 specification. Here is an example how the DH can enable
+all technologies available in PN7160, for both Poll & Listen Mode:
+1. The DH sets PF_BIT_RATE to 0x08, such that the PN7160 polls for 212 and 424 kb/s in technology F
+PASSIVE.
+CORE_SET_CONFIG_CMD( NbrParam = 0x01,
+ID = 0x18,
+Length = 0x01,
+Val = 0x08 )
+1. The DH enables all technologies and modes available in PN7160:
+RF_DISCOVER_CMD( 8,
+[NCI_DISCOVERY_TYPE_POLL_A_PASSIVE,1],
+[NCI_DISCOVERY_TYPE_POLL_B_PASSIVE,1],
+[NCI_DISCOVERY_TYPE_POLL_F_PASSIVE,1],
+[NCI_DISCOVERY_TYPE_POLL_15693_PASSIVE,1],
+[NCI_DISCOVERY_TYPE_POLL_A_ACTIVE*,1],
+[NCI_DISCOVERY_TYPE_LISTEN_A_PASSIVE,1],
+[NCI_DISCOVERY_TYPE_LISTEN_B_PASSIVE,1],
+[NCI_DISCOVERY_TYPE_LISTEN_F_PASSIVE,1] )
+* NCI_DISCOVERY_TYPE_POLL_F_ACTIVE is not allowed with the [PN7160_Ref], see Section 5.3.4.
+The resulting RF discovery is drawn below:
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+83 / 147

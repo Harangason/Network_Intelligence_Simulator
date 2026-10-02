@@ -1,0 +1,72 @@
+EV Driver Charging Station CSMS
+EV Driver has plugged in and is authorized
+(TxStartPoint = PowerPathClosed)
+TransactionEventRequest(Started, idToken = AA12345 )
+CSMS sets cost limit
+TransactionEventResponse(idTokenInfo.status = Accepted
+transactionLimit.maxCost = 12.34)
+TransactionEventRequest(Updated, ...,
+transactionInfo.transactionLimit.maxCost = 12.34,
+triggerReason = LimitChanged)
+TransactionEventResponse()
+Transaction continues.
+When cost limit reached...
+TransactionEventRequest(Updated, ...,
+triggerReason = CostLimitReached, chargingState = SuspendedEVSE)
+TransactionEventResponse()
+Inform driver limit is reached
+EV Driver stops authorization and unplugs to end transaction
+Figure 76. Sequence diagram for transaction with limited cost
+E16 - Transactions with fixed cost, energy, SoC or time - Requirements
+ID Precondition Requirement definition Note
+E16.FR.01 When Charging Station sets or
+changes a limit to the transaction in
+cost, energy, SoC or time
+Charging Station SHALL send a
+TransactionEventRequest with triggerReason =
+LimitSet and include this limit once in the field
+transactionInfo.transactionLimit.
+This is usually a limit
+entered by EV Driver.
+Sending transactionLimit
+may be part of another
+triggerReason if multiple
+triggers apply, see
+E02.FR.17.
+E16.FR.02 When CSMS sets or changes a limit to
+the transaction in cost, energy, SoC or
+time
+CSMS SHALL include the field transactionLimit
+once in the first possible
+TransactionEventResponse message.
+transactionLimit uses
+maxCost for cost limit,
+maxEnergy for energy
+limit, maxTime for time
+limit or maxSoC for SoC
+limit.
+E16.FR.03 E16.FR.02 AND
+at least one of the limits in
+transactionLimit is supported by the
+Charging Station
+Charging Station SHALL send a
+TransactionEventRequest with triggerReason =
+LimitSet and include the supported limit(s) once
+in the field transactionInfo.transactionLimit.
+This confirms to CSMS
+that the limit is set. For
+example, a prepaid cost
+limit. See also E16.FR.13.
+E16.FR.04 E16.FR.02 Charging Station SHALL NOT send a
+TransactionEventRequest with a
+transactionInfo.transactionLimit that exceeds a limit
+that was previously set by CSMS
+For example, when CSMS
+has set a prepaid
+balance as a maximum
+cost, then CS must not
+allow EV Driver set the
+maximum cost to a
+higher limit.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 216/803 Part 2 - Specification

@@ -1,0 +1,60 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 69
+The sequence required of the EHC, in order to program the OS81050 INIC, is as follows:
+/square6 Hold the OS81050 in reset (drive RST low),
+/square6 Hold the ERR/BOOT pin low,
+/square6 Release the OS81050 from reset (RST high),
+/square6 Erase and program OS81050 INIC, as described in the INIC Flash Guide Application Note  [10],
+/square6 Release the ERR/BOOT pin, and
+/square6 Reset the OS81050 to resume a normal mode of operation.
+During Boot Mode, the INT pin is configured as an output and driven to VDDCn.
+13.5.2   INIC Explorer via JTAG Port
+The OS81050 JTAG Port can be converted into a configuration interface for use with SMSC’s INIC Explorer
+[4] tool. INIC Explorer required that the application PCB provide a standard 14-pin (2x7) 2 mm header (such
+as Molex 8732-1420 or equivalent). The interface between the INIC Explorer tool and the OS81050 is also
+referred to as the Customer Configuration Interface .
+In addition to writing the INIC Configuration String into Flash memory, INIC Explorer provides debugging capa-
+bilities by allowing users access to INIC (via PC software) for:
+/square6 Exploring internal INIC properties and states while it is operating in the target platform,
+/square6 Viewing internal INIC states and routing configurations graphically, and
+/square6 Creating an INIC data memory snapshot as a file dump.
+Figure 13-5 illustrates the necessary connections between the OS81050 and the configuration/debug
+header that accommodates INIC Explorer. To allow the header to drive the ERR/BOOT and RST pins during
+configuration, the pull-up resistors on the lines should be greater than 10 k Ω. If the ERR/BOOT and RST
+lines are also connected to the EHC (as described in Section 13.5.1), the EHC must use open-drain logic
+or set its outputs as high-impedance when the INIC Explorer connects to the OS81050 via the configura-
+tion/debug header.
+Contact SMSC for more information on the INIC Explorer platform.
+TDO/DINT
+TCK/DSCL
+TDI/DSDA
+OS81050
+3.3Vs
+3.3Vs
+4.7 kΩ
+1
+3
+5
+7
+9
+11
+13
+2
+TMS
+3.3Vs
+RSTRESET
+MR
+Vcc
+Reset
+≥10 kΩ
+A push-pull output 
+requires a series resistor 
+in lieu of a pull-up.
+ERR/BOOT
+47 kΩ
+100 kΩ3.3Vs
+2.5Vs
+3.3Vs
+(open-drain)
+Figure 13-5: Configuration/Debug Header

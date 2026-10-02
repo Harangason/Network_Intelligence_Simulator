@@ -1,0 +1,95 @@
+ID Precondition Requirement definition Note
+E07.FR.02 E07.FR.01 The Charging Station SHALL send a
+TransactionEventRequest with triggerReason =
+StopAuthorized and SHOULD include the
+idToken used to stop authorization.
+The stopping idToken
+may differ from the
+starting idToken, when
+they share the same
+GroupId.
+E07.FR.04 If a transaction is stopped on request
+of the EV driver at the Charging
+Station.
+Charging Station MAY omit the stoppedReason
+element from the final TransactionEventRequest
+with eventType = Ended
+e.g. EV-driver presented
+IdToken to stop the
+transaction or pressed a
+"stop" button (not the
+emergency stop).
+See use case F03 for
+remotely stopping.
+E07.FR.05 If a transaction is stopped on request
+of the EV driver at the Charging
+Station.
+Charging Station SHOULD use a stoppedReason =
+Local in the final TransactionEventRequest with
+eventType = Ended.
+e.g. EV-driver presented
+IdToken to stop the
+transaction or pressed a
+"stop" button (not the
+emergency stop).
+See use case F03 for
+remotely stopping.
+E07.FR.06 If a transaction is stopped, but not on
+request of the EV driver at the
+Charging Station.
+Charging Station SHOULD use the most appropriate
+value from ReasonEnumType for stoppedReason in
+the final TransactionEventRequest with eventType =
+Ended.
+Apart from remotely
+stopping (Remote),
+CSMS revoking
+authorization
+(DeAuthorized) or
+disconnecting the EV
+(EVDisconnected),
+most other reasons are
+related to technical faults
+or energy limitations.
+E07.FR.07 E07.FR.02 The Charging Station SHALL unlock the cable (if
+not permanently attached).
+E07.FR.08 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Ended), See: Meter
+Values - Configuration
+The Charging Station SHALL add the configured
+measurands to the optional meterValue field with
+context = Transaction.End in the
+TransactionEventRequest(eventType = Ended) sent
+to the CSMS to provide more details about
+transaction usage.
+Same as E06.FR.11
+E07.FR.09 E07.FR.08
+AND
+The Charging Station is running low on
+memory
+The Charging Station MAY drop meter data in the
+TransactionEventRequest(eventType = Ended)
+message.
+Same as E06.FR.12
+E07.FR.10 E07.FR.09 When dropping meter data, the Charging Station
+SHALL drop intermediate values first (2nd value,
+4th value, 6th etc), not drop the start and end values
+from the list.
+Same as E06.FR.13
+E07.FR.11 When a TransactionEventRequest has
+to be created
+The Charging Station SHALL set the message’s
+seqNo field as specified in Sequence Number
+Generation.
+This enables the CSMS
+to track the
+completeness of
+transaction information.
+Same as E01.FR.07
+E07.FR.12 SampledDataSignReadings is true The Charging Station SHALL retrieve signed meter
+values and put them in the signedMeterValue field
+of sampledValues.
+Same as E02.FR.14
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 153/491 Part 2 - Specification

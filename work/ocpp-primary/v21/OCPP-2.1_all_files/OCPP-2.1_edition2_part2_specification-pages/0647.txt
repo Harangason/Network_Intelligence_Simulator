@@ -1,0 +1,37 @@
+Field Name Field Type Card. Description
+setpointReactive_L3 decimal 0..1 Optional. (2.1) Setpoint for reactive power (or current) in
+chargingRateUnit that the EV should follow on phase L3
+as closely as possible.
+preconditioningRequest boolean 0..1 Optional. (2.1) If true, the EV should attempt to keep the
+BMS preconditioned for this time interval.
+evseSleep boolean 0..1 Optional. (2.1) If true, the EVSE must turn off power
+electronics/modules associated with this transaction.
+Default value when absent is false.
+v2xBaseline decimal 0..1 Optional. (2.1) Power value that, when present, is used as
+a baseline on top of which values from v2xFreqWattCurve
+and v2xSignalWattCurve are added.
+operationMode OperationModeEnumType 0..1 Optional. (2.1) Charging operation mode to use during
+this time interval. When absent defaults to
+ChargingOnly.
+v2xFreqWattCurve V2XFreqWattPointType 0..20 Optional. (2.1) Only required when operationMode =
+LocalFrequency. When used it must contain at least
+two coordinates to specify a power-frequency table to
+use during this period. The table determines the value of
+setpoint power for a given frequency. chargingRateUnit
+must be W for LocalFrequency control.
+v2xSignalWattCurve V2XSignalWattPointType 0..20 Optional. (2.1) Only used, but not required, when
+operationMode = LocalFrequency. When used it must
+contain at least two coordinates to specify a signal-
+frequency curve to use during this period. The curve
+determines the value of setpoint power for a given signal.
+chargingRateUnit must be W for LocalFrequency
+control.
+2.19. ChargingScheduleType
+Class
+Charging schedule structure defines a list of charging periods, as used in: NotifyEVChargingScheduleRequest and
+ChargingProfileType. When used in a NotifyEVChargingScheduleRequest only duration and chargingSchedulePeriod are relevant
+and chargingRateUnit must be 'W'.
+An ISO 15118-20 session may provide either an absolutePriceSchedule or a priceLevelSchedule. An ISO 15118-2 session can only
+provide a_salesTariff_ element. The field digestValue is used when price schedule or sales tariff are signed.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 634/803 Part 2 - Specification

@@ -1,0 +1,44 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 47
+9 Clock Manager
+The Clock Manager generates all internal clocks and two external clocks, RMCK and SYNC. The RMCK
+output clock supports synchronization of external devices. The SYNC output clock supports synchroniza-
+tion of switching power supplies. As shown in Figure 9-1, the Clock Manager consists of an input clock
+multiplexer, an analog PLL, and output clock dividers. The analog PLL generates the main clock, which is
+then divided down to generate all other internal clocks.
+When configured as the network timing-master, the input clock multiplexer selects an external crystal oscil-
+lator (XTI/XTO) as the PLL locking source. While reset is asserted, the crystal oscillator is disabled and the
+PLL is pulled below the normal operating frequency. When reset is de-asserted, the crystal oscillator is
+automatically enabled and the PLL begins to lock.
+For network timing-slave devices, the PLL is clocked from the network interface ( RX). When not locked to
+the network, the external crystal oscillator is enabled in order to keep the PLL locked to a nominal fre-
+quency. Using the external crystal input allows INIC to lock faster when the network interface recovers and
+keeps all local clocks ( RMCK, MLBCLK, SCK, etc.) close to the locked network frequency.
+9.1  PLL Lock Status
+When the OS81050 initially obtains lock, it takes three frames to synchronize streaming data. Therefore,
+streaming data will not be transferred properly between t he network and any open source or sink ports for
+three frames when going from the unlock to lock state. While the PLL is unlocked, only control messages
+targeting the local FBlock INIC or NBMIN can be transferred (via the Control Port or MediaLB Port). 
+Network unlock/lock events can affect the behavior of the ERR/BOOT pin, based on the MuteMode() set-
+ting. (For more information on the use of ERR/BOOT for lock/unlock detection, refer to the
+OS8105x/6x INIC API User’s Manual [2].)
+A valid and continuous external reference clock ( XTI/XTO) must be present for normal
+operation. If the reference clock is disabled during operation, INIC may become inopera-
+ble and/or the PLL lock status may not be accurately reflected by the ERR/BOOT pin. A
+reset and valid reference clock is required to recover from this condition.
+RX
+XTO
+XTI
+PLL
+RMCK
+Internal
+Clocks
+FLT
+SYNC Divider
+Divider
+RMCK()SYNC()
+DeviceMode()
+ClockMode()
+ERR/BOOT
+Figure 9-1: Clock Manager

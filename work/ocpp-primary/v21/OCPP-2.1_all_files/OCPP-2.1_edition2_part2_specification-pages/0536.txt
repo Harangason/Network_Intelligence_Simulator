@@ -1,0 +1,71 @@
+No. Type Description
+5 Prerequisites Configuration variable ExternalControlSignalsEnabled = true.
+Configuration variable ExternalConstraintsProfileDisallowed = false or absent.
+6 Post conditions Use case ends when the charging profile for ChargingStationExternalConstraints ends.
+7 Error Handling
+8 Remarks The communication method by which the External System communicates the charging profile to
+the Charging Station is out of scope of this document.
+See section K. Smart Charging use cases K23 to K26 to see various topologies in which an
+external actor imposes charging limits.
+An external system (e.g. EMS) might not be aware (or does not have to be aware) of how many
+EVSEs the charging station has. In that case the ChargingStationExternalConstraints
+charging profile has to be assigned to EVSE #0.
+When a ChargingStationExternalConstraints charging profile is active with a
+chargingSchedulePeriod with operationMode = ExternalSetpoint and at the same time a
+Tx(Default)Profile charging profile is active with a chargingSchedulePeriod that also
+controls the setpoint (e.g. CentralSetpoint or Central/LocalFrequency) then the variable
+SmartChargingCtrlr.SetpointPriority determines which value of setpoint the charging station shall
+use.
+The power setpoint communicated towards EV may never exceed limit or go below
+dischargeLimit of the composite (merged) charging schedules. (See V2X.03/04)
+A scheduled external setpoint control, i.e. with chargingProfileKind = Absolute or Relative, is
+not mentioned as a scenario. It is possible, but less likely, since a setpoint is controlling the exact
+amount of power and an External System is unlikely to be able to predict a schedule for this.
+Q06 - External V2X control with a charging profile from an External System -
+Requirements
+Table 156. Q06 - Requirements
+ID Precondition Requirements Note
+Q06.FR.01 When External System sends a
+schedule of limits
+Charging Station SHALL represent this by a
+ChargingProfileType with chargingProfilePurpose =
+ChargingStationExternalConstraints,
+chargingProfileKind = Absolute and a
+chargingSchedule with chargingSchedulePeriods
+with operationMode = ExternalLimits
+representing the received schedule of limit and
+dischargeLimit.
+When applicable this
+also include the L2 and
+L3 values of
+(discharge)limit.
+Q06.FR.02 When External System sends a single
+limit value
+Charging Station SHALL represent this by a
+ChargingProfileType with chargingProfilePurpose =
+ChargingStationExternalConstraints,
+chargingProfileKind = Dynamic and a
+chargingSchedule with one chargingSchedulePeriod
+with operationMode = ExternalLimits
+representing the received value of limit and
+dischargeLimit.
+When applicable this
+also include the L2 and
+L3 values of
+(discharge)limit.
+Q06.FR.03 When External System sends a
+schedule of setpoints
+Charging Station SHALL represent this by a
+ChargingProfileType with chargingProfilePurpose =
+ChargingStationExternalConstraints,
+chargingProfileKind = Absolute and a
+chargingSchedule with chargingSchedulePeriods
+with operationMode = ExternalSetpoint
+representing the received schedule of setpoint and
+setpointReactive.
+When applicable this
+also include the L2 and
+L3 values of
+setpoint(Reactive).
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 523/803 Part 2 - Specification

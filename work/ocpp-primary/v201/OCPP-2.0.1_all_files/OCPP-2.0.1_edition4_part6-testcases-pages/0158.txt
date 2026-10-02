@@ -1,0 +1,53 @@
+TC_C_54_CS: Authorization using Contract Certificates 15118 - Offline -
+ContractValidationOffline is true
+Test case name Authorization using Contract Certificates 15118 - Offline - ContractValidationOffline is true
+Test case Id TC_C_54_CS
+Use case Id(s) C07
+Requirement(s) C07.FR.08,C07.FR.09,C07.FR.10,C07.FR.11,C07.FR.12
+System under test Charging Station
+Description The Charging Station is able to authorize with contract certificates for an EMAID that exists in authorization
+cache or local authorization list, while offline.
+Purpose To verify if the Charging Station is able to authorize using contract certificates, while it is offline.
+Prerequisite(s) The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+TxCtrlr.TxStartPoint contains one or more of PowerPathClosed, Authorized, EVConnected, ParkingBayOccupancy
+AuthCtrlr.AuthEnabled is true (If implemented AND ReadWrite)
+AuthCacheCtrlr.Enabled is true OR LocalAuthListCtrlr.Enabled is true
+OfflineTxForUnknownIdEnabled is false (If implemented)
+OfflineThreshold is <Configured RetryBackOffWaitMinimum_duration> + 60.0
+RetryBackOffWaitMinimum is <Configured RetryBackOffWaitMinimum_duration>
+RetryBackOffRandomRange is 0
+Note:
+<Configured RetryBackOffWaitMinimum_duration should be long enough to execute manual tasks>
+For ISO15118Ctrlr of EVSE involved in PnC transaction:
+ISO15118Ctrlr.ContractValidationOffline is true
+ISO15118Ctrlr.PnCEnabled is true
+Memory State:
+CertificateInstalled for certificateType V2GRootCertificate
+CertificateInstalled for certificateType MORootCertificate
+RenewV2GChargingStationCertificate 
+IdTokenCached15118 for <Configured valid ISO 15118 IdToken> (If implemented)
+IdTokenLocalAuthList for <Configured valid ISO 15118 IdToken> (If implemented)
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does not accept a reconnect.
+Manual Action: Drive EV into parking bay.
+Manual Action: Connect the EV and EVSE.
+Notes(s): The Test System will wait for <Configured Transaction Duration> seconds.
+2. The Test System accepts the reconnection attempt from the Charging Station after <Configured Transaction Duration> seconds.
+3. The Charging Station notifies the CSMS about the status
+change of the connector. 4. The Test System responds accordingly.
+5. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed when TxStartPoint contains
+EVConnected OR the transaction already started (in the case
+TxStartPoint contains ParkingBayOccupancy)
+6. The Test System responds with a TransactionEventResponse
+7. The Charging Station sends a TransactionEventRequest
+8. The Test System responds with a TransactionEventResponse
+With idTokenInfo.status Accepted
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 156/914 Part 6 - Test Cases

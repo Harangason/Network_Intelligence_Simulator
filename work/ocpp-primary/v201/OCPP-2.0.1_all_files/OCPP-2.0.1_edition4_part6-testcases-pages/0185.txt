@@ -1,0 +1,40 @@
+TC_E_17_CS: Stop transaction options - Deauthorized - EV side disconnect
+Test case name Stop transaction options - Deauthorized - EV side disconnect
+Test case Id TC_E_17_CS
+Use case Id(s) E06(S3)
+Requirement(s) E06.FR.04, E06.FR.15
+System under test Charging Station
+Description OCPP 2.x.x has a flexible transaction mechanism that allows the transaction start and stop points to be
+configured differently. This test covers one of the start options.
+Purpose To verify if the Charging Station stops a transaction when the transaction gets deauthorized by a
+connection loss from the EV side and it has been configured to do so.
+Prerequisite(s) This testcase is applicable if the value Authorized is a supported value for TxStopPoint AND
+EVConnected, PowerPathClosed and EnergyTransfer must not be set as TxStopPoint AND
+StopTxOnEVSideDisconnect true must be a supported value.
+Before (Preparations)
+Configuration State:
+If the mutability of TxStopPoint is ReadWrite then TxStopPoint contains Authorized
+StopTxOnEVSideDisconnect is true
+UnlockOnEVSideDisconnect is false
+AuthCtrlr.AuthEnabled is true (If implemented AND ReadWrite)
+AuthCtrlr.DisableRemoteAuthorization is false (If implemented)
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferSuspended
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Disconnect the EV and EVSE on EV side (EVSE loses connection with EV).
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+Manual Action: Present the IdToken that was used to start the transaction.
+Note(s):
+- This manual action needs to be executed when the Charging Station has a detachable cable on the Charging Station side AND
+UnlockOnEVSideDisconnect is set to false.
+Manual Action: Disconnect the EV and EVSE on Charging Station side.
+Note(s):
+- This manual action needs to be executed when the Charging Station has a detachable cable on the Charging Station side.
+3. The Charging Station notifies the CSMS about the current
+state of the connector. 4. The Test System responds accordingly.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 183/914 Part 6 - Test Cases

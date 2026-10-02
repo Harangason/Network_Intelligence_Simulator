@@ -1,0 +1,3877 @@
+PDF_PAGE1
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Document Title SOME/IP Protocol Specification
+Document Owner AUTOSAR
+Document Responsibility AUTOSAR
+Document Identification No 696
+Document Status published
+Part of AUTOSAR Standard Foundation
+Part of Standard Release R25-11
+Document Change History
+Date Release Changed by Description
+2025-11-27 R25-11
+AUTOSAR
+Release
+Management
+• Added Configuration parameters for
+(de-)serialization and referenced them in
+existing requirements
+• Updated error handling flowchart,
+corresponding requirements and return
+codes table
+• Reverted the handling of receiving less
+data than expected and substitution of
+missing data with default values during
+deserialization
+• Clarified the requirements of
+deserialization with duplicate members
+and invalid wire type
+• Editorial Changes and bug fixes
+2024-11-27 R24-11
+AUTOSAR
+Release
+Management
+• Protocol updates for interoperability
+issues between AP and CP regarding
+SOME/IP Error responses
+• Added configurable timer for
+SOME/IP-TP reception timeout time
+• Editorial Changes
+▽
+1 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE2
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+2023-11-23 R23-11
+AUTOSAR
+Release
+Management
+• Clarifications in Payload Compatibility
+Rules table
+• Changed [PRS_SOMEIP_00163] to
+allow sharing of local endpoint between
+different required service instances of
+the same service
+• Made length field required in dynamic
+arrays
+• Editorial Changes
+2022-11-24 R22-11
+AUTOSAR
+Release
+Management
+• Clarification of SOME/IP-TP
+segmentation
+• Removed
+implementsSOMEIPStringHandling
+• [PRS_SOMEIP_00300] extended by
+uint64
+• Corrected serialization with BOM in
+[PRS_SOMEIP_00374]
+• Corrected multiple Bugs in
+[PRS_SOMEIP_00043],
+[PRS_SOMEIP_00739],
+[PRS_SOMEIP_00043],
+[PRS_SOMEIP_00241],
+[PRS_SOMEIP_00101],
+[PRS_SOMEIP_00942] and
+[PRS_SOMEIP_00922]
+• Added [PRS_SOMEIP_00245] to correct
+mismatch in size of Method-ID
+• Editorial Changes
+2021-11-25 R21-11
+AUTOSAR
+Release
+Management
+• Added Restriction of Server Connection
+from Clients
+• Added Restriction of Client Connection
+to Server
+• Clarification on String Handling in
+SOME/IP
+• SOME/IP Header shall be encoded in
+network byte order
+• Editorial Changes
+▽
+2 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE3
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+2020-11-30 R20-11
+AUTOSAR
+Release
+Management
+• Removed Draft Status from TLV
+Requirements
+• Fixed discrepancies between SWS and
+PRS
+• Clarified usage of length field
+• Restricted alignment of variable length
+arrays to 8, 16, 32, 64, 128 or 256 Bits
+• Editorial Changes
+2019-11-28 R19-11
+AUTOSAR
+Release
+Management
+• Added
+– Support for unit64 / sint64
+– Error-Codes for E2E-Protection
+• Clarify
+– Serialization of fixed length array data
+– Support for Data Accumulation feature
+– Contradicting requirements
+• Introduce
+implementsLegacyStringSerialization
+tag (as successor of
+implementsSOMEIPStringHandling)
+• Editorial Changes
+• Changed Document Status from Final to
+published
+2019-03-29 1.5.1
+AUTOSAR
+Release
+Management
+• No content changes
+2018-10-31 1.5.0
+AUTOSAR
+Release
+Management
+• Backward-incompatibility statement
+removed
+• Some statements improved
+2018-03-29 1.4.0
+AUTOSAR
+Release
+Management
+• Improved traceability
+2017-12-08 1.3.0
+AUTOSAR
+Release
+Management
+• No content changes
+2017-10-27 1.2.0
+AUTOSAR
+Release
+Management
+• Editorial changes
+▽
+3 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE4
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+2017-03-31 1.1.0
+AUTOSAR
+Release
+Management
+• Serialization of Structured Datatypes
+and Arguments with Identifier and
+optional members
+2016-11-30 1.0.0
+AUTOSAR
+Release
+Management
+• Initial Release
+4 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE5
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Disclaimer
+This work (specification and/or software implementation) and the material contained in
+it, as released by AUTOSAR, is for the purpose of information only. AUTOSAR and the
+companies that have contributed to it shall not be liable for any use of the work.
+The material contained in this work is protected by copyright and other types of intel-
+lectual property rights. The commercial exploitation of the material contained in this
+work requires a license to such intellectual property rights.
+This work may be utilized or reproduced without any modification, in any form or by
+any means, for informational purposes only. For any other purpose, no part of the work
+may be utilized or reproduced, in any form or by any means, without permission in
+writing from the publisher.
+The work has been developed for automotive applications only. It has neither been
+developed, nor tested for non-automotive applications.
+The word AUTOSAR and the AUTOSAR logo are registered trademarks.
+5 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE6
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Table of Contents
+1 Introduction and overview 9
+1.1 Protocol purpose and objectives . . . . . . . . . . . . . . . . . . . . . . . 9
+1.2 Applicability of the protocol . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+1.2.1 Constraints and assumptions . . . . . . . . . . . . . . . . . . . . . . 9
+1.2.2 Limitations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.3 Dependencies . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+1.4 Document Structure . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 10
+2 Use Cases 11
+3 Protocol Requirements 12
+3.1 Requirements Traceability . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+4 Acronyms and Abbreviations 16
+5 Protocol specification 17
+5.1 Specification of SOME/IP Message Format (Serialization) . . . . . . . . 17
+5.1.1 Header . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+5.1.1.1 Message ID [32 Bit] . . . . . . . . . . . . . . . . . . . . . . . . . 19
+5.1.1.2 Method ID [16 Bit] . . . . . . . . . . . . . . . . . . . . . . . . . . 19
+5.1.1.3 Length [32 Bit] . . . . . . . . . . . . . . . . . . . . . . . . . . . . 20
+5.1.1.4 Request ID [32 Bit] . . . . . . . . . . . . . . . . . . . . . . . . . 20
+5.1.1.5 Protocol Version [8 Bit] . . . . . . . . . . . . . . . . . . . . . . . 23
+5.1.1.6 Interface Version [8 Bit] . . . . . . . . . . . . . . . . . . . . . . . 23
+5.1.1.7 Message Type [8 Bit] . . . . . . . . . . . . . . . . . . . . . . . . 24
+5.1.1.8 Return Code [8 Bit] . . . . . . . . . . . . . . . . . . . . . . . . . 25
+5.1.1.9 Payload [variable size] . . . . . . . . . . . . . . . . . . . . . . . 25
+5.1.2 Endianness . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 26
+5.1.3 Serialization of Data Structures . . . . . . . . . . . . . . . . . . . . . 26
+5.1.3.1 Basic Datatypes . . . . . . . . . . . . . . . . . . . . . . . . . . . 29
+5.1.3.2 Structured Datatypes (structs) . . . . . . . . . . . . . . . . . . . 29
+5.1.3.3 Structured Datatypes and Arguments with Identifier and op-
+tional members (’TLV’) . . . . . . . . . . . . . . . . . . . . . . . 30
+5.1.3.4 Strings . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 40
+5.1.3.5 Arrays . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 43
+5.1.3.6 Enumeration . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 47
+5.1.3.7 Bitfield . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 47
+5.1.3.8 Union / Variant . . . . . . . . . . . . . . . . . . . . . . . . . . . 47
+5.1.4 De-serialization of Data Structures . . . . . . . . . . . . . . . . . . . 50
+5.1.4.1 Structured DataTypes (structs) . . . . . . . . . . . . . . . . . . 50
+5.1.4.2 Structured Datatypes and Arguments with Identifier and op-
+tional members (’TLV’) . . . . . . . . . . . . . . . . . . . . . . . 51
+6 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE7
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+5.1.4.3 Strings . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 52
+5.1.4.4 Arrays . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 53
+5.1.4.5 Enumeration . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 54
+5.1.4.6 Bitfield . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 54
+5.1.4.7 Union / Variant . . . . . . . . . . . . . . . . . . . . . . . . . . . 54
+5.2 Specification of SOME/IP Protocol . . . . . . . . . . . . . . . . . . . . . 55
+5.2.1 Transport Protocol Bindings . . . . . . . . . . . . . . . . . . . . . . . 55
+5.2.1.1 UDP Binding . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 56
+5.2.1.2 TCP Binding . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 57
+5.2.1.3 Multiple Service-Instances . . . . . . . . . . . . . . . . . . . . . 59
+5.2.1.4 Transporting large SOME/IP messages of UDP (SOME/IP-TP) 60
+5.2.2 Request/Response Communication . . . . . . . . . . . . . . . . . . 67
+5.2.3 Fire&Forget Communication . . . . . . . . . . . . . . . . . . . . . . 69
+5.2.4 Notification Events . . . . . . . . . . . . . . . . . . . . . . . . . . . . 70
+5.2.4.1 Strategy for sending notifications . . . . . . . . . . . . . . . . . 71
+5.2.5 Fields . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 71
+5.2.6 Error Handling . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 72
+5.2.6.1 Return Code . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 73
+5.2.6.2 Error Message . . . . . . . . . . . . . . . . . . . . . . . . . . . 74
+5.2.6.3 Error Processing Overview . . . . . . . . . . . . . . . . . . . . . 76
+5.3 Compatibility Rules for Interface Version . . . . . . . . . . . . . . . . . . 79
+6 Configuration Parameters 85
+7 Protocol usage and guidelines 88
+7.1 Choosing the transport protocol . . . . . . . . . . . . . . . . . . . . . . . 88
+7.2 Security Considerations for SOME/IP . . . . . . . . . . . . . . . . . . . . 88
+A Change history of AUTOSAR traceable items 90
+A.1 Traceable item history of this document according to AUTOSAR Release
+R25-11 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 90
+A.1.1 Added Specification Items in R25-11 . . . . . . . . . . . . . . . . . . 90
+A.1.2 Changed Specification Items in R25-11 . . . . . . . . . . . . . . . . 90
+A.1.3 Deleted Specification Items in R25-11 . . . . . . . . . . . . . . . . . 91
+A.1.4 Added Constraints in R25-11 . . . . . . . . . . . . . . . . . . . . . . 92
+A.1.5 Changed Constraints in R25-11 . . . . . . . . . . . . . . . . . . . . 92
+A.1.6 Deleted Constraints in R25-11 . . . . . . . . . . . . . . . . . . . . . 92
+A.2 Traceable item history of this document according to AUTOSAR Release
+R24-11 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 92
+A.2.1 Added Specification Items in R24-11 . . . . . . . . . . . . . . . . . . 92
+A.2.2 Changed Specification Items in R24-11 . . . . . . . . . . . . . . . . 93
+A.2.3 Deleted Specification Items in R24-11 . . . . . . . . . . . . . . . . . 93
+A.3 Traceable item history of this document according to AUTOSAR Release
+R23-11 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 94
+7 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE8
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+A.3.1 Added Specification Items in R23-11 . . . . . . . . . . . . . . . . . . 94
+A.3.2 Changed Specification Items in R23-11 . . . . . . . . . . . . . . . . 94
+A.3.3 Deleted Specification Items in R23-11 . . . . . . . . . . . . . . . . . 94
+A.4 Traceable item history of this document according to AUTOSAR Release
+R22-11 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 95
+A.4.1 Added Specification Items in R22-11 . . . . . . . . . . . . . . . . . . 95
+A.4.2 Changed Specification Items in R22-11 . . . . . . . . . . . . . . . . 95
+A.4.3 Deleted Specification Items in R22-11 . . . . . . . . . . . . . . . . . 96
+8 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE9
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+1 Introduction and overview
+This protocol specification specifies the format, message sequences and seman-
+tics of the AUTOSAR Protocol "Scalable service-Oriented MiddlewarE over IP
+(SOME/IP)".
+SOME/IP is an automotive/embedded communication protocol which supports remote
+procedure calls, event notifications and the underlying serialization/wire format. The
+only valid abbreviation is SOME/IP . Other abbreviations (e.g. Some/IP) are wrong and
+shall not be used.
+1.1 Protocol purpose and objectives
+SOME/IP was created as existing solutions were not compatible to automotive use
+cases as well as incompatible to the AUTOSAR Classic Platform architecture. The
+major design goals were as follows:
+• Fulfills the hard requirements regarding resource consumption of embedded
+ECUs
+• Is compatible through as many use-cases and communication partners as possi-
+ble
+• Compatible with AUTOSAR at least on the wire-format level; i.e., SOME/IP was
+introduced with minimal architecture changes in the AUTOSAR Classic Platform.
+• Provides the features required by automotive use-cases
+• Is scalable from tiny to large platforms
+1.2 Applicability of the protocol
+SOME/IP shall be implemented on different operating system (i.e., AUTOSAR,
+GENIVI/COVESA, and OSEK) and even embedded devices without operating system.
+SOME/IP shall be used for inter-ECU Client/Server Serialization. An implementation
+of SOME/IP allows AUTOSAR to parse the RPC PDUs and transport the parameters
+to the application.
+1.2.1 Constraints and assumptions
+The "Support for serialization of extensible data structs" has been introduced - which
+SOME/IP serializers based on AUTOSAR Foundation Standard 1.0.0 (AUTOSAR Clas-
+sic Standard 4.3.0) as well as most non-AUTOSAR implementations cannot process.
+To indicate this interoperability issue [PRS_SOMEIP_00220] requires to increase the
+major interface version of the respective serialized data.
+9 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE10
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+The support for "complementary default value" during reception of less data than ex-
+pected is no longer supported by AUTOSAR.
+1.2.2 Limitations
+[constr_00001] Reordering limitation for a SOME/IP message segment
+⌈Reordering of out-of-order segments of a SOME/IP message is not supported.⌋
+1.3 Dependencies
+There are no dependencies to AUTOSAR SWS modules.
+1.4 Document Structure
+The SOME/IP PRS will describe the following two aspects of SOME/IP .
+Specification of SOME/IP on wire-format (Serialization)
+• Structure of Header Format
+• How the different data types are serialized as per SOME/IP
+Specification of Protocol for Event and RPC-based communication
+• Transport Protocol
+• Rules that govern the RPC for SOME/IP
+In addition to this document, the PRS SOME/IP-SD [1] describes the Service Discovery
+and other functionalities of SOME/IP .
+10 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE11
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+2 Use Cases
+ID Name Description
+UC_SOMEIP_00001 Remote
+Procedure
+Call: Re-
+quest/Re-
+sponse
+Methods
+A Client application sends request to the server
+application and expects back a response from
+Server application. A Server application sends
+back response to the Client application on
+receiving a request.
+UC_SOMEIP_00002 Remote
+Procedure
+Call: Fire
+and Forget
+Methods
+A Client application sends request to the server
+application and does not expect any response.
+UC_SOMEIP_00003 Event
+based com-
+munication
+A Server application sends events to relevant
+client applications that are determined via
+SOME/IP-SD.
+UC_SOMEIP_00004 Field based
+communica-
+tion
+Applications communicate using fields that can
+have an optional notifier (event to be sent
+cyclically or on-change), an optional setter (a
+request/response method to update the field),
+and an optional getter (a request/response
+method to read out the current value of the field).
+UC_SOMEIP_00005 Communi-
+cation using
+various
+transport
+protocols
+Applications communicate over UDP or TCP as
+an underlying transport protocol.
+UC_SOMEIP_00006 Communi-
+cation
+based on
+Publish and
+Subscribe
+model
+Server applications dynamically offer and publish
+data to the required client applications in the
+network. Client applications dynamically
+subscribe and receive data from the required
+server applications in the network.
+UC_SOMEIP_00007 Message
+Processing
+and Error
+Handling
+Applications process the messages in a
+structured way and perform the error handling
+using specific Return Codes and Error
+Messages.
+UC_SOMEIP_00008 Different
+platform
+support
+Applications based on different implementation
+platforms and Operating Systems communicate
+with each other fulfilling the hard requirements of
+resource consumption.
+11 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE12
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+3 Protocol Requirements
+3.1 Requirements Traceability
+Requirement Description Satisfied by
+[RS_SOMEIP_00002] SOME/IP protocol shall provide
+service-based communication
+[PRS_SOMEIP_00703] [PRS_SOMEIP_00909]
+[PRS_SOMEIP_00946] [PRS_SOMEIP_00947]
+[RS_SOMEIP_00003] SOME/IP protocol shall provide
+support of multiple versions of a
+service interface
+[PRS_SOMEIP_00053] [PRS_SOMEIP_00758]
+[PRS_SOMEIP_00937] [PRS_SOMEIP_00938]
+[RS_SOMEIP_00004] SOME/IP protocol shall support event
+communication
+[PRS_SOMEIP_00925] [PRS_SOMEIP_00926]
+[RS_SOMEIP_00005] SOME/IP protocol shall support
+different strategies for event
+communication
+[PRS_SOMEIP_00183]
+[RS_SOMEIP_00006] SOME/IP protocol shall support
+uni-directional RPC communication
+[PRS_SOMEIP_00171] [PRS_SOMEIP_00382]
+[PRS_SOMEIP_00924]
+[RS_SOMEIP_00007] SOME/IP protocol shall support
+bi-directional RPC communication
+[PRS_SOMEIP_00920] [PRS_SOMEIP_00921]
+[PRS_SOMEIP_00922] [PRS_SOMEIP_00923]
+[PRS_SOMEIP_00927] [PRS_SOMEIP_00928]
+[RS_SOMEIP_00008] SOME/IP protocol shall support error
+handling of RPC communication
+[PRS_SOMEIP_00055] [PRS_SOMEIP_00058]
+[PRS_SOMEIP_00187] [PRS_SOMEIP_00188]
+[PRS_SOMEIP_00189] [PRS_SOMEIP_00190]
+[PRS_SOMEIP_00191] [PRS_SOMEIP_00195]
+[PRS_SOMEIP_00385] [PRS_SOMEIP_00537]
+[PRS_SOMEIP_00539] [PRS_SOMEIP_00576]
+[PRS_SOMEIP_00701] [PRS_SOMEIP_00757]
+[PRS_SOMEIP_00901] [PRS_SOMEIP_00902]
+[PRS_SOMEIP_00903] [PRS_SOMEIP_00904]
+[PRS_SOMEIP_00905] [PRS_SOMEIP_00910]
+[RS_SOMEIP_00009] SOME/IP protocol shall support field
+communication
+[PRS_SOMEIP_00179] [PRS_SOMEIP_00180]
+[PRS_SOMEIP_00181] [PRS_SOMEIP_00182]
+[PRS_SOMEIP_00183] [PRS_SOMEIP_00909]
+[RS_SOMEIP_00010] SOME/IP protocol shall support
+different transport protocols
+underneath
+[PRS_SOMEIP_00137] [PRS_SOMEIP_00139]
+[PRS_SOMEIP_00140] [PRS_SOMEIP_00141]
+[PRS_SOMEIP_00142] [PRS_SOMEIP_00154]
+[PRS_SOMEIP_00160] [PRS_SOMEIP_00378]
+[PRS_SOMEIP_00379] [PRS_SOMEIP_00382]
+[PRS_SOMEIP_00535] [PRS_SOMEIP_00706]
+[PRS_SOMEIP_00707] [PRS_SOMEIP_00708]
+[PRS_SOMEIP_00709] [PRS_SOMEIP_00710]
+[PRS_SOMEIP_00711] [PRS_SOMEIP_00720]
+[PRS_SOMEIP_00721] [PRS_SOMEIP_00722]
+[PRS_SOMEIP_00723] [PRS_SOMEIP_00724]
+[PRS_SOMEIP_00725] [PRS_SOMEIP_00726]
+[PRS_SOMEIP_00727] [PRS_SOMEIP_00728]
+[PRS_SOMEIP_00729] [PRS_SOMEIP_00730]
+[PRS_SOMEIP_00731] [PRS_SOMEIP_00732]
+[PRS_SOMEIP_00733] [PRS_SOMEIP_00734]
+[PRS_SOMEIP_00735] [PRS_SOMEIP_00736]
+[PRS_SOMEIP_00738] [PRS_SOMEIP_00740]
+[PRS_SOMEIP_00741] [PRS_SOMEIP_00742]
+[PRS_SOMEIP_00743] [PRS_SOMEIP_00744]
+[PRS_SOMEIP_00745] [PRS_SOMEIP_00746]
+[PRS_SOMEIP_00747] [PRS_SOMEIP_00749]
+[PRS_SOMEIP_00750] [PRS_SOMEIP_00751]
+[PRS_SOMEIP_00752] [PRS_SOMEIP_00753]
+[PRS_SOMEIP_00754] [PRS_SOMEIP_00940]
+[PRS_SOMEIP_00942] [PRS_SOMEIP_00943]
+▽
+12 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE13
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+Requirement Description Satisfied by
+[RS_SOMEIP_00011] SOME/IP protocol shall support
+messages of different lengths
+[PRS_SOMEIP_00722]
+[RS_SOMEIP_00012] SOME/IP protocol shall support
+session handling
+[PRS_SOMEIP_00521] [PRS_SOMEIP_00533]
+[PRS_SOMEIP_00720] [PRS_SOMEIP_00721]
+[PRS_SOMEIP_00739] [PRS_SOMEIP_00935]
+[PRS_SOMEIP_00936] [PRS_SOMEIP_00939]
+[RS_SOMEIP_00014] SOME/IP protocol shall support
+handling of protocol errors on
+receiver side
+[PRS_SOMEIP_00195] [PRS_SOMEIP_00378]
+[PRS_SOMEIP_00385] [PRS_SOMEIP_00576]
+[PRS_SOMEIP_00910]
+[RS_SOMEIP_00015] SOME/IP protocol shall support
+multiple instances of a service
+[PRS_SOMEIP_00138] [PRS_SOMEIP_00162]
+[PRS_SOMEIP_00163]
+[RS_SOMEIP_00016] SOME/IP protocol shall support
+combining multiple RPC methods,
+events and fields in one service
+[PRS_SOMEIP_00245] [PRS_SOMEIP_00366]
+[PRS_SOMEIP_00755]
+[RS_SOMEIP_00017] SOME/IP protocol shall support
+grouping events into eventgroups
+[PRS_SOMEIP_00365] [PRS_SOMEIP_00366]
+[RS_SOMEIP_00018] SOME/IP protocol shall support
+grouping fields in eventgroups
+[PRS_SOMEIP_00366]
+[RS_SOMEIP_00021] SOME/IP protocol shall identify RPC
+methods of services using unique
+identifiers
+[PRS_SOMEIP_00034]
+[RS_SOMEIP_00022] SOME/IP protocol shall identify
+events of services using unique
+identifiers
+[PRS_SOMEIP_00034]
+[RS_SOMEIP_00023] SOME/IP protocol shall identify event
+groups of services using unique
+identifiers
+[PRS_SOMEIP_00034]
+[RS_SOMEIP_00024] SOME/IP protocol shall define
+reserved identifiers
+[PRS_SOMEIP_00191] [PRS_SOMEIP_00907]
+[RS_SOMEIP_00025] SOME/IP protocol shall support the
+identification of callers of an RPC
+using unique identifiers
+[PRS_SOMEIP_00043] [PRS_SOMEIP_00044]
+[PRS_SOMEIP_00532] [PRS_SOMEIP_00702]
+[PRS_SOMEIP_00703]
+[RS_SOMEIP_00026] SOME/IP protocol shall define the
+endianness of header and payload
+[PRS_SOMEIP_00368] [PRS_SOMEIP_00369]
+[PRS_SOMEIP_00759]
+[RS_SOMEIP_00027] SOME/IP protocol shall define the
+header layout of messages
+[PRS_SOMEIP_00030] [PRS_SOMEIP_00031]
+[PRS_SOMEIP_00034] [PRS_SOMEIP_00042]
+[PRS_SOMEIP_00043] [PRS_SOMEIP_00046]
+[PRS_SOMEIP_00050] [PRS_SOMEIP_00051]
+[PRS_SOMEIP_00052] [PRS_SOMEIP_00053]
+[PRS_SOMEIP_00055] [PRS_SOMEIP_00058]
+[PRS_SOMEIP_00141] [PRS_SOMEIP_00245]
+[PRS_SOMEIP_00365] [PRS_SOMEIP_00366]
+[PRS_SOMEIP_00367] [PRS_SOMEIP_00521]
+[PRS_SOMEIP_00532] [PRS_SOMEIP_00533]
+[PRS_SOMEIP_00701] [PRS_SOMEIP_00702]
+[PRS_SOMEIP_00703] [PRS_SOMEIP_00704]
+[PRS_SOMEIP_00723] [PRS_SOMEIP_00724]
+[PRS_SOMEIP_00725] [PRS_SOMEIP_00726]
+[PRS_SOMEIP_00727] [PRS_SOMEIP_00728]
+[PRS_SOMEIP_00739] [PRS_SOMEIP_00755]
+[PRS_SOMEIP_00757] [PRS_SOMEIP_00931]
+[PRS_SOMEIP_00932] [PRS_SOMEIP_00933]
+[PRS_SOMEIP_00934] [PRS_SOMEIP_00935]
+[PRS_SOMEIP_00936] [PRS_SOMEIP_00940]
+[PRS_SOMEIP_00941]
+▽
+13 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE14
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+Requirement Description Satisfied by
+[RS_SOMEIP_00028] SOME/IP protocol shall specify the
+serialization algorithm for data
+[PRS_SOMEIP_00004] [PRS_SOMEIP_00101]
+[PRS_SOMEIP_00130] [PRS_SOMEIP_00210]
+[PRS_SOMEIP_00211] [PRS_SOMEIP_00212]
+[PRS_SOMEIP_00213] [PRS_SOMEIP_00214]
+[PRS_SOMEIP_00216] [PRS_SOMEIP_00220]
+[PRS_SOMEIP_00569] [PRS_SOMEIP_00611]
+[PRS_SOMEIP_00612] [PRS_SOMEIP_00613]
+[PRS_SOMEIP_00712] [PRS_SOMEIP_00921]
+[PRS_SOMEIP_00923]
+[RS_SOMEIP_00029] SOME/IP protocol shall specify how
+data in the payload are aligned
+[PRS_SOMEIP_00222] [PRS_SOMEIP_00569]
+[PRS_SOMEIP_00611] [PRS_SOMEIP_00612]
+[PRS_SOMEIP_00613] [PRS_SOMEIP_00730]
+[RS_SOMEIP_00030] SOME/IP protocol shall support
+transporting integer data types
+[PRS_SOMEIP_00065] [PRS_SOMEIP_00300]
+[PRS_SOMEIP_00615] [PRS_SOMEIP_00705]
+[RS_SOMEIP_00031] SOME/IP protocol shall support
+transporting boolean data type
+[PRS_SOMEIP_00065] [PRS_SOMEIP_00615]
+[RS_SOMEIP_00032] SOME/IP protocol shall support
+transporting float data types
+[PRS_SOMEIP_00065] [PRS_SOMEIP_00615]
+[RS_SOMEIP_00033] SOME/IP protocol shall support
+transporting structured data types
+[PRS_SOMEIP_00077] [PRS_SOMEIP_00079]
+[PRS_SOMEIP_00300] [PRS_SOMEIP_00370]
+[PRS_SOMEIP_00371] [PRS_SOMEIP_00705]
+[PRS_SOMEIP_00712] [PRS_SOMEIP_00900]
+[RS_SOMEIP_00034] SOME/IP protocol shall support
+transporting union data types
+[PRS_SOMEIP_00118] [PRS_SOMEIP_00119]
+[PRS_SOMEIP_00121] [PRS_SOMEIP_00122]
+[PRS_SOMEIP_00123] [PRS_SOMEIP_00126]
+[PRS_SOMEIP_00127] [PRS_SOMEIP_00129]
+[PRS_SOMEIP_00130] [PRS_SOMEIP_00906]
+[PRS_SOMEIP_00907] [PRS_SOMEIP_00915]
+[PRS_SOMEIP_00916]
+[RS_SOMEIP_00035] SOME/IP protocol shall support
+transporting one-dimensional and
+multi-dimensional array data types
+[PRS_SOMEIP_00099] [PRS_SOMEIP_00101]
+[RS_SOMEIP_00036] SOME/IP protocol shall support
+transporting array data types with a
+fixed length
+[PRS_SOMEIP_00099] [PRS_SOMEIP_00101]
+[PRS_SOMEIP_00207] [PRS_SOMEIP_00917]
+[PRS_SOMEIP_00944]
+[RS_SOMEIP_00037] SOME/IP protocol shall support
+transporting array data types with
+flexible length
+[PRS_SOMEIP_00001] [PRS_SOMEIP_00114]
+[PRS_SOMEIP_00375] [PRS_SOMEIP_00376]
+[PRS_SOMEIP_00377] [PRS_SOMEIP_00919]
+[RS_SOMEIP_00038] SOME/IP protocol shall support
+transporting string types with a fixed
+length
+[PRS_SOMEIP_00084] [PRS_SOMEIP_00085]
+[PRS_SOMEIP_00086] [PRS_SOMEIP_00087]
+[PRS_SOMEIP_00372] [PRS_SOMEIP_00373]
+[PRS_SOMEIP_00374] [PRS_SOMEIP_00760]
+[PRS_SOMEIP_00911] [PRS_SOMEIP_00912]
+[PRS_SOMEIP_00913] [PRS_SOMEIP_00948]
+[RS_SOMEIP_00039] SOME/IP protocol shall support
+transporting string data types with
+flexible length
+[PRS_SOMEIP_00002] [PRS_SOMEIP_00089]
+[PRS_SOMEIP_00090] [PRS_SOMEIP_00091]
+[PRS_SOMEIP_00092] [PRS_SOMEIP_00095]
+[PRS_SOMEIP_00914]
+[RS_SOMEIP_00040] SOME/IP protocol shall support
+providing the length of a serialized
+data element in the payload
+[PRS_SOMEIP_00001] [PRS_SOMEIP_00002]
+[PRS_SOMEIP_00042] [PRS_SOMEIP_00079]
+[PRS_SOMEIP_00208] [PRS_SOMEIP_00221]
+[PRS_SOMEIP_00370]
+[RS_SOMEIP_00041] SOME/IP protocol shall provide
+support of multiple versions of the
+protocol
+[PRS_SOMEIP_00050] [PRS_SOMEIP_00051]
+[PRS_SOMEIP_00052]
+▽
+14 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE15
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+Requirement Description Satisfied by
+[RS_SOMEIP_00042] SOME/IP protocol shall support
+unicast and multicast based event
+communication
+[PRS_SOMEIP_00930]
+[RS_SOMEIP_00050] SOME/IP protocol shall support
+serialization of extensible data structs
+[PRS_SOMEIP_00003] [PRS_SOMEIP_00201]
+[PRS_SOMEIP_00202] [PRS_SOMEIP_00203]
+[PRS_SOMEIP_00204] [PRS_SOMEIP_00205]
+[PRS_SOMEIP_00206] [PRS_SOMEIP_00208]
+[PRS_SOMEIP_00209] [PRS_SOMEIP_00210]
+[PRS_SOMEIP_00211] [PRS_SOMEIP_00212]
+[PRS_SOMEIP_00213] [PRS_SOMEIP_00214]
+[PRS_SOMEIP_00216] [PRS_SOMEIP_00217]
+[PRS_SOMEIP_00220] [PRS_SOMEIP_00221]
+[PRS_SOMEIP_00222] [PRS_SOMEIP_00223]
+[PRS_SOMEIP_00224] [PRS_SOMEIP_00225]
+[PRS_SOMEIP_00226] [PRS_SOMEIP_00227]
+[PRS_SOMEIP_00228] [PRS_SOMEIP_00229]
+[PRS_SOMEIP_00230] [PRS_SOMEIP_00231]
+[PRS_SOMEIP_00241] [PRS_SOMEIP_00242]
+[PRS_SOMEIP_00243] [PRS_SOMEIP_00244]
+[PRS_SOMEIP_00383] [PRS_SOMEIP_00384]
+[RS_SOMEIP_00051] SOME/IP protocol shall provide
+support for segmented transmission
+of large data
+[PRS_SOMEIP_00367] [PRS_SOMEIP_00729]
+[PRS_SOMEIP_00730] [PRS_SOMEIP_00731]
+[PRS_SOMEIP_00732] [PRS_SOMEIP_00733]
+[PRS_SOMEIP_00734] [PRS_SOMEIP_00735]
+[PRS_SOMEIP_00736] [PRS_SOMEIP_00738]
+[PRS_SOMEIP_00740] [PRS_SOMEIP_00741]
+[PRS_SOMEIP_00742] [PRS_SOMEIP_00743]
+[PRS_SOMEIP_00744] [PRS_SOMEIP_00745]
+[PRS_SOMEIP_00746] [PRS_SOMEIP_00747]
+[PRS_SOMEIP_00749] [PRS_SOMEIP_00750]
+[PRS_SOMEIP_00751] [PRS_SOMEIP_00752]
+[PRS_SOMEIP_00753] [PRS_SOMEIP_00754]
+Table 3.1: Requirements Tracing
+15 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE16
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+4 Acronyms and Abbreviations
+The glossary below includes acronyms and abbreviations relevant to the SOME/IP
+specification that are not included in the [2, AUTOSAR glossary].
+Abbreviation / Acronym: Description:
+Byte Order Mark
+The byte order mark (BOM) is a Unicode character, U+FEFF byte
+order mark (BOM), whose appearance as a magic number at the
+start of a text stream is used to indicate the used encoding.
+Method A method, procedure, function, or subroutine that is called/in-
+voked.
+Parameters input, output, or input/output arguments of a method or an event
+Remote Procedure Call (RPC) A method call from one ECU to another that is transmitted using
+messages
+Request a message of the client to the server invoking a method
+Response a message of the server to the client transporting results of a
+method invocation
+Request/Response communica-
+tion a RPC that consists of request and response
+Event
+A uni-directional data transmission that is only invoked on
+changes or cyclically and is sent from the producer of data to
+the consumers.
+Field A field does represent a status and thus has an valid value at all
+times on which getter, setter and notifier act upon.
+Notification Event An event message of the notifier of a field.
+Getter A Request/Response call that allows read access to a field.
+Setter A Request/Response call that allows write access to a field.
+Notifier Sends out event message with the fields value on change, on
+epsilon change, or cyclically based on configuration.
+Service A logical combination of zero or more methods, zero or more
+events, and zero or more fields.
+Service Interface the formal specification of the service including its methods,
+events, and fields
+Eventgroup A logical grouping of events and notification events of fields inside
+a service in order to allow subscription
+Service Instance Implementation of a service, which can exist more than once in
+the vehicle and more than once on an ECU
+Server The ECU offering a service instance shall be called server in the
+context of this service instance.
+Client The ECU using the service instance of a server shall be called
+client in the context of this service instance.
+Fire and Forget Requests without response message are called fire&forget.
+User Datagram Protocol A standard network protocol using a simple connectionless com-
+munication model.
+Union A data structure that dynamically assumes different data types.
+non-extensible (standard) struct
+A struct which is serialized without tags. At most, new members
+can be added in a compatible way at the end of the struct and
+optional members are not possible.
+extensible struct
+A struct which is serialized with tags. New members can be
+added in a compatible way at arbitrary positions and optional
+members are possible.
+TLV Tag Length Value
+Table 4.1: Acronyms and Abbreviations
+16 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE17
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+5 Protocol specification
+SOME/IP provides service oriented communication over a network. It is based on
+service definitions that list the functionality that the service provides. A service can
+consist of combinations of zero or multiple events, methods and fields.
+Events provide data that are sent cyclically or on change from the provider to the sub-
+scriber.
+Methods provide the possibility to the subscriber to issue remote procedure calls which
+are executed on provider side.
+Fields are combinations of one or more of the following three
+• a notifier which sends data from the provider to the subscribers on change, on
+epsilon change, or cyclically based on configuration.
+• a getter which can be called by the subscriber to explicitly query the provider for
+the value
+• a setter which can be called by the subscriber when it wants to change the value
+on provider side
+The major difference between the notifier of a field and an event is that events are
+only sent on change, the notifier of a field additionally sends the data directly after
+subscription.
+5.1 Specification of SOME/IP Message Format (Serialization)
+Serialization describes the way data is represented in protocol data units (PDUs) as
+payload of either UDP or TCP messages, transported over an IP-based automotive
+in-vehicle network.
+5.1.1 Header
+[PRS_SOMEIP_00030]
+Upstream requirements: RS_SOMEIP_00027
+⌈The structure of header layout shall consist of
+• Message ID (Service ID/Method ID) [32 Bits]
+• Length [32 Bits]
+• Request ID (Client ID/Session ID) [32 Bits]
+• Protocol Version [8Bits]
+• Interface Version [8 Bits]
+17 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE18
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+• Message Type [8 Bits]
+• Return Code [8 Bits]
+⌋
+[PRS_SOMEIP_00030] is shown in Table 5.1.
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+Message ID (Service ID / Method ID) [32 Bit]
+Length [32 Bit]
+Request ID (Client ID / Session ID) [32 Bit]
+Protocol Version [8 Bit] Interface version [8 Bit] Message Type [8 Bit] Return Code [8 Bit]
+Payload [variable size]
+Table 5.1: SOME/IP Header Format
+[PRS_SOMEIP_00941]
+Upstream requirements: RS_SOMEIP_00027
+⌈In case of E2E communication protection being applied, the E2E header is placed
+after Return Code, depending on the chosen Offset value for the E2E header. The
+default Offset value is 64 bit, which puts the E2E header exactly between Return Code
+and Payload.⌋
+[PRS_SOMEIP_00941] ss shown in the Table 5.2.
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+Message ID (Service ID / Method ID) [32 Bit]
+Length [32 Bit]
+Request ID (Client ID / Session ID) [32 Bit]
+Protocol Version [8 Bit] Interface version [8 Bit] Message Type [8 Bit] Return Code [8 Bit]
+E2E Header (variable size/ Dependent on selected E2E profile]
+Payload [variable size]
+Table 5.2: SOME/IP Header and E2E header Format
+[PRS_SOMEIP_00031]
+Upstream requirements: RS_SOMEIP_00027
+⌈For interoperability reasons the header layout shall be identical for all implementations
+of SOME/IP . The fields are presented in transmission order i.e. the fields on the top left
+are transmitted first.⌋
+Note: For the sake of proper processing (see e.g. Chapter 5.2.6.3 Error Processing
+Overview) involving different protocol versions, the location, the length and the en-
+coding of the following SOME/IP header fields will remain the same in all upcoming
+SOME/IP protocol versions:
+18 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE19
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+• Message ID (consisting of Service ID and Event/Method ID)
+• Length
+• Protocol Version
+5.1.1.1 Message ID [32 Bit]
+[PRS_SOMEIP_00034]
+Upstream requirements: RS_SOMEIP_00021, RS_SOMEIP_00022, RS_SOMEIP_00023, RS_-
+SOMEIP_00027
+⌈The Message ID shall be a 32 Bit identifier that is used to identify
+• the RPC call to a method of an application
+• or to identify an event.
+⌋
+Note: The assignment of the Message ID is up to the user / system designer. However,
+the Message ID is assumed be unique for the whole system (i.e. the vehicle).
+5.1.1.2 Method ID [16 Bit]
+[PRS_SOMEIP_00245]
+Upstream requirements: RS_SOMEIP_00016, RS_SOMEIP_00027
+⌈The Message ID header field shall be structured into a 16 Bit Service ID header field
+(to distinguish up to 216 services) and a 16 bit Method ID header field to distinguish
+up to 216 service elements (namely methods and/or events). This structuring of the
+Message ID header field is illustrated as shown in [PRS_SOMEIP_00755].⌋
+Note: It is common practice and recommended to split the ID space of the Method ID
+between Methods and Events/Notifications. Methods would be in the range 0x0000-
+0x7FFF (first bit of Method-ID is 0) and Events/Notifications would use the range
+0x8000-0x8FFF (first bit of the Method-ID is 1).
+[PRS_SOMEIP_00755] Message ID header field
+Upstream requirements: RS_SOMEIP_00016, RS_SOMEIP_00027
+⌈
+Service ID [16 Bit] Method ID [16
+Bit]
+⌋
+19 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE20
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Eventgroup is a logical grouping of events and notification events of fields inside a
+service in order to allow subscription.
+[PRS_SOMEIP_00365]
+Upstream requirements: RS_SOMEIP_00027, RS_SOMEIP_00017
+⌈A SOME/IP Eventgroup shall at least contain one event.⌋
+[PRS_SOMEIP_00366]
+Upstream requirements: RS_SOMEIP_00027, RS_SOMEIP_00016, RS_SOMEIP_00017, RS_-
+SOMEIP_00018
+⌈Events as well as field notifiers shall be mapped to at least one SOME/IP Eventgroup.⌋
+5.1.1.3 Length [32 Bit]
+[PRS_SOMEIP_00042]
+Upstream requirements: RS_SOMEIP_00027, RS_SOMEIP_00040
+⌈Length field shall contain the length in Byte starting from Request ID/Client ID until
+the end of the SOME/IP message.⌋
+5.1.1.4 Request ID [32 Bit]
+The Request ID allows a server and client to differentiate multiple parallel uses of the
+same method, getter or setter.
+[PRS_SOMEIP_00043]
+Upstream requirements: RS_SOMEIP_00025, RS_SOMEIP_00027
+⌈The Request ID shall be unique for a request-response pair to differentiate between
+multiple calls of the same method.⌋
+[PRS_SOMEIP_00704]
+Upstream requirements: RS_SOMEIP_00027
+⌈When generating a response message, the provider shall copy the Request ID from
+the request to the response message.⌋
+Note:
+This allows the client to map a response to the issued request even with more than one
+request outstanding.
+20 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE21
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00044]
+Upstream requirements: RS_SOMEIP_00025
+⌈Request IDs must not be reused until the response has arrived or is not expected to
+arrive anymore (timeout).⌋
+Structure of the Request ID
+[PRS_SOMEIP_00046] Request ID
+Upstream requirements: RS_SOMEIP_00027
+⌈
+Client ID [16 Bits] Session ID [16 Bits]
+⌋
+Note:
+This means that the implementer of an ECU can define the Client-IDs as required by
+his implementation and the provider does not need to know this layout or definitions
+because he just copies the complete Request-ID in the response.
+[PRS_SOMEIP_00702]
+Upstream requirements: RS_SOMEIP_00025, RS_SOMEIP_00027
+⌈The Client ID is the unique identifier for the calling client inside the ECU. The Client
+ID allows an ECU to differentiate calls from multiple clients to the same method.⌋
+[PRS_SOMEIP_00703]
+Upstream requirements: RS_SOMEIP_00002, RS_SOMEIP_00025, RS_SOMEIP_00027
+⌈The Session ID is a unique identifier that allows to distinguish sequential messages
+or requests originating from the same sender from each other.⌋
+[PRS_SOMEIP_00532]
+Upstream requirements: RS_SOMEIP_00025, RS_SOMEIP_00027
+⌈The Client ID shall also support being unique in the overall vehicle by having a con-
+figurable prefix or fixed value (e.g. the most significant byte of Client ID being the
+diagnostics address or a configured Client ID for a given application/SW-C).⌋
+For example:
+Client ID Prefix [8
+Bits]
+Client ID [8 Bits] Session ID [16 Bits]
+Table 5.3: Example of Client ID
+21 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE22
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00932]
+Upstream requirements: RS_SOMEIP_00027
+⌈In case Session Handling is not active, the Session ID shall be set to 0x00.⌋
+[PRS_SOMEIP_00933]
+Upstream requirements: RS_SOMEIP_00027
+⌈In case Session Handling is active, the Session ID shall be set to a value within the
+range [0x1, 0xFFFF] .⌋
+[PRS_SOMEIP_00934]
+Upstream requirements: RS_SOMEIP_00027
+⌈In case Session Handling is active, the Session ID shall be incremented according to
+the respective use case (detailed information about dedicated use cases is contained
+in separate specification items (e.g., [PRS_SOMEIP_00533]).⌋
+[PRS_SOMEIP_00533]
+Upstream requirements: RS_SOMEIP_00012, RS_SOMEIP_00027
+⌈Request/Response methods shall use session handling with Session IDs. Session ID
+should be incremented after each call.⌋
+[PRS_SOMEIP_00521]
+Upstream requirements: RS_SOMEIP_00012, RS_SOMEIP_00027
+⌈When the Session ID reaches 0xFFFF , it shall wrap around and start again with0x01⌋
+[PRS_SOMEIP_00739]
+Upstream requirements: RS_SOMEIP_00012, RS_SOMEIP_00027
+⌈For request/response methods, a client has to ignore a response if the Session ID of
+the response does not match the Session ID of the request⌋
+[PRS_SOMEIP_00935]
+Upstream requirements: RS_SOMEIP_00012, RS_SOMEIP_00027
+⌈For notification messages, a receiver shall ignore the Session ID in case Session
+Handling is not active.⌋
+[PRS_SOMEIP_00936]
+Upstream requirements: RS_SOMEIP_00012, RS_SOMEIP_00027
+⌈For notification messages, a receiver shall treat the Session ID according to the re-
+spective use case (detailed information about dedicated use cases is contained in
+separate specification items [e.g., [PRS_SOMEIP_00741]] in case Session Handling
+is active).⌋
+22 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE23
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00939] Session Handling for REQUEST_NO_RETURN Messages
+Upstream requirements: RS_SOMEIP_00012
+⌈Session Handling shall not be used for messages of type REQUEST_NO_RETURN,
+i.e, the Session ID part of the Request ID field of the SOME/IP header shall be 0x00
+for messages of type REQUEST_NO_RETURN if segmentation (SOME/IP-TP) is not re-
+quired as per [PRS_SOMEIP_00720].⌋
+5.1.1.5 Protocol Version [8 Bit]
+The Protocol Version identifies the used SOME/IP Header format (not including the
+Payload format).
+[PRS_SOMEIP_00052]
+Upstream requirements: RS_SOMEIP_00027, RS_SOMEIP_00041
+⌈Protocol Version shall be an 8 Bit field containing the SOME/IP protocol version.⌋
+[PRS_SOMEIP_00050]
+Upstream requirements: RS_SOMEIP_00027, RS_SOMEIP_00041
+⌈The Protocol Version shall be increased, for all incompatible changes in the SOME/IP
+header. A change is incompatible if a receiver that is based on an older Protocol
+Version would not discard the message and process it incorrectly.
+Note:
+The Protocol Version will not be increased for changes that only affect the payload
+format.⌋
+Note:
+Message processing and error handling is defined in chapter 4.2.6.3 (error processing
+overview)
+[PRS_SOMEIP_00051]
+Upstream requirements: RS_SOMEIP_00027, RS_SOMEIP_00041
+⌈The Protocol Version shall be 1.⌋
+5.1.1.6 Interface Version [8 Bit]
+[PRS_SOMEIP_00053]
+Upstream requirements: RS_SOMEIP_00003, RS_SOMEIP_00027
+⌈Interface Version shall be an 8 Bit field that contains the Major Version of the Service
+Interface.⌋
+23 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE24
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+5.1.1.7 Message Type [8 Bit]
+[PRS_SOMEIP_00055] Message Type field
+Upstream requirements: RS_SOMEIP_00008, RS_SOMEIP_00027
+⌈
+Number Value Description
+0x00 REQUEST A request expecting a response (even
+void)
+0x01 REQUEST_NO_RETURN A fire&forget request
+0x02 NOTIFICATION A request of a notification/event callback
+expecting no response
+0x80 RESPONSE The response message
+0x81 ERROR The response containing an error
+0x20 TP_REQUEST A TP request expecting a response (even
+void)
+0x21 TP_REQUEST_NO_RETURN A TP fire&forget request
+0x22 TP_NOTIFICATION A TP request of a notification/event call-
+back expecting no response
+0xa0 TP_RESPONSE The TP response message
+0xa1 TP_ERROR The TP response containing an error
+⌋
+[PRS_SOMEIP_00701]
+Upstream requirements: RS_SOMEIP_00008, RS_SOMEIP_00027
+⌈Regular request (message type 0x00) shall be answered by a response (message
+type 0x80) with return code 0x00 (E_OK) when no error occurred. If error occurs, then
+either a response message (message type 0x80) or an error message (message type
+0x81) with return code not equal to 0x00 (E_OK) shall be sent.⌋
+Note: Refer [PRS_SOMEIP_00901] and [PRS_SOMEIP_00903], that describe when
+messages with message type response and message type error can be sent.
+It is also possible to send a request that does not have a response message (mes-
+sage type 0x01). For updating values through notification a callback interface exists
+(message type 0x02).
+[PRS_SOMEIP_00367]
+Upstream requirements: RS_SOMEIP_00027, RS_SOMEIP_00051
+⌈The 3rd highest bit of the Message Type (=0x20) shall be called TP-Flag and shall be
+set to 1 to signal that the current SOME/IP message is a segment. The other bits of
+the Message Type are set as specified in this Section.⌋
+Note:
+Segments of the Message Type Request (0x00) have the Message Type (0x20), seg-
+ments of the Message Type Response (0x80) have the Message Type (0xa0), and so
+on. For details see (Chapter 5.2.1.4)
+24 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE25
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+5.1.1.8 Return Code [8 Bit]
+[PRS_SOMEIP_00058]
+Upstream requirements: RS_SOMEIP_00008, RS_SOMEIP_00027
+⌈The Return Code shall be used to signal whether a request was successfully pro-
+cessed. For simplification of the header layout, every message transports the field
+Return Code. The allowed Return Codes for specific message types are shown
+[PRS_SOMEIP_00757].⌋
+[PRS_SOMEIP_00757] Return Codes
+Upstream requirements: RS_SOMEIP_00008, RS_SOMEIP_00027
+⌈
+Message Type Allowed Return Codes
+REQUEST N/A set to 0x00 (E_OK)
+REQUEST_NO_RETURN N/A set to 0x00 (E_OK)
+NOTIFICATION N/A set to 0x00 (E_OK)
+RESPONSE See Return Codes in [PRS_SOMEIP_00191]
+ERROR See Return Codes in [PRS_SOMEIP_00191]. Shall not be
+0x00 (E_OK).
+⌋
+5.1.1.9 Payload [variable size]
+In the payload field the parameters are carried. The serialization of the parameters will
+be specified in the following section.
+The size of the SOME/IP payload field depends on the transport protocol used.
+[PRS_SOMEIP_00382] SOME/IP payload size using UDP
+Upstream requirements: RS_SOMEIP_00006, RS_SOMEIP_00010
+⌈With UDP the SOME/IP payload size should be between 0 and 1400 Bytes. Payload
+sizes greater than 1400 Bytes should be supported with TCP and segmentation of
+payload (see also [PRS_SOMEIP_00730]).⌋
+Note:
+The recommendation to 1400 Bytes improves change compatibility on the protocol
+stack (e.g. changing to IPv6 or adding security means).
+Payload might consists of data elements for events or parameters for methods.
+25 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE26
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+5.1.2 Endianness
+[PRS_SOMEIP_00368]
+Upstream requirements: RS_SOMEIP_00026
+⌈All SOME/IP Header Fields shall be encoded in network byte order (big endian).⌋
+[PRS_SOMEIP_00759]
+Upstream requirements: RS_SOMEIP_00026
+⌈The following fields in the payload of SOME/IP messages shall be encoded in network
+byte order (big endian):
+• the optional length field of extensible structs ([PRS_SOMEIP_00079]),
+• the TLV tag ([PRS_SOMEIP_00203]) and the length field ([PRS_SOMEIP_-
+00221]) of structured datatypes and arguments with identifier and optional mem-
+bers,
+• the optional length field for fixed length strings ([PRS_SOMEIP_00760]),
+• the length field for dynamic length strings ([PRS_SOMEIP_00089]),
+• the optional length field for extensible fixed length arrays ([PRS_SOMEIP_-
+00944]),
+• the length field of dynamic length arrays ([PRS_SOMEIP_00376]),
+• the length field of unions ([PRS_SOMEIP_00126]),
+• and the type field of unions ([PRS_SOMEIP_00129]).
+⌋
+[PRS_SOMEIP_00369]
+Upstream requirements: RS_SOMEIP_00026
+⌈The byte order of the parameters inside the payload shall be determined by configura-
+tion parameter BYTE_ORDER in the allowed values according to the 'Allowed Range
+or Values' column in [PRS_SOMEIP_00004]. If not configured explicitly via the config-
+uration parameter BYTE_ORDER, the default value defined in [PRS_SOMEIP_00004]
+shall be used as the byte order of the parameters. Exceptions are some of the fields
+in the payload of SOME/IP messages listed in [PRS_SOMEIP_00759], which shall
+be encoded in Network Byte Order regardless of the value of configuration parameter
+BYTE_ORDER.⌋
+5.1.3 Serialization of Data Structures
+The serialization is based on the parameter list defined by the interface specification.
+The interface specification defines the exact position of all data structures in the PDU
+and has to consider the memory alignment.
+26 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE27
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Alignment is used to align the beginning of data by inserting padding elements after
+the data in order to ensure that the aligned data starts at certain memory addresses.
+There are processor architectures which can access data more efficiently (i.e. master)
+when they start at addresses which are multiples of a certain number (e.g multiples of
+32 Bit).
+[PRS_SOMEIP_00611]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00029
+⌈Alignment of data shall be realized by inserting padding elements after the variable
+size data if the variable size data is not the last element in the serialized data stream.⌋
+Note:
+Please note that the padding value is not defined.
+Example: Structure with 5 Members
+- Member1: UINT16
+- Member2: One dimensional variableSize Array with uint8 elements
+- Member3: UINT32
+- Member4: UINT64
+- Member5: One dimensional variableSize Array with uint8 elements
+SOME/IP Header
+UINT16 Lengthfield
+(16Bit)
+uint8 uint8 uint8 uint8
+uint8 uint8 uint8 uint8 Padding
+UINT32 UINT64
+UINT64 Lengthfield
+(16Bit)
+uint8 uint8
+uint8 uint8 uint8 uint8
+<———————————————————————————————–>
+64 bit
+Table 5.4: SOME/IP Padding Example 01
+27 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE28
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Example: Structure with 5 Members
+- Member1: UINT16
+- Member2: One dimensional variableSize Array with uint8 elements
+- Member3: UINT32
+- Member4: UINT64
+- Member5: One dimensional variableSize Array with uint8 elements
+SOME/IP Header
+UINT16 Lengthfield
+(16Bit)
+uint8 uint8 uint8 Padding
+UINT32 UINT64
+UINT64 Lengthfield
+(16Bit)
+uint8 uint8
+uint8 uint8 uint8 uint8 uint8 uint8
+<———————————————————————————————–>
+64 bit
+Table 5.5: SOME/IP Padding Example 02
+[PRS_SOMEIP_00569]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00029
+⌈Alignment shall always be calculated from start of SOME/IP message.⌋
+[PRS_SOMEIP_00612]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00029
+⌈There shall be no padding behind fixed length data elements to ensure alignment of
+the following data.⌋
+Note:
+If data behind fixed length data elements shall be padded, this has to be explicitly
+considered in the data type definition.
+[PRS_SOMEIP_00613]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00029
+⌈The alignment for the data element immediately following a variable length data
+element (if it is not the last element in the serialized data stream) shall be deter-
+mined by the configuration parameter ALIGNMENT in the allowed range according
+to the 'Allowed Range or Values' column in [PRS_SOMEIP_00004]. If not config-
+ured explicitly via the configuration parameter ALIGNMENT, the default value defined
+in [PRS_SOMEIP_00004] shall be used as alignment.⌋
+28 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE29
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+5.1.3.1 Basic Datatypes
+[PRS_SOMEIP_00065] Supported basic Data Types
+Upstream requirements: RS_SOMEIP_00030, RS_SOMEIP_00031, RS_SOMEIP_00032
+⌈
+Type Description Size [bit] Remark
+boolean TRUE/FALSE value 8 FALSE (0), TRUE (1)
+uint8 unsigned Integer 8
+uint16 unsigned Integer 16
+uint32 unsigned Integer 32
+uint64 unsigned Integer 64
+sint8 signed Integer 8
+sint16 signed Integer 16
+sint32 signed Integer 32
+sint64 signed Integer 64
+float32 floating point number 32 IEEE 754 binary32 (Single Preci-
+sion)
+float64 floating point number 64 IEEE 754 binary64 (Double Preci-
+sion)
+⌋
+The Byte Order is specified for each parameter by configuration.
+[PRS_SOMEIP_00615]
+Upstream requirements: RS_SOMEIP_00030, RS_SOMEIP_00031, RS_SOMEIP_00032
+⌈For the evaluation of a Boolean value only the lowest bit of the uint8 is interpreted and
+the rest is ignored.⌋
+5.1.3.2 Structured Datatypes (structs)
+The serialization of a struct shall be close to the in-memory layout. This means, only
+the parameters shall be serialized sequentially into the buffer. Especially for structs it
+is important to consider the correct memory alignment.
+29 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE30
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Example:
+Struct_1 
+uint32 a 
+float32 b[2] 
+Struct_2 c Struct_2 
+uint32 d 
+float32 e[2]
+Struct_3 f
+serialization 
+uint32 a 
+float32 b_1 
+float32 b_2 
+uint32 d 
+float32 e_1 
+float32 e_2 
+…
+Figure 5.1: Serialization of Structs
+[PRS_SOMEIP_00077]
+Upstream requirements: RS_SOMEIP_00033
+⌈The SOME/IP implementation shall not automatically insert dummy/padding data.⌋
+[PRS_SOMEIP_00079]
+Upstream requirements: RS_SOMEIP_00033, RS_SOMEIP_00040
+⌈A length field may be inserted in front of the Struct depending on the configuration
+parameter SIZE_OF_STRUCT_LENGTH_FIELD in the allowed range according to the
+'Allowed Range or Values' column in [PRS_SOMEIP_00004]. If not configured explic-
+itly via the configuration parameter SIZE_OF_STRUCT_LENGTH_FIELD, the default
+value defined in [PRS_SOMEIP_00004] shall be used for the length of the length field.⌋
+[PRS_SOMEIP_00370]
+Upstream requirements: RS_SOMEIP_00033, RS_SOMEIP_00040
+⌈The length field of the struct shall describe the number of bytes this struct occupies
+for SOME/IP transport.⌋
+[PRS_SOMEIP_00712]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00033
+⌈The serialization of structs shall follow the depth-first-traversal of the structured data
+type.⌋
+5.1.3.3 Structured Datatypes and Arguments with Identifier and optional mem-
+bers (’TL V’)
+To achieve enhanced forward and backward compatibility, an additional Data ID can
+be added in front of struct members or method arguments. The receiver then can
+skip unknown members/arguments, i.e. where the Data ID is unknown. New member-
+30 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE31
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+s/arguments can be added at arbitrary positions when Data IDs are transferred in the
+serialized byte stream.
+Moreover, the usage of Data IDs allows describing structs and methods with optional
+members/arguments. Whether a member/argument is optional or not, is defined in the
+data definition.
+Whether an optional member/argument is actually present in the struct/method or not,
+must be determined during runtime. How this is realized depends on the used pro-
+gramming language or software platform (e.g. using a special available flag, using a
+special method, using pointers which might be null, ...).
+[PRS_SOMEIP_00201]
+Upstream requirements: RS_SOMEIP_00050
+⌈A Data ID shall be unique within the direct members of a struct or arguments of a
+method.⌋
+Note:
+Please note that a Data ID does not need to be unique across different structs or
+methods.
+Note:
+Please note that neither the AUTOSAR Methodology nor AUTOSAR CP RTE, nor
+AUTOSAR AP ara::com support the definition or usage of optional method arguments
+at the time being.
+[PRS_SOMEIP_00230]
+Upstream requirements: RS_SOMEIP_00050
+⌈A Data ID shall be defined either for all members of the same hierarchical level of a
+struct or for none of them.⌋
+[PRS_SOMEIP_00231]
+Upstream requirements: RS_SOMEIP_00050
+⌈A Data ID shall be defined either for all arguments of a method or for none of them.⌋
+In addition to the Data ID, a wire type encodes the datatype of the following member.
+Data ID and wire type are encoded in a so-called tag.
+[PRS_SOMEIP_00202]
+Upstream requirements: RS_SOMEIP_00050
+⌈The length of a tag shall be two bytes.⌋
+[PRS_SOMEIP_00203]
+Upstream requirements: RS_SOMEIP_00050
+⌈The tag shall consist of
+31 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE32
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+• reserved (Bit 7 of the first byte)
+• wire type (Bit 6-4 of the first byte)
+• Data ID (Bit 3-0 of the first byte and bit 7-0 of the second byte)
+⌋
+Refer to the Figure 5.2 for the layout of the tag. Bit 7 is the highest significant bit of a
+byte, bit 0 is the lowest significant bit of a byte.
+Wire Type Data ID (Higher
+Sig. Part) Data ID (Lower Sig. Part) Length Field (8/16/32 bit) Member Data ...
+Byte n Byte n + 1 Byte n + 2 ...
+7 0 7 0 7/15/31 0
+reserved
+Figure 5.2: Tag Layout
+[PRS_SOMEIP_00204]
+Upstream requirements: RS_SOMEIP_00050
+⌈The lower significant part of the Data ID of the member shall be encoded in bits 7-0
+of the second byte of the tag. The higher significant part of the Data ID of the member
+shall be encoded in bits 3-0 of the first byte.⌋
+Example:
+The Data ID of the member is 0x04F2. Then bits 3-0 of the first byte are set to 0x4.
+The second byte is set to 0xF2.
+[PRS_SOMEIP_00205] Wire Type and type of following data
+Upstream requirements: RS_SOMEIP_00050
+⌈
+Wire Type Following Data
+0 8 Bit Data Base data type
+1 16 Bit Data Base data type
+2 32 Bit Data Base data type
+3 64 Bit Data Base data type
+4 Complex Data Type: Array, Struct,
+String, Union with length field of
+static size (configured in data defi-
+nition)
+5 Complex Data Type: Array, Struct,
+String, Union with length field size 1
+byte (ignore static definition)
+6 Complex Data Type: Array, Struct,
+String, Union with length field size 2
+byte (ignore static definition)
+7 Complex Data Type: Array, Struct,
+String, Union with length field size 4
+byte (ignore static definition)
+32 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE33
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+⌋
+Note:
+wire type 4 ensures the compatibility with the current approach where the size of length
+fields is statically configured. This approach has the drawback that changing the size
+of the length field during evolution of interfaces is always incompatible. Thus, wire
+types 5, 6 and 7 allow to encode the size of the used length field in the transferred byte
+stream. A serializer may use this, if the statically configured size of the length field is
+not sufficient to hold the current size of the data struct.
+[PRS_SOMEIP_00206]
+Upstream requirements: RS_SOMEIP_00050
+⌈On reception side, if the wire type is set to 5, 6 or 7, the size of the length field defined
+in the data definition shall be ignored and the size of the length field shall be selected
+according to the wire type.⌋
+If a Data ID is configured for a member of a struct/argument of a method, a tag shall
+be inserted in the serialized byte stream.
+Note:
+regarding the existence of Data IDs, refer to [PRS_SOMEIP_00230] and
+[PRS_SOMEIP_00231].
+[PRS_SOMEIP_00003] Selection of to-be-used wire type and length of the Length
+field
+Upstream requirements: RS_SOMEIP_00050
+⌈On transmission side, the selection of the to-be-used wire type and the corresponding
+length of the length field shall depend on the configuration parameter IS_DYNAMIC_
+LENGTH_FIELD_SIZE. If the configuration parameter IS_DYNAMIC_LENGTH_
+FIELD_SIZE is set to TRUE, then a wire type of 5, 6 or 7 and a corresponding length
+for the length field (i.e., 1, 2, or 4 Bytes) shall be used depending on the actual
+size of the member data. If the configuration parameter IS_DYNAMIC_LENGTH_
+FIELD_SIZE is set to FALSE, then a wire type of 4 shall be used and the length
+of the length field shall be selected according to [PRS_SOMEIP_00001](SIZE_
+OF_ARRAY_LENGTH_FIELD),[PRS_SOMEIP_00002](SIZE_OF_STRING_
+LENGTH_FIELD),[PRS_SOMEIP_00079](IS_DYNAMIC_LENGTH_FIELD_SIZE)
+and [PRS_SOMEIP_00121](SIZE_OF_UNION_LENGTH_FIELD). If not configured
+explicitly via the configuration parameter IS_DYNAMIC_LENGTH_FIELD_SIZE, the
+default value defined in [PRS_SOMEIP_00004] shall be used for the selection of the
+to-be-used wire type and the corresponding length of the length field.⌋
+[PRS_SOMEIP_00212]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00050
+⌈
+33 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE34
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+If the datatype of the serialized member/argument is a basic datatype (wire types 0-3)
+and a Data ID is configured, the tag shall be inserted directly in front of the member/ar-
+gument. No length field shall be inserted into the serialized stream. ⌋
+[PRS_SOMEIP_00213]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00050
+⌈If the datatype of the serialized member/argument is not a basic datatype (wire type
+4-7) and a Data ID is configured, the tag shall be inserted in front of the length field.⌋
+[PRS_SOMEIP_00214]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00050
+⌈If the datatype of the serialized member/argument is not a basic datatype and a Data
+ID is configured, a length field shall always be inserted in front of the member/argu-
+ment.⌋
+Rationale:
+The length field is required for the de-serialization of known members/arguments and
+to skip unknown members/arguments during deserialization.
+[PRS_SOMEIP_00221]
+Upstream requirements: RS_SOMEIP_00040, RS_SOMEIP_00050
+⌈The length field shall always contain the length up to the next tag of the struct.⌋
+[PRS_SOMEIP_00208]
+Upstream requirements: RS_SOMEIP_00040, RS_SOMEIP_00050
+⌈If the members/arguments itself are of type struct, there shall be exactly one length
+field. The length field is added according to requirements [PRS_SOMEIP_00079] and
+[PRS_SOMEIP_00370].⌋
+[PRS_SOMEIP_00225]
+Upstream requirements: RS_SOMEIP_00050
+⌈If the members/arguments itself are of type dynamic length string, there shall
+be exactly one length field. The length field is added according to require-
+ments [PRS_SOMEIP_00089], [PRS_SOMEIP_00090], [PRS_SOMEIP_00002] and
+[PRS_SOMEIP_00095].⌋
+[PRS_SOMEIP_00224]
+Upstream requirements: RS_SOMEIP_00050
+⌈If the members/arguments itself are of type fixed length string, there shall be exactly
+one length field corresponding to dynamic length strings.⌋
+Note:
+when serialized without tag, fixed length strings do not have a length field. For the
+34 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE35
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+serialization with tag, a length field is also required for fixed length strings in the same
+way as for dynamic length strings.
+[PRS_SOMEIP_00227]
+Upstream requirements: RS_SOMEIP_00050
+⌈If the members/arguments itself are of type dynamic length array, there shall be
+exactly one length field. The length field is added according to requirements
+[PRS_SOMEIP_00376], [PRS_SOMEIP_00001], [PRS_SOMEIP_00377] with a size
+of 8, 16 or 32 bit.⌋
+[PRS_SOMEIP_00226]
+Upstream requirements: RS_SOMEIP_00050
+⌈If the members/arguments itself are of type fixed length array, there shall be exactly
+one length field corresponding to dynamic length arrays.⌋
+[PRS_SOMEIP_00228]
+Upstream requirements: RS_SOMEIP_00050
+⌈If the members/arguments itself are of type union, there shall be exactly one length
+field. The length field is added according to requirements [PRS_SOMEIP_00119],
+[PRS_SOMEIP_00121] with a size of 8,16 or 32 bit.⌋
+[PRS_SOMEIP_00229]
+Upstream requirements: RS_SOMEIP_00050
+⌈If the members/arguments itself are of type union, the length field shall cover the size
+of the type selector field, data and padding bytes.⌋
+Note:
+For the serialization without tags, the length field of unions does not cover the type
+selector field (see [PRS_SOMEIP_00126]). For the serialization with tags, it is required
+that the complete content of the serialized union is covered by the length field.
+[PRS_SOMEIP_00210]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00050
+⌈A member of a non-extensible (standard) struct which is of type extensible struct, shall
+be serialized according to the requirements for extensible structs.⌋
+[PRS_SOMEIP_00211]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00050
+⌈A member of an extensible struct which is of type non-extensible (standard) struct,
+shall be serialized according to the requirements for standard structs.⌋
+35 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE36
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00222]
+Upstream requirements: RS_SOMEIP_00029, RS_SOMEIP_00050
+⌈The alignment of variable length data according to [PRS_SOMEIP_00611] shall al-
+ways be 8 bit.⌋
+Rationale:
+When alignment greater 8 bits is used, the serializer may add padding bytes after
+variable length data. The padding bytes are not covered by the length field. If the
+receiver does not know the Data ID of the member, it also does not know that it is
+variable length data and that there might be padding bytes.
+[PRS_SOMEIP_00241]
+Upstream requirements: RS_SOMEIP_00050
+⌈If TLV is used the size of the length field for arrays, structs, unions and strings shall
+be greater than 0.⌋
+Rationale:
+The TLV serialization requires the usage of length fields. When wire type 4 is used, the
+length field size must be statically configured. When wire types 5-7 (dynamic length
+field size) are used, the static configuration of the length field size must also be present
+since not all length fields are preceded by a tag, e.g. structs contained in an array or
+the top-level struct contained in a SOME/IP event. Not using length fields here would
+result in ambiguities.
+[PRS_SOMEIP_00242]
+Upstream requirements: RS_SOMEIP_00050
+⌈The configured size of the length field for arrays, structs, unions and strings shall be
+identical.⌋
+Rationale:
+In case of an unknown member or argument, the deserializer cannot determine the
+actual datatype of the member/argument when wire type 4 is used.
+[PRS_SOMEIP_00243]
+Upstream requirements: RS_SOMEIP_00050
+⌈The size of the length field shall be configured for the top-level struct or method re-
+quest/response. All arrays, unions, structs and strings used within a struct or all ar-
+guments within a method shall inherit the size of the length field from the top-level
+definition.⌋
+Rationale:
+In case of an unknown member or argument, the deserializer needs to know the size of
+the length field when wire type 4 is used. The easiest way is that the size of the length
+field is then only defined at the top-level element.
+36 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE37
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00244]
+Upstream requirements: RS_SOMEIP_00050
+⌈Overriding the size of the length field at a subordinate array, union, struct or string or
+at an individual method argument shall not be allowed.⌋
+[PRS_SOMEIP_00216]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00050
+⌈The serializer shall not include optional members/arguments in the serialized byte
+stream if they are marked as not available.⌋
+[PRS_SOMEIP_00220]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00050
+⌈If the serialization with tags will be introduced for an existing service interface where
+tags have not been used, the major interface version shall be incremented and used to
+indicate this.⌋
+Note:
+The receiver only handles received messages that match all configured val-
+ues of Message ID, Protocol Version, Interface Version and Message-Type (see
+[PRS_SOMEIP_00195]).
+37 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE38
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Example for serializing structures with tags
+struct myStruct
+   unit8  a /* Data ID = 0 */
+   uint8  b /* Data ID = 1 */
+   struct c /* Data ID = 2 */  
+      uint8  c1
+      uint8  c2
+      struct c3
+         uint8  c31
+         struct c32
+            uint8   c321
+            uint8[] c322
+            uint8   c323
+         uint8  c33
+      uint8[]c4
+      uint8  c5
+   uint8  d /* Data ID = 3 */
+   struct e /* Data ID = 4 */
+      uint8  e1
+      uint8  e2
+   uint8  f /* Data ID = 5 */
+   uint8  g /* Data ID = 6 */
+myStruct_length
+a_tag = 0x0000
+a
+b_tag = 0x0001
+b
+c_tag = 0x4002
+c_length
+c1
+c2
+c3_length
+c31
+c32_length
+c321
+c322_length
+c322
+…
+c323
+c33
+c4_length
+c4
+…
+c5
+d_tag = 0x0003
+d
+e_tag = 0x4004
+e_length
+e1
+e2
+f_tag = 0x0005
+f
+g_tag = 0x0006
+g
+Figure 5.3: Example 01 for serializing structures with tags
+38 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE39
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+struct myStruct
+   unit8  a
+   uint8  b
+   struct c   
+      uint8  c1
+      uint8  c2
+      struct c3
+         uint8  c31 /* Data ID = 0 */
+         struct c32 /* Data ID = 2 */
+      uint8   c321
+uint8[] c322
+uint8   c323
+         uint8  c33 /* Data ID = 1 */
+      uint8[]c4
+      uint8  c5
+   uint8  d
+   struct e
+      uint8  e1
+      uint8  e2
+   uint8  f
+   uint8  g
+myStruct_length
+a
+b
+c_length
+c1
+c2
+c3_length
+c31_tag  = 0x0000
+c31
+c32_tag = 0x4002
+c32_length
+c321
+c322_length
+c322
+…
+c323
+c33_tag = 0x0001
+c33
+c4_length
+c4
+…
+c5
+d
+e_length
+e1
+e2
+f
+g
+Figure 5.4: Example 02 for serializing structures with tags
+struct myStruct
+   unit8  a
+   uint8  b
+   struct c   
+      uint8  c1
+      uint8  c2
+      struct c3
+         uint8  c31
+         struct c32
+            uint8   c321 /* Data ID = 2 */
+uint8[] c322 /* Data ID = 1 */
+uint8   c323 /* Data ID = 0 */
+         uint8  c33
+      uint8[]c4
+      uint8  c5
+   uint8  d
+   struct e
+      uint8  e1
+      uint8  e2
+   uint8  f
+   uint8  g
+myStruct_length
+a
+b
+c_length
+c1
+c2
+c3_length
+c31
+c32_length
+c321_tag = 0x0002
+c321
+c322_tag = 0x4001
+c322_length
+c322
+…
+c323_tag = 0x0000
+c323
+c33
+c4_length
+c4
+…
+c5
+d
+e_length
+e1
+e2
+f
+g
+Figure 5.5: Example 03 for serializing structures with tags
+39 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE40
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Example for serialization of arguments with tags
+SOME/IP Header (Request)
+a_tag = 0x0000
+a
+b_tag = 0x0002
+b
+c_tag = 0x4003
+c_length
+c
+...
+SOME/IP Header (Response)
+d_tag = 0x2000
+d
+e_tag = 0x0001
+e
+uint8 myFunction ( IN uint8 a, IN uint8 b, IN myStruct c, OUT uint32 d, OUT uint8 e)
+    /* Data ID = 0 */    /* Data ID = 2 */                 /* Data ID = 3 */                                /*Data  ID = 0 */         /*Data  ID = 1 */
+Figure 5.6: Example for serialization of arguments with tags
+Note:
+In the example Figure 5.6 there is no additional length field between the end of the
+SOME/IP header and the first tag. This would be redundant to the message length
+field in the SOME/IP header.
+5.1.3.4 Strings
+Following requirements are common for both fixed length and dynamic length strings.
+[PRS_SOMEIP_00372]
+Upstream requirements: RS_SOMEIP_00038
+⌈Unicode encoding shall be determined by configuration parameter STRING_EN-
+CODING.Different unicode encodings shall be supported according to the 'Allowed
+Range or Values' column in [PRS_SOMEIP_00004].If not configured explicitly via
+the configuration parameter STRING_ENCODING, the default value defined in
+[PRS_SOMEIP_00004] shall be used as the string encoding.⌋
+[PRS_SOMEIP_00948]
+Upstream requirements: RS_SOMEIP_00038
+⌈UTF-8 strings shall be zero terminated with a "\0" character. This means they shall
+end with a 0x00 Byte.⌋
+40 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE41
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00084]
+Upstream requirements: RS_SOMEIP_00038
+⌈UTF-16LE and UTF-16BE strings shall be zero terminated with a "\0" character. This
+means they shall end with (at least) two 0x00 Bytes.⌋
+[PRS_SOMEIP_00085]
+Upstream requirements: RS_SOMEIP_00038
+⌈UTF-16LE and UTF-16BE strings shall have an even length.⌋
+[PRS_SOMEIP_00086]
+Upstream requirements: RS_SOMEIP_00038
+⌈UTF-16LE and UTF-16BE strings having an odd length the last byte shall be ignored.⌋
+[PRS_SOMEIP_00087]
+Upstream requirements: RS_SOMEIP_00038
+⌈All strings shall always start with a Byte Order Mark (BOM) in the first three (UTF-8)
+or two (UTF-16) bytes of the to be serialized array containing the string. The BOM shall
+be included in fixed-length-strings as well as dynamic-length strings. BOM allows the
+possibility to detect the used encoding.⌋
+5.1.3.4.1 Strings (fixed length)
+[PRS_SOMEIP_00760]
+Upstream requirements: RS_SOMEIP_00038
+⌈Fixed length strings may have a length field that is added in front of the
+string (for the sake of backwards compatible extension).The length of this length
+field shall be determined by the configuration parameter SIZE_OF_STRING_
+LENGTH_FIELD in the allowed range according to the 'Allowed Range or Val-
+ues' column in [PRS_SOMEIP_00004].If not configured explicitly via the configu-
+ration parameter SIZE_OF_STRING_LENGTH_FIELD, the default value defined in
+[PRS_SOMEIP_00004] shall be used.⌋
+[PRS_SOMEIP_00373]
+Upstream requirements: RS_SOMEIP_00038
+⌈Strings shall be terminated with a "\0"-character despite having a fixed length.⌋
+[PRS_SOMEIP_00374]
+Upstream requirements: RS_SOMEIP_00038
+⌈The length of the string (this includes the "\0") in Bytes has to be specified in the data
+type definition.⌋
+41 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE42
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+5.1.3.4.2 Strings (dynamic length)
+[PRS_SOMEIP_00089]
+Upstream requirements: RS_SOMEIP_00039
+⌈Strings with dynamic length shall start with a length field. The length is measured in
+Bytes.⌋
+[PRS_SOMEIP_00090]
+Upstream requirements: RS_SOMEIP_00039
+⌈The length field is placed before the BOM, and the BOM is included in the length.⌋
+[PRS_SOMEIP_00091]
+Upstream requirements: RS_SOMEIP_00039
+⌈String are terminated with a "\0".⌋
+Note:
+The maximum number of bytes of the string (including termination with "\0") shall also
+be derived from the data type definition.
+[PRS_SOMEIP_00092]
+Upstream requirements: RS_SOMEIP_00039
+⌈[PRS_SOMEIP_00084], [PRS_SOMEIP_00085] and [PRS_SOMEIP_00086] shall
+also be valid for strings with dynamic length.⌋
+[PRS_SOMEIP_00002] Length field for Dynamic length strings
+Upstream requirements: RS_SOMEIP_00039, RS_SOMEIP_00040
+⌈Dynamic length strings shall have a length field that is added in front of the string. The
+length of this length field shall be determined by the configuration parameter SIZE_
+OF_STRING_LENGTH_FIELD in the allowed range according to the 'Allowed Range
+or Values' column in [PRS_SOMEIP_00004]. If not configured explicitly via the con-
+figuration parameter SIZE_OF_STRING_LENGTH_FIELD, the default value defined in
+[PRS_SOMEIP_00004] shall be used.⌋
+[PRS_SOMEIP_00095]
+Upstream requirements: RS_SOMEIP_00039
+⌈The length of the Strings length field is not considered in the value of the length field;
+i.e. the length field does not count itself.⌋
+42 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE43
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+5.1.3.5 Arrays
+5.1.3.5.1 Arrays (fixed length)
+Fixed length arrays are easier for use in very small devices. Dynamic length arrays
+might need more resources on the ECU using them.
+[PRS_SOMEIP_00944]
+Upstream requirements: RS_SOMEIP_00036
+⌈Fixed length arrays may have a length field that is added in front of the array
+(for the sake of backwards compatible extension). The length of this length field
+shall be determined by the configuration parameter SIZE_OF_ARRAY_LENGTH_
+FIELD in the allowed range according to the 'Allowed Range or Values' col-
+umn in [PRS_SOMEIP_00004]. If not configured explicitly via the configura-
+tion parameter SIZE_OF_ARRAY_LENGTH_FIELD, the default value defined in
+[PRS_SOMEIP_00004] shall be used.⌋
+Note: Overruns of fixed-size arrays can only be detected with a length field.
+One-dimensional
+[PRS_SOMEIP_00099]
+Upstream requirements: RS_SOMEIP_00035, RS_SOMEIP_00036
+⌈The one-dimensional arrays with fixed length "n" shall carry exactly "n" elements
+of the same type. An optional length field may precede the first element (see
+[PRS_SOMEIP_00944].⌋
+Note: If a length field is defined for a specific fixed-length array, then this array is rep-
+resented on the bus as a composite of the length field and the collection of n elements
+of the same data type.
+The layout of [PRS_SOMEIP_00099] is shown in Figure 5.7.
+43 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE44
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+LengthField
+(optional) 
+Element_1 Element_2 Element_n
+…
+LengthField + n*e
+element size e
+Element_31
+Static Array [n]
+n*e
+Figure 5.7: One-dimensional array (fixed length)
+Multidimensional
+[PRS_SOMEIP_00101]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00035, RS_SOMEIP_00036
+⌈The serialization of multidimensional arrays follows the in-memory layout of multidi-
+mensional arrays in the C/C++ programming language (row-major order).⌋
+Note: If a length field is defined for a specific multidimensional fixed-length array, then
+this array is represented on the bus as a composite of a length field and n collections
+consisting each of a length field and m elements of the same data type.
+The layout of [PRS_SOMEIP_00101] is shown in Figure 5.8.
+44 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE45
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+LengthField
+(optional) 
+Element_1 
+…
+LengthField + n*(LengthField + m*e)
+e
+Static Array [n][m]
+n*(LengthField + m*e)
+Element_n
+LengthField
+(optional) E1,1 E1,m
+m*e
+Element_2 
+…
+LengthField
+(optional) E2,1 E2,m
+…
+Figure 5.8: Multidimensional array (fixed length)
+5.1.3.5.2 Dynamic Length Arrays
+[PRS_SOMEIP_00375]
+Upstream requirements: RS_SOMEIP_00037
+⌈The layout of arrays with dynamic length shall be based on the layout of fixed length
+arrays.⌋
+[PRS_SOMEIP_00376]
+Upstream requirements: RS_SOMEIP_00037
+⌈A length field at the beginning of a dynamic length array shall be used to specify the
+length of the array in Bytes.⌋
+[PRS_SOMEIP_00377]
+Upstream requirements: RS_SOMEIP_00037
+⌈The length does not include the size of the length field.⌋
+Note:
+If the length of the length field is set to 0 Bits, the number of elements in the array has
+to be fixed; thus, being an array with fixed length.
+The layout of dynamic arrays is shown in Figure 5.9 and Figure 5.10.
+45 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE46
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Figure 5.9: One-dimensional array (dynamic length)
+In the one-dimensional array one length field is used, which carries the number of bytes
+used for the array.
+The number of static length elements can be easily calculated by dividing by the size
+of an element.
+In the case of dynamical length elements the number of elements cannot be calculated,
+but the elements must be parsed sequentially.
+Figure 5.10 shows the structure of a Multidimensional Array of dynamic length.
+Element_a[1][j…k_1] 
+L_1 [Bytes] 
+Length n 
+32 Bit 
+E1,1 E1,2 E1,k_1 … L_1 
+Element_a[2][j…k_2] 
+E1,1 E1,2 E1,k_2 … L_2 
+32 Bit 
+… 
+L_2 [Bytes] 32 Bit 
+n [Bytes] 
+Figure 5.10: Multidimensional array (dynamic length)
+[PRS_SOMEIP_00114]
+Upstream requirements: RS_SOMEIP_00037
+⌈In multidimensional arrays every sub array of different dimensions shall have its own
+length field.⌋
+46 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE47
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+If static buffer size allocation is required, the data type definition shall define the maxi-
+mum length of each dimension.
+Rationale: When measuring the length in Bytes, complex multi-dimensional arrays can
+be skipped over in deserialization.
+SOME/IP also supports that different length for columns and different length for rows
+in the same dimension. See k_1 and k_2 in Figure 5.10. A length indicator needs to
+be present in front of every dynamic length array. This applies for both outer and all
+inner/nested arrays.
+[PRS_SOMEIP_00001] Length field for Dynamic length arrays
+Upstream requirements: RS_SOMEIP_00037, RS_SOMEIP_00040
+⌈Dynamic length arrays shall have a length field that is added in front of the array. The
+length of this length field shall be determined by the configuration parameter SIZE_
+OF_ARRAY_LENGTH_FIELD in the allowed range according to the 'Allowed Range
+or Values' column in [PRS_SOMEIP_00004]. If not configured explicitly via the con-
+figuration parameter SIZE_OF_ARRAY_LENGTH_FIELD, the default value defined in
+[PRS_SOMEIP_00004] shall be used.⌋
+5.1.3.6 Enumeration
+[PRS_SOMEIP_00705]
+Upstream requirements: RS_SOMEIP_00030, RS_SOMEIP_00033
+⌈Enumerations are not considered in SOME/IP . Enumerations shall be transmitted as
+unsigned integer datatypes.⌋
+5.1.3.7 Bitfield
+[PRS_SOMEIP_00300]
+Upstream requirements: RS_SOMEIP_00033, RS_SOMEIP_00030
+⌈Bitfields shall be transported as unsigned datatypes uint8/uint16/uint32/uint64.⌋
+The data type definition will be able to define the name and values of each bit.
+5.1.3.8 Union / Variant
+There are use cases for defining data as unions on the network where the payload can
+be of different data types.
+47 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE48
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+A union (also called variant) is such a parameter that can contain different types of
+data. For example, if one defines a union of type uint8 and type uint16, the union shall
+carry data which are a uint8 or a uint16.
+Which data type will be transmitted in the payload can only be decided during execu-
+tion. In this case, however, it is necessary to not only send the data itself but add an
+information about the applicable data type as a form of "meta-data" to the transmission.
+By the means of the attached meta-data the sender can identify the applicable data
+type of the union and the receiver can accordingly access the data properly.
+[PRS_SOMEIP_00118]
+Upstream requirements: RS_SOMEIP_00034
+⌈A union shall be used to transport data with alternative data types over the network.⌋
+[PRS_SOMEIP_00119] Union (length field, type selector field and payload)
+Upstream requirements: RS_SOMEIP_00034
+⌈
+Length field [32, 16, 8, 0 bit]
+Type selector field [32, 16, 8 bit]
+Payload including padding [length of padding = value of length field - actual payload length]
+⌋
+[PRS_SOMEIP_00126]
+Upstream requirements: RS_SOMEIP_00034
+⌈The length field shall define the size of the payload and padding in bytes and does
+not include the size of the length field and type selector field.⌋
+Note:
+The padding can be used to align following data in the serialized data stream if config-
+ured accordingly.
+[PRS_SOMEIP_00121]
+Upstream requirements: RS_SOMEIP_00034
+⌈The length of the length field shall be defined by configuration parameter SIZE_OF_
+UNION_LENGTH_FIELD and shall be in the allowed range according to the 'Allowed
+Range or Values' column in [PRS_SOMEIP_00004].If not configured explicitly via the
+configuration parameter SIZE_OF_UNION_LENGTH_FIELD ,the default value defined
+in [PRS_SOMEIP_00004] shall be used as length of the length field that is added in
+front of the union.⌋
+48 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE49
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00122]
+Upstream requirements: RS_SOMEIP_00034
+⌈A length of the length field of 0 Bit means that no length field will be written to the
+PDU.⌋
+[PRS_SOMEIP_00123]
+Upstream requirements: RS_SOMEIP_00034
+⌈If the length of the length field is 0 Bit, all types in the union shall be of the same
+length.⌋
+[PRS_SOMEIP_00129]
+Upstream requirements: RS_SOMEIP_00034
+⌈The type selector field shall specify the payload type of the payload.⌋
+[PRS_SOMEIP_00127]
+Upstream requirements: RS_SOMEIP_00034
+⌈The length of the type selector field shall be defined by configuration parameter SIZE_
+OF_UNION_TYPE_SELECTOR_FIELD and shall be in the allowed range according to
+the 'Allowed Range or Values' column in [PRS_SOMEIP_00004]. If not configured ex-
+plicitly via the configuration parameter SIZE_OF_UNION_TYPE_SELECTOR_FIELD ,
+the default value defined in [PRS_SOMEIP_00004] shall be used as length of the type
+selector field that is added in front of the union.⌋
+[PRS_SOMEIP_00906]
+Upstream requirements: RS_SOMEIP_00034
+⌈Possible values of the type selector field shall be defined by the configuration for each
+union separately.⌋
+[PRS_SOMEIP_00907]
+Upstream requirements: RS_SOMEIP_00024, RS_SOMEIP_00034
+⌈The value 0 of the type selector field shall be reserved for the NULL type. In this case
+the length of the payload shall be 0.⌋
+Note:
+This denotes an empty union.
+[PRS_SOMEIP_00130]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00034
+⌈The payload is serialized depending on the type in the type selector field.⌋
+In the following example a length of the length field is specified as 32 Bits. The union
+shall support a uint8 and a uint16 as data. Both are padded to the 32 bit boundary
+(length=4 Bytes).
+49 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE50
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+A uint8 will be serialized like shown in Table 5.6.
+Length = 4 Bytes
+Type = 1
+uint8 Padding 0x00 Padding 0x00 Padding 0x00
+Table 5.6: Example: uint8
+A uint16 will be serialized like shown in Table 5.7.
+Length = 4 Bytes
+Type = 2
+uint16 Padding 0x00 Padding 0x00
+Table 5.7: Example: uint16
+5.1.4 De-serialization of Data Structures
+The de-serialization process need to inspect the payload (serialized byte stream) of
+the received SOME/IP message. Thereby the de-serialization process need to identify
+the elements within the received byte stream and compare the identified elements with
+the configured data type(s) of the corresponding service interface (please note, the
+data type is derived from the interface specification, which defines the exact position
+of all data structures in a SOME/IP message). The possibility to identify elements in a
+dedicated SOME/IP serialized byte stream depend on the interface specification and
+the serialization properties. The serialization properties define among others:
+• if structured data types are serialized with a length field in front
+• if tag-length-value are used for encoding, which include data ids and the possi-
+bility specify optional data members
+The de-serialization process of a SOME/IP messages need to consider the received
+message length and deal with a message length which may be larger than expected
+according the interface specification. This is needed to support backward compatible
+communication, where ECUs of a heterogeneous in-vehicle network (re-used ECUs
+and new developed ECUs) communicate via SOME/IP serialized byte streams. Note
+that the feature of "complementary default value during reception of less data than
+expected" is no longer supported by AUTOSAR. The subsequential chapters describe
+the expected behavior of the de-serialization process.
+5.1.4.1 Structured DataTypes (structs)
+If more data than expected was received, then the de-serialization process should ac-
+cept all received elements of the SOME/IP message payload which correspond to the
+configured service interface data type and skip the unknown identified elements of the
+de-serialized SOME/IP message payload. If less data than expected was received,
+50 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE51
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+then the de-serialization should be aborted and the message shall be treated as mal-
+formed.
+[PRS_SOMEIP_00371]
+Upstream requirements: RS_SOMEIP_00033
+⌈If the length is greater than the length of the struct as specified in the data type defi-
+nition only the bytes specified in the data type shall be interpreted and the other bytes
+shall be skipped based on the length field.⌋
+[PRS_SOMEIP_00900]
+Upstream requirements: RS_SOMEIP_00033
+⌈If the length is less than the sum of the lengths of all struct members, then the dese-
+rialization shall be aborted and the message shall be treated as malformed.⌋
+5.1.4.2 Structured Datatypes and Arguments with Identifier and optional mem-
+bers (’TL V’)
+If the de-serialization process detect an unknown optional member according the con-
+figured service interface data type, then the de-serialization process should ignore this
+member. If the de-serialization process detect a missing member/argument, which is
+required according the configured service interface data type, then the SOME/IP mes-
+sage is treated as malformed.
+[PRS_SOMEIP_00223]
+Upstream requirements: RS_SOMEIP_00050
+⌈The deserializer shall ignore optional members/arguments which are not available in
+the serialized byte stream.⌋
+[PRS_SOMEIP_00217]
+Upstream requirements: RS_SOMEIP_00050
+⌈If the deserializer reads an unknown Data ID (i.e. not contained in its data definition),
+it shall skip the unknown member/argument by using the information of the wire type
+and length field.⌋
+[PRS_SOMEIP_00209] Behaviour if a required member/argument is missing in
+the received SOME/IP message
+Upstream requirements: RS_SOMEIP_00050
+⌈If the deserializer cannot find a required (i.e. non-optional) member/argument defined
+in its data definition in the serialized byte stream, the deserialization shall be aborted
+and the message shall be treated as malformed.⌋
+51 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE52
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00384] Behaviour if a required member/argument is found multi-
+ple times in the received SOME/IP message
+Upstream requirements: RS_SOMEIP_00050
+⌈If the deserializer finds a member/argument defined in its data definition in the se-
+rialized byte stream multiple times, then the deserialization shall be aborted and the
+message shall be treated as malformed.⌋
+[PRS_SOMEIP_00383] Behaviour if a required member/argument is found with
+invalid wire type in the received SOME/IP message
+Upstream requirements: RS_SOMEIP_00050
+⌈If the deserializer finds a required (i.e. non-optional) member/argument defined in its
+data definition in the serialized byte stream with invalid wire type, then the deserializa-
+tion shall be aborted and the message shall be treated as malformed.⌋
+5.1.4.3 Strings
+Strings could be configured with a fixed length or dynamic length. Independent a string
+has fixed length or dynamic length configured, a serialized string, which is received
+with a larger length than expected according the configured service interface data type,
+should be treated as malformed. For strings with fixed length and received with a length
+which is less than expected and this string is correctly terminated, the string should be
+processed. Otherwise the message shall be treated as malformed.
+5.1.4.3.1 Strings (fixed length)
+[PRS_SOMEIP_00911]
+Upstream requirements: RS_SOMEIP_00038
+⌈If the length of a string with fixed length is greater than expected (expectation shall
+be based on the data type definition), the deserialization shall be aborted and the
+message shall be treated as malformed.⌋
+[PRS_SOMEIP_00912]
+Upstream requirements: RS_SOMEIP_00038
+⌈If the length of a string with fixed length is less than expected (expectation shall be
+based on the data type definition) and it is correctly terminated using "\0", it shall be
+accepted.⌋
+52 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE53
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00913]
+Upstream requirements: RS_SOMEIP_00038
+⌈If the length of a string with fixed length is less than expected (expectation shall be
+based on the data type definition) and it is not correctly terminated using "\0", the
+deserialization shall be aborted and the message shall be treated as malformed.⌋
+Instead of transferring application strings as SOME/IP strings with BOM and "\0" ter-
+mination, strings can also be transported as plain dynamic length arrays without BOM
+and "\0" termination (see chapter 5.1.3.5.2). Please note that this requires the full string
+handling (e.g. endianness conversion) to be done in the applications.
+5.1.4.3.2 Strings (dynamic length)
+[PRS_SOMEIP_00914]
+Upstream requirements: RS_SOMEIP_00039
+⌈If the length of a string with variable length is greater than expected (expectation
+shall be based on the data type definition), the deserialization shall be aborted and the
+message shall be treated as malformed.⌋
+5.1.4.4 Arrays
+Arrays could be configured with a fixed length or dynamic length. Independent if an
+array has fixed length or dynamic length configured, if a serialized array was received
+with a larger length than expected according the configured service interface data type,
+then all known elements according the configured service interface data type should
+be considered and the remaining elements should be skipped by the de-serialization
+process.
+For arrays with fixed length and the de-serialization process detect a missing ele-
+ment, which is required according the configured service interface data type, then the
+SOME/IP message is treated as malformed.
+5.1.4.4.1 Arrays (fixed length)
+[PRS_SOMEIP_00917]
+Upstream requirements: RS_SOMEIP_00036
+⌈If the length of a fixed length array is greater than expected (expectation shall be
+based on the data type definition) only the elements specified in the data type shall be
+interpreted and the other bytes shall be skipped based on the length field.⌋
+53 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE54
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00207] Behaviour if a required element is missing in the received
+SOME/IP message
+Upstream requirements: RS_SOMEIP_00036
+⌈If the length of a fixed length array is less than expected (expectation shall be based
+on the data type definition) and no substitution for the missing data can be provided
+locally by the receiver, the deserialization shall be aborted and the message shall be
+treated as malformed.⌋
+Note: Overruns of fixed-size arrays can only be detected with a length field.
+5.1.4.4.2 Arrays (dynamic length)
+[PRS_SOMEIP_00919]
+Upstream requirements: RS_SOMEIP_00037
+⌈If the length of a variable length array is greater than expected (expectation shall be
+based on the data type definition) only the elements specified in the data type shall be
+interpreted and the other bytes shall be skipped based on the length field.⌋
+5.1.4.5 Enumeration
+No further requirements considered for the deserialization.
+5.1.4.6 Bitfield
+No further requirements considered for the deserialization.
+5.1.4.7 Union / Variant
+[PRS_SOMEIP_00915]
+Upstream requirements: RS_SOMEIP_00034
+⌈If the length of a union is greater than expected (expectation shall be based on the
+data type definition) only the bytes specified in the data type shall be interpreted and
+the other bytes shall be skipped based on the length field.⌋
+[PRS_SOMEIP_00916]
+Upstream requirements: RS_SOMEIP_00034
+⌈If the length of a union is less than expected (expectation shall be based on the
+data type definition) it shall depend on the inner data type whether valid data can be
+deserialized or the deserialization shall be aborted and the message shall be treated
+as malformed.⌋
+54 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE55
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+5.2 Specification of SOME/IP Protocol
+This chapter describes the Remote Procedure Call(RPC), Event Notifications and Error
+Handling of SOME/IP .
+5.2.1 Transport Protocol Bindings
+In order to transport SOME/IP messages different transport protocols may be used.
+SOME/IP currently supports UDP and TCP . Their bindings are explained in the follow-
+ing sections, while Chapter 7 discusses which transport protocol to choose.
+[PRS_SOMEIP_00138]
+Upstream requirements: RS_SOMEIP_00015
+⌈If a server runs different instances of the same service, messages belonging to differ-
+ent service instances shall be mapped to the service instance by the transport protocol
+port on the server side.⌋
+For details of see Chapter 5.2.1.3
+[PRS_SOMEIP_00535]
+Upstream requirements: RS_SOMEIP_00010
+⌈All Transport Protocol Bindings shall support transporting more than one SOME/IP
+message in a Transport Layer PDU (i.e. UDP packet or TCP segment).⌋
+[PRS_SOMEIP_00142]
+Upstream requirements: RS_SOMEIP_00010
+⌈The receiving SOME/IP implementation shall be capable of receiving unaligned
+SOME/IP messages transported by UDP or TCP .⌋
+Rationale:
+When transporting multiple SOME/IP payloads in UDP or TCP the alignment of the
+payloads can be only guaranteed, if the length of every payloads is a multiple of the
+alignment size (e.g. 32 bits).
+[PRS_SOMEIP_00140]
+Upstream requirements: RS_SOMEIP_00010
+⌈The header format allows transporting more than one SOME/IP message in a single
+packet. The SOME/IP implementation shall identify the end of a SOME/IP message by
+means of the SOME/IP length field. Based on the packet length field, SOME/IP shall
+determine if there are additional SOME/IP messages in the packet. This shall apply for
+UDP and TCP transport.⌋
+55 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE56
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00141]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00027
+⌈Each SOME/IP payload shall have its own SOME/IP header.⌋
+[PRS_SOMEIP_00940]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00027
+⌈One Service-Instance can use the following setup for its communication of all the
+methods, events, and notifications:
+• up to one TCP connection
+• up to one UDP unicast connection
+• up to one UDP multicast connection
+⌋
+5.2.1.1 UDP Binding
+[PRS_SOMEIP_00139]
+Upstream requirements: RS_SOMEIP_00010
+⌈The UDP binding of SOME/IP shall be achieved by transporting SOME/IP messages
+in UDP packets.⌋
+[PRS_SOMEIP_00137]
+Upstream requirements: RS_SOMEIP_00010
+⌈SOME/IP protocol shall not restrict the usage of UDP fragmentation.⌋
+[PRS_SOMEIP_00943]
+Upstream requirements: RS_SOMEIP_00010
+⌈The client and server shall use a single UDP unicast connection for all methods,
+events, and notifications of a Service-Instance which are configured to be communi-
+cated using UDP unicast.⌋
+[PRS_SOMEIP_00942]
+Upstream requirements: RS_SOMEIP_00010
+⌈The client and server shall use a single UDP multicast address combination ("connec-
+tion") per eventgroup, which is configured to be communicated using UDP multicast.
+If the same multicast address is shared between different service instances of the same
+service, then the port number of the UDP multicast address combination used for each
+of these service instances shall be different, at least on server side.⌋
+56 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE57
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Note: Please refer to [PRS_SOMEIP_00163] and the rational below [PRS_SOMEIP_
+00163] for detailed information.
+5.2.1.2 TCP Binding
+The TCP binding of SOME/IP is heavily based on the UDP binding. In contrast to the
+UDP binding, the TCP binding allows much bigger SOME/IP messages and uses the
+robustness features of TCP (coping with loss, reorder, duplication, etc.).
+In order to lower latency and reaction time, Nagle’s algorithm should be turned off
+(TCP_NODELAY).
+[PRS_SOMEIP_00706]
+Upstream requirements: RS_SOMEIP_00010
+⌈When the TCP connection is lost, pending requests shall be handled if a timeout
+occurred.⌋
+Since TCP handles reliability, additional means of reliability are not needed.
+[PRS_SOMEIP_00707]
+Upstream requirements: RS_SOMEIP_00010
+⌈The client and server shall use a single TCP connection for all methods, events, and
+notifications of a Service-Instance which are configured to be communicated using
+TCP .⌋
+[PRS_SOMEIP_00708]
+Upstream requirements: RS_SOMEIP_00010
+⌈The TCP connection shall be opened by the client, when the first method call shall be
+transported or the client tries to receive the first notifications.⌋
+The client is responsible for re-establishing the TCP connection whenever it fails.
+[PRS_SOMEIP_00709]
+Upstream requirements: RS_SOMEIP_00010
+⌈The TCP connection shall be closed by the client, when the TCP connection is not
+required anymore.⌋
+[PRS_SOMEIP_00710]
+Upstream requirements: RS_SOMEIP_00010
+⌈The TCP connection shall be closed by the client, when all Services using the TCP
+connections are not available anymore (stopped or timed out).⌋
+57 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE58
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00711]
+Upstream requirements: RS_SOMEIP_00010
+⌈The server shall not stop the TCP connection when stopping all services. Give the
+client enough time to process the control data to shutdown the TCP connection itself.⌋
+Rational:
+When the server closes the TCP connection before the client recognized that the TCP
+is not needed anymore, the client will try to reestablish the TCP connection.
+Allowing resync to TCP stream using Magic Cookies
+[PRS_SOMEIP_00154]
+Upstream requirements: RS_SOMEIP_00010
+⌈In order to allow testing tools to identify the boundaries of SOME/IP Message
+transported via TCP , the SOME/IP Magic Cookie Message may be inserted into the
+SOME/IP messages over TCP message stream at regular distances.⌋
+[PRS_SOMEIP_00160]
+Upstream requirements: RS_SOMEIP_00010
+⌈The layout of the Magic Cookie Messages shall consist of the following fields:
+• for communication from Client to Server:
+– Message ID (Service ID/Method ID): 0xFFFF 0000
+– Length: 0x0000 0008
+– Request ID (Client ID/Session ID): 0xDEAD BEEF
+– Protocol Version: 0x01
+– Interface Version: 0x01
+– Message Type: 0x01
+– Return Code: 0x00
+• for communication from Server to Client:
+– Message ID (Service ID/Method ID): 0xFFFF 8000
+– Length: 0x0000 0008
+– Request ID (Client ID/Session ID): 0xDEAD BEEF
+– Protocol Version: 0x01
+– Interface Version: 0x01
+– Message Type: 0x02
+58 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE59
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+– Return Code: 0x00
+⌋
+The layout of the Magic Cookie Messages is shown in Figure 5.11.
+Protocol Version [8 bit]
+=0x01 
+Interface Version [8 bit]
+=0x01 
+Message Type [8 bit]
+=0x01 
+Return Code [8 bit]
+=0x00 
+Request ID (Client ID / Session ID) [32 bit]
+= 0xDEAD BEEF 
+Length [32 bit]
+= 0x0000 0008 
+Message ID (Service ID / Method ID) [32 bit]
+(= 0xFFFF 0000)
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 bit offset 
+Covered
+by Length
+Protocol Version [8 bit]
+=0x01
+Interface Version [8 bit]
+=0x01
+Message Type [8 bit]
+=0x02
+Return Code [8 bit]
+=0x00
+Request ID (Client ID / Session ID) [32 bit]
+= 0xDEAD BEEF
+Length [32 bit]
+= 0x0000 0008
+Message ID (Service ID / Method ID) [32 bit]
+(= 0xFFFF 8000)
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31 bit offset 
+Covered
+by Length
+Client  Server:
+Server  Client:
+Figure 5.11: SOME/IP Magic Cookie Message for SOME/IP
+5.2.1.3 Multiple Service-Instances
+[PRS_SOMEIP_00162]
+Upstream requirements: RS_SOMEIP_00015
+⌈Service-Instances of the same Service are identified through different Instance IDs. It
+shall be supported that multiple Service-Instances reside on different ECUs as well as
+multiple Service-Instances of one or more Services reside on one single ECU.⌋
+[PRS_SOMEIP_00163]
+Upstream requirements: RS_SOMEIP_00015
+⌈While several Service-Instances of different Services shall be able to share the same
+port number of the transport layer protocol used on both the provided/server and the
+consumed/client side, multiple Service-Instances of the same Service on the pro-
+vided/server side on one single ECU shall use different port numbers per Service-
+Instance. Multiple Service-Instances of the same Service on the required/client side
+on one single ECU may use the same port number per Service-Instance.⌋
+59 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE60
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Rationale: Normal SOME/IP (not SOME/IP-SD) messages do not carry the Service-
+Instance ID as a dedicated field in the SOME/IP header. - Thus port numbers (and per-
+haps the transport protocol) need to be used to distinguishdifferent Service-Instance
+of the same Service of a single ECU. This way a Service-Instance can be identified
+through the combination of the Service ID combined with the endpoint information (i.e.,
+IP-address, transport protocol (UDP/TCP), and port number). It is sufficient to use dif-
+ferent port numbers for the different Service-Instances of the same Service on either
+the server or the client side , since only a single difference in the 4-tuple <src IP , src
+port, dst IP , dst port > is sufficient as a distinguishing criterion. As the server is the
+one actually providing the different Service-Instances, the server is also the natural
+place to handle the distinction. = > The server shall use different port numbers for
+providing different Service-Instances of the same Service.
+Recommendation: It is recommended that instances use the same port number for
+UDP and TCP . If a Service-Instance uses UDP port x, only this Service-Instance of the
+Service and not another Service-Instance of the same Service should use exactly TCP
+port x for its Service provision.
+5.2.1.4 Transporting large SOME/IP messages of UDP (SOME/IP-TP)
+The UDP binding of SOME/IP can only transport SOME/IP messages that fit directly
+into an IP packet. If larger SOME/IP messages need to be transported over UDP
+(e.g. of 32 KB) the SOME/IP Transport Protocol (SOME/IP-TP) shall be used. The
+SOME/IP message too big to be transported directly with the UDP binding shall be
+called "original" SOME/IP message. The "pieces" of the original SOME/IP message
+payload transported in SOME/IP-TP messages shall be called "segments".
+Use TCP only if very large chunks of data need to be transported (> 1400 Bytes) and
+no hard latency requirements in the case of errors exists
+[PRS_SOMEIP_00720]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00012
+⌈SOME/IP messages using SOME/IP-TP shall activate Session Handling (Session ID
+must be unique for the original message).⌋
+[PRS_SOMEIP_00721]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00012
+⌈All SOME/IP-TP segments shall carry the Session ID of the original message; thus,
+they have all the same Session-ID.⌋
+[PRS_SOMEIP_00722]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00011
+⌈SOME/IP-TP segments shall have the TP-Flag of the Message Type set to 1.⌋
+60 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE61
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00723]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00027
+⌈SOME/IP-TP segments shall have a TP header right after the SOME/IP header (i.e.
+before the SOME/IP payload) with the following structure (bits from highest to lowest):
+• Offset [28 bits]
+• Reserved Flag [1 bit]
+• Reserved Flag [1 bit]
+• Reserved Flag [1 bit]
+• More Segments Flag [1 bit]
+⌋
+SOME-IP-TP-Header is as shown in Table 5.8.
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+Message ID (Service ID / Method ID) [32 Bit]
+Length [32 Bit]
+Request ID (Client ID / Session ID) [32 Bit]
+Protocol Version [8 Bit] Interface version [8 Bit] Message Type [8 Bit] Return Code [8 Bit]
+Offset [28 bit] RES
+0 0 0
+M
+Payload [variable size]
+Table 5.8: SOME/IP TP header
+[PRS_SOMEIP_00931]
+Upstream requirements: RS_SOMEIP_00027
+⌈SOME/IP-TP Header shall be encoded in network byte order (big endian).⌋
+[PRS_SOMEIP_00724]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00027
+⌈The Offset field shall transport the upper 28 bits of a uint32. The lower 4 bits shall be
+always interpreted as 0.⌋
+Note:
+This means that the offset field can only transport offset values that are multiples of 16
+bytes.
+[PRS_SOMEIP_00725]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00027
+⌈The Offset field of the TP header shall be set to the offset in bytes of the transported
+segment in the original message.⌋
+61 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE62
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00726]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00027
+⌈The Reserved Flags shall be set to 0 by the sender and shall be ignored (and not
+checked) by the receiver.⌋
+[PRS_SOMEIP_00727]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00027
+⌈The More Segments Flag shall be set to 1 for all segments but the last segment. For
+the last segment it shall be set to 0.⌋
+[PRS_SOMEIP_00728]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00027
+⌈The SOME/IP length field shall be used as specified before. This means it covers the
+first 8 bytes of the SOME/IP header and all bytes after that.⌋
+Note:
+This means that for a SOME/IP-TP message transporting a segment, the SOME/IP
+length covers 8 bytes of the SOME/IP header, the 4 bytes of the TP header, and the
+segment itself.
+[PRS_SOMEIP_00729]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The length of a segment must reflect the alignment of the next segment based on the
+offset field. Therefore, all but the last segment shall have a length that is a multiple of
+16 bytes.⌋
+[PRS_SOMEIP_00730] Maximum segement length
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00029, RS_SOMEIP_00051
+⌈In accordance with the recommended payload size (see [PRS_SOMEIP_00382]), the
+maximum length of a segment that is correctly aligned should be 1392 bytes.⌋
+[PRS_SOMEIP_00731]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈SOME/IP-TP messages shall use the same Message ID (i.e. Service ID and Method
+ID), Request ID (i.e. Client ID and Session ID), Protocol Version, Interface Version,
+and Return Code as the original message.⌋
+Note:
+As described above the Length, Message Type, and Payload are adapted by SOME/IP-
+TP .
+62 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE63
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Example
+This example describes how an original SOME/IP message of 5880 bytes payload has
+to be transmitted. The Length field of this original SOME/IP message is set to 8 + 5880
+bytes.
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+Message ID (Service ID / Method ID) [32 Bit]
+0x0101 0009
+Length [32 Bit]
+= 8 + 5880
+Request ID (Client ID / Session ID) [32 Bit]
+0x0001 0005
+Protocol Version [8 Bit]
+0x01
+Interface version [8 Bit]
+0x01
+Message Type [8 Bit]
+b00000000 [0x00]
+Return Code [8 Bit]
+0x00
+Payload [5880 Bytes]
+0x00 0x00 0x30 0x00
+0x00 0x01 0x02 0x03
+...
+Table 5.9: Example: Header of Original SOME/IP message
+This original SOME/IP message will now be segmented into 5 consecutive SOME/IP
+segments. Every payload of these segments carries at most 1392 bytes in this exam-
+ple.
+For these segments, the SOME/IP TP module adds additional TP fields (marked red).
+The Length field of the SOME/IP carries the overall length of the SOME/IP segment
+including 8 bytes for the Request ID, Protocol Version, Interface Version, Message Type
+and Return Code. Because of the added TP fields (4 bytes), this Length information is
+extended by 4 additional SOME/IP TP bytes.
+The following figure provides an overview of the relevant SOME/IP header settings for
+every SOME/IP segment:
+Length (Bytes) Message Type [TP-Flag] Offset Value More Segment Flag
+1st segment 8 + 4 + 1392 = 1404 TP-Flag = ’1’ 0 1
+2nd segment 8 + 4 + 1392 = 1404 TP-Flag = ’1’ 87 1
+3rd segment 8 + 4 + 1392 = 1404 TP-Flag = ’1’ 174 1
+4th segment 8 + 4 + 1392 = 1404 TP-Flag = ’1’ 261 1
+5th segment 8 + 4 + 312 = 324 TP-Flag = ’1’ 348 0
+Table 5.10: Example: Overview of relevant SOME/IP TP headers
+Note:
+Please be aware that the value provided within the Offset Field is given in units of 16
+bytes, i.e.: The Offset Value of 87 correspond to 1392 bytes Payload.
+The complete SOME/IP headers of the SOME/IP segments message will look like this
+in detail:
+63 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE64
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+• The first 4 segments contain 1392 Payload bytes each with "More Segments
+Flag" set to ’1’:
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+Message ID (Service ID / Method ID) [32 Bit]
+0x0101 0009
+Length [32 Bit]
+8+4+1392 (1404)
+Request ID (Client ID / Session ID) [32 Bit]
+0x0001 0005
+Protocol Version [8 Bit]
+0x01
+Interface version [8 Bit]
+0x01
+Message Type [8 Bit]
+b00100000 [0x20]
+Return Code [8 Bit]
+0x00
+Offset [28 bit] RES
+0 0 0
+M
+1
+Payload [1392 Bytes]
+0x00 0x17 0x28 0x33
+0x28 0x03 0x18 0x32
+...
+Table 5.11: Example: Header of the SOME/IP segments
+• The last segment (i.e. #5) contains the remaining 312 Payload bytes of the origi-
+nal 5880 bytes payload. This last segment is marked with "More Segments flag"
+set to ’0’.
+0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31
+Message ID (Service ID / Method ID) [32 Bit]
+0x0101 0009
+Length [32 Bit]
+8+4+312 (324)
+Request ID (Client ID / Session ID) [32 Bit]
+0x0001 0005
+Protocol Version [8 Bit]
+0x01
+Interface version [8 Bit]
+0x01
+Message Type [8 Bit]
+b00100000 [0x20]
+Return Code [8 Bit]
+0x00
+Offset [28 bit] RES
+0 0 0
+M
+0
+Payload [312 Bytes]
+...
+0x4d 0x65 0x67 0x61
+0x6e 0x46 0x6f 0x78
+Table 5.12: Example: Header of the last SOME/IP segments
+Sender specific behavior
+[PRS_SOMEIP_00732]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The sender shall segment only messages that were configured to be segmented.⌋
+64 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE65
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00733]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The sender shall send segments in ascending order.⌋
+[PRS_SOMEIP_00734]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The sender shall segment in a way that all segments with the More Segment Flag set
+to 1 are of the same size.⌋
+[PRS_SOMEIP_00735]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The sender shall try to maximize the size of segments within limitations imposed by
+this specification.⌋
+[PRS_SOMEIP_00736]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The sender shall not send overlapping or duplicated segments.⌋
+Receiver specific behavior
+[PRS_SOMEIP_00738]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The receiver shall match segments for reassembly based on the configured values of
+Message-ID, Protocol-Version, Interface-Version and Message-Type (w/o TP Flag).⌋
+[PRS_SOMEIP_00740]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈It shall be supported to reassemble multiple messages with the same Message ID but
+sent from different clients (difference in Sender IP , Sender Port, or Client ID) in parallel.
+This should be controlled by configuration and determines the amount of "reassembly
+buffers".⌋
+[PRS_SOMEIP_00741]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The Session ID shall be used to detect the next original message to be reassembled.⌋
+[PRS_SOMEIP_00742]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The receiver shall start a new reassembly (and may throw away old segments that
+were not successfully reassembled), if a new segment with a different Session-ID is
+received.⌋
+65 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE66
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00743]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The receiver should only reassemble up to its configured buffer size and skip the rest
+of the message.⌋
+[PRS_SOMEIP_00744]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈Only correctly reassembled message of up to the configured size shall be passed to
+an application.⌋
+Note:
+This means that the implementation must make sure that all bytes of the message must
+be bytes that were received and reassembled correctly. Counting non-overlapping,
+non-duplicated bytes and comparing this to the length could be a valid check.
+[PRS_SOMEIP_00379] .
+Upstream requirements: RS_SOMEIP_00010
+⌈The receiver shall cancel the current assembly process, when no segment
+has been received during a configured SOMEIPTP_REASSEMBLY_TIMEOUT (see
+[PRS_SOMEIP_00378]) period.⌋
+[PRS_SOMEIP_00745]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The Return Code of the last segment used for reassembly shall be used for the re-
+assembled message.⌋
+[PRS_SOMEIP_00746]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈During reassembling the SOME/IP TP segments into a large unsegmented message,
+the Message Type shall be adapted, the TP Flag shall be reset to 0.⌋
+[PRS_SOMEIP_00747]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The receiver shall support reassembly of segments that are received in ascending
+and descending order.⌋
+[PRS_SOMEIP_00749]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈When a missing segment is detected during assembly of a SOME/IP message, the
+current assembly process shall be canceled.⌋
+Note:
+This means that reordering is not supported.
+66 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE67
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00750]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈Interleaving of different segmented messages using the same buffer (e.g. only the
+Session-ID and payload are different) is not supported.⌋
+Note:
+This prohibits that equal events (same Message-ID, IP-Addresses, ports numbers, and
+transport protocol) arrive in the wrong order, when some of their segments get re-
+ordered.
+[PRS_SOMEIP_00751]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈Reordering of segments of completely different original messages (e.g. Message ID
+is different) is not of concern since those segments go to different buffers.⌋
+[PRS_SOMEIP_00752]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The receiver shall correctly reassemble overlapping and duplicated segments by over-
+writing based on the last received segment.⌋
+[PRS_SOMEIP_00753]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The receiver may cancel reassembly, if overlapping or duplicated segments change
+already written bytes in the buffer, if this feature can be turned off by configuration.⌋
+[PRS_SOMEIP_00754]
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00051
+⌈The receiver shall be able to detect and handle obvious errors gracefully. E.g. cancel
+reassembly if segment length of a segment with MS=1 is not a multiple of 16.⌋
+Note:
+This means that buffer overflows or other malfunction shall be prevented by the receiv-
+ing code.
+5.2.2 Request/Response Communication
+One of the most common communication patterns is the request/response pattern.
+One communication partner (Client) sends a request message, which is answered by
+another communication partner (Server).
+67 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE68
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00920]
+Upstream requirements: RS_SOMEIP_00007
+⌈For the SOME/IP request message the client has to do the following for payload and
+header:
+• Construct the payload
+• Set the Message ID based on the method the client wants to call
+• Set the Length field to 8 bytes (for the part of the SOME/IP header after the length
+field) + length of the serialized payload
+• Optionally set the Request ID to a unique number (shall be unique for client only)
+• Set the Protocol Version according [PRS_SOMEIP_00052]
+• Set the Interface Version according to the interface definition
+• Set the Message Type to REQUEST (i.e. 0x00)
+• Set the Return Code to 0x00
+⌋
+[PRS_SOMEIP_00921]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00007
+⌈To construct the payload of a request message, all input or inout arguments of the
+method shall be serialized according to the order of the arguments within the signature
+of the method.⌋
+[PRS_SOMEIP_00922]
+Upstream requirements: RS_SOMEIP_00007
+⌈The server builds the header of the response based on the header of the client’s
+request and does in addition:
+• Construct the payload
+• take over the Message ID from the corresponding request
+• Set the length to the 8 Bytes + new payload size
+• take over the Request ID from the corresponding request
+• Set the Message Type to RESPONSE (i.e. 0x80) or ERROR (i.e. 0x81)
+• set Return Code to a return code according to [PRS_SOMEIP_00191].
+⌋
+68 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE69
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00923]
+Upstream requirements: RS_SOMEIP_00028, RS_SOMEIP_00007
+⌈To construct the payload of a response message, all output or inout arguments of the
+method shall be serialized according to the order of the arguments within the signature
+of the method.⌋
+[PRS_SOMEIP_00927]
+Upstream requirements: RS_SOMEIP_00007
+⌈A server shall not sent a response message for a request with a specific Request ID
+until the corresponding request message has been received.⌋
+[PRS_SOMEIP_00928]
+Upstream requirements: RS_SOMEIP_00007
+⌈A client shall ignore the reception of a response message with a specific Request ID,
+when the corresponding request message has not yet been sent completely.⌋
+5.2.3 Fire&Forget Communication
+Requests without response message are called fire&forget.
+[PRS_SOMEIP_00924]
+Upstream requirements: RS_SOMEIP_00006
+⌈For the SOME/IP request-no-return message the client has to do the following for
+payload and header:
+• Construct the payload
+• Set the Message ID based on the method the client wants to call
+• Set the Length field to 8 bytes (for the part of the SOME/IP header after the length
+field) + length of the serialized payload
+• Optionally set the Request ID to a unique number (shall be unique for client only)
+• Set the Protocol Version according [PRS_SOMEIP_00052]
+• Set the Interface Version according to the interface definition
+• Set the Message Type to REQUEST_NO_RETURN (i.e. 0x01)
+• Set the Return Code to 0x00
+⌋
+69 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE70
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00171]
+Upstream requirements: RS_SOMEIP_00006
+⌈Fire & Forget messages shall not return an error. Error handling and return codes
+shall be implemented by the application when needed.⌋
+5.2.4 Notification Events
+Notifications describe a general Publish/Subscribe-Concept. Usually the server pub-
+lishes a service to which a client subscribes. On certain cases the server will send the
+client an event, which could be for example an updated value or an event that occurred.
+SOME/IP is used only for transporting the updated value and not for the publishing and
+subscription mechanisms. These mechanisms are implemented by SOME/IP-SD.
+[PRS_SOMEIP_00925]
+Upstream requirements: RS_SOMEIP_00004
+⌈For the SOME/IP notification message the server has to do the following for payload
+and header:
+• Construct the payload
+• Set the Message ID based on the event the server wants to send
+• Set the Length field to 8 bytes (for the part of the SOME/IP header after the length
+field) + length of the serialized payload
+• Set the Client ID to 0x00. Set the Session ID according to
+[PRS_SOMEIP_00932], [PRS_SOMEIP_00933], and [PRS_SOMEIP_00521].
+In case of active Session Handling the Session ID shall be incremented upon
+each transmission.
+• Set the Protocol Version according [PRS_SOMEIP_00052]
+• Set the Interface Version according to the interface definition
+• Set the Message Type to NOTIFICATION (i.e. 0x02)
+• Set the Return Code to 0x00
+⌋
+[PRS_SOMEIP_00926]
+Upstream requirements: RS_SOMEIP_00004
+⌈The payload of the notification message shall consist of the serialized data of the
+event.⌋
+70 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE71
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00930]
+Upstream requirements: RS_SOMEIP_00042
+⌈When more than one subscribed client on the same ECU exists, the system shall han-
+dle the replication of notifications in order to save transmissions on the communication
+medium.⌋
+This is especially important, when notifications are transported using multicast mes-
+sages.
+5.2.4.1 Strategy for sending notifications
+For different use cases different strategies for sending notifications are possible. The
+following examples are common:
+• Cyclic update — send an updated value in a fixed interval (e.g. every 100 ms for
+safety relevant messages with Alive)
+• Update on change — send an update as soon as a "value" changes (e.g. door
+open)
+• Epsilon change — only send an update when the difference to the last value is
+greater than a certain epsilon. This concept may be adaptive, i.e. the prediction is
+based on a history; thus, only when the difference between prediction and current
+value is greater than epsilon an update is transmitted.
+5.2.5 Fields
+A field represents a status and has a valid value. The consumers subscribing for the
+field instantly after subscription get the field value as an initial event.
+[PRS_SOMEIP_00179]
+Upstream requirements: RS_SOMEIP_00009
+⌈A field shall be a combination of getter, setter and notification event.⌋
+[PRS_SOMEIP_00180]
+Upstream requirements: RS_SOMEIP_00009
+⌈A field without a setter and without a getter and without a notifier shall not exist. The
+field shall contain at least a getter, a setter, or a notifier.⌋
+[PRS_SOMEIP_00181]
+Upstream requirements: RS_SOMEIP_00009
+⌈The getter of a field shall be a request/response call that has an empty payload in the
+request message and the value of the field in the payload of the response message.⌋
+71 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE72
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00182]
+Upstream requirements: RS_SOMEIP_00009
+⌈The setter of a field shall be a request/response call that has the desired value of the
+field in the payload of the request message and the value that was set to the field in
+the payload of the response message.⌋
+Note:
+If the value of the request payload was adapted (e.g. because it was out of limits) the
+adapted value will be transported in the response payload.
+[PRS_SOMEIP_00909]
+Upstream requirements: RS_SOMEIP_00002, RS_SOMEIP_00009
+⌈The notifier shall send an event message that transports the value of the field to the
+client when the client subscribes to the field.⌋
+[PRS_SOMEIP_00183]
+Upstream requirements: RS_SOMEIP_00005, RS_SOMEIP_00009
+⌈The notifier shall send an event message that transports the value of a field and shall
+follow the rules for events. Sending strategies include on change, on epsilon change,
+and cyclic sending.⌋
+5.2.6 Error Handling
+Error handling can be done in the application or the communication layer below. There-
+fore SOME/IP supports two different mechanisms:
+• Return Codes in the Response Messages of methods
+• Explicit Error Messages
+Which one of both is used, depends on the configuration.
+[PRS_SOMEIP_00901]
+Upstream requirements: RS_SOMEIP_00008
+⌈Return Codes in the RESPONSE Messages (Message Type 0x80) of methods shall
+be used to transport application errors and the response data of a method from the
+provider to the caller of a method. Message Type RESPONSE 0x80 shall be used
+in cases where no additional/extended error information (apart from the error code
+encoded in the Return Code field) needs to be propagated to the caller.⌋
+Note:
+Please be aware that return codes of the Request and Response methods are not
+treated as errors from the point of view of SOME/IP . This means that the message type
+is still 0x80 if a request/response method exits with a return code not equal to 0x00
+72 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE73
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+(message type is still 0x80 if ApplicationError of AUTOSAR ClientServerOperation is
+different from E_OK).
+[PRS_SOMEIP_00902]
+Upstream requirements: RS_SOMEIP_00008
+⌈Explicit Error Messages shall be used to transport application errors and the response
+data or generic SOME/IP errors from the provider to the caller of a method.⌋
+[PRS_SOMEIP_00903]
+Upstream requirements: RS_SOMEIP_00008
+⌈If more detailed error information (apart from an error code encoded in the Return
+Code field) needs to be propagated to the caller, an ERROR message (Message type
+0x81) shall be used. The payload of the Error Message shall be filled with serialized
+error specific data, e.g. an exception string, or other error information. This additional
+error information shall be modeled in the interface description, or defined by the stan-
+dard.⌋
+This can be used to handle all different application errors that might occur in the server.
+In addition, problems with the communication medium or intermediate components
+(e.g. switches) may occur, which have to be handled e.g. by means of reliable trans-
+port.
+All messages have a return code field in their header. (See chapter 5.1.1)
+[PRS_SOMEIP_00904]
+Upstream requirements: RS_SOMEIP_00008
+⌈Only responses (Response Messages (message type 0x80) and Error Messages
+(message type 0x81) shall use the return code field to carry a return code to the request
+(Message Type 0x00) they answer.⌋
+[PRS_SOMEIP_00905]
+Upstream requirements: RS_SOMEIP_00008
+⌈All other messages than 0x80 and 0x81 shall set this field to 0x00.⌋
+For message type see Chapter 5.1.1.7.
+5.2.6.1 Return Code
+[PRS_SOMEIP_00187]
+Upstream requirements: RS_SOMEIP_00008
+⌈The return code shall be UINT8.⌋
+73 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE74
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00191] Return Codes
+Upstream requirements: RS_SOMEIP_00008, RS_SOMEIP_00024
+⌈
+ID Name Description
+0x00 E_OK No error occurred.
+0x01 E_NOT_OK An unspecified error occurred.
+0x02 E_UNKNOWN_SERVICE The requested Service ID is unknown.
+0x03 E_UNKNOWN_METHOD The requested Method ID is unknown. Service ID is
+known.
+0x04 E_NOT_READY deprecated.
+0x05 E_NOT_REACHABLE deprecated.
+0x06 E_TIMEOUT deprecated.
+0x07 E_WRONG_PROTOCOL_
+VERSION
+Version of SOME/IP protocol not supported.
+0x08 E_WRONG_INTERFACE_
+VERSION
+Interface version mismatch.
+0x09 E_MALFORMED_MESSAGE Deserialization error, so that payload cannot be de-
+serialized.
+0x0a E_WRONG_MESSAGE_TYPE An unexpected message type was received
+(e.g.received REQUEST for a method defined as
+REQUEST_NO_RETURN).
+0x0b E_E2E_REPEATED Repeated E2E calculation error.
+0x0c E_E2E_WRONG_SEQUENCE Wrong E2E sequence error.
+0x0d E_E2E Not further specified E2E error.
+0x0e E_E2E_NOT_AVAILABLE E2E not available.
+0x0f E_E2E_NO_NEW_DATA No new data for E2E calculation present.
+0x10 -
+0x1f
+RESERVED Reserved for generic SOME/IP errors. These errors
+will be specified in future versions of this document.
+0x20 -
+0x5E
+RESERVED Reserved for specific errors of services and meth-
+ods. These errors are specified by the interface
+specification.
+⌋
+Generation and handling of return codes shall be configurable.
+[PRS_SOMEIP_00539]
+Upstream requirements: RS_SOMEIP_00008
+⌈A SOME/IP error message (i.e. return code 0x01 - 0x1f) shall not be answered with
+an error message.⌋
+5.2.6.2 Error Message
+For more flexible error handling, SOME/IP allows a different message layout specific
+for Error Messages instead of using the message layout of Response Messages.
+The recommended layout for the exception message is the following:
+74 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE75
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+• Union of specific exceptions. At least a generic exception without fields needs to
+exist.
+• Dynamic Length String for exception description.
+Rationale: The union gives the flexibility to add new exceptions in the future in a type-
+safe manner. The string is used to transport human readable exception descriptions to
+ease testing and debugging.
+[PRS_SOMEIP_00188]
+Upstream requirements: RS_SOMEIP_00008
+⌈The receiver of a SOME/IP message shall not return an error message for events/no-
+tifications.⌋
+[PRS_SOMEIP_00189]
+Upstream requirements: RS_SOMEIP_00008
+⌈The receiver of a SOME/IP message shall not return an error message for fire&forget
+methods.⌋
+[PRS_SOMEIP_00537]
+Upstream requirements: RS_SOMEIP_00008
+⌈The receiver of a SOME/IP message shall only return an error message if the received
+message type is set to REQUEST.⌋
+Rationale:
+If the server maps the message ID to a NOTIFICATION or RE-
+QUEST_NO_RESPONSE type, the client that sends a message wrongly with
+type REQUEST would expect to receive a RESPONSE. RESPONSE with
+E_WRONG_MESSAGE_TYPE would make sense. On the other hand, if a client
+sends a message wrongly with type REQUEST_NO_RESPONSE, even if the server
+maps the message ID to a RESPONSE type, sending back an error RESPONSE is
+not helpful, as the client will simply ignore it.
+[PRS_SOMEIP_00190]
+Upstream requirements: RS_SOMEIP_00008
+⌈For Request/Response methods the error message shall copy over the fields of the
+SOME/IP header (i.e. Message ID, Request ID, and Interface Version) but not the
+payload. In addition Message Type and Return Code have to be set to the appropriate
+values.⌋
+75 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE76
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+5.2.6.3 Error Processing Overview
+[PRS_SOMEIP_00576]
+Upstream requirements: RS_SOMEIP_00008, RS_SOMEIP_00014
+⌈Error handling shall be based on the message type received (e.g. only methods
+can be answered with a return code) and shall be checked in a defined order of
+[PRS_SOMEIP_00195].⌋
+[PRS_SOMEIP_00910]
+Upstream requirements: RS_SOMEIP_00008, RS_SOMEIP_00014
+⌈For SOME/IP messages received over UDP , the following shall be checked:
+• The UDP datagram size shall be at least 16 Bytes (minimum size of a SOME/IP
+message)
+• The value of the length field shall be less than or equal to the remaining bytes in
+the UDP datagram payload
+If one check fails, a malformed error shall be issued.⌋
+[PRS_SOMEIP_00195]
+Upstream requirements: RS_SOMEIP_00008, RS_SOMEIP_00014
+⌈SOME/IP messages shall be checked by error processing. This does not include the
+application based error handling but just covers the error handling in messaging and
+RPC.⌋
+An overview of the error processing is shown in Figure 5.12.
+76 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE77
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Figure 5.12: Message Validation and Error Handling in SOME/IP
+77 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE78
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Note: Certain sequence of the steps shown in this diagram can vary based on the
+specific implementation, e.g. Classic Platform splits the check for 'SOME/IP header
+incomplete?' between SocketAdaptor and SOME/IP Transformer.
+[PRS_SOMEIP_00385] Conditions to discard received SOME/IP Message
+Upstream requirements: RS_SOMEIP_00008, RS_SOMEIP_00014
+⌈Receiver shall discard SOME/IP message for the following scenarios of SOME/IP
+Header:
+• Incomplete Message as per 'Length' Value
+• 'Message ID' is invalid
+• 'Message Type' is ERROR but Return Code is '0x00'
+• 'Client ID' and 'Session ID' of messages with message type 'RESPONSE' or 'ER-
+ROR' are not set to the 'Client ID' and 'Session ID' of unanswered message with
+message type 'REQUEST'
+• If the message type is not set to 'REQUEST' and below conditions are met:
+– 'Protocol Version' is not supported.
+– 'Service ID' is not configured
+– 'Interface Version' is not configured for received 'Service ID'
+– 'Method ID' is not configured for received 'Service ID' and 'Interface Version'
+– 'Message Type' is not configured for corresponding 'Message ID'(i.e,value of
+the 'Message Type' field in the received SOME/IP message does not match
+the 'Message Type' that is configured (according to the recipient’s local con-
+figuration) for the value of the 'Message ID' field in the received SOME/IP
+message).
+For example,'Message ID' (according to local configuration) is configured for
+reception of method call RESPONSE(or ERROR) but 'Message Type' field
+in the actual received message is different from RESPONSE or ERROR.
+OR 'Message ID' (according to local configuration) is configured for recep-
+tion of method REQUEST but 'Message Type' field in the actual received
+message is REQUEST_NO_RETURN.
+⌋
+5.2.6.3.1 Handling of Communication Errors
+When considering the transport of RPC messages different reliability semantics exist:
+• Maybe — the message might reach the communication partner
+• At least once — the message reaches the communication partner at least once
+78 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE79
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+• Exactly once — the message reaches the communication partner exactly once
+When using the above terms, in regard to Request/Response the term applies to both
+messages (i.e. request and response or error).
+While different implementations may implement different approaches, SOME/IP cur-
+rently achieves "maybe" reliability when using the UDP binding and "exactly once" reli-
+ability when using the TCP binding. Further error handling is left to the application.
+For "maybe" reliability, only a single timeout is needed, when using request/response
+communication in combination of UDP as transport protocol. Figure 5.13 shows the
+state machines for "maybe" reliability. The client’s SOME/IP implementation has to
+wait for the response for a specified timeout. If the timeout occurs SOME/IP shall
+signal E_TIMEOUT to the client application.
+processing
+reqReceived 
+waitingForResponse 
+/ sendReq rspReceived 
+rspTimeout 
+/ sendRsp
+Error: NoResponse 
+Client 
+Server
+Figure 5.13: State Machines for Reliability "Maybe"
+For "exactly once" reliability the TCP binding may be used, since TCP was defined to
+allow for reliable communication.
+5.3 Compatibility Rules for Interface Version
+The Interface Version identifies the Payload format. The Payload format is affected by
+• the Service Interface specification
+• the serialization configuration (e.g. usage of variable size arrays, size of length
+fields, padding, TLV, SOME/IP-TP).
+[PRS_SOMEIP_00937]
+Upstream requirements: RS_SOMEIP_00003
+⌈The Interface Version shall be increased for any of the following reasons:
+• incompatible changes in the Payload format
+79 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE80
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+• incompatible changes in the service behavior
+• required by application design
+⌋
+Note: The Interface Version shall not be increased for compatible changes in the Pay-
+load format.
+[PRS_SOMEIP_00938]
+Upstream requirements: RS_SOMEIP_00003
+⌈The rules in [PRS_SOMEIP_00758] shall define the compatibility of changes of the
+payload format. For complex data types the rules shall be applied recursively. X de-
+notes a compatible change, an empty cell denotes an incompatible change.⌋
+Note:
+This table is based on the specification of the SOME/IP protocol. As a rule of thumb,
+interfaces are compatible if the receiver of data finds all expected information on the
+expected locations.
+[PRS_SOMEIP_00758] Compatibility of changes of the payload format
+Upstream requirements: RS_SOMEIP_00003
+⌈
+Classes of Protocol / Serialization Capa-
+bilities
+Serialization without length fields
+Serialization with length fields
+Serialization with TL V
+Serialization with TL V and optional members
+Change of Interface
+Transmitter
+Receiver
+Transmitter
+Receiver
+Transmitter
+Receiver
+Transmitter
+Receiver
+Add a struct member not to the end of the struct MAXIMUM-MESSAGE-SIZE (MMS) X X X
+Add a struct member to the end of the toplevel struct MAXIMUM-MESSAGE-SIZE (MMS) X X X X X
+Add a struct member to the end of a sub-struct MAXIMUM-MESSAGE-SIZE (MMS) X X X X
+Remove struct member not from the end of the struct MAXIMUM-MESSAGE-SIZE (MMS) X X X
+▽
+80 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE81
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+Classes of Protocol / Serialization Capa-
+bilities
+Serialization without length fields
+Serialization with length fields
+Serialization with TL V
+Serialization with TL V and optional members
+Change of Interface
+Transmitter
+Receiver
+Transmitter
+Receiver
+Transmitter
+Receiver
+Transmitter
+Receiver
+Remove struct member from the end of the toplevel struct
+MAXIMUM-MESSAGE-SIZE (MMS) X X X X X
+Remove struct member from the end of a sub-struct MAXIMUM-MESSAGE-SIZE (MMS) X X X X
+Reorder struct members X X X X
+Change the non-highest union member (redefine or remove)
+Add a new union member with previously unused type selector X X X X
+Remove union member with highest type selector X X X X
+Change of data type:
+• to a larger one (e.g. uint8 to uint16)
+• to a smaller one (e.g. uint16 to uint8
+• to a semantically different one (e.g. integer to struct, integer to float, string to
+string with different character size)
+• byte order
+• number of dimensions of arrays
+• size of length field of array, struct or union type selector
+Add new enumeration valuesENUM-REMARK X X X X
+Change existing enumeration valuesENUM-REMARK
+Remove enumeration valuesENUM-REMARK X X X X
+Increase the length of a fixed size array X X X
+Decrease the length of a fixed size array X X X
+Increase the length of a fixed size stringZERO-TERMINATED X X X
+Decrease the length of a fixed size stringZERO-TERMINATED X X X
+Decrease maximum length of variable size string N/A N/A X X X
+Increase maximum length of variable size string N/A N/A X X X
+Change maximum length of variable size array N/A N/A X X X X X X
+Add argument not to the end of the argument list of a method request
+Remove argument not from the end of the argument list of a method response
+MAXIMUM-MESSAGE-SIZE (MMS), OPTIONAL-METHOD-ARGUMENTS-REMARK
+X X X
+▽
+81 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE82
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+Classes of Protocol / Serialization Capa-
+bilities
+Serialization without length fields
+Serialization with length fields
+Serialization with TL V
+Serialization with TL V and optional members
+Change of Interface
+Transmitter
+Receiver
+Transmitter
+Receiver
+Transmitter
+Receiver
+Transmitter
+Receiver
+Add argument to the end of the argument list of a method request
+Remove argument from the end of the argument list of a method response
+MAXIMUM-MESSAGE-SIZE (MMS), OPTIONAL-METHOD-ARGUMENTS-REMARK, DEFAULT-VALUE
+X X X X X
+Remove argument not from the end of the argument list of a method request
+Add argument not from the end of the argument list of a method response
+OPTIONAL-METHOD-ARGUMENTS-REMARK, DEFAULT-VALUE
+X X X
+Remove argument from the end of the argument list of a method request
+Add argument from the end of the argument list of a method response
+OPTIONAL-METHOD-ARGUMENTS-REMARK
+X X X X X
+Reorder arguments of methods X X X X
+Change optionality of argument N/A N/A N/A N/A N/A N/A
+Change the return type of a method (e.g void to uint8)
+Add return codes of a method X X X X
+Remove return codes of a method X X X X
+Change of the name of a service interface, method or event X X X X X X X X
+Add event ot eventgroup X X X X
+Remove event from eventgroup X X X X
+Add setter or getter to a field
+Remove notifier from a field X X X X
+Remove setter or getter from a field
+Add notifier to a field X X X X
+Extend service interface by new method, event or field X X X X
+Remove method, event or field from a service interface X X X X
+Change Method ID
+▽
+82 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE83
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+Classes of Protocol / Serialization Capa-
+bilities
+Serialization without length fields
+Serialization with length fields
+Serialization with TL V
+Serialization with TL V and optional members
+Change of Interface
+Transmitter
+Receiver
+Transmitter
+Receiver
+Transmitter
+Receiver
+Transmitter
+Receiver
+Change data ID of argument
+Reuse data ID of previously removed argument N/A N/A N/A N/A
+The following legend to the table applies:
+ENUM-REMARK: The "Receiver" of an Enumeration needs to know all values it can re-
+ceive, while the "Transmitter" does not have to send all values the "Receiver" knows.
+MAXIMUM-MESSAGE-SIZE (MMS): The compatibility in Classic Platform is limited by
+the maximum configured size of message. This means that if the message size is configured
+larger than necessary, additional text could be added and, independently of the message size
+on tag, can be replaced by a new one.
+OPTIONAL-METHOD-ARGUMENTS-REMARK: See note above [PRS_SOMEIP_00230].
+DEFAULT -VALUE: A default value is required for this change to be compatible.
+ZERO-TERMINATED: Strings are terminated with a "\0"-character(see [PRS_SOMEIP_00373],
+[PRS_SOMEIP_00911], [PRS_SOMEIP_00912] and [PRS_SOMEIP_00913])
+⌋
+The column "Transmitter" refers to the side transmitting a SOME/IP message, which
+can be the transmitter of an event (provider of the interface) or the method arguments
+used by the caller of a method (user of the interface) or the method result returned by
+the callee of a method (provider of the interface). The column "Receiver" refers to the
+side receiving a SOME/IP message, which can be the receiver of an event (user of the
+interface) or the method arguments forwarded to the callee of a method (provider of the
+interface) or the method result forwarded to the caller of a message (user of the inter-
+face). For fields, compatibility is only given if both the "Transmitter" and the "Receiver"
+83 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE84
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+columns are marked as compatible, because the same content will be transmitted by
+the side defined by the provider of the interface (notification event, getter method) and
+the user of the interface (setter method).
+84 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE85
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+6 Configuration Parameters
+The following chapter summarizes the configuration parameters that are used in this
+specification.
+[PRS_SOMEIP_00378] SOMEIPTP_REASSEMBLY_TIMEOUT
+Upstream requirements: RS_SOMEIP_00010, RS_SOMEIP_00014
+⌈SOME/IP Protocol shall provide a configurable timer
+SOMEIPTP_REASSEMBLY_TIMEOUT for the reception timeout time of SOME/IP-
+TP segments.⌋
+Parameter Descrip-
+tion
+Parameter support
+in AP
+Parameter support
+in CP
+SOMEIPTP_REASSEMBLY_
+TIMEOUT
+([PRS_SOMEIP_00378])
+Config-
+urable timer
+for the
+reception
+timeout
+time
+between
+SOME/IP-
+TP
+segments
+SomeipEventDe-
+ployment.
+segmentRecep-
+tionTimeoutTime
+[TPS_MANI_03328],
+SomeipMethodDe-
+ployment.
+segmentRecep-
+tionTimeout-
+TimeRequest
+[TPS_MANI_03329],
+SomeipMethodDe-
+ployment.
+segmentRecep-
+tionTimeout-
+TimeResponse
+[TPS_MANI_03330]
+SomeipTpChan-
+nel.
+SomeipTpRxTime-
+outTime
+see [ECUC_
+SomeIpTp_00023]
+Table 6.1: Mapping Table - SOME/IP Protocol Parameters
+[PRS_SOMEIP_00004] Configuration Parameters for SOME/IP (De)Serialization
+Upstream requirements: RS_SOMEIP_00028
+⌈The following table summarizes the configuration parameters that are used for
+SOME/IP (De)Serialization.⌋
+85 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE86
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+Parameter Description Allowed Range or
+Values
+Default
+values(in case
+parameter is
+not explicitly
+configured)
+ALIGNMENT Defines the alignment
+requirement for the data
+element immediately
+following a variable length
+data element (if it is not the
+last element in the serialized
+data stream) in units of
+bytes.
+1,2,4,8,16,32 1
+BYTE_ORDER Defines the byte order of the
+payload message.
+mostSignificantByte-
+First,
+mostSignificantByteLast,
+opaque
+mostSignificant-
+ByteFirst
+(BigEndian)
+IS_
+DYNAMIC_
+LENGTH_
+FIELD_SIZE
+This parameter shall be
+used to determine the size
+of the length field based on
+wire type in the context of
+using the TLV encoding. If
+set to TRUE, the size of the
+length field defined in the
+data definition shall be
+ignored and the size of the
+length field shall be selected
+according to the wire type.
+TRUE,FALSE TRUE
+SIZE_OF_
+ARRAY_
+LENGTH_
+FIELD
+Defines the size of the
+length field (in bytes) that
+will be put in front of an
+array (see Chapter 5.1.3.5)
+in the SOME/IP message.
+0, 1, 2, 4 for fixed
+length arrays (see
+[PRS_SOMEIP_00944])
+where 0 indicates that
+there is no length field
+present.
+1, 2, 4 for dynamic
+length arrays (see
+[PRS_SOMEIP_00001])
+where 0 is not allowed
+since a dynamic length
+array has a mandatory
+length field.
+4
+▽
+86 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE87
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+SIZE_OF_
+STRING_
+LENGTH_
+FIELD
+Defines the size of the
+length field (in bytes) that
+will be put in front of a string
+(see Chapter 5.1.3.4) in the
+SOME/IP message.
+0, 1, 2, 4 for fixed
+length strings(see
+[PRS_SOMEIP_00760])
+where 0 indicates that
+there is no length field
+present.
+1, 2, 4 for dynamic
+length strings(see
+[PRS_SOMEIP_00002])
+where 0 is not allowed
+since a dynamic length
+string has a mandatory
+length field.
+4
+SIZE_OF_
+STRUCT_
+LENGTH_
+FIELD
+Defines the size of the
+length field (in bytes) that
+will be put in front of a struct
+(see Chapter 5.1.3.2) in the
+SOME/IP message.
+0,1,2,4 0
+SIZE_OF_
+UNION_
+LENGTH_
+FIELD
+Defines the size of the
+length field (in bytes) that
+will be put in front of a union
+(see Chapter 5.1.3.8) in the
+SOME/IP message.
+0,1,2,4 4
+SIZE_OF_
+UNION_
+TYPE_
+SELECTOR_
+FIELD
+Defines the size of the
+payload selector field (in
+bytes) that will be put in
+front of a union (see
+Chapter 5.1.3.8) in the
+SOME/IP message.
+1,2,4 4
+STRING_
+ENCODING
+Defines the types of unicode
+encodings supported for a
+string (see Chapter 5.1.3.4)
+in the SOME/IP message.
+UTF-8, UTF-16BE and
+UTF-16LE
+UTF-8
+Table 6.2: SOME/IP Serialization Configuration Parameters
+87 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE88
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+7 Protocol usage and guidelines
+7.1 Choosing the transport protocol
+SOME/IP supports User Datagram Protocol (UDP) and Transmission Control Protocol
+(TCP). While UDP is a very lean transport protocol supporting only the most important
+features (multiplexing and error detecting using a checksum), TCP adds additional
+features for achieving a reliable communication. TCP not only handles bit errors but
+also segmentation, loss, duplication, reordering, and network congestion.
+Inside a vehicle many applications requires very short timeout to react quickly. These
+requirements are better met using UDP because the application itself can handle the
+unlikely event of errors. For example, in use cases with cyclic data it is often the best
+approach to just wait for the next data transmission instead of trying to repair the last
+one. The major disadvantage of UDP is that it does not handle segmentation. Hence,
+only being able to transport smaller chunks of data.
+Guideline:
+• Use TCP only if very large chunks of data need to be transported (> 1400 Bytes)
+and no hard latency requirements in the case of errors exists
+• Use UDP if very hard latency requirements (<100ms) in case of errors is needed
+• Use UDP together with SOME/IP-TP if very large chunks of data need to be
+transported (> 1400 Bytes) and hard latency requirements in the case of errors
+exists
+• Try using external transport or transfer mechanisms (Network File System, APIX
+link, 1722, ...) when they are more suited for the use case. In this case SOME/IP
+can transport a file handle or a comparable identifier. This gives the designer
+additional freedom (e.g. in regard to caching).
+The transport protocol used is specified by the interface specification on a per-message
+basis. Methods, Events, and Fields should commonly only use a single transport pro-
+tocol.
+7.2 Security Considerations for SOME/IP
+[PRS_SOMEIP_00946] Restricting Server Connection from Clients
+Upstream requirements: RS_SOMEIP_00002
+⌈A server may enforce communication policies to protect the server from malicious
+or unauthorized clients. I.e. the server may reject subscriptions to eventgroups, or
+method calls from unauthorized clients.⌋
+Note: These policies are beyond the scope of this specification. Such policies can be
+based on the IP address of the client or any other means to identify the client.
+88 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE89
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[PRS_SOMEIP_00947] Restricting Client Connection to Server
+Upstream requirements: RS_SOMEIP_00002
+⌈A client may enforce communication policies to protect the client from malicious
+servers. I.e. the client may deny communication to unauthorized servers.⌋
+Note: These policies are beyond the scope of this specification. Such policies can be
+based on the IP address of the server or any other means to identify the client.
+89 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE90
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+A Change history of AUTOSAR traceable items
+Please note that the lists in this chapter also include traceable items that have been
+removed from the specification in a later version. These items do not appear as hyper-
+links in the document.
+A.1 Traceable item history of this document according to
+AUTOSAR Release R25-11
+A.1.1 Added Specification Items in R25-11
+Number Heading
+[PRS_SOMEIP_
+00001] Length field for Dynamic length arrays
+[PRS_SOMEIP_
+00002] Length field for Dynamic length strings
+[PRS_SOMEIP_
+00003] Selection of to-be-used wire type and length of the Length field
+[PRS_SOMEIP_
+00004] Configuration Parameters for SOME/IP (De)Serialization
+[PRS_SOMEIP_
+00207] Behaviour if a required element is missing in the received SOME/IP message
+[PRS_SOMEIP_
+00209]
+Behaviour if a required member/argument is missing in the received SOME/
+IP message
+[PRS_SOMEIP_
+00383]
+Behaviour if a required member/argument is found with invalid wire type in
+the received SOME/IP message
+[PRS_SOMEIP_
+00384]
+Behaviour if a required member/argument is found multiple times in the
+received SOME/IP message
+[PRS_SOMEIP_
+00385] Conditions to discard received SOME/IP Message
+[PRS_SOMEIP_
+00939] Session Handling for REQUEST_NO_RETURN Messages
+Table A.1: Added Specification Items in R25-11
+A.1.2 Changed Specification Items in R25-11
+Number Heading
+[PRS_SOMEIP_
+00050]
+[PRS_SOMEIP_
+00079]
+▽
+90 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE91
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+Number Heading
+[PRS_SOMEIP_
+00121]
+[PRS_SOMEIP_
+00127]
+[PRS_SOMEIP_
+00191] Return Codes
+[PRS_SOMEIP_
+00206]
+[PRS_SOMEIP_
+00225]
+[PRS_SOMEIP_
+00227]
+[PRS_SOMEIP_
+00369]
+[PRS_SOMEIP_
+00372]
+[PRS_SOMEIP_
+00613]
+[PRS_SOMEIP_
+00701]
+[PRS_SOMEIP_
+00760]
+[PRS_SOMEIP_
+00900]
+[PRS_SOMEIP_
+00944]
+Table A.2: Changed Specification Items in R25-11
+A.1.3 Deleted Specification Items in R25-11
+Number Heading
+[PRS_SOMEIP_
+00093]
+[PRS_SOMEIP_
+00094]
+[PRS_SOMEIP_
+00107]
+[PRS_SOMEIP_
+00380]
+Behaviour if a required member/argument is missing in the received SOME/
+IP message
+[PRS_SOMEIP_
+00381] Behaviour if a required element is missing in the received SOME/IP message
+▽
+91 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE92
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+Number Heading
+[PRS_SOMEIP_
+00614]
+[PRS_SOMEIP_
+00945]
+Table A.3: Deleted Specification Items in R25-11
+A.1.4 Added Constraints in R25-11
+Number Heading
+[constr_00001] Reordering limitation for a SOME/IP message segment
+Table A.4: Added Constraints in R25-11
+A.1.5 Changed Constraints in R25-11
+none
+A.1.6 Deleted Constraints in R25-11
+none
+A.2 Traceable item history of this document according to
+AUTOSAR Release R24-11
+A.2.1 Added Specification Items in R24-11
+Number Heading
+[PRS_SOMEIP_
+00378] SOMEIPTP_REASSEMBLY_TIMEOUT
+[PRS_SOMEIP_
+00379] .
+[PRS_SOMEIP_
+00380]
+Behaviour if a required member/argument is missing in the received SOME/
+IP message
+[PRS_SOMEIP_
+00381] Behaviour if a required element is missing in the received SOME/IP message
+▽
+92 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE93
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+△
+Number Heading
+[PRS_SOMEIP_
+00382] SOME/IP payload size using UDP
+Table A.5: Added Specification Items in R24-11
+A.2.2 Changed Specification Items in R24-11
+Number Heading
+[PRS_SOMEIP_
+00119] Union (length field, type selector field and payload)
+[PRS_SOMEIP_
+00706]
+[PRS_SOMEIP_
+00730] Maximum segement length
+[PRS_SOMEIP_
+00758] Compatibility of changes of the payload format
+[PRS_SOMEIP_
+00900]
+[PRS_SOMEIP_
+00901]
+[PRS_SOMEIP_
+00903]
+[PRS_SOMEIP_
+00907]
+[PRS_SOMEIP_
+00942]
+Table A.6: Changed Specification Items in R24-11
+A.2.3 Deleted Specification Items in R24-11
+Number Heading
+[PRS_SOMEIP_
+00218]
+[PRS_SOMEIP_
+00908]
+[PRS_SOMEIP_
+00918]
+Table A.7: Deleted Specification Items in R24-11
+93 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE94
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+A.3 Traceable item history of this document according to
+AUTOSAR Release R23-11
+A.3.1 Added Specification Items in R23-11
+Number Heading
+[PRS_SOMEIP_
+00755] Message ID header field
+[PRS_SOMEIP_
+00757] Return Codes
+[PRS_SOMEIP_
+00758] Compatibility of changes of the payload format
+[PRS_SOMEIP_
+00759]
+[PRS_SOMEIP_
+00760]
+Table A.8: Added Specification Items in R23-11
+A.3.2 Changed Specification Items in R23-11
+Number Heading
+[PRS_SOMEIP_
+00046] Request ID
+[PRS_SOMEIP_
+00107]
+[PRS_SOMEIP_
+00163]
+[PRS_SOMEIP_
+00183]
+[PRS_SOMEIP_
+00205] Wire Type and type of following data
+[PRS_SOMEIP_
+00369]
+[PRS_SOMEIP_
+00376]
+Table A.9: Changed Specification Items in R23-11
+A.3.3 Deleted Specification Items in R23-11
+none
+94 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE95
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+A.4 Traceable item history of this document according to
+AUTOSAR Release R22-11
+A.4.1 Added Specification Items in R22-11
+Number Heading
+[PRS_SOMEIP_
+00245]
+Table A.10: Added Specification Items in R22-11
+A.4.2 Changed Specification Items in R22-11
+Number Heading
+[PRS_SOMEIP_
+00043]
+[PRS_SOMEIP_
+00101]
+[PRS_SOMEIP_
+00137]
+[PRS_SOMEIP_
+00241]
+[PRS_SOMEIP_
+00300]
+[PRS_SOMEIP_
+00365]
+[PRS_SOMEIP_
+00366]
+[PRS_SOMEIP_
+00374]
+[PRS_SOMEIP_
+00730] Maximum segement length
+[PRS_SOMEIP_
+00739]
+[PRS_SOMEIP_
+00922]
+[PRS_SOMEIP_
+00942]
+Table A.11: Changed Specification Items in R22-11
+95 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE96
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+A.4.3 Deleted Specification Items in R22-11
+Number Heading
+[PRS_SOMEIP_
+00038]
+[PRS_SOMEIP_
+00040]
+Table A.12: Deleted Specification Items in R22-11
+96 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol
+PDF_PAGE97
+SOME/IP Protocol Specification
+AUTOSAR FO R25-11
+[1] Specification of Service Discovery
+AUTOSAR_CP_SWS_ServiceDiscovery
+[2] Glossary
+AUTOSAR_FO_TR_Glossary
+97 of 97 Document ID 696: AUTOSAR_FO_PRS_SOMEIPProtocol

@@ -1,0 +1,102 @@
+ID Precondition Requirement definition Note
+K01.FR.05 When a
+SetChargingProfileRequest
+with an already known
+ChargingProfile.id is
+received AND
+the existing ChargingProfile
+does NOT have
+chargingProfilePurpose =
+ChargingStationExter
+nalConstraints
+The Charging Station SHALL replace the existing
+ChargingProfile with the one specified.
+ChargingStationExternalCon
+straints profile cannot be
+replaced by CSMS.
+K01.FR.06 When
+chargingProfilePurpose is
+NOT TxProfile
+The CSMS SHALL NOT send a ChargingProfile with a
+stackLevel - chargingProfilePurpose - evseId combination
+that already exists in another ChargingProfile (with
+different id) on the Charging Station and has an
+overlapping validity period.
+This is to ensure that no two
+charging profiles with same
+stack level and purpose can
+be valid at the same time.
+(See also K01.FR.39)
+K01.FR.07 When the Charging Station
+accepts a
+SetChargingProfileRequest
+The Charging Station SHALL re-evaluate its collection of
+charging profiles to determine which ChargingProfile will
+become active.
+K01.FR.08 The CSMS MAY send charging profiles to a Charging
+Station that are to be used as default charging profiles.
+K01.FR.09 When a
+SetChargingProfileRequest
+with a TxProfile is received
+AND there is no transaction
+active on the specified EVSE
+The Charging Station SHALL send a
+SetChargingProfileResponse with status Rejected.
+It is recommended to
+include reasonCode =
+"TxNotFound".
+K01.FR.10 When validFrom and validTo
+of a ChargingProfile are not
+set
+The Charging Station SHALL consider the ChargingProfile
+to be valid indefinitely until it is explicitly replaced.
+K01.FR.11 If ChargingSchedule has a
+duration AND
+ChargingSchedulePeriod.sta
+rtPeriod >=
+ChargingSchedule.duration
+The Charging Station SHALL NOT execute the
+ChargingSchedulePeriod, because it is past the duration
+of the ChargingSchedule.
+K01.FR.12 A ChargingSchedulePeriod remains active until the next
+ChargingSchedulePeriod in the list starts or until
+ChargingSchedule.duration has elapsed.
+K01.FR.13 When recurrencyKind is
+used in combination with a
+ChargingSchedule duration
+shorter than recurrencyKind
+period.
+The Charging Station SHALL fall back to default behavior
+after ChargingSchedule duration ends.
+K01.FR.14 When a
+SetChargingProfileRequest
+with a TxDefaultProfile and
+evseId = 0 is received AND
+No other TxDefaultProfile
+with the same stackLevel is
+installed on any specific
+EVSE.
+The Charging Station SHALL apply, but not copy, this
+profile to all EVSEs.
+A TxDefaultProfile charging
+profile on EVSE #0 is
+“owned by” EVSE #0, but
+has effect on all EVSEs.
+K01.FR.15 When a
+SetChargingProfileRequest
+with a TxDefaultProfile and
+evseId > 0 is received AND
+No TxDefaultProfile with the
+same stackLevel is installed
+on EVSE #0.
+The Charging Station SHALL only apply this profile to the
+specified EVSE.
+K01.FR.16 TxProfile SHALL only be used with evseId >0.
+K01.FR.17 When more than one ChargingProfile with the same
+chargingProfilePurpose is valid, as determined by their
+validFrom and validTo fields, then a ChargingSchedule
+from a ChargingProfile with a higher stackLevel overrules
+a ChargingSchedule from a ChargingProfile with a lower
+stackLevel.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 329/803 Part 2 - Specification

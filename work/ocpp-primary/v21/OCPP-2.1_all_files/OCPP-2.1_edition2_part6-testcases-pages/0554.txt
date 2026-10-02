@@ -1,0 +1,49 @@
+Tool validations
+* Step 3:
+Message SetChargingProfileResponse
+- status must be Accepted
+* Step 5:
+Note: The period of time between sending the SetChargingProfileRequest in step 2 and the scheduleStart from the
+GetCompositeScheduleResponse is called x. The first period lasts between 1 and 1 + <random> seconds, where <random> is
+between 0 and randomizedDelay. If x > 1 + <random> then the first period will be missed in the composite schedule.
+Message: GetCompositeScheduleResponse
+- status must be Accepted
+- schedule.duration must be 134400
+- schedule.chargingSchedulePeriod[0].startPeriod must 0
+- schedule.chargingSchedulePeriod[0].limit must be 6
+- schedule.chargingSchedulePeriod[1].startPeriod must be between 1 and 5760 - <x>
+- schedule.chargingSchedulePeriod[1].limit must be 0
+- schedule.chargingSchedulePeriod[2].startPeriod must be between 28800 - <x> and 34560 - <x>
+- schedule.chargingSchedulePeriod[3].limit must be 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+- schedule.chargingSchedulePeriod[4].startPeriod must be between 86400 - <x>
+- schedule.chargingSchedulePeriod[4].limit must be 0
+- schedule.chargingSchedulePeriod[5].startPeriod must be between 115200 - <x> and 120960 - <x>
+- schedule.chargingSchedulePeriod[5].limit must be 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+* Step 9:
+Note: The period of time between sending the SetChargingProfileRequest in step 6 and the scheduleStart from the
+GetCompositeScheduleResponse is called x:
+Message: GetCompositeScheduleResponse
+- status must be Accepted
+- schedule.duration must be 134400
+- schedule.chargingSchedulePeriod[0].startPeriod must be 0
+- schedule.chargingSchedulePeriod[0].limit must be 3 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+- schedule.chargingSchedulePeriod[1].startPeriod must be between 9600 - <x> and 15360 - <x>
+- schedule.chargingSchedulePeriod[1].limit must be 0
+- schedule.chargingSchedulePeriod[2].startPeriod must be between 19200 - <x> and 24960 - <x>
+- schedule.chargingSchedulePeriod[2].limit must be 2 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+- schedule.chargingSchedulePeriod[3].startPeriod must be 38400 - <x> 
+- schedule.chargingSchedulePeriod[3].limit must be 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+- schedule.chargingSchedulePeriod[4].startPeriod must be 86400 - <x>
+- schedule.chargingSchedulePeriod[4].limit must be 0
+- schedule.chargingSchedulePeriod[5].startPeriod must be between 115200 - <x> and 120960 - <x>
+- schedule.chargingSchedulePeriod[5].limit must be _6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 552/1383 Part 6 - Test Cases

@@ -1,0 +1,524 @@
+PAGE 1
+Application Report
+SLLA108A–February 2002–Revised January 2013
+Introduction to M-LVDS (TIA/EIA-899)
+Michael Peffers.......................................................................................................................... HPA
+ABSTRACT
+LVDS (TIA/EIA-644) devices are ideal for designs that demand high speed, low power, and
+electromagnetic compatibility. LVDS devices provide a wide range of solutions for point-to-point and
+multidrop data transmission. The Multipoint LVDS (M-LVDS) standard brings all of the LVDS benefits to
+the multipoint data transmission world. This application report summarizes the M-LVDS standard, its
+unique multipoint provisions, and Texas Instruments M-LVDS family of devices.
+Contents
+1 Introduction .................................................................................................................. 2
+2 Topologies and Technologies ............................................................................................. 2
+2.1 Topologies .......................................................................................................... 2
+2.2 Technologies ....................................................................................................... 3
+3 The M-LVDS Standard ..................................................................................................... 5
+3.1 Driver Specifications ............................................................................................... 5
+3.2 Receiver Specifications ........................................................................................... 7
+4 Texas Instruments M-LVDS Portfolio .................................................................................... 9
+5 Summary ................................................................................................................... 10
+List of Figures
+1 Point-to-Point Simplex Configuration..................................................................................... 2
+2 Multidrop Configuration..................................................................................................... 2
+3 Multipoint Configuration .................................................................................................... 3
+4 TIA/EIA-644 Driver Test Load............................................................................................. 4
+5 TIA/EIA-644-A Driver Full-Load Test Circuit ............................................................................ 5
+6 TIA/EIA-899 Driver Test Circuit ........................................................................................... 5
+7 Driver Short-Circuit Test Circuit........................................................................................... 6
+8 Receiver Differential Input Voltage Threshold Requirements......................................................... 8
+9 Wired-OR Signaling Using M-LVDS Drivers and Receivers .......................................................... 8
+10 MLVD200 Series Footprints.............................................................................................. 10
+List of Tables
+1 A Comparison of LVDS Specifications................................................................................... 3
+2 SN65MLVD200 Series Parts .............................................................................................. 9
+1SLLA108A–February 2002–Revised January 2013 Introduction to M-LVDS (TIA/EIA-899)
+Submit Documentation Feedback
+Copyright © 2002–2013, Texas Instruments Incorporated
+
+PAGE 2
+Zt
+D RZt
+Introduction www.ti.com
+1 Introduction
+Can LVDS be adapted to operate in a multipoint system? Can I get more noise margin in my LVDS
+system? Are there any options for a higher speed, lower power version of 485? The answer to these
+questions is yes, as is shown in this application report.
+Texas Instruments offers a wide variety of single and multichannel M-LVDS devices that support high-
+speed, low-power, and true multipoint operation. M-LVDS devices give designers the ability to realize the
+benefits of LVDS technology while operating in a multipoint environment. This application report describes
+the M-LVDS standard and also highlights Texas Instruments wide breadth of M-LVDS solutions.
+2 Topologies and Technologies
+TIA/EIA-899 (Electrical Characteristics of Multipoint-Low-Voltage Differential Signaling (M-LVDS)) was
+developed to respond to a demand for a general-purpose, high-speed, balanced interface standard for
+multipoint applications. A common question is often raised concerning the applicability of LVDS devices
+(those complying with TIA/EIA-644) to different architectural problems. What is the difference between a
+point-to-point, multidrop, or multipoint system; and which devices can be applied to each system? The
+following paragraphs look at various topological architectures, and the applicability of different standards
+to each topology.
+2.1 Topologies
+2.1.1 Point-to-Point
+A point-to-point interface consists of a single driver and a single receiver connected by transmission
+media. The point-to-point connection provides the optimum configuration from a signaling quality
+viewpoint. Mainline stubs and other discontinuities are avoided, and the highest possible signaling rate
+can be expected. The point-to-point topology supports simplex communication where the data
+transmission is unidirectional. Figure 1 shows a differential point-to-point simplex configuration.
+Figure 1. Point-to-Point Simplex Configuration
+2.1.2 Multidrop
+A second common interconnection configuration is multidrop. In a multidrop system a single driver is again
+used, but now multiple receivers are connected to the main transmission line. Where line termination is
+necessary, a single termination is located at the far end of the line from the transmitter. Like point-to-point,
+a multidrop connection provides unidirectional transmission. Figure 2 shows a differential multidrop
+interconnection.
+Figure 2. Multidrop Configuration
+2 Introduction to M-LVDS (TIA/EIA-899) SLLA108A–February 2002–Revised January 2013
+Submit Documentation Feedback
+Copyright © 2002–2013, Texas Instruments Incorporated
+
+PAGE 3
+Stub
+ZtZt
+www.ti.com Topologies and Technologies
+2.1.3 Multipoint
+The final architecture to be discussed is multipoint. In a multipoint configuration many transmitters and
+many receivers can be interconnected on a single transmission line. The key difference here is the
+presence of two or more drivers. Such a situation creates contention issues that need not be addressed
+with point-to-point or multidrop systems. Multipoint operation allows for bidirectional, half-duplex
+communication over a single balanced media pair. To support the location of the various drivers
+throughout the transmission line, double termination of the transmission line is now necessary. Figure 3
+shows a multipoint configuration.
+Figure 3. Multipoint Configuration
+2.2 Technologies
+2.2.1 TIA/EIA-644 (LVDS)
+Discrete LVDS devices generally comply with the 1996 ANSI standard TIA/EIA-644, Electrical
+Characteristics of Low Voltage Differential Signaling (LVDS) Interface Circuits. TIA/EIA-644 was conceived
+to provide a general-purpose electrical-layer specification for drivers and receivers connected in a point-to-
+point interface. Table 1 highlights some of the important LVDS specifications for drivers and receivers.
+LVDS drivers are specified when driving a simple 100-Ω resistive load. Figure 4 shows the driver test
+circuit included in the 644 standard. Receivers require ±100 mV thresholds and operation over ±1 V of
+ground potential difference. Table 1 shows that receivers also have a 20 µA input leakage current
+requirement. Since LVDS was originally specified as a point-to-point interface, this 20 µA leakage was
+negligible, and was therefore ignored when specifying the driver output characteristics. LVDS drivers were
+specified to work for point-to-point applications, but could not be assumed to work in a multidrop system.
+Table 1. A Comparison of LVDS Specifications
+TIA/EIA-644 TIA/EIA-644-A TIA/EIA-899PARAMETER UNIT(LVDS) (LVDS REV A) (M-LVDS)
+DRIVER CHARACTERISTICS
+Offset voltage: Vos (max) 1375 1375 2100 mV
+Offset voltage: Vos (min) 1125 1125 300 mV
+Differential output voltage: Vod (max) 454 (100 Ω) 454 (100 Ω) 650 (50 Ω) mV
+Differential output voltage: Vod(min) 247 (100 Ω) 247 (100 Ω) 480 (50 Ω) mV
+Offset voltage variation: Vospp 150 150 150 mV
+Short circuit current: Ios 12/24 12/24 43 mA
+Differential voltage change: ∆Vod 50 50 50 mV
+Offset voltage change: ∆Vos 50 50 50 mV
+Transition time: tr/tf(min) 260 260 1000 ps
+RECEIVER CHARACTERISTICS
+Ground potential difference: Vgpd ±1 ±1 ±1 V
+Input leakage current: Iin 20 20 20 µA
+Differential input leakage current: Iid NS 6 4 µA
+Input voltage range: Vin 0 to 2.4 0 to 2.4 –1.4 to 3.8 V
+Input threshold: Vith 100 100 50 mV
+NS: Not specified
+3SLLA108A–February 2002–Revised January 2013 Introduction to M-LVDS (TIA/EIA-899)
+Submit Documentation Feedback
+Copyright © 2002–2013, Texas Instruments Incorporated
+
+PAGE 4
+VODInput RL = 100 Ω
+Topologies and Technologies www.ti.com
+2.2.2 TIA/EIA-644-A (LVDS, REV A)
+As discussed earlier, a multidrop application has one driver communicating with multiple receivers. The
+644 receiver input leakage requirement of 20 µA has a small effect on the driver output voltage when only
+one receiver is connected, but this effect becomes more pronounced as the driver is loaded with additional
+receivers. An update to LVDS, designated TIA/EIA-644-A, was developed and released in 2001 to
+standardize the driver requirements for LVDS devices being used in a multidrop configuration. Devices
+compliant to 644-A can be easily identified by the full load test required for the driver output. Figure 5
+shows this 644-A test circuit. As with 644, 644-A receivers have a 20 µA input leakage requirement, which
+implies a 120 kΩ input resistance. The 3.74 kΩ resistors in Figure 5 represent the worst-case parallel
+combination of thirty-two 644-A receivers. The VTEST power supply in Figure 5 represents the possible
+range of bias voltages that 644-A receivers may present to the bus, when connected in a system that
+operates over a ±1 V ground noise environment.
+Figure 4. TIA/EIA-644 Driver Test Load
+Table 1 includes significant 644-A electrical specifications alongside the 644 values. The availability of
+TIA/EIA-644-A compliant devices allows users to confidently choose multidrop drivers when the need
+arises.
+2.2.3 Multipoint Variants of LVDS
+Multipoint operation introduces a new set of problems. First, the main transmission line needs to be doubly
+terminated. Whereas LVDS drivers are specified for driving a 100-Ω load, a multipoint line, using 100-Ω
+transmission media appears as 50-Ω (or even lower depending on the capacitive loading of multiple bus
+transceivers). TI introduced the LVDM family of drivers in 1998, compliant to the 644 LVDS standard, with
+the exception of a doubling of the output current. The LVDM family does not include many of the
+provisions necessary when more than two drivers are expected on a multipoint bus, but provides an
+attractive solution when a point-to-point half-duplex (i.e., a single transceiver communicating with a second
+transceiver) multipoint design is needed. In a point-to-point multipoint system intermediate stubs are
+absent on the bus allowing the use of fast edge-rate drivers and enabling half-duplex transmissions at
+rates of 300-600 Mbps. LVDM devices also find use in simple point-to-point architectures when a designer
+is looking for additional noise margin at the receiver.
+National Semiconductor, now part of TI, introduced the BLVDS family of devices that were targeted at
+heavily loaded backplanes where card loading and spacing lowers the impedance of the transmission line
+as much as 50%. This loading effect, and the need to terminate the bus at both ends for multipoint
+applications, required a change to the driver's output. National boosted the output current three fold to the
+10-12 mA range. A 100 Ohm transmission line, loaded down to 54 Ohms by the cards, would then need to
+be terminated at both ends with 54 Ohms. Thus a driver would see the two terminations in parallel and
+only need to drive a minimal load of 27 ohms with 12 mA to generate 325 mV swing. See References
+While LVDM and BLVDS devices provide the necessary features to address many problems, true
+multipoint capabilities (to include edge rate control, contention provisions, wired-Or signaling, etc.) are
+needed when the design involves numerous drivers and receivers connected to a bus. M-LVDS devices
+support these needs. Table 1 also lists M-LVDS parameters with the other standards that have already
+been discussed. As shown in the table, the offset voltage for M-LVDS drivers is allowed to vary over a
+much wider range than allowed by the previous standards discussed. This increased offset voltage range
+allows for the presence of multiple drivers on the bus. Table 1 shows that M-LVDS receivers are also
+required to operate over ±1 V of ground noise. Another noteworthy point concerns the M-LVDS
+specification for differential output voltage. While 644 and 644-A were specified with a 100-Ω load, the M-
+LVDS driver requirement is for a 50-Ω load, as would be expected for a doubly terminated multipoint
+driver.
+4 Introduction to M-LVDS (TIA/EIA-899) SLLA108A–February 2002–Revised January 2013
+Submit Documentation Feedback
+Copyright © 2002–2013, Texas Instruments Incorporated
+
+PAGE 5
+49.9 Ω VT
+A
+B
+3.32 kΩ
++
+V(TEST)
+–1 V to 3.4 V
+C
+G
+= Measured Parameter
+Steady State
+Logic Input
+(1 or 0) 3.32 kΩ
+100 Ω VT
+A
+B
+3.74 kΩ
+3.74 kΩ +
+V(TEST)
+0 to 2.4 V
+C
+G
+= Measured Parameter
+Steady State
+Logic Input
+(1 or 0)
+www.ti.com The M-LVDS Standard
+Figure 5. TIA/EIA-644-A Driver Full-Load Test Circuit
+3 The M-LVDS Standard
+3.1 Driver Specifications
+3.1.1 Driver Offset and Differential Voltages
+As mentioned above, the M-LVDS standard includes many unique features to address issues of concern
+when operating with multipoint communication. Figure 6 shows the test circuit for M-LVDS drivers. The
+similarity to the 644-A test circuit is obvious. The standard allows up to thirty-two M-LVDS circuits (driver,
+receiver, or transceiver) to be connected to the common transmission media. The familiar 20 µA input
+leakage requirement is specified for disabled drivers, disabled transceivers, or receivers. The 3.32 kΩ load
+resistors represent the parallel combination of any mix of thirty-two M-LVDS circuits. The test circuit power
+supply now ranges from –1 V to 3.4 V to accommodate the possible range of voltages that can be
+presented to the bus by compliant circuits. But why is this voltage range now greater than the 0 to 2.4 V
+test voltage seen with 644-A? As we see in the following paragraphs, the answer lies in the common-
+mode signal components and their defined voltage limits.
+The common-mode voltage on a multipoint bus is the sum of the driver output and ground offset voltages.
+644 and 644-A drivers are required to have an output offset voltage of 1.2 V ± 0.175 V. Since there are
+periods when there are no active drivers on a multipoint bus segment, the M-LVDS driver cannot be used
+to establish the worst-case common-mode operating point of the circuit. During this idle-bus state, the
+common-mode voltage is bounded by the open-circuit voltages of the attached components. In the case of
+TIA/EIA-899 compliant devices, this voltage is 0 V to 2.4 V and is borrowed from its 644 predecessor.
+Addition of a one-volt ground-noise offset added to this range gives the common-mode voltage range
+requirements for M-LVDS circuits of –1 V to 3.4 V as shown in Figure 6.
+Figure 6. TIA/EIA-899 Driver Test Circuit
+5SLLA108A–February 2002–Revised January 2013 Introduction to M-LVDS (TIA/EIA-899)
+Submit Documentation Feedback
+Copyright © 2002–2013, Texas Instruments Incorporated
+
+PAGE 6
+Max_signaling_rate  = 0.5
+tr tf,
+_
++
+= Measured Parameter
+D
+A
+B
+IOS
+V(TEST)
+–1 V to 3.4 V
+C
+High or Low
+Steady State
+Logic Input
+The M-LVDS Standard www.ti.com
+Figure 6 shows that the driver shunt load is ~ 50 Ω, the parallel combination of two 100-Ω ideal
+transmission lines, and the common-mode load is 3.32 kΩ. M-LVDS drivers provide a typical differential
+output signal of 565 mV into a 50-Ω test load. This means that M-LVDS drivers deliver approximately 11.3
+mA when a 50-Ω load represents the actual application. M-LVDS drivers therefore, may deliver more
+signal to receivers in a multipoint architecture than their LVDS counterparts deliver in a point-to-point or
+multidrop type configuration (typical differential voltage for 644 and 644-A drivers is 350 mV). This
+increased, relative, drive strength is incorporated to address anticipated multipoint designs involving
+closely spaced nodes. While a point-to-point multipoint or widely distributed multipoint system can be
+expected to look like 50 Ω to a driver, closely spaced nodes can easily result in capacitive loading that
+drops the effective load seen by the driver to 30 Ω. The 11.3 mA output ensures that M-LVDS drivers still
+provide greater than 300 mV under these conditions.
+3.1.2 Driver Short Circuit
+A second M-LVDS driver provision to address contention deals with the maximum short circuit current
+delivered to the multipoint bus. M-LVDS drivers are required to deliver less than 43 mA of current when
+driving into a short circuit as shown in Figure 7.
+The power supply included in the figure is the one already seen, its range of voltage chosen to represent
+the maximum bus voltage due to drivers located throughout the multipoint line, and separated by up to ±1
+V of ground shift. The 43-mA short circuit requirement ensures that the maximum output from any driver
+does not develop more than 0 to 2.4 V differential on the bus. A 50-Ω line impedance, coupled with this
+43-mA current, ensures that the max differential bus voltage stays below 2.4 V in magnitude.
+Figure 7. Driver Short-Circuit Test Circuit
+3.1.3 Driver Transition Time
+A final M-LVDS driver provision to address multipoint operation concerns transition time. As was shown in
+Table 1, 644 and 644-A allow driver transition times as fast as 260 ps. Faster transition times lead to
+higher signaling rates, which is one of the key benefits of LVDS. Using the generally accepted equation
+below it is seen that the 644 and 644-A allow for signaling rates of up to 1.923 Gbps:
+One of the drawbacks of fast transition times is that careful attention needs to be placed on the design of
+the interconnect to minimize impedance mismatches from stubs, connectors, and other parasitic
+connections to the line. General guidelines suggest that mainline stubs be kept as short as possible, with
+specific guidelines recommending that the propagation delay of a stub be less than 30% of the signal
+transition time. With 260 ps transition times, this means stubs should be less than 80 ps long, or
+approximately 0.5 inch of FR-4 PCB material.
+In a multipoint system, stubs off the mainline may be the norm, rather than the exception. In order to allow
+for this, while also observing the 30% propagation delay recommendation, the M-LVDS standard specifies
+a minimum transition time of 1 ns. This 1 ns means that the maximum signaling rate expected with M-
+LVDS devices is 500 Mbps, but stubs can now be almost 2 inches long without violating the 30% rule.
+6 Introduction to M-LVDS (TIA/EIA-899) SLLA108A–February 2002–Revised January 2013
+Submit Documentation Feedback
+Copyright © 2002–2013, Texas Instruments Incorporated
+
+PAGE 7
+www.ti.com The M-LVDS Standard
+3.2 Receiver Specifications
+3.2.1 Input Impedance and Leakage Current
+In a multipoint environment, active drivers provide a differential signal to receivers, as well as disabled
+(three-stated), inactive, drivers and transceivers. From a loading point-of-view, inactive drivers and
+transceivers can effect the transmitted signal in the same way that receivers can. In order to bound the
+impedance seen by an active driver, the M-LVDS standard specifies a common leakage requirement for
+disabled devices and receivers. Similar to the LVDS standard, a 20 µA leakage current is permitted over a
+0 to 2.4 V input range. Since M-LVDS devices are required to operate over a wider input range than LVDS
+devices, additional leakage requirements are included for the wider voltage inputs, but all devices can be
+characterized simply as 120 kΩ, minimum, input impedance. The M-LVDS driver full-load test circuit seen
+earlier (Figure 6) ensures that at least thirty two compliant M-LVDS circuits can be interconnected, and
+comply with the electrical specifications of the standard.
+3.2.2 Bus Pin Voltage
+Disabled devices and M-LVDS receivers are also required to constrain their bus pin voltage. Compliant
+circuits are required to maintain bus-pin voltages between 0 and 2.4 V. Limiting bus pin voltage in this way
+ensures the bus operating voltages stay within those allowed by standard. Inactive devices and receivers
+are prohibited from employing simple failsafe pullup circuitry that can charge the line to more than 2.4 V or
+less than 0 V and result in operation outside the minimum common-mode operating voltages.
+3.2.3 Input Thresholds and Type-1/Type-2 Receivers
+As has been mentioned already, M-LVDS receivers are required to operate with differential inputs up to
+2.4 V in magnitude. Supporting this 2.4 V input ensures that proper operation is available even under
+conditions of thirty-two drivers operating simultaneously. M-LVDS receivers are also required to correctly
+detect the input state when as little as 50 mV of signal is available. This 50-mV requirement is half the 100
+mV specified for LVDS receivers. This reduction in input threshold, along with the increase in driver output
+(565 mV for M-LVDS vs 350 mV for LVDS drivers), provides improved noise margins when using M-LVDS
+devices. As in the LVDS specification, the M-LVDS threshold requirement is a steady state specification.
+System designers should plan on providing at least 50 mV of overdrive signal at the input to the receivers
+to provide for at-speed signaling.
+The LVDS standard does not specify any requirements for receiver failsafe. Compliant receivers were
+simply specified to correctly detect the input state when at least 100 mV was available and receiver
+response to less than 100 mV. The M-LVDS standard has specified two classes of receivers to bring
+standardization to failsafe implementation. The standard uses the nomenclature Type-1 and Type-2 to
+refer to these two receiver classes.
+Figure 8 shows the required response, vs input differential voltage, for Type-1 and Type-2 receivers.
+Type-1 receivers are similar to LVDS receivers, with improved thresholds. Type-2 receivers have an offset
+threshold. Bus input signals that are less than +50 mV are defined to be a low state. Greater than +150
+mV results in a high state. Type-1 receivers are expected to be used for maximum speed signals such as
+data or clock lines. Type-2 receivers are useful for lower speed applications such as control lines.
+7SLLA108A–February 2002–Revised January 2013 Introduction to M-LVDS (TIA/EIA-899)
+Submit Documentation Feedback
+Copyright © 2002–2013, Texas Instruments Incorporated
+
+PAGE 8
+Zt
+INPUT 1
+HI
+INPUT 2
+HI
+INPUTN
+HI
+Type–2
+Receiver
+Zt
+High High
+Low Low
+2.4 V
+–2.4 V
+150 mV
+50 mV
+0 V
+–50 mV
+Transition Region
+VID
+Type 1 Type 2
+The M-LVDS Standard www.ti.com
+Figure 8. Receiver Differential Input Voltage Threshold Requirements
+Type-2 receivers allow Wired-Or signaling with M-LVDS devices. Figure 9 shows devices connected in a
+Wired-Or architecture. The enable lines on the drivers are used to disable/enable the drivers. When
+enabled, drivers output a high state to the bus. Type-2 receivers detect a high state when one or more bus
+drivers are active. The receiver detects a low state when all drivers are disabled. Such a configuration
+might be used when sharing control lines to arbitrate for access to accompanying data lines.
+Figure 9. Wired-OR Signaling Using M-LVDS Drivers and Receivers
+8 Introduction to M-LVDS (TIA/EIA-899) SLLA108A–February 2002–Revised January 2013
+Submit Documentation Feedback
+Copyright © 2002–2013, Texas Instruments Incorporated
+
+PAGE 9
+driver_signaling_rate  = 0.3
+tr tf,
+www.ti.com Texas Instruments M-LVDS Portfolio
+4 Texas Instruments M-LVDS Portfolio
+Texas Instruments M-LVDS portfolio provides devices covering signal rates from 100-250. Table 2
+summarizes the portfolio, the data sheets for each of these parts can be found online at
+www.ti.com/interface.
+Table 2. SN65MLVD200 Series Parts
+SignalingPart Number No. of Tx No. of Rx FunctionReceiver Type Pin/PackageRate(Mbps)
+0 1 250 2 Receiver 8SONSN65MLVD3
+SN65MLVD2 0 1 250 1 Receiver 8SON
+SN65MLVD048 0 4 250 1, 2 Receiver 48VQFN
+1 1 100 1 Transceiver 14SOICSN65MLVD202A
+1 1 100 2 Transceiver 14SOICSN65MLVD205A
+1 1 100 2 Transceiver 8SOICSN65MLVD204A
+1 1 100 1 Transceiver 8SOICSN65MLVD200A
+1 1 200 2 Transceiver 14SOICSN65MLVD207
+1 1 200 1 Transceiver 14SOICSN65MLVD203
+1 1 200 2 Transceiver 8SOICSN65MLVD206
+1 1 200 1 Transceiver 8SOICSN65MLVD201
+DS91M124 4 1 250 Repeater 16SOIC
+DS91M125 4 1 250 Repeater 16SOIC
+4 4 250 1, 2 Transceiver 48VQFNSN65MLVD040
+16SOIC,SN65MLVD047A 4 4 200 1 Transceiver 16TSSOP
+SN65MLVD128 8 1 250 1 Repeater 48TSSOP
+8 2 250 1 Repeater 48TSSOPSN65MLVD129
+SN65MLVD080 8 8 250 1 Transceiver 64TSSOP
+8 8 250 2 Transceiver 64TSSOPSN65MLVD082
+Each of the family parts is briefly discussed below.
+The ‘200A, ‘202A, ‘204A and ‘205A devices provide 100 Mbps signaling rates with driver transition times
+limited within 1.5 ns and 3.0 ns. Since the signaling rate is a function of transition time, the maximum
+signaling rate is defined as 50% of the transition time. However, transition time degradation between the
+driver and receiver will occur and reduce the maximum achievable signaling rate. The following equation
+is generally accepted for calculating the signaling rate:
+Using this equation with the 3.0 ns max transition time results in the 100 Mbps driver specification. The
+1.5 ns minimum transition time helps bound the length of stubs off the main line, which in this case would
+be almost 3 inches long.
+The ‘200A and ‘204A are footprint compatible with the SN75176 bidirectional bus transceiver while the
+‘202A and ‘205A provide footprint replacements for devices complying with the SN75ALS180 differential
+driver/receiver pair (SN75176 and SN75ALS180 footprints are shown in Figure 10). The ‘176 is an
+industry standard RS-485 footprint that allows the driver and receiver to be enabled independently,
+thereby allowing simultaneous talking and listening at a single node. Halfduplex communication is also
+possible with the topology of the ‘176 footprint. Full duplex communication is available with the '180, an
+industry standard RS-422/RS-485 driver/receiver pair, because of the separate driver and receiver bus
+lines. The ‘200A and ‘202A provide Type-1 receivers with the 100 Mbps driver circuits, while the ‘204A
+and ‘205A include Type-2 receivers.
+9SLLA108A–February 2002–Revised January 2013 Introduction to M-LVDS (TIA/EIA-899)
+Submit Documentation Feedback
+Copyright © 2002–2013, Texas Instruments Incorporated
+
+PAGE 10
+1
+2
+4
+3
+7
+6
+DE
+D
+RE
+R
+A
+B 2
+3
+4
+5
+10
+9
+12
+11
+DE
+D
+RE
+R
+A
+B
+Y
+Z
+SN75176 Footprint SN75ALS180 Footprint
+Summary www.ti.com
+The ‘201A and ‘203A devices are 200 Mbps circuits with driver transition times limited to 1 ns and 1.5 ns.
+Since the 1 ns lower limit is shorter than the 1.5 nS lower limit of the 100 Mbps devices, the allowable stub
+off the main bus line is reduced to 2 inches.
+Figure 10. MLVD200 Series Footprints
+5 Summary
+The M-LVDS standard provides designers with the high speed and low power benefits of LVDS and allows
+designers the flexibility to implement these features in a multipoint data transmission application. Texas
+Instruments brings a vast M-LVDS portfolio to the market that incorporates a wide variety of single and
+multichannel devices to aid designers in their multipoint designs. Please visit www.ti.com/interface for
+more information on TI's M-LVDS portfolio and www.e2e.ti.com for technical support.
+References
+The Many Flavors of LVDS; SNLA184
+10 Introduction to M-LVDS (TIA/EIA-899) SLLA108A–February 2002–Revised January 2013
+Submit Documentation Feedback
+Copyright © 2002–2013, Texas Instruments Incorporated
+
+PAGE 11
+IMPORTANT NOTICE
+Texas Instruments Incorporated and its subsidiaries (TI) reserve the right to make corrections, enhancements, improvements and other
+changes to its semiconductor products and services per JESD46, latest issue, and to discontinue any product or service per JESD48, latest
+issue. Buyers should obtain the latest relevant information before placing orders and should verify that such information is current and
+complete. All semiconductor products (also referred to herein as “components”) are sold subject to TI’s terms and conditions of sale
+supplied at the time of order acknowledgment.
+TI warrants performance of its components to the specifications applicable at the time of sale, in accordance with the warranty in TI’s terms
+and conditions of sale of semiconductor products. Testing and other quality control techniques are used to the extent TI deems necessary
+to support this warranty. Except where mandated by applicable law, testing of all parameters of each component is not necessarily
+performed.
+TI assumes no liability for applications assistance or the design of Buyers’products. Buyers are responsible for their products and
+applications using TI components. To minimize the risks associated with Buyers’products and applications, Buyers should provide
+adequate design and operating safeguards.
+TI does not warrant or represent that any license, either express or implied, is granted under any patent right, copyright, mask work right, or
+other intellectual property right relating to any combination, machine, or process in which TI components or services are used. Information
+published by TI regarding third-party products or services does not constitute a license to use such products or services or a warranty or
+endorsement thereof. Use of such information may require a license from a third party under the patents or other intellectual property of the
+third party, or a license from TI under the patents or other intellectual property of TI.
+Reproduction of significant portions of TI information in TI data books or data sheets is permissible only if reproduction is without alteration
+and is accompanied by all associated warranties, conditions, limitations, and notices. TI is not responsible or liable for such altered
+documentation. Information of third parties may be subject to additional restrictions.
+Resale of TI components or services with statements different from or beyond the parameters stated by TI for that component or service
+voids all express and any implied warranties for the associated TI component or service and is an unfair and deceptive business practice.
+TI is not responsible or liable for any such statements.
+Buyer acknowledges and agrees that it is solely responsible for compliance with all legal, regulatory and safety-related requirements
+concerning its products, and any use of TI components in its applications, notwithstanding any applications-related information or support
+that may be provided by TI. Buyer represents and agrees that it has all the necessary expertise to create and implement safeguards which
+anticipate dangerous consequences of failures, monitor failures and their consequences, lessen the likelihood of failures that might cause
+harm and take appropriate remedial actions. Buyer will fully indemnify TI and its representatives against any damages arising out of the use
+of any TI components in safety-critical applications.
+In some cases, TI components may be promoted specifically to facilitate safety-related applications. With such components, TI’s goal is to
+help enable customers to design and create their own end-product solutions that meet applicable functional safety standards and
+requirements. Nonetheless, such components are subject to these terms.
+No TI components are authorized for use in FDA Class III (or similar life-critical medical equipment) unless authorized officers of the parties
+have executed a special agreement specifically governing such use.
+Only those TI components which TI has specifically designated as military grade or “enhanced plastic”are designed and intended for use in
+military/aerospace applications or environments. Buyer acknowledges and agrees that any military or aerospace use of TI components
+which have not been so designated is solely at the Buyer's risk, and that Buyer is solely responsible for compliance with all legal and
+regulatory requirements in connection with such use.
+TI has specifically designated certain components as meeting ISO/TS16949 requirements, mainly for automotive use. In any case of use of
+non-designated products, TI will not be responsible for any failure to meet ISO/TS16949.
+Products Applications
+Audio www.ti.com/audio Automotive and Transportation www.ti.com/automotive
+Amplifiers amplifier.ti.com Communications and Telecom www.ti.com/communications
+Data Converters dataconverter.ti.com Computers and Peripherals www.ti.com/computers
+DLP® Products www.dlp.com Consumer Electronics www.ti.com/consumer-apps
+DSP dsp.ti.com Energy and Lighting www.ti.com/energy
+Clocks and Timers www.ti.com/clocks Industrial www.ti.com/industrial
+Interface interface.ti.com Medical www.ti.com/medical
+Logic logic.ti.com Security www.ti.com/security
+Power Mgmt power.ti.com Space, Avionics and Defense www.ti.com/space-avionics-defense
+Microcontrollers microcontroller.ti.com Video and Imaging www.ti.com/video
+RFID www.ti-rfid.com
+OMAP Applications Processors www.ti.com/omap TI E2E Community e2e.ti.com
+Wireless Connectivity www.ti.com/wirelessconnectivity
+Mailing Address: Texas Instruments, Post Office Box 655303, Dallas, Texas 75265
+Copyright © 2013, Texas Instruments Incorporated

@@ -1,0 +1,93 @@
+ISO 15765-4 format. Try resending the command
+again – if it was a noise burst, it may be received
+correctly the second time.
+ERRxx
+There are a number of internal errors that might be
+reported as ERR with a two digit code following. These
+occur if an internally monitored parameter is found to
+be out of limits, or if a module is not responding
+correctly. If you witness one of these, contact Elm
+Electronics for advice.
+One error that is not necessarily a result of an
+internal problem is ERR94. This code represents a
+‘fatal CAN error’, and may be seen if there are CAN
+network issues (some non-CAN vehicles may use pins
+6 and 14 of the connector for other functions, and this
+may cause problems). If you see an ERR94, it means
+that the CAN module was not able to reset itself, and
+needed a complete IC reset to do so. You will need to
+restore any settings that you had previously made, as
+they will have been returned to their default values.
+Beginning with v1.3a of this IC, an ERR94 will also
+block further automatic searches through the CAN
+protocols, if bit 5 of PP 2A is a ‘1’ (it is by default). This
+is done because most ERR94s will be as a result of
+serious CAN wiring problems. Blocking of the CAN
+protocols remains in effect until the next power off and
+on, or until an AT FE is sent.
+FB ERROR
+When an OBD output is energized, a check is
+always made to ensure that the signal also appears at
+the respective input. If there is a problem, and no
+active input is detected, the IC turns the output off and
+declares that there was a problem with the FeedBack
+(FB) of the signal.  If this is an initial trial with your
+ELM327, this is almost certainly a wiring problem.
+Check your wiring before proceeding.
+LP ALERT or !LP ALERT
+This appears as a warning that the ELM327 is
+about to switch to the Low Power (standby) mode of
+operation in 2 seconds time. This delay is provided to
+allow an external controller enough time to prepare for
+the change in state. No inputs or voltages on pins can
+stop this action once initiated. Note that the ‘!’ before
+LP ALERT is printed if PP 0F bit 1 is 1.
+Error Messages and Alerts (continued)
+LV RESET
+The ELM327 continually monitors the 5V supply to
+ensure that it is within acceptable limits. If the voltage
+should go below the low limit, a ‘brownout reset’ circuit
+is activated, and the IC stops all activity. In rare cases,
+a sudden large change in V DD can also trigger a low
+voltage reset.
+When the voltage returns to normal, the ELM327
+performs a full reset, and then prints LV RESET. Note
+that this type of reset is exactly the same as an AT Z
+or MCLR reset (but it does not print ELM327 v2.2).
+An LV RESET will also block automatic searches
+through the CAN protocols, if bit 4 of PP 2A is a ‘1’ (it
+is by default). This is done because most LV RESETs
+seem to occur as a result of CAN wiring problems (the
+transceiver is capable of passing very large currents).
+Blocking of the CAN protocols is only done until the
+next reset (AT Z, WS, etc.) or until an AT FE is sent.
+NO DATA
+The IC waited for the period of time that was set
+by AT ST, and detected no response from the vehicle.
+It may be that the vehicle had no data to offer for that
+particular PID, that the mode requested was not
+supported, that the vehicle was attending to higher
+priority issues, or in the case of the CAN systems, the
+filter may have been set so that the response was
+ignored, even though one was sent. If you are certain
+that there should have been a response, try increasing
+the ST time (to be sure that you have allowed enough
+time for the ECU to respond), or restoring the CAN
+filter to its default setting.
+<RX ERROR
+An error was detected in the received CAN data.
+This most often occurs if monitoring a CAN bus using
+an incorrect baud rate setting, but it may occur if
+monitoring and there are messages found that are not
+being acknowledged, or that contain bit errors. The
+entire message will be displayed as it was received (if
+you have filters set, the received message may not
+agree with the filter setting). Try a different protocol, or
+a different baud rate.
+STOPPED
+If any OBD operation is interrupted by a received
+RS232 character, or by a low level on the RTS pin, the
+89 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com

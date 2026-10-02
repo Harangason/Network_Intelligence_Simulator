@@ -1,0 +1,54 @@
+TC_N_41_CS: Set Variable Monitoring - Return to FactoryDefault
+Test case name Set Variable Monitoring - Return to FactoryDefault
+Test case Id TC_N_41_CS
+Use case Id(s) N03
+Requirement(s) N03.FR.04, N04.FR.15
+System under test Charging Station
+Description This test case describes how the CSMS requests the Charging Station to overrule a preconfigured monitor
+by a custom monitor. When monitoringBase is set to FactoryDefault the preconfigured monitor must return.
+Purpose To verify if the Charging station is able to correctly restore monitors to FactoryDefault.
+Prerequisite(s) - Charging Station supports Monitoring
+- A preconfigured monitor exists with id <Configured preconfigured monitor id>.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+MonitoringBase has been set to FactoryDefault
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with
+GetMonitoringReportResponse
+1. The Test System sends GetMonitoringReportRequest with
+requestId = <Generated requestId>
+3. The Charging Station sends NotifyMonitoringReportRequest
+4. The Test System responds with
+NotifyMonitoringReportResponse
+Note(s):
+- If NotifyMonitoringReportRequest.tbc is True in Step 3 then step 3 and 4 will be repeated
+Search NotifyMonitoringReportRequest.monitoringReportData of step 3 to get a monitoringReportData.monitor
+WHERE monitor.variableMonitoring.id is <Configured preconfigured monitor id>
+AS <preconfiguredMonitor>
+6. The Charging Station responds with a
+SetVariableMonitoringResponse
+5. The Test System sends a SetVariableMonitoringRequest with
+setMonitoringData.id
+<preconfiguredMonitor.variableMonitoring.id>
+setMonitoringData.transaction
+<preconfiguredMonitor.variableMonitoring.transaction>
+setMonitoringData.value
+_<preconfiguredMonitor.variableMonitoring.value>
+setMonitoringData.type
+<preconfiguredMonitor.variableMonitoring.type>
+setMonitoringData.severity IF
+<preconfiguredMonitor.variableMonitoring.severity> < 9 THEN
+<preconfiguredMonitor.variableMonitoring.severity> + 1
+ELSE
+5
+END IF
+setMonitoringData.component
+<preconfiguredMonitor.component>
+setMonitoringData.variable <preconfiguredMonitor.variable>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 724/1383 Part 6 - Test Cases

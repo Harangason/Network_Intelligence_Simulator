@@ -1,0 +1,48 @@
+TC_E_117_CSMS: Set Charging Profile - Resuming transaction after interruption -
+TxResumptionTimeout not expired - TxAllowEnergyTransferResumption is true
+Test case name Set Charging Profile - Resuming transaction after interruption - TxResumptionTimeout not expired -
+TxAllowEnergyTransferResumption is true
+Test case Id TC_E_117_CSMS
+Use case Id(s) E17
+Requirement(s) E17.FR.15
+System under test CSMS
+Description CSMS restores TxProfile after Charging Station resumes transactions which had a Charging profile with
+purpose TxProfile configured.
+Purpose To verify the CSMS restores the charging profile for a transaction after resuming transactions by the
+Charging Station.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+SmartChargingCtrlr.ChargingProfilePersistence is <absent>
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual action: trigger CSMS to set a Charging Profile of type TxProfile on <transactionId>
+2. The Test System responds with a
+SetChargingProfileResponse with
+status Accepted
+1. The CSMS sends a SetChargingProfileRequest
+The Test System disconnects the connection.
+The Test System waits the <Configured transaction duration>
+The Test System restores the connection.
+3. The Test System sends a BootNotificationRequest
+4. The CSMS responds with a BootNotificationResponse
+5. The Test System notifies the CSMS about the current state of
+all connectors.
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+Configured EVSE.Connector:
+- eventData[0].actualValue "Occupied"
+Other connectors:
+- eventData[0].actualValue "Available"
+6. The CSMS responds accordingly.
+7 The Test System sends a SecurityEventNotificationRequest
+- type must be StartupOfTheDevice OR ResetOrReboot 8 The CSMS responds with a
+SecurityEventNotificationResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1100/1383 Part 6 - Test Cases

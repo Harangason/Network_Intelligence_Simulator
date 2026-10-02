@@ -1,0 +1,53 @@
+logical component that controls a group of Charging Stations. A typical use would be a number of Charging Stations in a parking
+garage where the rating of the connection to the grid is less than the sum the ratings of the Charging Stations. Another application
+might be that the Local Controller receives information about the availability of power from a DSO or a local smart grid node.
+Local group
+Local Controller
+CS00
+Local Controller limits
+power usage of total
+group to pre-configured
+maximum capacity.
+Charging Station
+CS01
+Charging Station
+CS02
+Charging Station
+CS03
+EV1
+EV2
+CSMS
+OCPP charging profile
+OCPP charging profile Control Pilot signal
+or ISO 15118
+Control Pilot signal
+or ISO 15118
+OCPP ChargingStationMaxProfile
+Figure 95. Local Smart Charging Topology
+2.4. External Smart Charging Control Signals
+The OCPP protocol is developed for communication between a CSMS and one or more Charging Stations. As described in the
+above, this means that a CSMS of a Charging Station Operator (CSO) controls a Charging Station and, based on the charging limits
+of both the EV and the Charging Station, the CSO controls how fast the EV is charged. In some situations there are other factors
+that might control charging power: A DSO can send signals to change charging power (e.g. via IEC 61850 [IEC61850-7-420], IEC
+60870 [IEC60870-5-104], DNP3 [DNP3] or OpenADR [OPENADR]), or a Home Energy Management System or a smart meter may be
+in place to limit charging power.
+An external actor can connect to a Charging Station with any protocol that is supported by the Charging Station for this purpose,
+like Modbus, EEBUS, and even OCPP. This control signal can be a single limit value or a schedule. In both cases Charging Station
+will represent the limit internally as a charging profile of purpose ChargingStationExternalConstraints.
+A CSMS may need to be informed of changes in charging rate as a result of external signals. OCPP provides a
+NotifyChargingLimitRequest message to report such changes.
+Site
+Other loadsLocal Generation
+Charging
+Station 1
+Charging
+Station 2
+EMS
+Grid_connection
+DSO
+CSMS
+control
+NotifyChargingLimit NotifyChargingLimit
+Figure 96. EMS control directly to Charging Stations
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 240/491 Part 2 - Specification

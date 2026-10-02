@@ -1,0 +1,46 @@
+TC_E_100_CS: Transactions with fixed cost, energy or time - CSMS specifies
+energy limit
+Test case name Transactions with fixed cost, energy or time - CSMS specifies energy limit
+Test case Id TC_E_100_CS
+Use case Id(s) E16
+Requirement(s) E16.FR.02, E16.FR.05, E16.FR.06, E16.FR.08
+System under test Charging Station
+Description CSMS will limit the transaction to the specified energy limit.
+Purpose To verify whether the Charging Station uses the specified energy limit to limit the transaction.
+Prerequisite(s) TxCtrlr.SupportedLimits contains maxEnergy
+Before (Preparations)
+Configuration State:
+SampledDataTxUpdatedInterval is <Configured sampled Meter Values Updated interval>
+Memory State:
+N/a
+Reusable State(s):
+State is Authorized
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+with
+transactionLimit.maxEnergy 2000
+transactionLimit.maxTime <omitted>
+transactionLimit.maxCost <omitted>
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+5. The Charging Station sends a TransactionEventRequest
+6. The Test System responds with a TransactionEventResponse
+with
+transactionLimit.maxEnergy 200
+transactionLimit.maxTime <omitted>
+transactionLimit.maxCost <omitted>
+7. The Charging Station sends a TransactionEventRequest
+8. The Test System responds with a TransactionEventResponse
+9. The Charging Station sends a TransactionEventRequest
+10. The Test System responds with a
+TransactionEventResponse
+Note: Steps 9 and 10 may repeat
+11. The Charging Station sends a TransactionEventRequest
+12. The Test System responds with a
+TransactionEventResponse
+Note: Step 11 should be triggered when 200 Wh has been charged
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 290/1383 Part 6 - Test Cases

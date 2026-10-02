@@ -1,0 +1,30 @@
+The smart charging options defined can be used in extensive ways. Because of the possible limitations and
+differences in capabilities between Charge Points, the Central System needs to be able to discover the Charge
+Point specific capabilities. This is ensured by the standardized configuration keys as defined in this chapter. A
+Smart Charging enabled Charge Point SHALL implement, and support reporting of, the following configuration
+keys through the GetConfiguration.req PDU
+SMART CHARGING CONFIGURATION KEYS
+ChargeProfileMaxStackLevel
+ChargingScheduleAllowedChargingRateUnit
+ChargingScheduleMaxPeriods
+MaxChargingProfilesInstalled
+A full list of all standardized configuration keys can be found in chapter Standard Configuration Key Names &
+Values.
+3.13.6. Offline behavior of smart charging
+This section is normative.
+If a Charge Point goes offline after having received a transaction-specific charging profile with purpose TxProfile,
+then it SHALL continue to use this profile for the duration of the transaction.
+If a Charge Point goes offline before a transaction is started or before a transaction-specific charging profile with
+purpose TxProfile was received, then it SHALL use the charging profiles that are available. Zero or more of the
+following charging profile purposes MAY have been previously received from the Central System:
+*ChargePointMaxProfile
+*TxDefaultProfile
+See section Combining Charging Profile Purposes for a description on how to combine charging profiles with
+different purposes.
+If a Charge Point goes offline, without having any charging profiles, then it SHALL execute a transaction as if no
+constraints apply.
+3.13.7. Example data structure for smart charging
+This section is informative
+The following data structure describes a daily default profile that limits the power to 6 kW between 08:00h and
+20:00h.
+27

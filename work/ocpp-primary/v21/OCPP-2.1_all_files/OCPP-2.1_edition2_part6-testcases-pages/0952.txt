@@ -1,0 +1,30 @@
+EnergyTransferStartedBatterySwapping
+State EnergyTransferStartedBatterySwapping
+System under test Charging Station
+Description This state will prepare the Charging Station, so that one or more batteries that have been inserted are
+charging.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+If State is NOT EVConnectedPreSessionBatterySwapping, then execute Reusable State EVConnectedPreSessionBatterySwapping
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+Notes:
+- Steps 1 and 2 are applicable if the Charging Station did not already report chargingState Charging at reusable state
+EVConnectedPreSessionBatterySwapping
+- Steps 1 and 2 are repeated for each battery inserted
+Tool validations
+* Step 5:
+Message: TransactionEventRequest
+- eventType must be Updated
+- triggerReason must be ChargingStateChanged
+- transactionInfo.chargingState must be Charging
+Post scenario validations:
+State is EnergyTransferStartedBatterySwapping
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 950/1383 Part 6 - Test Cases

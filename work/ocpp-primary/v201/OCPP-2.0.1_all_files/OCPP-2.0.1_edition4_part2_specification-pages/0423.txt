@@ -1,0 +1,47 @@
+Field Name Field Type Card. Description
+value string[0..2500] 0..1 Optional. Value of the attribute. May only be omitted
+when mutability is set to 'WriteOnly'.
+The Configuration Variable ReportingValueSize can be
+used to limit GetVariableResult.attributeValue,
+VariableAttribute.value and EventData.actualValue. The
+max size of these values will always remain equal.
+mutability MutabilityEnumType 0..1 Optional. Defines the mutability of this attribute. Default
+is ReadWrite when omitted.
+persistent boolean 0..1 Optional. If true, value will be persistent across system
+reboots or power down. Default when omitted is false.
+constant boolean 0..1 Optional. If true, value that will never be changed by the
+Charging Station at runtime. Default when omitted is
+false.
+2.51. VariableCharacteristicsType
+Class
+Fixed read-only parameters of a variable.
+VariableCharacteristicsType is used by: NotifyReportRequest.ReportDataType
+Field Name Field Type Card. Description
+unit string[0..16] 0..1 Optional. Unit of the variable. When the transmitted value
+has a unit, this field SHALL be included.
+dataType DataEnumType 1..1 Required. Data type of this variable.
+minLimit decimal 0..1 Optional. Minimum possible value of this variable.
+maxLimit decimal 0..1 Optional. Maximum possible value of this variable. When
+the datatype of this Variable is String, OptionList,
+SequenceList or MemberList, this field defines the
+maximum length of the (CSV) string.
+valuesList string[0..1000] 0..1 Optional. Mandatory when dataType = OptionList,
+MemberList or SequenceList. valuesList specifies the
+allowed values for the type.
+* OptionList: The (Actual) Variable value must be a single
+value from the reported (CSV) enumeration list.
+* MemberList: The (Actual) Variable value may be an
+(unordered) (sub-)set of the reported (CSV) valid values
+list.
+* SequenceList: The (Actual) Variable value may be an
+ordered (priority, etc) (sub-)set of the reported (CSV) valid
+values.
+This is a comma separated list.
+The Configuration Variable ConfigurationValueSize can
+be used to limit SetVariableData.attributeValue and
+VariableCharacteristics.valueList. The max size of these
+values will always remain equal.
+supportsMonitoring boolean 1..1 Required. Flag indicating if this variable supports
+monitoring.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 413/491 Part 2 - Specification

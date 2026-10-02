@@ -1,0 +1,57 @@
+TC_O_24_CS: Set Display Message -  Second Alwaysfront priority
+Test case name Set Display Message - Second Alwaysfront priority
+Test case Id TC_O_24_CS
+Use case Id(s) O01
+Requirement(s) O01_FR_16
+System under test Charging Station
+Description This test case describes how the CSMS can be requested to sent an SetDisplayMessageRequest to the
+charging station. Depending on the given parameters the message shall be displayed a certain way and at a
+certain moment on the Charging Station. These messages are displayed additionally on a Charging Station
+and are not part of the firmware.
+Purpose To verify if the Charging Station is able to display multiple additional messages with a "AlwaysFront" priority
+according to the DisplayMessage mechanism as described in the OCPP specification.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDisplayMessageResponse
+1. The Test System sends a SetDisplayMessageRequest with
+message.id <Generated displayMessageId>
+message.priority AlwaysFront
+4. The Charging Station responds with a
+SetDisplayMessageResponse
+3. The Test System sends a SetDisplayMessageRequest with
+message.id <Configured displayMessage2Id>
+message.priority AlwaysFront
+6. The Charging Station responds with a
+GetDisplayMessagesResponse
+5. The Test System sends a GetDisplayMessagesRequest with
+id <Configured displayMessage2Id>
+7. The Charging Station sends a NotifyDisplayMessagesRequest
+8. The Test System responds with a
+NotifyDisplayMessagesResponse .
+Note(s):
+- If tbc is True at Step 7 then step 7 and 8 will be repeated
+- The message from step 1 is NOT displayed anymore and is replaced by the message from step 5.
+Tool validations
+* Step 2:
+Message SetDisplayMessageResponse
+- status Accepted
+* Step 4:
+Message SetDisplayMessageResponse
+- status Accepted
+* Step 6:
+Message GetDisplayMessagesResponse
+- status Accepted
+* Step 7:
+Message NotifyDisplayMessagesRequest
+- requestId <Generated requestId>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 783/1383 Part 6 - Test Cases

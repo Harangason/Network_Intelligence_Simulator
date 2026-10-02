@@ -1,0 +1,30 @@
+Main (Test scenario)
+4. The Charging Station responds with a
+GetCompositeScheduleResponse
+3. The Test System sends a GetCompositeScheduleRequest
+with evseId <Configured evseId>
+duration is 8000
+chargingRateUnit <Configured chargingRateUnit>
+Tool validations
+* Step 2:
+Message SetChargingProfileResponse
+- status must be Accepted
+* Step 4:
+Note: The period of time between sending the SetChargingProfileRequest in step 1 and the scheduleStart from the
+GetCompositeScheduleResponse is called x:
+Message: GetCompositeScheduleResponse
+- status must be Accepted
+- schedule.duration must be 8000
+- schedule.chargingSchedulePeriod[0].startPeriod must be 0
+- schedule.chargingSchedulePeriod[0].limit must be 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+- schedule.chargingSchedulePeriod[1].startPeriod must be 3600 - <x>
+- schedule.chargingSchedulePeriod[1].limit must be 7 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+- schedule.chargingSchedulePeriod[2].startPeriod must be 7200 - <x>
+- schedule.chargingSchedulePeriod[2].limit must be 8 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 560/1383 Part 6 - Test Cases

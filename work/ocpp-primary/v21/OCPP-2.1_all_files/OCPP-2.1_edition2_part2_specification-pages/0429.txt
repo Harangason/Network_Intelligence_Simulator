@@ -1,0 +1,102 @@
+ID Precondition Requirement definition Note
+L01.FR.13 When the Charging Station does not
+start downloading firmware, because
+it is busy charging or because
+retrieveDateTime is in the future
+The Charging Station SHALL send a
+FirmwareStatusNotificationRequest
+with status DownloadScheduled.
+L01.FR.14 When the Charging Station enters the
+Download Paused state.
+The Charging Station SHALL send a
+FirmwareStatusNotificationRequest
+with status DownloadPaused.
+For example when the Charging
+Station has tasks with higher
+priorities.
+L01.FR.15 When a Charging Station needs to
+reboot before installing the
+downloaded firmware.
+The Charging Station SHALL send a
+FirmwareStatusNotificationRequest
+with status InstallRebooting, before
+rebooting.
+L01.FR.16 L01.FR.04 AND
+When installDateTime is set to a time
+in the future
+The Charging Station SHALL send a
+FirmwareStatusNotificationRequest
+with status InstallScheduled and
+install the firmware at the specified
+installation time.
+L01.FR.20 The field requestId in
+FirmwareStatusNotificationRequest is
+mandatory, unless status = Idle.
+L01.FR.21 When the Charging Station receives an
+UpdateFirmwareRequest
+The Charging Station SHALL validate
+the certificate before accepting the
+message.
+L01.FR.22 L01.FR.21 AND
+the certificate is invalid
+The Charging Station SHALL respond
+with UpdateFirmwareResponse with
+status InvalidCertificate.
+L01.FR.23 When the Charging Station needs to
+reboot during a firmware update AND
+the bootloader is unable to send OCPP
+messages
+The Charging Station MAY omit the
+FirmwareStatusNotificationRequest
+message with status Installing.
+L01.FR.24 When a Charging Station is installing
+new Firmware OR
+is going to install new Firmware, but
+has received an UpdateFirmware
+command to install it at a later time
+AND
+the Charging Station receives a new
+UpdateFirmwareRequest
+The Charging Station SHOULD cancel
+the ongoing firmware update AND
+respond with status
+AcceptedCanceled.
+The Charging Station SHOULD NOT
+first check if the new firmware file
+exists, this way the CSMS will be able
+to cancel an ongoing firmware update
+without starting a new one.
+The Charging Station may send a
+FirmwareStatusNotificationRequest
+with status DownloadFailed or
+InstallationFailed for the
+firmware update that has now been
+canceled.
+L01.FR.25 Charging Station receives a
+TriggerMessageRequest for
+FirmwareStatusNotification
+AND
+last sent
+FirmwareStatusNotificationRequest
+had status = Installed
+Charging Station SHALL return a
+FirmwareStatusNotificationRequest
+with status = Idle.
+L01.FR.26 Charging Station receives a
+TriggerMessageRequest for
+FirmwareStatusNotification
+AND
+last sent
+FirmwareStatusNotificationRequest
+had NOT status Installed
+Charging Station SHALL return a
+FirmwareStatusNotificationRequest
+with the last sent status.
+L01.FR.27 L01.FR.24
+AND
+the Charging Station is unable to
+cancel the firmware installation
+The Charging Station MAY respond
+with status = Rejected.
+Edition 2, 2025-12-03 L. Firmware Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 416/803 Part 2 - Specification

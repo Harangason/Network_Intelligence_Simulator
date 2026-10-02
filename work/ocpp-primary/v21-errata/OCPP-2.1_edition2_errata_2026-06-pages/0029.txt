@@ -1,0 +1,43 @@
+Chapter 4. Part 4
+4.1. Page 10 - (2026-02) - Update handling of unknown message type
+[1163]
+The sentence about ignoring unknown message types has been improved slightly. It mentioned to ignore the message payload, but
+the intention was to ignore the entire message.
+Old
+paragraph
+When a system receives a message with a Message Type Number not in this list, it SHALL ignore the message
+payload. Each message type may have additional required fields.
+New
+paragraph
+When a system receives a message with a Message Type Number not in this list, it SHALL ignore the message
+payload. Each message type may have additional required fields.
+4.2. Page 14 - (2026-02) - Wrong example of NotifyPeriodicEventStream
+[1159]
+Chapter 4.2.4 on page 14 shows an example RPC of the “NotifyPeriodicEventStream” action - they payload of which does not match
+the JSON schema.
+The correct example is:
+[6,
+ "19223201",
+ "NotifyPeriodicEventStream",
+ {
+  "id": 123,
+  "pending": 0,
+  "basetime" = "2024-08-27T12:30:40Z",
+  "data": [ {"t": 0, "v": "230.4"}, {"t": 5, "v": "230.2"} ]
+ }
+]
+4.3. Page 16 - (2026-02) - MessageTypeNotSupported is deprecated
+[1161]
+As of OCPP 2.1 a message type number that is not supported is silently ignored, as described in section 4.4. This is therefore no
+longer a valid error code.
+Valid Error Codes
+ErrorCode Description
+… …
+MessageTypeNotSupported (deprecated)  A message with a Message Type Number that is not supported by this
+implementation.
+… …
+4.4. Page 16 - (2026-02) - Section 4.4 Extension fallback mechanism
+removed [1163]
+Section 4.4 "Extension fallback mechanism" mentions the same as section 4.1, which states to ignore unknown message types. It
+has therefore been removed.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 25/116 Errata 2026-06

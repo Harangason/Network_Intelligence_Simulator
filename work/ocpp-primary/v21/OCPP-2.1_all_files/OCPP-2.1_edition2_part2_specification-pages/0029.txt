@@ -1,0 +1,96 @@
+Chapter 3. Generic Requirements
+This section is normative.
+The generic requirements build the basis for defining the use case elements described in the Functional Blocks.
+IMPORTANT This section requires knowledge of chapter 4 in Part 4 of the specification ([ref-ocpp20-part4]).
+Table 11. Generic requirements
+ID Precondition Requirement definition Note
+FR.01 The sender of a <message>Request
+SHALL wait for a
+<message>Response or a timeout,
+before sending another request
+message.
+FR.02 When the Charging Station receives a
+valid OCPP request message
+according to the JSON schemas / RPC
+Framework AND
+the other system is not causing a
+security violation
+The Charging Station SHALL respond
+with a RPC Framework: CALLRESULT.
+If the Charging Station/CSMS needs to
+provide additional information, this
+can be done in the statusInfo element
+of the response message.
+FR.03 When the Charging Station/CSMS
+receives an invalid OCPP request
+message according to the JSON
+schemas / RPC Framework OR
+the other system causes a security
+violation
+The Charging Station/CSMS SHALL
+respond with a RPC Framework:
+CALLERROR.
+FR.04 When the CSMS rejected the
+BootNotificationRequest from the
+Charging Station AND
+The Charging Station sends a
+message other than
+BootNotificationRequest
+The CSMS SHALL respond with a RPC
+Framework: CALLERROR:
+SecurityError.
+See use cases B02 and B03 for
+details.
+FR.05 There are a few messages that do not
+provide their result in the response
+message, but send one or more
+messages that contain the result.
+When one of the following messages
+is received; GetReport, GetBaseReport,
+GetMonitoringReport,
+GetDisplayMessages,
+CustomerInformation,
+GetChargingProfiles, GetLog,
+UpdateFirmware, PublishFirmware,
+TriggerMessage(<message>)
+The Charging Station SHALL
+acknowledge the requests in the list
+below with a response message
+(shown after the arrow "→") with the
+same requestId as the request:
+GetReport → NotifyReport
+GetBaseReport → NotifyReport
+GetMonitoringReport →
+NotifyMonitoringReport
+GetDisplayMessages →
+NotifyDisplayMessage
+CustomerInformation →
+NotifyCustomerInformation
+GetChargingProfiles →
+ReportChargingProfiles
+GetLog → LogStatusNotification
+UpdateFirmware →
+FirmwareStatusNotification
+PublishFirmware →
+PublishFirmwareStatusNotification
+TriggerMessage(<message>) →
+<requested message>
+The CSMS needs to know that a
+request for requestId = X was
+accepted, so that it can expect result
+messages for this requestId.
+TriggerMessage does not have a
+requestId, but the requirement still
+applies in the sense that a
+TriggerMessageResponse must be
+sent before the sending the requested
+message.
+FR.06 (2.1) When the Charging Station/CSMS
+receives an invalid OCPP response
+message according to the JSON
+schemas / RPC Framework
+The Charging Station/CSMS SHALL
+respond with a RPC Framework:
+CALLRESULTERROR.
+Edition 2, 2025-12-03 Generic
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 16/803 Part 2 - Specification

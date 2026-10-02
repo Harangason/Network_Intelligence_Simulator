@@ -1,0 +1,70 @@
+No. Type Description
+1 Name Idle, minimizing energy consumption
+2 ID Q10
+3 Objective(s) To request the EV to not perform any charging or discharging. Preconditioning of the vehicle is
+allowed.
+4 Description The CSMS requests EV to suspend any charging or discharging during one or more schedule
+intervals. CSMS requests EV to precondition itself in order to maintain the battery at an optimal
+temperature for charging or discharging.
+Actors EV, Charging Station, CSMS
+Scenario description #1 When preconditioning of the battery is needed:
+1. The CSMS sends a SetChargingProfileRequest message, with a chargingSchedule that
+has one or more periods with operationMode set to Idle and preconditioning set to True
+for this interval.
+2. The Charging Station will request the EV to refrain from charging or discharging the
+battery, and to turn on preconditioning of the battery, which may, of course, draw some
+power from the EVSE.
+Scenario description #2 When preconditioning of the battery is not needed:
+1. The CSMS sends a SetChargingProfileRequest message, with a chargingSchedule with
+operationMode set to Idle and preconditioning set to False for this interval.
+2. The Charging Station will request the EV to refrain from charging or discharging and
+switch off preconditioning.
+Scenario description #3 Requesting EVSE to sleep:
+1. The CSMS sends a SetChargingProfileRequest message, with a chargingSchedule that
+has one or more periods with operationMode set to Idle and evseSleep set to True for
+this interval.
+2. The Charging Station will turn off the power electronics/modules associated with the
+current transaction.
+3. When the EVSE is sleeping, any other charging command will “wake it up” (including
+limits/setpoints at 0 W).
+4. If a TransactionEventRequest is sent while the EVSE is sleeping, then the field evseSleep
+in TransactionEventRequest will be true.
+5 Prerequisites
+6 Post conditions ChargingSchedulePeriod ends
+7 Error Handling When Charging Station does not support evseSleep = true, it will ignore it.
+8 Remarks This use case assumes a feature exists to request the EV to precondition the battery. It does not
+describe how CSMS or Charging Station do this.
+The configuration key SmartChargingCtrlr.SupportsEvseSleep has the value true if the option to
+request the EVSE to sleep is supported.
+Q10 - Idle, minimizing energy consumption - Requirements
+Table 160. Q10 - Requirements
+ID. Precondition Requirements Note
+Q10.FR.01 When a chargingSchedulePeriod has
+operationMode = Idle
+The fields limit, dischargeLimit, setpoint and
+setpointReactive SHALL be absent
+This also applies to the
+L2/L3 variants of these
+fields.
+Q10.FR.02 When Charging Station receives a
+SetChargingProfileRequest with a
+chargingSchedulePeriod that has
+operationMode = Idle AND
+any of the fields limit, dischargeLimit,
+setpoint and setpointReactive is
+present
+Charging Station SHALL respond with
+SetChargingProfileResponse with status =
+Rejected and statusInfo.reasonCode =
+"InvalidSchedule".
+It is advised to mention
+the chargingSchedule.id
+and
+chargingSchedulePeriod.
+startPeriod in
+statusInfo.additionalInfo
+to tell which part of the
+charging schedule is
+invalid.
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 535/803 Part 2 - Specification

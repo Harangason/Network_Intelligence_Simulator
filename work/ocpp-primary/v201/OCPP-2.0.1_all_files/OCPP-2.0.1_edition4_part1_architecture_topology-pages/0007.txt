@@ -1,0 +1,90 @@
+Chapter 3. Information Model
+This section is informative.
+Given the growing complexity of the messages of OCPP, OCPP 2.0.1 is based on an Information Model as a blueprint for the
+messages and inherent schemas of OCPP. With an information model, we mean a logical object set, describing real objects with all
+their properties. This provides an informative representation of information structure in the protocol. Furthermore, it enables
+making objects within OCPP reusable and enables consistent definition of messages and automatically generated message
+schemas (Part 3).
+The Information Model is a model, also called Domain Model or Core Model, based on which the OCPP messages and datatypes
+are generated. These datatypes are extracted from the the OCPP 1.6 specification and are named Core DataTypes and Qualified
+DataTypes. The figure below illustrates how the DataTypes in the information model are built up.
+In part 2 - Specification, chapter Datatypes, some DataTypes have the Common: prefix. This originates from the Information Model.
+It means that the DataType is able to be shared among other DataTypes and Messages. This has no impact on the OCPP
+implementation of a device.
+«BDTSimpleType»
+IntegerType
+«Facet»
++ fractionDigits = 0 {readOnly}
+(from QualifiedDataTypes)
+«CDTSimpleType,LDT,EC...
+NumericType
+«Supplementary»
++ format: String [0..1]
+(from CoreDataTypes)
+«PRIMSimpleType»
+Decimal
+(from PrimitiveDataTypes)
+anySimpleType
+«XSDsimpleType»
+XSDDatatypes::decimal
+«BDTSimpleType»
+PercentageType
+«Facet»
++ fractionDigits = 0 {readOnly}
++ minInclusive = 0 {readOnly}
++ maxInclusive = 100 {readOnly}
+(from QualifiedDataTypes)
+«BDTComplexType»
+PositiveAmount
+«Facet»
++ fractionDigits = 0 {readOnly}
++ minInclusive = 0 {readOnly}
+(from QualifiedDataTypes)
+«CDTComplexType,ECDMChange,...
+AmountType
+«Supplementary»
++ currency: String [0..1]
++ currencyCodeListVersion: String [0..1]
+(from CoreDataTypes)
+«BDTComplexType»
+PowerType
+(from QualifiedDataTypes)
+«CDTComplexType,LDT,ECDMChange,...
+MeasureType
+«Supplementary»
++ measureUnit: String [0..1]
++ measureUnit.CodeListVersion: String [0..1]
+(from CoreDataTypes)
+«CDTComplexType,LDT,ECDMChange,CDT»
+IdentifierType
+«Supplementary»
++ identificationScheme: String [0..1]
++ identificationScheme.Agency: String [0..1]
++ identificationScheme.AgencyName: String [0..1]
++ identificationScheme.Name: String [0..1]
++ identificationScheme.UniformResource: String [0..1]
++ identificationScheme.Version: String [0..1]
++ identificationSchemeData.UniformResource: String [0..1]
+(from CoreDataTypes)
+«PRIMSimpleType»
+NormalizedString
+(from PrimitiveDataTypes)
+string
+«XSDsimpleType»
+XSDDatatypes::normalizedString
+«BDTComplexType»
+CertificateSerialNumberType
+«Facet»
++ maxLength = 20 {readOnly}
+(from QualifiedDataTypes)
+Figure 2. Example datatypes
+The Information Model is divided into a number of "functions" to have a better overview of the model (thus for readability):
+• Transactions
+• SmartCharging
+• Metering
+• Security (Profiles/Authorization)
+• Communication
+• SecondaryActorSchedule
+For more details about the actual model per function, please refer to the appendix.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 5/26 Part 1 - Architecture & Topology

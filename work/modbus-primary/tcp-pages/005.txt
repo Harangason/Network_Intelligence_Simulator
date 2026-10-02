@@ -1,0 +1,68 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+October 24, 2006 http://www.Modbus.org 5/46
+This header provides some differences comp ared to the MODBUS RTU application data 
+unit used on serial line:  
+ The MODBUS ‘slave address’ field usua lly used on MODBUS Serial Line is
+replaced by a s
+ingle byte ‘Unit Identifier’ within the MBAP Header. The
+‘Unit Identifier’ is used to communicate via devices such as bridges,
+routers and gateways that use a single IP address to support multiple
+independent MODBUS end units.
+ All MODBUS requests and responses are designed in such a way that the
+recipient can verify that a message is finished. For function codes where
+the MODBUS PDU has a fixed length, the func
+tion code alone is sufficient.
+For function codes carrying a variable amount of data in the request or
+response, the data field includes a byte count.
+ When MODBUS is carried over TCP, additional length information is
+carried in 
+the MBAP header to allow the recipient to recognize message
+boundaries even if the message has been split into multiple packets for
+transmission. The existence of explicit and implicit length rules, and use of
+a CRC-32 error check code (on Ethernet) results in an infinitesimal chance
+of undetected corruption to a request or response message.
+3.1.3 MBAP Header description 
+The MBAP Header contains the following fields: 
+Fields  Length Description - Client  Server  
+Transaction 
+Identifier  
+2 Bytes Identification of a 
+MODBUS Request / 
+Response transaction. 
+Initialized by the 
+client  
+Recopied by the 
+server from the 
+receiv ed 
+request  
+Protocol Identifier 2 Bytes  0 = MODBUS protocol Initialized by the 
+client 
+Recopied by the 
+server from the 
+received 
+request 
+Length 2 Bytes Number of following 
+bytes  
+Initialized by the 
+client ( request) 
+Initialized by 
+the server ( 
+Response)  
+Unit Identifier 1 Byte Identification of a 
+remote slave 
+connected on a serial 
+line or on other buses. 
+Initialized by the 
+client 
+Recopied by the 
+server from the 
+received 
+request 
+The header is 7 bytes long: 
+• Transaction Identifier   - It is used for transaction pairing, the MODBUS server copies
+in the response the transaction identifier of the request.
+• Protocol Identifier   – It is  used for intra-system mu ltiplexing. The MODBUS protocol
+is identified by the value 0.
+• Length  - The length field is a byte count of the following fields, including the Unit
+Identifier and data fields.
+Modbus Organization  

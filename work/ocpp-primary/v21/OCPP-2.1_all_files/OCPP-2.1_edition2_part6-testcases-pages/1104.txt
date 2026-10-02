@@ -1,0 +1,43 @@
+F Remote Control
+TC_F_01_CSMS: Remote start transaction - Cable plugin first
+Test case name Remote start transaction - Cable plugin first
+Test case Id TC_F_01_CSMS
+Use case Id(s) F01
+Requirement(s) N/a
+System under test CSMS
+Description OCPP 2.x.x allows an EV driver to either first connect the EV and EVSE OR wait for/trigger a
+RequestStartTransactionRequest. Both sequences will result in being able to charge.
+Purpose To verify if the CSMS is able to handle a Charging Station that is starts a charging session when the EV
+driver first connects the EV and EVSE, before receiving a RequestStartTransactionRequest message.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Trigger the CSMS to request the Charging Station to start a transaction.
+2. The Test System responds with a
+RequestStartTransactionResponse
+with status Accepted
+transactionId is <Generated transactionId>
+1. The CSMS sends a RequestStartTransactionRequest
+3. The Test System sends a TransactionEventRequest.
+with triggerReason is RemoteStart
+transactionInfo.remoteStartId is <By CSMS provided
+remoteStartID>
+eventType is Updated
+4. The CSMS responds with a TransactionEventResponse.
+5. Execute Reusable State EnergyTransferStarted (State is Authorized and _EVConnected = true)
+Tool validations
+* Step 1:
+Message: RequestStartTransactionRequest
+- idToken.idToken <Configured valid_idtoken_idtoken>
+- idToken.type <Configured valid_idtoken_type>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1102/1383 Part 6 - Test Cases

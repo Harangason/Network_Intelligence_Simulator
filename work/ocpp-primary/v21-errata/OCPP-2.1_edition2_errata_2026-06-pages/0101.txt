@@ -1,0 +1,56 @@
+Tool validations
+…
+* Step 5:
+Message: BatterySwapRequest
+- eventType must be BatteryIn
+- requestId must be <Configured requestId>
+- idToken.idToken must be <Configured valid_idtoken_idtoken>
+For each inserted battery:
+- batteryData.evseId must be <not omitted>
+- batteryData.serialNumber must be <not omitted>
+- batteryData.soC must be <not omitted>
+- batteryData.soH must be <not omitted>
+- batteryData[]  length must be equal to <number of inserted batteries>         
+6.2.66. Page 1207 - (2026-02) - TC_K_102_CS - Made the testcase useable with a
+real EV
+Test case name Set Charging Profile - limitAtSoc
+Test case Id TC_K_102_CS
+…
+Prerequisite(s) - Charging station supports receiving SoC from the EV. e.g. by CHaDeMo, ISO15118-2 or ISO15118-20
+- SmartChargingCtrlr.SupportsFeature[LimitAtSoC] is true
+EV must have a SoC level of between 1 and 98 percent.           
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.id <Configured chargingProfileId>
+evseId   <Configured evseId> 
+chargingProfile.chargingProfilePurpose TxDefaultProfile
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].s
+tartPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].li
+mit 8 * <limit multiplier>
+Note: Check [csKSmartChargingChargingProfileLimits] for <limit
+multiplier>
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].n
+umberPhases <Configured numberPhases>
+chargingProfile.chargingSchedule.limitAtSoc.soc <Configured
+limitAtSocSoc> 99
+chargingProfile.chargingSchedule.limitAtSoc.limit 6 * <limit
+multiplier>
+Note: Check [csKSmartChargingChargingProfileLimits] for <limit
+multiplier>
+3. Execute Reusable State EnergyTransferStarted
+Manual Action: Use EV to send out a SoC value less than <Configured limitAtSocSoc>
+5. The Charging Station responds with a
+GetCompositeScheduleResponse
+4. The Test System sends a GetCompositeScheduleRequest
+with evseId <Configured evseId>
+duration is 900
+chargingRateUnit <Configured chargingRateUnit>
+Manual Action: Use EV to send out a SoC value greater or equal to <Configured limitAtSocSoc>_
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 97/116 Errata 2026-06

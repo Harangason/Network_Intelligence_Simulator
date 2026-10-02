@@ -1,0 +1,47 @@
+Main (Test scenario)
+13. The Charging Station sends a
+ReportChargingProfilesRequest 14. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If ReportChargingProfilesRequest.tbc is True in Step 13 then step 13 and 14 will be repeated
+Tool validations
+* Step 2:
+Message: NotifyChargingLimitRequest
+- evseId must be <Configured evseId>
+- chargingLimit.chargingLimitSource must be EMS
+- ( chargingSchedule.chargingSchedulePeriod[*].limit must be <not omitted>
+OR chargingSchedule.chargingSchedulePeriod[*].dischargeLimit must be <not omitted>)
+* Step 5:
+Message: GetChargingProfilesResponse
+- status must be Accepted
+* Step 6:
+Message ReportChargingProfilesRequest
+- requestId must be Same Id as in the GetChargingProfilesRequest in step 4
+- EvseId must be <Configured evseId>
+There must be one ChargingProfile be reported with
+- chargingProfile[0].chargingProfilePurpose must be ChargingStationExternalConstraints
+- chargingProfile[0].chargingProfileKind must be Absolute
+- chargingProfile[0].chargingSchedule must be <NotifyChargingLimitRequest.chargingSchedule of step 2>
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].operationMode must be ExternalLimits
+* Step 9:
+Message: NotifyChargingLimitRequest
+- evseId must be <Configured evseId>
+- chargingLimit.chargingLimitSource must be EMS
+- ( chargingSchedule.chargingSchedulePeriod[*].limit must be <not omitted>
+OR chargingSchedule.chargingSchedulePeriod[*].dischargeLimit must be <not omitted>)
+* Step 12:
+Message: GetChargingProfilesResponse
+- status must be Accepted
+* Step 13:
+Message ReportChargingProfilesRequest
+- requestId must be Same Id as in the GetChargingProfilesRequest in step 11
+- EvseId must be <Configured evseId>
+There must be one ChargingProfile be reported with
+- chargingProfile[0].chargingProfilePurpose must be ChargingStationExternalConstraints
+- chargingProfile[0].chargingProfileKind must be Dynamic
+- chargingProfile[0].chargingSchedule must be <NotifyChargingLimitRequest.chargingSchedule of step 9>
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].operationMode must be ExternalLimits
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 839/1383 Part 6 - Test Cases

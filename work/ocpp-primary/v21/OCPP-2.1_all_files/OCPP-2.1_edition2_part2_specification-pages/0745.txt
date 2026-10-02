@@ -1,0 +1,61 @@
+Component componentNa
+me
+SecurityCtrlr
+Variable variableName AdditionalRootCertificateCheck
+variableAttribu
+tes
+mutability ReadOnly
+variableCharac
+teristics
+dataType boolean
+Description When installing a new CSMS Root certificate, the new certificate SHALL replace
+the old one AND the new CSMS Root Certificate MUST be signed by the old
+CSMS Root Certificate it is replacing.
+This configuration variable is required unless only "security profile 1 - Unsecured
+Transport with Basic Authentication" is implemented. Please note that security
+profile 1 SHOULD only be used in trusted networks.
+Note: When using this additional security mechanism please be aware that the
+Charging Station needs to perform a full certificate chain verification when the new
+CSMS Root certificate is being installed. However, once the old CSMS Root
+certificate is set as the fallback certificate, the Charging Station needs to perform
+a partial certificate chain verification when verifying the server certificate during
+the TLS handshake. Otherwise the verification will fail once the old CSMS Root
+(fallback) certificate is either expired or removed.
+Note 2: The statement that the variable is required, means that the configuration
+variable must be present, but does NOT indicate that the feature must be
+implemented. This is an optional feature. By setting the value to false, the Charging
+Station indicates that it does not support this feature, whereas true means that it
+does support the feature.
+2.2.7. MaxCertificateChainSize
+Required no
+Component componentNa
+me
+SecurityCtrlr
+Variable variableName MaxCertificateChainSize
+variableAttribu
+tes
+mutability ReadOnly
+variableCharac
+teristics
+dataType integer
+maxLimit 10000
+Description This configuration variable can be used to limit the size of the 'certificateChain'
+field from the CertificateSignedRequest PDU. This value SHOULD NOT be set too
+small. The smaller this value, the less security architectures the Charging Station
+will support. It is RECOMMENDED to set at least a size of 5600. This will allow
+the Charging Station to support most security architectures.
+2.2.8. CertSigningWaitMinimum
+Required no
+Component componentNa
+me
+SecurityCtrlr
+Variable variableName CertSigningWaitMinimum
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+unit s
+dataType integer
+Edition 2, 2025-12-03 Referenced Components and Variables
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 732/803 Part 2 - Specification

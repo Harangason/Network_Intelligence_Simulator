@@ -1,0 +1,59 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+October 24, 2006 http://www.Modbus.org 23/46
+Function Code (*) 1 0x03 
+Starting Address 2 0x0004 
+MODBUS 
+request 
+Quantity of Registers 2 0x0001 
+(*) please see the MODBUS Applic ation Protocol Specification [1]. 
+• Transaction Identifier
+The transaction identifier is used to associate the future response with the request.
+So, at a time, on a TCP connection, this identifier must be unique. There are
+several manners to use the transaction identifier:
+- For example, it can be used as a simple "TCP sequence number" with a
+counter which is incremented at each request.
+- It can also be judiciously used as a sm art index or pointer to identify a
+transac
+tion context in order to memorize the current remote server and the
+pending MODBUS request.
+Normally, on MODBUS serial line a client mu st send one request at a time. This means 
+that the client must wait for the answer to the first request before sending a second 
+request. On TCP/MODBUS, several requests can be sent without waiting for a 
+confirmation to the same server.  The MODB US/TCP to MODBUS serial line gateway is 
+in charge of ensuring compatibility between these two behaviors.   
+The number of requests accepted by a serv er depends on its capacity in term of 
+number of resources and size of the TCP wi ndows. In the same way the number of 
+transactions initialized simultaneously by a cli ent depends also on its resource capacity. 
+This implementation parameter is called " NumberMaxOfClientTransaction " and must 
+be described as one of the MODBUS client fe atures. Depending of the device type this 
+parameter can take a value from 1 to 16.  
+• Unit Identifier
+This field is used for routing purpose when addressing a device on a MODBUS+
+or MODBUS se
+rial line sub-network. In that case, the “Unit Identifier” carries the 
+MODBUS slave address of the remote device: 
+If the MODBUS server is connected to a MODBUS+ or MODBUS Serial Line 
+sub-network and 
+addressed through a bridge or a gateway, the MODBUS Unit 
+identifier is necessary to identify th e slave device connected on the sub-
+network behind the bridge or the gateway. The destination IP address 
+identifies the bridge itself and the bridge  uses the MODBUS Unit identifier to 
+forward the request to the right slave device. 
+The MODBUS slave device addresses on serial line are assigned from 1 to 
+247 (decimal). Address 0 is used as broadcast address. 
+On TCP/IP, the MODBUS 
+server is addresse d using its IP address; therefore, the 
+MODBUS Unit Identifier is useless.  The value 0xFF has to be used. 
+When addressing a MODBUS server connec ted directly to a TCP/IP network, 
+it’s recommended not using a significant MODBUS 
+slave address in the “Unit 
+Identifier” field. In the event of a re-allo cation of the IP addresses within an 
+automated system and if a IP address previously assigned to a MODBUS 
+server is then assigned to a gateway, using a significant slave address may 
+cause trouble because of a bad routing by the gateway. Using a non-
+significant slave address, the gateway will simply discard the MODBUS PDU 
+with no trouble. 0xFF is recommended for the “Unit Identifier" as non-
+significant value. 
+Remark : The value 0 is also accepted to communicate directly to a 
+MODBUS/TCP device . 
+Modbus Organization  

@@ -1,0 +1,86 @@
+ID Precondition Requirement definition Note
+M01.FR.03
+(2.1)
+When EV uses ISO
+15118-20
+Charging Station SHALL set field
+maximumContractCertificateChains in the
+Get15118EVCertificateRequest to the value of
+MaximumContractCertificateChains in the ISO
+15118-20 CertificateInstallationReq message.
+M01.FR.04
+(2.1)
+When
+maximumContractCertific
+ateChains is present in
+Get15118EVCertificateRe
+quest
+AND
+CSMS has received all
+CertificateInstallationRes
+responses from the
+contract certificate
+pool(s)
+CSMS SHALL return the first
+CertificateInstallationRes response and the total
+number of available contracts in
+remainingContracts in
+Get15118EVCertificateResponse.
+Presence of field
+maximumContractCertificateChains
+means that this is for ISO 15118-20.
+M01.FR.05
+(2.1)
+When EV uses ISO
+15118-20
+AND
+Upon receiving a
+Get15118EVCertificateRe
+sponse from CSMS
+Charging station SHALL update the value of
+RemainingContractCertificateChains in the ISO
+15118-20 CertificateInstallationRes message to EV
+to the value of remainingContracts of the OCPP
+Get15118EVCertificateResponse message.
+M01.FR.06
+(2.1)
+When EV uses ISO
+15118-20
+AND
+As long as
+remainingContracts in
+Get15118EVCertificateRe
+sponse is larger than 0
+Charging station SHALL send the same
+Get15118EVCertificateRequest to CSMS
+CSMS will send the next
+CertificateInstallationRes in the
+Get15118EVCertificateResponse.
+M01.FR.07
+(2.1)
+When EV uses ISO
+15118-20
+AND
+M01.FR.06
+CSMS SHALL return the next
+CertificateInstallationRes and decrease the value of
+remainingContracts in
+Get15118EVCertificateResponse by 1.
+M02 - Certificate Update EV
+No. Type Description
+1 Name Certificate Update
+2 ID M02
+Reference ISO15118-1 C1
+3 Objective(s) See ISO15118-1, use case Objective C1, page 20.
+4 Description See ISO15118-1, use case Description C1, page 21 up to and including the third "NOTE".
+Actors EV, Charging Station
+Scenario description 15118:
+See ISO15118-1, use case Objective C1, Scenario Description, first 3 bullets, page 21.
+OCPP:
+- The Charging Station sends a Get15118EVCertificateRequest message with action = Update to
+the CSMS.
+- The CSMS responds with Get15118EVCertificateResponse to the Charging Station.
+15118:
+See ISO15118-1, use case Description C1, Scenario Description, last 2 bullets, page 21.
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 439/803 Part 2 - Specification

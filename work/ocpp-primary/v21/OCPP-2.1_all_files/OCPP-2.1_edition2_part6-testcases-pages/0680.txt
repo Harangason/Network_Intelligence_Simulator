@@ -1,0 +1,46 @@
+TC_N_08_CS: Set Variable Monitoring - one setMonitoringData element
+Test case name Set Variable Monitoring - one setMonitoringData element
+Test case Id TC_N_08_CS
+Use case Id(s) N04
+Requirement(s) N04.FR.01, N04.FR.02, N04.FR.08, N04.FR.11
+System under test Charging Station
+Description CSMS sends a request to activate a monitor on a single variable.
+Purpose To test that Charging Station supports setting of a monitor on a variable.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+This test case activates a monitor on the following variable:
+- Component "EVSE", evse "1", variable "AvailabilityState", monitor type Delta
+It assumes, that no monitor is active on this variable prior to the test.
+Note: this is a required variable for which a monitor can be expected to exist or it can be configured.
+Note 2: Any other component/variable combination that supports monitoring could also be used for this test case.
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with:
+SetVariableMonitoringResponse
+Install monitor
+1. Test System sends SetVariableMonitoringRequest with:
+- setMonitoringData.value = 1
+- setMonitoringData.type = Delta
+- setMonitoringData.severity = 8
+- setMonitoringData.component.name = "EVSE"
+- setMonitoringData.component.evse.id = <Configured evseId>
+- setMonitoringData.variable.name = "AvailabilityState"
+4. Charging Station responds with:
+GetMonitoringReportResponse
+Verify monitor is installed
+3. Test System sends GetMonitoringReportRequest with:
+- requestId = <Generated requestId>
+- monitoringCriteria is absent
+- componentVariable[0].component.name = "EVSE"
+- componentVariable[0].component.evse.id = <Configured
+evseId>
+- componentVariable[0].variable.name = "AvailabilityState"
+5. Charging Station responds with:
+NotifyMonitoringReportRequest 6. Test System sends NotifyMonitoringReportResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 678/1383 Part 6 - Test Cases

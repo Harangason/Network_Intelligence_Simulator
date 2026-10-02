@@ -1,0 +1,52 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  47/50 
+7 MODBUS Exception Responses  
+When a client  device sends a request to a server  device it expects a normal response. One 
+of four possible events can occur from the client ’s query:  
+ If the server  device receives the request without a communication error, and can 
+handle the query normally, it returns a normal response.  
+ If the server  does not receive the request due to a communication error, no response 
+is returned. The client  program will eventually  process a timeout condition for the 
+request.  
+ If the server  receives the r equest, but detects a communication error (parity, LRC, 
+CRC, ...), no response is returned. The client  program will eventually process a 
+timeout condition for the request.  
+ If the server  receives the request without a communication error, but cannot handl e it 
+(for example, if the request is to read a non –existent output or register), the server  
+will return an exception response informing the client  of the nature of the error.  
+ 
+The exception response message has two fields that differentiate it from a nor mal response:  
+Function Code Field: In a normal response, the server  echoes the function code of the 
+original request in the function code field of the response. All function codes have a most –
+significant bit (MSB) of 0 (their values are all below 80 hexad ecimal). In an exception 
+response, the server  sets the MSB of the function code to 1. This makes the function code 
+value in an exception response exactly 80 hexadecimal higher than the value would be for a 
+normal response.  
+With the function code’s MSB set , the client's  application program can recognize the 
+exception response and can examine the data field for the exception code.  
+Data Field: In a normal response, the server  may return data or statistics in the data field 
+(any information that was requeste d in the request). In an exception response, the server  
+returns an exception code in the data field. This defines the server  condition that caused the 
+exception.  
+ 
+Example of a client  request and server exception response  
+ 
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  01 Function  81 
+Starting Address Hi  04 Exception Code  02 
+Starting Address Lo  A1   
+Quantity of Outputs Hi  00   
+Quantity of Outputs Lo  01   
+ 
+In this example, the client  addresses a request to server  device. The function code (01) is for 
+a Read Output Status operation. It requests the status of the output at address 1185  (04A1 
+hex). Note that only that one output is to be read, as specified by  the number of outputs field 
+(0001).  
+If the output address is non –existent in the server  device, the server  will return the exception 
+response with the exception code shown (02). This specifies an illegal data address for the 
+server . 
+ 
+A listing of except ion codes begins on the next page.  
+ 
+  

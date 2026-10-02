@@ -1,0 +1,48 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 40
+OS81050
+7 Streaming Port
+The Streaming Port is used by external devices (e.g. ADCs, DACs) to source/sink streaming data, with low
+overhead. The formats supported for data into and out of the Streaming Port are compatible with industry-
+standard serial interfaces, including: left-justified, right-justified, I 2S-compatible or sequential formats.
+The Streaming Port and the MediaLB Port share some pins; therefore, some modes are mutually exclu-
+sive. Table 7-1 shows the relationship between the availability of Streaming Port and MediaLB Port modes.
+A total of 60 bytes (maximum) can be transferred per frame, in either direction, for the
+Streaming Port and MediaLB Port combined.
+Depending on the Streaming Port mode enabled, the OS81050 can support up to four serial data pins. All
+data pins on the Streaming Port share a common bit clock (SCK) and a common frame synchronization sig-
+nal (FSY), which delineates the word/channel (left vs. right channel) boundaries. The bit clock ( SCK) oper-
+ates at 64 ×Fs, 128 ×Fs, or 256 ×Fs, where Fs is the frame rate of FSY. When synchronous data is
+exchanged on the serial data pins, the FSY and SCK pins can be configured as inputs or outputs. As inputs,
+they must be synchronous to the OS81050 (derived off of RMCK). As outputs, FSY and SCK are driven
+based on the network frame rate.
+The Streaming Port can be enabled, and the format selected, through the OpenPort() function, while the
+amount of streaming data transferred is selected through the CreateSocket() function. Figure 7-1 illus-
+trates the pin usage when the OS81050 is configured for Full Streaming Mode or MediaLB 5-pin mode.
+Streaming Port MediaLB Port
+Full Streaming Mode
+(all 4 serial interfaces available) Not Available
+Partial Streaming Mode
+(2 serial interfaces available) 3-pin mode
+Not Available 5-pin mode
+Table 7-1: Streaming Port vs. MediaLB Port Availability
+Figure 7-1: Full Streaming Mode vs. MediaLB 5-pin Mode
+MLBDAT / MLBDO / SX1
+MLBCLK
+MLBSIG / MLBSO / SR1
+SCK
+FSY
+SX0 / MLBDI / SR1
+SR0 / MLBSI / SX1
+MediaLB 5-pin Mode
+Streaming Port Not Available
+MLBDAT / MLBDO / SX1
+MLBCLK
+MLBSIG / MLBSO / SR1
+SCK
+FSY
+SX0 / MLBDI / SR1
+SR0 / MLBSI / SX1
+Full Streaming Mode
+MediaLB Port Not Available
+OS81050OS81050

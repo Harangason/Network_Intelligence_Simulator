@@ -1,0 +1,46 @@
+E12 - Inform CSMS of an Offline Occurred Transaction
+No. Type Description
+1 Name Inform CSMS of an Offline Occurred Transaction
+2 ID E12
+3 Objective(s) To enable the Charging Station to inform the CSMS that a transaction occurred while the
+Charging Station was Offline.
+4 Description This use case covers how the Charging Station starts and stops a transaction since connection
+loss.
+Actors Charging Station, CSMS
+Scenario description 1. The connection with the CSMS is restored.
+2. The Charging Station sends a Heartbeat message to the CSMS.
+3. The Charging Station sends TransactionEventRequest (eventType = Started, offline = TRUE) to
+the CSMS.
+4. The CSMS responds with TransactionEventResponse, accepting the transaction.
+5. The Charging Station sends TransactionEventRequest (eventType = Updated, offline = TRUE)
+6. The CSMS responds with TransactionEventResponse.
+7. The Charging Station sends TransactionEventRequest (eventType = Ended, offline = TRUE)
+8. The CSMS responds with TransactionEventResponse.
+5 Prerequisite(s) At least one Offline transaction has taken place.
+6 Postcondition(s) Successful postcondition:
+The CSMS has processed all transactions that occurred Offline.
+Failure postcondition:
+n/a
+7 Error handling n/a
+8 Remark(s) n/a
+Charging Station CSMS
+Charging Station is Offline and a transaction has occurred.
+Connection restored.
+HeartbeatRequest()
+HeartbeatResponse()
+send queued message()
+loop [for all queued TransactionEvent messages since connection loss]
+TransactionEventRequest(transactionId = X, offline = true)
+TransactionEventResponse()
+Figure 71. Sequence Diagram: Inform CSMS of an Offline Occurred Transaction
+E12 - Inform CSMS of an Offline Occurred Transaction - Requirements
+Table 74. E12 - Requirements
+ID Precondition Requirement definition
+E12.FR.01 When Offline The Charging Station MUST queue all TransactionEventRequest
+messages, that it would have sent to the CSMS if the Charging
+Station had been online.
+E12.FR.02 After the connection is restored. The Charging Station MUST send queued
+TransactionEventRequest messages with the flag offline set to
+TRUE.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 207/803 Part 2 - Specification

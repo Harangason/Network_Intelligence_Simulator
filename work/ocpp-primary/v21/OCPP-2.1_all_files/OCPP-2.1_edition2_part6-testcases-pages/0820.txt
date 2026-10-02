@@ -1,0 +1,58 @@
+TC_Q_104_CS: V2X Authorisation - ISO15118-20 - Scheduled Control
+Test case name V2X Authorisation - ISO15118-20 - Scheduled Control
+Test case Id TC_Q_104_CS
+Use case Id(s) Q01, Q02
+Requirement(s) Q01.FR.03, Q02.FR.05, Q02.FR.07
+System under test Charging Station
+Description Authorization of an EV by the CSMS to start a V2X power transfer loop.
+Purpose To verify if the Charging Station is able to support ISO15118-20 Schedule Control.
+Prerequisite(s) - EV supports V2X power transfer loop
+- EV and charging station support ISO15118-20
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is Iso1511820V2xControlBpt with controlMode ScheduledControl
+State is EVConnectedPreSession
+State is Authorized15118 (for 15118-20)
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+Note(s):
+- This step is captured by Authorized15118 (for 15118-20), but
+validated on testcase level.
+2. The Test System responds with a
+NotifyEVChargingNeedsResponse with
+- status Accepted
+Setting charging profile
+4. The Charging Station responds with a
+SetChargingProfileResponse
+3. The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile
+- transactionId <transactionId>
+- chargingProfilePurpose TxProfile
+- chargingProfile.chargingSchedule[0].chargingRateUnit W
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 1000
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].operationMode ChargingOnly
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[1
+].startPeriod 300
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[1
+].limit 2000
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[1
+].operationMode ChargingOnly
+5. The Charging station sends a
+NotifyEVChargingScheduleRequest
+6. The Test System responds with a
+NotifyEVChargingScheduleResponse with
+status Accepted
+7. Execute Reusable State EnergyTransferStarted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 818/1383 Part 6 - Test Cases

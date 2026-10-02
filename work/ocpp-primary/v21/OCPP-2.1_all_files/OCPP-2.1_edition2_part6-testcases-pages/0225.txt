@@ -1,0 +1,26 @@
+Main (Test scenario)
+7. Execute Reusable State EnergyTransferStarted with:
+(At the first TransactionEventResponse)
+- transactionLimit.maxEnergy 20000
+Note:
+- Step 8 and 9 may be executed after the TransactionEventResponse with transactionLimit.maxEnergy 20000 has been received.
+- It is also allowed to transmit the transactionLimit.maxEnergy 20000 at the first TransactionEventRequest sent (without
+triggerReason = LimitSet) after the TransactionEventResponse with transactionLimit.maxEnergy 20000 has been received. .
+8. The Charging Station sends a TransactionEventRequest
+9. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 5 and 6 and 7 combined: (First transactionEventRequest with idToken)
+Message TransactionEventRequest with:
+- idToken must be <Not empty>
+- idToken.type must be DirectPayment
+- transactionInfo.transactionId must be <transactionId>
+- transctionInfo.transactionLimit.maxEnergy is 20000
+* Step 8:
+Message: TransactionEventRequest
+- triggerReason must be LimitSet
+- transctionInfo.transactionLimit.maxEnergy is 20000
+N/a
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 223/1383 Part 6 - Test Cases

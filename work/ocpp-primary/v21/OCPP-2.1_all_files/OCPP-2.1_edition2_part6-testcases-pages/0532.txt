@@ -1,0 +1,51 @@
+TC_K_54_CS: Charging with load leveling based on High Level Communication - No
+SASchedule (rejected)
+Test case name Charging with load leveling based on High Level Communication - No SASchedule (rejected)
+Test case Id TC_K_54_CS
+Use case Id(s) K15, K17
+Requirement(s) K15.FR.01,K17.FR.04
+System under test Charging Station
+Description ISO15118-1 E1 AC Charging with load leveling based on High Level Communication, and E4 DC charging
+with load leveling based on High Level Communication.
+Purpose To verify if the Charging Station is able to handle a Rejected status from the CSMS in response to providing
+the EV charging needs.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State Authorized15118
+2. The Charging Station sends a
+NotifyEVChargingNeedsRequest. 3. The Test System responds with a
+NotifyEVChargingNeedsResponse.
+With status Rejected
+4. The Charging Station sends a
+NotifyEVChargingScheduleRequest.
+Note(s):
+- This step is optional. The Charging Station will only send it when
+the EV returns a charging profile.
+5. The Test System responds with a
+NotifyEVChargingScheduleResponse.
+With status Accepted
+6. The Charging Station sends a TransactionEventRequest.
+7. The Test System responds with a TransactionEventResponse.
+Tool validations
+* Step 2:
+(Message: NotifyEVChargingNeedsRequest)
+evseId <Configured evseId>
+* Step 4:
+(Message: NotifyEVChargingScheduleRequest)
+evseId <Configured evseId>
+* Step 6:
+Message: TransactionEventRequest
+- triggerReason must be ChargingStateChanged
+- transactionInfo.chargingState must be Charging
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 530/1383 Part 6 - Test Cases

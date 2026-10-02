@@ -1,0 +1,35 @@
+respond with a GetDiagnostics.conf PDU stating the name of the file containing the diagnostic information that
+will be uploaded. Charge Point SHALL upload a single file. Format of the diagnostics file is not prescribed. If no
+diagnostics file is available, then GetDiagnostics.conf SHALL NOT contain a file name.
+During uploading of a diagnostics file, the Charge Point MUST send DiagnosticsStatusNotification.req PDUs to
+keep the Central System updated with the status of the upload process.
+5.10. Get Local List Version
+Charge Point Central System
+GetLocalListVersion.req()
+GetLocalListVersion.conf(listVersion)
+Figure 31. Sequence Diagram: Get Local List Version
+In order to support synchronisation of the Local Authorization List, Central System can request a Charge Point
+for the version number of the Local Authorization List. The Central System SHALL send a GetLocalListVersion.req
+PDU to request this value.
+Upon receipt of a GetLocalListVersion.req PDU Charge Point SHALL respond with a GetLocalListVersion.conf PDU
+containing the version number of its Local Authorization List. A version number of 0 (zero) SHALL be used to
+indicate that the local authorization list is empty, and a version number of -1 SHALL be used to indicate that the
+Charge Point does not support Local Authorization Lists.
+5.11. Remote Start Transaction
+Charge Point Central System
+RemoteStartTransaction.req(idTag, [connectorId], [chargingProfile])
+RemoteStartTransaction.conf(status)
+Figure 32. Sequence Diagram: Remote Start Transaction
+Central System can request a Charge Point to start a transaction by sending a RemoteStartTransaction.req. Upon
+receipt, the Charge Point SHALL reply with RemoteStartTransaction.conf and a status indicating whether it has
+accepted the request and will attempt to start a transaction.
+The effect of the RemoteStartTransaction.req message depends on the value of the
+AuthorizeRemoteTxRequests configuration key in the Charge Point.
+• If the value of AuthorizeRemoteTxRequests is true, the Charge Point SHALL behave as if in response to
+a local action at the Charge Point to start a transaction with the idTag given in the
+RemoteStartTransaction.req message. This means that the Charge Point will first try to authorize the
+idTag, using the Local Authorization List, Authorization Cache and/or an Authorize.req request. A
+transaction will only be started after authorization was obtained.
+• If the value of AuthorizeRemoteTxRequests is false, the Charge Point SHALL immediately try to start a
+transaction for the idTag given in the RemoteStartTransaction.req message. Note that after the
+49

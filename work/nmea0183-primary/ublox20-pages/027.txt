@@ -1,0 +1,54 @@
+u-blox 20 HPG 2.00 - Interface description
+4 errAlt numeric m 3.2 Expected error in altitude
+5 svid numeric - 03 Satellite ID of most likely failed satellite
+6 prob numeric - - Probability of missed detection: null (not supported,
+ﬁxed ﬁeld)
+7 bias numeric m -21.4 Estimated bias of most likely failed satellite (a priori
+residual)
+8 stddev numeric m 3.8 Standard deviation of estimated bias
+9 systemId hexadecimal - 1 NMEA-deﬁned GNSS system ID, see Signal Identiﬁers
+table (only available in NMEA 4.10 and later)
+10 signalId hexadecimal - - NMEA-deﬁned GNSS signal ID, see Signal Identiﬁers
+table (only available in NMEA 4.10 and later)
+11 cs hexadecimal - *5B Checksum
+12 CRLF character - - Carriage return and line feed
+2.7.5 GGA
+2.7.5.1 Global positioning system ﬁx data
+Message NMEA-Standard-GGA
+Global positioning system ﬁx data
+Type Output
+Comment Time and position, together with GPS ﬁxing-related data (number of satellites in use, and the resulting HDOP,
+age of diﬀerential data if in use, etc.).
+☞ The output of this message is dependent on the currently selected datum (default: WGS84). The NMEA
+speciﬁcation indicates that the GGA message is GPS-speciﬁc. However, when the receiver is conﬁgured for
+multi-GNSS, the GGA message contents will be generated from the multi-GNSS solution. For multi-GNSS
+use, it is recommended that the NMEA-GNS message is used instead.
+Information Class/ID: 0xf0 0x00 Number of fields: 17
+Structure $xxGGA,time,lat,NS,lon,EW,quality,numSV,HDOP,alt,altUnit,sep,sepUnit,diffAge,diffSta ↲
+tion*cs\r\n
+Example $GPGGA,092725.00,4717.11399,N,00833.91590,E,1,08,1.01,499.6,M,48.0,M,,*5B\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGGA string - $GPGGA GGA Message ID (xx = current Talker ID, see NMEA
+Talker IDs table)
+1 time hhmmss.ss - 092725.00 UTC time. See section UTC representation in the
+integration manual for details.
+2 lat ddmm.
+mmmmm
+- 4717.11399 Latitude (degrees and minutes), see format description
+3 NS character - N North/South indicator
+4 lon dddmm.
+mmmmm
+- 00833.91590 Longitude (degrees and minutes), see format
+description
+5 EW character - E East/West indicator
+6 quality digit - 1 Quality indicator for position ﬁx, see position ﬁx ﬂags
+description
+7 numSV numeric - 08 Number of satellites used (range: 0-12)
+8 HDOP numeric - 1.01 Horizontal Dilution of Precision
+9 alt numeric m 499.6 Altitude above mean sea level
+10 altUnit character - M Altitude units: M (meters, ﬁxed ﬁeld)
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 27 of 224
+C1-Public

@@ -1,0 +1,71 @@
+Variable Unit ISO 15118-2 value ISO 15118-20 value
+ProtocolAgreed string A string with the following comma-separated
+items:
+“<uri>,<major>,<minor>”.
+This is the protocol uri and version
+information agreed upon between EV and
+EVSE in the supportedAppProtocolReq
+handshake from ISO 15118.
+Example for ISO 15118-2:
+"urn:iso:15118:2:2013:MsgDef,1,0"
+(1,0 = version 1.0)
+For DIN SPEC 70121:
+"urn:din:70121:2012:MsgDef"
+Same definition.
+Example for ISO 15118-20:
+"urn:iso:std:iso:15118:-20:DC,1,0"
+(or AC, ACDP, WPT, etc.)
+ProtocolSupportedBy
+EV["1"]
+to 
+ProtocolSupportedBy
+EV["20"]
+multi-instance
+string
+A string with the following comma-separated
+items:
+“<uri>,<major>,<minor>”.
+This is information from the
+SupportedAppProtocolReq message from
+ISO 15118
+This variable has 20 instances; one for each
+priority number. Priority is a number from 1
+to 20 as a string, i.e. "1", "2", etc.
+Example:
+- ConnectedEV.ProtocolSupportedByEV["1"] =
+"urn:iso:15118:2:2013:MsgDef,2,0"
+- ConnectedEV.ProtocolSupportedByEV["2"] =
+"urn:iso:15118:2:2010:MsgDef,1,0"
+Same definition.
+Example for ISO 15118-20:
+"urn:iso:std:iso:15118:-20:DC,1,0"
+(or AC, ACDP, WPT, etc.)
+Optional variables
+NOTE
+In below table the notation "<variable>(type)" refers to the attributeType <type> of the variable. For example,
+"ACCurrent(MinSet)" refers to value of the attributeType MinSet of the variable ACCurrent. "DCCurrent(Target)
+refers to the value of the attributeType Target of the variable DCCurrent.
+Variable Unit ISO 15118-2 value ISO 15118-20 value
+Voltage and current values: (from ChargeParameterDiscoveryReq unless stated otherwise)
+ACCurrent(MinSet) A EVMinCurrent -
+ACCurrent(MaxSet) A EVMaxCurrent -
+ACVoltage(MaxSet) V EVMaxVoltage -
+DCCurrent(MinSet) A - EVMinimumChargeCurrent
+DCCurrent(MaxSet) A EVMaximumCurrentLimit EVMaximumChargeCurrent
+DCCurrent(Target) A EVTargetCurrent (CurrentDemandReq) EVTargetCurrent (DC_ChargeLoopReq)
+DCVoltage(MinSet) V - EVMinimumVoltage
+DCVoltage(MaxSet) V EVMaximumVoltageLimit EVMaximumVoltage
+DCVoltage(Target) V EVTargetVoltage (CurrentDemandReq) EVTargetVoltage (DC_ChargeLoopReq)
+Power, energy and time values:
+Power(MaxSet) W EVMaximumPowerLimit (DC) EVMaximumChargePower (AC/DC)
+All phases combined.
+DischargePower(Max
+Set)
+W - EVMaximumDischargePower (AC/DC)
+Rated maximum, all phases combined (Actual
+discharging power is reported via EVSE)
+DischargePower W - EVMaximumDischargePower (AC/DC) (BPT
+ChargeLoopReq)
+Actual maximum, all phases combined
+Edition 2, 2025-12-03 Referenced Components and Variables
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 784/803 Part 2 - Specification

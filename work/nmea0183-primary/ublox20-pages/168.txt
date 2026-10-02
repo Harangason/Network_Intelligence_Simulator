@@ -1,0 +1,27 @@
+u-blox 20 HPG 2.00 - Interface description
+In the example ﬁgure above several items (e.g. the ﬁrst item) are only set in the default layer and
+hence, the default value ends up in the current conﬁguration in the RAM layer. The third item is
+present in the Default, ﬂash and BBR layers. The value from the BBR layer has the highest priority
+and therefore it ends up in the RAM layer. On the other hand, the default value of the sixth item is
+changed by the value in the ﬂash layer. The value of the last item is changed in the RAM layer only,
+i.e. upon startup the value in the RAM layer was the value from the default layer, but the value in the
+RAM layer was changed at runtime.
+6.4 Conﬁguration interface access
+The following sections describe the existing interfaces to access the Conﬁguration Database.
+6.4.1 UBX protocol interface
+The following UBX protocol messages are available to access the conﬁguration database:
+• UBX-CFG-VALGET to read conﬁguration items from the database
+• UBX-CFG-VALSET to set conﬁguration items in the database
+• UBX-CFG-VALDEL to delete conﬁguration items from the database
+6.5 Conﬁguration data
+Conﬁguration data is the binary representation of a list of key ID and value pairs. It is formed by
+concatenating keys (U4 values) and values (variable type) without any padding. This format is used
+in the UBX-CFG-VALSET and UBX-CFG-VALGET messages.
+The ﬁgure below shows an example. The four items (key ID - value pairs) on the left use the four
+fundamental storage sizes: one byte (L, U1, I1, E1 and X1 types), 2 bytes (U2, I2, E2 and X2 types),
+four byte (U4, I4, E4, X4 and R4 types) and eight bytes (U8, I8, X8 and R8 types). When concatenated
+(right) the key IDs and values are not aligned and there is no padding.
+UBXDOC-304424225-19888 - R01
+ 
+6 Conﬁguration interface Page 168 of 224
+C1-Public

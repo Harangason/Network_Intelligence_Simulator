@@ -1,0 +1,51 @@
+TC_A_09_CS: Update Charging Station Password for HTTP Basic Authentication -
+Accepted
+Test case name Update Charging Station Password for HTTP Basic Authentication - Accepted
+Test case Id TC_A_09_CS
+Use case Id(s) A01
+Requirement(s) A01.FR.01, A01.FR.11, A01.FR.12, B01.FR.01
+System under test Charging Station
+Description This test case defines how to use the BasicAuthPassword, the password used to authenticate Charging
+Stations in security profile 1 (Basic Authentication) and security profile 2 (TLS with Basic Authentication)
+Purpose To verify if the Charging Station is able to accept and store and log the new BasicAuthPassword as
+described at the OCPP specification.
+Prerequisite(s) The charging station supports security profile 1 and/or 2
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a SetVariablesResponse
+1. The Test System sends a SetVariablesRequest with
+setVariableData[1]:
+- variable.name = "BasicAuthPassword"
+- component.name = "SecurityCtrlr"
+- attributeValue = "<NewPassword>"
+3. The ChargingStation sends a HTTP upgrade request with an
+Authorization header, containing a username/password
+combination (with the new BasicAuthPassword).
+Note(s):
+- The Authorization header is formatted as follows:
+AUTHORIZATION: Basic <Base64 encoded(<Configured
+ChargingStationId>:<NEW BasicAuthPassword>)>
+4. The Test System validates the username/password
+combination AND upgrades the connection to a (secured)
+WebSocket connection.
+5. The Charging Station sends a BootNotificationRequest
+6. The Test System responds with a BootNotificationResponse
+7. The Charging Station notifies the Test System about the
+current state of all connectors. 8. The Test System responds accordingly.
+Note(s):
+- Steps 5, 6, 7, and 8 are only required when status in Step 2 is RebootRequired
+Tool validations
+* Step 2:
+Message: SetVariablesResponse
+- status must be Accepted or RebootRequired
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 13/1383 Part 6 - Test Cases

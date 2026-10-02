@@ -1,0 +1,45 @@
+enterprise application. This can be for example achieved by using the MQTT protocol, which is an open and
+lightweight publish/subscribe protocol designed speciﬁcally for machine-to-machine and mobile applications. It
+is optimized for communications over networks where bandwidth is at a premium or where the network con-
+nection could be intermittent. However MQTT requires an underlying network, such as TCP/IP, that provides
+an ordered lossless connection capability and this is too complex for very simple, small footprint, and low-cost
+devices such as wireless SAs.
+The purpose of this document is to specify MQTT-SN, a pub/sub protocol for wireless sensor networks.
+MQTT-SN can be considered as a version of MQTT which is adapted to the peculiarities of a wireless commu-
+nication environment. Wireless radio links have in general a higher failure rates than wired ones due to their
+susceptibility to fading and interference disturbances. They have also a lower transmission rate. For example,
+WSNs based on the IEEE 802.15.4 standard provide a maximum bandwidth of 250 kbit/s in the 2.4 GHz band.
+Moreover, to be resistant against transmission errors, their packets have a very short length. In the case of IEEE
+802.15.4, the packet length at the physical layer is limited to 128 bytes. Half of these 128 bytes could be taken
+away by the overhead information required by supporting functions such as MAC layer, networking, security, etc.
+MQTT-SN is also optimized for implementation on low-cost, battery-operated devices with limited processing
+and storage resources.
+MQTT-SN was originally developed for running on top of the ZigBee R©1 APS layer. ZigBee R©1 is an open
+industrial consortium with the aim of deﬁning an open and global communication standard for WSNs. To be
+global ZigBee R©1 has selected the IEEE standard 802.15.4 as the protocol for the PHY and MAC layers, and
+adds on top on this standard the required network, security and application layers, thus providing interoperability
+between products of different vendors.
+MQTT-SN is designed in such a way that it is agnostic of the underlying networking services. Any network
+which provides a bi-directional data transfer service between any node and a particular one (a gateway) should
+be able to support MQTT-SN. For example a simple datagram service which allows a source endpoint to send
+a data message to a speciﬁc destination endpoint should be sufﬁcient. A broadcast data transfer service is only
+required if the gateway discovery procedure is employed. To reduce the broadcast trafﬁc created by the discovery
+procedure, it is desirable that MQTT-SN could indicate the required broadcast radius to the underlying layer.
+3 MQTT-SN vs MQTT
+MQTT-SN is designed to be as close as possible to MQTT, but is adapted to the peculiarities of a wireless com-
+munication environment such as low bandwidth, high link failures, short message length, etc. It is also optimized
+for the implementation on low-cost, battery-operated devices with limited processing and storage resources.
+Compared to MQTT, MQTT-SN is characterized by the following differences:
+1. The CONNECT message is split into three messages. The two additional ones are optional and used to
+transfer the Will topic and the Will message to the server.
+2. To cope with the short message length and the limited transmission bandwidth in wireless networks, the
+topic name in the PUBLISH messages is replaced by a short, two-byte long “topic id”. A registration
+procedure is deﬁned to allow clients to register their topic names with the server/gateway and obtain the
+corresponding topic ids. It is also used in the opposite direction to inform the client about the topic name
+and the corresponding topic id that will be included in a following PUBLISH message.
+3. “Pre-deﬁned” topic ids and “short” topic names are introduced, for which no registration is required. Pre-
+deﬁned topic ids are also a two-byte long replacement of the topic name, their mapping to the topic names
+is however known in advance by both the client’s application and the gateway/server. Therefore both sides
+can start using pre-deﬁned topic ids; there is no need for a registration as in the case of “normal” topic ids
+mentioned above.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 4

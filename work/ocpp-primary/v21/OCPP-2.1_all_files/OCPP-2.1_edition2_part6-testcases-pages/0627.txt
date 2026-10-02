@@ -1,0 +1,59 @@
+Main (Test scenario)
+8. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Downloading
+9. The Test System responds with a
+FirmwareStatusNotificationResponse
+10. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Downloaded
+11. The Test System responds with a
+FirmwareStatusNotificationResponse
+12. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status SignatureVerified
+13. The Test System responds with a
+FirmwareStatusNotificationResponse
+14. The Charging Station notifies the CSMS about the current
+state of all connectors.
+Note(s):
+- This step is optional. The Charging Station may wants to set its
+last connector also to Unavailable, before proceeding installing
+the new firmware.
+15. The Test System responds accordingly.
+16. Execute Reusable State RebootBeforeFirmwareInstallation
+Note: This step only needs to be executed if the Charging Station needs to reboot before firmware installation.
+17. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Installing
+Note(s):
+- This step only needs to be executed if the Charging Station did
+NOT reboot before firmware installation, at step 16.
+18. The Test System responds with a
+FirmwareStatusNotificationResponse
+19. Execute Reusable State RebootBeforeFirmwareActivation
+Note: This step only needs to be executed if the Charging Station needs to reboot before firmware activation.
+20. The Test System waits for the Charging Station to reconnect.
+Note: This step only needs to be executed if the Charging Station did not reboot/reconnect up until this point. The Charging Station
+should at least reconnect to reestablish the protocol version handshake.
+Note: Step 21 through 26 can be send in a different order.
+21. The Charging Station notifies the CSMS about the current
+state of all connectors.
+Note(s):
+- This step only needs to be executed if the connectors were
+previously set to Unavailable (at step 14) and the Charging Station
+did not report setting them back to Available (after a reboot
+sequence at step 16 or 19) yet.
+22. The Test System responds accordingly.
+23. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Installed
+24. The Test System responds with a
+FirmwareStatusNotificationResponse
+25. The Charging Station sends a
+SecurityEventNotificationRequest
+With type FirmwareUpdated
+26. The Test System responds with a
+SecurityEventNotificationResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 625/1383 Part 6 - Test Cases

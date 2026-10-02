@@ -1,0 +1,73 @@
+Initial Cable plugin Cable unplug
+Unavailable - -
+Faulted - -
+NOTE
+In the table below the text: for component = "Connector"
+should be read as a shorthand notation for:
+for component.name = "Connector", component.evse.id = <evse id>, component.evse.connectorId = <connector id>
+G01 - Report connector AvailabilityState - Requirements
+Table 83. G01 - Requirements
+ID Precondition Requirement definition
+G01.FR.01 A Charging Station Connector MUST have one of the valid
+statuses from the ConnectorStatus enumeration.
+G01.FR.02 When an EVSE is set to status Unavailable by a
+ChangeAvailabilityRequest message.
+The EVSE’s Unavailable status SHALL be persistent across
+reboots.
+G01.FR.03 The connector is Available when an EV is
+connecting
+The Charging Station SHALL send a NotifyEventRequest for
+component = "Connector", variable = "AvailabilityState",
+actualValue = "Occupied" and trigger = "Delta"
+or a StatusNotificationRequest with connectorStatus =
+Occupied.
+G01.FR.04 The connector is Occupied when an EV is
+disconnecting AND
+connector is not scheduled to become
+Unavailable (G03.FR.05)
+The Charging Station SHALL send a NotifyEventRequest for
+component = "Connector", variable = "AvailabilityState",
+actualValue = "Available" and trigger = "Delta" when an EV is
+disconnected
+or a StatusNotificationRequest with connectorStatus =
+Available.
+G01.FR.05 The connector is Occupied when an EV is
+disconnecting AND
+connector is scheduled to become
+Unavailable (G03.FR.05)
+The Charging Station SHALL send a NotifyEventRequest for
+component = "Connector", variable = "AvailabilityState",
+actualValue = "Unavailable" and trigger = "Delta" when an EV is
+disconnected
+or a StatusNotificationRequest with connectorStatus =
+Unavailable.
+G01.FR.06 The connector is Reserved when an EV is
+connecting AND
+EV driver presents an IdToken matching the
+reservation
+The Charging Station SHALL send a NotifyEventRequest for
+component = "Connector", variable = "AvailabilityState",
+actualValue = "Occupied" and trigger = "Delta"
+or a StatusNotificationRequest with connectorStatus =
+Occupied.
+G01.FR.07 When a ChangeAvailabilityRequest leads to a
+connector status change
+The Charging Station SHALL send a NotifyEventRequest for
+component = "Connector", variable = "AvailabilityState", trigger =
+"Delta" and the corresponding actualValue of "AvailabilityState"
+or a StatusNotificationRequest with the corresponding
+connectorStatus.
+G01.FR.08 When a cable is plugged in to a connector of an
+EVSE AND
+the EVSE has multiple connectors
+The Charging Station SHOULD NOT send a NotifyEventRequest
+or StatusNotificationRequest for the other connector(s), even
+though they are no longer usable.
+G01.FR.09 The connector is Reserved when an EV is
+connecting AND
+( No IdToken is presented OR
+EV driver presents an IdToken not matching the
+reservation )
+Connector status SHALL NOT change.
+Edition 2, 2025-12-03 G. Availability
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 247/803 Part 2 - Specification

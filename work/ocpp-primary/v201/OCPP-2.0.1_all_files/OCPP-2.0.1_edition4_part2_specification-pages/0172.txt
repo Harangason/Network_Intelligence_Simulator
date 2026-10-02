@@ -1,0 +1,59 @@
+EV Driver
+Charging Station CSMS
+A transaction is ongoing.
+unplug cable at car side
+suspend energy offer
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 1,
+timestamp, chargingState = SuspendedEV, triggerReason = EVCommunicationLost, meterValues)
+TransactionEventResponse()
+alt [if Cable is plugged in]
+plugin cable
+resume energy offer
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 2,
+timestamp, chargingState = Charging, triggerReason = CablePluggedIn, meterValues)
+TransactionEventResponse()
+Continue with E02 - Start Transaction - Cable Plugin First from Ref #1.
+[if cable not permanently attached.]
+User authorization successful.
+unlock connector
+TransactionEventRequest(eventType = Ended, transactionId = AB1234, seqNo = N + 2,
+timestamp, triggerReason = StopAuthorized, meterValues)
+TransactionEventResponse()
+unplug cable
+StatusNotificationRequest(Available)
+StatusNotificationResponse()
+[if cable permanently attached]
+timeout()
+TransactionEventRequest(eventType = Ended, stoppedReason = Timeout,
+transactionId = AB1234, seqNo = N + 2,timestamp, meterValues)
+TransactionEventResponse()
+StatusNotificationRequest(Available)
+StatusNotificationResponse()
+Figure 58. Sequence Diagram: When cable disconnected on EV-side: Suspend Transaction
+E10 - When cable disconnected on EV-side: Suspend Transaction - Requirements
+Table 70. E10 - Requirements
+ID Precondition Requirement definition Note
+E10.FR.01 If StopTxOnEVSideDisconnect =
+false AND
+Cable not permanently attached
+The Connector SHALL remain locked at the
+Charging Station until the EV Driver presents the
+IdToken.
+E10.FR.02 If StopTxOnEVSideDisconnect =
+false AND
+Cable permanently attached AND
+Cable not plugged in within timeout
+The Charging Station SHALL deauthorize the
+transaction.
+E10.FR.03 When a TransactionEventRequest has
+to be created
+The Charging Station SHALL set the message’s
+seqNo field as specified in Sequence Number
+Generation.
+This enables the CSMS
+to track the
+completeness of
+transaction information.
+Same as E01.FR.07
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 162/491 Part 2 - Specification

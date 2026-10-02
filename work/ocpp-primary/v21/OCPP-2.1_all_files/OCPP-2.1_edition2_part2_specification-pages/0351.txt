@@ -1,0 +1,116 @@
+ID Precondition Requirement definition Note
+K01.FR.120
+(2.1)
+When Charging Station
+receives a
+SetChargingProfileRequest
+with a
+chargingProfilePurpose
+PriorityCharging or
+LocalGeneration AND
+This chargingProfilePurpose
+is not in
+SupportedAdditionalP
+urposes
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and optionally with reasonCode = "UnsupportedPurpose".
+K01.FR.122
+(2.1)
+When Charging Station
+receives a
+SetChargingProfileRequest
+with a dynUpdateInterval or
+dynUpdateTime field AND
+chargingProfileKind is not
+Dynamic
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and optionally with reasonCode = "InvalidProfile".
+K01.FR.123
+(2.1)
+When Charging Station
+receives a
+SetChargingProfileRequest
+with useLocalTime = true
+AND
+SupportsLocalTime is
+false or absent
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and optionally with reasonCode = "InvalidSchedule".
+K01.FR.124
+(2.1)
+When Charging Station
+receives a
+SetChargingProfileRequest
+with randomizedDelay > 0
+AND
+SupportsRandomizedDe
+lay is false or absent
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and optionally with reasonCode = "InvalidSchedule".
+K01.FR.125
+(2.1)
+When Charging Station
+receives a
+SetChargingProfileRequest
+with field limitAtSoC AND
+SupportsLimitAtSoC is
+false or absent
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and optionally with reasonCode = "InvalidSchedule".
+K01.FR.126
+(2.1)
+When Charging Station
+receives a
+SetChargingProfileRequest
+with a
+chargingSchedulePeriod
+that has evseSleep = true
+and operationMode != Idle
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and optionally with reasonCode = "InvalidSchedule".
+A request for EVSE to sleep
+can only occur during
+operationMode Idle. See
+Q10 for evseSleep behavior.
+ISO 15118-20 multi-phase support
+K01.FR.140
+(2.1)
+When determining the
+composite schedule from
+multiple charging profiles
+Charging Station SHALL at each point in time use the
+lowest value of numberPhases for that point in time in all
+applicable chargingSchedulePeriods.
+For example, if
+ChargingStationMaxProfile
+has numberPhases = 1 and
+TxProfile has
+numberPhases = 3, then the
+value 1 is used.
+K01.FR.141
+(2.1)
+When Charging Station
+receives a
+SetChargingProfileRequest
+that introduces a conflicting
+value of phaseToUse with
+the schedule periods of
+other applicable charging
+profiles
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and a statusInfo with reasonCode = "PhaseConflict".
+For example, if
+ChargingStationMaxProfile
+has phaseToUse = 1 and
+TxProfile is submitted with
+phaseToUse = 3, then this
+will be rejected.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 338/803 Part 2 - Specification

@@ -1,0 +1,35 @@
+A value of "0" (numeric zero), by convention, is to be interpreted to mean that no sampled data should be
+transmitted.
+MeterValuesSampledData is a comma separated list that prescribes the set of measurands to be included in a
+MeterValues.req PDU, every MeterValueSampleInterval seconds. The maximum amount of elements in the
+MeterValuesSampledData list can be reported by the Charge Point via: MeterValuesSampledDataMaxLength
+StopTxnSampledData is a comma separated list that prescribes the sampled measurands to be included in the
+TransactionData element of StopTransaction.req PDU, every MeterValueSampleInterval seconds from the start
+of the charging session. The maximum amount of elements in the StopTxnSampledData list can be reported by
+the Charge Point via: StopTxnSampledDataMaxLength
+3.14.2 Clock-Aligned Meter Values
+Grid Operator might require meter readings to be taken from fiscally certified energy meters, at specific Clock
+aligned times (usually every quarter hour, or half hour).
+"Clock-Aligned Billing Data" can be configured with the following configuration keys:
+• ClockAlignedDataInterval
+• MeterValuesAlignedData
+• MeterValuesAlignedDataMaxLength
+• StopTxnAlignedData
+• StopTxnAlignedDataMaxLength
+ClockAlignedDataInterval is the size of the clock-aligned data interval (in seconds). This defines the set of
+evenly spaced meter data aggregation intervals per day, starting at 00:00:00 (midnight).
+For example, a value of 900 (15 minutes) indicates that every day should be broken into 96 15-minute intervals.
+A value of "0" (numeric zero), by convention, is to be interpreted to mean that no clock-aligned data should be
+transmitted.
+MeterValuesAlignedData is a comma separated list that prescribes the set of measurands to be included in a
+MeterValues.req PDU, every ClockAlignedDataInterval seconds. The maximum amount of elements in the
+MeterValuesAlignedData list can be reported by the Charge Point via: MeterValuesAlignedDataMaxLength
+StopTxnAlignedData is a comma separated list that prescribes the set of clock-aligned periodic measurands to
+be included in the TransactionData element of StopTransaction.req PDU for every ClockAlignedDataInterval of
+the charging session. The maximum amount of elements in the StopTxnAlignedData list can be reported by the
+Charge Point via: StopTxnAlignedDataMaxLength
+3.14.3 Multiple Locations/Phases
+When a Charge Point can measure the same measurand on multiple locations or phases, all possible locations
+and/or phases SHALL be reported when configured in one of the relevant configuration keys.
+For example: A Charge Point capable of measuring Current.Import on Inlet (all 3 phases) (grid connection) and
+7

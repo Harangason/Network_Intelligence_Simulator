@@ -1,0 +1,53 @@
+TC_B_21_CSMS: Reset Charging Station - With Ongoing Transaction - OnIdle
+Test case name Reset Charging Station - With Ongoing Transaction - OnIdle
+Test case Id TC_B_21_CSMS
+Use case Id(s) B12
+Requirement(s) B12.FR.01, B12.FR.03, E07.FR.03
+System under test CSMS
+Description This test case covers how the CSMS can remotely request the Charging Station to reset itself by sending a
+ResetRequest during a transaction. When ResetRequest "OnIdle" is send the charging stations schedules a
+reboot after all transactions are stopped.
+This could for example be necessary if the Charging Station is not functioning correctly.
+Purpose To verify if the CSMS is able to perform the reset mechanism as described at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Request the CSMS to reboot the Charging Station with status OnIdle
+2. The Test System responds with a ResetResponse
+with status Scheduled
+1. The CSMS sends a ResetRequest
+with status OnIdle
+3. The Test System sends a TransactionEventRequest.
+- eventType Updated
+- triggerReason StopAuthorized
+- transactionInfo.chargingState EVConnected
+- idToken.idToken <Configured valid_idtoken_idtoken>
+- idToken.type <Configured valid_idtoken_type>
+4. The CSMS responds with a TransactionEventResponse.
+5. The Test System sends a TransactionEventRequest.
+- eventType Ended
+- triggerReason EVCommunicationLost
+- transactionInfo.chargingState Idle
+- transactionInfo.stoppedReason EVDisconnected
+6. The CSMS responds with a TransactionEventResponse.
+7. The Test System sends a BootNotificationRequest
+with reason ScheduledReset 8. The CSMS responds with a BootNotificationResponse
+9. The Test System notifies the CSMS about the current state of
+all connectors.
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- trigger Delta
+- actualValue "Available"
+- component.name "Connector"
+- variable.name "AvailabilityState"
+10. The CSMS responds accordingly.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 992/1383 Part 6 - Test Cases

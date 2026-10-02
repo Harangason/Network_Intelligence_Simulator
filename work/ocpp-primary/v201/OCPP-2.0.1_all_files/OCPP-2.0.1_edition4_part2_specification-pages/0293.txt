@@ -1,0 +1,94 @@
+ID Precondition Requirements NOTE
+K16.FR.06 K16.FR.05
+AND
+EV charging profile is
+within limits of CSMS
+ChargingSchedule
+CSMS responds with
+NotifyEVChargingScheduleResponse with
+status Accepted to Charging Station.
+Note: Already checked by Charging Station, but
+CSMS does its own check.
+K16.FR.07 K16.FR.05
+AND
+EV charging profile is
+NOT within limits of
+CSMS
+ChargingSchedule
+CSMS responds with
+NotifyEVChargingScheduleResponse with
+status Rejected to Charging Station.
+K16.FR.08 K16.FR.07 CSMS starts new renegotiation as per use
+case K16.
+K16.FR.09 When the Charging
+Station receives
+charging needs from
+the EV
+The Charging Station SHOULD NOT send a
+NotifyEVChargingNeedsRequest to the CSMS.
+CSMS initiated the renegotiation and has just
+sent a new charging profile, based on the initial
+charging needs from EV, energy already
+consumed by EV and whatever information
+has caused CSMS to update the charging
+profile.
+In ISO 15118 charging needs are sent via
+ChargeParameterDiscoveryReq.
+K16.FR.10 K16.FR.04 The Charging Station SHOULD take the
+schedule from the
+NotifyEVChargingScheduleRequest into
+account when calculating the actual
+Composite schedule.
+K16.FR.11 K16.FR.02
+AND
+current or power in
+new charging schedule
+is lower than actual
+current or power
+The Charging Station SHALL request EV to
+lower current or power to a value matching the
+new charging schedule at the first possible
+opportunity.
+In ISO 15118 this can be communicated in
+CurrentDemandRes (for DC) or
+ChargingStatusRes (for AC).
+K16.FR.12 K16.FR.09
+AND
+Charging Station
+sends a
+NotifyEVChargingNeed
+sRequest
+The CSMS SHALL send a
+SetChargingProfileRequest.
+This situation is not desirable, because
+charging profile will likely be the same as in
+K16.FR.01, but this is added for robustness
+when Charging Station is not adhering to
+K16.FR.09.
+K16.FR.13 EV does not return a
+charging profile
+Charging Station IS RECOMMENDED to return
+an EV charging profile as a chargingSchedule
+in a NotifyEVChargingScheduleRequest
+message to CSMS that matches the schedule
+that was selected by the EV (i.e. the OCPP
+charging schedule that is represented by the
+SAScheduleTupleId that EV sent in
+PowerDeliveryReq).
+In ISO 15118-2 the EV charging profile and the
+selected schedule are returned as
+ChargingProfile and SAScheduleTupleId in
+PowerDeliveryReq.
+K17 - Renegotiation initiated by EV
+No. Type Description
+1 Name Renegotiation initiated by EV.
+2 ID K16
+3 Objective(s) To let an EV request a new charging schedule.
+4 Description The EV signals the Charging Station that it wants to renegotiate and it provides new charging
+needs, which the Charging Station sends to the CSMS. Based on this and other parameters, the
+CSMS calculates a new charging schedule and sends it via SetChargingProfileRequest to
+Charging Station, which communicates it to the EV.
+Note: Description of actions between EV and Charging Station is informative only and not
+mandated by OCPP.
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 283/491 Part 2 - Specification

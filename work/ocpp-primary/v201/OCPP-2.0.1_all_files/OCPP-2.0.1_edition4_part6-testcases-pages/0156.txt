@@ -1,0 +1,55 @@
+TC_C_52_CS: Authorization using Contract Certificates 15118 - Online - Central
+contract certificate validation - Accepted
+Test case name Authorization using Contract Certificates 15118 - Online - Central contract certificate validation -
+Accepted
+Test case Id TC_C_52_CS
+Use case Id(s) C07
+Requirement(s) C07.FR.01,C07.FR.02,C07.FR.06
+System under test Charging Station
+Description The Charging Station is able to authorize with contract certificates when it supports ISO 15118.
+Purpose To verify if the Charging Station is able to authorize, while not being able to locally validate the contract
+certificate and then send it to the CSMS.
+Prerequisite(s) - The MO Root certificate that is needed to validate the EV Contract certificate must NOT be installed at the
+Charging Station.
+- The Charging Station supports central contract validation.
+Before (Preparations)
+Configuration State:
+TxCtrlr.TxStartPoint contains one or more of PowerPathClosed, Authorized, EVConnected, ParkingBayOccupancy
+AuthCtrlr.AuthEnabled is true (If implemented AND ReadWrite)
+AuthCtrlr.DisableRemoteAuthorization is false (If implemented)
+For the ISO15118Ctrlr of the EVSE used for the PnC transaction:
+ISO15118Ctrlr.CentralContractValidationAllowed is true
+ISO15118Ctrlr.ContractCertificateInstallationEnabled is true
+ISO15118Ctrlr.V2GCertificateInstallationEnabled is true
+ISO15118Ctrlr.PnCEnabled is true
+Memory State:
+CertificateInstalled for certificateType V2GRootCertificate
+RenewV2GChargingStationCertificate
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends an AuthorizeRequest
+Note(s):
+-The test case should be robust enough to also handle a
+GetCertificateStatusRequest
+2. The Test System responds with a AuthorizeResponse
+with idTokenInfo.status Accepted and certificateStatus =
+Accepted
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+With idTokenInfo.status Accepted
+5. Execute Reusable State EnergyTransferStarted
+Tool validations
+* Step 1:
+Message: AuthorizeRequest
+- idToken.type must be eMAID
+- iso15118CertificateHashData may be provided
+- certificate is provided
+* Step 3:
+Message: TransactionEventRequest
+- triggerReason must be Authorized
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 154/914 Part 6 - Test Cases

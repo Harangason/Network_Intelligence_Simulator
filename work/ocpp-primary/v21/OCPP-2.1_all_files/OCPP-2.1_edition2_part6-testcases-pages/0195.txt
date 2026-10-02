@@ -1,0 +1,42 @@
+TC_C_111_CS: Integrated Payment Terminal - Cancelation prior to transaction -
+Only Payment Terminal authorised - stopped by EV driver
+Test case name Integrated Payment Terminal - Cancelation prior to transaction - Only Payment Terminal authorised -
+stopped by EV driver
+Test case Id TC_C_111_CS
+Use case Id(s) C19
+Requirement(s) C18.FR.01, C18.FR.02, C18.FR.03, C19.FR.01
+System under test Charging Station
+Description In order to test that Charging Station supports cancelation of a payment terminal authorization when the EV
+driver stops the session at the Charging Station.
+Purpose To verify if the Charging Station is able to handle cancelation of a payment terminal authorization when the
+EV driver stops the session at the Charging Station.
+Prerequisite(s) - Charging Station has an integrated Payment Terminal
+- TxStartPoint does NOT contain ParkingBayOccupancy or Authorized
+Before (Preparations)
+Configuration State:
+PaymentCtrlr.Enabled is true
+PaymentCtrlr.AuthorizationAmount is 25.00
+PaymentCtrlr.AuthorizeDirectPayment is false
+TxStartPoint EVConnected or PowerPathClosed or EnergyTransfer or DataSigned
+Memory State:
+N/a
+Reusable State(s):
+State is DefaultTariffConfigured
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present a payment card to the payment terminal.
+Note(s):
+- Charging Station instructs payment terminal to request authorization for this card from PSP for amount of 25.00 EUR
+- PSP authorizes the payment card and provides <PspRef>
+- Charging Station authorizes EV to charge
+Manual Action: EV Driver stops the session at Charging Station.
+Note(s):
+- Charging Station instructs payment terminal to release the authorization amount of 25.00 EUR and cancel the payment
+- Charging Station does not send any NotifySettlementRequest
+Tool validations
+N/a
+Post scenario validations:
+- The authorization amount of 25.00 EUR is released and the payment is cancelled.
+- The Charging Station does not send any NotifySettlementRequest.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 193/1383 Part 6 - Test Cases

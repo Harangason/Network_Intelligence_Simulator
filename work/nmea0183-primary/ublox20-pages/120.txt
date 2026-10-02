@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+3.16.2.1 Satellite measurements for RRLP
+Message UBX-RXM-MEASX
+Satellite measurements for RRLP
+Type Periodic/polled
+Comment The message payload data is, where possible and appropriate, according to the Radio Resource LCS (Location
+Services) Protocol (RRLP) [1]. One exception is the satellite and GNSS IDs, which here are given according to
+the Satellite Numbering scheme. The correct satellites have to be selected and their satellite ID translated
+accordingly [1, tab. A.10.14] for use in a RRLP Measure Position Response Component. Similarly, the
+measurement reference time of week has to be forwarded correctly (modulo 14400000 for the 24 LSB GPS
+measurements variant, modulo 3600000 for the 22 LSB Galileo and Additional Navigation Satelllite Systems
+(GANSS) measurements variant) of the RRLP measure position response to the SMLC.
+Reference: [1] ETSI TS 144 031 V11.0.0 (2012-10), Digital cellular telecommunications system (Phase 2+),
+Location Services (LCS), Mobile Station (MS) - Serving Mobile Location Centre (SMLC), Radio Resource LCS
+Protocol (RRLP), (3GPP TS 44.031 version 11.0.0 Release 11).
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x02 0x14 44 + numSV·24 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version, currently 0x01
+1 U1[3] reserved0 - - Reserved
+4 U4 gpsTOW - ms GPS measurement reference time
+8 U4 gloTOW - ms GLONASS measurement reference time
+12 U4 bdsTOW - ms BeiDou measurement reference time
+16 U1[4] reserved1 - - Reserved
+20 U4 qzssTOW - ms QZSS measurement reference time
+24 U2 gpsTOWacc 2^-4 ms GPS measurement reference time accuracy (0xﬀﬀ = >
+4s)
+26 U2 gloTOWacc 2^-4 ms GLONASS measurement reference time accuracy
+(0xﬀﬀ = > 4s)
+28 U2 bdsTOWacc 2^-4 ms BeiDou measurement reference time accuracy (0xﬀﬀ
+= > 4s)
+30 U1[2] reserved2 - - Reserved
+32 U2 qzssTOWacc 2^-4 ms QZSS measurement reference time accuracy (0xﬀﬀ =
+> 4s)
+34 U1 numSV - - Number of satellites in repeated block
+35 U1 flags - - Flags
+bits 1…0   U:2 towSet - - TOW set (0 = no, 1 or 2 = yes)
+36 U1[8] reserved3 - - Reserved
+Start of repeated group (numSV times)
+44 + n·24 U1 gnssId - - GNSS ID (see Satellite Numbering)
+45 + n·24 U1 svId - - Satellite ID (see Satellite Numbering)
+46 + n·24 U1 cNo - - carrier noise ratio (0..63)
+47 + n·24 U1 mpathIndic - - multipath index (according to [1]) (0 = not measured,
+1 = low, 2 = medium, 3 = high)
+48 + n·24 I4 dopplerMS 0.04 m/s Doppler measurement
+52 + n·24 I4 dopplerHz 0.2 Hz Doppler measurement
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 120 of 224
+C1-Public

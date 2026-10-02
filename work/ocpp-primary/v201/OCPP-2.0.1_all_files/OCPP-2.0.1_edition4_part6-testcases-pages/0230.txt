@@ -1,0 +1,51 @@
+TC_E_45_CS: Offline Behaviour - Stop transaction during offline period - Same
+GroupId
+Test case name Offline Behaviour - Stop transaction during offline period - Same GroupId
+Test case Id TC_E_45_CS
+Use case Id(s) E08
+Requirement(s) E08.FR.02,E08.FR.04,E08.FR.05,E08.FR.06,E08.FR.07,E08.FR.08
+System under test Charging Station
+Description The Charging Station queues TransactionEvent messages to inform the CSMS that a transaction occurred
+while the Charging Station was Offline.
+Purpose To verify if the Charging Station is able to queue TransactionEvent messages when the transaction stopped
+by an idToken with the same groupIdToken, while the Charging Station was offline.
+Prerequisite(s) - The Charging Station supports Authorization cache OR Local Authorization List.
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+OfflineThreshold is <Configured RetryBackOffWaitMinimum_duration> + 60.0
+RetryBackOffWaitMinimum is <Configured RetryBackOffWaitMinimum_duration>
+RetryBackOffRandomRange is 0
+Note:
+<Configured RetryBackOffWaitMinimum_duration should be long enough to execute manual tasks>
+Memory State:
+IdTokenCached for <Configured valid idtoken fields2> with <Configured GroupIdToken>
+IdTokenLocalAuthList for <Configured valid idtoken fields2> with <Configured GroupIdToken>
+Reusable State(s):
+State is Authorized with <Configured GroupIdToken>
+Then proceed to state EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does
+not accept a reconnect.
+Manual Action: Present <Configured valid idtoken fields2>.
+Manual Action: Disconnect the EV and EVSE.
+Manual Action: Drive EV out of parking bay. (Only needed if TxStopPoint is ParkingBayOccupancy)
+2. The Test System accepts the reconnection attempt from the
+Charging Station.
+3. The Charging Stations sends a TransactionEventRequest
+Note(s):
+- The Charging Station will empty its Transaction message queue.
+This will contain one or more TransactionEventRequest messages
+4. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 3:
+All messages: TransactionEventRequest
+- offline must be true
+One of the messages: TransactionEventRequest
+- eventType Ended
+Post scenario validations:
+N/a
+NOTE If the Charging Station supports ISO15118, this testcase needs to be executed using EIM.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 228/914 Part 6 - Test Cases

@@ -1,0 +1,35 @@
+Main B (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+RequestStopTransactionResponse
+1. The Test System sends a RequestStopTransactionRequest
+with transactionId <transactionId provided by the Charging
+Station in TransactionEventRequest>
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+Note(s): This step is optional
+5. The Charging Station sends a TransactionEventRequest
+6. The Test System responds with a TransactionEventResponse
+With idTokenInfo.status is Accepted
+Tool validations
+* Step 2:
+Message: RequestStopTransactionResponse
+- status must be Accepted
+* Step 3:
+Message: TransactionEventRequest
+- triggerReason must be RemoteStop
+* Step 5:
+Message: TransactionEventRequest
+- triggerReason must be ChargingStateChanged
+- transactionInfo.chargingState must be EVConnected
+If TxStopPoint contains Authorized or PowerPathClosed or EnergyTransfer
+Then the last of the two TransactionEventRequest messages from step 3 and 5 needs to contain:
+- eventType must be Ended
+- transactionInfo.stoppedReason must be Remote
+Else
+Then both TransactionEventRequest messages need to contain:
+- eventType must be Updated
+Post scenario validations:
+State is StopAuthorized
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 931/1383 Part 6 - Test Cases

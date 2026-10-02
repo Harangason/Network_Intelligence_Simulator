@@ -1,0 +1,53 @@
+of Virtual Channel IDs at the input of each receive port. This remapping allows the receivers to handle conflicting 
+VC-IDs for input streams from multiple sensors and to send those streams to the same CSI-2 transmit port.
+In CSI-2 mode each deserializer Rx Port can support an FPD-Link III line rate up to 4.16 Gbps, where the line (or 
+forward channel) and back channel rates are based on the reference frequency used for the serializer:
+• In Synchronous mode based on REFCLK input frequency reference, the FPD-Link III forward channel rate 
+is a fixed value of 160 × REFCLK. FPD3_PCLK = 4 × REFCLK and back channel rate = 2 × REFCLK. For 
+example with REFCLK = 25 MHz, forward channel data rate = 4.0 Gbps, FPD3_PCLK = 100 MHz, back 
+channel data rate = 50 Mbps.
+• In Non-synchronous clocking mode when the DS90UB953-Q1 uses external reference clock (CLK_IN) the 
+FPD-Link line rate is typically CLK_IN × 80, FPD3_PCLK = 2 × CLK_IN (CLK_IN = 25 - 52 MHz) or 1 x 
+CLK_IN (CLK_IN = 50 - 104 MHz), based on serializer CLKIN_DIV selection. The back channel data rate 
+must be set to 10 Mbps using Register 0x58. For example, with CLK_IN = 50 MHz, forward channel rate = 
+4 Gbps, FPD3_PCLK = 100 MHz, REFCLK = 25 MHz, and the back channel rate is 10 Mbps. The sensor 
+CSI-2 rate is independent of the CLK_IN.
+7.4.2 RAW Mode
+In RAW mode, the DS90UB960-Q1 receives RAW8, RAW10, or RAW12 data from a DS90UB933-Q1 or 
+DS90UB913-Q1 serializer. The data is translated into a RAW8, RAW10, or RAW12 CSI-2 video stream for 
+forwarding on one of the CSI-2 transmit port s. For each input port, the CSI-2 packet header VC-ID and Data 
+Type are programmable.
+In RAW mode, each Rx Port can support up to:
+• 12 bits of DATA + 2 SYNC bits for an input PCLK range of 37.5 MHz to 100 MHz (75 MHz for DS90UB913A-
+Q1) in the 12-bit, high-frequency mode. Line rate = PCLK × (2/3) × 28. For example, PCLK = 100 MHz, line 
+rate = (100 MHz) × (2/3) × 28 = 1.87 Gbps. Note: No HS/VS restrictions (raw). NOTE: The back channel rate 
+must be set to 2.5 Mbps in this mode.
+• 12 bits of DATA + 2 bits SYNC for an input PCLK range of 25 MHz to 50 MHz in the 12-bit, low-frequency 
+mode. Line rate = PCLK × 28. For example, PCLK = 50 MHz, line rate = 50 MHz × 28 = 1.40 Gbps. Note: No 
+HS/VS restrictions (raw). The back channel rate must be set to 2.5 Mbps in this mode.
+• 10 bits of DATA + 2 SYNC bits for an input PCLK range of 50 MHz to 100 MHz in the 10-bit mode. Line rate = 
+(PCLK / 2) × 28. For example, PCLK = 100 MHz, line rate = (100 MHz / 2) × 28 = 1.40 Gbps. Note: HS/HV is 
+restricted to no more than one transition per 10 PCLK cycles. The back channel rate must be set to 2.5 Mbps 
+in this mode.
+When operating with a DVP serializer, the DS90UB960-Q1 deserializer also supports DVP formats such as 
+YUV-422 which have the same pixel packing as RAW8, RAW10 or RAW12. For example; there are 3 YUV CSI-2 
+data types that have the same pixel packing as RAW10: YUV420 10 bit, YUV420 10 bit Chroma shifted or 
+YUV422 10 bit. These formats can be used as well as 8 bit and 12 bit YUV formats which adhere to the same 
+structure as RAW8 and RAW12 respectively.
+7.4.3 MODE Pin
+Configuration of the device may be done through the MODE input strap pin, or through the configuration register 
+bits. A pullup resistor and a pulldown resistor of suggested values may be used to set the voltage ratio of the 
+MODE input (VMODE) and VDD18 to select one of the four possible modes. Possible configurations are:
+• CSI-2 Mode (DS90UB953-Q1 and DS90UB935-Q1 compatible)
+– 40-bit forward channel frame
+– 50-Mbps back channel rate for serializer operation in Synchronous mode (default)
+– 10-Mbps back channel rate for serializer operation in Non-synchronous mode (must be programmed by 
+setting BC_FREQ_SELECT register 0x58[2:0] = 010))
+• 12-bit LF / 12-bit HF / 10-bit RAW modes (DS90UB933-Q1 and DS90UB913A-Q1 compatible)
+– 28-bit forward channel frame
+– 2.5-Mbps back channel rate (default)
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+28 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

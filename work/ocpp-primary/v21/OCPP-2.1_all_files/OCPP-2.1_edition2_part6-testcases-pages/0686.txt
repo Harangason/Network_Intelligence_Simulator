@@ -1,0 +1,44 @@
+TC_N_11_CS: Set Variable Monitoring - Unknown component
+Test case name Set Variable Monitoring - Unknown component
+Test case Id TC_N_11_CS
+Use case Id(s) N04
+Requirement(s) N04.FR.03
+System under test Charging Station
+Description CSMS tries to set a monitor on an unknown component.
+Purpose To test that Charging Station checks whether a component exists.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+This test case activates a monitor on an existing component on non-existing evse and then on a non-existing component
+"NonExistent":
+- Component "EVSE", evse "99", variable "AvailabilityState", monitor type Delta
+- Component "NonExistent", variable "Power", monitor type UpperThreshold
+Note: this assumes, that EVSE #99 does not exist.
+The response to the "NonExistent" component can be either UnknownComponent or UnknownVariable, because both will not exist.
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with:
+SetVariableMonitoringResponse
+Install monitors
+1. Test System sends SetVariableMonitoringRequest with:
+setMonitoringData[1] = {
+- setMonitoringData[0].value = 1
+- setMonitoringData[0].type = Delta
+- setMonitoringData[0].severity = <Configured severity>
+- setMonitoringData[0].component.name = "EVSE"
+- setMonitoringData[0].component.evse.id = 99
+- setMonitoringData[0].variable.name = "AvailabilityState"
+}
+setMonitoringData[2] = {
+- setMonitoringData[1].value = 1234.0
+- setMonitoringData[1].type = UpperThreshold
+- setMonitoringData[1].severity = <Configured severity>
+- setMonitoringData[1].component.name = "NonExistent"
+- setMonitoringData[1].variable.name = "Power"
+}
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 684/1383 Part 6 - Test Cases

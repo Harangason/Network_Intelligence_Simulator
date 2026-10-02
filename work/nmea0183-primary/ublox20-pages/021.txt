@@ -1,0 +1,45 @@
+u-blox 20 HPG 2.00 - Interface description
+2.4 NMEA multi-GNSS operation
+Many applications that process NMEA messages assume that only a single GNSS is active.
+However, when multiple GNSS are conﬁgured, the NMEA speciﬁcation requires the output to change
+in the following ways:
+Main Talker ID The main NMEA Talker ID is "GN" (e.g. instead of "GP" for a GPS-only receiver).
+GSV Talker and Signal IDs The GSV message reports the signal strength of the visible satellites.
+In multi-GNSS operation, other messages use the main Talker ID "GN" but the Talker ID in the GSV
+message is speciﬁc to the GNSS it is reporting information for.
+The GSV messages are grouped by the Talker and Signal IDs. Separate sets of GSV messages are
+sent for each GNSS and signal. The Signal ID of a satellite may be unknown. Such satellites are
+presented in their own set with Signal ID 0. Grouping the GSV messages by the Signal ID is supported
+in protocol versions 27.12 and later.
+Multiple GSA and GRS messages Multiple GSA and GRS messages are output for each ﬁx, one for
+each GNSS. This may confuse applications that assume they are output only once per position ﬁx
+(as is the case for a single GNSS receiver).
+GGA Talker IDs The NMEA speciﬁcation indicates that the GGA message is GPS-speciﬁc. However,
+u-blox receivers support the output of a GGA message for each of the Talker IDs.
+BeiDou and Galileo Only NMEA version 4.10 and later have support for these systems.
+QZSS Only NMEA version 4.11 and later have support for this system.
+Extended satellite numbering In order to support some GNSS (e.g. BeiDou, Galileo, QZSS) that are
+not supported by some or all NMEA protocol versions, an "extended" SV numbering scheme can be
+enabled. This uses the NMEA-deﬁned numbers where possible, but adds other number ranges to
+support other GNSS. Note however that these non-standard extensions require 3-digit numbers,
+which may not be supported by some NMEA parsing software. For example, QZSS satellites use
+numbers in the range 193 to 202. See NMEA protocol conﬁguration and Satellite identiﬁers.
+2.5 NMEA data ﬁelds
+Various data ﬁelds in NMEA messages depend on NMEA protocol conﬁguration or require a
+deﬁnition for their interpretation.
+2.5.1 NMEA Talker ID
+One of the ways the NMEA standard diﬀers depending on the GNSS is by using a two-letter message
+identiﬁer, the "Talker ID". The speciﬁc Talker ID used by a u-blox receiver will depend on the product
+and its conﬁguration. The table below shows the Talker ID that will be used for various GNSS
+conﬁgurations by default.
+GNSS Talker ID Comments
+GPS, SBAS GP NMEA 2.3+
+GLONASS GL NMEA 2.3+
+Galileo GA NMEA 4.10+
+BeiDou GB NMEA 4.10+ (oﬃcial NMEA only since 4.11)
+NavIC GI NMEA 4.11+
+QZSS GQ NMEA 4.11+ (GP for NMEA 2.3 - 4.10)
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 21 of 224
+C1-Public

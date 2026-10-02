@@ -1,0 +1,61 @@
+Main (Test scenario)
+8. The Charging Station responds with a
+GetMonitoringReportResponse
+7. The Test System sends a GetMonitoringReportRequest with
+- requestId <Generated requestId>
+- id <preconfiguredMonitor.variableMonitoring.id>
+- componentVariable.component
+<preconfiguredMonitor.component>
+- componentVariable.variable <preconfiguredMonitor.variable>
+9. The Charging Station sends a
+NotifyMonitoringReportRequest 10. The Test System responds with a
+NotifyMonitoringReportResponse .
+12. The Charging Station responds with a
+SetMonitoringBaseResponse with
+- status Accepted
+11. The Test System sends a SetMonitoringBaseRequest with
+- monitoringBase FactoryDefault
+14. The Charging Station responds with a
+GetMonitoringReportResponse
+13. The Test System sends a GetMonitoringReportRequest with
+- requestId <Generated requestId>
+- id <preconfiguredMonitor.variableMonitoring.id>
+- componentVariable.component
+<preconfiguredMonitor.component>
+- componentVariable.variable <preconfiguredMonitor.variable>
+15. The Charging Station sends a
+NotifyMonitoringReportRequest 16. The Test System responds with a
+NotifyMonitoringReportResponse .
+Tool validations
+* Step 2:
+Message GetMonitoringReportResponse
+- status Accepted
+* Step 6:
+Message SetVariableMonitoringResponse
+- setMonitoringResult[0].status Accepted
+- setMonitoringResult[0].type Delta
+- setMonitoringResult[0].component <preconfiguredMonitor.component>
+- setMonitoringResult[0].variable <preconfiguredMonitor.variable>
+* Step 8:
+Message GetMonitoringReportResponse
+- status Accepted
+* Step 9:
+Message NotifyMonitoringReportRequest
+Should contain monitor:
+- monitor.component <preconfiguredMonitor.component>
+- monitor.variable <preconfiguredMonitor.variable>
+- monitor.variableMonitoring.id <preconfiguredMonitor.variableMonitoring.id>
+- monitor.variableMonitoring.severity IF <preconfiguredMonitor.variableMonitoring.severity> < 9 THEN
+<preconfiguredMonitor.variableMonitoring.severity> + 1
+ELSE
+5
+END IF
+* Step 15:
+Message NotifyMonitoringReportRequest
+Should contain monitor:
+- monitor.component <preconfiguredMonitor.component>
+- monitor.variable <preconfiguredMonitor.variable>
+- monitor.variableMonitoring.id <preconfiguredMonitor.variableMonitoring.id>
+- monitor.variableMonitoring.severity <preconfiguredMonitor.variableMonitoring.severity>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 725/1383 Part 6 - Test Cases

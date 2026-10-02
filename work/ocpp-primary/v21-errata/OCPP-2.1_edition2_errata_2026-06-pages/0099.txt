@@ -1,0 +1,53 @@
+Main (Test scenario)
+Note: Step 1 and 2 request the SoC for each configured EVSE
+4. The Charging Station responds with GetVariablesResponse
+3. Test System sends SetVariablesRequest with:
+- variable.name = "TargetSoc"
+- component.name = "BatterySwapCtrlr"
+- attributeValue = "<Highest returned SoC value from step 2, that
+is lower than 96 percent + 2>"
+- attributeType is omitted
+6. 4.  The Charging Station responds with GetVariablesResponse
+SetVariablesResponse
+5. 3.  Test System sends SetVariablesRequest with:
+- variable.name = "MaxSoc"
+- component.name = "BatterySwapCtrlr"
+- attributeValue = "<Highest returned SoC value from step 2, that
+is equal to or   lower than 96 percent + 4>"
+- attributeType is omitted
+7. The Charging Station notifies the CSMS about the status
+change of the slot. 8. The Test System responds accordingly.
+Note: Step 7 shall be triggered when the battery’s SoC reaches TargetSoc
+9. 5.  The Charging Station sends a TransactionEventRequest
+10. 6.  The Test System responds with a
+TransactionEventResponse
+Note: Step 9 5  shall be triggered when the battery’s SoC reaches the MaxSoc
+6.2.64. Page 916 - (2026-02) - Reusable state Booted now accepts
+StatusNotification Unavailable [1162]
+Booted
+State Booted
+System under test Charging Station
+Description This state will reset or power cycle the Charging Station, depending on the testcase. The charging station
+ends in a state where it is booted back up and is in idle mode.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+If Product subtype is Battery Swapping Station, then execute BootedBatterySwapping instead
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Power cycle the Charging Station.
+OR execute step 1 and 2, depending on the testcase.
+2. The Charging Station responds with a ResetResponse
+with status Accepted
+1. The Test System sends a ResetRequest
+3.  The Charging Station notifies the CSMS about the        
+unavailability of all connectors.   
+Note:   This step is optional.   
+4.  The Test System responds accordingly.     
+5. The Charging Station sends a BootNotificationRequest
+6. The Test System responds with a BootNotificationResponse
+with status Accepted
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 95/116 Errata 2026-06

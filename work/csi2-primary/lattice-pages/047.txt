@@ -1,0 +1,54 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  47 
+Port Type Description 
+s_axi_wready_o Output AXI4-Lite write data ready 
+s_axi_bresp_o[1:0] Output AXI4-Lite write response status 
+s_axi_bvalid_o Output AXI4-Lite write response valid 
+s_axi_bready_i Input AXI4-Lite write response ready 
+s_axi_araddr_i[11:0] Input AXI4-Lite read address input 
+s_axi_arprot_i[2:0] Input AXI4-Lite read protection attributes 
+s_axi_arvalid_i Input AXI4-Lite read address valid 
+s_axi_arready_o Output AXI4-Lite read address ready 
+s_axi_rdata_o[31:0] Output AXI4-Lite read data output 
+s_axi_rresp_o[1:0] Output AXI4-Lite read response status 
+s_axi_rvalid_o Output AXI4-Lite read data valid 
+s_axi_rready_i Input AXI4-Lite read data ready 
+ 
+4.2. MIPI CSI/DSI RX Signal Description 
+4.2.1. Clock Interface 
+Table 4.7. Clock and Reset Ports1 
+Port Type Description 
+ref_clk_i Input This is the clock input for soft PHY fabric-based implementation, and Hard D-
+PHY automatically generated power-up sequence and escape clock. 
+Available if PHY Mode == Soft D-PHY or when PHY Mode == Hard D-PHY. 
+ref_rst_n_i Input Asynchronous active-low reset input. This is synchronized internally with 
+ref_clk_i clock. This resets all logic and blocks in the ref_clk_i domain. 
+Available if PHY Mode == Soft D-PHY or when PHY Mode == Hard D-PHY. 
+byte_clk_o Output Byte clock output recovered from the MIPI data stream. Represents the rate 
+at which payload bytes are extracted from received packets. This is active only 
+when the clock lane is in high-speed mode. Frequency is displayed as Actual 
+Byte Clock Frequency (MHz). 
+fr_clk_i Input Free-running clock. Determines the rate at which received MIPI packets are 
+processed. Drives the logic that detects the low power to high-speed 
+transition of clock and data lanes. 
+fr_rst_n_i Input Asynchronous active-low reset input. This is synchronized internally with 
+fr_clk_i clock. Resets all logic and blocks in the fr_clk_i domain. 
+axis_vid_clk_i Input AXI4-Stream video clock input for the Byte-to-Pixel converter output 
+interface. Drives the pixel processing pipeline including format conversion, 
+pixel packing, and AXI4-Stream protocol generation. 
+axis_vid_rst_n_i Input Active-low AXI4-Stream video reset input for the Byte-to-Pixel converter. This 
+is synchronized internally with axis_vid_clk_i. Resets logic in pixel domain. 
+s_axi_aclk_i Input AXI4-Lite interface clock input.  
+s_axi_aresetn_i Input Active-low AXI4-Lite interface reset input.  
+Note: 
+1. The operating clock frequency and requirements information are available in the MIPI CSI/DSI Receiver Clocking Overview 
+section. 
+4.2.2. D-PHY Interface 
+Table 4.8. D-PHY Interface Ports 
+Port Type Description 
+clk_p_io Inout Positive differential clock I/O pad for D-PHY implementations. 

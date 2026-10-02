@@ -1,0 +1,31 @@
+The following table describes which status transitions are possible:
+State From \ To:
+1Available
+2Prepairing
+3Charging
+4SuspendedEV
+5SuspendedEVSE
+6Finishing
+7Reserved
+8Unavailable
+9Faulted
+A Available A2 A3 A4 A5 A7 A8 A9
+B Preparing B1 B3 B4 B5 B6 B9
+C Charging C1 C4 C5 C6 C8 C9
+D SuspendedEV D1 D3 D5 D6 D8 D9
+E SuspendedEVSE E1 E3 E4 E6 E8 E9
+F Finishing F1 F2 F8 F9
+G Reserved G1 G2 G8 G9
+H Unavailable H1 H2 H3 H4 H5 H9
+I Faulted I1 I2 I3 I4 I5 I6 I7 I8
+ The table above is only applicable to ConnectorId > 0. For ConnectorId 0, only a limited set is
+applicable, namely: Available, Unavailable and Faulted.
+The next table describes events that may lead to a status change:
+DESCRIPTION
+A2 Usage is initiated (e.g. insert plug, bay occupancy detection, present idTag, push start button, receipt of a RemoteStartTransaction.req)
+A3 Can be possible in a Charge Point without an authorization means
+A4 Similar to A3 but the EV does not start charging
+A5 Similar to A3 but the EVSE does not allow charging
+A7 A Reserve Now message is received that reserves the connector
+A8 A Change Availability message is received that sets the connector to Unavailable
+39

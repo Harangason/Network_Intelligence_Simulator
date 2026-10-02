@@ -1,0 +1,66 @@
+1.3. Security Profiles
+This section defines the different OCPP security profiles and their requirement. OCPP 2.0.1 supports three security profiles:
+The table below shows which security measures are used by which profile.
+Table 11. Overview of OCPP security profiles
+Profile Charging Station
+Authentication
+CSMS
+Authentication
+Communication
+Security
+1. Unsecured Transport with Basic
+Authentication
+HTTP Basic Authentication - -
+2. TLS with Basic Authentication HTTP Basic Authentication TLS authentication
+using certificate
+Transport Layer Security
+(TLS)
+3. TLS with Client Side Certificates TLS authentication
+using certificate
+TLS authentication
+using certificate
+Transport Layer Security
+(TLS)
+• The Unsecured Transport with Basic Authentication Profile does not include authentication for the CSMS, or measures to
+set up a secure communication channel. Therefore, it should only be used in trusted networks, for instance in networks
+where there is a VPN between the CSMS and the Charging Station. For field operation it is highly recommended to use a
+security profile with TLS.
+• In some cases (e.g. lab installations, test setups, etc.) one might prefer to use OCPP 2.0.1 without implementing security.
+While this is possible, it is NOT considered a valid OCPP 2.0.1 implementation.
+• When the Charging Station does not have the correct date and time set, it cannot validate the server certificate. A solution
+for this might be to either use NTP, mobile network to set time automatically, or have an installer tool that sets the time
+before the first connection.
+1.3.1. Generic Security Profile requirements
+Table 12. Generic Security Profile requirements
+ID Precondition Requirement definition
+A00.FR.001 The Charging Station and CSMS SHALL only use one security profile at a
+time
+A00.FR.002 If the Charging Station tries to
+connect with a different profile than
+the CSMS is using
+The CSMS SHALL terminate the connection.
+A00.FR.004 The security profile SHALL be configured before OCPP communication is
+possible.
+A00.FR.005 Lowering the security profile that is used, to a less secure profile, is for
+security reasons, not recommended.
+The Charging Station SHALL only allow to lower the security profile if the
+variable AllowSecurityProfileDowngrade is implemented and set to true. In
+that case, the Charging Station SHALL only allow to downgrade from
+profile 3 to profile 2. The Charging Station SHALL NOT allow to
+downgrade from profile 2 or profile 3 to profile 1 using the OCPP protocol.
+A00.FR.006 When a CSMS communicates with
+Charging Stations with different
+security profiles or different versions
+of OCPP.
+The CSMS MAY operate the Charging Stations via different addresses or
+ports of the CSMS.
+For instance, the CSMS server may have one TCP port for TLS with Basic
+Authentication, and another port for TLS with Client Side Certificates.
+In this case there is only one security profile in use per port of the CSMS,
+which is allowed.
+1.3.2. Unsecured Transport with Basic Authentication Profile - 1
+Table 13. Security Profile 1 - Unsecured Transport with Basic Authentication
+No. Type Description
+1 Name Unsecured Transport with Basic Authentication
+Edition 4, 2025-12-03 A. Security
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 18/491 Part 2 - Specification

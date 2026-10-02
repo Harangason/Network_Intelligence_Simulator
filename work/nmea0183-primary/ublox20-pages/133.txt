@@ -1,0 +1,47 @@
+u-blox 20 HPG 2.00 - Interface description
+13 + n·8 U1 eventType - - Type of the event:
+• 0 = indication started
+• 1 = indication stopped
+• 2 = indication triggered
+• 3 = indication timed-out
+Note: Single epoch events, caused by abrupt changes
+due to switching from the real to the spooﬁng signal or
+vice versa are handled as time-out events. This means
+that the time-out event is reported after a certain cool
+oﬀ period which is not related to any observations
+in the signal. The other detection types make use of
+'start' and 'stop' event types.
+14 + n·8 U1[2] reserved1 - - Reserved
+End of repeated group (numEvents times)
+3.17.4 UBX-SEC-UNIQID (0x27 0x03)
+3.17.4.1 Unique chip ID
+Message UBX-SEC-UNIQID
+Unique chip ID
+Type Output
+Comment This message is used to retrieve a unique chip identiﬁer (48 bits, 6 bytes).
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x27 0x03 10 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x02 for this version)
+1 U1[3] reserved0 - - Reserved
+4 U1[6] uniqueId - - Unique chip ID
+3.18 UBX-TIM (0x0d)
+The messages in the UBX-TIM class are used to output timing information from the receiver, such
+as time pulse and time mark measurements.
+3.18.1 UBX-TIM-TM2 (0x0d 0x03)
+3.18.1.1 Time mark data
+Message UBX-TIM-TM2
+Time mark data
+Type Periodic/polled
+Comment This message contains information for high precision time stamping / pulse counting.
+The delay ﬁgures and timebase given in CFG-TP conﬁguration items are also applied to the time results output
+in this message.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0d 0x03 28 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 133 of 224
+C1-Public

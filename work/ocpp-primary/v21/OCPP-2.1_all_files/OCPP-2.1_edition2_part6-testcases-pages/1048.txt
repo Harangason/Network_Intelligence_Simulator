@@ -1,0 +1,52 @@
+TC_C_131_CSMS: Ad hoc payment via static or dynamic QR code - success
+Test case name Ad hoc payment via static or dynamic QR code - success
+Test case Id TC_C_131_CSMS
+Use case Id(s) C25
+Requirement(s) C25.FR.07, C25.FR.09, C25.FR.20, C25.FR.21, C25.FR.23, C25.FR.24, C25.FR.40, C25.FR.41
+System under test CSMS
+Description In order to test that CSMS supports QR codes
+Purpose To verify if the CSMS is able to respond correctly when a QR code is scanned on Charging Station
+Prerequisite(s) - CSMS configured for central cost calculation
+- CSMS supports payments using dynamic QR codes
+- CSMS supports url templates for QR code payments containing at least placeholders
+{chargingstationid} and {totp}
+Test System has:
+- WebPaymentsCtrlr.Enabled is true
+- WebPaymentsCtrlr.URLTemplate is <base-url>/{chargingstationid}/{evse}/{totp}/{version} 
+- WebPaymentsCtrlr.ValidityTime is 30
+- WebPaymentsCtrlr.SharedSecret is mysharedsecret
+- WebPaymentsCtrlr.Length is 8
+- WebPaymentsCtrlr.TOTPVersion is 1
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Trigger CSMS to perform a payment and start a transaction via QR code webpage
+maxenergy is 20000
+qrUrl is <Configured QR base url> extended with: 
+{chargingstationId} is <configured charging station id>
+{totp} is <valid totp>
+{evseId} is <configured evse>
+{version} is 1
+2. The Test System responds with
+RequestStartTransactionResponse with
+status Accepted
+1. The CSMS sends a RequestStartTransactionRequest
+3. The Test System sends a TransactionEventRequest with
+eventType Started
+triggerReason RemoteStart
+idToken.idToken <PspRef>
+idToken.type DirectPayment
+transactionInfo.transactionId <transactionId>
+transactionInfo.remoteStartId <remoteStartId>
+meterValue[0].timestamp <not omitted>
+meterValue[0].sampledValue[0].value 10000
+meterValue[0].sampledValue[0].context Transaction.Begin
+4. The CSMS responds with a TransactionEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1046/1383 Part 6 - Test Cases

@@ -1,0 +1,30 @@
+Main (Test scenario)
+7. The Charging Station notifies the CSMS about its measured
+Meter Values.
+Note(s):
+- The Meter Value messages do NOT need to be send/received at
+the exact specified interval. The configured measurands must be
+measured at the configured interval.
+- Multiple Meter Value messages may be sent per configured
+interval. One (or more in case the amount of measured data is too
+much for one message) for each EVSE and one (or more) for the
+main power meter (evseId=0)
+8. The Test System responds accordingly.
+Tool validations
+* Step 1 & 7:
+Message: MeterValuesRequest
+- sampledValue[0].context must be Sample.Clock
+- sampledValue must contain <An element per configured measurand at the AlignedDataMeasurands. The measurand field may be
+omitted when the measurand is "Energy.Active.Import.Register">
+Post scenario validations:
+Message: MeterValuesRequest
+- timestamp <The intervals between the timestamps of the received Meter Value messages must equal the configured value at
+AlignedDataInterval. However it is allowed to send multiple Meter Value messages per configured interval. One (or more in case the
+amount of measured data is too much for one message) for each EVSE and one (or more) for the main power meter (evseId=0). But
+the timestamp of these messages must all be the same.>
+- The Charging Station did not send any message to report Meter Values to the Test System, during the time the transaction was
+active at step 3 and 4. This means none of the following; MeterValuesRequest OR TransactionEventRequest containing the
+MeterValue field.
+- None of the provided sampledValues shall have location = EV, except when measurand = SoC.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 467/1383 Part 6 - Test Cases

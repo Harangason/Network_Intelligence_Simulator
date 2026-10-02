@@ -1,0 +1,45 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+activated. If there are multiple Remote NFC Endpoints detected in Poll Mode, the DH can select the Endpoint it
+wants to communicate with. This selection also triggers the activation of the mapped Interface.
+Once an RF Interface has been activated, the DH can communicate with the Remote NFC Endpoint using
+the activated RF Interface. An activated RF Interface can be deactivated by either the DH or the NFCC (e.g.
+on behalf of the Remote NFC Endpoint). However, each RF Interface can define which of those methods are
+allowed. Depending on which part of the protocol stack is executed on the DH there are different deactivation
+options. For example, if a protocol command to tear down the communication is handled on the DH, the DH
+will deactivate the RF Interface. If such a command is handled on the NFCC, the NFCC will deactivate the
+Interface.
+This specification describes the possible Control Message sequences for RF Communication in the form of a
+state machine.
+3.2.5  NFCEE Communication
+The DH can learn about the NFCEEs connected to the NFCC by using the NFCEE Discovery module. During
+NFCEE Discovery the NFCC assigns an identifier for each NFCEE. When the DH wants to communicate with
+an NFCEE, it needs to open a Logical Connection to the NFCEE (unless this logical connection is static) using
+the corresponding identifier and specifying the NFCEE Protocol to be used.
+Opening a Logical Connection to an NFCEE automatically activates the NFCEE Interface associated to the
+protocol specified. When the NFCEE interface is static, it is available as soon as the NFCEE discovery process
+is completed. As there is always a one-to-one relationship between an NFCEE Protocol and Interface, there is
+no mapping step required (different as for the RF Communication).
+Once the interface has been activated, the DH can communicate with the NFCEE using the activated Interface.
+Closing the connection to an NFCEE Interface deactivates that NFCEE Interface.
+NCI also includes functionality to allow the DH to enable or disable the communication between an NFCEE and
+the NFCC.
+3.2.6  Identifiers
+The NFCC might only be used by the DH but also by the NFCEEs in the device (in such a case the NFCC
+is a shared resource). NFCEEs differ in the way they are connected to the NFCC and the protocol used on
+such a link determines how an NFCEE can use the NFCC. For example, some protocols allow the NFCEE to
+provide its own configuration for RF parameters to the NFCC (similar to the NCI Configuration Parameters for
+RF Discovery) in other cases the NFCEE might not provide such information.
+NFCCs can have different implementation in how they deal with multiple configurations from DH and NFCEEs.
+They might for example switch between those configurations so that only one is active at a time or they
+might attempt to merge the different configurations. During initialization NFCC informs the DH whether the
+configuration can only be under DH control or if the NFCC supports configuration by NFCEEs as well.
+NCI includes a module, called Listen Mode Routing, with which the DH can define where to route received data
+when the device has been activated in Listen Mode. The Listen Mode Routing allows the DH to maintain a
+routing table on the NFCC. Routing can be done based on the technology or protocol of the incoming traffic or
+based on application identifiers in case ISO/IEC7816-4 APDU commands are used on top of ISO-DEP.
+In addition, NCI enables the DH to get informed if communication between an NFCEE and a Remote NFC
+Endpoint occurs.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+14 / 147

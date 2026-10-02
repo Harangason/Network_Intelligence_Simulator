@@ -1,0 +1,1102 @@
+PDF_PAGE1
+Application Report
+SLLA070D–June 2002–Revised May 2010
+RS-422 and RS-485 Standards Overview and System
+Configurations
+Manny Soltero, Jing Zhang, and Chris Cockril ..................................................... HPA - Industrial Interface
+Updated by Kevin Zhang, Clark Kinnaird, and Thomas Kugelstadt .............................................................
+ABSTRACT
+ANSI TIA/EIA-422 and TIA/EIA-485 standards, commonly known as RS-422 and RS-485, respectively,
+specify balanced data-transmission schemes for transmitting data over long distances in noisy
+environments. These standards are compared, and their basic differences and similarities are discussed.
+Techniques for impedance matching to minimize line reflections in several applications are presented, with
+laboratory test results.
+Contents
+1 Introduction .................................................................................................................. 3
+2 Overview of RS-422 and RS-485 Standards ............................................................................ 3
+2.1 Selected RS-422 Electrical Specifications ...................................................................... 3
+2.2 Selected RS-485 Electrical Specifications ...................................................................... 9
+3 Failsafe Operation ......................................................................................................... 12
+3.1 The Need for Failsafe Protection ............................................................................... 12
+3.2 Internal Failsafe ................................................................................................... 13
+3.3 External Failsafe .................................................................................................. 13
+4 Suggested Termination and Grounding Techniques .................................................................. 13
+4.1 No Termination ................................................................................................... 13
+4.2 Parallel Termination .............................................................................................. 14
+4.3 AC Termination ................................................................................................... 16
+4.4 Multipoint Termination ........................................................................................... 17
+4.5 Ground Connections ............................................................................................. 18
+5 Typical System Configurations .......................................................................................... 21
+5.1 Daisy-Chain Configuration ...................................................................................... 21
+5.2 Bus and Stub Configuration ..................................................................................... 21
+5.3 Point-to-Point Configuration ..................................................................................... 22
+6 Summary Comparison of the Standards ............................................................................... 22
+6.1 Common-Mode Range ........................................................................................... 22
+6.2 Line Contention ................................................................................................... 23
+6.3 Drive Current ...................................................................................................... 23
+7 Conclusion .................................................................................................................. 23
+8 Glossary .................................................................................................................... 24
+9 Acknowledgment .......................................................................................................... 24
+10 References ................................................................................................................. 24
+List of Figures
+1 RS-422 Balanced-Voltage Digital-Interface Circuit ..................................................................... 4
+2 RS-422 Open-Circuit Test Circuit......................................................................................... 4
+3 RS-422 Output-Voltage Test Circuit...................................................................................... 5
+4 RS-422 Short-Circuit Output-Current Test Circuit ...................................................................... 5
+5 RS-422 Power-Off Output-Current Test Circuit ......................................................................... 5
+6 RS-422 Test Circuit and Output-Signal Waveform ..................................................................... 6
+1SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE2
+www.ti.com
+7 RS-422 Input Receiver Test Circuit and I/V Plot........................................................................ 7
+8 RS-422 Input-Sensitivity Test Circuit and Resultant Waveform ...................................................... 8
+9 RS-485 Balanced-Voltage Digital-Interface Circuit ..................................................................... 9
+10 RS-485 U.L. Test Circuit and I/V Relationship ........................................................................ 10
+11 RS-485 Open-Circuit Test Circuit ....................................................................................... 10
+12 RS-485 Output-Voltage Test Circuit .................................................................................... 11
+13 RS-485 Output-Voltage Test Circuit With Common-Mode Loading ................................................ 11
+14 RS-485 Short-Circuit Output-Current Test Circuit..................................................................... 11
+15 RS-485 Output-Signal Test Circuit...................................................................................... 12
+16 Differential Unterminated Configuration ................................................................................ 13
+17 Differential Unterminated-Driver Output Waveforms.................................................................. 14
+18 Differential Unterminated-Receiver Input Waveforms ................................................................ 14
+19 Differential Parallel-Terminated Configuration......................................................................... 15
+20 Differential Parallel-Terminated Driver Output Waveforms .......................................................... 15
+21 Differential Parallel-Terminated Receiver Input Waveforms......................................................... 16
+22 Differential AC-Terminated Configuration .............................................................................. 16
+23 Differential AC-Terminated Driver Output Waveforms................................................................ 17
+24 Differential AC-Terminated Receiver Input Waveforms .............................................................. 17
+25 Differential Multipoint-Terminated Configuration ...................................................................... 18
+26 Grounding Configuration with Isolated Local Ground and PE....................................................... 19
+27 Grounding Configuration with Connected Local Ground and PE ................................................... 19
+28 Isolated Configuration..................................................................................................... 20
+29 Daisy-Chain Connection.................................................................................................. 21
+30 Stub Cables Connected to the Main Backbone ....................................................................... 22
+31 Point-to-Point Connection ................................................................................................ 22
+List of Tables
+1 Input Sensitivity and Resultant Voltages of 422-Compliant Devices................................................. 8
+2 Input Sensitivity and Resultant Voltages of 485-Compliant Devices ............................................... 12
+3 Summary of Termination Techniques................................................................................... 18
+4 Summary Comparison of RS-485 and RS-422 Specifications ...................................................... 23
+2 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE3
+www.ti.com Introduction
+1 Introduction
+The RS-422 and RS-485 standards, as they are known today, are balanced data-transmission schemes
+that offer robust solutions for transmitting data over long distances and noisy environments. The official
+titles for these two standards are ANSI TIA/EIA-422 and TIA/EIA-485, respectively, and are revised
+periodically by the TR-30.2 DTE-DCE Interfaces and Protocols Subcommittee to the Telecommunications
+Industry Association (TIA) TR-30 Data Transmission Systems and Equipment Committee. For
+identification, RS-422 and RS-485 suffice.
+This application report offers an overview of the RS-422 and RS-485 standards. While many specifications
+are described in the official ANSI documents, only the most prevalent are discussed in this application
+report. The purpose of this application report is to not duplicate the official documents, but to outline basic
+differences and similarities between the RS-422 and RS-485 standards. Major specifications are described
+in detail and the two standards are compared. Because impedance matching is an important aspect of
+differential data transmission in minimizing line reflections due to transmission-line effects, techniques for
+terminating different system applications are presented. Also, typical system configurations are taken into
+consideration for optimal application performance and cost constraints.
+2 Overview of RS-422 and RS-485 Standards
+Officially, the RS-422 standard's title is Electrical Characteristics of Balanced Voltage Digital Interface
+Circuits, and is published by the ANSI Telecommunication Industry Association/Electronic Industries
+Association (TIA/EIA). In the industry, the term RS-422 is commonly used rather than the official name,
+and this document does the same. RS-422 is specified as a simplex multidrop standard, which means
+only one driver and up to ten receivers can be attached to a bus.
+The RS-485 standard's title is Electrical Characteristics of Generators and Receivers for Use in Balanced
+Digital Multipoint Systems. RS-485 is commonly used, rather than its official title. If more than one driver is
+required, devices conforming to RS-485 are recommended. RS-485 specifications allow only one driver to
+send data at a time, and up to 32 unit loads (U.L.) can be placed on the bus. The U.L. concept is
+described in this application report in the Selected RS-485 Electrical Specifications section.
+RS-422 and RS-485 initially might appear to be similar, but are distinct, and interchangeability is
+determined by the bus architecture. The RS-485 standard is written to be electrically compatible with
+RS-422. To illustrate their basic differences, a condensed description of each standard is presented in the
+following subsections.
+2.1 Selected RS-422 Electrical Specifications
+The balanced-voltage digital interface is shown in Figure 1. The driver (or generator) is labeled D, the
+receiver is labeled R, and the termination impedance is ZT. The termination impedance should be equal to
+the characteristic impedance of the cable, Zo, and is used only once at the end of the cable. Because
+matching termination impedance to Zo often is difficult to achieve and is application dependent, typically,
+±20% is sufficient. Also, up to nine additional receivers can be placed along the cable from points A and B
+to points A' and B', respectively. No restriction on maximum cable length is imposed by the RS-422
+standard. Taking this into account, systems of up to 1 km are not uncommon, with signaling rates no
+higher than about 100 kbps. Speed and cable lengths work against each other. In other words, the longer
+the cable, the slower the signaling rate must be, while data can be transmitted faster on shorter cables. As
+a rule of thumb, the data signaling rate (in bps) multiplied by the cable length (in meters) should not
+exceed 108. For example, a system with a cable measuring 500 m should not transmit data at speeds
+greater than 200 kbps (108/500).
+3SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE4
+ZT
+A’
+B’
+A
+B
+Logic
+(1□or□0) RD
+S0450-01
+Logic
+(1□or□0) D
+A
+B
++
+– VOA
+S0451-01
+VOD
++
+–
+VOB
++
+–
+Overview of RS-422 and RS-485 Standards www.ti.com
+A D = driver (or generator)
+B R = receiver
+C ZT = termination impedance
+Figure 1. RS-422 Balanced-Voltage Digital-Interface Circuit
+Although the input electrical characteristics of the RS-422-compliant receiver are identical to those of the
+RS-423-compliant receiver (ANSI TIA/EIA-423 standard), the RS-423 specifies an unbalanced signaling
+scheme, which is not within the scope of this application report.
+Descriptions of selected specified parameters are presented in the following paragraphs.
+2.1.1 Open-Circuit Output Voltage (VOD, VOA, and VOB Measured)
+The output voltage shall not exceed ±6 V under unloaded conditions, and the differential voltage
+[measured as the difference between an output voltage, VOA (VOB), and its complementary output voltage,
+VOB (VOA)] is no greater than ±10 V. See Figure 2 for the test circuit.
+A |VOD| ≤ 10 V, |VOA| ≤ 6 V, and |VOB| ≤ 6 V
+B VOA = voltage on A output
+C VOB = voltage on B output
+D VOD = differential output voltage
+Figure 2. RS-422 Open-Circuit Test Circuit
+2.1.2 Differential and Offset Output Voltage (VOD and VOC Measured)
+To ensure proper drive strength, a minimum of ±2-V VOD and a maximum of ±3-V VOS are measured (see
+Figure 3). Furthermore, a check on driver output-voltage balance between the differential output voltages
+is put in place to measure the change in these voltages (not to exceed 400 mV). The maximum limit of
+400 mV most often is approached during transients when driver outputs are switching states.
+4 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE5
+Logic
+(1□or□0) D
+A
+B
+50 /c87
+VOD
++
+–
++
+– VOC
+50 /c87
+A.□VOD|□□□□2□V,□|V |□□□□□3□V
+B.□| V |□=□||V |□-□V ||□□□□0.4□V
+C.
+OS
+OD OD OD/c68
+| V |□=□||V |□-□V ||□□□□0.4□V/c68 OC OC OC
+/c163
+/c179 /c163
+/c163
+Logic
+(1 or 0) D
+A
+B
+IOC
+S0453-01
+IOC
+Logic
+(1□or□0) D
+A
+B
+IOFF
+IOFF
+vO vO
+S0454-01
+www.ti.com Overview of RS-422 and RS-485 Standards
+Figure 3. RS-422 Output-Voltage Test Circuit
+2.1.3 Short-Circuit Output Current (IOS Measured)
+With the driver shorted to ground, the magnitude of the output current shall not exceed 150 mA,
+regardless of the state of the driver output (high or low) at the time of the short. This test ensures that the
+device is not destroyed by excessive current flowing through the output stage. Figure 4 shows the test
+circuit.
+A |IOC| to ground ≤ 150 mA
+Figure 4. RS-422 Short-Circuit Output-Current Test Circuit
+2.1.4 Power-Off Measurement (IOFF Measured; VO Applied)
+As shown in Figure 5, with the driver powered down, the magnitude of the output leakage current shall not
+exceed 100 µA for output voltages ranging from –0.25 V to 6 V. Currents higher than 100 µA can disrupt
+the bus potential and lead to erroneous data at the receiver.
+A |Ioff| ≤ 100 µA for –0.25 ≤ VO ≤ 6 V
+Figure 5. RS-422 Power-Off Output-Current Test Circuit
+5SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE6
+1.1 VSS
+1.1 VSS
+0.1 VSS
+tui
+tr tf
+0.1 VSS
+0.9 VSS
+0-V Differential
+VOD
+Logic
+(1 or 0) D
+A
+B
+100 /c87
+S0455-01
+VOD
++
+–
+VSS
+VOD
+0.9 VSS
+A. t = time duration of the unit interval
+B. V = |V - V |
+C. 2 V    |V |    10 V
+ui
+SS OD
+OD
+OD
+/c63 /c63
+Overview of RS-422 and RS-485 Standards www.ti.com
+2.1.5 Output-Signal Waveform (VOD Measured)
+Basically, this test ensures good signal quality on the bus. With a 100-Ω resistor across the differential
+output, the voltage monotonically changes between 10% and 90% of VSS within a tenth of the unit interval,
+tui, or 20 ns, whichever is greater. Figure 6 shows the test circuit and resultant waveform. In addition, the
+resultant voltage shall not change more than 10% of VSS after a transition has occurred (limits overshoots
+and undershoots).
+Figure 6. RS-422 Test Circuit and Output-Signal Waveform
+2.1.6 Input I/V Characteristics (VIA, and VIB, Applied; IIA, and IIB, Measured)
+A maximum limit on the input characteristic must be placed on the receiver to ensure a maximum load on
+the bus when all ten receivers are placed on it. With the common-mode voltage VIA, (VIB) ranging from +10
+V to –10 V while VIB, (VIA,) is held to 0 V, the resultant input current should remain within the shaded
+region (see Figure 7) in both the power-on and power-off conditions. A device with input characteristics
+within the shaded region reveals that the input impedance is no smaller than 4 kΩ, as defined by the
+calculation. The inverse of the slope of the upper and lower bounds is exactly the minimum input
+impedance allowed for the input.
+6 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE7
+S0456-01
+R
+A’
+B’
+IIB’
+IIA’
+vIA’ vIB’
++3V
+–3V
++10V
+–10V
+–3.25□mA
+3.25 mA
+VI
+II
+www.ti.com Overview of RS-422 and RS-485 Standards
+A R = ΔV/ΔI = 13 V/3.25 mA = 4 kΩ
+Figure 7. RS-422 Input Receiver Test Circuit and I/V Plot
+2.1.7 Input Sensitivity (VCM, VIA, and VIB, Applied; VID Measured)
+Figure 8 shows the test circuit used to determine a receiver's input sensitivity. To ensure functionality over
+the full common-mode range, suggested test voltages for both inputs and the purpose of the
+measurements are given in Table 1.
+7SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE8
+S0457-01
+R
+A’
+B’
+IIB’
+IIA’
+vIA’ vIB’
++10
+–10
++200 mV
+–200□mV
+VID
+VID Transition
+Region
+Maximum
+Operating
+Range
+Overview of RS-422 and RS-485 Standards www.ti.com
+A 200 mV < |VID| < 10 V
+Figure 8. RS-422 Input-Sensitivity Test Circuit and Resultant Waveform
+For a common-mode voltage varying from –7 V to 7 V, VID need not be greater than ±200 mV to correctly
+assume the intended state. As specified in the standard, the magnitude of the differential input voltage,
+VID, varying from 200 mV to 10 V, is required to maintain correct operation over this range.
+Table 1. Input Sensitivity and Resultant Voltages of 422-Compliant Devices
+APPLIED VOLTAGE RECEIVERRESULTING RESULTING OUTPUT PURPOSE OF MEASUREMENTSVID
+(1) VCM
+(2)
+VIA'
+(3) VIB'
+(3)
+STATE
++10 V –2 V +12 V +4 V Q Ensures correct operation with maximum differential
+voltage supply–10 V +2 V –12 V –4 V Q
++10 V +4 V +6 V +7 V Q Ensures correct operation with maximum common mode
+voltage supply–10 V –4 V –6 V –7 V Q
++100 mV –100 mV +200 mV 0 V Q
+–100 mV +100 mV –200 mV 0 V Q 200 mV threshold test across common mode voltage
+supply+7.1 V +6.9 V +200 V +7 V Q
+–7.1 V –6.9 V –200 V –7 V Q
+(1) |VID| < 12 V (maximum input differential voltage without damaging device)
+(2) VCM is measured as the arithmetic average of VIA' and VIB', or (VIA' + VIB')/2.
+(3) |VIA'| < 10 V, |VIB'| < 10 V (maximum input voltages to ensure correct operation)
+2.1.8 Cable Termination
+Cable termination is required, unless the data rate of the application is less than 200 kbps or the signal
+rise/fall time at the load end of the cable is greater than four times the one-way cable delay. The latter
+rule-of-thumb typically is used to describe a system that does not behave like a transmission line. In most
+other applications, cable termination is recommended. Cable termination for a RS-422-compliant system
+8 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE9
+D1
+D3
+ZTZT
+S0458-01
+A
+B
+A’
+B’
+A/A’
+B/B’
+R2 R3
+www.ti.com Overview of RS-422 and RS-485 Standards
+always is placed at the load end of the cable. Two options for cable termination are recommended in the
+standard. The first option is to match the termination resistance to the characteristic impedance of the
+cable, Zo, while the second option is to place an additional capacitor in series with the termination
+resistance for designers that are concerned with power dissipation. These two options are discussed in
+detail in the Suggested Termination and Grounding Techniques section.
+2.2 Selected RS-485 Electrical Specifications
+By comparing Figure 1 and Figure 9, it is evident that RS-422 and RS-485 system topologies are different.
+The RS-485 can operate in balanced digital multipoint systems, whereas the RS-422 can support only one
+driver per bus line (multidrop). Parameter values specified in 485 are similar to those specified in RS-422.
+Furthermore, RS-485-compliant receiver and driver electrical characteristics are specified such that they
+cover requirements of RS-422. This allows RS-485-compliant drivers and receivers to be used in most
+RS-422-compliant applications.
+A D1 = driver
+B D3/R3 = transceiver
+C R2 = receiver
+D ZT = termination impedance
+E Up to 32 U.L.s [receiver, driver (off state), transceiver]
+Figure 9. RS-485 Balanced-Voltage Digital-Interface Circuit
+Although RS-485 specifies that only one driver can talk at any given time (half-duplex operation), fault
+conditions might occur (caused by inadvertent shorts on output drivers or line contention). Therefore,
+RS-485-compliant devices must provide for this. For example, consider the case when driver D1 in
+Figure 9 is intended to send a signal to receiver R2, but driver D3 still is enabled. If the designer did not
+disable driver D3 before initiating the transmission, a fault condition occurs and erroneous data might be
+transmitted to receiver R2. This condition also is known as line contention (see Summary Comparison of
+the Standards section).
+The maximum recommended cable length is about 1200 m. Usually, the amount of noise a designer is
+willing to tolerate is the deciding factor in choosing the cable length. The same relationship of speed
+versus cable length applies to RS-485-compliant systems, as well as to RS-422-compliant systems.
+2.2.1 U.L. Concept (VIA and VIB Applied; IIA and IIB Measured)
+As with the RS-422, a maximum limit on the I/V characteristic must be placed on the receiver, driver (off
+state), and transceiver to ensure a maximum load on the bus when all 32 U.L.s are used. With the voltage
+VIA (VIB) ranging from –7 V to 12 V, while VIB (VIA) is grounded, the resulting input current IIA (IIB) should
+remain within the shaded region in both power-on and power-off conditions (see Figure 10). A device with
+input characteristics that fall within the shaded region conforms to having a 1-U.L. characteristic. The
+9SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE10
+S0459-01
+Load
+A/A’
+B/B’
+IIB
+IIA
+vIA vIB
++5V
+–3V
++12V
+–7V
+0.8□mA
+1 mA
+VI
+II
+Logic
+(1□or□0) D
+A
+B
++
+– VOA
+S0451-01
+VOD
++
+–
+VOB
++
+–
+Overview of RS-422 and RS-485 Standards www.ti.com
+RS-485 standard specifies the capability to sustain up to 32 U.L.s. The RS-485 often is thought of as a
+12-kΩ load standard. Because the output current of the driver is dependent on loading, a design that
+requires a large number of stations (drivers, receivers, or transceivers) attached to the bus needs a larger
+load resistance to allow more connections. For example, a 0.5-U.L. transceiver can be placed up to 64
+times on a bus, because this configuration complies with the maximum 32-U.L. specification.
+Figure 10. RS-485 U.L. Test Circuit and I/V Relationship
+2.2.2 Open-Circuit Output Voltage (VOD, VOA, and VOB Measured)
+The output voltage shall not exceed ±6 V under unloaded conditions, and the differential voltage
+generated will be no smaller than ±1.5 V and no greater than ±6 V. Figure 11 shows the test circuit used.
+A 1.5 V ≤ |VOD| ≤ 6 V
+B |VOA| ≤ 6 V; |VOB| ≤ 6 V
+Figure 11. RS-485 Open-Circuit Test Circuit
+10 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE11
+Logic
+(1□or□0) D
+A
+B
+27 /c87
+VOD
++
+–
++
+– VOC
+27 /c87
+A.□1.5□V |V | 5□V,□and□| V |□=□||V -□|V || 0.2□V
+B.□-
+OD OD OD OD /c68/c163 /c163 /c163
+1□V□□□|V |□□□□3□V,□and□| V |□=□||V -□|V ||□□□□0.2□VOC OC OC OC /c68/c163 /c163 /c163
+Logic
+(1□or□0) D
+A
+B
+375 /c87
+S0460-01
+VOD
++
+–
+–7□V V/c163 /c124CM/c124 /c16312□V
+375 /c87
+60 /c87
+Logic
+(1□or□0) D
+A
+B
+IOS
+IOS
+vO vO
+S0461-01
+www.ti.com Overview of RS-422 and RS-485 Standards
+2.2.3 Differential and Offset Output Voltage (VOD and VOC Measured)
+Similar to the RS-422, RS-485 also specifies a minimum output voltage to ensure proper drive strength,
+but also places a maximum limit. Figure 12 shows the limitations that have been placed on the differential
+and offset voltages. It also shows the magnitude in the change in these voltages shall not exceed 200 mV.
+Figure 12. RS-485 Output-Voltage Test Circuit
+2.2.4 Differential Output Voltage With Common-Mode Loading (VOD Measured; VCM Applied)
+With the test circuit shown in Figure 13, the magnitude of the differential output voltage falls within 1.5 V
+and 5 V.
+A 1.5 V ≤ |VOD| ≤ 5 V
+Figure 13. RS-485 Output-Voltage Test Circuit With Common-Mode Loading
+2.2.5 Short-Circuit Output Current (IOS Measured; VO Applied)
+With the driver shorted to a voltage source that is varied from –7 V to 12 V, current shall not exceed 250
+mA, and the driver shall not be damaged (see Figure 14). Texas Instruments incorporates into all its
+RS-485-compliant devices a circuit that meets this requirement.
+Figure 14. RS-485 Short-Circuit Output-Current Test Circuit
+Although the internal circuitry limits the amount of current flowing from the output driver, complying with
+the full range from –7 V to 12 V for an indefinite time is a very stringent test. For customers seeking
+11SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE12
+Logic
+(1□or□0) D
+A
+B
+54 /c8750□pF
+S0462-01
+VOD
++
+–
+Failsafe Operation www.ti.com
+devices with various levels of robustness, TI offers products that comply fully (indeterminate time period
+and full voltage range) and partially with this specification. Partially compliant devices may limit the current
+over the full range, but cannot sustain the current over a long period of time. Another example of partial
+compliance is the capability to keep the current within specification for long periods, but at a smaller
+voltage range.
+2.2.6 Output-Signal Waveform (VOD Measured)
+To ensure signal quality, RS-485 also places a constraint on the output-signal waveform. The
+output-signal waveform is identical to the one described for the RS-422, but a different test circuit is
+necessary (see Figure 15). The output voltage should change monotonically between 0.1 VSS and 0.9 VSS
+within 0.3 tui. Thereafter, the output voltage shall not change more than 10% of VSS, and |VOD| ≤ 5 V.
+Figure 15. RS-485 Output-Signal Test Circuit
+2.2.7 Input Sensitivity (VCM, VIA, and VIB, Applied; VID Measured)
+Using the same test circuit as in RS-422, Table 2 shows the operating voltage extremes of the receiver
+and the purpose of each measurement.
+Table 2. Input Sensitivity and Resultant Voltages of 485-Compliant Devices
+APPLIED VOLTAGE RESULTING RESULTING RECEIVER PURPOSE OF MEASUREMENTSVID VCM OUTPUT STATEVIA' VIB'
+–7 V –6.8 V –200 V –6.9 V Q Minimum VI at extreme – VCM
++12 V +11.8 V +200 V +11.9 V Q Minimum VI at extreme + VCM
+–7 V –2 V –5 V –4.5 V Q Maximum VI at extreme – VCM
++12 V +7 V +5 V +9.5 V Q Maximum VI at extreme + VCM
+3 Failsafe Operation
+The feature of receiver failsafe is a benefit in many RS-422 and RS-485 applications; however, its
+usefulness needs to be considered and understood at an application level.
+3.1 The Need for Failsafe Protection
+In any party-line interface system with multiple driver/receivers, long periods of time may occur when all
+the driving devices are inactive. This state is known as line idle or bus idle and occurs when all drivers
+place their outputs into a high-impedance state. During bus idle, the differential bus voltage is left floating
+(i.e., indeterminate: neither logic-high nor logic-low state) if there is no termination resistors, and the
+differential bus voltage is close to zero in the case where termination resistors are used. In both cases, as
+a result, the receiver can be falsely triggered into either a logic-high or logic-low state, depending on the
+presence of noise and the last polarity of the floating lines. Obviously, this is undesirable, as the circuitry
+following the receiver could interpret this as valid information. It is best to detect such a situation and place
+the receiver outputs into a known and predetermined state. The name given to methods that ensure this
+condition is receiver failsafe. An additional, desirable feature that a failsafe provides is to protect the
+receiver from shorted line conditions, which can again cause erroneous processing of data.
+12 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE13
+DY
+DIN ROUT
+RB
+DZ
+RD
+S0463-01
+RA
+www.ti.com Suggested Termination and Grounding Techniques
+3.2 Internal Failsafe
+TI and other manufacturers have devices with failsafe design by including some form of open-circuit,
+short-circuit, and idle-bus failsafe circuitry within the integrated circuits, which simplify the system design.
+Further discussion of internal failsafe is found in references SLYT080 and SLYT064.
+3.3 External Failsafe
+External failsafe uses external circuitry together with termination to provide a defined voltage across the
+receiver's input, regardless of whether the signal pair is shorted together or is left open circuited. It is
+recommended to use when there is no internal failsafe circuit, or to reinforce the effect of internal failsafe
+circuits in applications where extremely high levels of noise are possible. Further discussion of internal
+failsafe is found in reference SLYT324.
+4 Suggested Termination and Grounding Techniques
+When designing a system that uses drivers, receivers, and transceivers that comply with RS-422 or
+RS-485, proper cable termination is essential for highly reliable applications with reduced reflections in the
+transmission line. Because RS-422 allows only one driver on the bus, if termination is used, it is placed
+only at the end of the cable near the last receiver. In general, RS-485 requires termination at both ends of
+the cable.
+Factors to consider when determining the type of termination usually are performance requirements of the
+application and the ever-present factor, cost. The different types of termination techniques discussed are
+unterminated lines, parallel termination, ac termination, and multipoint termination. Laboratory waveforms
+for each termination technique (except multipoint termination) illustrate the usefulness and robustness of
+RS-422 (and, indirectly, RS-485). Similar results can be obtained if 485-compliant devices and termination
+techniques are used. For laboratory experiments, 100 feet of 100-Ω, 24-AWG, twisted-pair cable (Bertek)
+was used. A single driver and receiver, TI AM26C31C and AM26C32C, respectively, were tested at room
+temperature with a 5-V supply voltage. Two plots per termination technique are shown. In each plot, the
+top waveform is the driver input and the bottom waveform is the receiver output. To show voltage
+waveforms related to transmission-line reflections, the first plot shows output waveforms from the driver at
+the start of the cable; the second plot shows input waveforms to the receiver at the far end of the cable.
+Resistor and capacitor (if used) termination values are shown for each laboratory experiment, but vary
+from system to system. For example, the termination resistor, ZT, must be within 20% of the characteristic
+impedance, Zo, of the cable and can vary from about 90 Ω to 120 Ω.
+4.1 No Termination
+Figure 16 shows a configuration with no termination. Figure 17 and Figure 18 show that, although
+reflections are present at the receiver inputs at a data signaling rate of 200 kbps with no termination, the
+RS-422-compliant receiver reads only the input differential voltage and produces a clean signal at the
+output.
+Figure 16. Differential Unterminated Configuration
+• Advantages
+– Driver is only required to source a minimal amount of current to produce a signal at the receiver.
+– Minimizes the driver's on-chip power dissipation
+– Ensures that the receiver's output is in a known state if the receiver internally features open-line fail
+safe
+• Disadvantage
+– Signal reflections due to mismatched line impedance at high data signaling rates (should be used
+13SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE14
+G001
+DIN
+DZ
+DY
+ROUT
+G002
+DIN
+RA
+RB
+ROUT
+Suggested Termination and Grounding Techniques www.ti.com
+only in applications with data rates ≤200 kbps and short distances) (If tr > 4tdelay, the cable is not
+considered a transmission line.)
+Figure 17. Differential Unterminated-Driver Output Waveforms
+Figure 18. Differential Unterminated-Receiver Input Waveforms
+4.2 Parallel Termination
+Figure 19 shows a typical configuration using an impedance termination across the differential inputs at
+the far-end receiver. As shown in Figure 20 and Figure 21, parallel termination ensures that there are no
+impedance mismatches and eliminates reflections. A termination resistance of 100 Ω was applied, and
+only one receiver was used in this experiment, while transmitting at a data signaling rate of 1 Mbps.
+14 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE15
+ZT ROUTDIN R
+R
+D
+S0464-01
+DY RB
+RADZ LSTUB
+G003
+DIN
+DZ
+DY
+ROUT
+www.ti.com Suggested Termination and Grounding Techniques
+A ZT = Zo
+Figure 19. Differential Parallel-Terminated Configuration
+• Advantages
+– Elimination of reflections: higher data rates and longer cables
+– Multidrop applications are also supported.
+• Disadvantages
+– Long stub lengths (LSTUB) reintroduce reflections.
+– Increase in driver's power dissipation (when compared to the unterminated case)
+– Receiver's differential input is zero when all drivers are idle.
+Figure 20. Differential Parallel-Terminated Driver Output Waveforms
+15SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE16
+G004
+DIN
+RA
+RB
+ROUT
+ROUTDIN RD
+ZT
+S0465-01
+DY RB
+RADZ
+CT
+Suggested Termination and Grounding Techniques www.ti.com
+Figure 21. Differential Parallel-Terminated Receiver Input Waveforms
+4.3 AC Termination
+Because the differential outputs are complementary when the driver is activated, one output is in the high
+state, while the other is in the low state. Current flows from the high-state output to the low-state output
+through the termination resistor, as in the parallel configuration. A capacitor and resistor are used for ac
+termination to eliminate the dc current path from one differential output to the other. Figure 22 shows the
+connectivity. However, this added RC time-constant delay significantly reduces transmission speeds.
+Figure 23 and Figure 24 illustrate acceptable receiver input and output waveforms using an ac termination
+of ZT = 100 Ω and a 1000-pF capacitor. The data rate was limited to 200 kbps in laboratory
+measurements. If a RS-485-system with multiple drivers is used, place another ZT and CT across the
+balanced line at the other end of the cable.
+Figure 22. Differential AC-Terminated Configuration
+• Advantages
+– Driver power dissipation is decreased compared to parallel termination, but not as much as in the
+unterminated case.
+– Line reflections are reduced.
+– Ensures that the receiver's output goes to a known state if the receiver internally features open-line
+fail-safe
+• Disadvantage
+– Limitation on maximum data signaling rate and cable distance due to RC time constant (typically
+used on low-speed control lines)
+16 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE17
+DIN
+DZ
+DY
+ROUT
+G005
+G006
+DIN
+RA
+RB
+ROUT
+www.ti.com Suggested Termination and Grounding Techniques
+Figure 23. Differential AC-Terminated Driver Output Waveforms
+Figure 24. Differential AC-Terminated Receiver Input Waveforms
+4.4 Multipoint Termination
+Multipoint configurations are supported by RS-485, but not RS-422. Figure 25 shows a typical
+RS-485-compliant configuration, with a transceiver at both ends of the cable and drivers/receivers placed
+along the length of the cable. RS-485 requires termination at both ends of the cable (see Figure 25). No
+waveforms are provided for this configuration, but performance similar to that of the parallel-termination
+case can be expected.
+17SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE18
+ZTZTDIN RD
+S0466-01
+DR R D
+Suggested Termination and Grounding Techniques www.ti.com
+A ZT = Zo
+Figure 25. Differential Multipoint-Terminated Configuration
+• Advantages
+– Same as parallel termination
+– Optimum signal quality
+• Disadvantage
+– Same as parallel termination, but two termination resistors are required, one at each end of the
+cable, which adds more loading to the drivers.
+Table 3. Summary of Termination Techniques
+POWER OPEN-LINE SHORTED-LINETECHNIQUE SPEED SIGNAL INTEGRITYDISSIPATION FAIL-SAFE FAIL-SAFE
+Good at low signalingSupported if available Supported if availableNo termination Low Low rates, Poor at highon receiver on receiver speeds
+Supported if available Supported if availableParallel termination Medium High Excellenton receiver on receiver
+Supported if available Supported if availableAC termination Low Medium Goodon receiver on receiver
+Supported if available Supported if availableMultipoint termination Medium High Excellenton receiver on receiver
+4.5 Ground Connections
+Commonly RS-422 and RS-485 system configurations are presented without a separate ground wire.
+Laws of physics, however, still require a solid ground connection to ensure error-free communication
+between drivers and receivers.
+4.5.1 Local Ground and Protective Earth Is Not Connected
+If all the power supplies for all the transceivers and related processing circuitry are isolated and have
+disconnected local ground and PE (Protective Earth), no ground loop exists. Local ground of each
+transceiver can be connected directly (Figure 26).
+18 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE19
+ZT
+VCC2VCC1
+ZT
+RD
+L
+S0467-01
+DR
+Grounding Network
+in Factory, Office,
+House, etc
+Isolated
+Power
+Supply 2
+PE2
+(Protective
+Earth 2)
+PE1
+(Protective
+Earth 1)
+Local
+Ground 2
+Local
+Ground 1
+No Ground Loop
+N
+E
+No Connection No Connection
+L
+N
+E
+Isolated
+Power
+Supply 1
+ZT
+VCC2VCC1
+ZT
+RD
+L
+S0468-01
+DR
+Grounding Network
+in Factory, Office,
+House, etc
+Power
+Supply 2
+PE2
+(Protective
+Earth 2)
+PE1
+(Protective
+Earth 1)
+Local
+Ground 2
+Local
+Ground 1
+Ground Loop Exists
+N
+E
+Connected
+by Wire,
+Chassis,
+Leakage, etc.
+Connected
+by Wire,
+Chassis,
+Leakage, etc.
+L
+N
+E
+Power
+Supply 1
+100/c87100/c87
+www.ti.com Suggested Termination and Grounding Techniques
+Figure 26. Grounding Configuration with Isolated Local Ground and PE
+4.5.2 Local Ground and Protective Earth Is Connected
+In many cases, local ground and PE are connected by wire, chassis, or leakage for many reasons, such
+as lowest cost or simplest power supply design. Thus, if a high-voltage potential difference exists between
+remote grounds, especially during transients, then current flows through the remote ground because a
+ground loop does exist. If the ground loop has no resistance , then the ground current is large and creates
+some problems. For this reason, the RS-485 standard recommends adding some resistance between
+logic and chassis ground to avoid excess ground-loop currents (Figure 27).
+Figure 27. Grounding Configuration with Connected Local Ground and PE
+This approach reduces loop current, but the existence of a large ground loop keeps the data link sensitive
+to noise generated somewhere else along the loop.
+19SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE20
+S0469-01
+Z
+T
+V
+CC
+2_ISO
+V
+CC
+2
+V
+CC
+1
+Z
+T
+R
+D
+D
+R
+Grounding Networkin Factory, Office,
+House, etc
+PE1
+(ProtectiveEarth 1)
+Local
+Ground 1
+No Ground Loop
+(a) Isolation of Two Remote Transceiver Stations with Single-Ground Reference
+(b) Isolation of Multiple Remote Transceiver Stations
+Connectedby Wire,Chassis,
+Leakage, etc.
+L N E
+PowerSupply 1
+L
+PowerSupply 2
+PE2
+(ProtectiveEarth 2)
+Local
+Ground 2
+N E
+Connectedby Wire,Chassis,
+Leakage, etc.
+DigitalIsolatorIsolatedDC/DCConverter The Isolated
+DC/DC Converter
+and
+Digital Isolator
+Break theGround Loop
+V
+CC
+1
+V
+CC
+n
+V
+CC
+2
+VCC(n-1)
+Non-IsolatedTransceiver
+Isolated
+Transceiver
+Isolated
+Transceiver
+Isolated
+Transceiver
+GND1
+GNDn
+D
+D
+R
+R
+GND2
+GND(n – 1)
+D
+D
+R
+R
+Suggested Termination and Grounding Techniques www.ti.com
+The approach to tolerate ground potential differences up to several kilovolts across a robust RS-485 data
+link and over long distance is the galvanic isolation of the signal and supply lines of a bus transceiver from
+its local signal and supply sources (Figure 28).
+Figure 28. Isolated Configuration
+In this case, supply isolators, such as isolated DC/DC converters, and signal isolators, such as digital
+capacitive isolators, prevent current flow between remote system grounds and avoid the creation of
+current loops. The non-isolated transceiver on the left provides the single-ground reference for the entire
+bus.
+20 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE21
+S0470-01
+ZT
+ZT
+RR
+DD
+DD
+RR
+www.ti.com Typical System Configurations
+5 Typical System Configurations
+This section presents a general idea about connecting balanced differential drivers, receivers, and
+transceivers in different situations. Properly connecting the devices greatly reduces reflections.
+The following discussions on system configurations apply only to RS-485-compliant system designs.
+Conversion to a RS-422-compliant system is straightforward, knowing that the termination impedance, ZT,
+is placed only once in close proximity to the last receiver at the end of the cable farthest from the driver.
+Also, only one driver is required, with up to nine additional receivers allowed in a RS-422-compliant
+system design.
+5.1 Daisy-Chain Configuration
+One widely used connectivity scheme is called daisy-chaining. In this topology, each station is attached
+successively as close to the input/output as possible (see Figure 29). The idea is to make the main bus
+seem like only one transmission line.
+Figure 29. Daisy-Chain Connection
+5.2 Bus and Stub Configuration
+Another popular connection scheme (shown in Figure 30) is connecting stations directly to the main bus
+(referred to as a backbone). To reduce line reflections, it is essential to keep the stubs (cable distance
+from main bus line) as short as possible. Again, the intent is for the driver to see only one transmission
+line.
+21SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE22
+S0471-01
+ZTZT
+RR
+DD
+DD
+RR
+ZTZT
+RD
+S0472-01
+DR
+Summary Comparison of the Standards www.ti.com
+Figure 30. Stub Cables Connected to the Main Backbone
+5.3 Point-to-Point Configuration
+Point-to-point connectivity, in its simplest form of data transmission, is shown in Figure 31.
+Figure 31. Point-to-Point Connection
+6 Summary Comparison of the Standards
+As discussed previously, RS-422 and RS-485 have similar requirements. RS-485-compliant drivers and
+receivers generally are interchangeable with those compliant to RS-422, but the reverse is not necessarily
+true. RS-422-compliant drivers used in multipoint applications have at least three major problems:
+common-mode range, line contention, and output drive current.
+6.1 Common-Mode Range
+RS-485-compliant drivers and receivers are specified for operation with a common-mode range of -7 V to
+12 V. RS-422-compliant drivers are specified over the range of only 0.25 V to 6 V. RS-422-compliant
+receivers are specified regarding the 200-mV threshold levels over the common-mode range of -7 V to +7
+V, but are specified regarding bus pin leakage over the common-mode range -10 V to +10 V.
+22 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE23
+www.ti.com Conclusion
+6.2 Line Contention
+Line contention, as discussed previously, is caused when two or more drivers are turned on at the same
+time. For example, if driver 1 is driving VA > VB while driver 2 also is turned on and driving VB > VA, a
+line-contention situation arises. Both RS-422 and RS-485 require driver output current limits that protect
+against high currents in these situations. However, the data on the bus lines is unreliable during line
+contention.
+Thermal shutdown disables the output driver when it senses a high temperature and turns it back on after
+the device cools. If line contention still is present after the driver is re-enabled, thermal shutdown disables
+the driver again as soon as the temperature reaches a certain point. The output cycles in and out of
+thermal shutdown indefinitely until line contention no longer is present.
+The problem with line contention is exacerbated when the ground potential between the remote grounds is
+stretched to its maximum limit of ±7 V. If driver 2 is connected to the ground that is 7 V lower than the
+ground for driver 1, a potential close to +12 V can exist on the output of driver 2 (assuming VCC = 5 V). If
+driver 2 is connected to the ground that is 7 V higher than the ground for driver 1, a potential close to –7 V
+can exist on the output of driver 2. The RS-485 standard, as noted, limits the current out of the output
+when a voltage ranging from –7 V to 12 V is applied. Therefore, the standard does require protection
+against the effects of line contention by limiting the output current.
+6.3 Drive Current
+Because RS-485 requires two termination resistors, but RS-422 requires only one termination resistor,
+RS-485 outputs typically are stronger. Furthermore, RS-422 allows driving up to 10 4-kΩ loads (equivalent
+to 400 Ω), whereas RS-485 allows driving up to 32 12-kΩ loads (equivalent 375 Ω). Therefore, with the
+same output drive strength, a RS-485-compliant driver can handle triple the number of loads.
+Table 4 summarizes the main differences between RS-422 and RS-485; Table 3 summarizes attributes for
+each termination technique discussed.
+Table 4. Summary Comparison of RS-485 and RS-422 Specifications
+PARAMETER RS-422 RS-485 UNIT
+Number of drivers and receivers 1 driver / 10 receivers 32. U.L.s
+Maximum theoretical cable length 1200 1200 m
+Maximum data rate 10 > 10(1) Mbps
+Maximum common-mode voltage ±7 –7 to +12 V
+Driver differential output level 2 ≤ |VOD| ≤ 10 1.5 ≤ |VOD| ≤ 5 V
+Driver load ≥100 ≥60 Ω
+Driver output short-circuit current limit 150 to GND 250 to –7 V or 12 V mA
+High-impedance state, power off 60 12 kΩ
+Receiver input resistance 4 12 kΩ
+Receiver sensitivity ±200 ±200 mV
+(1) TI devices operating at up to 50 Mbps.
+7 Conclusion
+Although similarities exist between RS-422 and RS-485, board designers must consider distinct
+differences between devices specified for one standard or the other. This application report has outlined
+the major differences and provided suggested connection schemes. RS-485-compliant devices can be
+used in RS-422-compliant systems, but the opposite is not true.
+TI offers a variety of devices that meet or exceed requirements of RS-422 and RS-485. TI's main
+competitive advantage is its extensive selection of bipolar and BiCMOS differential devices that are
+available at competitive prices, allowing the board designer to reduce system costs. For a complete listing
+of available devices from each standard, data sheets are available on the Internet at http://www.ti.com
+under interface products.
+23SLLA070D–June 2002–Revised May 2010 RS-422 and RS-485 Standards Overview and System Configurations
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE24
+Glossary www.ti.com
+8 Glossary
+BiCMOS Bipolar and complementary metal-oxide-semiconductor process
+bps Bits per second
+Line contention At least two drivers on the same bus inadvertently enabled simultaneously
+Multidrop Multiple receivers driven by a single driver per bus line
+Multipoint Multiple transceivers, drivers, or receivers per bus line
+U.L. Unit load
+9 Acknowledgment
+Technical assistance was provided by Kevin Gingerich and Frank Dehmelt, both of the TI Advanced
+Analog Products Group.
+10 References
+1. Electrical Characteristics of Balanced Voltage Digital Interface Circuits, ANSI/TIA/ EIA-422-B-1994,
+Telecommunications Industry Association, 1994
+2. Electrical Characteristics of Generators and Receivers for Use in Balanced Digital Multipoint Systems,
+ANSI/TIA/EIA-485-A-1998, Telecommunications Industry Association, 1998
+3. Application Guidelines for TIA/EIA-485-A, TIA/EIA Telecommunications Systems Bulletin,
+Telecommunications Industry Association, 1998
+4. A Comparison of Differential Termination Techniques, Joe Vo, National Semiconductor, Application
+Note AN-903
+5. Comparing EIA-485 and EIA-422-A Line Drivers and Receivers in Multipoint Applications, John Goldie,
+National Semiconductor, Application Note AN-759
+24 RS-422 and RS-485 Standards Overview and System Configurations SLLA070D–June 2002–Revised May 2010
+Copyright © 2002–2010, Texas Instruments Incorporated
+PDF_PAGE25
+IMPORTANT NOTICE
+Texas Instruments Incorporated and its subsidiaries (TI) reserve the right to make corrections, modifications, enhancements, improvements,
+and other changes to its products and services at any time and to discontinue any product or service without notice. Customers should
+obtain the latest relevant information before placing orders and should verify that such information is current and complete. All products are
+sold subject to TI’s terms and conditions of sale supplied at the time of order acknowledgment.
+TI warrants performance of its hardware products to the specifications applicable at the time of sale in accordance with TI’s standard
+warranty. Testing and other quality control techniques are used to the extent TI deems necessary to support this warranty. Except where
+mandated by government requirements, testing of all parameters of each product is not necessarily performed.
+TI assumes no liability for applications assistance or customer product design. Customers are responsible for their products and
+applications using TI components. To minimize the risks associated with customer products and applications, customers should provide
+adequate design and operating safeguards.
+TI does not warrant or represent that any license, either express or implied, is granted under any TI patent right, copyright, mask work right,
+or other TI intellectual property right relating to any combination, machine, or process in which TI products or services are used. Information
+published by TI regarding third-party products or services does not constitute a license from TI to use such products or services or a
+warranty or endorsement thereof. Use of such information may require a license from a third party under the patents or other intellectual
+property of the third party, or a license from TI under the patents or other intellectual property of TI.
+Reproduction of TI information in TI data books or data sheets is permissible only if reproduction is without alteration and is accompanied
+by all associated warranties, conditions, limitations, and notices. Reproduction of this information with alteration is an unfair and deceptive
+business practice. TI is not responsible or liable for such altered documentation. Information of third parties may be subject to additional
+restrictions.
+Resale of TI products or services with statements different from or beyond the parameters stated by TI for that product or service voids all
+express and any implied warranties for the associated TI product or service and is an unfair and deceptive business practice. TI is not
+responsible or liable for any such statements.
+TI products are not authorized for use in safety-critical applications (such as life support) where a failure of the TI product would reasonably
+be expected to cause severe personal injury or death, unless officers of the parties have executed an agreement specifically governing
+such use. Buyers represent that they have all necessary expertise in the safety and regulatory ramifications of their applications, and
+acknowledge and agree that they are solely responsible for all legal, regulatory and safety-related requirements concerning their products
+and any use of TI products in such safety-critical applications, notwithstanding any applications-related information or support that may be
+provided by TI. Further, Buyers must fully indemnify TI and its representatives against any damages arising out of the use of TI products in
+such safety-critical applications.
+TI products are neither designed nor intended for use in military/aerospace applications or environments unless the TI products are
+specifically designated by TI as military-grade or "enhanced plastic." Only products designated by TI as military-grade meet military
+specifications. Buyers acknowledge and agree that any such use of TI products which TI has not designated as military-grade is solely at
+the Buyer's risk, and that they are solely responsible for compliance with all legal and regulatory requirements in connection with such use.
+TI products are neither designed nor intended for use in automotive applications or environments unless the specific TI products are
+designated by TI as compliant with ISO/TS 16949 requirements. Buyers acknowledge and agree that, if they use any non-designated
+products in automotive applications, TI will not be responsible for any failure to meet such requirements.
+Following are URLs where you can obtain information on other Texas Instruments products and application solutions:
+Products Applications
+Amplifiers amplifier.ti.com Audio www.ti.com/audio
+Data Converters dataconverter.ti.com Automotive www.ti.com/automotive
+DLP® Products www.dlp.com Communications and www.ti.com/communications
+Telecom
+DSP dsp.ti.com Computers and www.ti.com/computers
+Peripherals
+Clocks and Timers www.ti.com/clocks Consumer Electronics www.ti.com/consumer-apps
+Interface interface.ti.com Energy www.ti.com/energy
+Logic logic.ti.com Industrial www.ti.com/industrial
+Power Mgmt power.ti.com Medical www.ti.com/medical
+Microcontrollers microcontroller.ti.com Security www.ti.com/security
+RFID www.ti-rfid.com Space, Avionics & www.ti.com/space-avionics-defense
+Defense
+RF/IF and ZigBee® Solutions www.ti.com/lprf Video and Imaging www.ti.com/video
+Wireless www.ti.com/wireless-apps
+Mailing Address: Texas Instruments, Post Office Box 655303, Dallas, Texas 75265
+Copyright © 2010, Texas Instruments Incorporated

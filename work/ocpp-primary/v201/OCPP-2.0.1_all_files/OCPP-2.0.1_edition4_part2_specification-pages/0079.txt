@@ -1,0 +1,51 @@
+CSO
+CSMS Charging Station
+No transaction is active
+alt [Reset Charging Station]
+reset CS
+ResetRequest(OnIdle | Immediate)
+ResetResponse(status)
+opt [Report all connectors as Unavailable during reset]
+loop [for all connectors of all EVSEs]
+StatusNotificationRequest(Unavailable, ...)
+StatusNotificationResponse()
+reboot Charging Station
+Continue B01 - Cold Boot Charging Station
+[Reset EVSE]
+reset EVSE
+ResetRequest(OnIdle | Immediate, evseId)
+ResetResponse(status)
+opt [Report connectors of EVSE as Unavailable during reset]
+loop [for all connectors of EVSE]
+StatusNotificationRequest(Unavailable, evseId, connectorId)
+StatusNotificationResponse()
+reset EVSE without reboot
+of Charging Station
+reset EVSE
+opt [Report connectors of EVSE as Available]
+loop [for all connectors of EVSE]
+StatusNotificationRequest(Unavailable, evseId, connectorId)
+StatusNotificationResponse()
+Figure 20. Sequence Diagram: Reset Without Transaction
+B11 - Reset - Without Ongoing Transaction - Requirements
+Table 40. B11 - Requirements
+ID Precondition Requirement definition
+B11.FR.01 When the Charging Station receives a
+ResetRequest.
+The Charging Station SHALL respond with a ResetResponse.
+B11.FR.02 If the status was set to Inoperative by the CSMS. After a reboot of the Charging Station, the EVSEs SHALL return
+to the state Unavailable as prior to the reboot.
+B11.FR.03 B11.FR.01
+AND no evseId parameter is supplied
+AND
+ResetResponse has status = Accepted.
+The Charging Station MAY send a NotifyEventRequest for
+component = "Connector", variable = "AvailabilityState",
+actualValue = "Unavailable" and trigger = "Delta" for each EVSE,
+and SHALL start a reboot.
+B11.FR.04 B11.FR.03 The Charging Station SHALL proceed as described in use case
+B01 - Cold Boot Charging Station.
+B11.FR.05 If the status of an EVSE was Reserved. After a reboot of the Charging Station or resetting of EVSE, the
+EVSE(s) SHALL return to the state Reserved.
+Edition 4, 2025-12-03 B. Provisioning
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 69/491 Part 2 - Specification

@@ -1,0 +1,50 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  29/50 
+Figure 20: Get Comm Event Log state diagram  
+ 
+6.11  15 (0x0F) Write Multiple Coils  
+This function code is used to force each coil in a sequence of coils to either ON or OFF in a 
+remote device. The Request PDU specifies the coil references to be forced. Coils are 
+addressed starting at zero. Therefore coil  numbered 1 is addressed as 0.  
+The requested ON/OFF states are specified by contents of the request data field. A logical ' 1' 
+in a bit position of the field requests the corresponding output to be ON. A logical '0' requests 
+it to be OFF.  
+The normal response returns the function code, starting address, and quantity of coils forced.  
+Request PDU  
+Function code  1 Byte  0x0F  
+Starting Address  2 Bytes  0x0000 to 0xFFFF  
+Quantity of Outputs  2 Bytes  0x0001 to 0x07B0  
+Byte Count  1 Byte  N* 
+Outputs Value  N* x 1 Byte   
+*N = Quantity of Outputs / 8, if the remainder is different of 0  N = N+1  
+Response PDU  
+Function code  1 Byte  0x0F  
+Starting Address  2 Bytes  0x0000 to 0xFFFF  
+Quantity of Outputs  2 Bytes  0x0001 to 0x07B0  
+ 
+Error  
+Error code  1 Byte  0x8F  
+Exception code  1 Byte  01 or 02 or 03 or 04  
+ 
+Here is an example of a request to write a series of 10 coils starting at coil 20:  
+The request data contents are two bytes: CD 01 hex (1100 1101 0000 0001 binary). The 
+binary bits correspond to the outputs in the following way:  
+Bit:  1 1 0 0 1 1 0 1 0 0 0 0 0 0 0 1 
+Output :  27 26 25 24 23 22 21 20 – – – – – – 29 28 
+The first byte transmitted  (CD hex) addresses outputs 27 -20, with the least significant bit 
+addressing the lowest output (20) in this set.  
+The next byte transmitted (01 hex) addresses outputs 29 -28, with the least significant bit 
+addressing the lowest output (28) in this set. Unuse d bits in the last data byte should be zero –
+filled.  
+ 
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  0F Function  0F 
+Starting Address Hi  00 Starting Address Hi  00 
+Starting Address Lo  13 Starting Address Lo  13 
+Quantity of Outputs Hi  00 Quantity of Outputs Hi  00 
+Quantity of Outputs Lo  0A Quantity of Outputs Lo  0A 
+Byte Count  02   
+Outputs Value Hi  CD   
+Outputs Value Lo  01   
+ 

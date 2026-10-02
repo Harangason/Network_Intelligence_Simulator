@@ -1,0 +1,60 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  16/50 
+MB Server Sends mb_exception_rsp EXIT
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+YES
+NO
+NO
+ExceptionCode = 02
+YES
+NO
+ExceptionCode = 03
+YES
+ENTRY
+ReadMultipleRegisters == OK
+MB Server Sends mb_rsp
+NO
+YES
+0x0001  Quantity of Registers  0x007D
+Function code
+supported
+Starting Address == OK
+AND
+Starting Address + Quantity of Registers == OK
+ExceptionCode = 04
+Request Processing
+ 
+Figure 13: Read Holding Registers state diagram  
+ 
+ 
+6.4 04 (0x04) Read Input Registers  
+This function code is used to read from 1 to 125 contiguous input registers in a remote device. 
+The Request PDU specifies the starting register address and the number of registers. In the 
+PDU Registers are addressed starting at zero. Therefore input registers n umbered 1 -16 are 
+addressed as 0 -15. 
+The register data in the response message are packed as two bytes per register, with the 
+binary contents right justified within each byte. For each register, the first byte contains the 
+high order bits and the second contains the low order bits.  
+Request  
+Function code  1 Byte  0x04  
+Starting Address  2 Bytes  0x0000 to 0xFFFF  
+Quantity of Input Registers  2 Bytes  0x0001 to 0x007D  
+ 
+Response  
+Function code  1 Byte  0x04  
+Byte count  1 Byte  2 x N* 
+Input Registers  N* x 2 Bytes   
+*N = Quantity of Input Registers  
+ 
+Error  
+Error code  1 Byte  0x84  
+Exception code  1 Byte  01 or 02 or 03 or 04  
+ 
+Here is an example of a request to read input register 9:  
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  04 Function  04 
+Starting  Address Hi  00 Byte Count  02 
+Starting Address Lo  08 Input Reg. 9 Hi  00 
+Quantity of Input Reg. Hi  00 Input Reg. 9 Lo  0A 

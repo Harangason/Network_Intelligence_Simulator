@@ -1,0 +1,42 @@
+1.24.2. GetBaseReportResponse
+This contains the field definition of the GetBaseReportResponse PDU sent by the Charging Station to the CSMS.
+Class
+Field Name Field Type Card. Description
+status GenericDeviceModelStatusEnumTy
+pe
+1..1 Required. This indicates whether the Charging Station is
+able to accept this request.
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+1.25. GetCertificateChainStatus
+1.25.1. GetCertificateChainStatusRequest
+Class
+Field Name Field Type Card. Description
+certificateStatusRequests CertificateStatusRequestInfoType 1..4 Required. Certificate to check revocation status for.
+1.25.2. GetCertificateChainStatusResponse
+Class
+Field Name Field Type Card. Description
+certificateStatus CertificateStatusType 1..4 Required. Status of the certificate revocation check.
+1.26. GetCertificateStatus
+1.26.1. GetCertificateStatusRequest
+This contains the field definition of the GetCertificateStatusRequest PDU sent by the Charging Station to the CSMS.
+Class
+Field Name Field Type Card. Description
+ocspRequestData OCSPRequestDataType 1..1 Required. Indicates the certificate of which the status is
+requested.
+1.26.2. GetCertificateStatusResponse
+This contains the field definition of the GetCertificateStatusResponse PDU sent by the CSMS to the Charging Station.
+Class
+Field Name Field Type Card. Description
+status GetCertificateStatusEnumType 1..1 Required. This indicates whether the charging station
+was able to retrieve the OCSP certificate status.
+ocspResult string[0..18000] 0..1 Optional. (2.1) OCSPResponse class as defined in IETF
+RFC 6960. DER encoded (as defined in IETF RFC 6960),
+and then base64 encoded. MAY only be omitted when
+status is not Accepted.
+The minimum supported length is 18000. If a longer
+ocspResult is supported, then the supported length must
+be communicated in variable
+OCPPCommCtrlr.FieldLength[
+"GetCertificateStatusResponse.ocspResult" ].
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 590/803 Part 2 - Specification

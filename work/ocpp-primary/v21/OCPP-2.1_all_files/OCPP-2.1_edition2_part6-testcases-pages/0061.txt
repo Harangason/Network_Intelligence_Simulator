@@ -1,0 +1,36 @@
+TC_B_22_CS: Reset Charging Station - With Ongoing Transaction - Immediate
+Test case name Reset Charging Station - With Ongoing Transaction - Immediate
+Test case Id TC_B_22_CS
+Use case Id(s) B12
+Requirement(s) B12.FR.02, B12.FR.04, E07.FR.03, B01.FR.03
+System under test Charging Station
+Description This test case covers how the CSMS can remotely request the Charging Station to reset itself by sending a
+ResetRequest during a transaction. When ResetRequest "Immediate" is send the charging stations will try
+to stop all transactions before rebooting.
+This could for example be necessary if the Charging Station is not functioning correctly.
+Purpose To verify if the Charging Station is able to perform the reset mechanism as described at the OCPP
+specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ResetResponse
+1. The Test System sends a ResetRequest
+with type Immediate
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+Note(s):
+- Charging Station reboots
+5. The Charging Station sends a BootNotificationRequest
+6. The Test System responds with a BootNotificationResponse
+with status Accepted
+7. The Charging Station notifies the CSMS about the current
+state of all connectors. 8. The Test System responds accordingly.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 59/1383 Part 6 - Test Cases

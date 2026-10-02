@@ -1,0 +1,37 @@
+TC_C_37_CS: Clear Authorization Data in Authorization Cache - Accepted
+Test case name Clear Authorization Data in Authorization Cache - Accepted
+Test case Id TC_C_37_CS
+Use case Id(s) C11
+Requirement(s) C11.FR_01, C11.FR.02, C11.FR.03
+System under test Charging Station
+Description This test case covers how the Charging Station autonomously stores a record of previously presented
+identifiers that have been successfully authorized by the CSMS in the Authorization Cache. (Successfully
+meaning: a response received on a message containing an IdToken)
+Purpose To verify if the Charging Station is able to clear all identifiers from the Authorization Cache according to the
+mechanism as described in the OCPP specification.
+Prerequisite(s) The Charging Station has an authorization cache AND
+the Charging Station supports at least one of the following local start authorization options: C-30, C-31, C-
+32, C-34 OR supports at least one of the following remote start authorization options: C-36, C-37
+Before (Preparations)
+Configuration State:
+AuthCacheEnabled is true (If implemented)
+Memory State:
+IdTokenCached for <Configured valid IdToken fields>
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ClearCacheResponse
+1. The Test System sends a ClearCacheRequest
+3. Execute Reusable State Authorized
+4. Execute Reusable State EVConnectedPreSession
+5. Execute Reusable State EnergyTransferStarted
+Tool validations
+* Step 2:
+Message ClearCacheResponse
+- status Accepted
+Post scenario validations:
+- N/a
+NOTE If the Charging Station supports ISO15118, this testcase needs to be executed using EIM.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 123/914 Part 6 - Test Cases

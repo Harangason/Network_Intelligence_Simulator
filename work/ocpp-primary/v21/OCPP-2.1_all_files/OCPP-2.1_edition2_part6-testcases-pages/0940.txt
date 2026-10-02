@@ -1,0 +1,30 @@
+Tool validations
+* Step 1:
+Message: NotifyEVChargingNeedsRequest)
+- evseId <Configured evseId>
+- if (<iso15118Version> is iso15118-2 or omitted) and chargingNeeds.requestedEnergyTransfer is DC:
+- chargingNeeds.acChargingParameters must be <omitted>
+- chargingNeeds.dcChargingParameters must be <not omitted>
+- chargingNeeds.v2xChargingParameters must be <not omitted>
+- end if
+- if (<iso15118Version> is iso15118-2 or omitted) and chargingNeeds.requestedEnergyTransfer is AC:
+- chargingNeeds.acChargingParameters must be <not omitted>
+- chargingNeeds.dcChargingParameters must be <omitted>
+- chargingNeeds.v2xChargingParameters must be <not omitted>
+- end if
+- if <iso15118Version> is iso15118-20:
+- chargingNeeds.acChargingParameters must be <omitted>
+- chargingNeeds.dcChargingParameters must be <omitted>
+- chargingNeeds.v2xChargingParameters must be <not omitted>
+- end if
+- chargingSchedule must be <not omitted>
+* Step 4:
+Message: SetChargingProfileResponse)
+- status Accepted
+* Step 5:
+Message: NotifyEVChargingScheduleRequest)
+- evseId <Configured evseId>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 938/1383 Part 6 - Test Cases

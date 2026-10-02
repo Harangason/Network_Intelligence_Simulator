@@ -1,0 +1,89 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Name and Rights Description Ext.
+Tag
+Len. Default
+Value
+CLOCK_TO_CFG
+RW in E²PROM
+Indicates the timeout value to be used for clock request acknowledgment
+(from 1.53 ms to 10 ms in steps of 330 µs).
+So the actual Time Out value (in µs) is given by the following formula:
+TimeOut (µs) = 1200 + (CLOCK_TO_CFG)*330
+The value 0x00 SHALL NOT be used, otherwise there is no timeout
+(no wait time). The minimum value is 01.
+0xA0
+0x04
+1 0x01
+ENABLE_
+OTHER_NTF_
+CFG
+RW in E²PROM
+Note:  This
+configuration is
+supported from
+FW 12.50.11
+onwards.
+Enables/disables additional NTF from the IC.
+Value:
+• 0x01: Enable NTF of Xtal startup failure and retry. When this is enabled,
+and if there is any XTAL startup failure occurs and retried, an NTF “E9” is
+sent to the host.
+• Any other value: Disables this NTF.
+0xA0
+0x6F
+1 0x00
+IRQ_POLARITY_
+CFG
+RW in E²PROM
+Persistent After
+FwDL
+Configuration of the IRQ pin polarity
+Bit Mask Description
+b7 b6 b5 b4 b3 b2 b1 b0
+x Host interface wake-up with
+WUP_REQ pin
+'1' => enable
+'0' => disable
+x IRQ pin polarity config
+0 0 0 0 0 (RFU) => Logical 0
+b1=’0’ => PN7160 requests to transmit when IRQ pin = ’1’.
+b1=’1’ => PN7160 requests to transmit when IRQ pin = ‘0’.
+0xA0
+0x05
+1 0x00
+VBAT_MONITOR_
+EN_ CFG
+RW in E²PROM
+Persistent After
+FwDL
+To Enable/Disable the Battery monitor and configure the Threshold
+Bit Mask Description
+b7 b6 b5 b4 b3 b2 b1 b0
+x Vbat monitor Enable
+x Vbat monitor Threshold
+0 0 0 0 0 0 RFU
+b0: ‘1’ to Enable, ‘0’ to disable.
+b1: ‘1’ to set the threshold to 2.3 V and ‘0’ to set it to 2.75 V.
+0xA0
+0x06
+1 0x00
+VEN_CFG
+RW in E²PROM
+Persistent After
+FwDL
+Configures the internal VEN signal, in case the VEN pin driver NOT is
+supplied from PVDD. In such a case, when PVDD is switched OFF, the
+VEN pin level is unknown, so the internal VEN signal is defined by one
+bit in an internal register (VEN_Value) while the VEN pin has to be pulled
+down (to avoid leakage) thanks to a 2nd bit in the same register (VEN_
+Pulld) which has then to be set to '1' to activate the Pull Down. These 2 bits
+can be configured through NCI thanks to VEN_CFG LSbits, according to
+the following table:
+0xA0
+0x07
+1 0x03
+Table 98. Core configuration parameters...continued
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+94 / 147

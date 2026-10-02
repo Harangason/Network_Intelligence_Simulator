@@ -1,0 +1,28 @@
+Tool validations
+* Step 2:
+Message ResetResponse
+- status Scheduled
+* Step 7:
+Message BootNotificationRequest
+- reason ScheduledReset
+* Step 9:
+Message: StatusNotificationRequest
+- If the transaction was stopped at step 3, then
+ — for the connector involved in the transaction: connectorStatus Occupied
+ — for other connectors of this EVSE: connectorStatus Available or Unavailable
+Else connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+- If the transaction was stopped at step 3, then
+ — for the connector involved in the transaction: eventData[0].actualValue Occupied
+ — for other connectors of this EVSE: eventData[0].actualValue Available or Unavailable
+- Else eventData[0].actualValue "Available"
+* Step 11:
+Message: SecurityEventNotificationRequest
+- type StartupOfTheDevice or ResetOrReboot
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 58/1383 Part 6 - Test Cases

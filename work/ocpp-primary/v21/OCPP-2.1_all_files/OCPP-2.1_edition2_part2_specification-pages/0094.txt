@@ -1,0 +1,63 @@
+CSO
+CSMS Charging Station
+alt [Reset Charging Station]
+Transactions active on one or more EVSEs
+reset CS
+ResetRequest(Immediate)
+ResetResponse(Accepted)
+Terminate all transactions,
+regardless of TxStopPoint.
+loop [for all stopped transactions]
+TransactionEventRequest(eventType = Ended, stopReason = ImmediateReset,...)
+TransactionEventResponse(...)
+reboot Charging Station
+Continue B01 - Cold Boot Charging Station
+[Reset EVSE]
+Transaction active on EVSE
+reset CS
+ResetRequest(Immediate, evseId)
+ResetResponse(Scheduled)
+Terminate transaction,
+regardless of TxStopPoint.
+TransactionEventRequest(eventType = Ended, stopReason = ImmediateReset,...)
+TransactionEventResponse(...)
+reset EVSE
+loop [for all connectors of EVSE]
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Available)
+NotifyEventResponse()
+Figure 21b: Sequence Diagram: Reset Immediate With Ongoing Transaction
+B12 - Reset - With Ongoing Transaction - Requirements
+Table 42. B12 - Requirements
+ID Precondition Requirement definition
+B12.FR.01 When the Charging Station receives a
+ResetRequest(OnIdle)
+AND a transaction is ongoing
+The Charging Station SHALL respond with a
+ResetResponse(Scheduled), to indicate whether the Charging
+Station will attempt to reset itself or EVSE after all transactions
+on Charging Station or EVSE have ended.
+B12.FR.02 When the Charging Station receives a
+ResetRequest(Immediate)
+AND a transaction is ongoing
+The Charging Station SHALL respond with a
+ResetResponse(Accepted), to indicate whether the Charging
+Station will attempt to reset itself or EVSE.
+B12.FR.03 If no evseId is supplied
+AND
+If any transaction is in progress and an OnIdle
+reset is received.
+The transaction of the Charging Station SHALL be terminated
+normally, before the reboot, e.g. as in E06 - Stop Transaction.
+B12.FR.04 If no evseId is supplied
+AND
+If any transaction is in progress and an
+Immediate Reset is received.
+The Charging Station SHALL attempt to terminate any
+transaction in progress and send a TransactionEventRequest
+(eventType = Ended) message with triggerReason =
+ResetCommand and transactionInfo.stoppedReason =
+ImmediateReset for each terminated transaction before
+performing a reboot.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 81/803 Part 2 - Specification

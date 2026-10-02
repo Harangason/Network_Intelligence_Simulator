@@ -1,0 +1,35 @@
+FIELD NAME FIELD TYPE CARD. DESCRIPTION
+listVersion integer 1..1 Required. In case of a full update this is the version number of the
+full list. In case of a differential update it is the version number of
+the list after the update has been applied.
+localAuthorizationList AuthorizationData 0..* Optional. In case of a full update this contains the list of values
+that form the new local authorization list. In case of a differential
+update it contains the changes to be applied to the local
+authorization list in the Charge Point. Maximum number of
+AuthorizationData elements is available in the configuration key:
+SendLocalListMaxLength
+updateType UpdateType 1..1 Required. This contains the type of update (full or differential) of
+this request.
+6.42. SendLocalList.conf
+This contains the field definition of the SendLocalList.conf PDU sent by the Charge Point to the Central System in
+response to a SendLocalList.req PDU. See also Send Local List
+FIELD NAME FIELD TYPE CARD. DESCRIPTION
+status UpdateStatus 1..1 Required. This indicates whether the Charge Point has successfully received and
+applied the update of the local authorization list.
+6.43. SetChargingProfile.req
+This contains the field definition of the SetChargingProfile.req PDU sent by the Central System to the Charge
+Point.
+The Central System uses this message to send charging profiles to a Charge Point. See also Set Charging Profile
+FIELD NAME FIELD TYPE CARD. DESCRIPTION
+connectorId integer 1..1 Required. The connector to which the charging profile applies. If connectorId = 0,
+the message contains an overall limit for the Charge Point.
+csChargingProfiles ChargingProfile 1..1 Required. The charging profile to be set at the Charge Point.
+6.44. SetChargingProfile.conf
+This contains the field definition of the SetChargingProfile.conf PDU sent by the Charge Point to the Central
+System in response to a SetChargingProfile.req PDU. See also Set Charging Profile
+FIELD NAME FIELD TYPE CARD. DESCRIPTION
+status ChargingProfileStatus 1..1 Required. Returns whether the Charge Point has been able to process the
+message successfully. This does not guarantee the schedule will be followed to
+the letter. There might be other constraints the Charge Point may need to take
+into account.
+70

@@ -1,0 +1,28 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Figure 52. NFC Forum+ profile (when there is no card/tag in the field)
+Note: the transition from the Poll NFC-A Active phase to the Poll NFC-A (passive) is done through an RF field
+OFF/ON sequence.
+For more details concerning the different phases duration, guard time, Bail-out, please refer to the configuration
+section (Section 11.1) where all these parameters are defined.
+10.4  [PN7160-NCI] extension: Low Power Card Detector (LPCD) Mode
+10.4.1  Description
+The Low-Power Card Detector is an NXP proprietary extension, which is applied in case the DH wants to
+reduce the power consumption.
+The concept is to avoid using the Technology Detection Activity as defined in [ACTIVITY], which implies to
+generate an RF Field for several tens of milliseconds and to send technology-specific request commands to
+see if there is a Card/Tag in the field to respond. The more technologies the PN7160 is configured to detect, the
+longer the RF Field is generated and the higher the current consumption.
+The LPCD is based on another concept, which only relies on the antenna characteristics, not on valid
+responses from a Card/Tag. Indeed, the antenna impedance is influenced by the Card/tag which may enter
+into its proximity, due to the magnetic coupling between the 2 antennas. The LPCD is therefore monitoring the
+antenna impedance, to see if there is a significant variation which is interpreted as being caused by a Card/Tag
+being in proximity.
+To achieve that, the LPCD periodically generates very short pulses of RF Field, without any modulation, and
+measures some antenna characteristics during this pulse. The time between these RF pulses is defined by the
+TOTAL_DURATION parameter, as specified for the RF Discovery in [NCI].
+When a Card/Tag enters the field, there is an antenna impedance variation. If this variation is higher than a
+pre-defined threshold, the default Technology Detection profile (NFC Forum, or EMVCo, see next sections)
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+84 / 147

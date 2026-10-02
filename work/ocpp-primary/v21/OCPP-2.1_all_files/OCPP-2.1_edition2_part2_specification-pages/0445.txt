@@ -1,0 +1,66 @@
+Chapter 2. ISO 15118 Certificates
+2.1. ISO 15118 Certificate structure
+The ISO 15118 standard provides a Plug & Charge mechanism. This is an identification and authorization mode where the
+customer just has to plug his electric vehicle into the EVSE and all aspects of authentication, authorization, load control and billing
+are automatically taken care of without the need for further user interaction. This is facilitated by the application of digital
+signatures and exchange of X.509 certificates bound to a Public Key Infrastructures (PKI) model.
+The PKI structure defined by ISO 15118 is shown in the figure below. In general, four PKIs need to be in place.
+• PKI for the Charging Station Operator (CSO)
+• PKI for the Certificate Provisioning Service (CPS)
+• PKI for the Mobility Operator (MO)
+• PKI for the car manufacturer (OEM)
+The trust anchor (root CA) for the CSO and CPS is the so-called V2G Root CA. On the other hand, it is up to the respective OEM and
+MO to operate a Root CA of their own or derive their certificates from a V2G Root CA (indicated by the dotted lines between V2G
+Root and MO Sub-CA 1 and OEM Sub-CA 1, respectively).
+EVSE
+Provisioning
+Service Vehicle
+EVSE Leaf
+Certificate
+Leaf Prov
+Certificate
+Contract
+Certificate
+OEM Prov
+Certificate
+OEM Root CA MO Root CAV2G Root
+CSO Sub-CA 1
+CSO Sub-CA 2
+Prov Sub-CA 1
+Prov Sub-CA 2
+MO Sub-CA 1
+MO Sub-CA 2
+OEM Sub-CA 1
+OEM Sub-CA 2
+OCSP Signer
+Certificate
+OCSP Signer
+Certificate
+SalesTariff
+Signs
+OCSP
+Response
+Signs
+OCSP
+Response
+Signs
+Figure 155. PKIs applied for Plug & Charge identification mode
+If only one Sub-CA layer is used, i.e. a Sub-CA signed by a Root CA directly signs leaf certificates, the profile of Sub-CA 2 shall apply
+for that Sub-CA (Source: ISO15118-2)
+OCPP needs to make sure that the necessary information can be exchanged between the EV, the Charging Station and a backend IT
+infrastructure to facilitate the contract provisioning. Contract provisioning is a process defined within ISO 15118 that describes
+how an EV can retrieve a valid contract certificate during a communication session in order to authenticate and authorize itself for
+the charging process.
+Given the PKI structure in the figure above, OCPP must provide messages which are able to transmit the following certificates:
+• CPS certificate chain
+Comprised of Prov Sub-CA 1, Prov Sub-CA 2 and leaf provisioning certificate. Sent with the CertificateInstallationRes and
+CertificateUpdateRes message.
+• MO certificate chain
+Comprised of MO Sub-CA 1, MO Sub-CA 2 and contract certificate. Sent with the messages CertificateInstallationRes,
+CertificateUpdateReq, and CertificateUpdateRes.
+• OEM provisioning certificate
+Sent with the CertificateInstallationReq message.
+Furthermore, some ISO 15118 messages require a digital XML-based signature. This signature needs to be validated by the
+receiving party by using the corresponding certificate chain, verifying the chain all the way up to the respective trust anchor (V2G
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 432/803 Part 2 - Specification

@@ -1,0 +1,50 @@
+2.96. TariffConditionsFixedType
+Class
+These conditions describe if a FixedPrice applies at start of the transaction.
+When more than one restriction is set, they are to be treated as a logical AND. All need to be valid before this price is active.
+NOTE
+startTimeOfDay and endTimeOfDay are in local time, because it is the time in the tariff as it is shown to the EV
+driver at the Charging Station. A Charging Station will convert this to the internal time zone that it uses (which is
+recommended to be UTC, see section Generic chapter 3.1) when performing cost calculation.
+TariffConditionsFixedType is used by: Common:TariffFixedPriceType
+Field Name Field Type Card. Description
+startTimeOfDay string 0..1 Optional. Start time of day in local time.
+Format as per RFC 3339: time-hour ":" time-minute 
+Must be in 24h format with leading zeros. Hour/Minute
+separator: ":" Regex: ([0-1][0-9]|2[0-3]):[0-5][0-9]
+endTimeOfDay string 0..1 Optional. End time of day in local time. Same syntax as
+startTimeOfDay.
+If end time < start time then the period wraps around to
+the next day.
+To stop at end of the day use: 00:00.
+dayOfWeek DayOfWeekEnumType 0..7 Optional. Day(s) of the week this is tariff applies.
+validFromDate string 0..1 Optional. Start date in local time, for example: 2015-12-
+24. Valid from this day (inclusive).
+Format as per RFC 3339: full-date 
+Regex: ([12][0-9]{3})-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])
+validToDate string 0..1 Optional. End date in local time, for example: 2015-12-27.
+Valid until this day (exclusive). Same syntax as
+validFromDate.
+evseKind EvseKindEnumType 0..1 Optional. Type of EVSE (AC, DC) this tariff applies to.
+paymentBrand string[0..20] 0..1 Optional. For which payment brand this (adhoc) tariff
+applies. Can be used to add a surcharge for certain
+payment brands. Based on value of additionalIdToken
+from idToken.additionalInfo.type = "PaymentBrand".
+paymentRecognition string[0..20] 0..1 Optional. Type of adhoc payment, e.g. CC, Debit. Based
+on value of additionalIdToken from
+idToken.additionalInfo.type = "PaymentRecognition".
+2.97. TariffConditionsType
+Class
+These conditions describe if and when a TariffEnergyType or TariffTimeType applies during a transaction.
+When more than one restriction is set, they are to be treated as a logical AND. All need to be valid before this price is active.
+For reverse energy flow (discharging) negative values of energy, power and current are used.
+NOTE
+minXXX (where XXX = Kwh/A/Kw) must be read as "closest to zero", and maxXXX as "furthest from zero". For
+example, a charging power range from 10 kW to 50 kWh is given by minPower = 10000 and maxPower = 50000,
+and a discharging power range from -10 kW to -50 kW is given by minPower = -10 and maxPower = -50.
+NOTE
+startTimeOfDay and endTimeOfDay are in local time, because it is the time in the tariff as it is shown to the EV
+driver at the Charging Station. A Charging Station will convert this to the internal time zone that it uses (which is
+recommended to be UTC, see section Generic chapter 3.1) when performing cost calculation.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 667/803 Part 2 - Specification

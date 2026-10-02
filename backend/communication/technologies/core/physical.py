@@ -89,6 +89,9 @@ CAN_ARBITRATION = ArbitrationModel("CAN_NON_DESTRUCTIVE", MediumAccessModel.BITW
                                    deterministic=False, worst_case_delay_model="HIGHER_PRIORITY_INTERFERENCE")
 
 PHYSICAL_PROFILES: dict[str, PhysicalLayerProfile] = {
+    **{key:PhysicalLayerProfile('MODBUS_SERIAL_PHY_EXPLICIT',key,'EXPLICIT_SERIAL',(),None,
+        False,'PHY_DEPENDENT',('BUS','LINE','POINT_TO_POINT'),None,MediumAccessModel.MASTER_SLAVE)
+       for key in ('modbus_rtu','modbus_ascii')},
     'ethercat':PhysicalLayerProfile('ETHERCAT_CLASSIC_PHY_EXPLICIT','ethercat','EXPLICIT_ETHERNET_OR_EBUS',(),None,
                                    True,'FULL_DUPLEX',('LINE','RING','TREE','STAR'),None,MediumAccessModel.FULL_DUPLEX_SWITCHED),
     'cc_link_ie': PhysicalLayerProfile('CCLINK_IE_VARIANT_EXPLICIT','cc_link_ie','EXPLICIT_ETHERNET_OR_FIBER',(),None,
@@ -140,8 +143,8 @@ PHY_PAIRS = {"10BASE_T1S": 1, "100BASE_T1": 1, "1000BASE_T1": 1,
 PROFILE_ALIASES = {
     'ble':'bluetooth_le', 'bluetoothle':'bluetooth_le', 'bluetooth_low_energy':'bluetooth_le',
     "can_fd": "can", "canopen": "can", "ccp": "can", "j1939": "can", "nmea2000": "can",
-    "modbus_rtu": "rs485", "profinet": "ethernet",
-    "modbus_tcp": "ethernet", "ethernet_ip": "ethernet",
+    "profinet": "ethernet",
+    "ethernet_ip": "ethernet",
     "automotive_ethernet": "ethernet",
 }
 
@@ -154,6 +157,20 @@ def physical_profile(technology_id: str) -> PhysicalLayerProfile | None:
 def validate_physical_realization(data: dict[str, Any]) -> dict[str, Any]:
     realization = PhysicalRealization.from_dict(data)
     profile = physical_profile(realization.technology_id)
+    unresolved_modbus=False
+    if profile and profile.id=='MODBUS_SERIAL_PHY_EXPLICIT':
+        prefix='mr_' if realization.technology_id=='modbus_rtu' else 'ma_'
+        phy=data.get(prefix+'phy') or realization.phy_variant
+        modes={
+            'RS485_2W':(('D0','D1','COMMON'),1,True,'HALF_DUPLEX',('BUS','LINE'),2),
+            'RS485_4W':(('TXD0','TXD1','RXD0','RXD1','COMMON'),2,True,'FULL_DUPLEX',('BUS','LINE'),4),
+            'RS232':(('TXD','RXD','COMMON'),0,False,'FULL_DUPLEX',('POINT_TO_POINT',),0),
+        }
+        if phy in modes:
+            wires,pairs,differential,duplex,topologies,terminations=modes[phy]
+            profile=PhysicalLayerProfile(profile.id,realization.technology_id,'SHIELDED_SERIAL',wires,pairs,
+                differential,duplex,topologies,terminations,MediumAccessModel.MASTER_SLAVE,phy_variant=phy)
+        else:unresolved_modbus=True
     if profile and profile.id=='CCLINK_IE_VARIANT_EXPLICIT':
         variant=data.get('ccie_variant')
         phy=realization.phy_variant or data.get('ccie_phy')
@@ -171,6 +188,11 @@ def validate_physical_realization(data: dict[str, Any]) -> dict[str, Any]:
     if profile is None:
         finding("REVIEW", "PHYSICAL_PROFILE_MISSING", "No registered physical profile for this technology.")
     else:
+        if unresolved_modbus:
+            finding('REVIEW','MODBUS_SERIAL_PHY_UNKNOWN','Actual RS4852W/4W or RS232 must be selected; RTU does not imply RS485.')
+        supplied_duplex={'FULL':'FULL_DUPLEX','HALF':'HALF_DUPLEX'}.get(data.get('duplex'),data.get('duplex'))
+        if profile.id=='MODBUS_SERIAL_PHY_EXPLICIT' and not unresolved_modbus and supplied_duplex not in {None,profile.duplex_mode}:
+            finding('BLOCKER','MODBUS_SERIAL_DUPLEX_MISMATCH','Duplex belongs to another selected serial electrical path.')
         if profile.id=='CCLINK_IE_VARIANT_EXPLICIT':
             variant=data.get('ccie_variant')
             phy=realization.phy_variant or data.get('ccie_phy')

@@ -1,0 +1,31 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Figure 12. Data Message Exchange
+3.2.3  Interfaces
+An NCI Module may contain one Interface. An Interface defines how a DH can communicate via NCI with a
+Remote NFC Endpoint or NFCEE. Each Interface is defined to support specific protocols and can only be used
+for those protocols (the majority of Interfaces support exactly one protocol). NCI defines two types of Interfaces:
+RF Interfaces and NFCEE Interfaces.
+Protocols used to communicate with a Remote NFC Endpoint are called RF Protocols. Protocols used to
+communicate with an NFCEE are called NFCEE Protocols.
+An NFCEE Interface has a one-to-one relationship to an NFCEE Protocol, whereas there might be multiple RF
+Interfaces for one RF Protocol. The later allows NCI to support different splits of the protocol implementation
+between the NFCC and DH. An NCI implementation on an NFCC should include those RF Interfaces that match
+the functionality implemented on the NFCC.
+Interfaces must be activated before they can be used and they must be deactivated when they are no longer
+used.
+An Interface can define its own configuration parameters and Control Messages, but most importantly it must
+define how the payload of a Data Message maps to the payload of the respective RF or NFCEE Protocol and, in
+case of RF Communication, whether the Static RF Connection and/or Dynamic Logical Connections are used to
+exchange those Data Messages between the DH and the NFCC.
+3.2.4  RF Communication
+RF Communication is started by configuring and running the RF Discovery process. The RF Discovery is an
+NCI module that discovers and enumerates Remote NFC Endpoints.
+For each Remote NFC Endpoint, the RF Discovery Process provides the DH with the information about the
+Remote NFC Endpoint gathered during the RF Discovery Process. One part of this information is the RF
+Protocol that is used to communicate with the Remote NFC Endpoint. During RF Discovery configuration, the
+DH must configure a mapping that associates an RF Interface for each RF Protocol. If only a single Remote
+NFC Endpoint is detected during one discovery cycle, the RF Interface for this Endpoint is automatically
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+13 / 147

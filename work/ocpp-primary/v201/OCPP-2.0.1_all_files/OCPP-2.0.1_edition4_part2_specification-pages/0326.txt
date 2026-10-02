@@ -1,0 +1,51 @@
+ID Precondition Requirement definition
+M03.FR.04 M03.FR.03 The Charging Station SHALL include the hash data for each
+matching installed certificate in the
+GetInstalledCertificateIdsResponse.
+M03.FR.05 When the Charging Station receives a
+GetInstalledCertificateIdsRequest with
+certificateType V2GCertificateChain
+The Charging Station SHALL include the hash data for each
+installed certificate belonging to a V2G certificate chain. Sub CA
+certificates SHALL be placed as a childCertificate under the V2G
+Charging Station certificate.
+M04 - Delete a specific certificate from a Charging Station
+No. Type Description
+1 Name Delete a specific certificate from a Charging Station
+2 ID M04
+3 Objective(s) To enable the CSMS to request the Charging Station to delete an installed certificate.
+4 Description To facilitate the management of the Charging Station’s installed certificates, a method of deleting
+an installed certificate is provided. The CSMS requests the Charging Station to delete a specific
+certificate.
+Actors Charging Station, CSMS
+Scenario description 1. The CSMS requests the Charging Station to delete an installed certificate by sending a
+DeleteCertificateRequest.
+2. The Charging Station responds with a DeleteCertificateResponse.
+5 Prerequisite(s) n/a
+6 Postcondition(s) The requested certificate was deleted from the Charging Station.
+7 Error handling n/a
+8 Remark(s) For installing the (V2G) Charging Station Certificate, see use cases A02 - Update Charging Station
+Certificate by request of CSMS and A03 - Update Charging Station Certificate initiated by the
+Charging Station. The V2G certificate chain SHOULD NOT include the V2GRootCertificate. This
+SHOULD be installed using Use case M05 - Install CA certificate in a Charging Station.
+It is possible to delete the last (every) installed CSMSRootCertificates. When all
+CSMSRootCertificates are deleted, the Charging Station cannot validate CSMS Certificates, so it
+will not be able to connect to a CSMS. Before a CSMS would ever send a DeleteCertificateRequest
+that would delete the last/all CSMSRootCertificates the CSMS is ADVISED to make very sure that
+this is what is really wanted.
+It is possible to delete the last (every) installed ManufacturerRootCertificates, when all
+ManufacturerRootCertificates are deleted, no "Signed Firmware" can be installed in the Charging
+Station.
+CSMS Charging Station
+DeleteCertificateRequest(certificateHashData)
+DeleteCertificateResponse(status)
+Figure 126. Delete Installed Certificate
+M04 - Delete a specific certificate from a Charging Station - Requirements
+Table 119. M04 - Requirements
+ID Precondition Requirement definition Note
+M04.FR.01 After receiving a
+DeleteCertificateRequest
+The Charging Station SHALL respond with a
+DeleteCertificateResponse.
+Edition 4, 2025-12-03 M. Certificate Management
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 316/491 Part 2 - Specification

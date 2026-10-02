@@ -1,0 +1,240 @@
+PDF_PAGE 46
+IRT
+PROFINET IRT uses a time slot procedure (bandwidth reservation); i.e. 2 time slots occur. The IRT 
+telegrams are transmitted in the first time slot; the standard Ethernet and RT telegrams in the 
+second. By reserving the transmission bandwidth, the transmission of the IRT data is guaranteed 
+for all load/overload situations. For all participating devices to know when the time slot begins, 
+all the participating devices must be synchronized with PROFINET IRT.
+In addition to the bandwidth reservation, a schedule for the cyclic telegrams is developed 
+with consideration given to the topology. This makes it possible for the engineering system 
+to determine the required bandwidth for each individual cable.
+In addition to the synchronization of the transmission network with PROFINET IRT, the 
+application can also be synchronized in the devices with IRT High Performance (isochronous 
+application; e.g. position controller in SIMOTION or ServoSynchronousTask). This is an 
+essential requirement for closing control loops across the network and isochronous switching 
+of inputs and outputs in the network.
+Note
+Only PROFINET IRT High Performance is used for SIMOTION. Whenever PROFINET IRT is referred 
+to in the rest of this document, this means IRT High Performance.
+For more detailed information, see PROFINET IO with IRT (High Performance) (Page 51).
+Comparing RT and IRT
+Table 5-1 The major differences between RT and IRT
+Property RT IRT (High Performance)
+Real-time class Real-time class 1 Real-time class 3
+Transfer mode Prioritization of cyclic RT telegrams using 
+the so-called VLAN tag.
+Bandwidth reservation optimized by the engineering 
+system on the basis of topology information
+Determinism No
+Send and receive time points of the cy‐
+clical RT data are not precise; they can be 
+delayed by standard Ethernet telegrams.
+Yes
+Transmission and receiving times for cyclic IRT data 
+are precisely defined and guaranteed for all kinds of 
+topologies.
+Isochronous application Not supported Supported
+Hardware support using 
+special Ethernet controller
+No Special hardware necessary
+(e.g. SCALANCE X200 IRT)
+5.1.7.2 Send clock and update time
+Description
+With PROFINET the send clock and update time are distinguished. The send clock is the basic 
+cycle clock for cyclic communication. The update time indicates the cycle in which a device is 
+supplied with data.
+PROFINET IO
+5.1 PROFINET IO overview
+Communication
+46 System Manual, 04/2023, A5E33436509B
+PDF_PAGE 47
+Send clock
+This is the period between two successive intervals for IRT or RT communication. The send clock 
+is the shortest possible transmit interval for exchanging data. The send clock therefore 
+corresponds to the shortest possible update time. During this time, IRT data and non-IRT data 
+(RT, TCP/IP) is transmitted. All devices within a sync domain work with the same send clock.
+Update time
+The update time can be configured separately for each IO device and determines the interval at 
+which data is sent from the IO controller to the IO device (outputs) as well as from the IO device 
+to the IO controller (inputs). The calculated/configured update times are always a multiple (2n) 
+of the send clock.
+Relationship between the update time and send clock
+The calculated update times are multiples (1, 2, 4, 8, ..., 512) of the send clock. The minimum 
+possible update time thus depends on the minimum send clock for the IO controller that can be 
+set and the efficiency of the IO controller and the IO device. 
+5.1.7.3 Adjustable send clocks and update times
+Description
+The table below describes the send clocks which can be set for SIMOTION devices with PROFINET 
+IO, as well as the settable update times which are dependent on them and can be set for IRT and 
+RT. Update times are obtained by multiplying the factor and the send clock. The adjustable send 
+clocks are divided into two ranges: the "even" range and the "odd" range.
+Note
+The following versions generally relate to the use of the position control cycle clock with servo 
+or IPO task, unless otherwise specified. When using the Servo_fast with Servo_fast or IPO_fast 
+Task, other restrictions apply under certain circumstances. If Servo_fast and IPO_fast are used, 
+then the PROFINET must be operated isochronously.
+Table 5-2 Adjustable send clocks and update times when using servo or Servo_fast
+Send clock Factors (update time = factor * send clock)
+RT IRT
+"Even" range  125 µs Note 4) IO devices cannot be used with RT 1 Note 2)
+250, 500, 1,000 µs 1, 2, 4, 8, 16, 32, 64, 128, 256, 512
+2,000 µs 1, 2, 4, 8, 16, 32, 64, 128, 256
+4,000 µs 1, 2, 4, 8, 16, 32, 64, 128
+"Odd" range 375, 625, 750, 875, 1,125, 1,250 
+µs ... 3,875 µs
+(increment 125 µs)
+Cannot be used in front of SIMOTION V4.4 IO 
+devices with RT Note 1)
+1
+PROFINET IO
+5.1 PROFINET IO overview
+Communication
+System Manual, 04/2023, A5E33436509B 47
+PDF_PAGE 48
+Send clock Factors (update time = factor * send clock)
+RT IRT
+Note 1) Mixed operation RT / IRT with SIMOTION < V4.4
+Send cycles from the "odd" range can be used only if there is no IO device in the IO systems involved 
+in the sync domain. As soon as there are IO devices with RT in a sync domain, it is only possible to set 
+send clocks from the "even" range.
+Note 2) Settable factors and isochronous operation (isochronous application)
+Some IO devices with IRT support the factors 2, 4, 8, and 16 in addition to factor 1.
+Where IO devices (e.g. ET200S IM151-3 PN HS, SINAMICS S120) are operated isochronously, it is 
+usually only possible to set a factor of 1. In these cases, the mode for the update time must always be 
+set to Fixed factor to ensure STEP 7 does not automatically adapt the update time. The update time 
+than always matches the send clock.
+Note 3) Mixed operation RT / IRT as of SIMOTION V4.4
+As of SIMOTION V4.4, send cycles from the "odd" range can be used only if there is no IO device with 
+RT in the PROFINET IO systems involved in the sync domain. However, this mixed operation is only 
+possible with SIMOTION D4x5-2 devices on the onboard PROFINET interface. The same factors are 
+available as from the "even" range. The factors that can actually be set depends specifically on the set 
+send clock. 
+Restriction of Shared Device with RT / IRT as of SIMOTION V4.4:
+If a Shared Device is simultaneously used with PROFINET IO with RT and PROFINET IO with IRT, PRO‐
+FINET IO with IRT can only be operated with send clocks from the "even" range.
+Note 4) The send clock can only be used with D455-2 DP/PN on the onboard PROFINET interface together with 
+Servo_fast as of SIMOTION V4.4. If this send clock is used, only the first port of the onboard PROFINET 
+interface will be active, all other ports are deactivated and cannot be used.
+If there is no sync master configured in a PROFINET IO system (no PROFINET IRT), the send 
+cycle clock for the respective PROFINET IO system can be set individually on the relevant IO 
+controller. You can do this in the properties <PROFINET Interface> on the PROFINET tab 
+under Send cycle or in the properties PROFINET IO System on the Update time tab. There 
+is a default setting for the send clock of 1 ms. On the IO cycle tab, the down-scaling for the 
+update time can be set via the mode fixed factor or fixed update time and the factor.
+As soon as a sync master is configured in the PROFINET IO system, the send clock is defined 
+under the sync domain properties. The IO controllers assigned to the sync domain take over 
+this value. Update times can be set independently for each IO device.
+PROFINET IO
+5.1 PROFINET IO overview
+Communication
+48 System Manual, 04/2023, A5E33436509B
+PDF_PAGE 49
+Possible modes for setting the update time
+• Fixed factor
+Fixed send clock down-scaling for the update time
+• Fixed update time
+Update time is set
+• Automatic
+STEP 7 automatically adjusts the down-scaling if the factor selected is too low
+Note
+It is recommended that you work with the Fixed factor setting.
+Figure 5-2 The influence of isochronous mode on setting the update time
+5.1.7.4 PROFINET IO with RT
+PROFINET IO with RT is the optimal solution for the integration of I/O systems without particular 
+requirements in terms of performance and isochronous mode. This is a solution that uses 
+standard Ethernet and commercially available industrial switches as infrastructure components. 
+A special hardware support is not required.  
+PROFINET IO
+5.1 PROFINET IO overview
+Communication
+System Manual, 04/2023, A5E33436509B 49
+PDF_PAGE 50
+Not isochronous
+Although standard Ethernet and PROFINET IO with RT do not offer any synchronization 
+mechanisms for devices, this does not mean that such arrangements are impossible. However, 
+it does mean that isochronous data transmission is impossible, and there is no isochronous 
+application for motion control as a result.
+Data exchange
+Communication via PROFINET IO with RT and IRT is based on the Ethernet frame and the MAC 
+address. This means that cross-network communication via a router using RT and IRT is not 
+possible. PROFINET IO message frames have priority over IT message frames in accordance with 
+IEEE802.1Q. This ensures the availability of the real-time properties required in automation 
+applications (e.g. for standard IOs).
+Update time
+The adjustable update time is in the range of 0.25 - 512 ms. The selected update time depends 
+on the process requirements, the number of devices, and the amount of IO data. Given the 
+improved performance offered by PROFINET compared to field buses, the bus cycle is generally 
+no longer the variable which determines the system cycle. 
+Device replacement without removable data storage medium
+Activate the "Support device replacement without removable data storage medium" checkbox 
+if you want to use the module replacement (the devices connected to the IO controller) without 
+the PG or removable data storage medium. 
+The IO device replacement is no longer assigned a device name from the removable data 
+storage medium or the PG, but from the IO controller. The IO controller uses the configured 
+topology and the neighboring relationships determined by the IO devices for this purpose.  
+Note
+Device replacement without removable data storage medium
+In order that the device replacement without removable data storage medium functions, the 
+plant topology must be configured correctly. Use the topology editor for this purpose.
+5.1.7.5 PROFINET IO with IRT - Overview
+Overview
+PROFINET IO with IRT satisfies communication requirements which go beyond the sending of 
+standard signals. As far as IRT is concerned, the jitters which may still be encountered with RT 
+during communication are significantly reduced by synchronizing the network. 
+A time-slot procedure is required at a level above that of the Ethernet network. One time 
+slot is reserved for the IRT telegrams and another slot is reserved for the RT and IP-based 
+telegrams, in which the standard Ethernet communication (NRT (optional)) also runs. This 
+type of approach requires all devices involved in IRT communication to be synchronized. 
+PROFINET IO
+5.1 PROFINET IO overview
+Communication
+50 System Manual, 04/2023, A5E33436509B
+PDF_PAGE 137
+7. Click on Add to add a station or an I/O system to the sync domain.
+8. Click OK to add the station / IO system.
+5.3.8 Defining send clock and refresh times
+PROFINET RT and IRT are forms of cyclic communication; the basic clock is the send clock. The 
+update time is a multiple (2n) of the send clock and the devices are supplied with data in this cycle 
+clock. Individual update times can be set for each device.
+Note
+With IRT High Performance, the devices are supplied with data during each sending cycle 
+(sending cycle = update time). However, the data is only evaluated every nth cycle in the 
+SIMOTION Servo cycle clock (Servo_fast runs scaled-down to the servo cycle clock) or 
+SINAMICS_Integrated.
+As far as SINAMICS_Integrated is concerned, the controller can be used to define an application 
+cycle in such a way that it is only supplied with new data every n cycles.
+PROFINET IO
+5.3 Configuring PROFINET IO with SIMOTION
+Communication
+System Manual, 04/2023, A5E33436509B 137
+PDF_PAGE 138
+Configuring a send clock for PROFINET IRT
+1. In HW Config, open the Domain Management dialog box.
+Figure 5-43 Domain Management
+2. Select an appropriate send clock for the process. The transmission cycle clock is the smallest 
+possible transmission interval. The send clock is preset to 1 ms.
+Note
+Communication should be no faster than required, irrespective of what the maximum 
+communication speed may be. This will reduce the bandwidth requirement and the relieve 
+the load that the devices need to support.
+PROFINET IO
+5.3 Configuring PROFINET IO with SIMOTION
+Communication
+138 System Manual, 04/2023, A5E33436509B
+PDF_PAGE 139
+Configuring a send clock for PROFINET RT
+1. Double-click on the PN interface. The Properties dialog box opens.
+2. Switch to the PROFINET tab and select a send clock. The send clock can only be set if IO 
+controllers and IO devices are not synchronized.
+Figure 5-44 Configuring a send clock for PROFINET RT
+Defining the update times
+The update times for the data exchange of the IO devices is set in the Properties PROFINET IO 
+System dialog box.
+1. Click the path for the PROFINET IO system in HW Config and select Object properties from 
+the context menu. The dialog is displayed.
+2. Switch to the Update time tab and highlight the respective IO device for which you want to 
+set the update time.
+PROFINET IO
+5.3 Configuring PROFINET IO with SIMOTION
+Communication
+System Manual, 04/2023, A5E33436509B 139

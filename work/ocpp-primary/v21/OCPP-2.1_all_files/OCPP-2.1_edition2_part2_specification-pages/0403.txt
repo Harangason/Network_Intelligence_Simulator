@@ -1,0 +1,62 @@
+EV Charging Station CSMS
+TransactionEventRequest( eventType = Started, ...)
+TransactionEventResponse(...)
+ServiceDiscoveryReq()
+ServiceDiscoveryRes( allowedEnergyTransfer, ... )
+ServiceSelectionReq( requestedEnergyTransfer, controlMode=1 )
+ServiceSelectionRes()
+AC/DC_ChargeParameterDiscoveryReq( evChargingParameters, ... )
+AC/DC_ChargeParameterDiscoveryRes( evseChargingParameters, ... )
+ScheduleExchangeReq( Scheduled_SEResControlMode, ... )
+NotifyEVChargingNeedsRequest( DepartureTime,
+EVTargetEnergyRequest, requestedEnergyTransfer, ... )
+NotifyEVChargingNeedsResponse( Accepted )
+loop [until SetChargingProfileRequest received]
+ScheduleExchangeRes( Scheduled_SEResControlMode
+EVSEProcessing=Ongoing)
+ScheduleExchangeReq( DepartureTime, EVTargetEnergyRequest, ... )
+SetChargingProfileRequest( ChargingSchedule(s), PriceSchedule(s) )
+SetChargingProfileRequest( Accepted )
+ScheduleExchangeRes( Scheduled_SEResControlMode)
+PowerDeliveryReq( ChargeProgress=Start,
+SelectedScheduleTupleId, EVPowerProfile )
+Contactor Close
+PowerDeliveryRes()
+TransactionEventRequest( eventType = Updated,
+triggerReason = ChargingStateChanged,
+chargingState = Charging, ...)
+TransactionEventResponse(...)
+NotifyEVChargingScheduleRequest( timeBase, evseId, chargingSchedule )
+NotifyEVChargingScheduleResponse( status )
+EV charges according to EVPowerProfile
+Figure 142. Charging with load-leveling using ISO 15118-20 Scheduled Control Mode
+K18 - ISO 15118-20 Scheduled Control Mode - Requirements
+Table 114. K18 - Requirements
+ID Precondition Requirements Note
+K18.FR.01 When the Charging Station
+receives charging needs from
+the EV in
+ScheduleExchangeReq for
+scheduled control mode
+The Charging Station SHALL send a
+NotifyEVChargingNeedsRequest with controlMode
+= ScheduledControl to the CSMS.
+K18.FR.02 K18.FR.01 In response to a NotifyEVChargingNeedsRequest
+the CSMS SHALL send a
+NotifyEVChargingNeedsResponse.
+K18.FR.03 K18.FR.02 If the CSMS is able to provide a charging schedule,
+it SHALL indicate this by setting the status field in
+the NotifyEVChargingNeedsResponse to
+Accepted.
+K18.FR.04 K18.FR.02 If the CSMS is not able to provide a charging
+schedule, it SHALL indicate this by setting the
+status field in the
+NotifyEVChargingNeedsResponse to
+NoChargingProfile.
+(Note, status value differs from
+K15.FR.04).
+Charging Station will use a
+TxDefaultProfile or provide a
+schedule with unlimited power.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 390/803 Part 2 - Specification

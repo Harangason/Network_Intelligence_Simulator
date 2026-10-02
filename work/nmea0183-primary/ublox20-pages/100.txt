@@ -1,0 +1,53 @@
+u-blox 20 HPG 2.00 - Interface description
+48 I4 velN - mm/s NED north velocity
+52 I4 velE - mm/s NED east velocity
+56 I4 velD - mm/s NED down velocity
+60 I4 gSpeed - mm/s Ground Speed (2-D)
+64 I4 headMot 1e-5 deg Heading of motion (2-D)
+68 U4 sAcc - mm/s Speed accuracy estimate
+72 U4 headAcc 1e-5 deg Heading accuracy estimate (both motion and vehicle)
+76 U2 pDOP 0.01 - Position DOP
+78 X2 flags3 - - Additional ﬂags
+bit 0   U:1 invalidLlh - - 1 = Invalid lon, lat, height and hMSL (applicable to
+heading products only)
+bits 4…1   U:4 lastCorrection
+Age
+- - Age of the most recently received diﬀerential
+correction:
+• 0 = Not available
+• 1 = Age between 0 and 1 second
+• 2 = Age between 1 (inclusive) and 2 seconds
+• 3 = Age between 2 (inclusive) and 5 seconds
+• 4 = Age between 5 (inclusive) and 10 seconds
+• 5 = Age between 10 (inclusive) and 15 seconds
+• 6 = Age between 15 (inclusive) and 20 seconds
+• 7 = Age between 20 (inclusive) and 30 seconds
+• 8 = Age between 30 (inclusive) and 45 seconds
+• 9 = Age between 45 (inclusive) and 60 seconds
+• 10 = Age between 60 (inclusive) and 90 seconds
+• 11 = Age between 90 (inclusive) and 120 seconds
+• >=12 = Age greater or equal than 120 seconds
+bit 13   U:1 authTime - - Flag that indicates if the output time has been
+validated against an external trusted time source
+• 0 = Time is not authenticated
+• 1 = Time is authenticated
+bit 14   U:1 nmaFixStatus - - Flag assigned to a ﬁx that has been computed
+mixing satellites with data authenticated through
+Navigation Message Authentication (NMA) methods
+and satellites using unauthenticated data. The ﬁx
+is ﬂagged as Veriﬁed when internal cross-checks
+validates the unauthenticated signals against the
+authenticated ones. Note that Not Veriﬁed status
+does not imply directly spooﬁng attacks, to identify
+spooﬁng alerts refer to UBX-SEC-SIG.
+• 0 = Not Veriﬁed: The mixed solution does not
+agree with the NMA authenticated data or the
+comparison could not be performed, e.g., not
+enough authenticated SVs to extrapolate the
+result or cryptographic data not decoded yet
+• 1 = Veriﬁed: The mixed solution agrees with the
+NMA authenticated data
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 100 of 224
+C1-Public

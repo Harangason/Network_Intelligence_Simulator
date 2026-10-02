@@ -1,0 +1,50 @@
+TC_A_04_CS: TLS - server-side certificate - Valid certificate
+Test case name TLS - server-side certificate - Valid certificate
+Test case Id TC_A_04_CS
+Use case Id(s) A00
+Requirement(s) A00.FR.309,A00.FR.312,A00.FR.313,A00.FR.319,A00.FR.321,A00.FR.412,A00.FR.422
+System under test Charging Station
+Description The CSMS uses a server-side certificate to identify itself to the Charging Station, when using security profile
+2 or 3.
+Purpose To verify whether the Charging Station is able to receive a server certificate provided by the CSMS and
+setup a secured WebSocket connection.
+Prerequisite(s) - The charging station supports security profile 2 and/or 3
+- The active NetworkConnectionProfile uses either security profile 2 OR 3.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is Booting
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station initiates a TLS handshake and sends a
+Client Hello to the Test System. 2. The Test System responds with a Server Hello
+With the <Configured server certificate>
+3. The Charging Station performs the following actions:
+Send client certificate
+Client Key Exchange
+Certificate verify
+Change Cipher Spec
+Finished
+Note(s):
+- The client certificate is only sent when the Charging Station uses
+security profile 3.
+4. The Test System performs the following actions:
+Change Cipher Spec
+Finished
+5. The Charging Station sends a HTTP upgrade request to the
+Test System
+Note(s):
+- The HTTP request only contains a username/password
+combination when the Charging Station uses security profile 2.
+6. The Test System upgrades the connection to a (secured)
+WebSocket connection.
+7. The Charging Station sends a BootNotificationRequest
+8. The Test System responds with a BootNotificationResponse
+with status Accepted
+9. The Charging Station notifies the CSMS about the current
+state of all connectors. 10. The Test System responds accordingly.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 5/1383 Part 6 - Test Cases

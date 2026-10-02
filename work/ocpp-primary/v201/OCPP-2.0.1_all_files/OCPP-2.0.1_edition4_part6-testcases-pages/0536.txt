@@ -1,0 +1,52 @@
+TC_O_06_CS: Set Display Message - Specific transaction -  Success
+Test case name Set Display Message - Specific transaction - Success
+Test case Id TC_O_06_CS
+Use case Id(s) O02
+Requirement(s) O02.FR.02, O02_FR_14
+System under test Charging Station
+Description This test case describes how a CSO can set a message to be displayed on a Charging Station for a specific
+transaction. Depending on the given parameters the message shall be displayed a certain way on the
+Charging Station.
+Purpose To verify if the Charging Station is able to display the message correctly according the mechanism as
+described in the OCPP specification when a transaction is ongoing.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDisplayMessageResponse
+1. The Test System sends a SetDisplayMessageRequest with
+message.id <Generated displayMessageId> AND
+message.transactionId <Configured transactionId> AND
+message.priority <Configured Priority AND
+message.display <Configured display component variable>
+(Omitted when left empty)
+Note(s):
+- The display message is displayed as configured
+3. Execute Reusable State StopAuthorized
+4. Execute Reusable State EVConnectedPostSession
+5. Execute Reusable State EVDisconnected
+6. Execute Reusable State ParkingBayUnoccupied
+Note(s):
+- The display message is not displayed anymore
+8. The Charging Station responds with a
+GetDisplayMessagesResponse
+7. The Test System sends a GetDisplayMessagesRequest with
+id <Generated displayMessageId>
+Tool validations
+* Step 1:
+Message: SetDisplayMessageResponse
+- status must be Accepted
+* Step 8:
+Message: GetDisplayMessagesResponse
+- status must be Unknown
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 534/914 Part 6 - Test Cases

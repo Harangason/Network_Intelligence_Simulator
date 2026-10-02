@@ -1,0 +1,55 @@
+No. Type Description
+Scenario description An AC bidirectional session using AC_BPT_DER
+1. EV and Charging Station start an ISO 15118-20 session.
+2. Upon successful authorization the EV starts service negotiation and requests service
+details fo the AC_BPT_DER service.
+3. Charging Station presents service parameters that EV must comply with.
+a. Parameter DERControlFunctions in the service negotiation specifies in this use
+case that EV must at least support high frequency ride-through Must Trip mode
+(bit 11) and limitation of maximum discharge power (bit 20).
+4. EV selects the AC_BPT_DER service.
+5. EV and Charging Station exchange charge parameters.
+a. Charging Station sends EV a field DERControl with a FrequencyTrip curve and an
+ActivePowerSupport field containing the LimitMaxDischargePower with a
+PercentageValue of 50%.
+6. Charging Station sends NotifyEVChargingNeedsRequest with departureTime,
+v2xChargingParameters and derChargingParameters that contains (among others)
+nameplate information from EV inverter and a list of DER controls supported by EV.
+7. CSMS calculates a TxProfile for this session, which may contain periods of discharging,
+and sends it as a SetChargingProfileRequest.
+8. Charging Station responds with ScheduleExchangeRes to EV.
+a. If controlMode = Scheduled is used, then ScheduleExchangeRes will contain the
+TxProfile schedule.
+b. If controlMode = Dynamic is used, then Charging Station will update
+charging/discharging levels via the ChargeLoop messages with EV to match the
+TxProfile schedule.
+9. EV requests start of charging with a PowerDeliveryReq.
+10. EV starts charging.
+11. EV will start discharging according to schedule periods in TxProfile schedule.
+12. DER control is executed by inverter in EV:
+a. It will stop discharging when the frequency deviates from nominal for a certain
+amount and time as defined in the high frequency trip curve.
+b. It will limit discharging power to 50% of its rated capacity as defined by the
+ActivePowerSupport limitation.
+c. When any of the above occurs EV will notify Charging Station about this via the
+DERAlarm element in the ChargeLoop message with derFunctionName set to
+HFTrip (a) or LimitMaxPower (b).
+13. When a DER control influences the (dis)charging process, Charging Station will notify
+CSMS about this via the NotifyDERAlarmRequest with controlType set to HFMustTrip or
+LimitDischargingPower (depending on the event) and gridEventFault =
+OverFrequency in case of HFMustTrip and the timestamp.
+5 Prerequisites • In advance utility has sent DER control settings to the CSMS of CSO. In this example these
+are a VoltWatt curve and a limitation of discharging power to 50% of the rated power of
+the inverter.
+• The DER control settings are not reported by Charging Station in
+ACDERCtrlr.ModesSupported, meaning they will have to be sent to EV.
+• CSMS has conveyed these settings as SetDERControlRequest messages to the Charging
+Station:
+1. SetDERControlRequest(isDefault = true, controlType = HVMustTrip, curve = {…})
+2. SetDERControlRequest(isDefault = true, controlType = LimitDischargePower,
+limitMaxDischarge = { pctMaxDischargePower = 50.0} )
+See use cases R04 - Configure DER control settings at Charging Station.
+6 Post conditions
+7 Error Handling
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 552/803 Part 2 - Specification

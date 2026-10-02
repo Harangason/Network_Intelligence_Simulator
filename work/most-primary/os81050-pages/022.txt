@@ -1,0 +1,41 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 22
+OS81050
+3.1  INIC Message Interface
+Internal OS81050 FIFOs are used for message-based data exchange between INIC and the EHC.
+Message-based data includes: control messages (e.g. MCMs, ICMs) and asynchronous packets (e.g.
+MDPs). The Port Message Protocol  (described in Chapter 4) defines the format for all messages passing
+through the INIC Message Interface.
+Six independent FIFOs support the INIC Message Interface, including:
+/square6 MCM Rx FIFO - used to receive MOST Control Messages (MCMs) from the EHC that are intended for 
+either the local FBlock NBMIN or the MOST Network.
+/square6 MCM Tx FIFO - used to transmit MCMs to the EHC from the local FBlock NBMIN or the MOST Network.
+/square6 ICM Rx FIFO - used to receive INIC Control Messages (ICMs) from the EHC intended only for the local 
+FBlock INIC.
+/square6 ICM Tx FIFO - used to transmit ICMs to the EHC from the local FBlock INIC.
+/square6 MDP Rx FIFO - used to receive MOST Data Packet messages (MDPs) from the EHC that are intended for 
+transmission onto the MOST Network.
+/square6 MDP Tx FIFO - used to transmit MDPs to the EHC from the MOST Network.
+Each type of message-based data targets a specific INIC FIFO based on direction of transport. These
+FIFOs are used for message-based data exchange, regardless of the actual hardware port used for
+communication.
+The OS81050 INIC supports four external interfaces (INIC Ports) for exchanging messages. Message
+FIFOs are used during transmission and reception of data at each port. Most ports can be opened and
+configured using the OpenPort() function within the MOST NetServices MiniKernel’s Socket Connection
+Manager (SCM).
+/square6 MediaLB Port (PortID 0) - The MediaLB Port can be opened by default at power-up/reset based on 
+the INIC Configuration String. If not automatically opened by default, this port can be opened and 
+configured through the Control Port, using the OpenPort() function described in the API manual.
+When the MediaLB Port is automatically opened out of reset, one socket pair is created for
+Control message transport between INIC and the EHC. A sink socket is assigned
+ChannelAddress 0004h for EHC to INIC exchange. A source socket is assigned ChannelAddress
+0002h for INIC to EHC exchange. Additional socket pairs for asynchronous and
+synchronous data transfer between the MediaLB Port and the Network Port can be
+opened by the user with the CreateSocket() INIC function.
+/square6 Control Port (PortID 1) - The Control Port is not configurable via the API. This port can only be 
+opened at power-up/reset based on the INIC Configuration String.
+/square6 Network Port (PortID 2). The Network Port is configurable via the API. This port is always opened 
+default at power-up/reset.
+/square6 Streaming Port (PortID 3). The Streaming Port is never opened by default at power-up/reset. This 
+port can be opened and configured through the Control Port or MediaLB Port, using the OpenPort() 
+function described in the API manual.

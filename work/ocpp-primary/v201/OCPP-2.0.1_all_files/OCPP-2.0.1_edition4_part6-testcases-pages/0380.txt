@@ -1,0 +1,36 @@
+TC_K_42_CS: Get Composite Schedule - chargingRateUnit not supported
+Test case name Get Composite Schedule - chargingRateUnit not supported
+Test case Id TC_K_42_CS
+Use case Id(s) K08
+Requirement(s) K08.FR.07
+System under test Charging Station
+Description The CSMS requests a composite schedule which is a combination of local limits and the prevailing
+Charging Profiles of the different chargingProfilePurposes and stack levels.
+Purpose To verify if the Charging Station is able to reject a GetCompositeScheduleRequest when it asks for a not
+supported chargingRateUnit.
+Prerequisite(s) - The Charging Station does NOT support one of the chargingRateUnits; A or W.
+- The Test System chargingRateUnit configuration field contains the NOT supported chargingRateUnit.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+GetCompositeScheduleResponse
+1. The Test System sends a GetCompositeScheduleRequest
+with evseId 0
+duration is 300
+chargingRateUnit <Configured unsupported chargingRateUnit>
+Tool validations
+* Step 2:
+(Message: GetCompositeScheduleResponse)
+status Rejected
+schedule is omitted
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 378/914 Part 6 - Test Cases

@@ -1,0 +1,2332 @@
+PDF PAGE 1
+ 
+ 
+ 
+ 
+ 
+Open Metering System 
+Technical Report 09 
+ 
+Guide to Wired M-Bus Installations 
+Installationsleitfaden für Wired M-Bus 
+ 
+ 
+ 
+ 
+ 
+Version 1.0.3 / 2022-05-27 
+Release 
+ 
+ 
+English Version | Deutsche Ausgabe 
+© Open Metering System Group e.V., 2022  
+
+PDF PAGE 2
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  2/66 
+Document History | Versionsübersicht 
+Version Date Comment Editor 
+0.9.0 2021-09-27 First draft AG4, A. Reissinger 
+0.9.1 2021-10-14 Title changed to OMS-TR09 AG4, A. Reissinger 
+0.9.2 2021-11-17 Bilingual version after translation and AG4 
+review 
+AG4, A. Reissinger 
+0.9.3 2021-12-16 
+ 
+and 
+ 
+2021-12-21 
+Inclusion of review comments 
+ 
+ 
+ 
+New images in 3.3 and 3.9 
+AG4 
+ 
+and 
+ 
+A. Reissinger 
+1.0.0 2022-01-31 Release candidate A. Reissinger 
+1.0.1 2022-03-18 
+ 
+and  
+ 
+2022-03-30 
+Consideration of feedback by OMS internal 
+review 
+AG4, A. Reissinger 
+1.0.2 2022-04-26 Consideration of feedback by OMS internal 
+review 
+AG4, A. Reissinger 
+1.0.3 2022-05-27 Copyright remark added to front page 
+ 
+Release 
+A. Reissinger 
+ 
+ 
+  
+PDF PAGE 3
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  3/66 
+Version Datum Kommentar Autor 
+0.9.0 2021-09-27 Erster Entwurf AG4, A. Reissinger 
+0.9.1 2021-10-14 Titel auf OMS-TR09 geändert AG4, A. Reissinger 
+0.9.2 2021-11-17 Zweisprachige Version nach Übersetzung 
+und Review 
+AG4, A. Reissinger 
+0.9.3 2021-12-16 
+ 
+und 
+ 
+2021-12-21 
+Einarbeitung der Reviewkommentare 
+ 
+ 
+ 
+Neue Bilder in 3.3 and 3.9 
+AG4 
+ 
+und 
+ 
+A. Reissinger 
+1.0.0 2022-01-31 Release candidate A. Reissinger 
+1.0.1 2022-03-18  
+ 
+und  
+ 
+2022-03-30 
+Berücksichtigung der Kommentare aus der 
+OMS-Mitgliederbefragung 
+AG4, A. Reissinger 
+1.0.2 2022-04-26 Berücksichtigung der Kommentare aus der 
+OMS-Mitgliederbefragung 
+AG4, A. Reissinger 
+1.0.3 2022-05-27 Hinweis auf das Copyright auf der Titelseite 
+hinzugefügt 
+ 
+Release 
+A. Reissinger 
+ 
+  
+PDF PAGE 4
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  4/66 
+Contents | Inhalte 
+ 
+English Version | Deutsche Ausgabe ...................................................................................................... 1 
+Document History | Versionsübersicht .................................................................................................... 2 
+Contents | Inhalte..................................................................................................................................... 4 
+Tables | Tabellen ..................................................................................................................................... 9 
+Figures | Abbildungen .............................................................................................................................. 9 
+English Version ...................................................................................................................................... 11 
+1 Foreword ........................................................................................................................................ 11 
+2 The wired M-Bus solution - an overview ........................................................................................ 12 
+2.1 Introduction (b, a, p) .............................................................................................................. 12 
+2.2 The EN 13757 family (b, a, p) ................................................................................................ 12 
+2.3 The EN 13757-2 (b, a, p) ....................................................................................................... 13 
+2.4 The principle of wired M-Bus communication (b, a, p) .......................................................... 13 
+2.5 Installation and topology (b, a, p) .......................................................................................... 14 
+2.6 Communication and power supply (a) ................................................................................... 14 
+2.7 Requirements for the master (a) ............................................................................................ 15 
+2.8 Data formats and telegrams (a) ............................................................................................. 16 
+2.9 User data exchange (a) ......................................................................................................... 16 
+2.10 Search for bus nodes (a) ....................................................................................................... 17 
+2.11 Unit load or meter? (a, p) ....................................................................................................... 17 
+2.12 Readout frequency (a, p) ....................................................................................................... 17 
+3 Planning and installation ................................................................................................................ 19 
+3.1 Introduction ............................................................................................................................ 19 
+3.2 Device types (a, p) ................................................................................................................. 19 
+3.2.1 Introduction ........................................................................................................................ 19 
+3.2.2 Master ................................................................................................................................ 19 
+3.2.3 Slave .................................................................................................................................. 19 
+3.2.4 Converter ........................................................................................................................... 19 
+3.2.5 Gateway ............................................................................................................................. 20 
+3.2.6 Repeater ............................................................................................................................ 20 
+3.2.7 Splitter ................................................................................................................................ 20 
+3.2.8 Sniffer ................................................................................................................................ 20 
+3.2.9 Concentrator/Data logger/Data center............................................................................... 20 
+3.3 Electrical installation (b, a, p) ................................................................................................. 21 
+3.4 Topology (a, p)....................................................................................................................... 23 
+3.4.1 Introduction ........................................................................................................................ 23 
+3.4.2 Point-to-point ..................................................................................................................... 23 
+PDF PAGE 5
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  5/66 
+3.4.3 Linear ................................................................................................................................. 23 
+3.4.4 Star .................................................................................................................................... 23 
+3.4.5 Combined .......................................................................................................................... 24 
+3.4.6 Ring.................................................................................................................................... 25 
+3.5 Wiring (a, p) ........................................................................................................................... 25 
+3.6 Common cable types (a, p) ................................................................................................... 25 
+3.7 Distribution (a, p) ................................................................................................................... 26 
+3.8 Recommendations for action (a, p) ....................................................................................... 26 
+3.9 Gateways and media converters (a, p) ................................................................................. 26 
+3.10 Typical installations (a, p) ...................................................................................................... 27 
+3.10.1 M-Bus Master as readout device ................................................................................... 27 
+3.10.2 PC as readout device .................................................................................................... 27 
+3.10.3 Integration into networks ............................................................................................... 27 
+3.10.4 Reading of large networks ............................................................................................. 28 
+4 Troubleshooting (a) ........................................................................................................................ 31 
+4.1 Introduction ............................................................................................................................ 31 
+4.2 Testing of the M-Bus network (a) .......................................................................................... 31 
+4.2.1 Introduction ........................................................................................................................ 31 
+4.2.2 Voltage measurement........................................................................................................ 31 
+4.2.3 Current measurement ........................................................................................................ 32 
+4.2.4 Resistance measurement .................................................................................................. 32 
+4.2.5 Capacitance measurement ................................................................................................ 33 
+4.2.6 Evaluation .......................................................................................................................... 33 
+4.3 Fault analysis and localisation in the M-Bus network (a) ...................................................... 34 
+4.3.1 Introdcution ........................................................................................................................ 34 
+4.3.2 Voltage at master too low .................................................................................................. 34 
+4.3.3 Voltage at slave too low ..................................................................................................... 34 
+4.3.4 Resistance on the M-Bus is too low .................................................................................. 35 
+4.3.5 Current through M-Bus is too high ..................................................................................... 35 
+4.3.6 Capacitance in M-Bus too high .......................................................................................... 35 
+4.3.7 Special case of dynamic errors ......................................................................................... 35 
+4.3.8 Other installation errors ..................................................................................................... 36 
+4.4 Testing of communication (a) ................................................................................................ 36 
+4.4.1 Introduction ........................................................................................................................ 36 
+4.4.2 Addresses not unique ........................................................................................................ 37 
+4.4.3 Secondary addressing not possible ................................................................................... 37 
+4.4.4 Slaves do not always respond ........................................................................................... 37 
+4.4.5 Wrong baud rate is used ................................................................................................... 37 
+PDF PAGE 6
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  6/66 
+4.4.6 Error in telegram header .................................................................................................... 38 
+4.4.7 Use of other protocols........................................................................................................ 38 
+4.5 Malfunctions on the M-Bus (a) ............................................................................................... 38 
+ 
+  
+PDF PAGE 7
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  7/66 
+Deutsche Ausgabe ................................................................................................................................ 39 
+1 Vorwort ........................................................................................................................................... 39 
+2 Der M Bus - ein Überblick .............................................................................................................. 40 
+2.1 Einleitung (b, a, p).................................................................................................................. 40 
+2.2 Die Norm EN 13757 (b, a, p) ................................................................................................. 40 
+2.3 Die Norm EN 13757-2 (b, a, p) .............................................................................................. 41 
+2.4 Das Prinzip der verdrahteten M-Bus-Kommunikation (b, a, p) .............................................. 41 
+2.5 Installation und Topologie (b, a, p) ........................................................................................ 42 
+2.6 Kommunikation und Spannungsversorgung (a) .................................................................... 42 
+2.7 Anforderungen an den Master (a) ......................................................................................... 43 
+2.8 Datenformate und Telegramme (a) ....................................................................................... 43 
+2.9 Nutzdatenaustausch (a) ........................................................................................................ 44 
+2.10 Suche nach Busteilnehmern (a) ............................................................................................ 45 
+2.11 Standardlast oder Zähler? (a, p)............................................................................................ 45 
+2.12 Auslesehäufigkeit (a, p) ......................................................................................................... 45 
+3 Planung und Installation ................................................................................................................. 47 
+3.1 Einführung ............................................................................................................................. 47 
+3.2 Gerätetypen (a, p).................................................................................................................. 47 
+3.2.1 Einführung ......................................................................................................................... 47 
+3.2.2 Master ................................................................................................................................ 47 
+3.2.3 Slave .................................................................................................................................. 47 
+3.2.4 Konverter ........................................................................................................................... 47 
+3.2.5 Gateway ............................................................................................................................. 48 
+3.2.6 Repeater ............................................................................................................................ 48 
+3.2.7 Splitter ................................................................................................................................ 48 
+3.2.8 Sniffer ................................................................................................................................ 48 
+3.2.9 Konzentrator/Datenlogger/Datenzentrale .......................................................................... 49 
+3.3 Elektroinstallation (b, a, p) ..................................................................................................... 49 
+3.4 Topologie (a, p)...................................................................................................................... 51 
+3.4.1 Einführung ......................................................................................................................... 51 
+3.4.2 Punkt-zu-Punkt .................................................................................................................. 51 
+3.4.3 Linear ................................................................................................................................. 51 
+3.4.4 Sternförmig ........................................................................................................................ 51 
+3.4.5 Kombiniert .......................................................................................................................... 52 
+3.4.6 Ring.................................................................................................................................... 53 
+3.5 Leitungsführung (a, p) ........................................................................................................... 53 
+3.6 Übliche Kabeltypen (a, p) ...................................................................................................... 53 
+3.7 Verteilung (a, p) ..................................................................................................................... 54 
+PDF PAGE 8
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  8/66 
+3.8 Handlungsempfehlungen (a, p) ............................................................................................. 54 
+3.9 Gateways und Medienwandler (a, p) ..................................................................................... 54 
+3.10 Typische Installationen (a, p) ................................................................................................. 55 
+3.10.1 M-Bus Master als Auslesegerät ..................................................................................... 55 
+3.10.2 PC als Auslesegerät ...................................................................................................... 55 
+3.10.3 Integration in Netzwerke ................................................................................................ 55 
+3.10.4 Auslesung großer Netze ................................................................................................ 56 
+4 Fehlersuche (a) .............................................................................................................................. 59 
+4.1 Einführung ............................................................................................................................. 59 
+4.2 Prüfung des M-Bus-Netzes (a) .............................................................................................. 59 
+4.2.1 Einführung ......................................................................................................................... 59 
+4.2.2 Spannungsmessung .......................................................................................................... 59 
+4.2.3 Strommessung ................................................................................................................... 59 
+4.2.4 Widerstandsmessung ........................................................................................................ 60 
+4.2.5 Kapazitätsmessung ........................................................................................................... 60 
+4.2.6 Auswertung ........................................................................................................................ 61 
+4.3 Fehleranalyse und -lokalisierung im M-Bus-Netz (a) ............................................................ 61 
+4.3.1 Einführung ......................................................................................................................... 61 
+4.3.2 Spannung am Master zu gering ........................................................................................ 61 
+4.3.3 Spannung am Slave zu gering .......................................................................................... 62 
+4.3.4 Widerstand im M-Bus ist zu gering .................................................................................... 62 
+4.3.5 Strom durch M-Bus ist zu hoch ......................................................................................... 63 
+4.3.6 Kapazität im M-Bus zu hoch .............................................................................................. 63 
+4.3.7 Sonderfall dynamische Fehler ........................................................................................... 63 
+4.3.8 Sonstige Installationsfehler ................................................................................................ 63 
+4.4 Prüfung der Kommunikation (a) ............................................................................................. 64 
+4.4.1 Einführung ......................................................................................................................... 64 
+4.4.2 Adressen nicht eindeutig ................................................................................................... 64 
+4.4.3 Sekundäradressierung nicht möglich ................................................................................ 65 
+4.4.4 Slaves antworten sporadisch nicht .................................................................................... 65 
+4.4.5 Falsche Baudrate wird genutzt .......................................................................................... 65 
+4.4.6 Fehler im Telegrammkopf .................................................................................................. 65 
+4.4.7 Nutzung anderer Protokolle ............................................................................................... 65 
+4.5 Störungen auf dem M-Bus (a) ............................................................................................... 66 
+ 
+  
+PDF PAGE 9
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  9/66 
+Tables | Tabellen 
+Table 1 – Three versions of this installation guide ................................ ................................ 12 
+Table 2 – Cable type 0,5 mm2 (37 /km, 100 nF/km) ................................ ...........................21 
+Table 3 – Cable type 1,5 mm2 (13 /120 nF) ................................ ................................ .......22 
+Table 4 – Expected values for a functioning M-Bus ................................ .............................. 33 
+ 
+Tabelle 1 – Drei Versionen dieses Installationshandbuchs ................................ ...................40 
+Tabelle 2 – Kabeltyp 0,5 mm2 (37 /km, 100 nF/km) ................................ ...........................49 
+Tabelle 3 – Kabeltyp 1,5 mm2 (13 /120 nF) ................................ ................................ ........50 
+Tabelle 4 – Erwartungswerte für funktionierenden M-Bus ................................ .....................61 
+ 
+Figures | Abbildungen 
+Figure 1 - M-Bus official logo ................................ ................................ ................................ 12 
+Figure 2 - Bit representation on M-Bus, using a master with 36 V mark voltage as example 15 
+Figure 3 - Comparison of primary and secondary addressing using an example ..................16 
+Figure 4 - Point-to-point connection ................................ ................................ ......................23 
+Figure 5 - Linear bus topology ................................ ................................ .............................. 23 
+Figure 6 – Star topology ................................ ................................ ................................ .......24 
+Figure 7 - Combined bus topology ................................ ................................ ........................24 
+Figure 8 - Readout by means of M-Bus master ................................ ................................ ....27 
+Figure 9 - Readout by means of level converter ................................ ................................ ...27 
+Figure 10 - Client/push operation ................................ ................................ .........................28 
+Figure 11 - Server/pull operation ................................ ................................ ..........................28 
+Figure 12 - Peer/Push-pull operation ................................ ................................ ....................28 
+Figure 13 - Use of repeaters for many meters ................................ ................................ ......29 
+Figure 14 - Use of gateways in distributed systems ................................ .............................. 30 
+Figure 15 - Voltage measurement on the M-Bus ................................ ................................ ..31 
+Figure 16 - Current measurement on the M-Bus ................................ ................................ ...32 
+Figure 17 - Resistance measurement on the M-Bus ................................ .............................32 
+Figure 18 - Capacitance measurement on the M-Bus ................................ ...........................33 
+Figure 19 - 2nd resistance measurement with short circuit on critical path ...........................34 
+Figure 20 - Recording of communication (red = transmit, yellow = receive) using an 
+oscilloscope ................................ ................................ ................................ ..........................36 
+ 
+  
+PDF PAGE 10
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  10/66 
+Abbildung 1 - Offizielles M-Bus-Logo ................................ ................................ ....................40 
+Abbildung 2 - Bitdarstellung beim M-Bus am Beispiel eines Masters mit 36 V Mark-Spannung
+ ................................ ................................ ................................ ................................ .............43 
+Abbildung 3 - Vergleich von Primär- und Sekundäradressierung am Beispiel .......................44 
+Abbildung 4 - Punkt-zu-Punkt-Verbindung ................................ ................................ ............51 
+Abbildung 5 - Lineare Bus-Topologie ................................ ................................ ....................51 
+Abbildung 6 - Sternförmige Bus-Topologie ................................ ................................ ...........52 
+Abbildung 7 - Kombinierte Bus-Topologie................................ ................................ .............52 
+Abbildung 8 – Auslesung mittels M-Bus Master ................................ ................................ ....55 
+Abbildung 9 - Auslesung mittels Pegelwandler ................................ ................................ .....55 
+Abbildung 10 – Client/Push-Operation ................................ ................................ ..................56 
+Abbildung 11 – Server/Pull-Operation ................................ ................................ ..................56 
+Abbildung 12 – Peer/Push-Pull-Operation ................................ ................................ ............56 
+Abbildung 13 - Einsatz von Repeatern für viele Zähler ................................ .........................57 
+Abbildung 14 - Einsatz von Gateways in verteilten Anlagen ................................ .................58 
+Abbildung 15 - Spannungsmessung am M-Bus ................................ ................................ ....59 
+Abbildung 16 - Strommessung im M-Bus................................ ................................ ..............60 
+Abbildung 17 - Widerstandsmessung am M-Bus ................................ ................................ ..60 
+Abbildung 18 - Kapazitätsmessung am M-Bus ................................ ................................ .....60 
+Abbildung 19 – 2. Widerstandsmessung mit Kurzschluss im kritischen Pfad ........................62 
+Abbildung 20 - Aufzeichnung der Kommunikation (rot  = senden, gelb = empfangen) mittels 
+Oszilloskops ................................ ................................ ................................ .........................64 
+ 
+  
+PDF PAGE 11
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  11/66 
+English Version 
+1 Foreword 
+This technical report has been prepared by the OMS working group AG4 and is intended to be a 
+design and installation guide document for installers and planers of wired M-Bus system solutions. 
+ 
+  
+PDF PAGE 12
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  12/66 
+2 The wired M-Bus solution - an overview 
+ Introduction (b, a, p) 2.1
+M-Bus is a bus system, which is especially suited for the reading of consumption meters.  
+An M-Bus system consists of an M-Bus master and a number of meters with M-Bus interface.  
+A network can include different device types and manufacturers. 
+The wired M -Bus ("Meter-Bus") was developed in the 1980 ’s for reading and collecting consumption 
+data from consumption meters. The physical and link layer parameters for wired communication over 
+twisted pairs was originally specified in EN  1434-3:1997 (“M-Bus”) for heat meters. Today, the wired 
+M-Bus is standard ized in EN  13757. This standard is a compatible and interoperable extension of a 
+part of EN  1434-3:2008 and includes also other measured media (e.g. water, gas, thermal energy, 
+heat cost allocators) Today, wired M -Bus can be found in all types of consumpti on meters and it is 
+established as an independent standard coming with an official logo.  
+ 
+Figure 1 - M-Bus official logo 
+ 
+This installation guide addresses various focus groups (see Table 1). 
+Table 1 – Three versions of this installation guide 
+Chapter Basic installation 
+guide (b) 
+Advanced guide (a) Planners guide (p) 
+2.1 to 2.4 X X X 
+2.5 to 2.9  X  
+2.10, 2.11  X X 
+3.1  X X 
+3.2 X X X 
+3.3  X X 
+3.4 to 3.9  X X 
+4  X  
+ The EN 13757 family (b, a, p) 2.2
+The wired M-Bus is an integrated part of a standard family – the EN 13757 family. 
+This standard family is maintained by a Technical Committee (TC 294) in CEN. 
+CEN Technical Bodies - CEN/TC 294 (cencenelec.eu) 
+  
+
+PDF PAGE 13
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  13/66 
+The scope for CEN/TC 294 is: 
+Standardization of communications interfaces for metering and submetering systems for 
+Water, Fuel Gases, Heat and similar energies and fluids where the protocols are applied to the 
+meters, sensors and actuators and systems used to provide metering services. Security 
+features like Confidentiality, Authenticity and Integrity are provided at the application and lower 
+layers. Cooperation with CENELEC and ETSI, with regard to a consistent protocol and use of 
+spectrum, is an essential condition for achieving interoperability between different parts of a 
+system. Excluded from this scope are areas, which are under the responsibility of CLC/T C 205 
+and CEN/TC 247. 
+ 
+The year 2021 version of the EN 13757 family "Communication systems for meters" consists of 7 parts 
+and a technical report TR 17167. 
+ Communication systems for meters — Part 1: Data exchange 
+ Communication systems for meters — Part 2: Wired M-Bus communication 
+ Communication systems for meters — Part 3: Application protocols 
+ Communication systems for meters — Part 4: Wireless meter readout 
+ Communication systems for meters — Part 5: Wireless M-Bus relaying 
+ Communication systems for meters — Part 6: Local Bus 
+ Communication systems for meters — Part 7: Transport and security services 
+ 
+ Communication systems for meters — Accompanying TR to EN 13757-2, -3 and -7, Examples 
+and supplementary information 
+ The EN 13757-2 (b, a, p) 2.3
+The EN 13757-2 is maintained by TC 294/WG4 (Working Group 4) 
+CEN Technical Bodies - CEN/TC 294/WG 4 (cencenelec.eu) 
+The scope for CEN/TC 294/WG4 is: 
+Prepare, maintain and evolve standards for the lower layers for bidirectional wired data exchange and 
+for the upper layers for uni- and bidirectional data exchange of metering systems, taking into account:  
+- the scope of CEN/TC 294; 
+- the nominal service life of the devices in the market. 
+Maintain EN 1434-3 of the EN 1434 series hosted at CEN/TC 176.  
+ The principle of wired M-Bus communication (b, a, p) 2.4
+The M-Bus operates according to the single master/multiple slaves principle and thus has a central 
+device (M-Bus master, M -Bus repeaters), which communicates with M -Bus slaves. Up to 250 M -Bus 
+slaves (using primary addresses) can be connected to a single M-Bus master. 
+The M-Bus slaves have a primary and a secondary address. It is also possible to have an enha nced 
+secondary address. 
+ Primary address (000-250) 
+ Secondary address (M-Bus ID no. 00000000-99999999/manufacturer, device type, version) 
+ Enhanced secondary address (M-Bus ID no. 00000000-99999999/manufacturer, device type, 
+version/M-Bus fabrication no. 00000000-99999999) 
+Communication on the M -Bus is always initiated by the M -Bus master. If it sends a request or a 
+command over the M-Bus, it is received by all M -Bus slaves. Based on the transmitted address, an M -
+PDF PAGE 14
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  14/66 
+Bus slave is addressed, which then processes th e request and, if necessary, responds to it.  
+In addition, the M-Bus can communicate via broadcast whereby all slaves connected to the master get 
+the same command (e.g. a normalisation command). 
+For large M -Bus networks, it is recommended to use the second ary/enhanced secondary address 
+unique for each meter. The communication takes a little longer, but in this way one can theoretically 
+address up to 100 million meters directly without any initial effort for parameteri sation. This is an 
+advantage especially for new and large M-Bus installations. 
+Primary addressing is suitable for smaller systems and higher read -out rates. In addition, this can be 
+parameterized at the meters in most cases. The installer can therefore replace two identical meters, 
+e.g. for main tenance purposes, without having to adjust the readout infrastructure.  
+Only the primary addresses have to match. 
+ Installation and topology (b, a, p) 2.5
+Especially during installation, the wired M -Bus shows its advantages. A simple two -wire cable is 
+sufficient for the connection, whereby the topology (tree, star, bus) of the network can be freely 
+selected. In addition, the two-wire connection is polarity-independent. 
+It should be noted that the shielding is connected only to the M -Bus Master ground potential, but is 
+open at the slave side to avoid ground loops.  
+The maximum expansion of the M -Bus depends on the wire cross-section, baud rate and number of 
+devices on the bus. 
+It is highly recommended to always use twisted pair type cable. 
+ Communication and power supply (a) 2.6
+The greatest advantage of the M-Bus is the direct supply to the bus nodes with power.  
+The M-Bus uses voltage and current modulation for communication,. The master sends the outgoing 
+data by modulating the voltage on the bus between the mark vol tage (logical 1) of 24 to 42  V and the 
+space voltage (logical 0), which is about 12  V below the mark voltage. Some common masters switch 
+between 36 V (mark) and 24  V (space), for example. Both states ensure the continuous supply of the 
+slaves. These detect the voltage levels and can thus receive the data. The slaves, on the other hand, 
+respond by current modulation with a level of maximum 1 ,5 mA for a logical 1 and a level increase of 
+11 to 20 mA for a logical 0. In the idle state, both master and slave out put a logical 1 to the bus – that 
+is why 36  V is present at the master in the example above – and each slave consumes a maximum 
+current of 1,5 mA. 
+A slave with one so -called unit load (UL) may consume max. 1 ,5 mA current. The M -Bus standard 
+allows the use o f up to 4 standard loads (max. 6 ,0 mA) for one slave. OMS-S2, Annex P, P.2.1.5 
+states that the number of unit loads (UL) shall be listed in the data sheet, and the number shall be 
+printed on the device. 
+PDF PAGE 15
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  15/66 
+ 
+Figure 2 - Bit representation on M-Bus, using a master with 36 V mark voltage as example 
+ 
+The transmission rates 300, 2400, 9600, 19200 and 38400  baud are allowed for M -Bus, whereby 
+2400 baud is mostly used. According to EN13757 a transmission rate of 300  baud is mandatory for all 
+M-Bus slaves and automatic baud rate detection is highly recommended. However, according to 
+[OMS-S2], Annex P, P.2.2.1, 300 and 2400  baud are mandatory and automatic baud rate detection is 
+also mandatory. 
+ Requirements for the master (a) 2.7
+An essential featur e for the master is that it must guarantee the supply of the slaves. With 36  V bus 
+voltage and 250 possible slaves, this results in a power of over 13  W even in the idle state. In addition, 
+the master provides, for example, both 24 V and 36 V bus voltage, between which it must switch within 
+significantly less than 100 µs to ensure stable communication. 
+It is not sufficient to measure only the current for the receiving logic, Starting at about seven nodes, it 
+is no longer possible to clearly allocate the abs olute value. 20 slaves, for example, can draw 25  mA in 
+the idle state (logic 1), but this also corresponds to five slaves, one of which is currently transmitting a 
+logic 0. This requires complex current detection and especially the detection of the quiesce nt current. 
+Current modulations above 50  mA must be detected as collisions. This occurs when several slaves 
+respond simultaneously. Overlapping and falsification of the response data would be the result. The 
+receive logic therefore requires three adaptive current thresholds: Collision, logic 0 and logic 1 
+(quiescent current). 
+  
+1 0
+Bus voltage
+VMark = 36V
+VSpace = 24V
+(example)
+Switching of voltage level
+Logical 1 = VMark = 24 .. 42 V
+Logical 0 = VSpace = VMark - 12 V
+time
+* *
+* increased current level leads to low voltage
+drop in bus voltage at the resistance of the bus line 
+and the measuring resistors 
+10
+Bus current
+ISpace = 21,5 mA
+Switching of current level
+Logical 1 = IMark = max. 1,5 mA
+Logical 0 = ISpace = IMark + 11..20 mA
+time
+ISpace = 12,5 mA
+IMark = 1,5 mA
+Master transmits Slave transmits
+PDF PAGE 16
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  16/66 
+ Data formats and telegrams (a) 2.8
+Datagrams specified in EN 13757-2 are used for communication. 
+The simplest telegram is the Single Character , which is used with M -Bus for acknowledgeme nt. 
+Further telegrams are the Short Frame with 3 bytes of user data, the Long Frame with up to 252 bytes 
+of user data and the Control Frame without user data. 
+The communication on M -Bus is always initiated by the master. Two types of transmission services 
+are used. One is the send-confirm principle and the other is the request-response principle. 
+The shortest communication can be found in the telegram SND_NKE for initializing the slaves. The 
+master sends it as a short frame and receives a single character as confirmation. 
+It receives the same response after sending the long frame telegram SND_UD, to send user data to 
+the slaves. This can be used, for example, to change the date or to set parameters.  
+To read out the data (e.g.  meter reading) from the slaves, the master sends a short frame telegram 
+(REQ_UD1 or REQ_UD2). The slave responds to both requests with a long frame telegram RSP_UD, 
+which contains the requested data. 
+Status data is queried by the master sending the telegram REQ_SKE as a short frame and r eceiving 
+the response RSP_SKE as a short or long frame. 
+ 
+Figure 3 - Comparison of primary and secondary addressing using an example 
+ User data exchange (a) 2.9
+The long frame telegram is used for the transmission of user data. The CI f ield as part of this frame 
+specifies the type of data contained and its arrangement. 
+According to the CI field for the long header, the header of the telegram contains, among others, the 
+meter manufacturer, the serial number, the type of meter (device type /medium) and version. This data 
+forms the basis for the logical assignment of meter readings to a physical meter in a database.  
+Master (primary addressing) Slave (Adr = 0x01)
+REQ_UD2 (Short Frame, 0x10 0x7B 0x01 0x7C
+ 0x16)
+SND_NKE (Short Frame, 0x10 0x40 0x01 0x4
+1 0x16)
+ACK (Single Character, 0xE5)
+RSP_UD (Long Frame, 0x68 … 0x16)
+Mast Master (secondary addressing) Slave
+REQ_UD2 (Short Frame, 0x10 0x7B 0xFD 0x38 0x16
+)
+SND_NKE (Short Frame, 0x10 0x40 0xFD 0x3D 0x16
+)
+ACK (Single Character, 0xE5)
+RSP_UD (Long Frame, 0x68 … 0x16)
+SELECT (Long Frame, 0x68 ... 0x16
+)
+SND_NKE (Short Frame, 0x10 0x40 0xFD 0x3D 0x16
+)
+PDF PAGE 17
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  17/66 
+The header is followed by the meter data (with corresponding CI field) in the so -called variable data 
+format ( Variable Data Resp onse). This format is very powerful. Using DIF and VIF fields ( Data 
+Information Field  and Value Information Field ) and additional extensions, values and units can be 
+decoded from these combinations. The interpretation requires higher effort to implement th e software  
+for the master. 
+ Search for bus nodes (a) 2.10
+During commissioning, it is important that the connected devices can be detected and allocated by the 
+master. The primary search and the secondary search can be used for this purpose.  
+A master usually us es the short frame telegram REQ_UD for the primary search. By incrementing the 
+address in the address field, the 250 possible addresses can be addressed or searched. The existing 
+and addressed meters respond accordingly and are thus found. 
+In most cases, t he primary addresses of the slaves are neither configured nor clearly allocated after 
+installation. Therefore, the secondary search is very useful for initial commissioning. The method is 
+called Wildcard Search ; it uses wildcards to search all possible sec ondary addresses. This is an 
+iterative process that searches specific address ranges as a whole and, when one or more slaves are 
+detected (within that range), refines the search accordingly. The address range is logically understood 
+as a tree structure and  searched node by node. This process can take less than 10 minutes for small 
+networks or up to hours for large networks, depending on the bus structure and the secondary 
+addresses occurring. 
+ Unit load or meter? (a, p) 2.11
+The EN 13757 specifies a standard load (UL, unit load) of 1,5 mA. This is the current consumption that 
+a meter should not exceed in the idle state. Many meters are using 1 UL. High -quality measuring 
+systems or sensor couplers may require more energy from the M -Bus and therefore have a higher 
+current consumption. 
+This idle current consumption of meters is often specified as a multiple of the unit load. While meters 
+with 2 UL are still frequently found, there are also exotic sensor couplers which consume up to 16 UL. 
+However, the M-Bus standard only allows a maximum of 4 unit loads. 
+This must be taken into account in particular when selecting master devices and cables for an 
+installation. OMS-S2, Annex P, P.2.1.5 states that t he number of unit loads (UL) shall be listed in the 
+data sheet, and the number shall be printed on the device. 
+ Readout frequency (a, p) 2.12
+Since all M -Bus communication is initiated by the master, only the master determines how frequently 
+data is read out. The frequency thus results from the requirements of the system doing the f urther 
+processing. 
+Typical examples: 
+ Electricity meter for billing/load profile: quarter-hourly  
+ Water meter and thermal energy meter for billing purposes: daily 
+ Thermal energy meter for heating control: minute by minute 
+ Sensors for room monitoring: every minute 
+However, there are exceptions and limitations here.  
+Some meters, especially thermal energy meter s, do not take advantage of being supplied completely  
+from the M-Bus or at least having the communication part supplied from the M-Bus. These meters limit 
+the number of M -Bus readouts since the meter temporarily stops M -Bus communication to prolong 
+PDF PAGE 18
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  18/66 
+battery life time.  This can lead to difficulties when troubleshooting (see also [OMS -S2], Annex P, 
+P.2.1.9).  
+PDF PAGE 19
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  19/66 
+3 Planning and installation 
+ Introduction 3.1
+The planning and installation of M -Bus networks requires the consideration of many points, which are 
+described in this guide. Despite, or perhaps because of the simplicity of the M -Bus, misunderstandings 
+and errors often occur. In the following some aspects are described and recommendations are given. 
+ Device types (a, p) 3.2
+ Introduction 3.2.1
+An M-Bus network can connect different devices. For a consistent use of terminology, it is important to 
+know the different terms and to distinguish them from each other. Misunderstanding s can thus be 
+avoided. A list can be found below. 
+ Master 3.2.2
+The master on the M -Bus controls the communication process and is also responsible for the 
+operation of the M -Bus, i.e. the power supply. There must be exactly one master in each M -Bus 
+section. Examples of masters include: 
+ Level converter 
+ Gateway 
+ Data concentrator 
+ Slave 3.2.3
+The slave in the M -Bus is a communication partner of the master that answers the master's requests. 
+As a rule, a slave is providing measured data. Examples include: 
+ Consumption meter 
+ Pulse-M-Bus adaptor 
+ Analog-M-Bus adaptor 
+ Converter 3.2.4
+Converters have in common that M -Bus requests/responses are exchanged between master and 
+slave without modification of the data content and, apart from an optional power supply, do not actively 
+influence the communication. 
+A converter describes both level converters on layer 1 and 2 of the ISO/OSI layer model (i.e. voltage, 
+current and timing) as well as protocol converters on layer 2 and higher of the ISO/OSI layer model 
+(i.e. transparent forwarding of M -Bus requests or responses via third data access layers with 
+subsequent conversion to M-Bus). 
+Examples of converters are: 
+ Level converters: TTL/RS232/RS485 to M-Bus 
+ Protocol converters: M-Bus via Ethernet/USB tunnel 
+PCs or microcontrollers can be expanded by an M -Bus interface by means of a converter (Virtual 
+COM Port) and connected to an M -Bus. Converters are available both master -side and slave -side, 
+although in typical usage master-side converters are meant. 
+PDF PAGE 20
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  20/66 
+ Gateway 3.2.5
+Gateway refers to a converter on higher layers in the ISO/OSI layer model (e.g. layer 4 for TCP). Here, 
+the gateway first processes the M -Bus raw data by reordering, packaging, or (partial) interpretation or 
+modification, and then transmits it to the remote station. Examples of gateways are:  
+ Modbus TCP gateway 
+ Modbus UDP gateway 
+Gateways are pure communication nodes that do not provide their own data on the M -Bus. As a rule, 
+gateways are master devices. 
+ Repeater 3.2.6
+In general terms, a repeater is a signal amplifier that re -conditions the communicatio n signals for 
+transmission over a longer section. Extensive M -Bus networks with a large number of nodes can be 
+connected in this way. 
+For this purpose, the repeaters act on the one hand as slaves in the external network and on the other 
+hand as masters in the sub-network to be connected. The repeater thus provides the bus voltage and 
+the required unit loads in its sub -network. Furthermore, a repeater retains a defined number of 
+standard loads for itself. This relieves the actual master. The repeater forward s the communication 
+data unchanged to the respective opposite network. In addition, some repeaters can also operate 
+several M-Bus sections in parallel as a master. 
+A repeater does not provide its own data on the M -Bus, as it is designed purely as a communication 
+node. 
+ Splitter 3.2.7
+A splitter is generally used for splitting and distribution. This results in two constellations with the 
+M-Bus: 
+ Several masters on the same M-Bus network 
+ Several independent M-Bus networks on one master or several parts of an M -Bus network are 
+operated individually (reduction of unit loads) 
+Splitters can be used electronically or reali sed via simple switching elements (e.g.  relays). It should be 
+noted in any case that the M -Bus must be supplied with voltage for a minimum time after the  
+switchover (due to the associated voltage drop) so that all slaves are correctly initialized again and can 
+respond to incoming requests. 
+A splitter does not provide its own data on the M-Bus. 
+ Sniffer 3.2.8
+Sniffers are generally passive nodes in a communication  network. They are used to monitor 
+communication in order to analyze it more detailed with regard to e.g. troubleshooting. 
+A sniffer can also be used for a parallel data readout of M -Bus systems. This is advantageous for 
+extending existing installations or the connection to a changed infrastructure. 
+A sniffer does not provide its own data on the M -Bus, as it is designed as a passive communication 
+node. 
+ Concentrator/Data logger/Data center 3.2.9
+A concentrator is generally a data collector. In contrast to the gate way, the concentrator stores the 
+data, essentially in order to visuali se it later or forward it via remote access (WAN). A typical example 
+is the Smart Meter Gateway (SMGW). 
+PDF PAGE 21
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  21/66 
+Concentrators do not provide their own data on the M-Bus. 
+ Electrical installation (b, a, p) 3.3
+Before mounting and connecting the consumption meters, the installer or his customer must ensure 
+that the existing M -Bus network is installed and functions in accordance with the specifications of the 
+manufacturer of the M-Bus master: 
+ The electrical installation must comply with the standard rules of engineering and be carried 
+out professionally. 
+ Ideally, a cable of type J -Y(St)Y 2×2×0,8 mm ( wire cross-section 0 ,5 mm2, wire resistance 
+37 /km, cable capacitance 100 nF/km) or a cable of type LiYCY 2×1,5 mm2 (wire resistance 
+13 /km, cable capacitance 120 nF/km) should be used as the transmission medium. 
+ The necessary wire resistance as well as the cable capacitance must be taken into account 
+when designing the network.  
+ As network topology, star and  tree structure are permitted. Closed ring topologies are not 
+permitted. 
+ The shielding should be connected only to the M -Bus Master ground, but should be left open 
+at the slave side. 
+ Terminating resistors must not be installed in the network.  
+ Power connections or power supply units should be available for each required M -Bus master, 
+gateway, level converter or repeater. 
+ Cable lengths and number of meters can correspond to the following table (guide values), but 
+must follow the specifications of the supplier of the M-Bus master: 
+ 
+Table 2 – Cable type 0,5 mm2 (37 /km, 100 nF/km) 
+Baud rate/Number of 
+meters 
+10 50 150 250 
+300 baud  10000 m  2000 m  700 m  400 m 
+2400 baud  4000 m  2000 m  700 m  400 m 
+9600 baud  1000 m  1000 m  700 m  400 m 
+Possible cable lengths with all meters placed at the end of the cable network. 
+ 
+Baud rate/Number of 
+meters 
+10 50 150 250 
+300 baud  10000 m  3500 m  1200 m  700 m 
+2400 baud  4000 m  3500 m  1200 m  700 m 
+9600 baud  1000 m  1000 m  1000 m  700 m 
+Possible cable lengths with meters equally distributed in the cable network. 
+ 
+  
+PDF PAGE 22
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  22/66 
+Table 3 – Cable type 1,5 mm2 (13 /120 nF) 
+Baud rate/Number of 
+meters 
+10 50 150 250 
+300 baud  10000 m  8000 m  2800 m  1600 m 
+2400 baud  4000 m  4000 m  2800 m  1600 m 
+9600 baud  1000 m  1000 m  1000 m  1000 m 
+Possible cable lengths with all meters placed at the end of the cable network. 
+ 
+Baud rate/Number of 
+meters 
+10 50 150 250 
+300 baud  10000 m  10000 m  4800 m  2800 m 
+2400 baud  4000 m  4000 m  4000 m  2800 m 
+9600 baud  1000 m  1000 m  1000 m  1000 m 
+Possible cable lengths with meters equally distributed in the cable network. 
+ 
+Considering cable lengths, there are two aspects to be considered, the resistive length and the 
+capacitive length. 
+The resistive length is the maximum distance occurring between master and slave. This is caused by 
+the resistance of the bus wiring and must therefore also be considered when selecting the cross -
+section. 
+The capacitive length is the total length of all M -Bus lin es added together. This is caused by  the 
+capacitance of all installed cables. 
+ 
+  
+PDF PAGE 23
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  23/66 
+ Topology (a, p) 3.4
+ Introduction 3.4.1
+Topology refers to the spatial arrangement of the connection lines between the slaves and the master, 
+i.e. the readout device. The M-Bus allows the following topologies: 
+ Point-to-point 3.4.2
+In a point -to-point connection, exactly one end device (slave) is connected to exactly one readout 
+device (master). Such topologies are usually found with pulse interfaces or RS-232 interfaces. 
+ 
+Figure 4 - Point-to-point connection 
+This is used in an M-Bus system only if one meter is connected or if very large distances have to be 
+covered. This application does not use the advantages of a bus system. 
+ Linear 3.4.3
+Linear bus structures are usually ea sy to implement. The cabling effort and material usage is low. 
+However, the installation is increasingly error-prone with each additional connection. A disadvantage is 
+the commissioning and expansion of such systems and also the distance between the master  and the 
+outermost slave (resistive length). 
+ 
+Figure 5 - Linear bus topology 
+ Star 3.4.4
+Star connections are common and in principle the best bus topology. Here, a single device can be 
+removed or installed at any time without any major changes to the bus. Commissioning and 
+troubleshooting are also easier. The disadvantage is the extensive installation and the resulting cable 
+length of the entire bus (capacitive length). 
+
+PDF PAGE 24
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  24/66 
+ 
+Figure 6 – Star topology 
+ Combined 3.4.5
+The com bination of star and linear connections allows optimal use of the advantages and 
+disadvantages of each type. This structure is therefore most often seen in practice. The 
+implementation should generally be a good compromise between installation, commissioni ng and 
+maintenance effort. The resistive and capacitive length of the M-Bus should be considered carefully. 
+ 
+Figure 7 - Combined bus topology 
+  
+
+PDF PAGE 25
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  25/66 
+ Ring 3.4.6
+There are some special bus systems using ring structures. This cannot be used for  the M -Bus, 
+however. A ring structure does not take advantage of the reverse polarity protection, since the bus line 
+returns to the master device and enables the possibility for short circuits. Please do never use a ring 
+topology in M-Bus systems. 
+ Wiring (a, p) 3.5
+In order to ensure a high level of transmission reliability, wiring should be given high priority in bus 
+systems. The M-Bus is very robust against interferences, due to the high levels and data protection in 
+the protocol. Signal interferences can still lead to longer readout times, interruptions and data loss. 
+To minimize interferences the following basic rules should be considered: 
+ All cable connections should be as short as possible. 
+ All data cables should be routed as far away as possible from powe r cables and critical loads 
+such as motors, transformers, switchgear, and radio equipment. 
+ The cable should be used solely for the M-Bus. 
+ It is preferable to use cables with stranded wires. 
+ Shielded cables are preferred, but the shielding should only be co nnected at the master side. 
+The shielding should be connected through extensions/junctions. Cable shielding increases 
+the capacitance of the line, however. 
+ There should be no ground coupling via the M -Bus. The bus may be operated with a 
+maximum of one ground coupling (preferably master). The compensating currents which occur 
+otherwise via the bus system interfere with data transmission or can lead to the destruction of 
+individual devices. 
+ With the recommended cable J -Y(St)Y 2×2×0,8 mm, two wires remain for free use. In special 
+cases with a high voltage drop between the master and the slaves i t is recommended to 
+connect these two wires in parallel with the first two wires, and thus reduce the line resistance 
+of the cable connection. 
+ Common cable types (a, p) 3.6
+Standard lines such as those used in communications technology can be used for the cabling. The 
+following cables are suggested: 
+ Type J -Y(St)Y 2×2×0,6 mm: This cable is suitable for small installations and as a spur line 
+from distribution or junction boxes to a meter. 
+ Type J -Y(St)Y 2×2×0,8 mm: This cable is suitable for medium to large installations and for 
+main lines between the master and the distribution or junction boxes. 
+Technical data can be found in [OMS-S2], Annex P, P.3.1.1.1. 
+  
+PDF PAGE 26
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  26/66 
+ Distribution (a, p) 3.7
+The quality of the wire connections is essential for the quality of an M -Bus system. The following 
+recommendations should be considered for ensuring a secure connection, even after prolonged 
+operation: 
+ Spring clamp terminals should always be preferred to screw terminals. 
+ Stranded wires are only to be used with ferrules. 
+ Screw terminals must not be used without wire protection. 
+ A spring clamp terminal may only be used with one wire. For multiple wires, connecting 
+terminals with a corresponding number of springs must be used. 
+ For all spring terminals, especially those with plug -in terminal connection, the cross -section of 
+the terminal opening must be selected to match the wire diameter. 
+The distribution systems must be secured with seals in order to guarantee the requirements for billing 
+relevant remote meter reading. This must be provided, if necessary. 
+ Recommendations for action (a, p) 3.8
+Certain solutions have been established in daily use: 
+ Multiple unused wire pairs in a cable can be used for a later expansion of the M-Bus network. 
+ Larger distances can be achieved by dividing the network into several or smaller sections (i.e. 
+fewer devices per section).  
+ Star cabling close to the master simplifies subsequent troubleshooting and allows individual 
+sections to be easily disconnected. 
+ Gateways and media converters (a, p) 3.9
+In larger distributed systems, but also in existing installations, the M -Bus is not completely installed in 
+one piece. Due to expansion, galvanic coupling or structural conditions the M -Bus is split  into parts. 
+Individual sections are then sometimes logically connected to each other via LAN infrastructure such 
+as Ethernet or fiber optics. 
+Gateways or media converters must be inserted in such systems. 
+The use of such devices increases the parametri sation effort, however, and implies a possible source 
+of error. Such a configuration should be carefully planned and prepared. Here are some examples:  
+ The IP addresses must be configured correctly (for example: IP, subnet, gateway). 
+ The appropriate LAN standa rd must be supported by all devices (for example:  Ethernet TCP, 
+Multi-Mode-FO). 
+ Master and slaves must be distributed correctly in each M-Bus section. 
+ The communication sequence must match (e.g. Unicast, Broadcast, Point-To-Point). 
+ Both communication directions (sending and receiving) are covered. 
+ 
+  
+PDF PAGE 27
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  27/66 
+ Typical installations (a, p) 3.10
+ M-Bus Master as readout device 3.10.1
+In this installation variant, a device communicates as an M -Bus master directly with the M -Bus slaves 
+via an integrated M -Bus interface. The M -Bus protocol is processed in the respective devices for the 
+M-Bus master and the M-Bus slave(s). 
+ 
+Figure 8 - Readout by means of M-Bus master 
+ PC as readout device 3.10.2
+In the following installation variant, the PC acts as M -Bus master and com municates with the M -Bus 
+slaves via converter. The converter forwards the requests of the master transparently (i.e. without 
+changing the data) to the respective slaves. The same applies to the corresponding responses of the 
+slaves to the master. The M -Bus protocol is processed in the respective devices for the M -Bus master 
+and the M-Bus slave(s). 
+ 
+Figure 9 - Readout by means of level converter 
+ Integration into networks 3.10.3
+The stand-alone solutions described above can basically be int egrated into a network in three different 
+ways, but all solutions require an additional interface at the device that acts as M -Bus master. In this 
+context, a device acting as an M -Bus master without intermediate storage of M -Bus data is referred to 
+as a gateway, and with intermediate storage of M -Bus data, as a concentrator. This integration into a 
+network can be done via an M -Bus interface with corresponding protocol stack or via customer -
+specific interfaces, protocols and data formats: 
+ Client/push operation: The device acting as M -Bus master independently (i.e. periodically or 
+event-controlled) establishes connection(s) with previously configured system(s) and transmits 
+the data requested (gateway) or collected (concentrator) via M -Bus, as for example when  
+connecting to a database. 
+  
+
+PDF PAGE 28
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  28/66 
+ 
+Figure 10 - Client/push operation 
+ Server/pull operation: The device acting as M -Bus master waits for incoming connection(s) in 
+order to subsequently transmit the data requested (gateway) or collected (concentrator) via M-
+Bus, as for example with a connection via Modbus client. 
+ 
+Figure 11 - Server/pull operation 
+ Peer/push-pull operation: Furthermore, a variety of scenarios are conceivable in which the role 
+of the device acting as M-Bus master cannot be clearly defined, so that a mixture (peer) of the 
+previously described roles can exist either temporarily or continuously.  
+ 
+Figure 12 - Peer/Push-pull operation 
+ Reading of large networks 3.10.4
+Large networks have two potential challenges: 
+ Large expansion and the resulting line resistances or capacitances  
+ Large number of meters and the resulting high load on the master 
+The most obvious solution for this is the use of repeaters in order to be able to reach all M -Bus slaves 
+in a common network by means of one M-Bus master. 
+Repeaters can be inserted into the M -Bus line for long distances. In this way, they amplify the signals 
+in their respective sub -section. The applicability of this principle is only limited by signa l propagation 
+times. 
+Repeaters can also be used with a large number of meters. The high current demand of the meters 
+can thus be distributed among several (individual) masters with their sub -sections. The only limit to be 
+mentioned here is the addressability of the meters (primary address: 250/ID of the secondary address: 
+100,000,000). However, with each additional meter the readout cycle of all meters increases 
+(300 baud  approx. 8 s per meter, 2400 baud  approx. 2 s per meter, 9600 baud  approx. 1 s per 
+meter). 
+
+PDF PAGE 29
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  29/66 
+ 
+Figure 13 - Use of repeaters for many meters 
+Alternatively, large networks can be separated into several M -Bus sections, which do not necessarily 
+need a physical or logical connection to each other, but can be aggregate d via a common network , if 
+necessary. 
+This approach requires the use of gateways or concentrators, as these act as physical M -Bus masters 
+and can convert the data into an appropriate format, each for the connected medium (see section 
+3.9.3). 
+The logical difference between the variants is the location where the meter data is processed.  
+With Ethernet gateways, meter reading is the responsibility of the master computer. This makes the 
+requests to each meter and must process the response. Then it must convert t he response into a 
+format for the further processing layers, since the Ethernet gateways only make the raw M -Bus data 
+available to the master computer. 
+With Modbus TCP gateways the meter reading and conversion of the data is done directly by these 
+gateways. The master computer then only accesses the values stored in the registers as a Modbus 
+client. These correspond to a standardised format and can therefore be processed directly. 
+In both variants, the master computer must be able to address a corresponding  number of gateways 
+via individual virtual COM-ports,generic TCP or Modbus TCP connections. 
+
+PDF PAGE 30
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  30/66 
+ 
+Figure 14 - Use of gateways in distributed systems 
+ 
+  
+
+PDF PAGE 31
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  31/66 
+4 Troubleshooting (a) 
+ Introduction 4.1
+Problems occasionally occur in M -Bus systems. Thes e are usually caused by faults in the 
+infrastructure, defects in meters or incompatibilities. The following chapters show methods to detect, 
+isolate and eliminate errors. 
+ Testing of the M-Bus network (a) 4.2
+ Introduction 4.2.1
+One source of error in M -Bus systems ca n be a non -functional M-Bus cable network. Cabling plans 
+including topology with information on cable lengths and types (please observe the recommendation 
+for cable types, see [OMS -S2], Annex P, P.3.1.1.1) as well as the installation locations of junction 
+boxes should serve as a basis for the testing of the M-Bus network. 
+Simple defects can be detected and localised step by step with the help of a multimeter. 
+These measurements should be performed without any communication taking place on the M -Bus. 
+ Voltage measurement 4.2.2
+The voltage is measured between the two lines of the M -Bus by means of a multimeter while they are 
+connected to the master. 
+ 
+Figure 15 - Voltage measurement on the M-Bus 
+The multimeter must be set to a voltage range of at least 50 V DC. 
+  
+SlaveSlave Slave
+Master
+V V V
+PDF PAGE 32
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  32/66 
+ Current measurement 4.2.3
+The current measurement is carried out by means of a multimeter in alternation between both lines of 
+the M-Bus directly at the master, while these are connected with one wire to the master and with the 
+other wire to the multimeter. 
+ 
+Figure 16 - Current measurement on the M-Bus 
+The multimeter must be set to a current range of at least 1 A DC. 
+ Resistance measurement 4.2.4
+The resistance measurement is carried out by means of a multimeter between th e two lines of the 
+M-Bus while the master is not connected. 
+ 
+Figure 17 - Resistance measurement on the M-Bus 
+The multimeter must be set to a resistance range of at least 100 kΩ. 
+  
+A
+SlaveSlave Slave
+Master
+A
+Ω
+SlaveSlave Slave
+Master
+PDF PAGE 33
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  33/66 
+ Capacitance measurement 4.2.5
+The capacitance measurement is carried out by means of an appropriately equipped multimeter 
+between the two lines of the M-Bus while the master is not connected. 
+ 
+Figure 18 - Capacitance measurement on the M-Bus 
+Set the multimeter to a capacitance range not exceeding 1 µF. 
+ Evaluation 4.2.6
+The  following table gives the range of good values for intact M -Bus networks based on the 
+previous measurements: 
+Table 4 – Expected values for a functioning M-Bus 
+Measurement Valid range/setpoint 
+Voltage at the master a Approx. 3042 V DC 
+Voltage at the meter ≥24 V DC 
+Current in one of the M-Bus lines ≤Number of connected slaves × 1,5 mA b 
+Difference of the currents in both M-Bus lines <1 mA 
+Resistance M-Bus c >>470  
+Resistance per both M-Bus lines to PE 
+(protective earth) 
+>20 M 
+Capacitance M-Bus <1 µF 
+a  For the specific voltage values, consult the specification/data sheet of the master.  
+b  Assuming that every  slave consumes 1  UL (=1,5 mA) (up to 4  UL are allowed per slave ). 
+Examples: 30 slaves = 45 mA, 250 slaves = 375 mA 
+c This value is measured using a digital multi meter with a measuring voltage below 9 V. 
+ 
+  
+F
+SlaveSlave Slave
+Master
+PDF PAGE 34
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  34/66 
+ Fault analysis and localisation in the M-Bus network (a) 4.3
+ Introdcution 4.3.1
+Based on these measurements, appropriate steps can be taken to locate faults.  
+ Voltage at master too low 4.3.2
+With a master conne cted to the M -Bus, the voltage between both M -Bus connections is too low. 
+Proceed as follows: 
+ Disconnect the M -Bus from the master and measure again. If a valid voltage is now present, 
+there is an error in the M -Bus network. For this, measure the resistanc e and current on the 
+M-Bus. 
+ If the voltage is still too low even after disconnecting the M -Bus from the master, there is a 
+defect in the master. Check its power supply and status indicators. 
+The master may be a device that operates with lower bus voltages specifically for small installations 
+(local bus). This may cause compatibility problems with the slaves. 
+ Voltage at slave too low 4.3.3
+With a slave connected to the M -Bus, the voltage between both M -Bus connections is too low. 
+Proceed as follows: 
+ Measure the voltage at the master. If it is too low, first follow the steps in section 4.3.2. 
+ If the voltage at the master is in a valid range, the voltage drop on the M -Bus is too high. 
+Measure the resistance of the faulty section by perfor ming the resistance measurement 
+according to section 4.2.4, first performing a normal measurement and then a second 
+measurement with the M -Bus lines short -circuited at the point where the too -low voltage was 
+detected. According to clause 4.2.4 the first measurement should result in a value >>470  , 
+the second measurement a value <<470 . 
+ 
+Figure 19 - 2nd resistance measurement with short circuit on critical path 
+ If the loop resistance is too high, replace the cable. 
+ 
+  
+Ω
+SlaveSlave Slave
+Master
+PDF PAGE 35
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  35/66 
+ Resistance on the M-Bus is too low 4.3.4
+If the resistance measurement shows that the total resistance of the bus system is too low, proceed as 
+follows: 
+ Disconnect sections, parts or meters from the M-Bus step by step, continuously measuring the 
+resistance between the master -side line ends. As soon as the resistance  is in a valid range  
+again, the cause of the fault has been narrowed down and can now be located step by step by 
+connecting and disconnecting. Fix the cause of error accordingly. 
+ If the resistance is still too low despite disconnecting all meters or sections, there is a short 
+circuit in the cable that is currently still connected. Replace the cable. 
+ Proceed similarly when searching for connections to PE (protective earth). 
+ Current through M-Bus is too high 4.3.5
+If the current measurement shows that the current consumption of the entire bus is too high, proceed 
+as follows for further analysis: 
+ Disconnect sections, parts or meters of the M -Bus step by step while cont inuously measuring 
+the current. As soon as the current is in a valid range  again, the cause of the fault has been 
+narrowed down and can now be located step by step. Fix the cause of error accordingly. 
+ If the current is still too high despite disconnecting all meters or sections, there is a short 
+circuit in the cable that is currently still connected. Replace the cable. 
+ A short circuit can also exist to PE (protective earth). Check this by means of the resistance 
+measurement. 
+ Capacitance in M-Bus too high 4.3.6
+Capacitance that is too high leads mainly to a situation where packets can no longer be transmitted 
+correctly from the master to the slave. Disconnect the M-Bus from the master and continue as follows: 
+ Disconnect sections, parts or meters of the M -Bus step b y step, continuously measuring the 
+capacitance between the master -side line ends. As soon as the capacity is in a valid range  
+again, the cause of the fault has been narrowed down and can now be located step by step by 
+connecting and disconnecting. Fix the cause of error accordingly. 
+ If the capacitance is still too high despite disconnecting all meters or sections, there is a fault 
+in the cable that is currently still connected. Replace the cable. 
+ Special case of dynamic errors 4.3.7
+Under certain circumstances, a n error may also occur dynamically, specifically caused by a defective 
+device on the bus. For troubleshooting, measurements must be taken here during operation, possibly 
+also during ongoing communication. 
+For this purpose, it is helpful to record voltage a nd current curves with an oscilloscope and then to 
+isolate the fault by connecting and disconnecting them step by step, similar to the procedure described 
+above. It is not possible to describe the procedure here in general terms. 
+  
+PDF PAGE 36
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  36/66 
+Some error patterns are: 
+ Slave modulates current consumption sporadically/cyclically although no communication is 
+taking place. 
+ Interference signals are measured on the M-Bus (see section 4.5). 
+ The slew rate of the transmit and receive signals is very low. 
+ Voltage at the master or slave drops cyclically or briefly. 
+ High ripple of the M-Bus voltage 
+ Other installation errors 4.3.8
+In practice, other installation errors occasionally occur: 
+ Slaves are not M -Bus-capable; it is possible, for exampl e, that a meter has a pulse output 
+instead of an M-Bus interface 
+ Master or slave are specified for the local bus according to EN 13757-6 and are therefore not 
+compatible with EN 13757-2 
+ The configuration of media converters, gateways and level converters d oes not match the  
+installation (Who is master? Who is slave? Does each section have a master?).  
+ Testing of communication (a) 4.4
+ Introduction 4.4.1
+In case of incorrect parametri sation of the bus nodes or incompatibilities, communication may still be 
+disrupted, despite an intact infrastructure. Here, the communication process must be analysed. 
+Here it is helpful to record voltage and current characteristics using an oscilloscope. Th is signal 
+diagram can be compared with the data received at the master. 
+ 
+Figure 20 - Recording of communication (red = transmit, yellow = receive) using an oscilloscope 
+When measuring with an oscilloscope, it should be  ensured that the measurement is galvanically 
+insulated (floating). The signal ground of oscillosc opes is usually on PE. For that reason, the signal 
+ground must not be connected to one of the M-Bus lines. Differential probes should therefore be used. 
+
+PDF PAGE 37
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  37/66 
+The current measurement can be carried out by means of a series -connected measuring resistor 
+(e.g. 10 ). However a sensitive DC clamp is more suitable for floating measurements.  
+Some typical sources of error and possible remedies are described below.  
+ Addresses not unique 4.4.2
+All communication on the M -Bus uses the address of a slave (primary or secondary addre ss). If these 
+are not uniquely assigned, collisions occur on the bus, which lead to data inconsistencies.  
+This occurs frequently especially during primary addressing and initial commissioning, since many 
+slaves have a 0 as their primary address ex works and thus respond simultaneously. 
+This can be remedied by: 
+ assigning unique primary addresses to all slaves before the readout; 
+ switching to secondary addressing (uniqueness is very likely). 
+Under certain circumstances, the bus must also be put into operation  slave by slave if, e.g. the primary 
+address can only be set via master telegrams. 
+ Secondary addressing not possible 4.4.3
+If a slave does not support secondary addressing, although this is mandatory according to [OMS -S2], 
+Annex P, P3.1.2.2, primary addressing m ust be used. For this it is important that the slaves have 
+correspondingly unique addresses. You can find out more about this in the section 4.4.2. 
+ Slaves do not always respond 4.4.4
+Not all slaves can process the requests of the M -Bus master at all times. Often the internal structure of 
+the slaves is responsible for this. If, for example, a slave uses two microcontrollers which exchange 
+measurement and communication data, the M -Bus communication may be blocked during the internal 
+communication.  
+According to [OMS -S2], Annex P, P.2.1.9, a slave must actually always be addressable. However, it 
+can be declared in the [MANDEC] that the slave is not addressable under certain conditions.  
+The M -Bus master can compensate for this behavior by longer timeouts or multiple requests of the 
+slaves. 
+ Wrong baud rate is used 4.4.5
+The M-Bus operates according to EN  13757-2 with baud rates of 300, 2400 or 9600  baud. According 
+to [OMS-S2], Annex P, P.2.2.1, a slave must support at least the baud rates 300 and 2400 baud. It 
+must also support automatic detection for all baud rates.  
+Usually a baud rate of 2400 is used. However, not all slaves can handle this baud rate or they have to 
+be switched to this baud rate if they do not have automatic baud rate detection.  
+It can also happen that due to faulty implementation in the slave or master, the baud rates have too 
+great a deviation from the nominal value. The baud rate used can be determined relatively easily using 
+an oscilloscope. 
+The following procedure is recommended for possible baud rate problems: 
+ The master operates consecutively with the 3 standard baud rates. 
+ The slaves are set to a specific baud rate by means of a master telegram or user input.  
+ Slaves with baud rates deviating from the standard should be rep laced or operated in isolation 
+with a fixed master configuration. 
+PDF PAGE 38
+Open Metering System Technical Report 09 - Guide For Wired M-Bus-Installations 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  38/66 
+ Error in telegram header 4.4.6
+Under certain circumstances, it can happen that the data in the header of a telegram is not correct. 
+Well-known examples of this are: 
+ a slave outputs a different secondary address than the one under which it responds 
+ a slave uses hexadecimal numbers (0xA-0xF) in the secondary ID 
+ a slave specifies the use of encryption, but the data is not encrypted or is encrypted differently 
+than specified 
+The approach cannot be specified in general terms for such error patterns. A robust master software is 
+necessary here. 
+ Use of other protocols 4.4.7
+The M-Bus uses robust physics according to EN  13757-2. There are products on the market that use 
+the same physics but use different protocols  for communication. Principally, this is permissible, but it 
+leads to misunderstandings and enormous effort on the master side. Hybrid structures are not 
+recommended. 
+ Malfunctions on the M-Bus (a) 4.5
+Interference can occur on the M -Bus particularly in industr ial environments and in the context of large 
+expansions. Such disruptions can be detected and recorded by means of an oscilloscope. Here, 
+voltage levels are affected much more than current levels. 
+A typical fault pattern is short interference packets with significant voltage levels and high frequencies. 
+Switchgear in power engineering (e.g. inverters, frequency converters) are often the cause of such 
+disruptions. These usually couple from the energy network into the M -Bus network if they are not 
+operated wi th spatial separation. Due to the high levels, these interferences can disrupt 
+communication or even damage some M-Bus nodes temporarily or permanently. 
+Due to the high frequency components, these interferences can be partly suppressed by connecting 
+additional capacitors to the M -Bus. However, the total capacitance on the M -Bus and the performance 
+of the M -Bus master must be taken into account. Depending on the baud rate and the master, it 
+should never exceed a value of 1  µF. A stepwise increase, starting w ith values <100  nF, is 
+recommended here (see also sections 4.2.5, 4.2.6 and 4.3.6). 
+If the possibility exists, it is recommended to check the cabling. If possible, shield ed cables should be 
+used and these should be placed spatially separated from the power supply system, see also 
+sections 3.5 and 3.6. 
+ 
+ 
+ 
+PDF PAGE 39
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  39/66 
+Deutsche Ausgabe 
+1 Vorwort 
+Dieser technische Bericht wurde von der OMS-Arbeitsgruppe AG4 erstellt und dient als Planungs- und 
+Installationsleitfaden für Installateure und Planer von verkabelten M-Bus-Systemlösungen. 
+ 
+  
+PDF PAGE 40
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  40/66 
+2 Der M Bus - ein Überblick 
+ Einleitung (b, a, p) 2.1
+M-Bus ist ein Bussystem, das speziell für die Auslesung von Verbrauchszählern geeignet ist.  
+Ein M-Bus-System besteht aus einem M-Bus-Master und einer Anzahl von Zählern mit M-Bus-
+Schnittstelle.  
+Ein Netz kann verschiedene Gerätetypen und Hersteller beinhalten. 
+Der kabelgebundene M --Bus ("Meter-Bus") wurde i n den 1980er Jahren zur Ablesung und Erfassung 
+von Verbrauchsdaten aus Verbrauchszählern entwickelt. Die physikalischen Parameter und die 
+Parameter der Verbindungsschicht für die drahtgebundene Kommunikation über verdrillte 
+Doppelleitungen wurden ursprünglich in EN 1434-3:1997 ("M-Bus") für Wärmezähler festgelegt. Heute 
+ist der drahtgebundene M -Bus nach EN  13757 genormt. Diese Norm ist eine kompatible und 
+interoperable Aktualisierung eines Teils der EN  1434-3:2008 und umfasst auch andere Messmedien 
+(z.B. Wasser, Gas, thermische Energie, Heizkostenverteiler). Heute ist der drahtgebundene M -Bus in 
+allen Arten von Verbrauchszählern zu finden und hat sich als eigenständiger Standard und mit einem 
+offiziellen Logo etabliert. 
+ 
+Abbildung 1 - Offizielles M-Bus-Logo 
+ 
+Diese Installationsanleitung richtet sich an verschiedene Schwerpunktgruppen (siehe  Tabelle ). 
+Tabelle 1 – Drei Versionen dieses Installationshandbuchs 
+Kapitel Grundlegender 
+Installationsleitfaden 
+(b) 
+Erweiterter Leitfaden 
+(a) 
+Planer Leitfaden(p) 
+2.1 bis 2.4 X X X 
+2.5 bis 2.9  X  
+2.10, 2.11  X X 
+3.1  X X 
+3.2 X X X 
+3.3  X X 
+3.4 bis 3.9  X X 
+4  X  
+ 
+ Die Norm EN 13757 (b, a, p) 2.2
+Der kabelgebundene M -Bus ist ein integri erter Bestandteil einer Normenfamilie - der EN  13757-
+Familie. 
+Diese Normenfamilie wird von einem Technischen Komitee (TC  294) im CEN gepflegt. 
+CEN Technical Bodies - CEN/TC 294 (cencenelec.eu) 
+
+PDF PAGE 41
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  41/66 
+ 
+Zum Anwendungsbereich von CEN/TC 294 gehören: 
+Normung von Kommunikationsschnittstellen für Mess - und Submetering-Systeme für Wasser, 
+Treibstoff, Gase, Wärme und ähnliche Energien und Flüssigkeit en, wobei die Protokolle auf 
+die Zähler, Sensoren und Aktoren und Systeme angewendet werden, die zur Erbringung von 
+Messdienstleistungen verwendet werden. Sicherheitsmerkmale wie Vertraulichkeit, 
+Authentizität und Integrität werden bei der Anwendung und de n unteren Schichten 
+bereitgestellt. Die Zusammenarbeit mit CENELEC und ETSI in Bezug auf ein einheitliches 
+Protokoll und die Nutzung des Frequenzspektrums ist eine wesentliche Voraussetzung für die 
+Erreichung der Interoperabilität zwischen den Einheiten de r Systeme.  Ausgenommen sind 
+Bereiche, die in die Zuständigkeit von CLC/TC 205 und CEN/TC 247 fallen. 
+ 
+Die Version 2021 der EN 13757-Familie "Kommunikationssysteme für Zähler" besteht aus 7 Teilen 
+und einem technischen Bericht TR 17167. 
+ Kommunikationssysteme für Zähler - Teil 1: Datenaustausch 
+ Kommunikationssysteme für Zähler - Teil 2: Drahtgebundene M-Bus-Kommunikation 
+ Kommunikationssysteme für Zähler - Teil 3: Anwendungsprotokolle 
+ Kommunikationssysteme für Zähler - Teil 4: Drahtlose M-Bus Kommunikation 
+ Kommunikationssysteme für Zähler - Teil 5: Weitervermittlung für den drahtlosen M-Bus 
+ Kommunikationssysteme für Zähler - Teil 6: Lokales Bussystem 
+ Kommunikationssysteme für Zähler - Teil 7: Transport- und Sicherheitsdienste 
+ 
+ Kommunikationssysteme für Zähler - Begleitender TR zu EN 13757-2, -3 und -7, Beispiele und 
+zusätzliche Informationen 
+ Die Norm EN 13757-2 (b, a, p) 2.3
+Die EN 13757-2 wird von TC 294/WG4 (Arbeitsgruppe 4) gepflegt  
+CEN Technical Bodies - CEN/TC 294/WG 4 (cencenelec.eu) 
+Zum Anwendungsbereich der CEN/TC 294/WG4 gehören: 
+Erarbeitung, Pflege und Weiterentwicklung von Standards für die unteren Schichten für den 
+bidirektionalen drahtgebundenen Datenaustausch und für die oberen Schichten für den uni - und 
+bidirektionalen Datenaustausch von Messsystemen unter Berücksichtigung:  
+- des Anwendungsbereichs des CEN/TC 294; 
+- der nominellen Lebensdauer der Geräte auf dem Markt. 
+Beibehaltung von EN 1434-3, die bei CEN/TC 176 angesiedelt ist. 
+ Das Prinzip der verdrahteten M-Bus-Kommunikation (b, a, p) 2.4
+Der M -Bus arbeitet nach dem Single -Master/Multiple-Slave-Prinzip und somit mit einem zentralen 
+Gerät (M-Bus-Master, M-Bus-Repeater), das mit M -Bus-Slaves kommuniziert. So können z. B. bis zu 
+250 M -Bus-Slaves (unter Verwendung von Primäradressen) an einen einzigen M -Bus-Master 
+angeschlossen werden.  
+Die M -Bus-Slaves haben eine Primär - und eine Sekundäradresse. Auch eine erweiterte 
+Sekundäradresse ist möglich. 
+ Primäradresse (000-250) 
+ Sekundäradresse (M-Bus ID-Nr. 00000000-99999999 / Hersteller, Gerätetyp, Version) 
+PDF PAGE 42
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  42/66 
+ Erweiterte Sekundäradresse (M-Bus ID-Nr. 00000000-99999999 / Hersteller, Gerätetyp, Version / 
+M-Bus Fabrikations-Nr. 00000000-99999999) 
+Die Kommunikation auf dem M-Bus wird immer vom M-Bus-Master initiiert. Wenn er eine Anfrage oder 
+einen Befehl über den M -Bus sendet, wird dieser von allen M -Bus-Slaves empfangen. Anhand der 
+übertragenen Adresse wird ein M -Bus-Slave angesprochen, der die Anfr age bearbeitet und 
+gegebenenfalls beantwortet.  
+Darüber hinaus kann der M -Bus über Broadcast kommunizieren, wobei alle an den Master 
+angeschlossenen Slaves den gleichen Befehl (z.B. ein Normalisierungsbefehl) erhalten.  
+Für große M -Bus-Netzwerke wird empfoh len, die sekundäre/erweiterte sekundäre Adresse zu 
+verwenden, die für jeden Zähler eindeutig ist. Die Kommunikation dauert zwar etwas länger, aber auf 
+diese Weise kann man theoretisch bis zu 100 Millionen Zähler direkt ansprechen, ohne dass ein 
+Anfangsaufwand für die Parametrierung entsteht. Dies ist insbesondere bei neuen und großen M -Bus-
+Installationen von Vorteil. 
+Die primäre Adressierung eignet sich für kleinere Systeme und höhere Ausleseraten. Darüber hinaus 
+kann die Adresse an den meisten Zählern para metriert werden. Der Installateur kann daher zwei 
+identische Zähler austauschen, z. B. zu Wartungszwecken, ohne die Ausleseinfrastruktur anpassen zu 
+müssen. Nur die Primäradressen müssen übereinstimmen. 
+ Installation und Topologie (b, a, p) 2.5
+Besonders bei de r Installation spielt der kabelgebundene M -Bus seine Vorteile aus. Für den 
+Anschluss der Geräte ist lediglich eine zweiadrige Kabelverbindung notwendig, wobei die Topologie 
+(Baum, Stern, Bus) des Netzwerks frei gewählt werden kann. Außerdem ist der Zweidra htanschluss 
+polaritätsunabhängig. 
+Es ist zu beachten, dass die Abschirmung nur mit der Erdpotential des M -Bus-Masters verbunden ist, 
+aber an der Slaveseite offen ist, um Masseschleifen zu verhindern. 
+Die maximale Ausdehnung des M -Bus ist abhängig vom Leitu ngsquerschnitt, der Baudrate und der 
+Anzahl der Geräte am Bus. 
+Es wird dringend empfohlen, immer Twisted-Pair-Kabel zu verwenden. 
+ Kommunikation und Spannungsversorgung (a) 2.6
+Der größte Vorteil des M -Bus liegt darin, dass dieser eine direkte Spannungsversorgu ng der 
+Busteilnehmer ermöglicht.  
+Für die Kommunikation nutzt der M -Bus Spannungs - und Strommodulation. Der Master sendet die 
+ausgehenden Daten durch eine Modulation der Spannung auf dem Bus zwischen der Mark -Spannung 
+(logisch 1) von 24 bis 42  V und der Sp ace-Spannung (logisch  0), die etwa 12  V unterhalb der Mark -
+Spannung liegt. Einige gängige Master schalten z.B. zwischen 36  V (Mark) und 24  V (Space) um. 
+Beide Zustände gewährleisten die kontinuierliche Versorgung der Slaves. Diese detektieren die 
+Spannungspegel und können so die Daten empfangen. Die Slaves antworten hingegen durch eine 
+Strommodulation mit einem Pegel von maximal 1,5  mA für logisch 1 und einer Pegelerhöhung um 11 
+bis 20 mA für logisch  0. Im Ruhezustand geben sowohl Master als auch Slave logi sch 1 auf den Bus 
+aus, daher liegen am Master im o.g. Beispiel 36  V an, und jeder Slave nimmt maximal 1,5  mA Strom 
+auf. 
+Ein Slave mit einer sogenannten Standardlast darf maximal 1,5  mA Strom aufnehmen. Die M -Bus 
+Norm erlaubt die Verwendung von bis zu 4  Standardlasten (max. 6,0  mA) für einen Slave. OMS-S2, 
+Annex P, P.2.1.5 legt fest, dass die Anzahl der Standardlasten (UL) im Datenblatt aufgeführt und auf 
+den Slave aufgedruckt werden muss. 
+PDF PAGE 43
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  43/66 
+ 
+Abbildung 2 - Bitdarstellung beim M-Bus am Beispiel eines Masters mit 36 V Mark-Spannung 
+Für den M -Bus sind die Übertragungsraten 300, 2400,  9600, 19200 und 38400  Baud vorgesehen, 
+wobei meist 2400  Baud Verwendung findet.  Nach EN1375 7 ist die Unterstützung von 300  Baud für 
+alle M-Bus Endgeräte vorg eschrieben und automatische Baudratenerkennung empfohlen. Allerdings 
+muss nach [OMS -S2], Annex P, P.2.2.1 ein M -Bus Endgerät sogar 300 und 2400  Baud unterstützen; 
+weiterhin ist die automatische Baudratenerkennung vorgeschrieben. 
+ Anforderungen an den Master (a) 2.7
+Ein wesentliches Merkmal ist, dass der Master die Versorgung der Slaves gewährleisten muss. Bei 
+36 V Busspannung und 250 möglichen Slaves ergibt sich bereits im Ruhezustand eine Leistung von 
+über 13  W. Außerdem stellt der Master beispielsweise sowohl 24 V als auch 36  V Busspannung 
+bereit, zwischen denen er für eine saubere Kommunikation innerhalb von deutlich weniger als 100  µs 
+wechseln muss. 
+Für die Empfangslogik genügt es nicht, lediglich den Strom zu messen. Ab ca. sieben Teilnehmern ist 
+der Absolutwert nicht mehr eindeutig zuordenbar. 20 Slaves beispielsweise können im Ruhezustand 
+(logisch 1) 25  mA aufnehmen, dies entspricht aber durchaus auch fünf Slaves, von denen einer 
+gerade ein logisch  0 sendet. Dies erfordert eine aufwendige Stromdetektion und  vor allem die 
+Erkennung des Ruhestroms. 
+Strommodulationen oberhalb von 50  mA müssen als Kollision erkannt werden. Die tritt auf, wenn 
+mehrere Slaves gleichzeitig antworten. Überlagerung und Verfälschung der Antwortdaten wären die 
+Folge. Die Empfangslogik bedarf daher dreier adaptiver Stromschwellen: Kollision, logisch  0 und 
+logisch 1 (Ruhestrom). 
+ Datenformate und Telegramme (a) 2.8
+Für die Kommunikation dienen Datentelegramme, die in EN 13757-2 spezifiziert sind. 
+Das einfachste Telegramm ist das Einzelzeichen (Single Character), welches beim M -Bus zur 
+Quittierung genutzt wird. Weitere Telegramme sind der Kurzrahmen ( Short Frame) mit 3  Byte 
+1 0
+Busspannung
+VMark = 36V
+VSpace = 24V
+(Beispiel)
+Wechsel des Spannungspegels
+Logische 1 = VMark = 24 .. 42 V
+Logische 0 = VSpace = VMark - 12 V
+Zeit
+* *
+* erhöhter Strompegel führt zu kleinem Spannungs-
+abfall der Busspannung am Widerstand der Leitung 
+und den Messwiderständen
+10
+Busstrom
+ISpace = 21,5 mA
+Wechsel des Stromspegels
+Logische 1 = IMark = max. 1,5 mA
+Logische 0 = ISpace = IMark + 11..20 mA
+Zeit
+ISpace = 12,5 mA
+IMark = 1,5 mA
+Master sendet Slave sendet
+PDF PAGE 44
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  44/66 
+Nutzdaten, der Langrahmen ( Long Frame) mit bis zu 252  Byte angehängten Nutzdaten und der 
+Kontrollrahmen (Control Frame) ohne Nutzdaten. 
+Die Kommunikation wird beim M -Bus stets vom Master initiiert. Es werden zwei Arten von 
+Übertragungsdiensten genutzt. Zum einen ist es das Prinzip Senden -Bestätigen und zum anderen das 
+Prinzip Anfrage-Antwort. 
+Die kürzeste Kommunikation ergibt sich aus dem Telegramm SND_NKE zur Initialisierung der Slaves. 
+Der Master sendet es als Kurzrahmen und erhält als Bestätigung ein Einzelzeichen.  
+Die gleiche Antwort erhält er beim Langrahmen des Telegramms SND_UD zum Senden von 
+Nutzdaten an die Slaves. Hie rmit lässt sich beispielsweise das Datum ändern oder eine 
+Parametrierung vornehmen. 
+Zum Auslesen der Daten (z.  B.: Zählerstand) aus den Slaves versendet der Master ein Kurzrahmen -
+Telegramm ( REQ_UD1 oder REQ_UD2). Auf beide Anfragen antwortet der Slave mit einem 
+Langrahmen-Telegramm RSP_UD, welches die angeforderten Daten enthält. 
+Statusdaten werden abgefragt, indem der Master das Telegramm REQ_SKE als Kurzrahmen sendet 
+und die Antwort RSP_SKE, als Kurz- oder Langrahmen, erhält. 
+     
+Abbildung 3 - Vergleich von Primär- und Sekundäradressierung am Beispiel 
+ Nutzdatenaustausch (a) 2.9
+Für die Übertragung der Nutzdaten dient das Langrahmen -Telegramm. Das hier enthaltene CI -Feld 
+spezifiziert die Art der enthaltenen Daten und deren Anordnung. 
+Entsprechend des CI -Feldes für den langen Telegramkopf sind im Datenkopf des Telegramms 
+(Header) u. a. der Zählerhersteller, die Seriennummer, die Art des Zählers (Device Type / Medium) 
+und Version enthalten. Diese Daten bilden die Grundlage für die logisc he Zuordnung der Zählerstände 
+zu einem physischen Zähler in einer Datenbank. 
+Master (Primäradressierung) Slave (Adr = 0x01)
+REQ_UD2 (Kurzrahmen, 0x10 0x7B 0x01 0x7C
+ 0x16)
+SND_NKE (Kurzrahmen, 0x10 0x40 0x01 0x4
+1 0x16)
+ACK (Einzelzeichen, 0xE5)
+RSP_UD (Langrahmen, 0x68 … 0x16)
+Mast Master (Sekundäradressierung) Slave
+REQ_UD2 (Kurzrahmen, 0x10 0x7B 0xFD 0x38 0x16
+)
+SND_NKE (Kurzrahmen, 0x10 0x40 0xFD 0x3D 0x16
+)
+ACK (Einzelzeichen, 0xE5)
+RSP_UD (Langrahmen, 0x68 … 0x16)
+SELECT (Langrahmen, 0x68 ... 0x16
+)
+SND_NKE (Kurzrahmen, 0x10 0x40 0xFD 0x3D 0x16
+)
+PDF PAGE 45
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  45/66 
+Der Zähler übermittelt danach die Zählerdaten (bei entsprechendem CI -Field) im sogenannten 
+Variablen Datenformat (Variable Data Respond). Dieses Format ist sehr mächtig. Durch DIF  und VIF-
+Felder ( Data Information Field und Value Information Field) und mit zusätzlichen Erweiterungen, 
+lassen sich aus deren Kombination Werte und Einheiten dekodieren. Dabei erfordert die Interpretation 
+masterseitig hohen Software-Aufwand. 
+ Suche nach Busteilnehmern (a) 2.10
+Bei der Inbetriebnahme ist es wichtig, dass die angeschlossenen Geräte vom Master erfasst und 
+zugeordnet werden können. Hierfür können die Primärsuche und die Sekundärsuche genutzt werden.  
+Für die Primärsuche nutzt ein Master meist das Kur zrahmen-Telegramm REQ_UD. Durch das 
+Inkrementieren der Adresse im Adressfeld lassen sich so die 250 möglichen Adressen ansprechen 
+bzw. durchsuchen. Die vorhandenen und adressierten Zähler antworten entsprechend und werden 
+somit gefunden. 
+Oft sind bei Ersti nbetriebnahme nach der Installation die Primäradressen der Slaves nicht konfiguriert 
+bzw. nicht eindeutig zugeordnet. Hier bietet sich die Sekundärsuche an. Das Verfahren nennt sich 
+Wildcard Search, dieses nutzt Platzhalter, um alle möglichen Sekundäradres sen abzusuchen. Dies ist 
+ein iterativer Prozess, der spezifische Adressbereiche als Ganzes durchsucht und bei der Detektion 
+eines oder mehrerer Slaves (innerhalb dieses Bereichs) die Suche entsprechend verfeinert. Der 
+Adressbereich wird dabei logisch als B aumstruktur aufgefasst und Knoten für Knoten absucht. Je 
+nach Busaufbau kann dieser Vorgang bei kleinen Netzen im Bereich von weniger als 10  Minuten 
+liegen oder bei großen Netzen bis hin zu Stunden andauern abhängig von der Verteilung der 
+Sekundäradressen. 
+ Standardlast oder Zähler? (a, p) 2.11
+Grundsätzlich legt die EN  13757 eine Standardlast (UL, unit  load) auf 1,5  mA fest. Dies ist die 
+Stromaufnahme, welche ein Zähler im Ruhezustand nicht überschreiten sollte. Viele Zähler benötigen 
+1 UL. Hochwertige Messsysteme oder Sensorikkoppler benötigen unter Umständen mehr Energie aus 
+dem M-Bus und haben daher eine höhere Stromaufnahme. 
+Diese Ruhestromaufnahme von Zählern wird oft als vielfaches der Standardlast angegeben. Während 
+Zähler mit 2  UL noch des Öfteren zu find en sind, gibt es auch exotische Sensorikkoppler, welche bis 
+zu 16 UL aufnehmen. Die M-Bus Norm erlaubt allerdings nur max. 4 Standardlasten. 
+Dies ist speziell bei der Auslegung der Mastergeräte und Kabel zu beachten. OMS-S2, Annex P, 
+P.2.1.5 legt fest, dass die Anzahl der Standardlasten (UL) im Datenblatt aufgeführt und  auf den Slave 
+aufgedruckt werden muss. 
+ Auslesehäufigkeit (a, p) 2.12
+Da jegliche M -Bus-Kommunikation vom Master initiiert wird, legt allein dieser fest, wie häufig Daten 
+ausgelesen werden. Die Hä ufigkeit ergibt sich so aus den Anforderungen des weiterverarbeitenden 
+Systems. 
+Typische Beispiele: 
+ Elektrizitätszähler für Abrechnung/Lastgang: viertelstündlich  
+ Wasserzähler und Wärme-/Kältezähler für Abrechnungszwecke: täglich 
+ Wärmezähler für Heizungssteuerung: minütlich 
+ Sensorik für Raumüberwachung: minütlich 
+Jedoch gibt es hier Ausnahmen und Einschränkungen.  
+PDF PAGE 46
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  46/66 
+Einige Zähler, speziell für Wärmemengen, nutzen nicht die Möglichkeit, sich komplett oder zumindest 
+den Kommunikationsteil aus dem M -Bus zu verso rgen. Um die Batterielebensdauer zu verlängern, 
+beschränken diese die Anzahl M -Bus Auslesungen und antworten dann zeitweise nicht mehr. Bei der 
+Fehlersuche kann dies zu Schwierigkeiten führen (siehe auch [OMS-S2], Annex P, P.2.1.9). 
+  
+PDF PAGE 47
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  47/66 
+3 Planung und Installation 
+ Einführung 3.1
+Die Planung und Installation von M -Bus-Netzen erfordert die Berücksichtigung vieler Punkte, die in 
+diesem Ratgeber beschrieben werden. Trotz oder vor allem gerade wegen der Einfachheit des M -Bus 
+treten dabei oft Missverständnisse und Fehler auf. Im Folgenden werden einige Aspekte dazu 
+dargestellt und Handlungsempfehlungen gegeben. 
+ Gerätetypen (a, p) 3.2
+ Einführung 3.2.1
+Ein M-Bus-Netz kann zwischen unterschiedlichen Geräten aufgebaut werden. Für einen einheitlichen 
+Sprachgebrauch ist es wichtig, die ve rschiedenen Bezeichnungen zu kennen und gegeneinander 
+abzugrenzen. Missverständnisse können so vermieden werden. Eine Liste findet sich im Folgenden.  
+ Master 3.2.2
+Der Master im M -Bus steuert den Kommunikationsablauf und ist zudem für den Betrieb des M -Bus, 
+also die Spannungsversorgung, zuständig. In jedem M -Bus-Strang muss es genau einen Master 
+geben. Beispiele für Master sind: 
+ Pegelwandler 
+ Gateway 
+ Datenkonzentrator 
+ Slave 3.2.3
+Der Slave im M -Bus ist ein Kommunikationspartner des Masters, der die Anfragen des Masters 
+beantwortet. In der Regel ist ein Slave ein Messwertlieferant. Beispiele dafür sind:  
+ Verbrauchszähler 
+ Impuls-M-Bus-Wandler 
+ Analog-M-Bus-Wandler 
+ Konverter 3.2.4
+Konverter haben gemein, dass M -Bus Anfragen/Antworten ohne Modifikation des Dateninhalts 
+zwischen Maste r und Slave ausgetauscht werden und abgesehen von einer optionalen 
+Spannungsversorgung nicht aktiv in die Kommunikation eingreifen. 
+Ein Konverter beschreibt sowohl Pegelwandler auf Schicht 1 bzw. 2 des ISO/OSI -Schichtenmodells, 
+d.h. Spannung, Strom und zei tliche Abläufe, als auch Protokollumsetzer auf Schicht 2 und höher des 
+ISO/OSI-Schichtenmodells, d.h. transparente Weiterleitung von M -Bus Anfragen bzw. Antworten über 
+dritte Datenzugriffsschichten mit anschließender Umsetzung auf M-Bus. 
+Beispiele für Konverter sind: 
+ Pegelwandler: TTL/RS232/RS485 auf M-Bus 
+ Protokollumsetzer: M-Bus via Ethernet-/USB-Tunnel 
+PCs oder Mikrocontroller können mittels Konverter (Virtual COM Port) um eine M -Bus Schnittstelle 
+erweitert und an einem M -Bus angebunden werden. Konverter  sind sowohl Master - als auch Slave -
+seitig verfügbar, wobei im typischen Sprachgebrauch Master-seitige Konverter gemeint sind. 
+PDF PAGE 48
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  48/66 
+ Gateway 3.2.5
+Gateway bezeichnet einen Umsetzer auf höheren Schichten im ISO/OSI-Schichtenmodell 
+(z. B. Schicht 4 für TCP), dabei verar beitet das Gateway zunächst die M -Bus Rohdaten durch 
+Umordnung, Paketisierung, oder (partieller) Interpretation bzw. Modifikation und überträgt diese 
+anschließend zur Gegenstelle. Beispiele für Gateways sind: 
+ Modbus TCP Gateway 
+ Modbus UDP Gateway 
+Gateways sind reine Kommunikationsteilnehmer, die keine eigenen Daten auf dem M -Bus zur 
+Verfügung stellen. In der Regel handelt es sich bei Gateways um Mastergeräte.  
+ Repeater 3.2.6
+Ein Repeater ist allgemein betrachtet ein Signalverstärker, der die Kommunikationssignale für die 
+Übertragung über einen längeren Teilabschnitt wiederaufbereitet. Beim M -Bus lassen sich so 
+ausgedehnte Netze mit größeren Teilnehmerzahlen anbinden. 
+Hierfür agieren die Repeater einerseits im äußeren Netzwerk als Slave und andererseits im 
+anzubindenden Netzwerk als Master. Der Repeater stellt somit in seinem Subnetz die Busspannung 
+sowie die erforderlichen Standardlasten zur Verfügung.  Im Weiteren beansprucht ein Repeater für 
+sich selber eine definierte Anzahl Standardlasten. Dadurch wird der eigen tliche Master entlastet. Die 
+Kommunikationsdaten leitet der Repeater dabei unverändert zum jeweils anderen Netzwerk weiter. 
+Zusätzlich können einige Repeater auch mehrere M-Bus-Stränge parallel als Master betreiben. 
+Es werden keine eigenen Daten durch eine n Repeater auf dem M -Bus zur Verfügung gestellt, da 
+diese als reine Kommunikationsteilnehmer konzipiert sind. 
+ Splitter 3.2.7
+Ein Splitter wird allgemein zur Aufteilung und Verteilung genutzt. Beim M -Bus ergeben sich zwei 
+Konstellationen: 
+ Mehrere Master am selben M-Bus-Netz 
+ Mehrere unabhängige M-Bus-Netze an einem Master bzw. mehrere Teile eines M -Bus-Netzes 
+werden einzeln betrieben (Reduktion der Standardlasten) 
+Splitter können elektronisch oder über einfache Schaltelemente (z.  B.: Relais) realisiert werden. Zu 
+beachten ist in jedem Fall, dass der M -Bus nach dem Umschalten (durch den damit verbundenen 
+Spannungseinbruch) eine Mindestzeit mit Spannung versorgt sein muss damit alle Slaves wieder 
+korrekt initialisiert sind und auf eingehende Anfragen antworten können. 
+Es werden keine eigenen Daten durch einen Splitter auf dem M-Bus zur Verfügung gestellt. 
+ Sniffer 3.2.8
+Sniffer sind im Allgemeinen passive Teilnehmer in einem Kommunikationsnetz. Deren Einsatz dient 
+der Überwachung der Kommunikation, um diese beispielsweise hin sichtlich einer Fehlersuche näher 
+zu analysieren. 
+Beim M -Bus kann ein Sniffer neben diesem Einsatzfeld auch für das parallele Auslesen der Daten 
+verwendet werden. Dies ist vorteilhaft für die Erweiterung von Bestandanlagen oder die Anbindung an 
+eine geänderte Infrastruktur. 
+Es werden keine eigenen Daten durch einen Sniffer auf dem M -Bus zur Verfügung gestellt, da diese 
+als passive Kommunikationsteilnehmer konzipiert sind. 
+ 
+PDF PAGE 49
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  49/66 
+ Konzentrator/Datenlogger/Datenzentrale 3.2.9
+Ein Konzentrator ist im Allgemeinen ein Datens ammler. Im Gegensatz zum Gateway werden beim 
+Konzentrator die Daten gespeichert, um im Wesentlichen dann zu einem späteren Zeitpunkt diese zu 
+visualisieren oder dann per Fernzugriff (WAN) weiter zu übertragen. Ein typisches Beispiel ist das 
+Smart Meter Gateway. 
+Konzentratoren stellen keine eigenen Daten auf dem M-Bus zur Verfügung. 
+ Elektroinstallation (b, a, p) 3.3
+Vor der Montage und dem Anschluss der Verbrauchszähler ist bauseitig durch den Installateur oder 
+dessen Auftraggeber sicher zu stellen, dass das vor handene M-Bus-Netz gemäß den Vorgaben des 
+M-Bus Master Hersteller installiert und funktionsfähig ist: 
+ Die Ausführungen der Elektroinstallation müssen den anerkannten Regeln der Technik 
+entsprechen und fachgerecht ausgeführt sein. 
+ Als Übertragungsmedium ist  idealerweise ein Kabel vom Typ J -Y(St)Y 2×2×0,8 mm 
+(Leiterquerschnitt 0,5  mm2, Leiterwiderstand 37  /km, Kabelkapazität 100  nF/km) oder ein 
+Kabel vom Typ LiYCY 2×1,5 mm 2 (Leiterwiderstand 13  /km, Kabelkapazität 120  nF/km) 
+vorzusehen. 
+ Bei der Netzwerkauslegung muss der resultierende Leiterwiderstand sowie die Kabelkapazität 
+berücksichtigt werden.  
+ Als Netztopologie sind Stern und Baumstruktur zulässig. Geschlossene Ringleitungen sind 
+nicht zulässig. 
+ Die Abschirmung sollte nur mit der Erde des M -Bus-Masters verbunden, aber an der 
+Slaveseite offen sein. 
+ Am Netzwerk dürfen keine Abschlusswiderstände installiert werden.  
+ Es sollten Netzanschlüsse oder Netzteile je benötigtem M -Bus-Master, Gateway, 
+Pegelwandler oder Repeater vorhanden sein. 
+ Kabellängen und Gerätestückzahlen können nachfolgender Tabelle entsprechen (Richtwerte), 
+müssen jedoch gemäß den Vorgaben des M-Bus Master Lieferanten ausgelegt werden: 
+Tabelle 2 – Kabeltyp 0,5 mm2 (37 /km, 100 nF/km) 
+Baudrate/Anzahl der 
+Zähler 
+10 50 150 250 
+300 Baud  10000 m  2000 m  700 m  400 m 
+2400 Baud  4000 m  2000 m  700 m  400 m 
+9600 Baud  1000 m  1000 m  700 m  400 m 
+Mögliche Kabellänge falls alle Zähler am Ende des Netzwerks positioniert sind 
+ 
+Baudrate/Anzahl der 
+Zähler 
+10 50 150 250 
+300 Baud  10000 m  3500 m  1200 m  700 m 
+2400 Baud  4000 m  3500 m  1200 m  700 m 
+9600 Baud  1000 m  1000 m  1000 m  700 m 
+Mögliche Kabellänge falls alle Zähler gleichmäßig über das Netzwerk verteilt sind 
+ 
+ 
+PDF PAGE 50
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  50/66 
+Tabelle 3 – Kabeltyp 1,5 mm2 (13 /120 nF) 
+Baudrate/Anzahl der 
+Zähler 
+10 50 150 250 
+300 Baud  10000 m  8000 m  2800 m  1600 m 
+2400 Baud  4000 m  4000 m  2800 m  1600 m 
+9600 Baud  1000 m  1000 m  1000 m  1000 m 
+Mögliche Kabellänge falls alle Zähler am Ende des Netzwerks positioniert sind 
+ 
+Baudrate/Anzahl der 
+Zähler 
+10 50 150 250 
+300 Baud  10000 m  10000 m  4800 m  2800 m 
+2400 Baud  4000 m  4000 m  4000 m  2800 m 
+9600 Baud  1000 m  1000 m  1000 m  1000 m 
+Mögliche Kabellänge falls alle Zähler gleichmäßig über das Netzwerk verteilt sind 
+ 
+Bei Betrachtung der Leitungslängen muss man zwischen resistiver Länge und kapazitiver Länge 
+unterscheiden. 
+Die resistive Länge ist die maximal auftretende Entfernung zwischen Master und Slave. Diese wird 
+durch die Leitungswiderstände der Busverkabelung verursacht und ist somit auch beim Querschnitt zu 
+beachten. 
+Die kapazitive Länge ist die Gesamtlänge aller M -Bus-Leitungen. Diese wird von der Kapazität de r 
+installierten Kabel verursacht. 
+  
+PDF PAGE 51
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  51/66 
+ Topologie (a, p) 3.4
+ Einführung 3.4.1
+Unter Topologie wird die räuml iche Anordnung der Verbindungsleitungen zwischen den Slaves und 
+dem Master, also dem Auslesegerät, verstanden. Folgende Topologien sind für den M -Bus möglich: 
+ Punkt-zu-Punkt 3.4.2
+Bei einer Punkt -zu-Punkt-Verbindung ist genau ein Endgerät (Slave) mit genau einem  Auslesegerät 
+(Master) verbunden. Üblicherweise findet man solche Zuordnungen bei Impulsschnittstellen oder auch 
+RS-232 Schnittstellen. 
+ 
+Abbildung 4 - Punkt-zu-Punkt-Verbindung 
+Im Bereich M -Bus kommt diese zum Einsatz, wenn nur ei n Zähler ausgelesen wird oder wenn sehr 
+große Entfernungen überbrückt werden müssen. Der eigentliche Buscharakter wird hierbei nicht 
+genutzt. 
+ Linear 3.4.3
+Einfach zu realisieren sind in der Regel lineare Busstrukturen. Der Verkabelungsaufwand und 
+Materialeinsatz ist gering. Allerdings ist die Installation mit jeder weiteren Verbindung zunehmend 
+fehleranfällig. Nachteilig ist die Inbetriebnahme und Erweiterung solcher Systeme und auch die 
+hierdurch entstehende Entfernung zwischen Master und dem äußersten Slave (re sistive Länge). 
+ 
+Abbildung 5 - Lineare Bus-Topologie 
+ 
+ Sternförmig 3.4.4
+Sternförmige Verbindungen stellen eine übliche und prinzipiell die beste Bustopologie dar. Hierbei 
+kann jederzeit ein einzelnes Gerät aus - oder eingebaut werden, oh ne dass größere Veränderungen 
+am Bus vorgenommen werden müssen. Auch Inbetriebnahme und Fehlersuche sind einfacher. 
+
+PDF PAGE 52
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  52/66 
+Nachteilig ist die umfangreiche Installation und die hierdurch entstehende Leitungslänge des 
+gesamten Busses (kapazitive Länge). 
+ 
+Abbildung 6 - Sternförmige Bus-Topologie 
+ 
+ Kombiniert 3.4.5
+Durch die Kombinationen von sternförmiger und linearer Verbindung können Vor - und Nachteile der 
+jeweiligen Art optimal genutzt werden. In der Praxis zeigt sich daher diese Struktur am häu figsten. Die 
+konkrete Umsetzung sollte ein guter Kompromiss aus Installations -, Inbetriebnahme - und 
+Wartungsaufwand sein. Die resistive und kapazitive Länge des M-Bus sollte ausgewogen sein. 
+ 
+Abbildung 7 - Kombinierte Bus-Topologie 
+
+PDF PAGE 53
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  53/66 
+ Ring 3.4.6
+Bei speziellen Bussystemen findet man auch eine Ringstruktur. Für den M -Bus ist dies jedoch keine 
+einsetzbare Verbindungsvariante. Vor allem das Thema Verpolungssicherheit wird dadurch 
+aufgehoben, da die Busleitung zum Mastergerät zurückkehrt. Die F unktion ist daher ungewiss. Vom 
+Einsatz sollte unbedingt Abstand genommen werden. 
+ Leitungsführung (a, p) 3.5
+Um eine hohe Übertragungssicherheit zu gewährleisten, sollte bei Bussystemen ein hohes 
+Augenmerk auf die Leitungsführung gelegt werden. Der M -Bus ist z war auf Grund der hohen Pegel 
+und Datensicherung im Protokoll sehr robust gegenüber Störungen, diese können dennoch zu 
+größeren Auslesezeiten, Unterbrechungen und Datenverlust führen.  
+Um Störungen zu minimieren, sollten folgende Grundregeln berücksichtigt werden: 
+ Alle Kabelverbindungen sollten so kurz wie möglich ausgelegt werden. 
+ Alle Datenkabel sollten in möglichst großem Abstand zu Energiekabeln und kritischen 
+Verbrauchern, wie z.B. Motoren, Transformatoren, Schaltanlagen, Funkanlagen verlegt 
+werden. 
+ Das Kabel sollte einzig für den M-Bus genutzt werden. 
+ Kabel mit verseilten Adern sind bevorzugt zu verwenden. 
+ Geschirmte Kabel sind bevorzugt zu verwenden, der Schirm sollte nur auf der Masterseite 
+aufgelegt werden. Die Abschirmung sollte bei Verlängerungen/A bzweigungen 
+durchverbunden werden. Ein Kabelschirm erhöht allerdings die Kapazität der Leitung.  
+ Es sollte keine Massekopplung über den M -Bus erfolgen. Der Bus darf mit maximal einer 
+Massekopplung betrieben werden (bevorzugt Master). Die sonst auftretenden 
+Ausgleichsströme über das Bussystem stören die Datenübertragung oder können zur 
+Zerstörung einzelner Geräte führen. 
+ Bei dem empfohlenen Kabel J-Y(St)Y 2×2×0,8 mm verbleiben zwei Adern zur freien 
+Verwendung. In Einzelfällen mit hohem Spannungsabfall zwische n dem Master und den 
+Slaves wird empfohlen, diese beiden Adern parallel zu den ersten beiden Adern zu schalten 
+und so den Leitungswiderstand der Kabelverbindung zu verringern. 
+ Übliche Kabeltypen (a, p) 3.6
+Bei der Verkabelung können Standardleitungen, wie beis pielsweise in der Kommunikationstechnik 
+Verwendung finden. Folgende Kabel werden vorgeschlagen: 
+ Typ: J -Y(St)Y 2×2×0,6 mm: Diese Leitung eignet sic h für kleine Installationen und als 
+Stichleitung von Verteiler- bzw. Abzweigdosen zum Zähler. 
+ Typ: J-Y(St)Y 2×2×0,8 mm: Diese Leitung eignet sich für mittlere bis große Installationen und 
+für Hauptleitungen zwischen dem Master und den Verteiler- bzw. Abzweigdosen. 
+Technische Daten finden Sie in [OMS-S2], Annex P, P.3.1.1.1. 
+  
+PDF PAGE 54
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  54/66 
+ Verteilung (a, p) 3.7
+Maßgeblich für die Qualität eines M-Bus-Systems ist die Ausführung der Aderverbindungen. Um auch 
+nach längerem Betrieb eine sichere Verbindung zu gewährleisten, sollten folgende Empfehlungen 
+beachtet werden: 
+ Federklemmen sollten gegenüber Schraubklemmen grundsätzlich vorgezog en werden. 
+ Litzen sind nur mit Aderendhülsen zu nutzen. 
+ Schraubklemmen dürfen ohne Aderschutz nicht verwendet werden. 
+ Eine Federklemme darf grundsätzlich nur mit einer Ader belegt werden. Für mehrere Adern 
+müssen Verbindungsklemmen mit entsprechend vielen Federn Einsatz finden. 
+ Bei allen Federklemmen, besonders solche mit Steckklemmanschluss, muss der Querschnitt 
+der Klemmöffnung passend zum Aderdurchmesser gewählt werden. 
+Um den Anforderungen für abrechnungsrelevantes Zählerfernauslesen zu gewährleisten, m üssen die 
+Verteilsysteme mit Plomben gesichert werden. Dies ist im Bedarfsfall entsprechend vorzusehen.  
+ Handlungsempfehlungen (a, p) 3.8
+In der Praxis haben sich einige Vorgehensweisen als sinnvoll erwiesen: 
+ Kabel mit mehreren Leitungspaaren als Reserve ermögl ichen die spätere Erweiterbarkeit des 
+M-Bus-Netzes 
+ Größere Distanzen lassen sich durch eine Aufteilung des Netzes in mehrere bzw. kleinere 
+Stränge (also weniger Geräte pro Strang) erzielen.  
+ Eine Sternverkabelung nahe dem Master vereinfacht die spätere Feh lersuche und ermöglicht 
+das einfache Abtrennen einzelner Stränge. 
+ Gateways und Medienwandler (a, p) 3.9
+In größeren, verteilten Anlagen aber auch in Bestandsanlagen wird aufgrund der Ausdehnung, 
+galvanischen Kopplung bzw. baulichen Gegebenheiten der M -Bus nich t ohne Unterbrechung 
+installiert. Einzelne Stränge werden über LAN -Infrastruktur wie Ethernet oder Lichtwellenleiter 
+miteinander logisch verbunden. 
+In solchen Anlagen müssen Gateways oder Medienwandler eingefügt werden.  
+Der Einsatz solcher Geräte erhöht al lerdings den Parametrieraufwand und stellt eine mögliche 
+Fehlerquelle dar. Eine solche Konfiguration sollte sorgfältig geplant und vorbereitet werden. Ein paar 
+Beispiele dazu: 
+ Die IP-Adressen müssen richtig konfiguriert werden (z. B.: IP, Subnetz, Gateway). 
+ Der passende LAN-Standard muss von allen Geräten unterstützt werden (z.  B.: Ethernet TCP, 
+Multi-Mode-LWL). 
+ Master und Slaves müssen in jedem M-Bus-Strang richtig verteilt werden. 
+ Der Verbindungsablauf muss übereinstimmen (z. B.: Unicast, Broadcast, Point-To-Point). 
+ Beide Kommunikationsrichtungen (Senden und Empfangen) werden abgedeckt.  
+  
+PDF PAGE 55
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  55/66 
+ Typische Installationen (a, p) 3.10
+ M-Bus Master als Auslesegerät 3.10.1
+In dieser Installationsvariante kommuniziert ein Gerät als M -Bus Master direkt mit den M -Bus Slaves 
+mittels integrierter M -Bus Schnittstelle. Die Verarbeitung des M -Bus Protokolls erfolgt hierbei in den 
+jeweiligen Geräten für den M-Bus Master und den M-Bus Slave(s). 
+ 
+Abbildung 8 – Auslesung mittels M-Bus Master 
+ PC als Auslesegerät 3.10.2
+In der  nachfolgenden Installationsvariante agiert der PC als M -Bus Master und kommuniziert via 
+Konverter mit den M -Bus Slaves. Der Konverter leitet die Anfragen des Masters transparent, also 
+ohne Veränderung der Daten, an die jeweiligen Slaves weiter. Gleiches g ilt für die entsprechenden 
+Antworten der Slaves zum Master. Die Verarbeitung des M -Bus Protokolls erfolgt hierbei in den 
+jeweiligen Geräten für den M-Bus Master und den M-Bus Slave(s). 
+ 
+Abbildung 9 - Auslesung mittels Pegelwandler 
+ Integration in Netzwerke 3.10.3
+Die vorstehend beschriebenen Insellösungen sind grundsätzlich auf drei verschiedene Arten in ein 
+Netzwerk integrierbar, jedoch erfordern alle Lösungen eine zusätzliche Schnittstelle am Gerät, das als 
+M-Bus Master agiert. Dabei wir d ein als M -Bus Master agierendes Gerät ohne Zwischenspeicherung 
+von M -Bus Daten als Gateway und mit Zwischenspeicherung von M -Bus Daten als Konzentrator 
+bezeichnet. Diese Integration in ein Netzwerk kann wiederum über eine M -Bus Schnittstelle mit 
+entsprechendem Protokollstapel oder über kundenspezifische Schnittstellen, Protokolle und 
+Datenformate erfolgen: 
+ Client/Push-Operation: Das als M -Bus Master agierende Gerät nimmt selbstständig, d.h. 
+zeitlich periodisch oder ereignisgesteuert, Verbindung(en) mit zu vor konfigurierten System(en) 
+auf und überträgt die über M -Bus angefragten (Gateway) bzw. gesammelten (Konzentrator) 
+Daten, wie zum Beispiel bei der Anbindung an eine Datenbank. 
+
+PDF PAGE 56
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  56/66 
+ 
+Abbildung 10 – Client/Push-Operation 
+ Server/Pull-Operation: Das als M -Bus Master agierende Gerät wartet auf eingehende 
+Verbindung(en), um anschließend die über M -Bus angefragten (Gateway) bzw. gesammelten 
+(Konzentrator) Daten zu übertragen, wie zum Beispiel bei der Anbindung mittels Modbus -
+Client. 
+ 
+Abbildung 11 – Server/Pull-Operation 
+ Peer/Push-Pull-Operation: Darüber hinaus sind eine Vielzahl an Szenarien denkbar, in denen 
+die Rolle des als M -Bus Master agierenden Gerätes nicht eindeutig definiert werden kann, so 
+dass eine Mischun g (Peer) aus den zuvor beschriebenen Rollen entweder zeitweise oder 
+durchgängig bestehen kann. 
+ 
+Abbildung 12 – Peer/Push-Pull-Operation 
+ Auslesung großer Netze 3.10.4
+Große Netze haben zwei potentielle Herausforderungen: 
+ Große Ausdehnung und die daraus resultierenden Leitungswiderstände bzw. -kapazitäten 
+ Große Anzahl an Zählern und die dadurch bedingte hohe Belastung des Masters  
+Die naheliegendste Lösung hierfür ist der Einsatz von Repeatern, um mittels einem M -Bus Master alle 
+M-Bus Slaves in einem gemeinsamen Netz erreichen zu können. 
+Bei großen Entfernungen können Repeater in die M -Bus-Leitung eingefügt werden. Diese verstärken 
+so die Signale auf ihrem jeweiligen Teilstrang. Lediglich durch Signallaufzeiten ist die Anwendbarkeit 
+dieses Prinzips eingeschränkt. 
+Auch bei einer großen Anzahl von Zählern können Repeater eingesetzt werden. Der hohe 
+Strombedarf der Zähler kann so auf mehrere (einzelne) Master mit ihren Teilsträngen verteilt werden. 
+Als Grenze ist hier lediglich die Adressierbarke it der Zähler zu nennen (Primäradresse: 250 /ID der 
+Sekundäradresse: 100.000.000). Mit jedem zusätzlichen Zähler erhöht sich aber auch der 
+
+PDF PAGE 57
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  57/66 
+Auslesezyklus aller Zähler (300  Baud  ca. 8  s pro Zähler , 2400 Baud  ca. 2  s pro Zähler , 
+9600 Baud  ca. 1 s pro Zähler). 
+ 
+Abbildung 13 - Einsatz von Repeatern für viele Zähler 
+Alternativ können große Netze in mehrere M -Bus Stränge separiert werden, die nicht zwingend eine 
+physikalische oder logische Verbindung zueinander haben müssen, aber ggf . über ein gemeinsames 
+Netzwerk aggregiert werden können. 
+Dieser Lösungsansatz erfordert den Einsatz von Gateways bzw. Konzentratoren, da diese als 
+physischer M -Bus-Master agieren und die Daten in ein, jeweils für das angeschlossene Medium, 
+entsprechendes Format umwandeln können (siehe hierzu Kapitel 3.9.3). 
+Der logische Unterschied zwischen den Varianten ist der Ort der Verarbeitung der Zählerdaten.  
+Mit Ethernet -Gateways obliegt die Zählerauslesung dem Leitrechner. Dieser stellt die Anfragen an 
+jeden Zähle r und muss die Antwort verarbeiten. Dann muss er diese in ein Format für die 
+weiterverarbeitenden Schichten wandeln, da die Ethernet -Gateways dem Leitrechner lediglich die 
+M-Bus-Rohdaten zur Verfügung stellen. 
+Bei Modbus  TCP-Gateways erfolgt die Zählerausl esung und Konvertierung der Daten direkt durch 
+diese Gateways. Der Leitrechner greift dann als Modbus -Client lediglich auf die in den Registern 
+gespeicherten Werte zu. Diese entsprechen einem standardisierten Format und sind somit direkt 
+weiterverarbeitbar. 
+In beiden Varianten muss der Leitrechner entsprechend viele Gateways über einzelne 
+Virtuelle COM-Ports, generischer TCP- oder Modbus TCP-Verbindungen ansprechen können. 
+
+PDF PAGE 58
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  58/66 
+ 
+Abbildung 14 - Einsatz von Gateways in verteilten Anlagen 
+ 
+  
+
+PDF PAGE 59
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  59/66 
+4 Fehlersuche (a) 
+ Einführung 4.1
+In M-Bus-Systemen kommt es gelegentlich zu Problemen. Diese werden meist durch Störungen in der 
+Infrastruktur, Defekte von Zählern oder Inkompatibilitäten hervorgerufen.  
+Im Folgenden werden Wege aufgezeigt, einen Fehler einzugrenzen und ggf. zu beheben. 
+ Prüfung des M-Bus-Netzes (a) 4.2
+ Einführung 4.2.1
+Eine Fehlerquelle bei M -Bus-Systemen kann ein nicht funktionsfähiges M -Bus-Kabelnetz sein. Als 
+Basis für die Untersuchung des M -Bus-Netzes sollten Verkabelungspläne inkl. Topologie mit Ang aben 
+zu den Kabellängen und –typen (bitte die Empfehlung für Kabeltypen beachten, siehe [OMS -S2], 
+Annex P, P.3.1.1.1) sowie den Installationsorten von Verteilerdosen dienen.  
+Mit Hilfe eines Multimeters können einfache Mängel festgestellt und schrittweise l okalisiert werden. 
+Diese Messungen sollten durchgeführt werden, ohne dass Kommunikation über den M -Bus stattfindet. 
+ Spannungsmessung 4.2.2
+Die Spannungsmessung erfolgt mittels eines Multimeters zwischen den beiden Leitungen des M -Bus 
+während diese am Master angeschlossen sind. 
+ 
+Abbildung 15 - Spannungsmessung am M-Bus 
+Das Multimeter ist auf einen Spannungsbereich von mindestens 50 V Gleichspannung einzustellen. 
+ Strommessung 4.2.3
+Die Strommessung erfolgt mittels eines Multimeters in abwechseln d beiden Leitungen des M -Bus 
+direkt am Master während diese mit einer Ader am Master und mit der anderen Ader am Multimeter 
+angeschlossen sind. 
+SlaveSlave Slave
+Master
+V V V
+PDF PAGE 60
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  60/66 
+ 
+Abbildung 16 - Strommessung im M-Bus 
+Das Multimeter ist auf einen Strombereich von mindestens 1 A Gleichspannung einzustellen. 
+ Widerstandsmessung 4.2.4
+Die Widerstandsmessung erfolgt mittels eines Multimeters zwischen den beiden Leitungen des M -Bus, 
+während der Master nicht angeschlossen ist. 
+ 
+Abbildung 17 - Widerstandsmessung am M-Bus 
+Das Multimeter ist auf einen Widerstandsbereich von mindestens 100 k einzustellen. 
+ Kapazitätsmessung 4.2.5
+Die Kapazitätsmessung erfolgt mittels eines entsprechend ausgestatteten Multimeters zwischen den 
+beiden Leitungen des M-Bus, während der Master nicht angeschlossen ist. 
+ 
+Abbildung 18 - Kapazitätsmessung am M-Bus 
+Das Multimeter ist auf einen Kapazitätsbereich von höchstens 10 µF einzustellen. 
+A
+SlaveSlave Slave
+Master
+A
+Ω
+SlaveSlave Slave
+Master
+F
+SlaveSlave Slave
+Master
+PDF PAGE 61
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  61/66 
+ Auswertung 4.2.6
+Folgende Werte sollten vorliegen, wenn das M-Bus-Netz intakt ist: 
+Tabelle 4 – Erwartungswerte für funktionierenden M-Bus 
+Messung Gültiger Bereich/Sollwert 
+Spannung am Master a Ca. 3042 V DC 
+Spannung am Zähler ≥24 V DC 
+Strom in einer der M-Bus-Leitungen ≤Anzahl der angeschlossenen Slaves × 1,5 mA 
+b 
+Differenz der Ströme in beiden M-Bus-Leitungen <1 mA 
+Widerstand M-Bus c >>470  
+Widerstand je beide M-Bus-Leitungen gegen PE 
+(Schutzerde) 
+>20 M 
+Kapazität M-Bus <1 µF 
+a Für die konkreten Spannungswerte ist die Spezifikation/das Datenblatt des Masters zu 
+konsultieren. 
+b Unter der Annahme, dass jeder Slave 1 UL (=1,5 mA) verbraucht (bis zu 4 UL sind pro Slave 
+erlaubt). 
+Beispiele: 30 Slaves = 45 mA, 250 Slaves = 375 mA 
+c Dieser Wert wird mit einem Multimeter mit einer Messspannung kleiner als 9 V gemessen. 
+ Fehleranalyse und -lokalisierung im M-Bus-Netz (a) 4.3
+ Einführung 4.3.1
+Auf Basis dieser Messungen können entsprechende Schritte eingeleitet werden, um Fehler zu 
+lokalisieren. 
+ Spannung am Master zu gering 4.3.2
+Bei einem am M -Bus angeschlossenem Master ist die Spannung zwischen beiden M -Bus-
+Anschlüssen zu gering. Gehen Sie wie folgt vor: 
+ Trennen Sie den M -Bus vom Master ab und messen Sie erneut. Liegt nun eine gültige 
+Spannung an, liegt ein Fehler am M-Bus-Netz vor. Messen Sie dazu Widerstand und Strom im 
+M-Bus. 
+ Ist auch nach dem Abtrennen des M-Bus vom Master die Spannung zu gering, liegt ein Defekt 
+am Master vor. Prüfen Sie dessen Spannungsversorgung und dessen Statusanzeigen.  
+Unter Umständen handelt es sich beim Master um ein Gerät, welches mit geringeren Buss pannungen 
+speziell für kleine Installationen arbeitet ( Local Bus). Dabei kann es zu Kompatibilitätsproblemen mit 
+den Slaves kommen. 
+  
+PDF PAGE 62
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  62/66 
+ Spannung am Slave zu gering 4.3.3
+Bei einem am M -Bus angeschlossenen Slave ist die Spannung zwischen beiden M -Bus-Anschlüssen 
+zu gering. Gehen Sie wie folgt vor: 
+ Messen Sie die Spannung am Master. Wenn diese zu gering ist, folgen Sie zunächst den 
+Schritten in Kapitel 4.3.2. 
+ Wenn die Spannung am Master in einem gültigen Bereich liegt, ist der Spannungsfa ll auf dem 
+M-Bus zu groß. Messen Sie den Widerstand des fehlerhaften Strangs in dem Sie die 
+Widerstandsmessung nach Kapitel 4.2.4 durchführen und dabei erst eine normale Messung 
+durchführen und dann eine zweite Messung durchfüh ren, bei der die M -Bus-Leitungen an der 
+Stelle kurzgeschlossen sind, wo die zu niedrige Spannung angelegen hatte. Gemäß Kapitel  
+4.2.4 sollte die erste Messung einen Wert >>470   ergeben, die zweite Messung einen Wert 
+<<470 . 
+ 
+Abbildung 19 – 2. Widerstandsmessung mit Kurzschluss im kritischen Pfad  
+ Ist der Schleifenwiderstand zu groß, tauschen Sie das Kabel aus. 
+ Widerstand im M-Bus ist zu gering 4.3.4
+Ergibt die Widerstandsmessung, dass der Gesamtwiderstand de s Bussystems zu gering, sollte wie 
+folgt fortgefahren werden: 
+ Trennen Sie Stränge, Teile oder Zähler des M -Bus schrittweise ab und messen Sie dabei 
+fortlaufend den Widerstand zwischen den masterseitigen Leitungsenden. Sobald der 
+Widerstand wieder in einen gültigen Bereich kommt, haben Sie den Verursacher der Störung 
+eingegrenzt und können diesen so schrittweise durch an - und abklemmen lokalisieren. 
+Tauschen Sie den Verursacher aus. 
+ Ist der Widerstand trotz Abtrennung aller Zähler bzw. Stränge weiterhin zu g ering, liegt ein 
+Kurzschluss im aktuell noch angeschlossenen Kabel vor. Tauschen Sie das Kabel aus.  
+ Gehen Sie ähnlich bei der Suche nach Verbindungen zu PE (Schutzerde) vor.  
+  
+Ω
+SlaveSlave Slave
+Master
+PDF PAGE 63
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  63/66 
+ Strom durch M-Bus ist zu hoch 4.3.5
+Ergibt die Strommessung eine zu hohe Stromaufnahme  des Gesamtbusses sollte zur weiteren 
+Analyse wie folgt fortgefahren werden: 
+ Trennen Sie Stränge, Teile oder Zähler des M -Bus schrittweise ab und messen Sie dabei 
+fortlaufend den Strom. Sobald der Strom wieder in einen gültigen Bereich kommt, haben Sie 
+den Verursacher der Störung eingegrenzt und können diesen so schrittweise lokalisieren. 
+Tauschen Sie den Verursacher aus. 
+ Ist der Strom trotz Abtrennung aller Zähler bzw. Stränge weiterhin zu hoch, liegt ein 
+Kurzschluss im aktuell noch angeschlossenen Kabel vor. Tauschen Sie das Kabel aus. 
+ Ein Kurzschluss kann auch zu PE (Schutzerde) vorliegen. Prüfen Sie dies mittels der 
+Widerstandsmessung. 
+ Kapazität im M-Bus zu hoch 4.3.6
+Eine zu hohe Kapazität führt vor allem dazu, dass Pakete nicht mehr richtig vom Master zum Sl ave 
+übertragen werden können. Trennen Sie den M-Bus vom Master und fahren Sie folgendermaßen fort: 
+ Trennen Sie Stränge, Teile oder Zähler des M -Bus schrittweise ab und messen Sie dabei 
+fortlaufend die Kapazität zwischen den masterseitigen Leitungsenden. So bald die Kapazität 
+wieder in einen gültigen Bereich kommt, haben Sie den Verursacher der Störung eingegrenzt 
+und können diesen so schrittweise durch an - und abklemmen lokalisieren. Tauschen Sie den 
+Verursacher aus. 
+ Ist die Kapazität trotz Abtrennung aller Zähler bzw. Stränge weiterhin zu groß, liegt ein Fehler 
+im aktuell noch angeschlossenen Kabel vor. Tauschen Sie das Kabel aus.  
+ Sonderfall dynamische Fehler 4.3.7
+Unter Umständen kann auch der Fehler dynamisch auftreten, speziell durch ein defektes Gerät am 
+Bus verursacht werden. Zur Fehlersuche muss hier im laufenden Betrieb, eventuell auch bei laufender 
+Kommunikation, gemessen werden. 
+Dazu ist es hilfreich, mittels eines Oszilloskops Verläufe von Spannung und Strom aufzuzeichnen und 
+dann ähnlich wie oben beschrieben durch schrittweises an- und abklemmen den Fehler einzugrenzen. 
+Das Vorgehen kann hier nicht pauschal angegeben werden. 
+Einige Fehlerbilder sind: 
+ Slave moduliert Stromaufnahme sporadisch/zyklisch obwohl keine Kommunikation stattfindet.  
+ Störsignale sind auf dem M-Bus zu messen (siehe Kap.: 4.5). 
+ Flankensteilheit der Sende- und Empfangssignale ist sehr gering. 
+ Spannung am Master bzw. Slave bricht zyklisch bzw. kurzzeitig ein. 
+ Hohe Welligkeit der M-Bus-Spannung 
+ Sonstige Installationsfehler 4.3.8
+In der Praxis zeigen sich gelegentlich weitere Installationsfehler: 
+ Slaves sind nicht M -Bus-fähig, möglicher Weise handelt es sich zum Beispiel um einen 
+Impulszähler 
+ Master oder Slave sind für den Local Bus nach EN  13757-6 spezifiziert und som it zu 
+EN 13757-2 nicht kompatibel 
+ Medienkonverter, Gateways und Pegelwandler stimmen von der Konfiguration nicht mit der 
+Installation überein (Wer ist Master? Wer ist Slave? Hat jeder Strang einen Master?).  
+PDF PAGE 64
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  64/66 
+ Prüfung der Kommunikation (a) 4.4
+ Einführung 4.4.1
+Bei falscher Parametrierung der Busteilnehmer oder Inkompatibilitäten kann trotz intakter Infrastruktur 
+die Kommunikation dennoch gestört sein. Hierbei muss der Kommunikationsverlauf analysiert werden.  
+Dazu ist es hilfreich, mittels eines Oszilloskops Verläufe von  Spannung und Strom aufzuzeichnen. 
+Diese Verläufe können mit den am Master empfangenen Daten verglichen werden.  
+ 
+Abbildung 20 - Aufzeichnung der Kommunikation (rot = senden, gelb = empfangen) mittels 
+Oszilloskops 
+Bei Messungen mit tels Oszilloskops ist die Potentialfreiheit zu beachten. Die Signalmasse von 
+Oszilloskopen liegt in der Regel auf PE. Daher darf die Signalmasse nicht mit einer der M -Bus-
+Leitungen verbunden werden. Differentielle Tastköpfe sollten daher verwendet werden.  
+Die Strommessung kann mittels eines in Reihe geschalteten Messwiderstands (z.  B.: 10 ) erfolgen. 
+Auf Grund der Potentialfreiheit ist eine empfindliche Gleichstromzange jedoch besser geeignet.  
+Einige typische Fehlerquellen und ggf. Abhilfe werden im Folgenden beschrieben. 
+ Adressen nicht eindeutig 4.4.2
+Sämtliche Kommunikation beim M -Bus erfolgt über die Adresse eines Slaves (Primär - oder 
+Sekundäradresse). Sofern diese nicht eindeutig vergeben sind, treten Kollisionen am Bus auf, welche 
+zu Dateninkonsistenzen führen. 
+Gerade bei Primäradressierung und Erstinbetriebnahme tritt dies häufig auf, da viele Slaves ab Werk 
+eine 0 als Primäradresse besitzen und somit gleichzeitig antworten. 
+Dies kann behoben werden, indem: 
+ vor der Auslesung eindeutige Primäradressen an alle Slaves vergeben werden; 
+ auf Sekundäradressierung umgestellt wird (Eindeutigkeit ist sehr wahrscheinlich).  
+Unter Umständen muss der Bus auch Slave für Slave in Betrieb genommen werden, wenn z.B. nur 
+über Mastertelegramme ein Setzen der Primäradresse möglich ist. 
+
+PDF PAGE 65
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  65/66 
+ Sekundäradressierung nicht möglich 4.4.3
+Sollte ein Slave die Sekundäradressierung nicht unterstützen, obwohl dies nach [OMS -S2], Annex P, 
+P.3.1.2.2, verpflichtend ist, muss die Primäradressierung genutzt werden. Hierfür ist es wichtig, dass 
+die Slaves entsprechend eindeutige Adressen besitzen. Mehr dazu finden Sie in Kapitel 4.4.2. 
+ Slaves antworten sporadisch nicht 4.4.4
+Nicht alle Slaves können die Anfragen des M -Bus-Masters jederzeit verarbeiten. Oft ist dafür der 
+interne Aufbau d er Slaves verantwortlich. Findet man dort beispielsweise 2 Mikrocontroller welche 
+Mess- und Kommunikationsdaten austauschen, kann während der internen Kommunikation die 
+M-Bus-Kommunikation blockiert sein.  
+Nach [OMS-S2], Annex P, P.2.1.9, muss ein Slave eigentlich immer ansprechbar sein. Allerdings kann 
+in der [MANDEC] deklariert werden, dass der Slave unter bestimmten Bedingungen nicht ansprechbar 
+ist. 
+Durch längere Timeouts oder mehrfaches Anfragen der Slaves, kann der M -Bus-Master dieses 
+Verhalten ausgleichen. 
+ Falsche Baudrate wird genutzt 4.4.5
+Der M-Bus arbeitet laut EN  13757-2 mit Baudraten von 300, 2400 oder 9600 Baud. Nach [OMS -S2], 
+Annex P, P.2.2.1, muss ein Slave mindestens die Baudraten 300 und 2400 Baud unterstützen. 
+Außerdem muss er für alle Baudraten eine automatische Erkennung unterstützen.  
+Üblicher Weise wird eine Baudrate von 2400 verwendet. Jedoch können nicht alle Slaves mit diesen 
+Baudraten umgehen oder sie müssen auf diese Baudrate umgestellt werden, wenn sie über keine 
+Autobaudratendetektion verfügen. 
+Es kann auch vorkommen, dass auf Grund fehlerhafter Implementierung im Slave oder Master die 
+Baudraten eine zu große Abweichung vom Sollwert haben. Die genutzte Baudrate lässt sich mittels 
+Oszilloskop relativ einfach bestimmen. 
+Bei möglichen Baudratenproblemen empfiehlt sich folgendes Vorgehen: 
+ Der Master arbeitet nacheinander mit den 3 Standard-Baudraten. 
+ Mittels Mastertelegramm oder Benutzereingabe werden die Slaves auf eine bestimmte 
+Baudrate eingestellt. 
+ Slaves mit vom Standard abweichenden Ba udraten sollten ausgetauscht werden oder isoliert 
+mit fester Masterkonfiguration betrieben werden. 
+ Fehler im Telegrammkopf 4.4.6
+Unter Umständen kann es vorkommen, dass die Daten im Header eines Telegramms nicht stimmen. 
+Bekannte Beispiele dafür sind: 
+ ein Slave gibt eine andere Sekundäradresse aus, als unter der er antwortet  
+ ein Slave verwendet hexadezimale Zahlen (0xA-0xF) in der Sekundär-ID 
+ ein Slave gibt die Nutzung einer Verschlüsselung vor, jedoch sind die Daten nicht 
+verschlüsselt oder anders verschlüsselt als angegeben 
+Das Vorgehen kann bei solchen Fehlerbildern nicht pauschal angegeben werden. Eine robuste 
+Mastersoftware ist hier notwendig. 
+ Nutzung anderer Protokolle 4.4.7
+Der M-Bus nutzt nach EN  13757-2 eine robuste Physik. Es gibt Produkte am Markt, die die gl eiche 
+Physik nutzen, jedoch andere Protokolle darüber übertragen. Prinzipiell ist dies zulässig, führt jedoch 
+PDF PAGE 66
+Open Metering System Technical Report 09 - Installationsleitfaden für Wired M-Bus 
+Version 1.0.3 / 2022-05-27 (Release)   
+ 
+OMS GROUP  66/66 
+zu Missverständnissen und hohem Aufwand auf Master -Seite. Hybride Strukturen sind nicht zu 
+empfehlen. 
+ Störungen auf dem M-Bus (a) 4.5
+Gerade im indust riellen Umfeld und bei großen Ausdehnungen können Störungen auf dem M -Bus 
+auftreten. Solche Störungen können mittels eines Oszilloskops erkannt und aufgezeichnet werden. 
+Dabei sind die Spannungspegel deutlich stärker betroffen als die Strompegel.  
+Das typis che Fehlerbild sind kurze Störpakete mit signifikanten Spannungspegeln und hohen 
+Frequenzen. Schaltanlagen der Energietechnik (z.  B.: Wechselrichter, Frequenzumrichter) sind oft die 
+Ursache solcher Störungen. Diese koppeln meist vom Energienetz in das M -Bus-Netz ein, wenn diese 
+nicht räumlich getrennt geführt werden. Diese Störungen können aufgrund der hohen Pegel die 
+Kommunikation stören oder auch manche M-Bus-Teilnehmer temporär oder dauerhaft beschädigen. 
+Durch die hohen Frequenzanteile lassen sich diese  Störungen in einem gewissen Maße mittels 
+zusätzlich eingebrachten Kapazitäten im M -Bus unterdrücken. Hierbei muss jedoch auf die 
+Gesamtkapazität im M -Bus und die Leistungsfähigkeit des M -Bus-Masters geachtet werden. Diese 
+sollte, abhängig von der Baudrate  und vom Master, nie einen Wert von 1  µF überschreiten. Ein 
+schrittweises Erhöhen, beginnend mit Werten <100  nF ist hier empfehlenswert, siehe dazu auch 
+Kapitel 4.2.5, 4.2.6 und 4.3.6). 
+Wenn die Möglichkeit besteht, empfiehlt es sich, die Verkabelung zu überprüfen. Nach Möglichkeit 
+sollten geschirmte Kabel verwendet und diese räumlich getrennt vom Energienetz verlegt werden, 
+siehe dazu auch Kapitel 3.5 und 3.6. 

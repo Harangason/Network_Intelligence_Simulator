@@ -1,0 +1,31 @@
+Table 2. Unique Message ID
+NAME DATATYPE RESTRICTIONS
+messageId string Unique message ID, maximum length of 36 characters, to allow for UUIDs/GUIDs
+3.8. Page 11, par 4.2: No reference to the JSON Schemas
+The OCPP-J Spec has no reference to the JSON Schemas and schema version.
+Additional reference in 1.6 references on page 3:
+ [JSON_SCHEMA] http://json-schema.org/
+Additional text:
+4.2.4 Schemas Together with this document, there are also JSON Schema files provided. These schemas can be
+used for validation of OCPP-J messages.
+The OCPP-J 1.6 Schema files are [JSON_SCHEMA] draft-04 schemas.
+3.9. Page 14, section: 4.2.3: No example of CallError
+There is no example of a CallError in the document, the following is an example.
+[4,
+  "162376037",
+  "NotSupported",
+  "SendLocalList.req not implemented",
+  {}
+]
+3.10. Page 15, section: 5: Explanation how to respond to message before Charge Point
+is accepted.
+There is no explanation for how a Central System should respond to any CALL message from the Charge Point
+(other then BootNotification.req) before being accepted by the Central System.
+Additional section 5.6 Charge Point CALL message before accepted
+When a Central System receives CALL messages (other then BootNotification) from a Charge Point before the Charge Point is
+accepted, the Central System is RECOMMENDED to respond with and RPC CallError: SecurityError.
+3.11. Page 20, section: 7: How to handle half open connections not clear
+It can sometimes happen that WebSockets connections are not opened or closed correctly. When this happens,
+a WebSocket ping should detect this and cause a WebSocket to be closed. By sending WebSockets pings at a
+regular interval, it should never happen that messages are dropped because of a half open connection.
+10

@@ -1,0 +1,35 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 23
+4 Port Message Protocol
+All message-based data (includes control messages and asynchronous packets) transferred up or down
+the INIC Software Stack adheres to the same low-level message format (defined as a Port Message) regard-
+less of the physical hardware port used.
+Control messages (e.g. MCMs, ICMs) are used to access the FBlock of a network node. MCMs are typi-
+cally routed through INIC (between the network control channel and the INIC Message Interface), using
+either the MCM Rx FIFO  or the MCM Tx FIFO , depending on the direction of transport. ICMs target the
+FBlock INIC and are exchanged exclusively between INIC and the EHC, using either the ICM Rx FIFO  or
+the ICM Tx FIFO, depending on the direction of transport.
+Asynchronous packets (e.g. MDPs) are routed between the network packet channel and the INIC Message
+Interface, using either the MDP Rx FIFO or the MDP Tx FIFO, depending on the direction of transport.
+4.1  Generic Port Messages
+A generic Port Message consists of three main fields:
+/square6 Port Message Length (PML) - This 16-bit field indicates the total number of bytes that follow in the Port 
+Message, including the message overhead and payload.
+/square6 Port Message Header (PMH) - This field contains the Port Message overhead and defines the format of 
+the payload data that follows.
+/square6 Port Message Body (PMB) - This field contains the message payload whose format is dependant on the 
+preceding header.
+Figure 4-1 illustrates the generic format of the Port Message.
+Five types of specific Port Messages are defined, each associated with a specific operation to be performed
+on the targeted FIFO:
+/square6 FIFO Command - Writes commands to the INIC Message Interface
+/square6 FIFO Status Read - Reads FIFO status information from the INIC Message Interface
+/square6 FIFO Status Write - Sends an acknowledge to the INIC Message Interface when a data message is read
+/square6 FIFO Data Write - Writes a message into a particular FIFO
+/square6 FIFO Data Read - Reads a message out of a particular FIFO
+The following pages outline the basic structure of the Port Messages. For more information on the software-
+controlled, sub-fields of the Port Messages, see the OS8105x/6x INIC API User’s Manual [2].
+PML PM Header (PMH) PM Body (PMB)
+Port Message (PM)
+Figure 4-1: Generic Port Message Format

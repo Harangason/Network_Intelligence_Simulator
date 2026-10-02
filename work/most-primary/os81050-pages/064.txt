@@ -1,0 +1,105 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 64
+OS81050
+13 Application Information
+13.1  Power
+The OS81050 requires 3.3 V power for the VDDPn pins and 2.5 V power for the VDDCn and VDDAn pins.
+The 2.5 V power can be provided by an external voltage regulator (discussed in Section 13.1.1) or through
+a transistor controlled by the OS81050 BIAS pin (discussed in Section 13.1.2). The 3.3 V and 2.5 V power
+supplies may safely power-up (and power-down) in any order, without damaging INIC.
+The power supply architectures and decoupling shown in the following sections are required to minimize
+jitter effects. Ferrite beads can be added to VDDAn for increased noise immunity. The series resistor on the
+VDDA2 line should lie between the ferrite bead and the capacitor to prevent the formation of an LC tank,
+which can result in oscillation. 
+13.1.1   External Regulator
+Figure 13-1 illustrates a typical power arrangement for the OS81050, when an external regulator is used to
+supply the 2.5 V power. The combination of a switch ing and linear regulator minimizes noise and ripple at
+maximum efficiency. The input to the linear regulator (for the 2.5 V supply) should be provided by the
+switching regulator, which derives the 3.3 V intermediate voltage from the main 12 V supply. The 3.3 V
+OS81050 power may be supplied directly by the switching regulator. When this external regulator power
+arrangement is used, BIAS must be connected directly to ground.
+0.1 μF
+0.1 μF
+RX
+TX
+VDDP1
+33 -150 Ω
+VDDP2
+GNDP1
+GNDP2
+VDDC1
+GNDC1
+0.1 μF
+22 μF
+to EHC
+Short as possible       
+33 - 150 Ω
+TXGAIN
+10 μF
+MMUN2111LT
+27 kΩ
+27 kΩ
+10 kΩ
+0.1 μF
+3.3Vs
+10 μF 0.1 μF
+2.5Vs
+3.3Vs/2.5Vs
+RST
+BC848C
+FLT
+1 kΩ
+OS81050
+VDDC2
+GNDC2
+0.1 μF
+10 μF
+(low ESR)
+VDDA1
+GNDA1
+0.1 μF
+VDDA2
+GNDA2
+0.1 μF
+ERR/BOOT
+BIAS
+RSOUTto EHC
+10 kΩ
+100 kΩ
+37 kΩ
+10 kΩPOR 
+circuit
+10 Ω
+SYNC
++12 V
+GND
+Power 
+Supply
+Switching
+Regulator
+Linear 
+Regulator
+3.3Vs/2.5Vs
+100 μF
+Aluminum
+Electrolytic
+Constant
+Switched
+Ferrite Bead
+Ferrite Bead
+47 kΩ
+* Can be pulled to either 2.5Vs 
+or 3.3Vs, however 3.3Vs will 
+waste a small amount of power
+3.3Vs/2.5Vs *
+0.47 μF‡
+‡ Maximum variation of 20 %
+over all conditions
+MOST Network
+FOR
+STATUS
+RXDATA
+FOX
+TXDATA
+RGAIN
+Figure 13-1: Typical Power Supply Connection Diagram (with External Regulator)

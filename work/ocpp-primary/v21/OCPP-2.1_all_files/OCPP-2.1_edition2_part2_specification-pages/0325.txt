@@ -1,0 +1,99 @@
+ID Precondition Requirement definition Note
+J02.FR.17 For improved auditability, ".Register" values
+SHOULD be reported exactly as they are directly
+read from a non-volatile register in the electrical
+metering hardware, and SHOULD NOT be re-based
+to zero at the start of transactions
+This allows any "missing
+energy" between
+sequential transactions,
+due to hardware fault,
+meter replacement, mis-
+wiring, fraud, etc. to be
+identified, by allowing the
+CSMS to confirm that the
+starting register value of
+any transaction is
+identical to the finishing
+register value of the
+preceding transaction on
+the same connector.
+J02.FR.18 The timestamp of a MeterValue SHALL apply to all
+its SampledValues.
+J02.FR.19 When CSMS receives a
+TransactionEventRequest
+CSMS SHALL respond with
+TransactionEventResponse.
+Failing to respond with
+TransactionEventRespon
+se might cause the
+Charging Station to try
+the same message
+again.
+J02.FR.20 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Ended) AND
+amount of meter data is too much for
+one TransactionEventRequest
+(eventType = Ended) message
+Charging Station MAY remove samples until it fits
+in a message. When removing samples, the
+Charging Station SHOULD remove intermediate
+samples first (for example: 2nd sample, 4th
+sample, 6th sample etc.).
+Samples should be
+removed in a way that it
+does not affect billing.
+See also E06.FR.12.
+J02.FR.21 SampledDataSignReadings is true The Charging Station SHALL retrieve signed meter
+values from components that support data signing
+and put them in the signedMeterValue field.
+J02.FR.22 Meter values reported in a
+TransactionEventRequest message SHALL all be
+related to EVSE on which the transaction is taking
+place.
+J02.FR.23
+(2.1)
+When a signedMeterValue is provided The field publicKey, when present, IS
+RECOMMENDED to have the format
+"<marker>:<encoding>:<content-type>:<printed-
+public-key>"
+to allow proper decoding, where
+• <marker> = "oca"
+• <encoding> = "base16", "base32" or
+"base64"
+• <content-type> = "asn1"
+• <printed-public-key> = <the public key as
+printed on the certified meter>.
+For example:
+oca:base16:asn1:
+3056301006072a8648ce
+3d020106052b8104000a
+03420004460a02ba2766
+d9c44f023ecc0e4e5864
+4a87add1aadd6317e5fe
+4dccdb29b163a01d8a62
+97c84bc530f86431e92f
+8d46ab37830247c05cbd
+92fac252929e7f61
+(line breaks added for
+readability)
+J02.FR.24
+(2.1)
+J02.FR.23 AND
+signedMeterValue does not specify the
+method used to create the digital
+signature
+signingMethod SHOULD contain the method used
+to create the digital signature.
+A list of standardized
+values is provided in the
+Appendix as
+SigningMethodEnumStri
+ngType.
+3.2. ISO 15118 MeterValue signing
+J03 - Charging Loop with metering information exchange
+No. Type Description
+1 Name Charging Loop with metering information exchange
+Edition 2, 2025-12-03 J. Meter Values
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 312/803 Part 2 - Specification

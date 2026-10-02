@@ -1,0 +1,47 @@
+MODBUS over serial line specification and implementation guide V1.02 Modbus.org    
+Modbus.org http://www.modbus.org/ 13/44
+Dec 20, 2006 
+Fr
+ame description : 
+Slave
+Address
+Function
+Code Data CRC
+1 byte 1 byte 0 up to 252 byte(s) 2 bytes
+CRC HiCRC Low
+Figure 12: 
+RTU Message Frame 
+/barb4right  The maximum size of a MODBUS RTU frame is 256 bytes. 
+2.5.1.1 MODBUS Message RTU Framing 
+A MODBUS message is placed by the transmitting device into a frame that has a known beginning and ending point.  This allows 
+devices that receive a new frame to begin at the start of the message, and to know when the message is completed.  Partial 
+messages must be detected and errors must be set as a result. 
+In RTU mode, message frames are separated by a silent interval of at least  3.5 character times.  In the following sections, this time 
+interval is called t3,5. 
+t0
+at least 3.5 char
+Frame 1 Frame 2
+at least 3.5 char
+Frame 3
+4.5 char
+3.5 char
+Start Address Function Data CRC Check
+≥ 3.5 c har 8 bits 8 bits N x 8 bits 16 bits
+End
+≥ 3.5 c har
+MODBUS message
+Figure 13: 
+RTU Message Frame 
+The entire message frame must be transmitted as a continuous stream of characters. 
+If a silent interval of more than 1.5 character times occurs between two characters, the message frame is declared incomplete a nd 
+should be discarded by the receiver. 
+t0
+≤ 1.5 char
+Frame 1 OK Frame 2 NOK
+> 1.5 char
+Remark : 
+T
+he implementation of RTU reception driver may imply the management of a lot of interruptions due to the t 1.5   and t3.5  timers.  With 
+high communication baud rates, this leads to a heavy CPU load.  Consequently these two timers must  be strictly respected when the 
+baud rate is equal or lower than 19200 Bps.  For baud rates greater than 19200 Bps, fixed values for the 2 timers should be used:  it is 
+recommended to use a value of 750µs for the inter-character time-out (t 1.5) and a value of 1.750ms for inter-frame delay (t3.5). 

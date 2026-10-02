@@ -1,0 +1,57 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+Network AccessNetwork Access
+Ethernet II and 802.3 layerEthernet II and 802.3 layer
+  MsgMsg
+TCPTCP
+ModbusModbus
+IPIP
+ICMPICMP
+ARPARP
+The goal of this section is to give 
+an overview of the Stack interface 
+and also some information 
+concerning the parameterization of 
+the stack. This overview focuses 
+on the features used by the 
+MODBUS Messaging.  
+For more information, the advice is to read the RFC 1122 that provides guidance for 
+vendors and designers of Internet communication software. It enumerates standard 
+protocols that a host connected to the Internet  must use as well as an explicit set of 
+requirements and options. 
+The stack interface is generally based on the BSD (Berkeley Software Distribution) 
+Interface that is described in this document. 
+.  
+4.3.1 Use of BSD Socket interface 
+Remark : some TCP/IP stacks propose othe r types of interfaces for perform ance 
+issues. A MODBUS client or server can use these specific interfac es, but this use will 
+be not described in this specification. 
+A socket is an endpoint of communication. It is the basic building block for 
+communication. A MODBUS communication is executed by sending and receiving data 
+through sockets. The TCPIP 
+library provid es only stream sockets using TCP and 
+providing a connection-based communication service. 
+The Sockets are created via the socket ()  func tion. A socket number is returned, which 
+is then used by the creator to access the socket. Sockets are created without 
+addresses (IP address and port number). Until a port is bound to a socket, it cannot be 
+used to receive data.   
+The bind ()  function is used to bind a port number to a socket. The bind () creates an 
+association between the socket and the port number specified.  
+In order to initiate a connection, the client must issue the connect ()  function specifying 
+the 
+socket number, the remote IP address and the remote listening port number (active 
+connection establishment). 
+In order to complete a connection, the server must issue the accept ()  func tion 
+specifying the socket number that was specified in the prior listen () call (passive 
+connection establishment). A new socket is cr eated with the same properties as the 
+initial one. This new socket is connected to the client’s socket, and its number is 
+returned to the server. The initial socket is thereby free for other clients that might want 
+to connect with the server. 
+After the establishment of the TCP connec tion the data can be transferred. The send()  
+and recv() functions are designed specifically to be  used with sockets that are already 
+connected. 
+The setsockopt ()  f unction allows a socket’s creator to associate options with a socket. 
+These options modify the behavior of the so cket. The description of these options is 
+given in the section 4.3.2. 
+The select ()  func tion allows  the programmer to test events on all sockets. 
+October 24, 2006 http://www.Modbus.org 15/46
+Modbus Organization  

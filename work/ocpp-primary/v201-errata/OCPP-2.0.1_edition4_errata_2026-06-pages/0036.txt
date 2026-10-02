@@ -1,0 +1,47 @@
+6.3. CSMS
+6.3.1. Page 668 - 670 - (2026-04) -
+TC_C_47_CSMS/TC_C_48_CSMS/TC_C_49_CSMS - Removed configuration
+variable masterPassGroupId
+The <Configured MasterPassGroupId> variable has been removed from the OCTT. The MasterPassGroupId can be provided to the
+OCTT by the CSMS through a SetVariableRequest.
+Main (Test scenario)
+Charging Station CSMS
+Manual action :  trigger CSMS to set the masterPassGroupId     
+2.  The Charging Station responds with       SetVariablesResponse 
+with  attributeStatus  =   Accepted
+1.  Test System sends     SetVariablesRequest  with: 
+-  variable.name  =   "MasterPassGroupId"
+-  component.name  =   "AuthCtrlr"
+-  attributeValue  =   <Specified masterPassGroupId> 
+Where applicable tool validations mentioning <Configured masterPassGroupId> were replace with the masterPassGroupId
+specified through the SetVariablesRequest
+Tool validations
+* Step 4:
+Message AuthorizeResponse
+- idTokenInfo.groupIdToken.idToken <Configured masterPassGroupId> <masterPassGroupId from step 1>   
+* Step 6:
+Message TransactionEventResponse
+- idTokenInfo.groupIdToken.idToken <Configured masterPassGroupId> <masterPassGroupId from step 1>   
+Post scenario validations:
+- N/a
+6.3.2. Page 672 - (2026-06) - TC_C_51_CSMS - Corrected OCSP response and
+removed post scenario validations
+The OCSP response was previously incorrectly marked as valid, this has now been corrected to indicate a revoked status.
+Post-scenario validations have been removed, as they are not applicable to the CSMS.
+Test case name Authorization using Contract Certificates 15118 - Online - Local contract certificate validation - Rejected
+Test case Id TC_C_51_CSMS
+…
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System sends an AuthorizeRequest
+With idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+iso15118CertificateHashData contains <hashes from configured
+(V2G) certificate chain
+2. The CSMS sends an OCSP request to responder URL of
+iso15118CertificateHashData to check validity
+3. The Test System OCSP service responds that certificate is
+valid revoked . 4. The CSMS responds with a AuthorizeResponse
+Tool validations
+…
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2026 33/34 Errata 2026-06

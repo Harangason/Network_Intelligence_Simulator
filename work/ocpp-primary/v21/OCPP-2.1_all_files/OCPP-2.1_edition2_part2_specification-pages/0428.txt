@@ -1,0 +1,84 @@
+ID Precondition Requirement definition Note
+L01.FR.03 When the Charging Station enters the
+Invalid Signature state.
+The Charging Station SHALL send a
+SecurityEventNotificationRequest
+message to the CSMS with the
+security event
+InvalidFirmwareSignature (See part 2
+appendices for the full list of security
+events).
+L01.FR.04 When the Charging Station has
+successfully downloaded the new
+firmware
+The signature SHALL be validated, by
+calculating the signature over the
+entire firmware file using the RSA-PSS
+or ECSchnorr algorithm for signing,
+and the SHA256 algorithm for
+calculating hash values.
+L01.FR.05 L01.FR.04 AND
+( installDateTime is not set OR
+current time >= installDateTime )
+The Charging Station SHALL install
+the new firmware as soon as it is able
+to.
+L01.FR.06 L01.FR.05
+AND
+The Charging Station has ongoing
+transactions
+AND
+When it is not possible to start
+installation of firmware while a
+transaction is ongoing
+The Charging Station SHALL wait until
+all transactions have ended, before
+commencing installation.
+L01.FR.07 L01.FR.06 or L01.FR.33 AND
+configuration variable
+AllowNewSessionsPendingFirmw
+areUpdate is false or does not exist
+The Charging Station SHALL set all
+EVSE that are not in use to
+UNAVAILABLE while the Charging
+Station waits for the ongoing
+transactions to end. Until the firmware
+is installed, any EVSE that becomes
+available SHALL be set to
+UNAVAILABLE.
+L01.FR.08 It is RECOMMENDED that the
+firmware is sent encrypted to the
+Charging Station. This can either be
+done by using a secure protocol (such
+as HTTPS, SFTP, or FTPS) to send the
+firmware, or by encrypting the
+firmware itself before sending it.
+L01.FR.09 Firmware updates SHALL be digitally
+protected to ensure authenticity and
+to provide proof of origin.
+This protection is achieved by
+applying a digital signature over the
+hash value of the firmware image.
+Ideally, this signature is already
+computed by the manufacturer. This
+way proof of origin of the firmware
+image can be tracked back to the
+original author of the firmware.
+L01.FR.10 Every
+FirmwareStatusNotificationRequest
+sent for a firmware update SHALL
+contain the same requestId as the
+UpdateFirmwareRequest that started
+this firmware update.
+L01.FR.11 For security purposes the CSMS
+SHALL include the Firmware Signing
+certificate (see Keys used in OCPP) in
+the UpdateFirmwareRequest.
+L01.FR.12 For verifying the certificate (see
+Certificate Hierarchy) use the rules for
+X.509 certificates [19]. The Charging
+Station MUST verify the file’s digital
+signature using the Firmware Signing
+certificate.
+Edition 2, 2025-12-03 L. Firmware Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 415/803 Part 2 - Specification

@@ -1,0 +1,49 @@
+Tool validations
+…
+* Step 12 11 :
+Message: GetDERControlResponse
+- status must be Accepted
+* Step 13 12 :
+Message: ReportDERControlRequest
+Field corresponding to configuring <CS supported controlType1>
+- *[0].id must be control1
+Field corresponding to configuring <CS supported controlType2>
+- Corresponding field should be omitted.
+* Step 16 15 :
+Message: GetDERControlResponse
+- status must be Accepted
+* Step 17 16 :
+Message: ReportDERControlRequest
+Field corresponding to configuring <CS supported controlType2>
+- *[0].id must be control2
+Field corresponding to configuring <CS supported controlType1>
+- Corresponding field should be omitted.
+Post scenario validations:
+N/a
+6.2.60. Page 881 - (2026-02) - TC_R_101_CS - Test case removed
+This testcases has been removed, because TC_B_53_CS will be responsible for performing all device model validations.
+6.2.61. Page 899 - (2026-02) - TC_R_108_CS - Use static curves to trigger, instead
+of configurable ones
+Test case name Charging station reporting a DER event
+Test case Id TC_R_108_CS
+Use case Id(s) R05
+Requirement(s) R05.FR.01, R05.FR.02, R05.FR.03, R05.FR.04
+System under test Charging Station
+Description Configure a DER Control which will always trigger and affect the charging rate of the running transaction,
+then add another DER Control to test overriding the previous one. After that, clearing all DER controls to test
+it reports that the alert is cleared.
+This test case uses DER controls that, when installed, trigger during normal operation: a HVMustTrip curve               
+(configured to trip at nomimal voltage) and a LFMustTrip curve (configured to trip at nominal frequency)               .
+Curves that are a function of power (WattPF, WattVar) or voltage (HV/LVMustTrip, VoltVar, VoltWatt) are
+usually easier to trigger than frequency-based curves.
+Purpose To check if the CS reports when DER controls are taking over.
+Prerequisite(s) CS supports DER Control (DCDERCtrlr or ACDERCtrlr is present for EVSE)
+CS is a DC charging station
+CS supports ISO15118-20
+Main (Test scenario)
+Charging Station CSMS
+Note:  Curve HVCURVE is defined as: {[(1.00, 5.0), (1.20, 0.16)} — this should trip at nominal voltage (1.00) after 5 seconds.                  
+Note:  Curve LFCURVE is defined as: {(50.5, 5.0), (60.5, 10.0)} — this should trip after 5 seconds below 50.5 Hz (EU, and trip after 10                      
+seconds below 60.5 Hz (US).    
+Note: Wait 10 seconds after start of energy transfer before setting DER control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 90/116 Errata 2026-06

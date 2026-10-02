@@ -1,0 +1,49 @@
+Field Name Field Type Card. Description
+tariffId string[0..60] 1..1 Required. Unique id of tariff
+currency string[0..3] 1..1 Required. Currency code according to ISO 4217
+validFrom dateTime 0..1 Optional. Time when this tariff becomes active. When
+absent, it is immediately active.
+description MessageContentType 0..10 Optional. List of multi-language tariff information texts to
+be shown to the user.
+energy TariffEnergyType 0..1 Optional. Energy tariff
+chargingTime TariffTimeType 0..1 Optional. Charging time tariff
+idleTime TariffTimeType 0..1 Optional. Idle time tariff
+fixedFee TariffFixedType 0..1 Optional. Fixed fee tariff
+minCost PriceType 0..1 Optional. The minimal cost for a transaction with this
+tariff including and excluding taxes. Minimum can be
+including tax or excluding tax, or both.
+maxCost PriceType 0..1 Optional. The maximum cost for a transaction with this
+tariff. Maximum can be including tax or excluding tax, or
+both.
+reservationTime TariffTimeType 0..1 Optional. Reservation time tariff
+reservationFixed TariffFixedType 0..1 Optional. Fixed fee for a reservation
+2.105. TaxRateType
+Class
+Tax percentage
+TaxRateType is used by: Common:PriceType , Common:TariffEnergyType , Common:TariffFixedType , Common:TariffTimeType
+Field Name Field Type Card. Description
+type string[0..20] 1..1 Required. Type of this tax, e.g. "Federal ", "State", for
+information on receipt.
+tax decimal 1..1 Required. Tax percentage
+stack integer, 0 <= val 0..1 Optional. Stack level for this type of tax. Default value,
+when absent, is 0.
+stack = 0: tax on net price;
+stack = 1: tax added on top of stack 0;
+stack = 2: tax added on top of stack 1, etc.
+2.106. TaxRuleType
+Class
+Part of ISO 15118-20 price schedule.
+TaxRuleType is used by: Common:AbsolutePriceScheduleType
+Field Name Field Type Card. Description
+taxRuleID integer, 0 <= val 1..1 Required. Id for the tax rule.
+taxRuleName string[0..100] 0..1 Optional. Human readable string to identify the tax rule.
+taxIncludedInPrice boolean 0..1 Optional. Indicates whether the tax is included in any
+price or not.
+appliesToEnergyFee boolean 1..1 Required. Indicates whether this tax applies to Energy
+Fees.
+appliesToParkingFee boolean 1..1 Required. Indicates whether this tax applies to Parking
+Fees.
+appliesToOverstayFee boolean 1..1 Required. Indicates whether this tax applies to Overstay
+Fees.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 671/803 Part 2 - Specification

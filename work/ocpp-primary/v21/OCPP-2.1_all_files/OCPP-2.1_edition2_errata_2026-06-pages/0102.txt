@@ -1,0 +1,49 @@
+Main (Test scenario)
+7. The Charging Station responds with a
+GetCompositeScheduleResponse SetChargingProfileResponse
+6. The Test System sends a GetCompositeScheduleRequest
+with evseId <Configured evseId>
+duration is 900
+chargingRateUnit <Configured chargingRateUnit>
+The Test System sends a      SetChargingProfileRequest  with 
+ evseId   <Configured evseId> 
+ chargingProfile.id   <chargingProfile.id from step 1>   
+ chargingProfile.chargingProfilePurpose   TxDefaultProfile
+ chargingProfile.chargingSchedule.chargingRateUnit 
+<Configured chargingRateUnit> 
+ chargingProfile.chargingSchedule.chargingSchedulePeriod[0].s
+tartPeriod   0
+ chargingProfile.chargingSchedule.chargingSchedulePeriod[0].li
+mit   8  *   <limit multiplier> 
+ Note: Check   [csKSmartChargingChargingProfileLimits]  for <limit  
+multiplier>
+ chargingProfile.chargingSchedule.chargingSchedulePeriod[0].n
+umberPhases   <Configured numberPhases> 
+ chargingProfile.chargingSchedule.limitAtSoc.soc   1
+ chargingProfile.chargingSchedule.limitAtSoc.limit   6  *   <limit
+multiplier>
+ Note: Check   [csKSmartChargingChargingProfileLimits]  for <limit  
+multiplier>
+Manual Action: Use EV to send out a SoC value less than <Configured limitAtSocSoc>
+9. The Charging Station responds with a
+GetCompositeScheduleResponse
+8. The Test System sends a GetCompositeScheduleRequest
+with evseId <Configured evseId>
+duration is 900
+chargingRateUnit <Configured chargingRateUnit>
+Tool validations
+…
+* Step 7:
+Message: GetCompositeScheduleResponse SetChargingProfileResponse
+- status must be Accepted
+- schedule.chargingRateUnit must be <Configured chargingRateUnit>
+- schedule.chargingSchedulePeriod[0].startPeriod must be 0
+- schedule.chargingSchedulePeriod[0].limit must be 6 * <limit multiplier>
+Note: Check [csKSmartChargingChargingProfileLimits] for <limit multiplier>
+* Step 9:
+Message: GetCompositeScheduleResponse
+- status must be Accepted
+- schedule.chargingRateUnit must be <Configured chargingRateUnit>
+- schedule.chargingSchedulePeriod[0].startPeriod must be 0
+- schedule.chargingSchedulePeriod[0].limit must be 8 6  * <limit multiplier>
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 98/116 Errata 2026-06

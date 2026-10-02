@@ -1,0 +1,50 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 28
+OS81050
+5 Control Port
+The Control Port supports message-based communication exclusively between the OS81050 and the
+EHC. These messages are used to configure and control INIC and target the local INIC FBlocks ( INIC or
+NBMIN). The Control Port also supports the routing of asynchronous packets and control messages
+between the EHC and the network.
+The Control Port supports the I2C protocol, where the data is received MSB-first, and is processed in bytes
+by the internal firmware of the OS81050. The processing time varies based on the overall load of tasks.
+Clock stretching provides an appropriate handshake mechanism to adapt the data transfer rate dynami-
+cally, thereby maximizing the transfer rate at any given time.
+The Control Port is enabled by default after power-up/reset based on the INIC Configuration String . Specifi-
+cally, the Control Port is enabled under one of the following two conditions:
+/square6 PortConfiguration.DefPort()  is set to I2C, or
+/square6 PortConfiguration.DefPort()  is set to INT_Select and INT is pulled high.
+If one of these conditions is not met when the OS81050 is powered-up (or reset), the Control Port is dis-
+abled and all communication between the EHC and the OS81050 must occur through the MediaLB Port.
+The OS81050 Control Port operates as an I 2C slave device that must be managed externally. The SCL pin
+clocks data in and out; SDA is a bi-directional data pin. INT is an open-drain, active low output that can be
+used as an interrupt to the EHC. The INIC INT line should be isolated from other signals that may interrupt
+the EHC (e.g. do not wire-or with other open-drain lines).
+Figure 5-1 illustrates the OS81050 in an I 2C environment.
+When the Control Port is enabled, INIC drives the INT interrupt pin low to inform the EHC when service
+through the port is required (e.g. message available for reading). Following reset, the EHC should wait for
+the first falling edge of INT, which occurs when initialization is complete. The first available message
+through the Control Port (shown below) indicates INIC is ready to receive messages and the EHC should
+synchronize all FIFOs.
+AllFIFOs:Status(SyncS, StartUp)
+The first byte of an I 2C message is the bus address plus the read/write (R/W ) bit, which determines
+whether the EHC is reading or writing Port Messages. The OS81050 Factory default I 2C address is 41h for
+read, 40h for write; however, using the Customer Configuration Interface  (described in Section 13.7), the
+default I2C address can be changed in the INIC Configuration String.
+Clock stretching is a handshaking mechanism supported on the Control Port. If the OS81050 cannot keep
+up with a message, it will st retch the clock at the byte boundary; therefore, the I 2C bus master must moni-
+tor SCL when communicating with INIC.
+SDA SCL
+Factory default: 40h (write)
+41h (read)
+other
+I2C device
+SDA SCL
+External Host 
+Controller
+SCLSDA
+4.7 kΩ
+INT INT
+4.7 kΩ
+Figure 5-1: Control Port Pin Connections
+OS81050

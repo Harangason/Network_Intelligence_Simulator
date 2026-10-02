@@ -1,0 +1,47 @@
+• AlignedDataMeasurands
+• AlignedDataInterval
+• AlignedDataTxEndedMeasurands
+• AlignedDataTxEndedInterval
+• AlignedDataSendDuringIdle
+• AlignedDataUpstreamMeasurands
+• AlignedDataUpstreamInterval
+AlignedDataInterval is the size of the clock-aligned data interval (in seconds). This defines the set of evenly spaced meter
+data aggregation intervals per day, starting at 00:00:00 (midnight), at which time the Charging Station should take measurements
+and send them to the CSMS in a MeterValuesRequest message. A value of "0" (numeric zero), by convention, is to be interpreted to
+mean that no clock-aligned data should be transmitted.
+AlignedDataTxEndedInterval is the size of the clock-aligned data interval (in seconds). This defines the set of evenly spaced
+meter data aggregation intervals per day, starting at 00:00:00 (midnight) intended to be transmitted in the TransactionEventRequest
+(eventType = Ended) message.
+For example, a value of 900 (15 minutes) indicates that every day should be broken into 96 15-minute intervals, starting at 0:00 and
+then measured every 15 minutes: 0:15, 0:30, 0:45, 1:00, 1:15 etc.
+AlignedDataMeasurands is a comma separated list that prescribes the set of measurands to be included in a
+MeterValuesRequest PDU, every AlignedDataInterval seconds.
+AlignedDataTxEndedMeasurands is a comma separated list that prescribes the set of clock-aligned periodic measurands to be
+included in the meterValue elements of TransactionEventRequest (eventType = Ended) PDU for every
+AlignedDataTxEndedInterval of the transaction.
+• AlignedDataUpstreamMeasurands
+• AlignedDataUpstreamInterval
+AlignedDataSendDuringIdle can be used to only send clock aligned meter values when there are no ongoing transactions.
+NOTE Clock-aligned meter values for an EVSE that is involved in a transaction MAY be transmitted in
+TransactionEventRequests with context = Sample.Clock instead of in MeterValuesRequests.
+2.3. Multiple Locations/Phases
+Updated in OCPP 2.1
+When a Charging Station has measurands configured in SampledDataTxStarted/Updated/EndedMeasurands and/or
+AlignedDataMeasurands/AlignedDataTxEndedMeasurands, that can be measured on multiple locations or phases, then all
+possible locations and/or phases SHALL be reported. This does not include location Upstream. Measurands to be reported for
+Upstream are configured in SampledData/AlignedDataUpstreamMeasurands.
+For example: A Charging Station capable of measuring Current.Import on Inlet (all 3 phases) (grid connection) and Outlet (3 phases
+per EVSE on both its EVSEs). Current.Import is set in AlignedDataMeasurands. AlignedDataInterval is set to 900
+(seconds). Then the Charging Station should send: (every 15 minutes)
+• a MeterValuesRequest with: evseId = 0; with 3 SampledValue elements, one per phase with location = Inlet.
+• a MeterValuesRequest with: evseId = 1; with 3 SampledValue elements, one per phase with location = Outlet.
+• a MeterValuesRequest with: evseId = 2; with 3 SampledValue elements, one per phase with location = Outlet.
+NOTE
+When the configuration variable SampledDataRegisterValuesWithoutPhases has the value true, then
+meter values of measurand Energy.Active.Import.Register will only report the total energy over all
+phases without reporting the individual phase values.
+2.4. Signed Meter Values
+OCPP 2.1 supports signed meter values. When a Charging Station supports signed meter values it can use the Configuration
+Variables AlignedDataSignReadings and SampledDataSignReadings to report this. The CSMS can then use this same
+Edition 2, 2025-12-03 J. Meter Values
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 305/803 Part 2 - Specification

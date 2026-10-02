@@ -1,0 +1,37 @@
+connections. Using this mechanism on an unencrypted connection means that anyone who can see the
+network traffic between Charge Point and Central System can see the charge point credentials, and can
+thus impersonate the Charge Point.
+Setting the charge point’s credentials
+For this charge point authentication scheme, the charge point needs to have an authentication key.
+This authentication key has to be transferred onto the charge point in some way. What is a good way
+depends on the business model of the charge point manufacturer and central system operator.
+Setting during or before installation
+The desired, secure situation is that every charge point has its own, unique authorization key. If an
+authorization key is not unique, an attacker who discovers the authorization key of a single charge
+point can impersonate many or even all charge points in an operator’s Central System.
+The simplest way to achieve this is to install the authorization key on the charge point during
+manufacture or installation. In these cases, the key will be securely communicated between the central
+system operator and installer or manufacturer by communication channels outside of OCPP. This
+scenario is secure because the key is not sent over the channel it is meant to secure, so an attacker
+eavesdropping the connection between Charge Point and Central System cannot impersonate the
+Charge Point.
+Setting the key over OCPP
+If the processes of manufacturing, sale and installation of a charge point are not under the central
+system operator’s control, there is no way to put a unique key on each individual charge point and also
+make sure the central system operator knows these keys and the charge points they belong to. For such
+scenarios, it is desirable for all charge points of a series to have the same "master" key when they leave
+the factory and are installed, or to have keys that are derived from the charge point identity by the
+same algorithm. Still the Central System operator will want to keep adversaries from impersonating all
+charge points of a series if the master key is leaked. For this use case, there is a possibility for the
+Central System to send a unique key to the charge point via OCPP after charge point installation.
+To set a charge point’s authorization key via OCPP, the Central System SHALL send the Charge Point a
+ChangeConfiguration.req message with the key AuthorizationKey and as the value a 40-character
+hexadecimal representation of the 20-byte authorization key. If the Charge Point responds to this
+ChangeConfiguration.req with a ChangeConfiguration.conf with status Accepted, the Central System
+SHALL assume that the authorization key change was successful, and no longer accept the credentials
+previously used by the charge point. If the Charge Point responds to the ChangeConfiguration.req with
+a ChangeConfiguration.conf with status Rejected or NotSupported, the Central System SHALL keep
+accepting the old credentials. While the Central System SHALL still accept an OCPP-J connection from
+the Charge Point in this case, it MAY treat the Charge Point’s OCPP  messages differently, e.g. by not
+accepting the Charge Point’s boot notifications.
+17

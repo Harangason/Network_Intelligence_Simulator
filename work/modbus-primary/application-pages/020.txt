@@ -1,0 +1,56 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  20/50 
+MB Server Sends mb_exception_rsp EXIT
+ExceptionCode = 04
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+YES
+NO
+NO
+ExceptionCode = 02
+YES
+NO
+ExceptionCode = 03
+YES
+ENTRY
+WriteSingleRegister == OK
+MB Server Sends mb_rsp
+NO
+YES
+0x0000  Register  Value  0xFFFF
+Function code
+supported
+Register Address == OK
+Request Processing
+ 
+Figure 16: Write Single Register state diagram  
+ 
+ 
+ 
+ 
+6.7  07 (0x07) Read Exception Status (Serial Line only)  
+This function code is used to read the contents of eight Exception Status outputs in a remote 
+device.  
+The function provides a simple method for accessing this information,  because the Exception 
+Output references are known (no output reference is needed in the function).  
+The normal response contains the status of the eight Exception Status outputs. The outputs 
+are packed into one data byte, with one bit per output. The statu s of the lowest output 
+reference is contained in the least significant bit of the byte.  
+The contents of the eight Exception Status outputs are device specific.  
+Request  
+Function code  1 Byte  0x07  
+ 
+Response  
+Function code  1 Byte  0x07  
+Output Data  1 Byte  0x00 to 0xFF  
+ 
+Error  
+Error code  1 Byte  0x87  
+Exception code  1 Byte  01 or 04  
+ 
+Here is an example of a request to read the exception status:  
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  07 Function  07 
+  Output Data  6D 
+ 

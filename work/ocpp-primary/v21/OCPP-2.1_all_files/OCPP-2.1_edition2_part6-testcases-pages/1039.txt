@@ -1,0 +1,34 @@
+Main (Test scenario)
+3. The Test System sends a TransactionEventRequest with
+eventType Ended
+triggerReason StopAuthorized
+idToken <configured PspRef>
+idToken.type DirectPayment
+transactionInfo.transactionId <transactionId>
+transactionInfo.stoppedReason Local
+costDetails.totalCost.currency EUR
+costDetails.totalCost.fixed.exclTax 15.00
+costDetails.totalCost.fixed.inclTax 18.15 EUR
+costDetails.totalCost.fixed.taxRate.type MyTax
+costDetails.totalCost.fixed.taxRate.tax 21
+costDetails.totalUsage.energy 123
+costDetails.totalUsage.chargingTime 5
+costDetails.totalUsage.idleTime 0
+costDetails.chargingPeriods[ <omitted>
+4. The CSMS responds with a TransactionEventResponse
+5. The Test System sends a NotifySettlementRequest with
+transactionId <transactionId>
+pspRef <configured PspRef>
+status Settled
+settlementTime <not omitted>
+settlementAmount 18.15
+receiptUrl <omitted>
+6. The CSMS responds with a NotifySettlementResponse
+Tool validations
+* Step 6:
+Message NotifySettlementResponse
+- receiptUrl must be <not omitted>
+Post scenario validations:
+- Verify that the receipt URL provided by the CSMS is valid and accessible.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1037/1383 Part 6 - Test Cases

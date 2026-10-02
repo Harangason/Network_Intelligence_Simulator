@@ -1,0 +1,35 @@
+EV Driver
+Charging Station CSMS
+alt [Plug-in first]
+EV Connected.
+User authorization successful.
+TransactionEventRequest(eventType = Started, chargingState = EVConnected,
+triggerReason = Authorized,...)
+TransactionEventResponse()
+[Authorization first]
+User authorization successful.
+EV Connected.
+TransactionEventRequest(eventType = Started, chargingState = EVConnected,
+triggerReason = CablePluggedIn,...)
+TransactionEventResponse()
+start energy offer
+TransactionEventRequest(eventType = Update, chargingState = Charging,
+triggerReason = ChargingStateChanged,...)
+TransactionEventResponse()
+Figure 53. Sequence Diagram: Start Transaction options - PowerPathClosed
+S6 Scenario objective To start a transaction when the energy flow starts.
+Scenario description 1. The EV Driver is authorized by the Charging Station and/or CSMS.
+2. The Charging Station closes the power relay.
+3. The EV starts charging, energy flow starts.
+4. The Charging Station sends a TransactionEventRequest (eventType = Started) notifying the
+CSMS about a transaction that has started.
+5. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+Prerequisite(s) Configuration Variable: TxStartPoint: EnergyTransfer.
+Postcondition(s) Successful postcondition:
+The transaction is ongoing and the CSMS is Successfully informed.
+Failure postcondition:
+The transaction is not ongoing, or
+The CSMS is not informed.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 169/803 Part 2 - Specification

@@ -1,0 +1,69 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  66 
+d. External CSI-2 sink (Raspberry Pi 5) 
+• MIPI CSI-2 video can also retransmit in the following sequence: 
+a. Pattern generator 
+b. CSI-2 source (MIPI CSI TX) 
+c. External CSI-2 sink (Raspberry Pi 5) 
+7.3. Example Design Overview 
+7.3.1. Example Design System 
+ED Top
+MIPI 
+Subsystem
+Sys 
+PLL
+I2C 
+PLL
+Reset 
+Sequence 
+Controller
+Pattern 
+Subsystem
+I2C 
+Subsystem
+RISC-V 
+Subsystem
+150 MHz
+8 MHz
+125 MHz
+100 MHz
+Reset
+Sensor
+ PLL
+27 MHz
+UVSI TX Stream
+RX_D_P/N_IO, RX_CLK_P/N_IO
+TX_D_P/N_IO, TX_CLK_P/N_IOSCL_IO, SDA_IO
+Custom IP
+External Hardware
+Lattice Propel Software IP
+Clock Connection
+Reset Connection
+AXI-Lite Connection
+UVSI Connection
+MIPI PHY Serial Connection
+I2C Serial Connection
+Camera
+Sensor
+Raspberry 
+Pi 5  
+50 MHz
+ 
+Figure 7.1. Example Design System Diagram 
+The example design system consists of the following IP and custom components: 
+• Reset sequence controller 
+• Sys PLL 
+• I2C PLL 
+• Sensor PLL 
+• MIPI subsystem 
+• I2C subsystem 
+• Pattern subsystem 
+• RISC-V subsystem 
+7.3.1.1. Reset Sequence Controller 
+The reset sequence controller handles the reset sequence of the IP and subsystem components inside the FPGA and 
+the sensor camera which is an external component on device power up. 

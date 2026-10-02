@@ -1,0 +1,57 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  68 
+TX PLL IP 
+The TX PLL generates 456 MHz clock output for the PHY clock of the MIPI CSI TX IP. 
+7.3.1.6. I2C Subsystem 
+The I2C subsystem serves as the I2C communication link between FPGA and external components such as sensor 
+camera and the Raspberry Pi 5 board. The I2C subsystem consists of Lattice IPs such as I2C Controller, I2C Target, and 
+custom components such as I2C bridge, sensor LMMI driver, and I2C APB driver. In this example design, the I2C 
+subsystem initializes the camera sensor via the static ROM configuration setting from FPGA through the I2C 
+communication. In addition, the I2C subsystem bypasses the Raspberry Pi 5 OS initialization to the camera sensor with 
+a dummy ACK response during driver probing. 
+I2C Subsystem
+I2C Target
+T
+Custom IP
+External Hardware
+Lattice Propel Software IP
+Interconnect Connection
+I2C Serial ConnectionI2C APB 
+Driver
+C
+Sensor 
+LMMI Driver
+C
+I2C Controller
+T
+I2C BridgeCamera 
+Sensor
+Raspberry 
+Pi 5  
+C Controller
+T Target
+ 
+Figure 7.3. I2C Subsystem Diagram 
+I2C Target IP 
+The general purpose I2C Target IP provides device addressing, read and write operations, and an acknowledgement 
+mechanism. The programmable nature of the FPGA provides flexibility of configuring the I2C target device to any legal 
+target address, avoiding a potential target address collision on an I2C bus with multiple target devices. In this example 
+design, the I2C Target IP is used for ACK response to the Raspberry Pi 5 OS during the I2C driver probing after power 
+up. 
+For more information about the IP including register map information, refer to the I2C Target IP User Guide (FPGA-
+IPUG-02072). 
+I2C Controller IP 
+The general purpose I2C Controller IP controls an I2C bus. The programmable nature of the FPGA provides flexibility of 
+configuring the I2C controller device, allowing you to customize the I2C controller to meet your specific design 
+requirements. In this example design, the I2C Controller IP is used together with the sensor LMMI driver to configure 
+the IMX258 sensor camera via I2C communication after power up.  
+For more information about the IP including register map information, refer to the I2C Controller IP User Guide (FPGA-
+IPUG-02071). 
+I2C Bridge 
+The I2C bridge is used for I2C communication handshake between the FPGA with external components such as sensor 
+camera and the Raspberry Pi 5 OS. The I2C bridge is responsible for propagating any I2C commands through the FPGA 

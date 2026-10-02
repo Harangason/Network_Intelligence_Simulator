@@ -1,0 +1,50 @@
+TC_I_119_CS: Local Cost Calculation - Cost Details of Transaction - with tariff
+conditions
+Test case name Local Cost Calculation - Cost Details of Transaction - with tariff conditions
+Test case Id TC_I_119_CS
+Use case Id(s) I12
+Requirement(s) I12.FR.06, I12.FR.30, I12.FR.35, I12.FR.36
+System under test Charging Station
+Description Charging Station calculates cost of the transaction locally and returns a break-down of the cost at end of
+the transaction for every charging period for which a different tariff element was active. CSMS can use this
+to generate invoices or Charge Detail Records for EMSPs.
+Purpose To verify if the Charging Station correctly reports the cost and usage details of a transaction.
+Prerequisite(s) - The Charging Station supports local cost calculation using the Tariff mechanism
+(TariffCostCtrlr.Enabled[Tariff] exists and ReadWrite or is true and ReadOnly).
+- The Charging Station supports tariff conditions (TariffCostCtrlr.ConditionsSupported[Tariff] is true)
+Before (Preparations)
+Configuration State:
+- TariffCostCtrlr.Enabled[Tariff] is true
+- TariffCostCtrlr.Enabled[RunningCost] is true
+- TariffCostCtrlr.Enabled[Cost] is true
+- TariffCostCtrlr.Interval[Cost] is 15
+- SampledDataCtrlr.TxUpdatedInterval is 0
+- AlignedDataCtrlr.Interval is 0
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.reservationFixed.prices[0].priceFixed 20.00
+tariff.reservationFixed.taxRates[0].type t5_0
+tariff.reservationFixed.taxRates[0].tax 5.0
+tariff.fixedFee.prices[0].priceFixed 10.00
+tariff.fixedFee.prices[2].priceFixed 5.00
+tariff.fixedFee.taxRates[0].type t5_0
+tariff.fixedFee.taxRates[0].tax 5.0
+tariff.chargingTime.prices[0].priceMinute 6.00
+tariff.chargingTime.prices[0].conditions.minTime 30
+tariff.chargingTime.prices[1].priceMinute 60.00
+tariff.chargingTime.taxRates[0].type t20_0
+tariff.chargingTime.taxRates[0].tax 20.0
+3. Execute Reusable State EnergyTransferStarted
+Note: After approx 10-15 s (depending on TxStartPoint) first CostDetails are sent.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 448/1383 Part 6 - Test Cases

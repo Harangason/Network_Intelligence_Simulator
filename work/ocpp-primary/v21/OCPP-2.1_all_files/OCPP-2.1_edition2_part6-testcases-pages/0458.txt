@@ -1,0 +1,53 @@
+Main (Test scenario)
+7. Execute Reusable State EnergyTransferStarted
+Note: The Test System waits 30 seconds
+8. Execute Reusable State StopAuthorized
+Execute Reusable State EVDisconnected
+Execute Reusable State ParkingBayUnoccupied
+9. The Charging Station sends a TransactionEventRequest
+10. The Test System responds with a
+TransactionEventResponse
+11. Execute Reusable State EnergyTransferStarted
+12. The Charging Station sends a TransactionEventRequest
+13. The Test System responds with a
+TransactionEventResponse
+14. The Charging Station sends a TransactionEventRequest
+15. The Test System responds with a
+TransactionEventResponse
+16. The Charging Station sends a TransactionEventRequest
+17. The Test System responds with a
+TransactionEventResponse
+18. The Charging Station sends a TransactionEventRequest
+19. The Test System responds with a
+TransactionEventResponse
+20. Execute Reusable State StopAuthorized
+Execute Reusable State EVDisconnected
+Execute Reusable State ParkingBayUnoccupied
+21. The Charging Station sends a TransactionEventRequest
+22. The Test System responds with a
+TransactionEventResponse
+Tool validations
+* Step 5:
+Note: The value of TransactionEventRequest.timestamp of last TransactionEventRequest.eventType is Started is called
+TxStartDateTime:
+Message TransactionEventRequest with eventType Ended from reusable states leading up to ParkingBayUnoccupied must have:
+- costDetails.failureToCalculate must be <omitted>
+- costDetails.failureReason must be <omitted>
+- costDetails.totalCost.currency must be EUR
+- costDetails.totalCost.typeOfCost must be MinCost
+- costDetails.totalCost.fixed.exclTax must be 16.00
+- costDetails.totalCost.fixed.inclTax must be 17.60
+- costDetails.totalCost.fixed.taxRates[0].type t10_0
+- costDetails.totalCost.fixed.taxRates[0].tax 10.0
+- costDetails.totalCost.energy must be <omitted>
+- costDetails.totalCost.chargingTime must be <omitted>
+- costDetails.totalCost.idleTime must be <omitted>
+- costDetails.totalCost.reservation must be <omitted>
+- costDetails.totalCost.total.exclTax must be 16.00
+- costDetails.totalCost.total.inclTax must be 17.60
+- costDetails.chargingPeriods[0].tariffId must be Test System1
+- costDetails.chargingPeriods[0].startPeriod must be <TxStartDateTime>
+- costDetails.chargingPeriods[0].dimensions[0].type must be ChargingTime
+- costDetails.chargingPeriods[0].dimensions[0].volume must be <not omitted>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 456/1383 Part 6 - Test Cases

@@ -1,0 +1,52 @@
+C19 - Cancellation prior to transaction - Requirements
+ID Precondition Requirements Note
+C19.FR.01 When EV Driver stops the
+session at Charging Station
+before a transaction has been
+started OR
+An EVConnectionTimeout
+occurs
+Charging Station SHALL instruct payment terminal
+to release the authorization amount and cancel the
+payment.
+C19.FR.02 C19.FR.01 AND
+PaymentCtrlr.AuthorizeDirectPa
+yment = true
+Charging Station SHALL send a
+NotifySettlementRequest with idToken = <pspRef>
+of the ad hoc payment and status = Canceled and
+settlementTime set to current time.
+This notifies CSMS that the
+DirectPayment idToken will not
+be charged.
+C20 - Cancellation after start of transaction
+New in OCPP 2.1
+No. Type Description
+1 Name Cancellation after start of transaction
+2 ID C20
+3 Objective To inform the CSMS that payment has been canceled and the authorization amount has been
+released.
+4 Description The EV Driver cancels the payment when a transaction has been started, but no energy has been
+delivered and no other costs have been made (e.g. no reservation fee).
+Actors EV Driver, Payment Terminal, CSMS, Charging Station
+Scenario description TxStartPoint = "PowerPathClosed" and charging does not start
+1. Payment card of EV Driver has been authorized by the payment service provider and an
+authorization amount has been reserved on the card.
+2. Charging Station has authorized idToken for charging.
+3. EV Driver connects EV.
+4. Charging Station sends a TransactionEventRequest with eventType = Started,
+triggerReason = CablePluggedIn and idToken information and other relevant fields.
+a. CSMS responds with TransactionEventResponse with idTokenInfo.
+5. Charging does not start, e.g. due to failure in either EV or Charging Station.
+6. EV Driver decides to cancel the session.
+7. Payment terminal requests payment service provider to release the authorization
+reservation on the card.
+8. Charging Station ends authorization of idToken.
+9. Charging Station sends TransactionEventRequest with eventType = Ended and
+triggerReason = StopAuthorized and other relevant fields.
+10. CSMS responds with TransactionEventResponse with totalCost = 0.
+11. Charging Station sends a NotifySettlementRequest with pspRef = idToken and status =
+Canceled to notify CSMS that the previously authorized idToken will not start a
+transaction and payment has been canceled.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 134/803 Part 2 - Specification

@@ -1,0 +1,48 @@
+Main (Test scenario)
+Charging Station CSMS
+Note: Request CSMS to send a network profile including identity and password.
+Manual Action :  Request CSMS to send a network profile including identity and password.          
+Tool validations
+* Step 1:
+Message SetNetworkProfileRequest
+- configurationSlot is <Configured configurationSlot>
+- connectionData.messageTimeout <Configured messageTimeout>
+- connectionData.ocppCsmsUrl <Configured ocppCsmsUrl>
+- connectionData.ocppInterface <Configured ocppInterface>
+- connectionData.ocppTransport JSON
+- connectionData.ocppVersion OCPP20 OCPP21  
+- connectionData.securityProfile <Configured securityProfile> <Active securityProfile> 
+- connectionData.identity <Configured identity>
+- connectionData.basicAuthPassword <Configured basicAuthPassword>
+6.3.7. Page 1007/1008 - (2026-02) - TC_B_116_CSMS -
+Added SecurityEventNotificationRequest steps and updated tool validations.
+Test case name Reset ImmediateAndResume - With Ongoing Transaction and SmartCharging - resuming energytransfer
+Test case Id TC_B_116_CSMS
+…
+Description This test case covers how the CSMS can remotely request the Charging Station to reset itself by sending a
+ResetRequest during a transaction. When ResetRequest "Immediate" "ImmediateAndResume"  is sent the
+charging stations will try to stop all transactions before rebooting.
+Main
+(Test scenario)
+Charging Station CSMS
+…
+9. The Test System notifies the CSMS about the current state of
+all connectors.
+For <Configured connectorId>:
+Message: StatusNotificationRequest
+- connectorStatus Occupied
+Message: NotifyEventRequest
+- trigger Delta
+- actualValue "Occupied"
+- component.name "Connector"
+- variable.name "AvailabilityState"
+For <Other connector(s)>:
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- trigger Delta
+- actualValue "Available"
+- component.name "Connector"
+- variable.name "AvailabilityState"
+10. The CSMS responds accordingly.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 102/116 Errata 2026-06

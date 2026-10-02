@@ -1,0 +1,56 @@
+TC_N_39_CS: Set Variable Monitoring - Component/Variable combination does
+NOT correspond
+Test case name Set Variable Monitoring - Component/Variable combination does NOT correspond
+Test case Id TC_N_39_CS
+Use case Id(s) N04
+Requirement(s) N04.FR.16
+System under test Charging Station
+Description This test case describes how the CSMS requests the Charging Station to set monitoring triggers on
+Variables. Multiple triggers can be set for upper or lower thresholds, delta changes or periodic reporting.
+Purpose To verify if the Charging station is able to correctly respond to the request when a Component/Variable
+combination which does NOT correspond is sent as described at the OCPP specification.
+Prerequisite(s) Charging Station supports Monitoring
+This test case assumes the Charging Station has a non-numeric Component Variable <Configured non-
+numeric delta component variable> and numeric Component Variable <Configured threshold monitor
+component variable>.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetVariableMonitoringResponse
+1. The Test System sends a SetVariableMonitoringRequest with
+setMonitoringData[0].type Delta
+setMonitoringData[0].value 1
+setMonitoringData[0].component = <Configured non-numeric
+delta component variable>
+setMonitoringData[0].variable = <Configured non-numeric delta
+component variable>
+4. The Charging Station responds with a
+SetVariableMonitoringResponse
+3. The Test System sends a SetVariableMonitoringRequest with
+setMonitoringData[0].id
+<SetVariableMonitoringResponse.setMonitoringResult[0].id of
+step 2>
+setMonitoringData[0].type Delta
+setMonitoringData[0].value 1
+setMonitoringData[0].component = <Configured numeric delta
+component variable>
+setMonitoringData[0].variable = <Configured numeric delta
+component variable>
+6. The Charging Station responds with a
+GetMonitoringReportResponse
+5. The Test System sends a GetMonitoringReportRequest with
+- requestId <Generated requestId>
+7. The Charging Station sends a
+NotifyMonitoringReportRequest 8. The Test System responds with a
+NotifyMonitoringReportResponse .
+Note(s):
+- If tbc is True at Step 7 then step 7 and 8 will be repeated
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 721/1383 Part 6 - Test Cases

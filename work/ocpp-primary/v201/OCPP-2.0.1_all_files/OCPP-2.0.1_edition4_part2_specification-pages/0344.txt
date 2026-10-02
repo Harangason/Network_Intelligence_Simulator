@@ -1,0 +1,61 @@
+No. Type Description
+4 Description NotifyEventRequest reports every Component/Variable for which a VariableMonitoring setting
+was triggered. Only the VariableMonitoring settings that are responsible for triggering an event
+are included.
+Actors Charging Station, CSMS
+Scenario description 1. If a threshold or a delta value has exceeded, the Charging Station sends a NotifyEventRequest
+to the CSMS.
+2. The CSMS responds with a NotifyEventResponse.
+5 Prerequisite(s) The Charging Station has active monitoring settings.
+The monitoring setting(s) might have been configured explicitly via a SetVariableMonitoring
+message or it might be "hard-wired" in the Charging Station’s firmware.
+6 Postcondition(s) The Charging Station notified the CSMS about the monitoring events.
+7 Error handling n/a
+8 Remark(s) Requirement N07.FR.04 states that events with a severity equal or less than
+OfflineMonitoringEventQueuingSeverity shall be queued while the charging station is offline, and
+delivered once online. This implies that events with a severity greater than
+OfflineMonitoringEventQueuingSeverity will not be sent to CSMS. The result is, that the logical
+chain of events may be broken when the charging station is back online.
+For example, a monitoring event for a variable exceeding a threshold occurred while offline and
+was not sent. Once back online, at some point in time the monitoring event is reported with the
+variable cleared set to true, but CSMS did not even know that the threshold had been exceeded.
+CSMS will have to be able to deal with that.
+This problem can be prevented, while still adhering to the specification, by not simply discarding
+these monitoring events, but by delaying the evaluation of those monitors that exceed
+OfflineMonitoringEventQueuingSeverity, until the charging station comes back online. The result
+is, that when the charging station is back online, CSMS will get the monitoring events that apply to
+the current situation, and it is fully up-to-date regarding the monitors. Only those monitoring
+events that were triggered & cleared during the offline period will remain invisible to CSMS.
+Charging Station CSMS
+alt [If a threshold or a delta value of a monitoring setting has been reached]
+loop [For each report part]
+NotifyEventRequest(generatedAt, tbc, seqNo, eventData)
+NotifyEventResponse()
+Figure 135. Sequence Diagram: Alert Event
+N07 - Alert Event - Requirements
+Table 128. N07 - Requirements
+ID Precondition Requirement definition Note
+N07.FR.02 When a monitored value returns to
+within the set UpperThreshold or
+LowerThreshold
+The Charging Station SHALL send a
+NotifyEventRequest with an eventData with the
+attribute cleared is true.
+N07.FR.03 When the CSMS receives an
+NotifyEventRequest
+The CSMS SHALL respond with an empty
+NotifyEventResponse.
+N07.FR.04 When a monitor is triggered AND
+The severity number of the monitor is
+equal to or lower than the severity
+number set in the Configuration
+Variable
+OfflineMonitoringEventQueuin
+gSeverity 
+AND
+The Charging Station is offline
+The Charging Station SHALL queue this
+NotifyEventRequest and deliver it when it is back
+online.
+Edition 4, 2025-12-03 N. Diagnostics
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 334/491 Part 2 - Specification

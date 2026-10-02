@@ -1,0 +1,68 @@
+2.13. Page 178 - (2026-06) - New F01.FR.27 and F02.FR.28 for evseId in
+RequestStartTransactionRequest [1281]
+There has always been an implicit (silent) requirement that a CSMS is able to provide an EVSE ID in a
+RequestStartTransactionRequest. It is only for flexibility that the option was given to let the charging station decide which EVSE to
+use if it is able to do so. A charging station that cannot do this can reject the request. In that case CSMS will have to send a new
+RequestStartTransaction with an EVSE ID.
+Unfortunately, due to the evseId being an optional field, a CSMS could be implemented that is never sending an evseId and still
+comply to the requirements. Therefore, a new requirement is added to close this gap.
+New requirement
+ID Precondition Requirement definition Note
+F01.FR.27 CSMS SHALL be able to provide an evseId in a
+RequestStartTransactionRequest for interoperability with
+Charging Stations that do not accept
+RequestStartTransactionRequest without it.
+F01.FR.07 allows a charging
+station to reject a request
+without evseId. F01.FR.06
+allows CSMS to send a request
+without evseId, but in case of
+F01.FR.07 it must be able to
+provide a evseId.
+The same requirement is also for F02.
+New requirement
+ID Precondition Requirement definition Note
+F02.FR.28 CSMS SHALL be able to provide an evseId in a
+RequestStartTransactionRequest for interoperability with
+Charging Stations that do not accept
+RequestStartTransactionRequest without it.
+(Same as F01.FR.27)
+F02.FR.15 allows a charging
+station to reject a request
+without evseId. F02.FR.14
+allows CSMS to send a request
+without evseId, but in case of
+F02.FR.15 it must be able to
+provide a evseId.
+2.14. Page 293 - (2026-04) - L01.FR.04 - removed ECSchnorr algorithm
+option and clarify the signature verification the Charging Station must
+do
+ID. Precondition Requirements Note
+Old L01.FR.04 When the Charging Station has
+successfully downloaded the
+new firmware
+The signature SHALL be validated, by
+calculating the signature over the entire
+firmware file using the RSA-PSS or
+ECSchnorr algorithm for signing, and the
+SHA256 algorithm for calculating hash
+values.
+New L01.FR.04 When the Charging Station has
+successfully downloaded the
+new firmware
+The charging station SHALL verify the     
+signature from the  
+UpdateFirmwareRequest with the hash   
+over the entire received firmware file     
+computed using the signature hash    
+algorithm.
+The RSA-PSS or ECDSA   
+algorithm is used for signing.    
+Please refer to section   
+[certificate_properties]  for more  
+details about signature  
+algorithms and computing hash   
+values.
+2.15. Page 412 - (2026-02) - Improved description of
+UnitOfMeasureType [670]
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2026 11/34 Errata 2026-06

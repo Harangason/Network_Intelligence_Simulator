@@ -1,0 +1,42 @@
+TC_C_105_CS: Integrated Payment Terminal - CSMS rejects authorization
+Test case name Integrated Payment Terminal - CSMS rejects authorization
+Test case Id TC_C_105_CS
+Use case Id(s) C18
+Requirement(s) C18.FR.01, C18.FR.02, C18.FR.04, C18.FR.07
+System under test Charging Station
+Description To start/authorize a transaction from a payment terminal connected directly to the Charging Station.
+Purpose To verify that the Charging Station correctly handles payment terminal authorizations when the CSMS
+rejects the authorization.
+Prerequisite(s) - Charging Station has an integrated Payment Terminal
+Before (Preparations)
+Configuration State:
+- PaymentCtrlr.Enabled = true
+- PaymentCtrlr.AuthorizationAmount = 50.00
+- PaymentCtrlr.AuthorizeDirectPayment = true
+- PaymentCtrlr.PaymentDetails = CardLast4Digits
+Memory State:
+N/a
+Reusable State(s):
+State is DefaultTariffConfigure
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present a payment card to the payment terminal
+Note(s):
+- The Charging Station instructs payment terminal to request authorization for this card from PSP for amount of 50.00 EUR
+- PSP authorizes the payment card and provides <PspRef>
+1. The Charging Station sends an AuthorizeRequest
+2. The Test System responds with an AuthorizeResponse with
+idTokenInfo.status = Invalid
+Note(s):
+- The Charging Station instructs payment terminal to release the authorization amount and cancel the payment
+Tool validations
+* Step 1:
+Message AuthorizeRequest
+- idToken must be <Not empty>
+- idToken.type must be DirectPayment
+- idToken.additionalInfo[0].additionalIdToken must be <not omitted>
+- idToken.additionalInfo[0].type must be CardLast4Digits
+Post scenario validations:
+- Authorization amount is released and the payment is cancelled.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 187/1383 Part 6 - Test Cases

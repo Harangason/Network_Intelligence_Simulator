@@ -1,0 +1,43 @@
+TC_N_103_CS: Retrieve Log Information - Authentication - HTTPS
+Test case name Retrieve Log Information - Authentication - HTTPS
+Test case Id TC_N_103_CS
+Use case Id(s) N01
+Requirement(s) N01.FR.01, N01.FR.02, N01.FR.04, N01.FR.07, N01.FR.08, N01.FR.09, N01.FR.13, N01.FR.21 N01.FR.25
+System under test Charging Station
+Description This test case covers the functionality of getting log information from a Charging Station. The CSMS can
+request a Charging Station to upload a file with log information to a given location (URL). The format of this
+log file is not prescribed. The Charging Station successfully uploads a log file and gives information about
+the status of the upload by sending status notifications to the CSMS.
+Purpose To verify if the Charging station is able to successfully upload a log of logType DiagnosticsLog as described
+at the OCPP specification, using the HTTPS protocol.
+Prerequisite(s) - Charging Station has log information available.
+- Charging station supports HTTPS file transfer protocol (This is configured at the configuration variable
+FileTransferProtocols).
+- A diagnostics logging server has been set up for HTTPS and accepts only specific userinfo credentials .
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a GetLogResponse
+1. The Test System sends a GetLogRequest with
+logType DiagnosticsLog log.remoteLocation <Configured log
+location with userinfo> and set protocol to HTTPS
+For example:
+https://username:password@my.server.net
+Note(s):
+- Charging Station is uploading log file
+3. The Charging Station sends a LogStatusNotificationRequest
+4. The Test System responds with a
+LogStatusNotificationResponse
+Note(s):
+- Log file is uploaded
+5. The Charging Station sends a LogStatusNotificationRequest
+6. The Test System responds with a
+LogStatusNotificationResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 745/1383 Part 6 - Test Cases

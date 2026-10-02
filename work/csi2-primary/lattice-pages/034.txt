@@ -1,0 +1,52 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  34 
+2.11. MIPI CSI/DSI Receiver Byte-to-Pixel Block 
+The Byte-to-Pixel module converts MIPI packet payload bytes into pixel data and outputs the data via UVSI AXI4-
+Stream. The block bridges the free running clock domain (fr_clk_i) and video pixel clock domain (axis_vid_clk_i), and 
+uses dual clock FIFO for data buffering and flow control. 
+This block performs the following key functions: 
+• Byte-to-Pixel conversion: Translates MIPI CSI/DSI packet payload bytes into pixel data according to the configured 
+video format. Payload processing begins after detecting SOF. 
+• Clock domain bridging: Interfaces between the free running clock domain (fr_clk_i) and the video pixel clock 
+domain (axis_vid_clk_i). 
+• AXI4-Stream output: Outputs the converted pixel data via UVSI. 
+Table 2.8. MIPI CSI/DSI Receiver Byte-to-Pixel Supported Configurations 
+RX Controller Mode Color Format Number of Pixel per Clock (PPC) 
+32-bit RGB888, RGB565, RAW10, RAW12 1, 2, 4 
+64-bit RGB888, RGB565, RAW10, RAW12 1, 2, 4 
+Note: 
+1. 64-bit controller mode is only supported in Hard D-PHY with 4 lanes configuration 
+2.12. Dynamic Reconfiguration 
+Dynamic lane reconfiguration allows runtime configuration of the active MIPI data lane number without a system reset. 
+This feature is targeted for power management, bandwidth adaptation , and responding to changing display and sensor 
+requirements. 
+To enable this feature, configure the IP based on the supported IP attributes in the IP Parameter Description section. 
+Check the additional IP parameters in the Module/IP Block Wizard in the Lattice Radiant software as follows:  
+• Ensure the Enable AXI4-Lite Interface and Dynamic Reconfiguration parameters are checked. This is required as 
+registers are accessible only through AXI4-Lite. 
+• Set the Number of D-PHY Lanes parameter to the maximum desired value at compile time to enable dynamic 
+reconfiguration of all possible combinations. 
+When you configure the PHY_CONFIG_REG (0x210) register via the AXI4-Lite interface, the new lane configuration 
+takes effect when all the current active data lanes are in idle state, which ensures no data corruption occurs. 
+2.12.1. MIPI CSI/DSI Transmitter Dynamic Lane Reconfiguration 
+To reconfigure the dynamic lane registers, follow these steps: 
+1. After sending the whole frame packet, wait for 2ms to allow packet processing to complete. 
+2. Write to PHY_CONFIG_REG 0x210[2:0] to change the number of active lanes and PHY_CONFIGURATION_REG 
+0x210[3] to enable the update. 
+3. For generated IP with x4 lanes, to configure the IP to x1 lanes, write 0x0000_0009 to PHY_CONFIG_REG address 
+(0x210). To configure the IP to x2 lanes, write 0x0000_000A to PHY_CONFIG_REG address (0x210). 
+When you configure the PHY_CONFIG_REG (0x210) register via the AXI4-Lite interface, the new lane configuration takes  
+effect when all the current active data lanes are in idle state, which ensures no data corruption occurs. 
+2.12.2. MIPI CSI/DSI Receiver Dynamic Lane Reconfiguration 
+To reconfigure the dynamic registers, follow these steps: 
+1. Write to PHY_CONFIG_REG 0x210[2:0] to change the number of active lanes and PHY_CONFIG_REG 0x210[3] to 
+enable the update. 
+2. When PHY Mode is set to Hard D-PHY, configurable deskew calibration can be set by writing to PHY_CONFIG_REG 
+0x210[4] to enable or disable deskew calibration and PHY_CONFIG_REG 0x210[5] to enable the deskew setting. 
+3. After setting PHY_CONFIG_REG 0x210, wait for 2 ms before writing to CONFIG_REG 0x200, to indicate that all 
+configuration registers are already set. 

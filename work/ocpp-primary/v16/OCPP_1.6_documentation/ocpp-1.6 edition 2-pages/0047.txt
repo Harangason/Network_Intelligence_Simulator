@@ -1,0 +1,40 @@
+DESCRIPTION
+I1-I8
+Fault is resolved and status returns to the pre-fault state
+
+A Charge Point Connector MAY have any of the 9 statuses as shown in the table above. For
+ConnectorId 0, only a limited set is applicable, namely: Available, Unavailable and Faulted. The
+status of ConnectorId 0 has no direct connection to the status of the individual Connectors
+(>0).
+ If charging is suspended both by the EV and the EVSE, status SuspendedEVSE SHALL have
+precedence over status SuspendedEV.
+
+When a Charge Point or a Connector is set to status Unavailable by a Change Availability
+command, the 'Unavailable' status MUST be persistent across reboots. The Charge Point MAY
+use the Unavailable status internally for other purposes (e.g. while updating firmware or
+waiting for an initial Accepted RegistrationStatus).
+As the status Occupied has been split into five new statuses (Preparing, Charging, SuspendedEV, SuspendedEVSE
+and Finishing), more StatusNotification.req PDUs will be sent from Charge Point to the Central System. For
+instance, when a transaction is started, the Connector status would successively change from Preparing to
+Charging with a short SuspendedEV and/or SuspendedEVSE inbetween, possibly within a couple of seconds.
+To limit the number of transitions, the Charge Point MAY omit sending a StatusNotification.req if it was active for
+less time than defined in the optional configuration key MinimumStatusDuration. This way, a Charge Point
+MAY choose not to send certain StatusNotification.req PDUs.
+
+A Charge Point manufacturer MAY have implemented a minimal status duration for certain
+status transitions separate of the MinimumStatusDuration setting. The time set in
+MinimumStatusDuration will be added to this default delay. Setting
+MinimumStatusDuration to zero SHALL NOT override the default manufacturer’s minimal
+status duration.
+
+Setting a high MinimumStatusDuration time may result in the delayed sending of all
+StatusNotifications, since the Charge Point will only send the StatusNotification.req once the
+MinimumStatusDuration time is passed.
+The Charge Point MAY send a StatusNotification.req PDU to inform the Central System of fault conditions. When
+the 'status' field is not Faulted, the condition should be considered a warning since charging operations are still
+possible.
+ ChargePointErrorCode EVCommunicationError SHALL only be used with status Preparing,
+SuspendedEV, SuspendedEVSE and Finishing and be treated as warning.
+When a Charge Point is configured with StopTransactionOnEVSideDisconnect set to false, a transaction is
+running and the EV becomes disconnected on EV side, then a StatusNotification.req with the state: SuspendedEV
+42

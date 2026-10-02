@@ -1,0 +1,27 @@
+Example:
+<wsa5:ReplyTo SOAP-ENV:mustUnderstand="true">
+<wsa5:Address>
+http://www.w3.org/2005/08/addressing/anonymous
+</wsa5:Address>
+</wsa5:ReplyTo>
+3.9. To
+Required: Yes
+According to the WS-A 1.0 Core specification this field is marked as optional. However, if this field is
+omitted because it is optional the implicit value is “http://www.w3.org/2005/08/addressing/anonymous”.
+What this means of how it should affect SOAP behavior is unspecified. For OCPP we require the To
+field to be filled in with the correct web service address of the recipient.
+Example:
+<wsa5:To SOAP-ENV:mustUnderstand="true">
+http://some.backoffice.com/ocpp/v1/5
+</wsa5:To>
+4. Fault Response
+In cases where the receiving party (e.g. Charge Point or Central System) cannot process the request and
+the corresponding confirmation PDU does not have to ability to report the error, then the SOAP Fault
+Response Message SHOULD be used. This can be used, for instance, when the operation is not
+implemented or when an internal error has occurred.
+If a sender receives a SOAP Fault Response from the receiver, the sender SHOULD NOT resend the
+same message.
+The following fault codes can be used by the service:
+Code, Reason and Value belong to the namespace "http://www.w3.org/2003/05/soap-envelope".
+This example SubCode belongs to the namespace "urn://Ocpp/Cs/2015/10"
+9

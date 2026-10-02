@@ -1,0 +1,41 @@
+RAW8, RAW10 or RAW12 as well as formats which have the same pixel packing as RAW8, RAW10 or RAW12 
+such as YUV-422.
+For each RX Port, register defines with which channel and data type the context is associated:
+• For FPD Receiver port operating in RAW input mode connected to a DS90UB933-Q1 or DS90UB913A-Q1 
+serializer, register 0x70 describes RAW10 Mode and 0x71 RAW12 Mode.
+• RAW1x_VC[7:6] field defines the associated virtual ID transported by the CSI-2 protocol from the camera 
+sensor.
+• RAW1x_ID[5:0] field defines the associated data type. The data type is a combination of the data type 
+transported by the CSI-2 protocol.
+VC
+Virtual Channel 
+Indentifier
+(VC)
+Data Type 
+(DT)
+Data Identifier (DI) Byte
+DI7 DI4 DI3 DI0DI6 DI5 DI1 DI2
+DT
+Figure 7-10. CSI-2 Data Identifier Structure
+7.4.17 Virtual Channel and Context
+The CSI-2 protocol layer transports virtual channels. The purpose of virtual channels is to separate different data 
+flows interleaved in the same data stream. Each virtual channel is identified by a unique channel identification 
+number in the packet header. Therefore, a CSI-2 TX context can be associated with a virtual channel and a data 
+type. Virtual channels are defined by a 2-bit field. This channel identification number is encoded in the 2-bit code.
+The CSI-2 TX transmits the channel identifier number and multiplexes the interleaved data streams. The CSI-2 
+TX supports up to four concurrent virtual channels.
+7.4.18 CSI-2 Mode Virtual Channel Mapping
+The CSI-2 Mode provides per-port Virtual Channel ID mapping. For each FPD-Link III input port, separate 
+mapping may be done for each input VC-ID to any of the four VC-ID values. The mapping is controlled by 
+the VC_ID_MAP register. This function sends the output as a time-multiplexed CSI-2 stream, where the video 
+sources are differentiated by the virtual channel.
+7.4.18.1 Example 1
+The DS90UB960-Q1 is receiving data from sensors attached to each port. Each port is sending a video stream 
+using VC-ID of 0. The DS90UB960-Q1 can be configured to re-map the incoming VC-IDs to ensure each video 
+stream has a unique ID. The direct implementation would map incoming VC-ID of 0 for RX Port 0, VC-ID of 1 for 
+RX Port 1, VC-ID of 2 for RX Port 2, and VC-ID of 3 for RX Port 3.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 41
+Product Folder Links: DS90UB960-Q1

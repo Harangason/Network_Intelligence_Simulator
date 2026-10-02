@@ -1,0 +1,86 @@
+62 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+Using CAN Extended Addresses
+Some vehicles with CAN interfaces use a data
+format that is slightly different from what we have
+described so far. The data packets look very similar,
+except that the first byte is used for the receiver’s (ie
+target’s) address. The remaining seven bytes are used
+as described previously.
+We refer to this type of addressing as ‘CAN
+Extended Addressing’, and provide support for it with
+the CEA and CER commands. Perhaps an example
+would best describe how to use it.
+Here is a portion of a data transfer that was taken
+from a vehicle. For the moment, ignore the first data
+bytes on each line and only look at the remaining data
+bytes (that are outlined in grey):
+7B0 04 02 10 81 00 00 00 00
+7C0 F1 02 50 81 00 00 00 00
+7B0 04 02 21 A2 00 00 00 00
+7C0 F1 10 16 61 A2 01 02 05
+7B0 04 30 FF 00 00 00 00 00
+7C0 F1 20 DF 01 00 04 09 01
+7C0 F1 21 02 05 DF 01 00 04
+7C0 F1 22 09 01 00 04 01 00
+If you are familiar with the ISO 15765 data format,
+you will recognize that the data bytes shown inside the
+box appear to conform to that standard. The rows that
+begin with 02 are Single Frames, the one that starts
+with 10 is a First Frame, the one with a 30 is a Flow
+Control, and the others are Consecutive Frames.
+The remaining bytes, shown outside the box, are
+the standard 11 bit CAN ID, and an extra address
+byte. The lines that have F1 for the extra address are
+directed to the scan tool (all scan tools generally use
+F1 as the default address), and the other lines are
+being sent to the vehicle (at address 04).
+As an example, we will set the ELM327 to handle
+the above messages. We know that the messages use
+11 bit IDs with ISO 15765 formatting, and let us
+assume a baud rate of 50kbps. The command to
+configure protocol B for this is:
+>AT PB 81 0A
+Next, tell the ELM327 to receive all messages that
+have an ID of 7C0:
+>AT CRA 7C0
+and to send with an ID (header) of 7B0:
+>AT SH 7B0
+Notice that there was a flow control message that
+was sent in this group, but it’s not quite the same as
+the one for OBD systems. For this reason, you’ll need
+to define your own flow control with the following three
+statements:
+>AT FC SH 7B0
+>AT FC SD 04 30 FF 00
+>AT FC SM1
+The final setup statement that you will need is to
+tell the ELM327 to send messages to CAN Extended
+Address 04:
+>AT CEA 04
+Note that the default CER receive address is the
+tester address (F1), so we do not need to send a CER
+command to define the receive address.
+Now everything is configured. Next, tell the IC to
+use this protocol, and to bypass any initiation (as it is
+not standard OBD, and would likely fail):
+>AT SP B
+>AT BI
+That’s all. To exactly reproduce the flow of data
+shown previously, you only need to send the relevant
+data bytes and the ELM327 will add the rest:
+>10 81
+50 81
+>21 A2
+016
+0: 61 A2 01 02 05
+0: DF 01 00 04 09 01
+1: 02 05 DF 01 00 04
+2: 09 01 00 04 01 00
+Notice that for some reason, this vehicle has sent
+two segment 0’s, but that just means that it doesn’t
+exactly follow the ISO 15765 protocol. The above
+shows what the responses would look like with the
+headers off. If they had been on, the data exchange
+would look like what we showed on the left.

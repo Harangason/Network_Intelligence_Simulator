@@ -1,0 +1,47 @@
+Other Loads
+EMS as
+Local Controller Charging Station CSMS
+Power measurements
+Power measurements
+Calculate available power
+for charging
+internally represent limitation
+as ExternalConstraints schedule
+recalculate charging schedule
+opt [if charging limit changed more than: LimitChangeSignificance]
+NotifyChargingLimitRequest(EMS, chargingSchedule)
+NotifyChargingLimitResponse()
+balance available power across
+active Charging Stations
+loop [or each Charging Station]
+SetChargingProfileRequest(ChargingStationMaxProfile,
+<schedule>)
+SetChargingProfileResponse(Accepted)
+opt [transaction ongoing]
+recalculate charging schedule
+opt [if charging rate changed more than:
+LimitChangeSignificance]
+TransactionEventRequest(Updated,
+ChargingRateChanged, ...)
+TransactionEventResponse(...)
+K25 - Smart Charging with EMS acting as a Local Controller - Requirements
+The requirements for this use case are already covered in use case K14.
+K26 - Smart Charging with Hybrid Local & Cloud EMS
+New in OCPP 2.1
+No. Type Description
+1 Name Smart Charging with Hybrid Local & Cloud EMS
+2 ID K26 (see also K14)
+3 Objective(s) To describe how smart charging can be performed by an EMS in the cloud that is acting as a
+Local Controller that manages Charging Stations in the building.
+This use case is similar to K25. The difference is, that in this case EMS has cloud component and
+a local component.
+4 Description In this use case EMS exists in both a cloud and a local instance. It has two alternative topologies:
+1. The part running in the cloud is responsible for scheduling and Local Controller
+functionality, and the other part running locally on site measures local loads and acts as a
+fail-safe protection against overloading the local grid connection.
+2. The part running in the cloud is only responsible for scheduling, and the other part running
+locally on site acts as a Local Controller and measures local loads and acts as a fail-safe
+protection against overloading the local grid connection.
+Actors Cloud EMS, Local EMS, Charging Station, CSMS
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 370/803 Part 2 - Specification

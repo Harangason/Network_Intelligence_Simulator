@@ -1,0 +1,70 @@
+No. Type Description
+Alternative scenario Settlement fails due to communication problems
+1. Charging Station requests payment terminal to settle payment.
+2. Payment terminal attempts to contact PSP, but fails.
+3. Payment terminal may be configured to autonomously perform a number of retries. (This
+is not an OCPP-related configuration).
+4. Payment terminal returns a Failed status
+5. Charging Station sends a NotifySettlementRequest with transactionId, idToken,
+settlementAmount, settlementTime and status = Failed and (optional) additional error
+information in statusInfo.
+5 Prerequisites Transaction was started using ad hoc payment.
+6 Postcondition(s) CSMS knows of the rejected/failed settled status.
+7 Error handling
+8 Remark(s) In case of settlement failure CSO can try to capture the amount by contacting the payment
+service provider and providing the payment details, such as the PSP reference (which is the value
+of idToken).
+EV Driver
+Payment Service
+Provider
+Integrated
+Payment Terminal Charging Station CSMS
+Assuming TxStopPoint
+is PowerPathClosed
+Adhoc transaction for idToken <PspRef> is ended.
+TransactionEventRequest(eventType = Ended,
+transactionId = "AB123", costDetails = ..., ...)
+TransactionEventResponse()
+Show cost breakdown
+settlement payment(finalCost)
+settle payment(finalCost)
+settlement result(Rejected
+or Failed)
+settlement result(Rejected
+or Failed)
+Show settlement status
+NotifySettlementRequest(transactionId = "AB123",
+pspRef = <idToken>,
+settlementAmount = <finalCost>,
+status = Rejected/Failed, settlementTime = ...)
+NotifySettlementResponse()
+Figure 44. Sequence diagram of failing settlement of an ad hoc payment
+C22 - Settlement is rejected or fails - Requirements
+ID Precondition Requirements Note
+C22.FR.01 When Charging Station receives
+a settlement status from
+payment terminal that is
+Rejected
+Charging Station SHALL send a
+NotifySettlementRequest to CSMS with status =
+Rejected, settlementAmount, settlementTime,
+transactionId and pspRef without receipt
+information.
+This means the payment
+service provider has rejected
+the settlement.
+C22.FR.02 When Charging Station receives
+a settlement status from
+payment terminal that is
+Failed
+Charging Station SHALL send a
+NotifySettlementRequest to CSMS with status =
+Failed, settlementAmount, settlementTime,
+transactionId and pspRef without receipt
+information.
+This means that there are
+technical reasons why the
+settlement failed, e.g. a failure
+to communicate.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 140/803 Part 2 - Specification

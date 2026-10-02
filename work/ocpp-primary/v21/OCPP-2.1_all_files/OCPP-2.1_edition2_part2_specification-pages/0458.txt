@@ -1,0 +1,49 @@
+No. Type Description
+Actors Charging Station, CSMS
+Scenario description 1. The Charging Station requests the CSMS to provide OCSP certificate status by sending a
+GetCertificateStatusRequest.
+2. The CSMS responds with a GetCertificateStatusResponse.
+5 Prerequisite(s) n/a
+6 Postcondition(s) Successful postcondition:
+The Charging Station received the OCSP certificate status for the requested certificate
+Failure postcondition:
+The retrieval of the OCSP certificate status by the CSMS failed
+7 Error handling n/a
+8 Remark(s) The status indicator in the GetCertificateStatusResponse indicates whether or not the CSMS was
+successful in retrieving the certificate status. it does NOT indicate the validity of the certificate.
+For installing the (V2G) Charging Station Certificate, see use cases A02 - Update Charging Station
+Certificate by request of CSMS and A03 - Update Charging Station Certificate initiated by the
+Charging Station. The V2G certificate chain SHOULD NOT include the V2GRootCertificate. This
+SHOULD be installed using Use case M05 - Install CA certificate in a Charging Station.
+OCPP allows for only one certificate per GetCertificateStatusRequest. Because when multiple
+answers on a GetCertificateStatusRequest are to be expected, it makes handling the request and
+status more complex. So a GetCertificateStatusRequest needs to be sent per SubCA.
+responderURL is required in OCPP, while it is optional in ISO 15118. Without a responderURL in a
+certificate it cannot work, so a responderURL is required for any certificate for which a
+GetCertificateStatusRequest can be expected.
+Charging Station CSMS
+GetCertificateStatusRequest(ocpsRequestData)
+Retrieve OCSP certificate status
+GetCertificateStatusResponse(status, ocspResult)
+Cache retrieved information
+Figure 163. Get V2G Charging Station Certificate status
+M06 - Get V2G Charging Station Certificate status - Requirements
+Table 132. M06 - Requirements
+ID Precondition Requirement definition
+M06.FR.01 After receiving a GetCertificateStatusRequest The CSMS SHALL respond with a GetCertificateStatusResponse.
+M06.FR.02 M06.FR.01
+AND
+The CSMS was successful in retrieving the
+OCSP certificate status
+The CSMS SHALL indicate success by setting status to
+Accepted in the GetCertificateStatusResponse.
+M06.FR.03 M06.FR.02 The CSMS SHALL include the OCSP response data in the
+OCSPResult field in the GetCertificateStatusResponse.
+M06.FR.04 M06.FR.01
+AND
+The CSMS was not successful in retrieving the
+OCSP certificate status
+The CSMS SHALL indicate it was not successful by setting
+status to Failed in the GetCertificateStatusResponse.
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 445/803 Part 2 - Specification

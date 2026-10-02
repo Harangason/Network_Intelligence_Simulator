@@ -1,0 +1,33 @@
+No. Type Description
+Scenario description 1. The User (Law Enforcement official) presents his IdToken at the Charging Station.
+2. The Charging Station sends AuthorizeRequest to the CSMS to request authorization.
+3. Upon receipt of AuthorizeRequest, the CSMS responds with AuthorizeResponse. This response
+message contains a GroupId that equals the value of the Configuration Variable
+MasterPassGroupId and the idToken is valid.
+4a. If the Charging Station has a UI, then the Charging Station "Shows" the Master Pass UI.
+5a. The user selects which transactions to stop.
+6a. The Charging Station stops the selected transaction(s) AND sends a
+TransactionEventRequest (eventType = Ended, stopReason = MasterPass) to the CSMS for every
+stopped transaction.
+7a. Upon receipt of TransactionEventRequest the CSMS responds with
+TransactionEventResponse.
+4b. If the Charging Station does NOT have a UI, then the Charging Station stops all transactions
+AND sends a TransactionEventRequest (eventType = Ended, stopReason = MasterPass) to the
+CSMS for every stopped transaction.
+5b. Upon receipt of TransactionEventRequest the CSMS responds with
+TransactionEventResponse.
+Alternative scenario(s) C01 - EV Driver Authorization
+5 Prerequisites Ongoing Transaction(s)
+Configuration Variable: MasterPassGroupId set.
+Users IdToken has groupId equal to the configured MasterPassGroupId.
+6 Postcondition(s) (Selected) transaction(s) stopped.
+7 Error Handling When the user does not make a selection before an acceptable timeout, the Charging Station
+SHALL go back to normal operation.
+8 Remarks The scenario description and sequence diagram above are based on the Configuration Variable
+for stop transaction being configured as follows.
+TxStopPoint: Authorized, PowerPathClosed, EnergyTransfer
+This use-case is also valid for other configurations, but then the transaction might stop at another
+moment, which might change the sequence in which message are send. For more details see the
+use case: E06 - Stop Transaction options
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 123/803 Part 2 - Specification

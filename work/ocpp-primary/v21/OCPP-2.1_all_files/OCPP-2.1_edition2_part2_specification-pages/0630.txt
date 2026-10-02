@@ -1,0 +1,41 @@
+Field Name Field Type Card. Description
+setVariableResult SetVariableResultType 1..* Required. List of result statuses per Component-Variable.
+1.82. SignCertificate
+1.82.1. SignCertificateRequest
+Sent by the Charging Station to the CSMS to request that the Certificate Authority signs the public key into a certificate.
+Class
+Field Name Field Type Card. Description
+csr string[0..5500] 1..1 Required. The Charging Station SHALL send the public
+key in form of a Certificate Signing Request (CSR) as
+described in RFC 2986 [22] and then PEM encoded, using
+the SignCertificateRequest message.
+certificateType CertificateSigningUseEnumType 0..1 Optional. Indicates the type of certificate that is to be
+signed. When omitted the certificate is to be used for
+both the 15118 connection (if implemented) and the
+Charging Station to CSMS connection.
+requestId integer 0..1 Optional. (2.1) RequestId to match this message with the
+CertificateSignedRequest.
+hashRootCertificate CertificateHashDataType 0..1 Optional. (2.1) The hash of the root certificate to identify
+the PKI to use.
+1.82.2. SignCertificateResponse
+Sent by the CSMS to the Charging Station in response to the SignCertificateRequest message.
+Class
+Field Name Field Type Card. Description
+status GenericStatusEnumType 1..1 Required. Specifies whether the CSMS can process the
+request.
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+1.83. StatusNotification
+1.83.1. StatusNotificationRequest
+This contains the field definition of the StatusNotificationRequest PDU sent by the Charging Station to the CSMS. This message
+might be removed in a future version of OCPP. It will be replaced by Device Management Monitoring events.
+Class
+Field Name Field Type Card. Description
+timestamp dateTime 1..1 Required. The time for which the status is reported.
+connectorStatus ConnectorStatusEnumType 1..1 Required. This contains the current status of the
+Connector.
+evseId integer, 0 <= val 1..1 Required. The id of the EVSE to which the connector
+belongs for which the the status is reported.
+connectorId integer, 0 <= val 1..1 Required. The id of the connector within the EVSE for
+which the status is reported.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 617/803 Part 2 - Specification

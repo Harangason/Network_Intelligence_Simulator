@@ -1,0 +1,43 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  33/50 
+Sub-Req. x, Record Number  2 Bytes  0x0000 to 0x270F  
+Sub-Req. x, Record  Length  2 Bytes  N 
+Sub-Req. x+1, ...    
+Response  
+Function code  1 Byte  0x14  
+Resp. data Length  1 Byte  0x07 to 0xF5  
+Sub-Req. x, File Resp. length  1 Byte  0x07 to 0xF5  
+Sub-Req. x, Reference Type  1 Byte  6 
+Sub-Req. x, Record Data  N x 2 Bytes   
+Sub-Req. x+1, ...    
+Error  
+Error code  1 Byte  0x94  
+Exception code  1 Byte  01 or 02 or 03 or 04 or 
+08 
+ 
+While it is allowed for the File Number to be in the range 1 to 0xFFFF, it should be noted that 
+interoperability with legacy equipment may be compromised if the File Number is greater than 
+10 (0x0A) . 
+Here is an example of a request to read two groups of references from remote device:  
+ Group 1 consists of two registers from file 4, starting at register 1 (address 0001).  
+ Group 2 consists of two registers from file 3, starting at register 9 (address 0009).  
+ 
+ 
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  14 Function  14 
+Byte Count  0E Resp. Data length  0C 
+Sub-Req. 1, Ref. Type  06 Sub-Req. 1, File resp. length  05 
+Sub-Req. 1, File Number Hi  00 Sub-Req. 1, Ref. Type  06 
+Sub-Req. 1, File Number Lo  04 Sub-Req. 1, Register .Data Hi  0D 
+Sub-Req. 1, Record number Hi  00 Sub-Req. 1, R egister .Data Lo FE 
+Sub-Req. 1, Record number Lo  01 Sub-Req. 1, Register.Data H i 00 
+Sub-Req. 1, Record Length Hi  00 Sub-Req. 1, Register .Data Lo 20 
+Sub-Req. 1, Record Length Lo  02 Sub-Req. 2, File resp. length  05 
+Sub-Req. 2, Ref. Type  06 Sub-Req. 2, Ref. Type  06 
+Sub-Req. 2, File Number Hi  00 Sub-Req. 2, Register.Data H  33 
+Sub-Req. 2, File Number Lo  03 Sub-Req. 2, Register .Data Lo CD 
+Sub-Req. 2, Record number Hi  00 Sub-Req. 2, Register.Data H i 00 
+Sub-Req. 2, Record number Lo  09 Sub-Req. 2, Register .Data Lo 40 
+Sub-Req. 2, Record Length Hi  00   
+Sub-Req. 2, Record Length Lo  02   

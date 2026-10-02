@@ -1,0 +1,49 @@
+No. Type Description
+4 Description During charging (especially DC fast charging) it might be useful to show the EV driver updated
+tariff information when it becomes available.
+Example: If a tariff has a bandwidth:
+charging will cost between 0,25 and 0,40 euro/kWh depending on current energy price. Current
+price is 0,28 euro/kWh.
+Then when the price changing, this tariff information needs to be updated:
+charging will cost between 0,25 and 0,40 euro/kWh depending on current energy price. Current
+price is 0,32 euro/kWh.
+Scenario description 1. The Charging Station sends TransactionEventRequest (eventType = Updated) messages during
+the transaction.
+2. When the CSMS receives a TransactionEventRequest message it checks if there is updated
+tariff information available.
+3. The CSMS acknowledges with a TransactionEventResponse message, which contains the
+updated tariff information if available.
+5 Prerequisites The Charging Station supports Tariff Information
+There is a transaction ongoing
+6 Postcondition(s) Successful postcondition:
+The updated tariff information is shown to the EV Driver.
+Failure postcondition:
+The EV Driver has not been shown the updated tariff information.
+7 Error Handling n/a
+8 Remarks There may be a policy or a legal requirement in place, that the tariff communicated at the start of
+the transaction must be used for the entire transaction, in which case no updated tariff
+information should be sent during the transaction.
+Charging Station CSMS
+A transaction is ongoing.
+TransactionEventRequest(eventType = Updated,...)
+Check for updated
+tariff information
+TransactionEventResponse(updatedPersonalMessage,...)
+Figure 89. Sequence Diagram: Update Tariff Information During Transaction
+I06 - Update Tariff Information During Transaction - Requirements
+ID. Precondition Requirements
+I06.FR.01 When the CSMS receives a
+TransactionEventRequest (eventType =
+Updated) from the Charging Station.
+The CSMS SHALL check if there is updated tariff information
+available.
+I06.FR.02 I06.FR.01 AND
+When there is updated tariff information
+available.
+The CSMS SHALL respond with a TransactionEventResponse
+message to the Charging Station, containing the updated tariff
+information in the updatedPersonalMessage field.
+I06.FR.03 I06.FR.02 The Charging Station SHALL display the updated tariff
+information to the EV Driver.
+Edition 4, 2025-12-03 I. Tariff And Cost
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 224/491 Part 2 - Specification

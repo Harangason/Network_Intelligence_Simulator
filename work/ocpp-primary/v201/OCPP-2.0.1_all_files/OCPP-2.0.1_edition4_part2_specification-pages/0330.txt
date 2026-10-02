@@ -1,0 +1,38 @@
+Charging Station CSMS
+GetCertificateStatusRequest(ocpsRequestData)
+Retrieve OCSP certificate status
+GetCertificateStatusResponse(status, ocspResult)
+Cache retrieved information
+Figure 128. Get V2G Charging Station Certificate status
+M06 - Get V2G Charging Station Certificate status - Requirements
+Table 121. M06 - Requirements
+ID Precondition Requirement definition
+M06.FR.01 After receiving a GetCertificateStatusRequest The CSMS SHALL respond with a GetCertificateStatusResponse.
+M06.FR.02 M06.FR.01
+AND
+The CSMS was successful in retrieving the
+OCSP certificate status
+The CSMS SHALL indicate success by setting status to
+Accepted in the GetCertificateStatusResponse.
+M06.FR.03 M06.FR.02 The CSMS SHALL include the OCSP response data in the
+OCSPResult field in the GetCertificateStatusResponse.
+M06.FR.04 M06.FR.01
+AND
+The CSMS was not successful in retrieving the
+OCSP certificate status
+The CSMS SHALL indicate it was not successful by setting
+status to Failed in the GetCertificateStatusResponse.
+M06.FR.06 The Charging Station SHALL request and cache the OCSP status
+for its V2G certificates.
+M06.FR.07 After the Charging Station Certificate has been updated, The
+Charging Station SHALL refresh the cached OCSP data by
+sending a GetCertificateStatusRequest for the new certificate,
+and also for the intermediate certificates.
+M06.FR.08 The CSMS SHALL format the response data according to
+OCSPResponse as defined in IETF RFC 6960, formatted
+according to ASN.1 [X.680].
+M06.FR.09 The OCSPResponse data SHALL be DER encoded.
+M06.FR.10 The Charging Station SHALL refresh the cached OCSP data at
+least once a week.
+Edition 4, 2025-12-03 M. Certificate Management
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 320/491 Part 2 - Specification

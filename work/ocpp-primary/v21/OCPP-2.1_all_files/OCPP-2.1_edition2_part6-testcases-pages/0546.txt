@@ -1,0 +1,54 @@
+TC_K_103_CS: Set Charging Profile - Local time - TimeOffset
+Test case name Set Charging Profile - Local time - TimeOffset
+Test case Id TC_K_103_CS
+Use case Id(s) K01
+Requirement(s) K01.FR.90
+System under test Charging Station
+Description To enable the CSMS to set charging profiles with local times so the charging power can be influences on
+local time base independent on DST.
+Purpose To verify if the Charging station is able to calculate the Zulu time from a chargingProfileSchedule using
+local times.
+Prerequisite(s) - SmartChargingCtrlr.SupportsFeature[UseLocalTime] is true
+- ClockCtrlr.TimeOffset is present
+Before (Preparations)
+Configuration State:
+- ClockCtrlr.TimeZone is "" (if present)
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with SetVariablesResponse
+1. Test System sends SetVariablesRequest with:
+- setVariableData[0].variable.name = TimeOffset
+- setVariableData[0].component.name = ClockCtrlr
+- setVariableData[0].attributeValue = +02:00
+- setVariableData[0].attributeType = Actual
+- setVariableData[1].variable.name = TimeZone
+- setVariableData[1].component.name = ClockCtrlr
+- setVariableData[1].attributeValue = ""
+- setVariableData[1].attributeType = Actual
+4. The Charging Station responds with a
+SetChargingProfileResponse
+3. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.id <Configured chargingProfileId>
+chargingProfile.chargingProfilePurpose TxDefaultProfile
+chargingProfile.chargingSchedule.useLocalTime true
+chargingProfile.chargingSchedule.duration <Configured
+duration>
+chargingProfile.chargingSchedule.startSchedule <current
+dateTime + 02:10>
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.star
+tPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limi
+t 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.nu
+mberPhases <Configured numberPhases>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 544/1383 Part 6 - Test Cases

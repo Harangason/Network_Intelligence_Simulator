@@ -1,0 +1,53 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  31 
+Calibration time calculation: 
+Byte Clock Period (ns) = PHY Data Width / Line Rate per Lane (Mbps)  × 1000 
+Calibration Time (ns) = T_SKEWCAL_INITIAL × Byte Clock Period (ns) 
+ 
+Example: 
+Line Rate per Lane = 2500.0 Mbps 
+PHY Data Width = 16 
+T_SKEWCAL_INITIAL = 2049 (0x801) 
+ 
+Byte Clock Period = 6.4 ns 
+Calibration Time = 13113.6 ns 
+ 
+Programming T_SKEW_INITIAL with a value of 2049 (0x0801) and triggering via CAL_INITIAL_TRIGGER_EN results in a 
+calibration time of approximately 13113.6 ns across the serial links.  Similar formula and calculation are applicable to 
+periodic skew calibration time calculation. Refer to Table 5.6 for more information about registers. 
+2.8. MIPI CSI/DSI Transmitter Pixel-to-Byte Block 
+The Pixel-to-Byte module converts incoming pixel data into MIPI-compatible payload bytes and stores the data in the 
+line buffer before forwarding the data to the packetization block through UVSI. This block bridges the video pixel clock 
+domain (axis_vid_clk_i) and byte clock domain (byte_clk_o), using a dual‑clock FIFO for buffering, synchronization, and 
+flow‑control management. 
+This block performs the following key functions: 
+• Pixel-to-Byte conversion: Converts incoming pixel data of various color formats into byte-aligned payload 
+structures suitable for MIPI packetization. Implements AXI4-Stream TVALID/TREADY handshaking to manage data 
+flow and prevent FIFO overflow or underflow during mode transitions or clock -rate differences. 
+• Line buffer: Stores pixel information in a byte-aligned format and performs clock-domain bridging between the 
+video-pixel clock and the byte clock using a dual-clock FIFO, ensuring safe data transfer across asynchronous 
+domains while managing backpressure. 
+• Video FSM: The video timing block defines and enforces the video cadence by sequencing synchronization events  
+and active video transfer. This block drives packet generation of sync short packets (Frame Start, Frame End, Line 
+Start, Line End) and active video packets. The video timing FSM operates in CSI-2 mode, selecting the protocol-
+specific packet schedule and timing rules. In accordance with the CSI-2 specification, the LS (Line Start) and LE (Line 
+End) short packets are optional and may be disabled based on system configuration or video timing requirements 
+using an IP parameter. 
+Table 2.5. MIPI CSI/DSI Transmitter Pixel-to-Byte Supported Configurations 
+TX Controller Mode Color Format Number of Pixel per Clock (PPC) 
+32-bit RGB888, RGB565, RAW10, RAW12 1, 2, 4 
+64-bit1 RGB888, RGB565, RAW10, RAW12 1, 2, 4 
+Note: 
+1. 64-bit controller mode is supported only in Hard D-PHY with 4 lanes configuration, avoiding resource consumption in other 
+configurations. 
+2.8.1. MIPI CSI/DSI Transmitter Blanking Insertion 
+At the end of line or frame on the HS burst transmission, video FSM inserts additional horizontal line or vertical frame 
+blanking period duration at LP-11 (Stop/Idle) state where both positive and negative differential serial d_p/n_io signals 
+stay high. The horizontal_blanking_cnt_en_o and vertical_blanking_cnt_en_o output signal s assert during the 
+corresponding horizontal line or vertical frame blanking period of the LP -11 state. 
+Refer to Table 4.5 for more details. 

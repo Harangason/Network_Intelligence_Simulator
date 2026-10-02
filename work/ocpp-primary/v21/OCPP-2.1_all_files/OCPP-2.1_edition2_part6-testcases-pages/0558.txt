@@ -1,0 +1,37 @@
+Main (Test scenario)
+5. The Charging Station responds with a
+GetCompositeScheduleResponse
+4. The Test System sends a GetCompositeScheduleRequest
+with evseId <Configured evseId>
+duration is 129600
+chargingRateUnit <Configured chargingRateUnit>
+Note: Stopping transaction
+6. Execute Reusable State StopAuthorized
+7. Execute Reusable State EVConnectedPostSession
+8. Execute Reusable State EVDisconnected
+9. Execute Reusable State ParkingBayUnoccupied
+Note: Restarting transaction
+10. Execute Reusable State EnergyTransferStarted
+12. The Charging Station responds with a
+GetCompositeScheduleResponse
+11. The Test System sends a GetCompositeScheduleRequest
+with evseId <Configured evseId>
+duration is 134400
+chargingRateUnit <Configured chargingRateUnit>
+Tool validations
+* Step 3:
+Message SetChargingProfileResponse
+- status must be Accepted
+* Step 12:
+Note: The period of time between the scheduleStart from the GetCompositeScheduleResponse in step 5 and the scheduleStart from
+the GetCompositeScheduleResponse in step 12 is called x:
+Message: GetCompositeScheduleResponse
+- status must be Accepted
+- schedule.duration must be 129600
+- schedule.chargingSchedulePeriod[0].startPeriod must be 0
+- schedule.chargingSchedulePeriod[1].startPeriod must NOT be within the range of <chargingSchedulePeriod[1].startPeriod of step
+5> - x - 1 to <chargingSchedulePeriod[1].startPeriod of step 5> - x + 1
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 556/1383 Part 6 - Test Cases

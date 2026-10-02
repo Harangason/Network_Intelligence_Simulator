@@ -1,0 +1,38 @@
+TC_I_103_CS: Set Default Tariff - CS doesn’t support local cost calculation
+Test case name Set Default Tariff - CS doesn’t support local cost calculation
+Test case Id TC_I_103_CS
+Use case Id(s) I07
+Requirement(s) I07.FR.01
+System under test Charging Station
+Description To set the default tariff on the charging station, for example for ad hoc charging, or when there is no driver-
+specific tariff.
+Purpose To verify if the Charging Station which doesn’t support tariffs is responding like one which doesn’t support
+it.
+Prerequisite(s) - The Charging Station doesn’t support local cost calculation or has it disabled
+Before (Preparations)
+Configuration State:
+- TariffCostCtrlr.Available[Tariff] is absent or false
+- or TariffCostCtrlr.Enabled[Tariff] is false
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with RPC Framework
+CALLERROR
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.energy.taxRates[0].type MyTax1
+tariff.energy.taxRates[0].tax 20
+tariff.energy.prices[0].priceKwh 1.00
+Tool validations
+* Step 2:
+Message CALLERROR
+- ErrorCode must be NotSupported or NotImplemented
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 413/1383 Part 6 - Test Cases

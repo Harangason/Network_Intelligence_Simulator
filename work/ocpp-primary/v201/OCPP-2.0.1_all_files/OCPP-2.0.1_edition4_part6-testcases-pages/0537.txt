@@ -1,0 +1,43 @@
+TC_O_07_CS: Get a Specific Display Message - Id
+Test case name Get a Specific Display Message - Id
+Test case Id TC_O_07_CS
+Use case Id(s) O04
+Requirement(s) O04_FR_01, O04_FR_03, O04_FR_04, O04_FR_05, O04_FR_06
+System under test Charging Station
+Description This test case describes how a CSO can request specific installed DisplayMessages configured via OCPP in
+a Charging Station. The Charging Station can remove messages when they are out-dated, or transactions
+have ended. It can be very useful for a CSO to be able to view to current list of messages, so the CSO knows
+which messages are (still) configured.
+Purpose To verify if the Chargin Station is able to respond the specific id message requested by the CSMS according
+to the mechanism as described in the OCPP specification.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+SetDisplayMessage
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+GetDisplayMessagesResponse
+1. The Test System sends a GetDisplayMessagesRequest with
+id <Generated displayMessageId> requestId <Generated
+requestId>
+3. The Charging Station sends a NotifyDisplayMessagesRequest
+4. The Test System responds with a
+NotifyDisplayMessagesResponse .
+Note(s):
+- If tbc is True at Step 3 then step 3 and 4 will be repeated
+Tool validations
+* Step 2:
+Message GetDisplayMessagesResponse
+- status Accepted
+* Step 3:
+Message NotifyDisplayMessagesRequest
+- requestId <Generated requestId>
+Post scenario validations:
+- All messages have been received
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 535/914 Part 6 - Test Cases

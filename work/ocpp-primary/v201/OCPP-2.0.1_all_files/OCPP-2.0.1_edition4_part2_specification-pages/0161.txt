@@ -1,0 +1,45 @@
+No. Type Description
+8 Remark(s) The scenario descriptions are based on TxStopPoint containing Authorized or PowerPathClosed.
+The sequence diagrams also show behavior for other TxStopPoint values in the alt-blocks.
+The CSMS cannot prevent a transaction from stopping.
+EV Driver
+Charging Station CSMS
+User authorization successful.
+alt [TxStopPoint = Authorized OR TxStopPoint = PowerPathClosed]
+TransactionEventRequest(eventType = Ended, transactionId = AB1234, seqNo = N + 1, timestamp,
+triggerReason = StopAuthorized, stoppedReason = Local, idToken.id = 1234, meterValues)
+TransactionEventResponse(idTokenInfo.status)
+[TxStopPoint = EVConnected OR TxStopPoint = ParkingBayOccupancy OR TxStopPoint = EnergyTransfer]
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 1, timestamp,
+triggerReason = StopAuthorized, idToken.id = 1234)
+TransactionEventResponse(idTokenInfo.status)
+opt [if cable not permanently attached & (same identification or authorized)]
+unlock connector
+alt [TxStopPoint = EnergyTransfer]
+TransactionEventRequest(eventType = Ended, transactionId = AB1234, seqNo = N + 2, timestamp,
+triggerReason = ChargingStateChanged, chargingState = EVConnected, stoppedReason = Local, meterValues)
+TransactionEventResponse()
+[TxStopPoint = EVConnected OR TxStopPoint = ParkingBayOccupancy]
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 1, timestamp,
+triggerReason = ChargingStateChanged, chargingState = EVConnected)
+TransactionEventResponse()
+Unplug cable
+StatusNotificationRequest(Available)
+StatusNotificationResponse()
+alt [TxStopPoint = EVConnected]
+TransactionEventRequest(eventType = Ended, transactionId = AB1234, seqNo = N + 3, timestamp,
+triggerReason = EVCommunicationLost, stoppedReason = Local)
+TransactionEventResponse()
+[TxStopPoint = ParkingBayOccupancy]
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 3, timestamp,
+triggerReason = EVCommunicationLost)
+TransactionEventResponse()
+Drive out of parking bay
+alt [TxStopPoint = ParkingBayOccupancy]
+TransactionEventRequest(eventType = Ended, transactionId = AB1234, seqNo = N + 3, timestamp,
+triggerReason = EVDeparted, stoppedReason = Local)
+TransactionEventResponse()
+Figure 54. Sequence Diagram: Transaction locally stopped by IdToken with TransactionEventRequest reported strictly by TxStopPoint
+configuration
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 151/491 Part 2 - Specification

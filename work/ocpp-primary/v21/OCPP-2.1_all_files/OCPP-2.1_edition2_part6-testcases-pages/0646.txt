@@ -1,0 +1,54 @@
+TC_M_30_CS: Install CA certificate - AdditionalRootCertificateCheck - Reconnect
+using new CSMS Root - Success
+Test case name Install CA certificate - AdditionalRootCertificateCheck - Reconnect using new CSMS Root - Success
+Test case Id TC_M_30_CS
+Use case Id(s) M05
+Requirement(s) M05.FR.13
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to install new Root CA certificates using the
+InstallCertificateRequest message.
+Purpose To verify if the Charging Station is able to reconnect to the CSMS, while using a new CSMS Root certificate.
+Prerequisite(s) - The Charging Station supports Security Profile 2 or 3. - The Charging Station has the configuration variable
+AdditionalRootCertificateCheck implemented with value true
+- The at the Test System configured new CSMSRootCertificate must be signed by the old CSMS Root
+certificate.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+CertificateInstalled for certificateType CSMSRootCertificate and certificate <Configured new CSMS Root certificate 2>
+If security profile 3 is enabled, then:
+RenewChargingStationCertificate for certificateType ChargingStationCertificate
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ResetResponse
+1. The Test System sends a ResetRequest
+with type OnIdle
+4. During the TLS handshake the Charging Station validates the
+CSMS certificate. 
+Note(s):
+- This connection attempt must succeed.
+3. During the TLS handshake the Test System provides a CSMS
+certificate which is signed by the <Configured new CSMS Root
+certificate>
+5. Execute Reusable State Booted
+7. The Charging Station responds with a
+GetInstalledCertificateIdsResponse
+6. The Test System sends a GetInstalledCertificateIdsRequest
+with certificateType is CSMSRootCertificate
+Tool validations
+* Step 2:
+Message ResetResponse
+- status Accepted
+* Step 7:
+Message: GetInstalledCertificateIdsResponse
+- status must be Accepted
+- certificateHashDataChain must NOT contain an entry with following values:
+- certificateType is CSMSRootCertificate
+- certificateHashData contains <HashData from configured old CSMS Root certificate>
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 644/1383 Part 6 - Test Cases

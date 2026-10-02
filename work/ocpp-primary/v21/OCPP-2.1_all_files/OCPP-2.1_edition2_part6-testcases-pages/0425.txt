@@ -1,0 +1,50 @@
+TC_I_108_CS: Receive Driver Tariff - CS cannot process tariff - Deauthorize
+Test case name Receive Driver Tariff - CS cannot process tariff - Deauthorize
+Test case Id TC_I_108_CS
+Use case Id(s) I08
+Requirement(s) I08.FR.30, I08.FR.31
+System under test Charging Station
+Description To support receiving the driver-specific tariff to enable local cost calculation based on a tariff for this driver.
+Purpose To verify if the Charging Station which doesn’t support local cost calculation properly handles receiving a
+tariff in AuthorizeResponse.
+Prerequisite(s) - The Charging Station doesn’t support tariffs or has it disabled
+- The Charging Station is able to send AuthorizeRequest for local authorization (RFID) or remote start
+Before (Preparations)
+Configuration State:
+- AuthCtrlr.Enabled = true
+- AuthCtrlr.AuthorizeRemoteStart = true
+- TariffCostCtrlr.Available[Tariff] is absent or false
+- or TariffCostCtrlr.Enabled[Tariff] is false
+- TariffCostCtrlr.HandleFailedTariff is Deauthorize
+Memory State:
+N/a
+Reusable State:
+State EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State Authorized
+AuthorizeResponse with:
+idTokenInfo.status Accepted
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.energy.prices[0].priceKwh 2.00
+2. The Charging Station sends a
+NotifyEventRequest
+3. The Test System sends a
+NotifyEventResponse
+4. The Charging Stations does NOT send a
+TransactionEventRequest with
+ChargingState is Charging
+5. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 2:
+Message NotifyEventRequest
+- trigger = Alerting or Delta
+- component = TariffCostCtrlr
+- variable = Problem
+- actualValue = true
+Note: It is also allowed to receive other NotifyEventRequests from the Charging Station.
+Post scenario validations:
+- Charging Station SHALL not deliver energy.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 423/1383 Part 6 - Test Cases

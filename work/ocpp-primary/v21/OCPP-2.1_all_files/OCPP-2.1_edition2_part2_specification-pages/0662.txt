@@ -1,0 +1,43 @@
+Field Name Field Type Card. Description
+cleared boolean 0..1 Optional. Cleared is set to true to report the clearing of a
+monitored situation, i.e. a 'return to normal'.
+transactionId identifierString[0..36] 0..1 Optional. If an event notification is linked to a specific
+transaction, this field can be used to specify its
+transactionId.
+variableMonitoringId integer, 0 <= val 0..1 Optional. Identifies the VariableMonitoring which
+triggered the event.
+eventNotificationType EventNotificationEnumType 1..1 Required. Specifies the event notification type of the
+message.
+severity integer, 0 <= val 0..1 Optional. (2.1) Severity associated with the monitor in
+variableMonitoringId or with the hardwired notification.
+component ComponentType 1..1 Required. Component for which event is notified.
+variable VariableType 1..1 Required. Variable for which event is notified.
+2.44. EVPowerScheduleEntryType
+Class
+(2.1) An entry in schedule of the energy amount over time that EV is willing to discharge. A negative value indicates the willingness
+to discharge under specific conditions, a positive value indicates that the EV currently is not able to offer energy to discharge.
+EVPowerScheduleEntryType is used by: Common:EVPowerScheduleType
+Field Name Field Type Card. Description
+duration integer 1..1 Required. The duration of this entry.
+power decimal 1..1 Required. Defines maximum amount of power for the
+duration of this EVPowerScheduleEntry to be discharged
+from the EV battery through EVSE power outlet. Negative
+values are used for discharging.
+2.45. EVPowerScheduleType
+Class
+(2.1) Schedule of EV energy offer.
+EVPowerScheduleType is used by: Common:EVEnergyOfferType
+Field Name Field Type Card. Description
+timeAnchor dateTime 1..1 Required. The time that defines the starting point for the
+EVEnergyOffer.
+evPowerScheduleEntries EVPowerScheduleEntryType 1..102
+4
+Required. List of EVPowerScheduleEntries.
+2.46. EVPriceRuleType
+Class
+(2.1) An entry in price schedule over time for which EV is willing to discharge.
+EVPriceRuleType is used by: Common:EVAbsolutePriceScheduleEntryType
+Field Name Field Type Card. Description
+energyFee decimal 1..1 Required. Cost per kWh.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 649/803 Part 2 - Specification

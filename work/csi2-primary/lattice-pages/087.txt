@@ -1,0 +1,45 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  87 
+Number of Horizontal Blanking Bytes in Byte Clock Domain = Required Horizontal Line Blanking Duration/Byte Clock  
+Period 
+           = 1170.58 ns/8.77193 ns 
+           = ~133 Bytes 
+ 
+The following IP simulation waveform diagram shows the horizontal line blanking period of LP-11 state between Line 
+End and the next Line Start short packet with the latest Number of Horizontal Blanking Bytes in Byte Clock Domain 
+value. 
+ 
+Figure 9.3. Horizontal Line Blanking between Line End and the Next Line Start HS Burst Short Packet (Number of 
+Horizontal Blanking Bytes in Byte Clock Domain = 133) 
+The frame_period_ns and frame_rate_fps signals are status variable from the RX simulation model in the testbench 
+which indicate the measured frame rate of ~59.96. 
+ 
+For Vertical Frame Blanking Insertion Only 
+With the horizontal line blanking period at a minimal value determined by the video FSM, adjust the LP-11 state 
+between consecutive Frame End the next Frame Start short packet to increase or decrease the Frame Period.  In this 
+case, the value configured in Number of Horizontal Active Bytes in Byte Clock Domain is Actual Active Bytes plus 
+additional dummy bytes which is used by TX to insert only vertical frame blanking line duration. The  Number of 
+Horizontal Blanking Bytes in Byte Clock Domain parameter is set to zero. This does not impact the actual pixel data 
+packet received by TX from the user interface. 
+ 
+Line Start Short Packet HS Burst/Line End Short Packet HS Burst Duration = ~245  ns (SOT) + ~101 ns (EOT) + (2 x Byte 
+Clock Period) 
+            = ~363.5438 ns  
+ 
+Long Packet HS Burst Duration  = ((1200 (Data) + 2 (Packet Header) + 1 (CRC)) x Byte Clock Period) + 245 ns (SOT) + 
+101 ns (EOT) 
+    = ~10898.6317 ns 
+ 
+LP-11 Minimum Duration  = ~831 ns (from simulation) 
+ 
+Horizontal Line Blanking Duration  = Same as LP-11 Minimum Duration 
+ 
+Derived Line Period  = (2 x 363.5438 ns) + (3 x 831 ns) + 10898.6317 ns = 14118.7193 ns 
+ 
+Frame Period    = (Active Lines x Line Period) + Vertical Frame Blanking Duration 
+ 

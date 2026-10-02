@@ -1,0 +1,580 @@
+PDF_PAGE 9
+PROFIsafe System Description 5
+Figure 6: The complete safety communication 
+paths
+The individual safety parameters of a F-Device are 
+technology-specific, e.g. drives with integrated 
+safety, laser scanners, etc. Handling these 
+iParameters via GSD would entail tremendous 
+efforts and unnecessary dependencies. It therefore 
+has to be possible for F-Device developers 
+to integrate their individual configuration, 
+parameterization and diagnostic tools (CPD tools) 
+via appropriate interfaces into the engineering tools 
+of system vendors. This facilitates the navigation 
+and communication to the specific F-Device or 
+F-Module.
+For fast F-Device replacement in case of a failure, 
+the system has to support "Save and Restore" 
+functionality for individual safety parameters 
+(iPar-Server) in a uniform way. Usually the F-Host or 
+the controller that provides the basic bus start-up 
+parameterization provides also this feature.
+Supplementary documentation defines all aspects 
+of deployment of PROFIsafe devices such as 
+requirements for
+• Installation
+• Electrical safety
+• Power supplies
+• Electromagnetic compatibility
+• Data security
+Finally, strong support for developers of PROFIsafe 
+in F-Devices or F-Modules is available in the form of 
+PROFIsafe development kits, competence centers 
+and test centers.
+In its current version, PROFIsafe meets all of 
+these requirements. The final concept is still 
+straightforward and easy to understand.
+Before we learn more about PROFIsafe in detail let‘s 
+take a look at some preconditions and constraints.
+3. "Black Channel"
+Even though PROFIsafe uses the "Black Channel" 
+principle, there are some basic features of PROFIBUS 
+and PROFINET that were considered for its design.
+3.1. Basic features
+One such feature is the cyclic communication 
+between a bus controller and its associated field 
+devices (send and receive response principle). This 
+polling operation will immediately detect any failed 
+device. PROFIsafe adopted this principle.
+The other feature is the 1:1 communication 
+relationship between a bus controller and its 
+associated field devices. PROFIsafe also adopts this 
+principle to ensure the authenticity of messages. 
+3.2. Network components
+A "Black Channel" may comprise several types of 
+transparent network components such as switches, 
+routers, links, and wireless transmission channels. 
+For PROFIsafe, minor constraints exist in order to 
+meet the SIL3 requirements.
+Any kind of switch is permitted but only 100 can be 
+connected in a row. The Codename space within a 
+PROFIsafe island must be unique. Connected islands 
+with the same Codename space must be separated 
+by multiport routers. There are no restrictions for 
+links such as from PROFINET to PROFIBUS and from 
+there to the intrinsic safety version MBP-IS (figure 6).
+3.3. Wireless
+Wireless transmission is permitted as long as 
+sufficient availability (no nuisance trips) and 
+security can be guaranteed.
+PROFIsafe specifies certain security requirements 
+for wireless transmission and for wired networks 
+that are connected to industrial Ethernet backbones 
+or the Internet (open networks).
+3.4. Data types
+In general, fieldbus communication uses different 
+data types for information transfer (see literature 
+box on page 11). In order to reduce complexity, 
+PROFIsafe offers a reasonable subset.
+PDF_PAGE 10
+PROFIsafe System Description6
+3.5. Selective tripping
+PI‘s document "Remote IO for Factory Automation  
+(RIO for FA)" specifies so-called qualifier bits 
+associated to process values to indicate validity. 
+This allows individual user reaction per process 
+value. PROFIsafe offers an additional configurable 
+prevention from automatic machine start.
+4. PROFIsafe – the solution
+It is the objective of safety communication between 
+two partners to deliver:
+• updated and correct data (data integrity),
+• to the intended destination (authenticity), 
+• just-in-time (timeliness).
+Various errors may occur when messages are 
+transferred in complex network topologies, 
+whether due to hardware failures, extraordinary 
+electromagnetic interference, or other influences. A 
+message can be lost, occur repeatedly, be inserted 
+from somewhere else, appear delayed or in an 
+incorrect sequence, and/or show corrupted data. In 
+the case of safety communications, there may also 
+be incorrect addressing: a message erroneously 
+appears at a wrong F-Device and pretends to be a 
+correct safety message. Different transmission rates 
+may additionally cause bus component storage 
+effects to occur. Out of the numerous remedies 
+known from literature, PROFIsafe focuses on those 
+presented in the matrix shown in figure 7.
+Figure 7: Error types and safety measures
+4.1. Safety measures
+These safety measures include:
+• The numbering of the PROFIsafe messages 
+(sequence error detection used for "timeliness")
+• A time expectation with acknowledgment 
+(timeout error detection used for "timeliness") 
+• A Codename between sender and receiver 
+("authentication")
+• Data integrity checks (CRC = cyclic redundancy 
+check) 
+Using the Monitoring Number, a receiver can 
+see whether or not it received the messages 
+within the correct sequence. When it returns a 
+message with the Monitoring Number only as an 
+acknowledgment to the sender, the sender, too, 
+will be assured. Basically, a simple "toggle bit" 
+would have proven sufficient. However, due to 
+the storage buffers in some bus components, e.g. 
+switches, a 32-bit Monitoring Number was selected 
+for PROFIsafe. 
+As safety systems are real-time systems, process 
+signals must not only be delivered correctly, but 
+also in time. In case of timeliness errors, the safety 
+system will initiate a safe reaction, e.g. safely stop 
+the movement of a drive. For this purpose, F-Devices 
+utilize a watchdog timer that is restarted whenever 
+a new PROFIsafe message with a new subsequent 
+Monitoring Number arrives.
+The 1:1 relationship between the F-Host and a 
+F-Device facilitates the detection of misdirected 
+message frames. Sender and receiver must simply 
+have identification (Codename) that is unique 
+in the network, and can be used for verifying the 
+authenticity of a PROFIsafe message. PROFIsafe‘s 
+Codename is called "F-Address" .
+A cyclic redundancy check (CRC) plays a key role 
+in detecting corrupted data bits. The necessary 
+probabilistic examination makes use of the 
+definitions within the IEC 61508 that considers the 
+probability of dangerous failures of entire safety 
+functions. PROFIsafe follows this approach (figure 8). 
+Figure 8:  Safety function and SIL
+PDF_PAGE 11
+PROFIsafe System Description 7
+According to IEC 61508, a safety circuit includes 
+all sensors, actuators, transfer elements and logic 
+processes that are involved in a safety function. IEC 
+61508 defines overall values for the probability of 
+failures for different safety integrity levels. 
+For example, for SIL3 this is 10-7/h. PROFIsafe uses a 
+carefully selected 32-bit CRC generator polynomial, 
+which ensures a probability of dangerous failures 
+per hour of less than 10-9/h. This value is guaranteed, 
+independent of the "Black Channel" in use. Thus, 
+even in SIL3 applications, less than 1% of the overall 
+budget of 10-7/h per safety function is consumed by 
+PROFIsafe, leaving 99% of the budget for failures in 
+sensors, actuators, or logic operations. 
+4.2. PROFIsafe formats
+A PROFIsafe message that is exchanged between 
+F-Host and its F-Device is carried within the payload 
+of a standard PROFIBUS or PROFINET message. In 
+case of a modular F-Device with several F-Modules, 
+the payload consists of several PROFIsafe messages. 
+Figure 9 shows the format of a safety protocol data 
+unit (SPDU).
+Figure 9: PROFIsafe SPDU format
+The data unit consists of three fields. The first field 
+contains the F-Input or F-Output data using the 
+already-mentioned subset of data types. These 
+data structures of a particular F-Device usually are 
+defined via its associated GSD (General Station 
+Description) file. Normally, factory automation and 
+process automation place different requirements 
+upon a safety system. One deals with short ("bit") 
+signals that must be processed at a very high speed, 
+the other involves longer ("floating point") process 
+values that may take a little more time. PROFIsafe 
+recommends using 1 up to 12/13 bytes F-Input/
+Output data for factory automation applications 
+since all F-Hosts are obliged to support at least this 
+data length. However, the measures of PROFIsafe 
+(CRC signature) are laid-out such that data lengths 
+up to a maximum of 123 bytes can be supported.
+The second field consists of a Control Byte if the 
+SPDU was sent by the F-Host or a Status Byte if it 
+was sent by the F-Device. This information helps 
+synchronizing the sender and receiver of PROFIsafe 
+SPDUs.
+The third field of a PROFIsafe SPDU is a 32 bit CRC 
+signature.
+The Monitoring Number is not transmitted within 
+a PROFIsafe SPDU. Both sender and receiver use 
+their own Monitoring Number generators that are 
+synchronized via the Control Byte and Status Byte. 
+Correct synchronization is monitored through the 
+inclusion of the Monitoring Number values into the 
+CRC signature calculation. The generators are based 
+on an efficient pseudorandom number generator. 
+Every connection uses a different seed for the 
+generator, derived from its respective Codename 
+("F-Address").
+4.3. PROFIsafe services
+Sender and receiver of PROFIsafe SPDUs are located 
+in layers above the "Black Channel" communication 
+layers (figure 5). Usually, these PROFIsafe layers 
+are realized in software ("drivers"). Their central 
+functionality is a state machine controlling the 
+regular cyclic processing of PROFIsafe messages 
+and the exceptions such as start-up, power-on/off, 
+CRC error handling, etc. Figure 10 shows how the 
+PROFIsafe layers interact with the technology part 
+in F-Devices and with the user program in F-Hosts.
+Figure 10: PROFIsafe layer structure in F-Host 
+and F-Device
+F-Host services
+The main services provide exchange of F-Output 
+and F-Input data. During start-up, or in case of 
+errors, the actual process values are replaced by 
+default fail-safe values (FV). These fail-safe values 
+shall be all "0" to force the receiver into a safe state 
+(e.g. de-energize). 
+PDF_PAGE 12
+PROFIsafe System Description8
+For F-Devices where de-energize is not the only 
+possible safe state such as with burner ventilators, 
+PROFIsafe provides additional services via a flag 
+"activate_FV" in the Control Byte. In return, a F-Device 
+can inform the user program that it has activated its 
+safe state via a flag "FV_activated" in the Status Byte.
+PROFIsafe communication errors cause the F-Host 
+driver to switch into a safe state. A safety function 
+is usually not allowed to automatically switch from 
+a safe state to normal operation without human 
+interaction. To inform the user program that an 
+operator intervention and acknowledgment is 
+requested, PROFIsafe provides an additional service 
+"OA_Req" . PROFIsafe informs the F-Device about a 
+pending request such that the F-Device can indicate 
+it via a LED (optional). The operator acknowledgment 
+can be passed over from the user program to the 
+F-Host driver via a corresponding service "OA_C" .
+The technology-specific parameters of a F-Device are 
+called iParameters. In case a F-Device needs different 
+iParameters at runtime, another set of services is 
+available. The service "iPar_EN" allows the user 
+program to switch the F-Device into a mode during 
+which it will accept new iParameters. The companion 
+service "iPar_OK" indicates to the user program the 
+readiness to resume normal safety operation.
+F-Device services
+The PROFIsafe services for F-Device technology 
+include the corresponding exchange of F-Output 
+and F-Input data, the extra possibility to activate 
+and report fail-safe values, the indicators for the 
+iParameter handling and for the already mentioned 
+operator request.
+Additionally, the F-Device technology is able to 
+report F-Device faults to the F-Host driver via the flag 
+"Device_Fault" in the Status Byte. 
+The duration of the demand of a F-Device for a safety 
+reaction shall be long enough to be transmitted 
+by the PROFIsafe communication (at least two 
+subsequent Monitoring Numbers). A special service 
+informs the technology about new Monitoring 
+Numbers in order to facilitate the realization of this 
+requirement.
+Diagnostic information from the PROFIsafe layer may 
+be passed over to the technology part via a special 
+service.
+Last but not least the technology is able to pass 
+over the F-Parameters to the PROFIsafe layer. The 
+F-Device receives these F-Parameters together with 
+all the other parameters during startup. What is the 
+purpose of these F-Parameters?
+F-Parameter
+The F-Parameters provide the PROFIsafe layer 
+information to adjust its behavior to particular 
+customer needs and to double-check the correctness 
+of assignments. The most important F-Parameters 
+are:
+• F_S/D_Address (short: "F-Address")
+• F_WD_Time
+• F_SIL
+• F_iPar_CRC
+• F_Par_CRC
+The "F_Address" is a unique connection identification 
+for F-Devices/F-Modules within one PROFIsafe island 
+and corresponds to the Codename. The F-Device 
+technology compares this "F-Address" with the 
+locally assigned value of a micro switch or otherwise 
+entered information to ensure the authenticity of the 
+connection. 
+The F_WD_Time specifies a number of milliseconds 
+for a watchdog timer. This timer monitors the 
+reception of the next valid PROFIsafe SPDU.
+F_SIL indicates the SIL expected by the user for the 
+particular F_Device. It is compared with the locally 
+stored manufacturer information.
+F_iPar_CRC is a signature across all the iParameters 
+within the technology of the F-Device.
+Finally, the F_Par_CRC is a signature across all the 
+F-Parameters. It is used to ensure correct delivery of 
+the F-Parameters.
+5. How to implement?
+First of all, it should be made sure, that all the 
+necessary and helpful literature for the work that is 
+available from PI has been obtained (see Literature 
+box on Page 11). Use the denoted or a later version. A 
+previous version V1.30 of the PROFIsafe specification 
+has been withdrawn. 
+Next, it is recommended to study at least the basic 
+safety standard IEC 61508 or get some consultancy 
+on what needs to be established in your development 
+processes and in your organization to achieve the 
+necessary safety for your device. As a general rule, it 
+is not possible to turn a standard device into a safety 
+device just by implementing the PROFIsafe protocol. 
+This is due to the fact that PROFIsafe protects against 
+transmission errors on the Black Channel, but not 
+against errors occurring within the F-Devices itself. 
+The architecture of the F-Device safety technology 
+together with the protocol and the manner in which 
+both are implemented define the final SIL of the 
+device.
+PDF_PAGE 13
+PROFIsafe System Description 9
+5.1. Safety classes
+Even though PROFIsafe is suitable for safety 
+functions up to SIL3, it may not be necessary to 
+design and develop the F-Device also for SIL3. The 
+required safety class depends on the final customer 
+application and on how the safety functions are 
+defined. It may be possible through redundancy or 
+other measures to achieve higher safety integrity 
+levels with F-Devices of an even lower safety class 
+(see Chapter 9.6. "PA-Devices").
+5.2. F-Device
+In addition to the possibility of implementing the 
+PROFIsafe specification from scratch, development 
+kits are available on the market. See the product 
+finder on the PI website for further information. The 
+advantage of using a development kit is obvious: 
+pre-certified driver software, additional valuable 
+information and tools, and support.
+For the PROFIBUS and PROFINET interface, you can 
+use any of the available ASICs and layer stacks and 
+adapt the PROFIsafe driver software.
+Securing the GSD 
+For every device on PROFIBUS or PROFINET, a General 
+Station Description (GSD file) is necessary. After 
+defining the common part of the GSD for a F-Device, 
+the coding of the F-Parameters is necessary. This 
+section of the F-Parameters must be protected by 
+a special CRC signature "F_ParamDescCRC" against 
+data corruption on storage media. A configuration 
+tool can check the data integrity of the F-Parameter 
+description section utilizing this special signature, 
+which is also a part of the GSD file.
+Securing configurations
+The GSD file also contains descriptions for the 
+F-Input and/or F-Output data structures. In order 
+to secure this part of the GSD file, another CRC 
+signature "F_IO_StructureDescCRC" is used.
+iParameter
+According to the many different safety device 
+technologies there is a huge variety of individual 
+safety parameters (iParameter). 
+The amount of iParameters ranges from a few bytes 
+for a F-Module up to several tens of kBytes for a 
+laser scanner. For most of the safety devices, special 
+parameterization and diagnostic software tools 
+(CPD-Tool) already exist: therefore it does not make 
+sense to handle iParameters via the GSD. PROFIsafe 
+therefore recommends using a new mechanism, the 
+so-called Universal-Parameter-Server (iPar-Server). 
+It is the responsibility of F-Host manufacturers to 
+provide this capability, whether it is realized within 
+Figure 11:  The iPar-Server concept
+PDF_PAGE 14
+PROFIsafe System Description10
+the non-safety part of F-Host acting as the fieldbus 
+parameterization master or within a controlled 
+subsystem such as a non-safety PLC or an industrial 
+computer on the same network. 
+Figure 11 demonstrates the principal steps of the 
+iPar-Server mechanism by an example. Together with 
+the network configuration and F-Parameterization 
+of a F-Device, an associated iPar-Server function 
+is instantiated (1). The F-Device is able to switch 
+into the data exchange mode while using a safe 
+state (FV). An associated CPD tool can be launched 
+via an appropriate interface (2) such as TCI (Tool 
+Calling Interface) or FDT (Field Device Tool) from 
+the engineering tool, propagating at least the node 
+address of the configured device. Parameterization, 
+commissioning, testing, etc., can be executed with 
+the help of the CPD tool (3). After finalization, the 
+iPar_CRC signature is calculated and displayed in 
+hexadecimal form for (at least) copying and pasting 
+of this value into the "F_iPar_CRC" entry field of 
+the configuration part of the engineering tool (4). 
+A restart of the F-Device is necessary to transfer 
+the "F_iPar_CRC" parameter into the F-Device (5). 
+After final verification and release, the F-Device is 
+enabled to initiate an upload notification (6) to its 
+iPar-Server instance. It thereby utilizes the standard 
+diagnosis mechanism. The iPar-Server polls the 
+diagnosis information (e.g. RDIAG FB) to interpret 
+the request (R) and to establish the upload process 
+(7), storing the iParameters as instance data within 
+the iPar-Server host using acyclic services (Read 
+Record).
+After the replacement of a defective F-Device, the 
+new F-Device receives its F-Parameters, including 
+the "F_iPar_CRC" , at start-up. As iParameters 
+are normally missing in a replacement or a 
+non-retentive F-Device, it recognizes a difference 
+between the "F_iPar_CRC" and its stored 
+iParameters and initiates a download notification 
+(6) to its iPar-Server instance, again using the 
+standard diagnosis mechanism. The iPar-Server 
+polls the diagnosis information to interpret the 
+request (R) and to establish the download process 
+(Write Record). Through this transfer the F-Device 
+is enabled to provide the original functionality 
+without further engineering or CPD tools.
+PROFIdrive
+The IEC 61800-5-2 defines some safety features 
+for drives with integrated safety. These features 
+comprise a group of stopping functions:
+• Safe torque off (de-energize)
+• Safe stop 1
+• Safe stop 2
+• Safe operating stop
+And a group of other safety subfunctions:
+• Safely limited acceleration
+• Safely limited speed
+• Safely limited torque / force
+• Safely limited (absolute) position
+• Safely limited increment
+• Safe direction
+• Safely limited motor temperature 
+Figure 12 illustrates how electro mechanics are 
+replaced by electronic safety stops and monitoring 
+subfunctions. One major objective is to mainly 
+monitor the operations of the drive control and to 
+de-energize only in case of failures. The working 
+group PROFIdrive within PI is specifying parts of 
+these subfunctions in a special amendment to their 
+PROFIdrive specification (see Literature box).
+Figure 12: Drives with integrated safety STOP 
+and monitoring subfunctions
+PA Devices
+F-Devices for process automation follow the sector 
+standard IEC 61511, which takes into account the 
+particular aspect of "proven-in-use" . Under certain 
+conditions, a PA-Device may achieve a better SIL 
+if it is considered to be proven-in-use. PA Devices 
+usually follow the design models of IEC 61804. 
+The Electronic Device Description (EDD) plays an 
+important role here. Therefore, the PI Working 
+Group "PA Devices" also specified, within a separate 
+amendment to their PA Device specification, how 
+to use the PROFIsafe platform for their devices and 
+parameterization methodologies (see Literature 
+box).
+I&M functions
+Since 2005, I&M functions are mandatory for 
+all PROFIBUS and PROFINET devices providing 
+acyclic services. I&M stands for Identification and 
+Maintenance and allows retrieving information 
+about the device‘s manufacturer code, its catalog 
+and serial number, and its hardware and software 
+PDF_PAGE 15
+PROFIsafe System Description 11
+versions in a standardized manner. Via the 
+manufacturer code and additional information on 
+the PI website, the user can be directed to the most 
+current product information on the manufacturer‘s 
+website. See the Profile Guideline (Literature box).
+Diagnosis
+One of the major advantages of PROFIBUS and 
+PROFINET is the possibility for devices to report 
+diagnostics information to the operator in 
+exceptional situations such as failures or errors. 
+Good diagnostics information helps in reducing 
+down times of facilities and thus costs. The concepts 
+not only cover how to code the information but 
+also how to provide foreign language support and 
+how to provide HELP information on what to do in 
+a particular situation. See the corresponding Profile 
+Guideline (Literature box).
+Literature box
+• PROFIsafe Policy V1.5; Order No. 2.282
+• PROFIsafe – Profile for Safety Technology 
+on PROFIBUS DP and PROFINET IO, V2.6.1; 
+Order No. 3.192
+• PROFIsafe – Environmental Requirements, 
+V2.6; Order No. 2.232
+• PROFIsafe – Test Specification for F-Slaves, 
+F-Devices, and F-Hosts, V2.2; Order No. 2.242
+• PROFIsafe for PA-Devices, V1.0.1; Order No. 
+3.042
+• PROFIdrive on PROFIsafe, V3.00.4; Order No. 
+3.272
+• Specification for PROFIBUS Device 
+Description and Device Integration, Volume 
+1: GSD, V5.1; Order No. 2.122
+• GSDML Specification for PROFINET IO, 
+V2.3.2; Order No. 2.352
+• Profile Guideline, Part 1: Identification & 
+Maintenance Functions, V2.0; Order No. 
+3.502
+• Profile Guideline, Part 2: Data Types, 
+Programming Languages, and Platforms, 
+V1.0; Order No. 3.512
+• Profile Guideline, Part 3: Diagnosis, Alarms 
+and Time Stamping, V1.0; Order No. 3.522
+• Profile Guideline, Part 4: Universal Parameter 
+Server, V1.0.1; Order No. 3.532
+• Diagnosis for PROFINET IO, V1.1; Order No. 
+7.142 
+• Rapid way to PROFIBUS DP; Order No. 4.072
+• Industrial Communications with PROFINET;  
+Order No. 4.182
+5.3. F-Host
+Depending on the strategy of system manufacturers, 
+different kinds of architectures for F-Hosts with 
+PROFIsafe communication are possible: stand-
+alone F-CPUs or integrated but logically separated 
+safety processing within standard CPUs.
+Possible structures
+Safety processing itself can be realized in many 
+different ways also: for example via hardware 
+redundancy and discrepancy checking or via 
+"software redundancy" or via "safeguarding" or by 
+using already existing diverse hardware platforms. 
+Development kits are available.
+Conformance classes
+In order to ensure that all F-Devices will be 
+supported by all the PROFIsafe F-Hosts on the 
+market, PROFIsafe specifies conformance classes 
+for F-Hosts. PROFIsafe F-Hosts shall meet the 
+requirements of these conformance classes as a 
+precondition for PI certification (figure 13).
+6. Conformity & 
+certification
+Several products of different types from various 
+vendors communicate within a PROFIsafe island. 
+The products must be implemented conforming 
+to the PROFIsafe specification to ensure that 
+this communication works correctly. Usually the 
+conformance is documented through a certificate 
+from the PI Certification Office based on the test 
+report of one of the accredited PI test laboratories.
+6.1. The PROFIsafe tests
+The PROFIsafe protocol mechanisms are based 
+on finite state machines. It was possible to 
+mathematically prove that PROFIsafe works 
+correctly, even in cases where more than two 
+independent errors or failures occur. This was 
+achieved by systematically generating all possible 
+cases for "test-to-pass" and "test-to-fail" situations. 
+They have been extracted as test cases for a fully 
+automated PROFIsafe layer tester, which is used to 
+check the PROFIsafe conformance of F-Devices and 
+F-Hosts. It is part of a three-step-procedure within 
+the overall safety certification process according to 
+IEC 61508 by assessment bodies (figure 13).

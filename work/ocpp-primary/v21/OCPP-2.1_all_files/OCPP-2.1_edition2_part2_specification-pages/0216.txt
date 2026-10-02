@@ -1,0 +1,51 @@
+EV Driver
+Charging Station CSMS
+A transaction is ongoing.
+unplug cable at car side
+suspend energy offer
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 1,
+timestamp, chargingState = SuspendedEV, triggerReason = EVCommunicationLost, meterValues)
+TransactionEventResponse()
+alt [if Cable is plugged in]
+plugin cable
+resume energy offer
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, seqNo = N + 2,
+timestamp, chargingState = Charging, triggerReason = CablePluggedIn, meterValues)
+TransactionEventResponse()
+Continue with E02 - Start Transaction - Cable Plugin First from Ref #1.
+[if cable not permanently attached.]
+User authorization successful.
+unlock connector
+TransactionEventRequest(eventType = Ended, transactionId = AB1234, seqNo = N + 2,
+timestamp, triggerReason = StopAuthorized, meterValues)
+TransactionEventResponse()
+unplug cable
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Available)
+NotifyEventResponse()
+[if cable permanently attached]
+timeout()
+TransactionEventRequest(eventType = Ended, stoppedReason = Timeout,
+transactionId = AB1234, seqNo = N + 2,timestamp, meterValues)
+TransactionEventResponse()
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Available)
+NotifyEventResponse()
+Figure 69. Sequence Diagram: When cable disconnected on EV-side: Suspend Transaction
+E10 - When cable disconnected on EV-side: Suspend Transaction - Requirements
+Table 72. E10 - Requirements
+ID Precondition Requirement definition Note
+E10.FR.01 If StopTxOnEVSideDisconnect =
+false AND
+Cable not permanently attached
+The Connector SHALL remain locked at the
+Charging Station until the EV Driver presents the
+IdToken.
+E10.FR.02 If StopTxOnEVSideDisconnect =
+false AND
+Cable permanently attached AND
+Cable not plugged in within timeout
+The Charging Station SHALL deauthorize the
+transaction.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 203/803 Part 2 - Specification

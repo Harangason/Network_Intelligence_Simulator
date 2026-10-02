@@ -1,0 +1,45 @@
+1.15.1. FirmwareStatusNotificationRequest
+This contains the field definition of the FirmwareStatusNotificationRequest PDU sent by the Charging Station to the CSMS.
+Class
+Field Name Field Type Card. Description
+status FirmwareStatusEnumType 1..1 Required. This contains the progress status of the
+firmware installation.
+requestId integer 0..1 Optional. The request id that was provided in the
+UpdateFirmwareRequest that started this firmware
+update. This field is mandatory, unless the message was
+triggered by a TriggerMessageRequest AND there is no
+firmware update ongoing.
+1.15.2. FirmwareStatusNotificationResponse
+This contains the field definition of the FirmwareStatusNotificationResponse PDU sent by the CSMS to the Charging Station in
+response to a FirmwareStatusNotificationRequest. No fields are defined.
+1.16. Get15118EVCertificate
+1.16.1. Get15118EVCertificateRequest
+This message is sent by the Charging Station to the CSMS if an ISO 15118 vehicle selects the service Certificate installation. NOTE:
+This message is based on CertificateInstallationReq Res from ISO 15118 2.
+Class
+Field Name Field Type Card. Description
+iso15118SchemaVersion string[0..50] 1..1 Required. Schema version currently used for the 15118
+session between EV and Charging Station. Needed for
+parsing of the EXI stream by the CSMS.
+action CertificateActionEnumType 1..1 Required. Defines whether certificate needs to be
+installed or updated.
+exiRequest string[0..5600] 1..1 Required. Raw CertificateInstallationReq request from EV,
+Base64 encoded.
+1.16.2. Get15118EVCertificateResponse
+Response message from CSMS to Charging Station containing the status and optionally new certificate. NOTE: This message is
+based on CertificateInstallationReq Res from ISO 15118-2.
+Class
+Field Name Field Type Card. Description
+status Iso15118EVCertificateStatusEnum
+Type
+1..1 Required. Indicates whether the message was processed
+properly.
+exiResponse string[0..5600] 1..1 Required. Raw CertificateInstallationRes response for the
+EV, Base64 encoded. The Charging Station can let the
+CSMS know it supports a higher field size by reporting
+this using the device model as
+OCPPCommCtrlr.FieldLength["Get15118EVCertificateRes
+ponse.exiResponse"] = <New max length>
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 368/491 Part 2 - Specification

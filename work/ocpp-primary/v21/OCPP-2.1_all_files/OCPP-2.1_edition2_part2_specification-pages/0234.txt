@@ -1,0 +1,97 @@
+E17.FR.11 E17.FR.10 AND
+TxAllowEnergyTransferResumpt
+ion = true AND
+the EV and EVSE are not disconnected
+Charging Station SHALL resume such a transaction
+in the charging state it had before the interruption.
+E17.FR.12 E17.FR.10 AND
+TxAllowEnergyTransferResumpt
+ion = false AND
+Charging state was Charging AND
+the EV and EVSE are not disconnected
+Charging Station SHALL resume such a transaction
+in the charging state SuspendedEVSE or
+EVConnected.
+E17.FR.13 E17.FR.10 AND
+TxAllowEnergyTransferResumpt
+ion = false AND
+Charging state was not (Charging or
+SuspendedEV) AND
+the EV and EVSE are not disconnected
+Charging Station SHALL resume such a transaction
+in the charging state it had before the interruption.
+E17.FR.14 For each resumed transaction Charging Station
+SHALL send a TransactionEventRequest with
+eventType = Updated and triggerReason =
+TxResumed and its chargingState as well as other
+relevant parameters.
+E17.FR.15 E17.FR.14 AND
+CSMS has a charging profile of
+chargingProfilePurpose = TxProfile
+for transactions reported with
+triggerReason = TxResumed AND
+SmartChargingCtrlr.ChargingProfilePe
+rsistence for instance = "TxProfile" =
+false or absent
+CSMS SHALL send the SetChargingProfileRequest
+for chargingProfilePurpose = TxProfile for these
+transactions again.
+The charging profiles are
+identical to those sent at
+start of transaction, since
+start time of the resumed
+transaction has not
+changed.
+E17.FR.16 E17.FR.10 AND
+the EV and EVSE are disconnected
+AND
+the TxStopPoint conditions are not
+met
+Charging Station SHALL resume such a transaction
+in the charging state Idle.
+E17.FR.17 E17.FR.10 AND
+the EV and EVSE are disconnected
+AND
+the TxStopPoint conditions are met
+The transaction will end normally, as described by
+E06 - Stop Transaction options
+E17.FR.18 E17.FR.11 AND
+Before interruption the charging state
+was Charging AND
+The EV and EVSE are not
+disconnected
+The Charging Station SHALL delay resuming energy
+transfer for a random amount of seconds, with a
+maximum of the value configured at
+EnergyTransferResumptionRandomRange.
+If after a power outage
+all Charging Stations in
+an area start resuming
+energy transfer at the
+exact same time, this
+may result in issues with
+the energy grid.
+After timeout
+E17.FR.20 When Charging Station reboots after
+interruption AND
+Interruption was longer than
+TxResumptionTimeout seconds
+Charging Station SHALL end the transactions that
+were ongoing before the interruption.
+E17.FR.21 E17.FR.20 AND
+Interruption was caused by a power
+loss
+Charging Station SHALL send a
+TransactionEventRequest with eventType = Ended
+and triggerReason = AbnormalCondition and
+stoppedReason = PowerLoss.
+E17.FR.22 E17.FR.20 AND
+Interruption was caused by Charging
+Station (e.g. software fault or watch
+dog timer)
+Charging Station SHALL send a
+TransactionEventRequest with eventType = Ended
+and triggerReason = AbnormalCondition and
+stoppedReason = Reboot.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 221/803 Part 2 - Specification

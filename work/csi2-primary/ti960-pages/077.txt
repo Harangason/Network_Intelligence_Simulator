@@ -1,0 +1,53 @@
+Table 7-22. Main Access Type Codes (continued)
+Access Type Code Description
+W W Write
+W1S W
+1S
+Write
+1 to set
+WStrap W
+Strap
+Write
+Default value loaded from bootstrap pin after reset.
+Reset or Default Value
+-n Value after reset or the default value
+7.6.1.1 I2C_DEVICE_ID Register (Address = 0x0) [Reset = 0x00] 
+I2C_DEVICE_ID is shown in Table 7-23.
+Return to the Summary Table.
+The I2C Device ID Register field always indicates the current value of the I2C ID. When bit 0 of this register is 
+0, this field is read-only and shows the strapped ID from device initialization after power on. When bit 0 of this 
+register is 1, this field is read/write and can be used to assign any valid I2C ID address to the deserializer.
+Table 7-23. I2C_DEVICE_ID Register Field Descriptions
+Bit Field Type Reset Description
+7:1 DEVICE_ID R/WStrap 0x0 7-bit I2C ID of Deserializer (Strap)
+This field always indicates the current value of the I2C ID. When bit 
+0 of this register is 0, this field is read-only and show the strapped 
+ID. When bit 1 of this register is 1, this field is read/write and can be 
+used to assign any valid I2C ID.
+0 DES_ID R/W 0x0 0: Device ID is from strap
+1: Register I2C Device ID overrides strapped value
+7.6.1.2 RESET_CTL Register (Address = 0x1) [Reset = 0x00] 
+RESET_CTL is shown in Table 7-24.
+Return to the Summary Table.
+The Reset Control register allows for soft digital reset of the DS90UB960-Q1 device internal circuitry without 
+using PDB hardware analog reset. Digital Reset 0 is recommended if desired to reset without overwriting 
+configuration registers to default values.
+Table 7-24. RESET_CTL Register Field Descriptions
+Bit Field Type Reset Description
+7:6 RESERVED R 0x0 Reserved
+5 RESERVED R 0x0 Reserved
+4:3 RESERVED R 0x0 Reserved
+2 RESTART_AUTOLOAD RH/W1S 0x0 Restart ROM Auto-load
+Setting this bit to 1 causes a re-load of the ROM. This bit is self-
+clearing. Software may check for Auto-load complete by checking 
+the CFG_INIT_DONE bit in the DEVICE_STS register.
+1 DIGITAL_RESET1 RH/W1S 0x0 Digital Reset
+Resets the entire digital block including registers. This bit is self-
+clearing.
+1: Reset
+0: Normal operation
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 77
+Product Folder Links: DS90UB960-Q1

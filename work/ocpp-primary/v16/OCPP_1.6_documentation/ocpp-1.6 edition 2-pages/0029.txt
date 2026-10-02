@@ -1,0 +1,45 @@
+User
+EV Charge Point Central System
+RFID or other Authorization
+set max current(limit)
+switch power on()
+start charging()
+StartTransaction.req(connectorId, idTag, meterStart, timestamp, [reservationId])
+StartTransaction.conf(idTagInfo, transactionId)
+loop Change according to charging profile
+[for each interval period in charging profile]
+get limit from charging profile():limit
+Charge Point implements charging
+profile via the Control Pilot
+signal whenever maximum current
+needs changing.
+set max current(limit)
+opt [Change of limits by Central System]
+SetChargingProfile.req(ConnectorId, ChargingProfileId, [transactionId],
+ChargingProfilePurpose: TxProfile , ChargingProfileType, recurrencyKind, ValidFrom,
+ValidTo, ChargingSchedule)
+Central System decides to
+change the charging profile.
+SetChargingProfile.conf(Accepted)
+RFID or other Authorization
+end charging()
+switch power off()
+StopTransaction.req(meterStop, timestamp,
+transactionId, reason, [idTag], [transactionData])
+StopTransaction.conf([idTagInfo])
+Figure 8. Sequence Diagram: Central Smart Charging
+Explanation for the above figure:
+• After authorization the connector will set a maximum current to use via the Control Pilot signal. This limit
+is based on a (default) charging profile that the connector had previously received from the Central
+System. The EV starts charging and a StartTransaction.req is sent to the Central System.
+• While charging is in progress the connector will continuously adapt the maximum current or power
+according to the charging profile. Optionally, at any point in time the Central System may send a new
+charging profile for the connector that shall be used as a limit schedule for the EV.
+Local Smart Charging
+The Local Smart Charging use case describes a use case in which smart charging enabled Charge Points have
+charging limits controlled locally by a Local Controller, not the Central System. The use case for local smart
+charging is about limiting the amount of power that can be used by a group of Charge Points, to a certain
+maximum. A typical use would be a number of Charge Points in a parking garage where the rating of the
+connection to the grid is less than the sum the ratings of the Charge Points. Another application might be that
+the Local Controller receives information about the availability of power from a DSO or a local smart grid node.
+24

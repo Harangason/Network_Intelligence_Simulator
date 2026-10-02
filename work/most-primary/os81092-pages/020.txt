@@ -1,0 +1,39 @@
+OS81092
+DS60001271B-page 20  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+Figure 6-2 illustrates the main fields of the FIFO Status and FIFO Command messages.
+FIGURE 6-2: FIFO STATUS AND COMMAND MESSAGE FORMAT
+6.3 FIFO Data Messages
+FIFO Data messages, which indicate either a read or write of a control message or asynchronous packet, are comprised
+of the following fields:
+• Port Message Length (PML) - This 16-bit field specifies the total byte length of the message, not including this 
+field.
+• Port Message Header Length (PMHL) - This single byte field specifies the total byte length of the two fields that 
+follow (FIFO Protocol Header and FIFO Data Header).
+• FIFO Protocol Header (FPH) - At least one byte in length, this field defines the message type and the FIFO to be 
+targeted by the message. The length is extensible up to three bytes on a byte-basis.
+• FIFO Data Header (FDH) - This field contains message information, such as Target Address, Source Address, 
+Functional Address (FBlockID.InstID part of the control message), message priority, and retry parameters. 
+This is a variable-length field, based upon FPH settings.
+• Port Message Body (PMB) - This field (also known as the FIFO Data Body), contains the actual message, and has 
+a total length defined by (PML - PMHL - 1). In addition to payload, this field defines the FktID.OpType(Param-
+eters)part of the control message, required by the MOST Specification [1] for typical control messages.
+For MOST Data Packets (MDP), this field contains a 16-bit length sub-field and a maximum MOST Packet mes-
+sage payload of 1014 bytes when the message is sent via the MediaLB interface. When sent via the Control Port, 
+the maximum MOST Packet payload is 50 bytes.
+Figure 6-3 illustrates the main fields of the FIFO Data (Read/Write) messages.
+FIGURE 6-3: FIFO READ AND WRITE MESSAGE FORMAT
+Handle
+Handle
+FDH
+PML PM Header (PMH)
+Port Message (PM)
+FIFO Status FieldPML PMHL FPH
+FIFO Message FieldPML PMHL FPH
+FIFO Command FieldPML PMHL FPH
+FIFO Status message format
+Generic format for
+FIFO Status and FIFO Command messages
+FIFO Command message format
+PML PM Header (PMH) PM Body (PMB)
+Port Message (PM)
+FIFO Data Header (FDH) FIFO Data BodyPML PMHL FPH

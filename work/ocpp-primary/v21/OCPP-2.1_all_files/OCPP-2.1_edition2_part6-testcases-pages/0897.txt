@@ -1,0 +1,49 @@
+TC_R_105_CS: Configure DER control - Superseding active DER control
+Test case name Configure DER control settings at CS - superseding active DER control
+Test case Id TC_R_105_CS
+Use case Id(s) R04
+Requirement(s) R04.FR.06, R04.FR.21, R04.FR.22
+System under test Charging Station
+Description Test System tries to set a DER control which is supported by the CS and no other controls are set on the CS.
+Purpose To check if the CS behaves correctly when setting controlTypes with different priorities.
+Prerequisite(s) EV supports DER Control
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station sends a ClearDERControlResponse
+1. The Test System sends a ClearDERControlRequest with
+isDefault true
+4. The Charging Station sends a ClearDERControlResponse
+3. The Test System sends a ClearDERControlRequest with
+isDefault false
+6. The Charging Station sends a SetDERControlResponse
+5. The Test System sends a SetDERControlRequest with
+controlId control1
+isDefault false
+controlType <CS supported controlType1>
+*.priority 6
+*.startTime <Current DateTime>
+*.duration 300
+7 The Charging Station sends a NotifyDERStartStopRequest
+8. The Test System sends a NotifyDERStartStopResponse
+10. The Charging Station sends a SetDERControlResponse
+9. The Test System sends a SetDERControlRequest with
+controlId control2
+isDefault false
+controlType <CS supported controlType1> *.priority 5
+*.startTime <Current DateTime + 60 seconds>
+*.duration 60
+Note(s): After about 60 seconds…
+11 The Charging Station sends a NotifyDERStartStopRequest
+12. The Test System sends a NotifyDERStartStopResponse
+Note(s): After about 60 seconds…
+13 The Charging Station sends a NotifyDERStartStopRequest
+14. The Test System sends a NotifyDERStartStopResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 895/1383 Part 6 - Test Cases

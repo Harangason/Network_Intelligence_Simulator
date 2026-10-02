@@ -1,0 +1,59 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+Send negative
+confirmation to user
+Application
+Process
+MODBUS
+Confirmation
+Set Waiting
+response timer
+Send MODBUS request
+To TCP management
+Wait
+Find out pending
+transaction
+Idle
+Send positive
+confirmation to
+User Application
+Build MODBUS
+request
+Wait
+Idle
+[Retries number reached]
+[Request_from_the_user application]
+[Confirmation error]
+Waiting_response_timer_expires
+[Reveive_Response_from_TCP_Mgt]
+[Retries number not reached]
+[Confirmation OK]
+[Send Not OK] [Send OK]
+Figure 11: MODBUS Client Activity Diagram 
+A MODBUS client can receive three events:  
+ A new demand from the user application to  send a request , in this case a MODBUS
+request has to be encoded and be sent on the network using the TCP management 
+component service. The lower layer ( TCP management module) can give back an 
+error due to a TCP connection error, or some other errors. 
+ A response from the TCP management, in th is case the client has to analyze the
+content of the response and send a conf irmation to the user application 
+ The expiration of a Time out due to a non-response. A new retry can be sent on the
+network or a negative confirmation can be  sent to the User Application. 
+Rem
+ark : These retries are initiated by the MODBUS client, some other retries can 
+also be done by the TCP layer in case of TCP acknowledge lack. 
+4.4.1.2 Build a MODBUS Request 
+Following the reception of a demand from the user  application, the client has to build a 
+MODBUS request and to send it  to the TCP management.  
+Building the MODBUS request can be split in several sub-tasks:  
+ The instantiation of a MODBUS transaction that enables the Client to memorize all
+required information in order to bind later the response to the request and to send 
+the confirmation to the user application. 
+ The encoding of the MODBUS request (PDU + MPAB header). The user application
+that initiates the demand has to provide a ll required information which enables the 
+Client to encode the request. The MODBUS PDU is encoded according to 
+the 
+MODBUS Application Protocol Specificat ion [1]. (MB function code, associated 
+parameters and application data ). All fiel ds of the MBAP header are filled. Then, 
+the MODBUS request ADU is built pref ixing the PDU with the MBAP header 
+October 24, 2006 http://www.Modbus.org 21/46
+Modbus Organization  

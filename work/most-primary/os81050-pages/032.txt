@@ -1,0 +1,64 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 32
+OS81050
+6.1  MediaLB 3-pin Mode
+The MediaLB Port provides a conduit for accessing the content of the MOST Network via a single hard-
+ware interface. All data types exchanged across network channels are supported across MediaLB.
+The MediaLB Port also allows access to the internal functions of the OS81050, eliminating the need for
+Control Port access. With MediaLB, only one interface is needed for data and control. When combined
+with the MediaLB software API library, the system designer is insulated from much of the complexity of
+managing the interface between the application software and the network.
+The MediaLB 3-pin interface consists of:
+/square6 MLBCLK - MediaLB Controller output signal that clocks data in and out of the MediaLB Port
+/square6 MLBDAT - bi-directional signal that transports data to and from the MediaLB Port
+/square6 MLBSIG - bi-directional signal that transports signal information to and from the MediaLB Port
+When the MediaLB Port is configured in MediaLB 3-pin mode, the Streaming Port can be
+simultaneously configured with two serial interfaces.
+The MediaLB Controller (OS81050) uses MLBSIG to grant bus access to a MediaLB Device (e.g. EHC).
+That Device can then send data to other Devices (including the Controller). The OS81050 MLBDAT pin
+receives data for configuration or transmission onto the network, and transmits data to other Devices from
+the network receiver. Data and signal information is shifted into Devices by MLBCLK. A complete
+description of the Media Local Bus can be found in the MediaLB Specification [3].
+In the MediaLB 3-pin connection diagram shown in Figure 6-1, each MediaLB line has a weak pull-down to
+keep the signals in a known state when no Device is driving the line. MediaLB Devices that transmit on the
+line also have a series resistor near the Device for series termination and rise/fall time control. The clock
+line may optionally have AC-parallel termination at the farthest point from the Controller (clock source) to
+minimize reflections and ensure a clean clock.
+MOST Network
+MLBSIG
+MLBCLK
+MLBDAT
+Device 2
+DSP
+100 Ω
+100 Ω
+100 Ω
+100 Ω
+100 Ω
+100 Ω
+(Optional)
+47 kΩ
+47 kΩ 47 kΩ
+27 pF
+(Optional)
+100 Ω
+100 Ω
+MLBSIG
+MLBCLK
+MLBDAT
+MediaLB Controller
+MLBDAT
+MLBCLK
+MLBSIG
+Device 1
+EHC
+Network Port
+The series resistor values shown 
+are recommendations only. Values 
+chosen in actual systems should 
+be based on the intended MediaLB 
+clock speed, the impedance of the 
+PCB traces, and the actual 
+capacitive load on the line.
+Figure 6-1: MediaLB 3-pin Mode Connection Diagram - Example
+OS81050

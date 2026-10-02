@@ -1,0 +1,127 @@
+ID Precondition Requirement definition Note
+B09.FR.23
+(2.1)
+B09.FR.10 AND
+On receipt of a
+SetVariablesRequest containing
+any NetworkConfiguration
+component variable AND
+the component instance matches
+none of the members in the
+currently configured
+NetworkConfigurationPriority
+The Charging Station SHALL store the value
+and respond by sending a
+SetVariablesResponse with the corresponding
+setVariableResult containing status Accepted
+B09.FR.26
+(2.1)
+When a SetVariablesRequest
+changes the variable
+SecurityCtrlr.Identity
+The Charging Station SHALL clear the Identity
+from the active NetworkConnectionProfile and
+NetworkConfiguration (when it is writable).
+The SecurityCtrlr.Identity is
+deprecated, and remains for
+backwards compatibility only. This
+assures that the Charging Station
+will use the value from the
+SecurityCtrlr.Identity if it is set by
+CSMS (See B09.FR.16).
+B09.FR.27
+(2.1)
+When a SetVariablesRequest
+changes the variable
+SecurityCtrlr.BasicAuthPassword
+The Charging Station SHALL clear the
+BasicAuthPassword from the active
+NetworkConnectionProfile and
+NetworkConfiguration (when it is writable).
+The
+SecurityCtrlr.BasicAuthPassword
+is deprecated, and remains for
+backwards compatibility only. This
+assures that the Charging Station
+will use the value from the
+SecurityCtrlr.BasicAuthPassword if
+it is set by CSMS (See B09.FR.16).
+B09.FR.28
+(2.1)
+If the NetworkConnectionProfile or
+NetworkConfiguration used for the
+currently active connection
+includes a value for the variable
+Identity AND
+A GetVariablesRequest is received
+for SecurityCtrlr.Identity
+The Charging Station SHALL return the value
+of Identity from the currently active
+connection.
+There is no need to require this for
+SecurityCtrlr.BasicAuthPassword,
+because that value (being a
+password) will never be returned in
+a GetVariablesResponse.
+B09.FR.29
+(2.1)
+When CSMS configures variables
+for an APN or VPN connection
+CSMS SHALL set variable ApnEnabled resp.
+VpnEnabled of NetworkConfiguration to True.
+B09.FR.30
+(2.1)
+When CSMS does not configure
+variables for an APN or VPN
+connection
+CSMS SHALL set variable ApnEnabled resp.
+VpnEnabled of NetworkConfiguration to False.
+B09.FR.31 The variable
+AllowSecurityProfileDowngrade is
+implemented and set to true AND
+the currently active 'SecurityProfile'
+is higher than 1 AND
+the Charging Station receives a
+SetNetworkProfileRequest with a
+NetworkConnectionProfile with
+securityProfile = 1
+The Charging Station SHALL respond with
+SetNetworkProfileResponse with status
+Rejected and optional statusInfo.reasonCode
+= "NoSecurityDowngrade"
+B09.FR.32
+(2.1)
+The variable
+AllowSecurityProfileDowngrade is
+implemented and set to true AND
+the currently active 'SecurityProfile'
+is higher than 1 AND
+the Charging Station receives a
+SetVariablesRequest for
+NetworkConfiguration.SecurityProf
+ile with attributeValue = 1.
+The Charging Station SHALL respond with
+SetVariablesResponse with the corresponding
+setVariableResult with attributeStatus
+Rejected and attributeStatusInfo.reasonCode
+= "NoSecurityDowngrade"
+B09.FR.33
+(2.1)
+B09.FR.10 AND
+On receipt of a
+SetVariablesRequest containing
+the variable
+NetworkConfigurationPriority AND
+the new value adds configuration
+slot(s) to the current value
+The Charging Station SHALL validate the
+NetworkConfiguration component for
+instances equal to the added configuration
+slot(s), and if successful, the Charging Station
+SHALL respond by sending a
+SetVariablesResponse message, with status
+Accepted
+Matches B09.FR.01 for
+SetNetworkProfileRequest.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 72/803 Part 2 - Specification

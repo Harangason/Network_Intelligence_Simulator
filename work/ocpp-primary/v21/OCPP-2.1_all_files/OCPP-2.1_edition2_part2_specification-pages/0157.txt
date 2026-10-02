@@ -1,0 +1,60 @@
+EV Driver
+Charging Station
+CS-001 Payment Kiosk
+Payment
+Provider CSMS
+Enter payment credentials
+Authorize payment
+Return approval and pspRef
+PspRef = 4444, payment details, charging station/evse
+EV Driver enters EVSE number
+and/or plugs cable in
+RequestStartTransactionRequest([evseId = 1]
+idToken(id = 4444, type = DirectPayment, remoteStartId = 123))
+RequestStartTransactionResponse(Accepted)
+Transaction starts as in F07
+TransactionEventRequest(eventType = Started, remoteStartId = 123, ...)
+TransactionEventResponse(transactionLimit.maxCost = 12.34, ...)
+When transaction has finished
+alt [When cost calculated locally]
+TransactionEventRequest(eventtype = Ended, costDetails = ..., ...)
+TransactionEventResponse()
+[When cost calculated by CSMS]
+TransactionEventRequest(eventtype = Ended, ...)
+TransactionEventResponse(totalCost = ..., updatedPersonalMessage = ...)
+alt [When cost settled with PSP by PK]
+<total cost>
+settle <total cost>
+settlement result and URL to receipt
+URL to receipt
+[When cost settled with PSP by CSMS]
+settle <total cost> for pspRef = 4444
+URL to receipt
+opt
+DisplayMessageRequest(<URL to receipt>)
+DisplayMessageResponse()
+C24 - Ad hoc payment via stand-alone payment terminal - Requirements
+ID Precondition Requirements Note
+C24.FR.01 When CSMS receives a message
+from Payment Kiosk that payment is
+authorized with authorization
+reference <PspRef> for Charging
+Station with identity <CS> and
+optionally an EVSE <evse>
+CSMS SHALL send a
+RequestStartTransactionRequest to Charging
+Station with identity <CS> and EVSE <evse>
+(when present) and having idToken.idToken =
+<PspRef> and idToken.type =
+DirectPayment
+There is need to include
+additionalInfo elements for
+payment details, like cardBin,
+cardLast4Digits, towards
+Charging Station.
+The protocol between
+Payment Kiosk and CSMS is
+not specified in this
+document.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 144/803 Part 2 - Specification

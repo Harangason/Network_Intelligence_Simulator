@@ -1,0 +1,62 @@
+EV Charging Station CSMS
+Starting using Plug-and-Charge.
+TxStartPoint = Authorized, TxStopPoint = EVConnected
+User connects cable
+15118 Identification, Authentication
+SessionSetupReq()
+SessionSetupRes()
+ServiceDiscoveryReq()
+ServiceDiscoveryRes()
+PaymentServiceSelectionReq()
+PaymentServiceSelectionRes()
+opt [15118 Certificate Installation or Update]
+CertificateInstallReq()
+Get15118EVCertificateRequest(15118SchemaVersion, install,exiRequest)
+Get15118EVCertificateResponse(status, exiResponse)
+CertificateInstallRes()
+PaymentDetailsReq()
+AuthorizeRequest(idToken, iso15118CertificateHashData)
+AuthorizeResponse(idTokenInfo, certificateStatus)
+PaymentDetailsRes()
+AuthorizationReq()
+AuthorizationRes(EVSEProcessing, ResponseCode)
+TransactionEventRequest(eventType = Started,
+triggerReason = Authorized, chargingState = EVConnected, ...)
+TransactionEventResponse(...)
+seq 15118 Target Setting and charge Scheduling
+ChargeParameterDiscoveryReq()
+NotifyEVChargingNeedsRequest(chargingNeeds, evseId, ...)
+NotifyEVChargingNeedsResponse(Accepted)
+SetChargingProfileRequest(evseId, chargingProfile)
+SetChargingProfileResponse(Accepted)
+ChargeParameterDiscoveryRes(SAScheduleList)
+PowerDeliveryReq(ChargeProgress=Start,ChargingProfile)
+Contactor Close
+PowerDeliveryRes()
+TransactionEventRequest(eventType = Updated,
+triggerReason = ChargingStateChanged, chargingState = Charging, ...)
+TransactionEventResponse(...)
+NotifyEVChargingScheduleRequest(timeBase, evseId,
+chargingSchedule)
+NotifyEVChargingScheduleResponse(status)
+EV is charging...
+loop [while charging]
+ChargingStatusReq()
+ChargingStatusRes()
+User terminates charging
+Stopping Transaction
+PowerDeliveryReq(ChargeProgress=Stop)
+Contactor Open
+PowerDeliveryRes()
+SessionStopReq(ChargingSession=Terminate)
+SessionStopRes()
+TransactionEventRequest(eventType = Updated,
+triggerReason = ChargingStateChanged, chargingState = EVConnected, ...)
+TransactionEventResponse(...)
+User disconnects cable
+TransactionEventRequest(eventType = Ended,
+triggerReason = EVCommunicationLost, chargingState = Idle, ...)
+TransactionEventResponse(...)
+Figure 153. Sequence with Authorization and Scheduling with ISO 15118-2
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 428/803 Part 2 - Specification

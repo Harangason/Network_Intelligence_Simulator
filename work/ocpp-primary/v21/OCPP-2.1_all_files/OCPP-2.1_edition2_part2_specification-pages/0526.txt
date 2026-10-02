@@ -1,0 +1,40 @@
+No. Type Description
+Scenario description 1. The Charging Station sends a AuthorizeRequest with EVCCID of EV in additionalInfo of
+idToken.
+a. The CSMS cannot (yet) allow V2X and returns an AuthorizeResponse with
+idTokenInfo.status = Accepted and omits the field allowedEnergyTransfer.
+2. The Charging Station sends a NotifyEVChargingNeedsRequest with
+requestedEnergyTransfer set to normal AC or DC.
+3. The CSMS will respond with the NotifyEVChargingNeedsResponse message, with status
+set to Accepted
+4. The CSMS sends a SetChargingProfileRequest message, with a chargingSchedule with
+operationMode set to ChargingOnly.
+a. Charging Station and CSMS behave as described in Use cases & Requirements.
+5. The CSMS gets the EVCCID from EV from additionalInfo which it had received in the
+AuthorizeRequest or from the device model variable ConnectedEV.VehicleId.
+6. Alternatively, CSMS gets the vehicle certificate from the device model variable
+ConnectedEV.VehicleCertificate.
+7. When CSMS decides to allow V2X, for example based on idToken, EVCCID or vehicle
+certificate
+a. CSMS sends a NotifyAllowedEnergyTransferRequest to Charging Station with an
+updated allowedEnergyTransfer list that contains a bidirectional transfer, DC_BPT,
+AC_BPT or AC_BPT_DER.
+b. Charging Station responds with NotifyAllowedEnergyTransferResponse with
+status = Accepted.
+8. The Charging Station will start a service renegotiation with the EV, allowing the EV to
+change its current energy service to one with potentially more value.
+5 Prerequisites
+6 Post conditions Charging profile schedule ends
+7 Error Handling
+8 Remarks This use case may also be applied when the user authorizes using external identification means
+(EIM) before plugging-in a cable. In that case, the charging station does not know which EVSE will
+be selected by the user (in case multiple EVSEs are available). If the EVSEs have different
+capabilities (e.g. AC and DC), then the CSMS will not be able to provide the correct list of allowed
+energy transfer options in the AuthorizationResponse at time of authorization.
+When the user connects the cable to EV, then CSMS can send a
+NotifyAllowedEnergyTransferRequest to update the list of allowed energy transfers for this EVSE.
+This will trigger a service renegotiation, as described in this use case.
+NOTE The diagram below only shows ISO 15118-20 messages for as far as they are relevant for the data exchange
+between Charging Stations and CSMS.
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 513/803 Part 2 - Specification

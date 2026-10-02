@@ -1,0 +1,29 @@
+var base62          =
+"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+// Get time interval
+var timeInSeconds   = DateTime.UtcNow - new DateTime(1970, 1, 1);
+var timeInterval    = (UInt64) (timeInSeconds.TotalSeconds /
+validityTime.TotalSeconds);
+var timeBytes       = BitConverter.GetBytes(timeInterval);
+if (BitConverter.IsLittleEndian)
+    Array.Reverse(timeBytes);
+using (var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(sharedSecret)))
+{
+    // Calculate hash
+    var hash = hmac.ComputeHash(timeBytes);
+    // Convert hash bytes to characters starting at random offset
+    var offset         = hash[^1] & 0x0F;
+    var stringBuilder  = new StringBuilder();
+    for (var i = 0; i < totpLength; i++)
+        stringBuilder.Append(base62[hash[(offset + i) % hash.Length] %
+base62.Length]);
+    return stringBuilder.ToString();
+}
+Validation of TOTP
+CSMS validates the time-based one-time password (TOTP) in the URL against the TOTP that CSMS calculates for the current time.
+The TOTP in the URL (URL-TOTP) is considered valid if it equals the TOTP calculated by CSMS (CSMS-TOTP). If the TOTPs are not
+equal CSMS shall try to compare the URL-TOTP against a CSMS-TOTP for the previous time interval and the next time interval. This
+overcomes failed validation as a result processing delays or small differences in clock time.
+If URL-TOTP and CSMS-TOTP still do not match in any of these cases, then CSMS shall consider the URL as invalid.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 153/803 Part 2 - Specification

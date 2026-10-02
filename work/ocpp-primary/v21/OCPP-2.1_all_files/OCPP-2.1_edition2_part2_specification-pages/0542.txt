@@ -1,0 +1,45 @@
+EV Charging Station CSMS
+Transaction has started
+alt [15118-20 Scheduled mode]
+Not applicable
+[15118-20 Dynamic mode]
+ScheduleExchangeReq( DepartureTime, EVTargetEnergyRequest,
+Dynamic, ... )
+NotifyEVChargingNeedsRequest(
+DepartureTime, EVTargetEnergyRequest, ... )
+NotifyEVChargingNeedsResponse( Accepted )
+SetChargingProfileRequest( v2xSchedule
+"LocalFrequency" )
+SetChargingProfileResponse( Accepted )
+ScheduleExchangeRes()
+PowerDeliveryReq()
+PowerDeliveryRes()
+loop [Updating setpoint dynamically every schedule period]
+Measure grid frequency
+opt [aFRR]
+AFRRSignalRequest(time, signal)
+AFRRSignalResponse(Accepted)
+Adjust power per v2xFreqWattCurve
+and v2xSignalWattCurve
+AC/DC_ChargeLoopReq()
+Continuous charge loop
+AC/DC_ChargeLoopRes( setpoint )
+[CHAdeMO]
+evChargingParameters
+evseChargingParameters
+SoC
+SetChargingProfileRequest( v2xSchedule,
+"LocalFrequency" )
+SetChargingProfileResponse( Accepted )
+loop [Updating power setpoint every schedule period]
+Measure grid frequency
+opt [aFRR]
+AFRRSignalRequest(time, signal)
+AFRRSignalResponse(Accepted)
+Adjust power per v2xFreqWattCurve
+and v2xSignalWattCurve
+Available output current (H'108.3)
+Charging current request (H'102.3)
+Figure 193. V2X Operation Mode LocalFrequency
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 529/803 Part 2 - Specification

@@ -1,0 +1,46 @@
+TC_M_07_CS: Install CA certificate - Rejected - Certificate invalid
+Test case name Install CA certificate - Rejected - Certificate invalid
+Test case Id TC_M_07_CS
+Use case Id(s) M05
+Requirement(s) M05.FR.01,M05.FR.07
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to install new Root CA certificates using the
+InstallCertificateRequest message.
+Purpose To verify if the Charging Station is able to reject an invalid certificate.
+Prerequisite(s) - The Charging Station supports Security Profile 2 or 3.
+- The Charging Station does NOT have the following configuration; AdditionalRootCertificateCheck is
+implemented with value true
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+InstallCertificateResponse
+1. The Test System sends a InstallCertificateRequest
+with certificateType is CSMSRootCertificate
+certificate is <Generated Expired Certificate>
+4. The Charging Station responds with a
+GetInstalledCertificateIdsResponse
+3. The Test System sends a GetInstalledCertificateIdsRequest
+with certificateType is CSMSRootCertificate
+Tool validations
+* Step 2:
+Message: InstallCertificateResponse
+- status must be Rejected
+* Step 4:
+Message: GetInstalledCertificateIdsResponse
+- status must be NotFound
+OR
+- status must be Accepted
+- certificateHashDataChain must NOT contain an entry with following values:
+ — certificateType is CSMSRootCertificate
+ — certificateHashData contains <HashData from configured new CSMS Root certificate>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 642/1383 Part 6 - Test Cases

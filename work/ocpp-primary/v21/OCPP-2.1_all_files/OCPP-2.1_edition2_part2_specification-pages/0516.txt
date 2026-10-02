@@ -1,0 +1,27 @@
+Figure 185. Diagram of a local load-balancing setup
+For this operation mode there are four configurable keys:
+1. UpperThreshold, threshold level for the measured load at which the EV will start to compensate the power of the load in
+order to avoid exceeding the threshold (by discharging).
+2. LowerThreshold, threshold level for the measured load at which the EV will start to compensate the power of the load in
+order to avoid passing below the threshold (by charging) .
+3. UpperOffset, the amount by which the load is compensated more (or less) than the upper threshold.
+4. LowerOffset, the amount by which the load is compensated more (or less) than the lower threshold.
+All these keys can have either positive or negative values, as long as UpperThreshold > LowerThreshold. The values of LowerOffset
+and UpperOffset are relative to LowerThreshold and UpperThreshold.
+To better understand what possible usages of this operation mode can be, here are some examples:
+1. When both LowerOffset and UpperOffset are set to zero, then the schedule will aim to keep the load exactly between
+LowerThreshold and UpperThreshold.
+2. When UpperThreshold = 10 kW with UpperOffset = +1 kW and LowerThreshold = -5 kW with LowerOffset = -1 kW, then the
+schedule will aim to keep the load between +11 kW and - 6 kW.
+Load = get latest load power reading ()
+If Load > UpperThreshold
+    DeltaSetpoint = UpperThreshold + UpperOffset - Load
+Else If Load < LowerThreshold
+    DeltaSetpoint = LowerThreshold + LowerOffset - Load
+Else
+    DeltaSetpoint = 0
+setpoint = setpoint + DeltaSetpoint
+The determined setpoint in the V2X schedule entry is always to be limited by limit (when positive) or dischargeLimit (when
+negative).
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 503/803 Part 2 - Specification

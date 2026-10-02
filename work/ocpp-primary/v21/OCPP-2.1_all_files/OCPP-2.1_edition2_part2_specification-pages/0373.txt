@@ -1,0 +1,75 @@
+ID Precondition Requirements Note
+K11.FR.06
+(2.1)
+K11.FR.01 The Charging Station SHALL use purpose
+ChargingStationExternalConstraints when
+reporting about this limit (i.e. in a
+ReportChargingProfilesRequest).
+When configuration variable
+MaxExternalConstrain
+tsId exists, it is
+RECOMMENDED to use
+values for the id of a
+ChargingStationExter
+nalConstraints profile
+below this value, to
+minimize the risk of a clash
+with an id that CSMS might
+use for a (future) charging
+profile.
+When configuration variable
+MaxExternalConstrain
+tsId does not exist, it is
+RECOMMENDED to use
+negative values for the id of
+a
+ChargingStationExter
+nalConstraints profile,
+to minimize the risk of a
+clash with an id that CSMS
+might use for a (future)
+charging profile.
+See use case K29 for the
+use of Dynamic charging
+profiles and external limits.
+K11.FR.07
+(2.1)
+When an external charging
+limit/schedule is received
+during an ongoing
+transaction AND
+ExternalConstraintsP
+rofileDisallowed is
+true
+The Charging Station SHALL ignore the external charging
+limit/schedule.
+CSMS will need to set a
+charging profile with
+operationMode =
+ExternalLimits to allow
+this. See use case K29.
+K12 - Set / Update External Charging Limit Without Ongoing Transaction
+Updated in OCPP 2.1
+No. Type Description
+1 Name Set / Update External Charging Limit Without Ongoing Transaction
+2 ID K12
+3 Objective(s) To inform the CSMS of a charging schedule or charging limit imposed by an external system on
+the Charging Station for new transactions or on the grid connection.
+4 Description To inform the CSMS of a charging schedule or charging limit imposed by an external system on
+the Charging Station for new transactions or on the grid connection. The External Control System
+can be a DSO, but also a smart meter or a home energy management system. The interface
+between External Control System and Charging Station is not specified. It can be any protocol that
+is supported by Charging Station for this purpose, even OCPP.
+Actors External Control System, Charging Station, CSMS
+Scenario description 1. External Control System sends a charging limit to Charging Station (not during a transaction).
+2. Optional: Charging Station calculates new charging schedule.
+3. Charging Station adjusts the charging speed.
+4. If the charging limit changed by more than: LimitChangeSignificance, the Charging
+Station sends a NotifyChargingLimitRequest message to CSMS with optionally the set charging
+limit/schedule.
+5. The CSMS responds with a NotifyChargingLimitResponse to the Charging Station.
+5 Prerequisites Charging Station is not in error state.
+The external system can set/clear a charging limit/schedule on the Charging Station via a direct
+connection to the Charging Station.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 360/803 Part 2 - Specification

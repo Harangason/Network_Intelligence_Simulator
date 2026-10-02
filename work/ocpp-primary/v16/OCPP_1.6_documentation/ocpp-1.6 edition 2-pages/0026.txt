@@ -1,0 +1,35 @@
+The final schedule constraints that apply to a transaction are determined by merging the profiles with purposes
+ChargePointMaxProfile with the profile TxProfile or the TxDefaultProfile in case no profile of purpose TxProfile is
+provided. TxProfile SHALL only be set at Charge Point ConnectorId >0.
+3.13.2. Stacking charging profiles
+It is allowed to stack charging profiles of the same charging profile purpose in order to describe complex
+calendars. For example, one can define a charging profile of purpose TxDefaultProfile with a duration and
+recurrence of one week that allows full power or current charging on weekdays from 23:00h to 06:00h and from
+00:00h to 24:00h in weekends and reduced power or current charging at other times. On top of that, one can
+define other TxDefaultProfiles that define exception to this rule, for example for holidays.
+Precedence of charging profiles is determined by the value of their StackLevel parameter. At any point in time
+the prevailing charging profile SHALL be the charging profile with the highest stackLevel among the profiles that
+are valid at that point in time, as determined by their validFrom and validTo parameters.
+To avoid conflicts, the existence of multiple Charging Profiles with the same stackLevel and Purposes in a Charge
+Point is not allowed. Whenever a Charge Point receives a Charging Profile with a stackLevel and Purpose that
+already exists in the Charge Point, the Charge Point SHALL replace the existing profile.
+
+In the case an updated charging profile (with the same stackLevel and purpose) is sent with a
+validFrom dateTime in the future, the Charge Point SHALL replace the installed profile and
+SHALL revert to default behavior until validFrom is reached. It is RECOMMENDED to provide a
+start time in the past to prevent gaps.
+ If you use Stacking without a duration, on the highest stack level, the Charge Point will never
+fall back to a lower stack level profile.
+3.13.3. Combining charging profile purposes
+The Composite Schedule that will guide the charging level is a combination of the prevailing Charging Profiles of
+the different chargingProfilePurposes.
+This Composite Schedule is calculated by taking the minimum value for each time interval. Note that time
+intervals do not have to be of fixed length, nor do they have to be the same for every charging profile purpose.
+This means that a resulting Composite Schedule MAY contain intervals of different lengths.
+At any point in time, the available power or current in the Composite Schedule, which is the result of merging the
+schedules of charging profiles ChargePointMaxProfile and TxDefaultProfile (or TxProfile), SHALL be less than or
+equal to lowest value of available power or current in any of the merged schedules.
+In the case the Charge Point is equipped with more than one Connector, the limit value of
+ChargePointMaxProfile is the limit for all connectors combined. The combined energy flow of all connectors
+SHALL NOT be greater then the limit set by ChargePointMaxProfile.
+21

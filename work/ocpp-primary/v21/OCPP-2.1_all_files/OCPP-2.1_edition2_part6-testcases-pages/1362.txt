@@ -1,0 +1,57 @@
+Main (Test scenario)
+10. The Test System responds with a SetDERControlResponse
+with
+status Accepted
+9. The CSMS sends a SetDERControlRequest
+Test GetDERControl
+Manual action: trigger CSMS to send a GetDERControlRequest with isDefault true
+12. The Test System responds with a GetDERControlResponse
+with
+status Accepted
+11. The CSMS sends a GetDERControlRequest
+13. The Test System sends a ReportDERControlRequest with
+- enterService :
+- enterService.id = "enterservice_1"
+- enterService.*enterService.highVoltage = 250
+- enterService.*enterService.lowVoltage = 210
+- enterService.*enterService.highFreq = 50.5
+- enterService.*enterService.lowFreq 49.5
+- enterService.*enterService.priority = 1
+- freqDroop :
+- freqDroop.id = "freqdroop_1"
+- freqDroop.isDefault = true
+- freqDroop.isSuperseded = false
+- freqDroop.freqDroop.priority must be 6
+- freqDroop.freqDroop.overFreq = 50.5
+- freqDroop.freqDroop.underFreq = 49.5 
+- freqDroop.freqDroop.overDroop = 0.05
+- freqDroop.freqDroop.underDroop = 0.05
+- freqDroop.freqDroop.responseTime = 10
+14. The CSMS sends a ReportDERControlResponse
+Manual action: trigger CSMS to send a GetDERControlRequest with isDefault false
+16. The Test System responds with a GetDERControlResponse
+with
+status Accepted
+15. The CSMS sends a GetDERControlRequest
+17. The Test System sends a ReportDERControlRequest with
+- curve :
+- curve.id = "freqwatt_1"
+- curve.curveType = "FreqWatt"
+- curve.isDefault = false
+- curve.isSuperseded = false
+- curve.curve.priority = 4
+- curve.curve.yUnit = "PctMaxW"
+- curve.curve.curvedata[0].x = 49
+- curve.curve.curvedata[0].y = 75
+- curve.curve.curvedata[1].x = 49.5
+- curve.curve.curvedata[1].y = 90
+- curve.curve.curvedata[2].x = 50.5
+- curve.curve.curvedata[2].y = 100
+- curve.curve.curvedata[3].x = 51
+- curve.curve.curvedata[3].y = 100
+- curve.curve.startTime = <current time>
+- curve.curve.duration = 900
+18. The CSMS sends a ReportDERControlResponse
+Manual action: trigger CSMS to send a GetDERControlRequest with controlType LimitMaxDischarge
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1360/1383 Part 6 - Test Cases

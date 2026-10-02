@@ -1,0 +1,52 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+The TCP connection management module uses th e Stack interface (usually BSD Socket 
+interface) to communicate with the TCP/IP stack. 
+In order to maintain compatibility between system requirements and server resources, 
+the TCP management will maintain 2 pools of connection. 
+ The first pool ( priority  connection pool ) is made of connections that are never
+closed on a local initiative. A configuration mu st be provided to set this pool up. The 
+principle to be implemented is to associat e a specific IP address with each possible 
+connection of this pool. The devices with such IP addresses are said to be 
+“marked”. Any new connection that is re quested by a marked device must be 
+accepted, and will be taken from the priority connection pool. It is also necessary to 
+configure the maximum number of Connections allowed for each remote device to 
+avoid that the same device uses all the connections of the priority pool.  
+ The second pool ( non-priority  connection pool ) contains connections for non
+marked devices. The rule that takes over here is to close the oldest connection 
+when a new connection request arrives from a non-marked device and when there 
+is no more connection available in the pool. 
+A configuration might be optionally provided  to assign the number of connections 
+available in each pool. However (It is not mandatory) the designers can set the number 
+of connections at design time if required. 
+4.2.1.2 Connection management description 
+• Connection establishment :
+The MODBUS messaging service must provide a listening socket on Port 502, which 
+permits to accept new connection and to exchange data with other devices.  
+When the messaging service needs to exchange  data with a remote s e rver, it must 
+open a new client connection with a remote Port 502 in order to exchange data with this 
+distant. The local port must be higher than 1024 and different for each client 
+connection. 
+Device Device
+Client
+Ports
+Server
+Port
+502
+n
+(n>1024)
+Server
+Port
+Client
+Ports
+502
+n
+(n>1024)Connection (@ IP1 n,
+@IP2 502)
+@ IP1 @ IP2
+Figure 8: MODBUS TCP connection establishment 
+If the number of client and server connections is greater than the number of authorized 
+connections the oldest unused connection is closed. The access control mechanism 
+can be activated to check if the IP address of the remote client is authorized. If not the 
+new connection is refused. 
+October 24, 2006 http://www.Modbus.org 12/46
+Modbus Organization  

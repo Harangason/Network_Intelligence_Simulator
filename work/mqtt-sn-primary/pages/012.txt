@@ -1,0 +1,33 @@
+• GwAdd: address of the indicated GW; optional, only included if message is sent by a client.
+Like the SEARCHGW message the broadcast radius for this message is also indicated to the underlying
+network layer when MQTT-SN gives this message for transmission.
+5.4.4 CONNECT
+Length MsgType Flags ProtocolId Duration ClientId
+(octet 0) (1) (2) (3) (4,5) (6:n)
+Table 9: CONNECT Message
+The CONNECT message is sent by a client to setup a connection. Its format is shown in Table 9:
+• Length and MsgType: see Section 5.2.
+• Flags:
+– DUP, QoS, Retain, TopicIdType: not used.
+– Will: if set, indicates that client is requesting for Will topic and Will message prompting;
+– CleanSession: same meaning as with MQTT, however extended for Will topic and Will message (see
+Section 6.3).
+• ProtocolId: corresponds to the “Protocol Name” and “Protocol Version” of the MQTT CONNECT message.
+• Duration: same as with MQTT, contains the value of the Keep Alive timer.
+• ClientId: same as with MQTT, contains the client id which is a 1-23 character long string which uniquely
+identiﬁes the client to the server.
+5.4.5 CONNACK
+Length MsgType ReturnCode
+(octet 0) (1) (2)
+Table 10: CONNACK Message
+The CONNACK message is sent by the server in response to a connection request from a client. Its format is
+shown in Table 10:
+• Length and MsgType: see Section 5.2.
+• ReturnCode: encoded according to Table 5.
+5.4.6 WILLTOPICREQ
+Length MsgType
+(octet 0) (1)
+Table 11: WILLTOPICREQ and WILLMSGREQ Messages
+The WILLTOPICREQ message is sent by the GW to request a client for sending the Will topic name. Its
+format is shown in Table 11: it has only a header and no variable part.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 11

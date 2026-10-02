@@ -1,0 +1,63 @@
+M07 - Get Vehicle Certificate Chain Revocation Status - Requirements
+Table 133. M07 - Requirements
+ID Precondition Requirement definition
+M07.FR.01 When CSMS receives a
+GetCertificateChainStatusRequest with one or
+more entries in certificateStatusRequests which
+have source = OCSP
+CSMS SHALL perform an OCSP request to one of URLs in urls for
+certificateHashData of each certificate.
+M07.FR.02 M07.FR.01 AND
+the OCSP request to the selected URL from urls
+for certificateHashData fails
+CSMS SHALL use status = Failed for this certificate with
+certificateHashData in the response.
+M07.FR.03 M07.FR.01 AND NOT M07.FR.02 CSMS SHALL use the OCSP status (Good/Revoked/Unknown)
+for status of the certificate with certificateHashData in the
+response.
+M07.FR.04 When CSMS receives a
+GetCertificateChainStatusRequest with one or
+more entries in certificateStatusRequests which
+have source = CRL
+CSMS SHALL retrieve the CRL from one of the urls for
+certificateHashData of each certificate.
+M07.FR.05 M07.FR.04 AND
+CSMS fails to download the CRL
+CSMS SHALL use status = Failed for this certificate with
+certificateHashData in the response.
+M07.FR.06 M07.FR.04 
+the serialNumber of a certificate is part of the
+downloaded CRL
+CSMS SHALL use status = Revoked for this certificate in the
+response.
+M07.FR.07 M07.FR.04 AND
+the serialNumber of a certificate is not part of
+the downloaded CRL
+CSMS SHALL use status = Good for this certificate in the
+response.
+M07.FR.08 When CSMS has checked all certificates in the
+GetCertificateChainStatusRequest
+CSMS SHALL respond with a
+GetCertificateChainStatusResponse with a list of
+certificateStatus in which each entry has the certificateHashData
+of the certificate, the source (OCSP/CRL), status and nextUpdate
+of the checked certificates.
+M07.FR.09 M07.FR.08 Charging Station SHOULD store the certificateStatus data from
+the GetCertificateChainStatusResponse in a local certificate
+status cache for at most one week.
+M07.FR.10 When an entry for certificateHashData is present
+in the local certificate status cache AND
+the time in nextUpdate has not expired
+Charging Station SHOULD NOT send a
+GetCertificateChainStatusRequest for the certificate.
+M07.FR.11 When Charging Station wants to check the
+revocation status of a certificate chain AND
+the certificateHashData for one or more
+certificates of the chain is not present in the
+local certificate status cache
+Charging Station SHALL send a
+GetCertificateChainStatusRequest to CSMS for the
+certificateHashData entries of the certificate chain that are not in
+the local certificate status cache.
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 448/803 Part 2 - Specification

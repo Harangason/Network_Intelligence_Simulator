@@ -1,0 +1,33 @@
+DefaultTariffConfigured
+State DefaultTariffConfigured
+System under test Charging Station
+Description Configures the Charging Station with a default tariff for all EVSE’s.
+Exposes <defaultTariff>
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.energy.taxRate[0].type MyTax
+tariff.energy.taxRate[0].tax 21
+tariff.energy.prices[0].priceKwh 0.50
+2. The Charging Station responds with
+SetDefaultTariffResponse
+status = Accepted
+SetDefaultTariffRequest.tariff of step 1 is exposed as <defaultTariff>
+Tool validations
+* Step 2:
+Message SetDefaultTariffResponse
+- status must be Accepted
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 945/1383 Part 6 - Test Cases

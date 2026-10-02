@@ -1,0 +1,53 @@
+I Tariff and Cost
+TC_I_01_CSMS: Show EV Driver running total cost during charging  -
+costUpdatedRequest
+Test case name Show EV Driver running total cost during charging - costUpdatedRequest
+Test case Id TC_I_01_CSMS
+Use case Id(s) I02
+Requirement(s) I02.FR.01
+System under test CSMS
+Description While a transaction is ongoing, the driver wants to know how much the running total cost is, updated at a
+relevant interval.
+Purpose To verify if the CSMS is able to correctly send the running total cost as described in the OCPP specification.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System sends an AuthorizeRequest
+with idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+2. The CSMS responds with an AuthorizeResponse
+3. The Test System sends a TransactionEventRequest with
+- triggerReason Authorized
+- idToken.idToken <Configured valid_idtoken_idtoken>
+- idToken.type <Configured valid_idtoken_type>
+- eventType Updated
+4. The CSMS responds with a TransactionEventResponse
+5. Execute Reusable State EVConnectedPreSession
+6. Execute Reusable State EnergyTransferStarted
+7. The Test System sends a TransactionEventRequest
+With triggerReason is MeterValuePeriodic
+eventType is Updated
+timestamp <The intervals between the timestamps of the
+received Meter Value messages equals the configured sampled
+Meter Values interval>.
+sampledValue.context is Sample.Periodic
+Note(s):
+_- This step will be executed every _<Configured sampled Meter
+Values interval>
+- The Test System will end the testcase after two MeterValues.
+8. The CSMS responds with a TransactionEventResponse
+10. The Test System responds with a CostUpdatedResponse
+9. The CSMS sends a CostUpdatedRequest
+Note(s):
+- This step will be executed after every
+TransactionEventResponse, if the message did not contain a
+totalCost.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 750/914 Part 6 - Test Cases

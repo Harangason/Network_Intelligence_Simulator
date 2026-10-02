@@ -1,0 +1,62 @@
+Table 7-85. RAW_EMBED_DTYPE Register Field Descriptions
+Bit Field Type Reset Description
+7:6 EMBED_DTYPE_EN R/W 0x0 Embeded Data Type Enable
+0: All long packets will be forwarded as RAW10 or RAW12 video 
+data
+01, 10, or 11: Send first N long packets (1, 2, or 3) as Embedded 
+data using the data type in the EMBED_DTYPE_ID field of this 
+register. This control has no effect if the Receiver is programmed 
+to receive CSI-2 formatted data.
+5:0 EMBED_DTYPE_ID R/W 0x12 Embedded Data Type
+If sending embedded data is enabled via the EMBED_DTYPE_EN 
+control in this register, the Data Type field for the first N lines of each 
+frame will use this value rather than the value programmed in the 
+RAW12_ID or RAW10_ID registers. The default setting matches the 
+CSI-2 specification for Embedded 8-bit non Image Data.
+7.6.1.64 FPD3_PORT_SEL Register (Address = 0x4C) [Reset = 0x00] 
+FPD3_PORT_SEL is shown in Table 7-86.
+Return to the Summary Table.
+The FPD-Link III Port Select register configures which port is accessed in I2C commands to unique Rx Port 
+registers 0x4D - 0x7F and 0xD0 - 0xDF. A 2-bit RX_READ_PORT field provides for reading values from a 
+single port. The RX_WRITE_PORT fields provide individual enables for each port, allowing simultaneous writes 
+broadcast to all of the FPD-Link III Receive port register blocks in unison. The DS90UB960-Q1 maintains 
+separate page control, preventing conflict between sources.
+Table 7-86. FPD3_PORT_SEL Register Field Descriptions
+Bit Field Type Reset Description
+7:6 PHYS_PORT_NUM R 0x0 Physical port number
+This field porvides the physical port connection when reading from a 
+remote device via the Bi-directional Control Channel.
+When accessed via local I2C interfaces, the value returned is always 
+0. When accessed via Bi-directional Control Channel, the value 
+returned is the port number of the Receive port connection.
+5:4 RX_READ_PORT R/W 0x0 Select RX port for register read
+This field selects one of the four RX port register blocks for 
+readback. This applies to all paged FPD3 Receiver port registers.
+00: Port 0 registers
+01: Port 1 registers
+10: Port 2 registers
+11: Port 3 registers
+When accessed via local I2C interfaces, the default setting is 0. 
+When accessed via Bi-directional Control Channel, the default value 
+is the port number of the Receive port connection.
+3 RX_WRITE_PORT_3 R/W 0x0 Write Enable for RX port 3 registers
+This bit enables writes to RX port 3 registers. Any combination of RX 
+port registers can be written simultaneously. This applies to all paged 
+FPD3 Receiver port registers.
+0: Writes disabled
+1: Writes enabled
+When accessed via Bi-directional Control Channel, the default value 
+is 1 if accessed over RX port 3.
+2 RX_WRITE_PORT_2 R/W 0x0 Write Enable for RX port 2 registers
+This bit enables writes to RX port 2 registers. Any combination of RX 
+port registers can be written simultaneously. This applies to all paged 
+FPD3 Receiver port registers.
+0: Writes disabled
+1: Writes enabled
+When accessed via Bi-directional Control Channel, the default value 
+is 1 if accessed over RX port 2.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 109
+Product Folder Links: DS90UB960-Q1

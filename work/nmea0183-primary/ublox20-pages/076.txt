@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x40 20 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 type - - Message type (0x01 for this type)
+1 U1 version - - Message version (0x00 for this version)
+2 U1[2] reserved0 - - Reserved
+4 I4 lat 1e-7 deg WGS84 Latitude
+8 I4 lon 1e-7 deg WGS84 Longitude
+12 I4 alt - cm WGS84 Altitude
+16 U4 posAcc - cm Position accuracy (stddev)
+3.13.7.3 Initial time assistance UTC
+Message UBX-MGA-INI-TIME_UTC
+Initial time assistance UTC
+Type Input
+Comment This message allows the delivery of UTC time assistance to a receiver. This message is equivalent to the UBX-
+MGA-INI-TIME_GNSS message, except for the time base.
+See section AssistNow online in the integration manual for details.
+☞ Supplying time assistance that is inaccurate by more than the speciﬁed time accuracy, may lead to
+substantially degraded receiver performance.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x40 24 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 type - - Message type (0x10 for this type)
+1 U1 version - - Message version (0x00 for this version)
+2 X1 ref - - Reference to be used to set time
+bits 3…0   U:4 source - - • 0 = none, i.e. on receipt of message (will be
+inaccurate!)
+• 1 = relative to pulse sent to EXTINT0
+• 2 = relative to pulse sent to EXTINT1
+• 3-15 = reserved
+bit 4   U:1 fall - - use falling edge of EXTINT pulse (default rising) - only
+if source is EXTINT
+bit 5   U:1 last - - use last EXTINT pulse (default next pulse) - only if
+source is EXTINT
+3 I1 leapSecs - s Number of leap seconds since 1980 (or 0x80 = -128 if
+unknown)
+4 U2 year - - Year
+6 U1 month - - Month, starting at 1
+7 U1 day - - Day, starting at 1
+8 U1 hour - - Hour, from 0 to 23
+9 U1 minute - - Minute, from 0 to 59
+10 U1 second - s Seconds, from 0 to 59
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 76 of 224
+C1-Public

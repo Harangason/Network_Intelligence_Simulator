@@ -1,0 +1,38 @@
+Text
+Old State is [csIso1511820V2xControlBpt]
+New State is [authorized15118] (for 15118-20)
+6.2.58. Page 877 - (2026-02) - TC_Q_130_CS - Updated tool validation
+requestedEnergyTransfer
+Test case name V2X Authorisation - ISO15118-20 - has ISO15118ServiceRenegotiationSupport - Charging needs rejected
+Test case Id TC_Q_130_CS
+…
+Tool validations
+* Step 1:
+Message: NotifyEVChargingNeedsRequest
+- evseId must be <Configured evseId>
+For AC charging station:
+- chargingNeeds.requestedEnergyTransfer AC_BPT
+- chargingNeeds.availableEnergyTransfer [AC_single_phase, AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]
+For DC charging station:
+- chargingNeeds.requestedEnergyTransfer DC_BPT
+- chargingNeeds.availableEnergyTransfer [DC, DC_BPT, DC_ACDP, DC_ACDP_BPT]
+- chargingNeeds.controlMode must be ScheduledControl
+- chargingNeeds.v2xChargingParameters.maxChargePower must be 10000 (W)
+- chargingNeeds.v2xChargingParameters.maxDischargePower must be 5000 (W)
+* Step 3:
+Message: NotifyEVChargingNeedsRequest
+- evseId must be <Configured evseId>
+For AC charging station:
+- chargingNeeds.requestedEnergyTransfer <Not a bi-directional energyTransferMode>   
+- chargingNeeds.availableEnergyTransfer [AC_single_phase, AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]
+For DC charging station:
+- chargingNeeds.requestedEnergyTransfer DC
+- chargingNeeds.availableEnergyTransfer [DC, DC_BPT, DC_ACDP, DC_ACDP_BPT]
+- chargingNeeds.controlMode must be ScheduledControl
+- chargingNeeds.v2xChargingParameters.maxChargePower must be 10000 (W)
+- chargingNeeds.v2xChargingParameters.maxDischargePower must be <omitted>
+Post scenario validations:
+N/a
+6.2.59. Page 879 - (2026-06) - TC_R_100_CS - Used reusable state booted
+The test case was updated to make use of the reusable state booted.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 88/116 Errata 2026-06

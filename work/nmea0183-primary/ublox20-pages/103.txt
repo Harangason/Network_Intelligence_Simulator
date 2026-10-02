@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+bit 9   U:1 relPos
+Normalized
+- - 1 if the components of the relative position vector
+(including the high-precision parts) are normalized
+3.15.14 UBX-NAV-RESETODO (0x01 0x10)
+3.15.14.1 Reset odometer
+Message UBX-NAV-RESETODO
+Reset odometer
+Type Command
+Comment This message resets the traveled distance computed by the odometer (see UBX-NAV-ODO).
+UBX-ACK-ACK or UBX-ACK-NAK are returned to indicate success or failure.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x10 0 see below CK_A CK_B
+Payload This message has no payload.
+3.15.15 UBX-NAV-SAT (0x01 0x35)
+3.15.15.1 Satellite information
+Message UBX-NAV-SAT
+Satellite information
+Type Periodic/polled
+Comment This message displays information about SVs that are either known to be visible or currently tracked by the
+receiver. All signal related information corresponds to the subset of signals speciﬁed in Signal Identiﬁers.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x35 8 + numSvs·12 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+4 U1 version - - Message version (0x01 for this version)
+5 U1 numSvs - - Number of satellites
+6 U1[2] reserved0 - - Reserved
+Start of repeated group (numSvs times)
+8 + n·12 U1 gnssId - - GNSS identiﬁer (see Satellite Numbering) for
+assignment
+9 + n·12 U1 svId - - Satellite identiﬁer (see Satellite Numbering) for
+assignment
+10 + n·12 U1 cno - dBHz Carrier to noise ratio (signal strength)
+11 + n·12 I1 elev - deg Elevation (range: +/-90), unknown if out of range
+12 + n·12 I2 azim - deg Azimuth (range 0-360), unknown if elevation is out of
+range
+14 + n·12 I2 prRes 0.1 m Pseudorange residual
+16 + n·12 X4 flags - - Bitmask
+bits 2…0   U:3 qualityInd - - Signal quality indicator:
+• 0 = no signal
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 103 of 224
+C1-Public

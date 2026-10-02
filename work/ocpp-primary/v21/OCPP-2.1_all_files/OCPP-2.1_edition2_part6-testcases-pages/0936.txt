@@ -1,0 +1,47 @@
+EVDisconnected
+State EVDisconnected
+System under test Charging Station
+Description This state will prepare the Charging Station, so that the EV and EVSE are disconnected, after the charging
+session is authorized to stop.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+If Product subtype is Battery Swapping Station, then execute EVDisconnectedBatterySwapping instead
+If State is NOT EVConnectedPostSession then execute Reusable State EVConnectedPostSession
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Disconnect the EV and EVSE.
+Note: Steps 3 & 4 are allowed to occur before step 1.
+1. The Charging Station notifies the CSMS about the status
+change of the connector. 2. The Test System responds accordingly.
+3. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed when the transaction has NOT
+been ended already. So in the case TxStopPoint contains
+Authorized OR EnergyTransfer OR PowerPathClosed OR
+DataSigned
+4. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: StatusNotificationRequest
+- connectorStatus must be Available
+- evseId must be <configured evseId>
+- connectorId must be <configured connectorId>
+Message: NotifyEventRequest
+- eventData[0].trigger must be Delta
+- eventData[0].actualValue must be Available
+- eventData[0].component.name must be Connector
+- eventData[0].variable.name must be AvailabilityState
+- eventData[0].component.evse.id must be <configured evseId>
+- eventData[0].component.evse.connectorId must be <configured connectorId>
+* Step 3:
+Message: TransactionEventRequest
+- triggerReason must be EVCommunicationLost
+- transactionInfo.chargingState must be Idle
+Post scenario validations:
+State is EVDisconnected
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 934/1383 Part 6 - Test Cases

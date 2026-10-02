@@ -1,0 +1,54 @@
+TC_O_27_CS: Set Display Message - Specific transaction -  Display message at
+StartTime
+Test case name Set Display Message - Specific transaction - Display message at StartTime
+Test case Id TC_O_27_CS
+Use case Id(s) O02
+Requirement(s) O02_FR_06
+System under test Charging Station
+Description This test case describes how a CSO can set a message to be displayed on a Charging Station for a specific
+transaction. Depending on the given parameters the message shall be displayed a certain way on the
+Charging Station.
+Purpose To verify if the Charging Station is able to display the message with a certain start time correctly according
+the mechanism as described in the OCPP specification when a transaction is ongoing.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDisplayMessageResponse
+1. The Test System sends a SetDisplayMessageRequest with
+message.id <Generated displayMessageId>
+message.priority <Configured Priority>
+message.startDateTime <Current dateTime + Configured Start
+Date Time Offset>
+message.display <Configured display component variable>
+(Omitted when left empty)
+Note(s):
+- The display message is not yet displayed.
+- Waiting <Configured Start Date Time Offset> seconds.
+- The display message is displayed after <Configured Start Date Time Offset> seconds.
+3. Execute Reusable State StopAuthorized
+4. Execute Reusable State EVConnectedPostSession
+5. Execute Reusable State EVDisconnected
+6. Execute Reusable State ParkingBayUnoccupied
+Note(s):
+- The display message is not displayed anymore
+8. The Charging Station responds with a
+GetDisplayMessagesResponse
+7. The Test System sends a GetDisplayMessagesRequest with
+id <Generated displayMessageId>
+Tool validations
+* Step 2:
+Message SetDisplayMessageResponse
+- status Accepted
+* Step 8:
+Message: GetDisplayMessagesResponse
+- status Unknown
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 554/914 Part 6 - Test Cases

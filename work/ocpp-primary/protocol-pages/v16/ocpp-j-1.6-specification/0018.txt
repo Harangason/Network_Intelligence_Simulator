@@ -1,0 +1,32 @@
+Encryption means that the OCPP messages are encrypted so no unauthorized third party can see the
+messages exchanged.
+Charge point authentication means that Central System can verify the identity of a charge point, so that
+no unauthorized third party can pretend to be a charge point and send malicious messages to a central
+system.
+6.2.1. Encryption
+The industry standard for encryption on the internet is Transport Layer Security (TLS) [RFC5246].
+Therefore OCPP is also adopting protocol for encrypting the connection between Central System and
+Charge Point. TLS with WebSocket is widely supported by libraries and for clients should be hardly
+more difficult than using unencrypted WebSocket.
+When using TLS, the central system MAY also provide a signed certificate that a charge point can use to
+verify the central system’s identity.
+As some Charge Point implementations are using embedded systems with limited computing
+resources, we impose an additional restriction on the TLS configuration on the server side:
+• The TLS certificate SHALL be an RSA certificate with a size no greater than 2048 bytes
+6.2.2. Charge point authentication
+For authentication, OCPP-J over TLS uses the HTTP Basic authentication scheme ( [RFC2617]). The
+relatively simple HTTP Basic authentication can be used because the connection is already TLS-
+encrypted, so there is no need to encrypt the credentials a second time.
+When using HTTP Basic authentication, the client, i.e. the Charge Point, has to provide a username and
+password with its request. The username is equal to the charge point identity, which is the identifying
+string of the charge point as it uses it in the OCPP-J connection URL. The password is a 20-byte key that
+is stored on the charge point.
+Example
+If we have a charge point with:
+• charge point identity "AL1000"
+• authorization key 0001020304050607FFFFFFFFFFFFFFFFFFFFFFFF
+the HTTP authorization header should be:
+Authorization: Basic QUwxMDAwOgABAgMEBQYH////////////////
+A note on encryption
+The authentication mechanism via HTTP Basic Authentication is meant to be used on TLS-encrypted
+16

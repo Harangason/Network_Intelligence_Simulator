@@ -1,0 +1,30 @@
+When a Charge Point is configured to provide meter values in the StopTransaction via: StopTxnSampledData
+and/or StopTxnAlignedData, and the Transaction takes really long (think: EV parked for days at an airport) or the
+interval in configured to a low value in: ClockAlignedDataInterval or MeterValueSampleInterval, the Charge Point
+might collect more meter values than it can store or send in a StopTransaction. In this case the Charge Point
+needs to drop intermediate values to prevent crashes etc. But the Central System needs to known at what point
+this happens.
+New definition:
+9.1 Core Profile
+9.1.23 StopTransactionMaxMeterValues
+Required/optional optional
+Accessibility R
+Type integer
+Description The maximum amount of meter values that this Charge Point can report in the transactionData field of a StopTransaction.req.
+When the amount of meter values collected for a transaction exceeds: StopTransactionMaxMeterValues, the Charge Point MAY
+drop intermediate meter values, to prevent running out of memory, or being unable to send the StopTransaction.req
+(overrunning the transmit buffer size). The Start and Stop meter values SHALL never be dropped.
+When the Charge Point needs to store more intermediate values than: StopTransactionMaxMeterValues, it is RECOMMENDED
+not to start dropping messages from the start, or stop storing new values. It is better to drop intermediate messages first (1st
+message, 3th message, 5th message etc.), or uses a smart algorithm, for example remove duplicate values first. etc.
+4. Typos
+Typos, fixes to incorrect links/reference, improve terms used etc. that have no impact on the description of the
+way the protocol works.
+4.1. Generic: Typo Field Type: DateTime should be dateTime
+dateTime field type is misspelled a couple of times as: DateTime (with upper-case D)
+PAGE SECTION MESSAGE/CLASS FIELD NAME
+24 3.12.2 NOTE add the bottom validFrom
+70 6.22 GetCompositeSchedule.conf scheduleStart
+90 7.8 ChargingProfile validFrom
+91 7.8 ChargingProfile validTo
+36

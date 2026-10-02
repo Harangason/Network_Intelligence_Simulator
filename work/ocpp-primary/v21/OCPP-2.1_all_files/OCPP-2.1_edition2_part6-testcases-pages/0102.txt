@@ -1,0 +1,49 @@
+TC_B_107_CS: Set new NetworkConnectionProfile - Add and remove slot from
+NetworkConfigurationPriority
+Test case name Set new NetworkConnectionProfile - Add and remove slot from NetworkConfigurationPriority
+Test case Id TC_B_107_CS
+Use case Id(s) B09
+Requirement(s) B09.FR.20, B09.FR.33, B09.FR.34
+System under test Charging Station
+Description The CSMS updates the connection details on the Charging Station. For instance in preparation of a
+migration to a new CSMS.
+Purpose To verify if the Charging Station is able to add and remove a slot from NetworkConfigurationPriority and
+check the associated configuration values in NetworkConfiguration when adding.
+Prerequisite(s) NetworkConfiguration component variables are writable.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with GetVariablesResponse
+1. Test System sends GetVariablesRequest for
+OCPPCommCtrlr.NetworkConfigurationPriority.
+Note:
+- If value in step #2 contains the non-active networkProfile slot, then step 3 and 4 are executed.
+- If value in step #2 does NOT contain the non-active networkProfile slot, then similar steps will be executed at the end of the
+testcase; step 17 and 18.
+4. Charging Station responds with SetVariablesResponse
+3. Test System sends SetVariablesRequest for
+OCPPCommCtrlr.NetworkConfigurationPriority with:
+- setVariableData.attributeValue has value of
+NetworkConfigurationPriority with <Configured non-active
+configurationSlot> removed.
+Note: If value in step #2 was "1,2" and non-active slot is 2, then the new value in step #3 will be "1"
+6. The Charging Station responds with GetVariablesResponse
+5. Test System sends a GetVariablesRequest for
+- DeviceDataCtrlr.ItemsPerMessage[GetVariables]
+Note: In the following steps the notation for setting a variable, like:
+NetworkConfiguration[<instance>].OcppCsmsUrl = <value>
+expands to:
+- setVariableData[0].component.name NetworkConfiguration
+- setVariableData[0].component.instance <instance>
+- setVariableData[0].variable.name OcppCsmsUrl
+- setVariableData[0].attributeValue <value>
+Note: If the value of DeviceDataCtrlr.ItemsPerMessage[GetVariables] from step #1 is 9 or more, than the following can all be set
+in one SetVariablesRequest, otherwise the variables are set one-by-one.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 100/1383 Part 6 - Test Cases

@@ -1,0 +1,53 @@
+TC_B_50_CS: Migrate to new ConnectionProfile - Success - New CSMS Root - New
+CSMS
+Test case name Migrate to new ConnectionProfile - Success - New CSMS Root - New CSMS
+Test case Id TC_B_50_CS
+Use case Id(s) B10,M05
+Requirement(s) M05.FR.13
+System under test Charging Station
+Description The CSMS updates the connection details on the Charging Station. For instance in preparation of a
+migration to a new CSMS.
+Purpose To verify if the Charging Station is able to correctly handle migrating to the new CSMS using a new CSMS
+Root certificate to validate the server certificate.
+Prerequisite(s) - At least two configuration slots for networkConnectionProfiles must be supported AND
+- The Charging Station must be connected using either security profile 2 or 3.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+CertificateInstalled for certificateType CSMSRootCertificate and certificate <Configured (new) CSMS Root certificate 2>
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetNetworkProfileResponse
+1. The Test System sends a SetNetworkProfileRequest
+with configurationSlot is <Configured configurationSlot> or
+<Configured configurationSlot2> depending on which one is
+already in use
+- connectionData.messageTimeout <Configured
+messageTimeout> or <Configured messageTimeout2>
+- connectionData.ocppCsmsUrl <ocppCsmsUrl that is not
+currently active>
+- connectionData.ocppInterface <Configured ocppInterface> or
+<Configured ocppInterface2>
+- connectionData.ocppVersion OCPP20
+- connectionData.securityProfile <Configured securityProfile> or
+<Configured securityProfile2>
+Note(s):
+- The Test System checks the ActiveNetworkProfile variable to
+see which slot is currently active.
+- The Test System prevents overwriting the NetworkProfile at the
+active slot, as this is not recommended.
+4. The Charging Station responds with a SetVariablesResponse
+3. The Test System sends a SetVariablesRequest
+with variable.name is "NetworkConfigurationPriority"
+component.name is "OCPPCommCtrlr"
+attributeValue is <configurationSlot set at Step 1, the other
+configured configurationSlot>
+6. The Charging Station responds with a ResetResponse
+5. The Test System sends a ResetRequest
+with type OnIdle
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 81/914 Part 6 - Test Cases

@@ -1,0 +1,68 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  32 
+clk_p_io
+d_n_io Horizontal/
+Line Blanking
+Vertical/Frame 
+Blanking
+Horizontal/
+Line Blanking
+d_p_io Horizontal/
+Line Blanking
+Vertical/Frame 
+Blanking
+Horizontal/
+Line Blanking
+End of HS 
+burst Line N-3
+End of HS 
+burst Line N-2
+End of HS 
+burst Line N-1
+clk_n_io
+horizontal_blanking_cnt_en_o
+vertical_blanking_cnt_en_o
+ 
+Figure 2.30. LP-11 State After HS Burst Transmission 
+To achieve a desirable target frame rate, the transmitter is required to dynamically insert horizontal and/or vertical 
+blanking periods to regulate the frame period duration of the video frame output. With additional blanking insertion, 
+the transmitter introduces additional duration at LP-11 state to throttle the serial streaming output and maintain the 
+frame rate to be constant. 
+As the number of lanes increases with fixed lane rate, the active pixel data is distributed across all lanes thus active 
+data transmission time is reduced. To maintain the same frame rate across different number of lanes, the required 
+horizontal line or vertical frame blanking period duration at LP-11 (Stop/Idle) state needs to be adjusted accordingly. 
+The following table describes an example of expected frame rate derived with no overhead: 
+• Active Resolution: 1920 × 1080 
+• Horizontal Blanking Pixels: 280 
+• Vertical Blanking Lines: 45 
+• Total Horizontal Pixels: 2,200 
+• Total Vertical Lines: 1,125 
+• Pixel format: RAW10 
+• Lane rate: 912 Mbps 
+• Pixels Per Clock: 4 
+• Byte Clock (Lane rate/PHY Data Width): 114 MHz 
+Table 2.6. Example of Expected Frame Rate Calculation 
+Parameter Number of Lanes Unit 1 Lane 2 Lanes 4 Lanes 
+Required Pixel Clocks 
+((Number of Lanes x Lane Rate) / (Bits Per 
+Pixels)/Pixels Per Clock) 
+22.80 45.60 91.20 MHz 
+Active Horizontal Bytes (Per Lane) 2,400 1,200 600 Byte 
+Clock 
+Cycle 
+Horizontal Blanking Bytes (Per Lane) 350 175 88 
+Total Horizontal Bytes (Per Lane) 2750 1375 688 
+Line Period  
+(Total Horizontal Bytes x Byte Clock Period) 24.123 12.061 6.035 us 
+Frame Period  
+(Total Lines x Line Period) 27.138 13.569 6.789 ms 
+Frame Rate Per Second 
+(1/Frame Period) 36.8 73.7 147.3 fps 
+ 
+With fixed horizontal and vertical blanking period across different number of lanes, the frame rate increase s 
+proportionally. However, additional overheads (short packet, packet header, CRC, HS to LP state transition, data path 

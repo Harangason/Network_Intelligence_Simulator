@@ -1,0 +1,104 @@
+Note
+The SN65DSI83 device does not support the DSI virtual channel capability or reverse direction
+(peripheral to processor) transmissions.
+VSS
+t LINE
+NOP/
+LP HSS
+NOP/
+LP
+t LINE
+...
+HSS
+NOP/
+LP
+t LINE
+Vertical sync / blanking
+HSS RGB
+NOP/LP
+NOP/
+LP
+t LINE
+...
+HSS RGB
+NOP/LP
+NOP/
+LP
+t LINE
+Active Lines
+HSS
+NOP/
+LP
+t LINE
+...
+HSS
+NOP/
+LP
+t LINE
+Vertical sync / blanking
+One Video Frame
+DSI
+Channel A
+VSS
+NOP/
+LP
+t LINE
+Vertical Blanking Period LVDS Transfer Function
+HS (1)
+DSI
+Channel A
+t W ( HS )
+VS (2)
+DE (3)
+0x000DATA
+(1) The assertion of HS is delayed (t PD) by a programmable number of pixel clocks from the
+last bit of VSS/HSS packet received on DSI. The HS pulse width (t W(HS)) is also programmable.
+The illustration shows HS active low.
+(2) VS is signaled for a programmable number of lines (t LINE) and is asserted when HS is
+asserted for the first line of the frame . VS is de -asserted when HS is asserted after the
+number of lines programmed has been reached. The illustration shows VS active low
+(3) DE is asserted when active pixel data is transmitted on LVDS , and polarity is set
+independent to HS/VS. The illustration shows DE active high
+(4) After the last pixel in an active line is output to LVDS, the LVDS data is output zero
+HSS RGB
+NOP/LP NOP/
+LP HSS
+t LINE
+DSI
+Channel
+PixelStream Data 0x000 (4)
+...
+Active Video Line LVDS Transfer Function
+LEGEND
+VSS DSI Sync Event Packet: V Sync Start
+HSS DSI Sync Event Packet: H Sync Start
+RGB A sequence of DSI Pixel Stream Packets
+and Null Packets
+NOP/LP DSI Null Packet , Blanking Packet , or a
+transition to LP Mode
+t PD
+HSS
+NOP/
+LP
+t LINE
+HS (1)
+DSI
+Channel A
+t W(HS)
+VS (2)
+DE (3)
+0x000DATA
+t PD
+HS (1)
+VS (2)
+DE (3)
+0x000DATA
+Figure 7-12. DSI Channel Transmission and Transfer Function
+7.5 Programming
+7.5.1 Local I2C Interface Overview
+The SN65DSI83 device local I 2C interface is enabled when EN is input high, access to the CSR registers is
+supported during ULPS. The SCL and SDA pins are used for I 2C clock and I 2C data respectively. The
+SN65DSI83
+SLLSEC1I – SEPTEMBER 2012 – REVISED OCTOBER 2020 www.ti.com
+22 Submit Document Feedback Copyright © 2020 Texas Instruments Incorporated
+Product Folder Links: SN65DSI83

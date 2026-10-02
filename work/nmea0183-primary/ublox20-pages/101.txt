@@ -1,0 +1,48 @@
+u-blox 20 HPG 2.00 - Interface description
+Currently, the only existing NMA method is Galileo
+Open Service Navigation Message Authentication
+(OSNMA) protocol.
+80 U1[4] reserved0 - - Reserved
+84 I4 headVeh 1e-5 deg Heading of vehicle (2-D), this is only valid when
+headVehValid is set, otherwise the output is set to the
+heading of motion
+88 I2 magDec 1e-2 deg Magnetic declination. Only supported in ADR 4.10 and
+later.
+90 U2 magAcc 1e-2 deg Magnetic declination accuracy. Only supported in ADR
+4.10 and later.
+3.15.13 UBX-NAV-RELPOSNED (0x01 0x3c)
+3.15.13.1 Relative positioning information in NED frame
+Message UBX-NAV-RELPOSNED
+Relative positioning information in NED frame
+Type Periodic/polled
+Comment This message contains the relative position vector from the reference station to the rover, including accuracy
+ﬁgures, in the local topological system deﬁned at the reference station.
+☞ The NED frame is deﬁned as the local topological system at the reference station. The relative position
+vector components in this message, along with their associated accuracies, are given in that local topological
+system.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x3c 64 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x01 for this version)
+1 U1 reserved0 - - Reserved
+2 U2 refStationId - - Reference station ID. Must be in the range 0..4095.
+4 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+8 I4 relPosN - cm North component of relative position vector
+12 I4 relPosE - cm East component of relative position vector
+16 I4 relPosD - cm Down component of relative position vector
+20 I4 relPosLength - cm Length of the relative position vector
+24 I4 relPosHeading 1e-5 deg Heading of the relative position vector
+28 U1[4] reserved1 - - Reserved
+32 I1 relPosHPN 0.1 mm High-precision North component of relative position
+vector.
+Must be in the range -99 to +99.
+The full North component of the relative position
+vector, in units of cm, is given by
+relPosN + (relPosHPN * 1e-2)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 101 of 224
+C1-Public

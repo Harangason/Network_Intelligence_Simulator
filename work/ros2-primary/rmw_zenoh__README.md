@@ -1,0 +1,386 @@
+# rmw_zenoh
+
+[![build](https://github.com/ros2/rmw_zenoh/actions/workflows/build.yaml/badge.svg)](https://github.com/ros2/rmw_zenoh/actions/workflows/build.yaml)
+[![style](https://github.com/ros2/rmw_zenoh/actions/workflows/style.yaml/badge.svg)](https://github.com/ros2/rmw_zenoh/actions/workflows/style.yaml)
+
+| Package | Status |
+| ------- | ------ |
+| rmw_zenoh_cpp | [![Build Status](https://build.ros2.org/view/Rbin_uR64/job/Rbin_uR64__rmw_zenoh_cpp__ubuntu_resolute_amd64__binary/badge/icon)](https://build.ros2.org/view/Rbin_uR64/job/Rbin_uR64__rmw_zenoh_cpp__ubuntu_resolute_amd64__binary/) |
+| zenoh_cpp_vendor | [![Build Status](https://build.ros2.org/view/Rbin_uR64/job/Rbin_uR64__zenoh_cpp_vendor__ubuntu_resolute_amd64__binary/badge/icon)](https://build.ros2.org/view/Rbin_uR64/job/Rbin_uR64__zenoh_cpp_vendor__ubuntu_resolute_amd64__binary/) |
+| zenoh_security_tools | [![Build Status](https://build.ros2.org/view/Rbin_uR64/job/Rbin_uR64__zenoh_security_tools__ubuntu_resolute_amd64__binary/badge/icon)](https://build.ros2.org/view/Rbin_uR64/job/Rbin_uR64__zenoh_security_tools__ubuntu_resolute_amd64__binary/) |
+
+A ROS 2 RMW implementation based on Zenoh that is written using the zenoh-cpp bindings.
+
+## Design
+
+For information about the Design please visit [design](docs/design.md) page.
+
+## Requirements
+- [ROS 2](https://docs.ros.org)
+
+> [!NOTE]
+> See available distro branches, eg. `jazzy`, for supported ROS 2 distributions.
+
+## Installation
+`rmw_zenoh` can either be installed via binaries (recommended for stable development) or built from source (recommended if latest features are needed). See instructions below.
+
+### Binary Installation
+Binary packages for supported ROS 2 distributions (see distro branches) are available on respective [Tier-1](https://reps.openrobotics.org/rep-2000/#support-tiers) platforms for the distributions.
+First ensure that your system is set up to install ROS 2 binaries by following the instructions [here](https://docs.ros.org/en/rolling/Installation/Ubuntu-Install-Debs.html).
+
+Then install `rmw_zenoh` binaries using the command
+
+```bash
+sudo apt update && sudo apt install ros-<DISTRO>-rmw-zenoh-cpp # replace <DISTRO> with the codename for the distribution, eg., rolling
+```
+
+### Source Installation
+
+> [!NOTE]
+> By default, we vendor and compile `zenoh-cpp` with a subset of `zenoh` features.
+The `ZENOHC_CARGO_FLAGS` CMake argument may be overwritten with other features included if required.
+The `USE_SYSTEM_ZENOH` CMake argument can be used to use non-vendored system libraries instead.
+The user must ensure that the non-vendored libraries are found by CMake and provide the necessary features (e.g., shared-memory support).
+See [zenoh_cpp_vendor/CMakeLists.txt](./zenoh_cpp_vendor/CMakeLists.txt) for more details.
+
+```bash
+# replace <DISTRO> with ROS 2 distro of choice
+mkdir ~/ws_rmw_zenoh/src -p && cd ~/ws_rmw_zenoh/src
+git clone https://github.com/ros2/rmw_zenoh.git -b <DISTRO>
+cd ~/ws_rmw_zenoh
+rosdep install --from-paths src --ignore-src --rosdistro <DISTRO> -y
+source /opt/ros/<DISTRO>/setup.bash
+colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release
+```
+
+Make sure to source the built workspace using the commands below prior to running any other commands.
+```bash
+cd ~/ws_rmw_zenoh
+source install/setup.bash
+```
+
+## Test
+
+### Terminate ROS 2 daemon started with another RMW
+```bash
+pkill -9 -f ros && ros2 daemon stop
+```
+Without this step, ROS 2 CLI commands (e.g. `ros2 node list`) may
+not work properly since they would query ROS graph information from the ROS 2 daemon that
+may have been started with different a RMW.
+
+### Start the Zenoh router
+> [!NOTE]
+> Manually launching Zenoh router won't be necessary in the future.
+```bash
+# terminal 1
+ros2 run rmw_zenoh_cpp rmw_zenohd
+```
+
+> [!NOTE]
+> Without the Zenoh router, nodes will not be able to discover each other since multicast discovery is disabled by default in the node's session config. Instead, nodes will receive discovery information about other peers via the Zenoh router's gossip functionality. See more information on the session configs [below](#configuration).
+
+### Run the `talker`
+```bash
+# terminal 2
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+ros2 run demo_nodes_cpp talker
+```
+
+### Run the `listener`
+```bash
+# terminal 2
+export RMW_IMPLEMENTATION=rmw_zenoh_cpp
+ros2 run demo_nodes_cpp listener
+```
+
+The listener node should start receiving messages over the `/chatter` topic.
+
+## Configuration
+
+By default, `Zenoh sessions` created by `rmw_zenoh` will attempt to connect to a Zenoh router to receive discovery information.
+To understand more about `Zenoh routers` and `Zenoh sessions`, see [Zenoh documentation](https://zenoh.io/docs/getting-started/deployment/).
+
+### Checking for a Zenoh router.
+The `ZENOH_ROUTER_CHECK_ATTEMPTS` environment variable can be used to configure if and how a `Zenoh session` checks for the presence of a `Zenoh router`.
+The behavior is explained in the table below.
+
+
+| ZENOH_ROUTER_CHECK_ATTEMPTS |                                                 Session behavior                                                   |
+|:---------------------------:|:------------------------------------------------------------------------------------------------------------------:|
+|               0             |                                                             Indefinitely waits for connection to a Zenoh router.   |
+|             < 0             |                                                                                        Skips Zenoh router check.   |
+|             > 0             | Attempts to connect to a Zenoh router in `ZENOH_ROUTER_CHECK_ATTEMPTS` attempts with 1 second wait between checks. |
+|            unset            |                                                                    Equivalent to `1`: the check is made only once. |
+
+If after the configured number of attempts the Node is still not connected to a `Zenoh router`, the initialisation goes on anyway.
+If a `Zenoh router` is started after initialization phase, the Node will automatically connect to it, and autoconnect to other Nodes if gossip scouting is enabled (true with default configuratiuon).
+
+### Session and Router configs
+`rmw_zenoh` relies on separate configurations files to configure the `Zenoh router` and `Zenoh session` respectively.
+For more information on the topology of Zenoh adopted in `rmw_zenoh`, please see [Design](#design).
+Default configuration files are used by `rmw_zenoh` however certain environment variables may be set to provide absolute paths to custom configuration files.
+The table below summarizes the default files and the environment variables for the `Zenoh router` and `Zenoh session`.
+For a complete list of configurable parameters, see [zenoh/DEFAULT_CONFIG.json5](https://github.com/eclipse-zenoh/zenoh/blob/main/DEFAULT_CONFIG.json5).
+
+|         |                                            Default config                                            |   Envar for custom config  |
+|---------|:----------------------------------------------------------------------------------------------------:|:--------------------------:|
+| Router  |  [DEFAULT_RMW_ZENOH_ROUTER_CONFIG.json5](rmw_zenoh_cpp/config/DEFAULT_RMW_ZENOH_ROUTER_CONFIG.json5)  |  `ZENOH_ROUTER_CONFIG_URI` |
+| Session | [DEFAULT_RMW_ZENOH_SESSION_CONFIG.json5](rmw_zenoh_cpp/config/DEFAULT_RMW_ZENOH_SESSION_CONFIG.json5) | `ZENOH_SESSION_CONFIG_URI` |
+
+For example, to set the path to a custom `Zenoh router` configuration file,
+```bash
+export ZENOH_ROUTER_CONFIG_URI=$HOME/MY_ZENOH_ROUTER_CONFIG.json5
+```
+
+`rmw_zenoh` allows you to override configuration fields using the `ZENOH_CONFIG_OVERRIDE` environment variable .
+These overrides apply to `Zenoh sessions` and the `Zenoh router` **after** the `ZENOH_SESSION_CONFIG_URI` or `ZENOH_ROUTER_CONFIG_URI` (if specified)
+has been processed.
+
+You can specify multiple key-value pairs using the following syntax:
+```bash
+export ZENOH_CONFIG_OVERRIDE="key/path/to/field1=value1;key/path/to/field2=value2"
+```
+
+#### Examples
+
+- Make a `Zenoh router` to connect to one or more remote `Zenoh routers`:
+
+  ```bash
+  export ZENOH_CONFIG_OVERRIDE='connect/endpoints=["tcp/192.168.0.3:7447", "tcp/192.168.0.4:7447"]'
+  ros2 run rmw_zenoh_cpp rmw_zenohd
+  ```
+
+- Enable multicast scouting (disabled by default) to allow ROS 2 nodes running on a same host to discover each other without requiring a Zenoh router:
+
+  ```bash
+  # terminal 1
+  export ZENOH_ROUTER_CHECK_ATTEMPTS=-1
+  export ZENOH_CONFIG_OVERRIDE='scouting/multicast/enabled=true'
+  ros2 run demo_nodes_cpp talker
+
+  # terminal 2
+  export ZENOH_ROUTER_CHECK_ATTEMPTS=-1
+  export ZENOH_CONFIG_OVERRIDE='scouting/multicast/enabled=true'
+  ros2 run demo_nodes_cpp listener
+  ```
+
+- Enable multicast scouting to allow ROS 2 nodes running on distinct hosts to discover each other
+  (the nodes have to listen on all available interfaces, not only `localhost` which is the default configuration):
+
+  ```bash
+  # host 1
+  export ZENOH_ROUTER_CHECK_ATTEMPTS=-1
+  export ZENOH_CONFIG_OVERRIDE='listen/endpoints=["tcp/0.0.0.0:0"];scouting/multicast/enabled=true'
+  ros2 run demo_nodes_cpp talker
+
+  # host 2
+  export ZENOH_ROUTER_CHECK_ATTEMPTS=-1
+  export ZENOH_CONFIG_OVERRIDE='listen/endpoints=["tcp/0.0.0.0:0"];scouting/multicast/enabled=true'
+  ros2 run demo_nodes_cpp listener
+  ```
+
+### Connecting multiple hosts
+By default, all discovery & communication is restricted within a host, where a host is a machine running a `Zenoh router` along with various ROS 2 nodes with their default [configurations](rmw_zenoh_cpp/config/).
+To bridge communications across two or more hosts, the `Zenoh router` configuration for one of the hosts must be updated to connect to the other host's `Zenoh router` at startup.
+
+First, make a copy of the [DEFAULT_RMW_ZENOH_ROUTER_CONFIG.json5](rmw_zenoh_cpp/config/DEFAULT_RMW_ZENOH_ROUTER_CONFIG.json5) and modify the `connect` block to include the endpoint(s) that the other host's `Zenoh router(s)` is listening on.
+For example, if another `Zenoh router` is listening on IP address `192.168.1.1` and port `7447` on its host, modify the config file to connect to this router as shown below:
+
+```json5
+/// ... preceding parts of the config file.
+{
+  connect: {
+    endpoints: ["tcp/192.168.1.1:7447"],
+  },
+}
+/// ... following parts of the config file.
+```
+
+Then, start the `Zenoh router` after setting the `ZENOH_ROUTER_CONFIG_URI` environment variable to the absolute path of the modified config file.
+
+### Connecting to the Zenoh router on another host
+
+In some scenarios, we want to connect to the Zenoh router on another host directly for better performance.
+For example, it's more efficient to connect to the Zenohd of a robot while running RViz remotely.
+By default, Zenoh router doesn't forward messages between peers, because this is unnecessary in the same host.
+Therefore, we need to switch the remote node into the client mode to make Zenoh router forward messages.
+
+Assume that the Zenoh router is listening to `tcp/192.168.1.1:7447`.
+Here are two ways to configure on the remote side:
+
+1. Copy the [DEFAULT_RMW_ZENOH_SESSION_CONFIG.json5](rmw_zenoh_cpp/config/DEFAULT_RMW_ZENOH_SESSION_CONFIG.json5) and set the `ZENOH_SESSION_CONFIG_URI` to the path of that config file.
+
+    ```json5
+    /// ... preceding parts of the config file.
+    {
+      mode: "client",
+      connect: {
+        endpoints: ["tcp/192.168.1.1:7447"],
+      },
+    }
+    /// ... following parts of the config file.
+    ```
+
+2. A simpler way is to override the config by `ZENOH_CONFIG_OVERRIDE`
+
+    ```bash
+    export ZENOH_CONFIG_OVERRIDE='mode="client";connect/endpoints=["tcp/192.168.1.1:7447"]'
+    ```
+
+
+### Serialization Buffer Pool
+
+The RMW recycles serialization buffers on transmission using a buffer pool with bounded memory
+usage.
+These buffers are returned to the pool - without being deallocated - once they cross the
+network boundary in host-to-host communication, or after transmission in inter-process
+communication, or upon being consumed by subscriptions in intra-process communication, etc.
+
+When the total size of the allocated buffers within the pool exceeds
+`RMW_ZENOH_BUFFER_POOL_MAX_SIZE_BYTES`, serialization buffers are allocated using the system
+allocator and moved to Zenoh; no recycling is performed in this case to prevent the buffer pool from
+growing uncontrollably.
+
+The default value of `RMW_ZENOH_BUFFER_POOL_MAX_SIZE_BYTES` is 8 MiB; this value was chosen since it is roughly the size of the cache in a modern CPU.
+
+## Zenoh Shared Memory
+
+Zenoh-backed shared memory provides implicit SHM optimization for any messages passing through (not only those created with loaned messages API).
+
+> [!WARNING]
+> In case of high CPU usage, such as at launch time in systems with a large number of Nodes, a known issue may cause some
+> service calls or TRANSIENT_LOCAL historical publications to be silently dropped.  
+> See issue [#978](https://github.com/ros2/rmw_zenoh/issues/978).
+
+### Configuration
+
+> [!NOTE]
+> To have Zenoh SHM working, it should be enabled on all Zenoh sessions exchanging messages. It can also be enabled on the router for lower latency between the Nodes and the router, in case a message shall be routed outside.
+
+To enable Zenoh SHM, the `transport/shared_memory/enabled` and `transport/shared_memory/transport_optimization/enabled` Zenoh config keys should be set to `true` in the Zenoh configuration files for all the sessions and the router.
+Note that if only `transport/shared_memory/enabled` is set to `true`, `rmw_zenoh_cpp` will overwrite the `transport/shared_memory/transport_optimization/enabled` configuration to force it to `true`. An INFO level log is displayed in such case.
+
+You can also enable SHM simply by setting the `ZENOH_CONFIG_OVERRIDE` environment variable as such:
+
+```bash
+export ZENOH_CONFIG_OVERRIDE='transport/shared_memory/enabled=true'
+```
+
+Each Node uses a SHM segment into which it writes the data to send. The size of this segment can be configured via the `transport/shared_memory/transport_optimization/pool_size` Zenoh config key. The default value is 50331648 bytes (48 MiB).
+You can also override this value with the `ZENOH_SHM_ALLOC_SIZE` environment variable. This environment variable exists for backward compatibility reason. It will be deprecated and eventually removed in a future release.
+
+When this segment is allocated depends on the `transport/shared_memory/mode` config key. With the default `lazy` mode, the segment is allocated the first time the Node actually sends or receives data through SHM: this minimizes startup time but adds a one-time latency on the first SHM message. With `init`, the segment is allocated when the session opens, removing that first-message latency at the cost of a slower session startup.
+
+Each Node will write the data that exceed a configurable threshold in this segment. Smaller data will be sent via the network, as there is no benefit to use SHM for small data. This threshold can be configured via the `transport/shared_memory/transport_optimization/message_size_threshold` Zenoh config key. The default value is 512 bytes. This value must be a power of two. Note that depending on your hardware characteristics (CPU, memory) it could be counter-productive for the latency of small messages to lower this threshold.
+You can also override this value with the `ZENOH_SHM_MESSAGE_SIZE_THRESHOLD` environment variable. This environment variable exists for backward compatibility reason. It will be deprecated and eventually removed in a future release.
+
+Zenoh automatically handles garbage collection of data in shared memory once all recipients have read it. It also defragments the shared memory segment to maintain space for large payloads. If writing to shared memory fails (for instance if a recipient didn't yet read the previous data) Zenoh seamlessly falls back to network transport. This ensures publishers are never blocked and data is always delivered.
+
+> [!IMPORTANT]
+> Make sure that the host's shared memory space (`/dev/shm` on Linux) is large enough for all the processes you run to allocate the configured amount of memory. The SHM segment is allocated up to `pool_size` bytes: with the default `lazy` mode this allocation happens the first time the Node sends or receives an SHM message, so an undersized `/dev/shm` surfaces on the first large message rather than at process startup (with `mode: init` it surfaces when the session opens). If the segment cannot be allocated, Zenoh falls back to the regular network transport (as described above).
+> The default value of 48 MiB has been chosen to support out-of-the-box very large payloads such as a 4K video image (~24 MiB per image, 2 images in-flight). If this size multiplied by the number of ROS processes in your system exceeds the host's shared memory space, you need to reduce this size for the processes that do not need to send such large payloads. On the other hand, if a Node is sending payloads larger than 24 MiB in one or several topics, you need to consider increasing its shared memory size configuration.
+
+> [!TIP]
+> Shared memory can be used between Docker containers. Several solutions for this:
+>
+> 1. Use `--ipc=host` for each container to use host's shared memory domain. Drawback: no isolation with host's application also using shared memory.
+>
+> 2. Use `--ipc=shareable` for 1 container and `--ipc=container:<donor-name-or-ID>` for the other containers. Drawback: the "donor" container shall be run before the other and be always running.
+>
+> 3. Create a local volume with type `tmpfs` and mount it as `/dev/shm` for each container.  
+>    E.g.: `docker volume create --driver local --opt type=tmpfs --opt device=tmpfs --opt o=size=6400m,uid=1000 my_shm`
+>
+
+### Interoperability
+
+- SHM-enabled nodes are fully interoperable with remote (non-localhost) nodes and localhost non-SHM-enabled nodes on transparent basis.
+- SHM subsystem is fully transparent and interoperable with any other RMW-compatible Zenoh software like bridges etc.
+- Zenoh SHM works intra- and inter- containers if container's POSIX SHM is configured properly.
+
+## Security
+
+Security is available in `rmw_zenoh` by means of access control, authentication and encryption.
+The [zenoh_security_tools](./zenoh_security_tools/) package contains a script to generate Zenoh configs with security configured along with documentation on its usage.
+
+## Logging
+
+The core of Zenoh is implemented in Rust and uses a logging library that can be configured via a `RUST_LOG` environment variable.
+This variable can be configured independently for each Node and the Zenoh router.
+For instance:
+- `RUST_LOG=zenoh=info` activates information logs about Zenoh initialization and the endpoints it's listening on.
+- `RUST_LOG=zenoh=info,zenoh_transport=debug` adds some debug logs about the connectivity events in Zenoh.
+- `RUST_LOG=zenoh=info,zenoh::net::routing::queries=trace` adds some trace logs for each query (i.e. calls to services and actions).
+- `RUST_LOG=zenoh=debug` activates all the debug logs.
+
+For more information on the `RUST_LOG` syntax, see https://docs.rs/env_logger/latest/env_logger/#enabling-logging.
+
+## On interoperability with other Zenoh APIs
+
+The current scope of `rmw_zenoh` is limited to ROS 2 nodes on Tier-1 supported platforms and relying on a ROS Client Library (rcl).
+
+While it is possible for an application using any Zenoh API to interoperate with `rmw_zenoh`, supporting such use cases is beyond the scope of this repository's goals. If you aim to develop such a Zenoh application, you must follow the same design than `rmw_zenoh` for key expressions, data serialization format, attachments, and liveliness tokens.
+See [docs/design.md](docs/design.md) for more details.
+
+## On interoperability with [eclipse-zenoh/zenoh-plugin-ros2dds](https://github.com/eclipse-zenoh/zenoh-plugin-ros2dds) and `zenoh-bridge-ros2dds`
+
+`zenoh-plugin-ros2dds` allows to bridge DDS-based ROS 2 communications (mainly using CycloneDDS) to Zenoh.
+
+`rmw_zenoh` utilizes Zenoh differently, particularly in terms of key expressions. Consequently, `rmw_zenoh` cannot interoperate with `zenoh-plugin-ros2dds`. This use case is beyond the scope of `rmw_zenoh`.
+
+## Known Issues
+
+### Router crashes on IPv4-only systems
+
+The default configuration shipped with `rmw_zenoh` makes the Zenoh router attempt to listen on IPv6 `ANY` only ([here](https://github.com/ros2/rmw_zenoh/blob/12f83445e00a7c25805b27f391e92a455f2d0774/rmw_zenoh_cpp/config/DEFAULT_RMW_ZENOH_ROUTER_CONFIG.json5#L82-L84)).
+On any system without IPv6 support (either because it has been disabled or because it is non-functioning) this will cause the router to crash with an error similar to the following:
+
+<details><summary>Click to expand</summary>
+
+```
+WARN ThreadId(03) zenoh::net::runtime::orchestrator: Unable to open listener tcp/[::]:7447: Can not create a new TCP listener bound to tcp/[::]:7447: [Os { code: 97, kind: Uncategorized, message: "Address family not supported by protocol" }] at /home/buildfarm/.cargo/git/checkouts/zenoh-cc237f2570fab813/9640d22/io/zenoh-links/zenoh-link-tcp/src/unicast.rs:326.
+ERROR ThreadId(03) zenohc::session: Error opening session: Can not create a new TCP listener bound to tcp/[::]:7447: [Os { code: 97, kind: Uncategorized, message: "Address family not supported by protocol" }] at /home/buildfarm/.cargo/git/checkouts/zenoh-cc237f2570fab813/9640d22/io/zenoh-links/zenoh-link-tcp/src/unicast.rs:326.
+Error opening Session!
+[ros2run]: Process exited with failure 1
+```
+
+</details>
+
+To resolve this, either run the router on a system with IPv6 support, or update the `listen.endpoints` list in the Zenoh configuration and replace `"tcp/[::]:7447"` with `"tcp/0.0.0.0:7447"` (ie: make the router listen on IPv4 `ANY`).
+Note: the existing entry must be *replaced*, it's not sufficient to just *add* the IPv4 entry (as that would make the router attempt to listen on both IPv4 and IPv6 `ANY` and still not work).
+
+### Crash when program terminates
+
+When a program terminates, global and static objects are destructed in the reverse order of their
+construction.
+The `Thread Local Storage` is one such entity which the `tokio` runtime in Zenoh uses.
+If the Zenoh session is closed after this entity is cleared, it causes a panic like seen below.
+
+```
+thread '<unnamed>' panicked at /rustc/aedd173a2c086e558c2b66d3743b344f977621a7/library/std/src/thread/local.rs:262:26:
+cannot access a Thread Local Storage value during or after destruction: AccessError
+```
+
+This can happen with `rmw_zenoh` if the ROS 2 `Context` is not shutdown explicitly before the
+program terminates.
+In this scenario, the `Context` will be shutdown inside the `Context`'s destructor which then closes the Zenoh session.
+Since the ordering of global/static objects is not defined, this often leads to the above panic.
+
+The recommendation is to ensure the `Context` is shutdown before a program terminates.
+One way to ensure this is to call `rclcpp::shutdown()` when the program exits.
+Note that composable nodes should *never* call `rclcpp::shutdown()`, as the composable node container will automatically do this.
+
+For more details, see https://github.com/ros2/rmw_zenoh/issues/170.
+
+### rmw_zenoh is incompatible between Humble and newer distributions.
+
+Since Iron, ROS 2 introduced type hashes for messages and `rmw_zenoh` includes these type hashes in the Zenoh keyexpressions it constructs for data exchange. While participants will be discoverable, communication between Humble and newer distributions will fail, resulting in messages being silently dropped.
+
+For more details, see https://github.com/ros2/rmw_zenoh/issues/569.
+
+## Quality Declaration files
+
+Quality Declarations for each package in this repository:
+
+* [`rmw_zenoh_cpp`](rmw_zenoh_cpp/QUALITY_DECLARATION.md)
+* [`zenoh_cpp_vendor`](zenoh_cpp_vendor/QUALITY_DECLARATION.md)

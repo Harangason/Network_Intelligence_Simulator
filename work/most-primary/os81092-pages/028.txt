@@ -1,0 +1,66 @@
+OS81092
+DS60001271B-page 28  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+The MediaLB 3-pin interface consists of:
+• MLBCLK - MediaLB Controller output signal that clocks data in and out of the MediaLB Port
+• MLBDAT - bi-directional signal that transports data to and from the MediaLB Port
+• MLBSIG - bi-directional signal that transports signal information to and from the MediaLB Port
+The MediaLB Controller (OS81092) uses MLBSIG to grant bus access to a MediaLB Device (e.g. EHC). That Device
+can then send data to other Devices (including the Controller). The OS81092 MLBDAT pin receives data for configu-
+ration or transmission onto the network, and transmits data to other Devices from the network receiver. Data and signal
+information is shifted into Devices by MLBCLK. A complete description of the Media Local Bus can be found in the
+MediaLB Specification [3]. 
+In the MediaLB 3-pin connection diagram shown in Figure 8-1, each MediaLB line has a weak pull-down to keep the
+signals in a known state when no Device is driving the line. MediaLB Devices that transmit on the line also have a series
+resistor near the Device for series termination and rise/fall time control. The clock line may optionally have AC-parallel
+termination at the farthest point from the Controller (clock source) to minimize reflections and ensure a clean clock. 
+FIGURE 8-1: MediaLB 3-PIN MODE CONNECTION DIAGRAM - EXAMPLE
+The MediaLB protocol supports a set of physical channels for sending data over the Media Local Bus. The physical
+channels (PCn) are four bytes in length (one quadlet) and can be grouped into logical channels. Each logical channel
+represents a unidirectional data path (one or more quadlets in length) and is defined by a unique ChannelAddress.
+On each logical channel, the source (transmitter) is a unique location on a Device, with a destination (receiver) of one
+or more Devices. In a system, the ChannelAddresses are generally static and defined at the development stage; however,
+the MediaLB Controller can dynamically define additional ChannelAddresses during operation to communicate with other
+Devices.
+The MediaLB Controller initiates communication over the Media Local Bus by sending out a ChannelAddress on MLBSIG.
+This indicates to the addressed Device that it can begin transmitting on the logical channel associated with that Channe-
+lAddress. The structure of the ChannelAddress is described in the MediaLB Specification [3], Link Layer Section.
+Note: When the MediaLB Port is configured in MediaLB 3-pin mode, the Streaming
+Port can be simultaneously configured with two serial interfaces.
+MOST
+Network
+MLBSIG
+MLBCLK
+MLBDAT
+Device 2
+DSP
+100 
+100 
+100 
+100 
+100 
+100 
+(Optional)
+47 k
+47 k 47 k
+27 pF
+(Optional)
+100 
+100 
+MLBSIG
+MLBCLK
+MLBDAT
+MediaLB Controller
+MLBDAT
+MLBCLK
+MLBSIG
+Device 1
+EHC
+Network Port
+The series resistor values shown 
+are recommendations only. Values 
+chosen in actual systems should 
+be based on the intended MediaLB 
+clock speed, the impedance of the 
+PCB traces, and the actual 
+capacitive load on the line.
+OS81092

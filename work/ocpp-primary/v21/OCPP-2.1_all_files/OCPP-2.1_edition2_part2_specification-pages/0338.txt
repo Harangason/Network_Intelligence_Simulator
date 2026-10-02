@@ -1,0 +1,46 @@
+NOTE A value of phaseToUse may only be used when numberOfPhases = 1.
+3.9. Using randomized delays in schedule periods
+(New in OCPP 2.1)
+A charging profile of type TxDefaultProfile is especially useful to define hours for peak and off-peak charging. Suppose that
+charging during peak hours is not allowed or has to be at a lower charging rate, then TxDefaultProfile can define a standard
+schedule for every charging transaction using a list of allowed charging rates over time. The rate is set to zero when no charging is
+allowed in a period.
+The peak/off-peak charging schedule is configured as a so-called "recurring profile": it has a schedule for a period of 24 hours and
+then repeats every day.
+When an EV driver starts a transaction during peak hours, the charging will be suspended until the period of off-peak hours starts,
+after which charging is allowed normally. If charging still continues when peak hours begin, the energy transfer will be suspended
+again until end of peak hours. If such a standard TxDefaultProfile is used for a large population of charging stations, for example
+for all residential chargers in a city or region, then suspending or resuming charging for all those EVs at exactly the same time will
+have a negative impact on the electric grid.
+A charging schedule with a value for randomizedDelay, will automatically delay the start of each period with a random time between
+0 and randomizedDelay. The first charging schedule period will, however, not be delayed to avoid introducing a gap between the
+start of the charging schedule (at startSchedule or start of energy transfer in case of a relative charging profile) and the first period
+becoming active. The duration, when present, will not be affected either.
+The above means that randomizedDelay will not affect starting and stopping of charging schedules and will not affect recurrence of
+charging schedules. In case a random delay is required at start of a schedule, then this can be achieved by inserting a short period
+of limit = 0 as the first period with startPeriod = 0.
+Example 1. Example TxDefaultProfile: peak hours from 8.00h to 11.00h and 16.00h to 22.00h.
+"chargingProfile": {
+  "id": 10, "stackLevel": 1, "chargingProfilePurpose": "TxDefaultProfile",
+  "chargingProfileKind": "Recurring", "recurrencyKind": "Daily",
+  "chargingSchedule": [ {
+    "id": 1, "startSchedule": "2022-06-30T00:00:00",
+    "duration": 86400, // 24 hrs
+    "chargingRateUnit": "W",
+    "randomizedDelay": 600,
+    "chargingSchedulePeriod": [
+      { "startPeriod": 0, "limit": 999999 },      // 0:00h
+      { "startPeriod": 28800, "limit": 0 },       // 8:00h
+      { "startPeriod": 39600, "limit": 999999 },  // 11:00h
+      { "startPeriod": 57600, "limit": 0 },       // 16:00h
+      { "startPeriod": 79200, "limit": 999999 } ] // 22:00h
+  } ]
+}
+This defines peak hours as: [28800, 39600] and [57600, 79200] seconds since midnight with a randomized delay, which is
+calculated for each period at the time the transaction starts as a value between 0 and 600 seconds. This can become
+something like this:
+• for transaction X: [28800+123, 39600+345] and [57600+234, 79200+456], and
+• for transaction Y: [28800+555, 39600+111] and [57600+333, 79200+222]
+in which the bold numbers represent the random delays.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 325/803 Part 2 - Specification

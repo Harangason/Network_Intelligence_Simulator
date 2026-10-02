@@ -1,0 +1,50 @@
+TC_B_100_CS: Set new NetworkConnectionProfile - Identity and password
+Test case name Set new NetworkConnectionProfile - Identity and password
+Test case Id TC_B_100_CS
+Use case Id(s) B09
+Requirement(s) B09.FR.01, B09.FR.08, B09.FR.09, B09.FR.11, B09.FR.12
+System under test Charging Station
+Description The CSMS updates the connection details on the Charging Station. For instance in preparation of a
+migration to a new CSMS.
+Purpose To verify if the Charging Station is properly reporting the network connection profile in the device model.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetNetworkProfileResponse
+1. The Test System sends a SetNetworkProfileRequest with:
+- configurationSlot is <Configured non-active configurationSlot>
+- connectionData.ocppVersion OCPP21
+- connectionData.ocppInterface Any
+- connectionData.ocppTransport JSON
+- connectionData.messageTimeout <Configured
+messageTimeout>
+- connectionData.ocppCsmsUrl <Configured ocppCsmsUrl>
+- connectionData.securityProfile 2
+- connectionData.identity <Configured identity>
+- connectionData.basicAuthPassword <Configured
+basicAuthPassword>
+4. The Charging Station responds with GetBaseReportResponse
+3. The Test System sends GetBaseReportRequest with
+requestId = <Generated requestId>
+reportBase = FullInventory
+5. The Charging Station sends NotifyReportRequest
+6. The Test System responds with NotifyReportResponse
+Note(s):
+- If NotifyReportRequest.tbc is True in Step 5 then step 5 and 6 will be repeated
+Tool validations
+* Step 2:
+Message SetNetworkProfileResponse
+- status must be Accepted
+* Step 4:
+Message GetBaseReportResponse
+- status must be Accepted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 91/1383 Part 6 - Test Cases

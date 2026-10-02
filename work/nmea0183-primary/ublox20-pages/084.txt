@@ -1,0 +1,45 @@
+u-blox 20 HPG 2.00 - Interface description
+bit 0   U:1 sbas_L1CA - - SBAS L1C/A
+20 + n·28 X2 qzssSup - - QZSS supported signals
+A non-zero value indicates QZSS is supported
+A zero value indicates QZSS is not supported
+bit 0   U:1 qzss_L1CA - - QZSS L1C/A
+bit 1   U:1 qzss_L1CB - - QZSS L1C/B
+bit 2   U:1 qzss_L1C - - QZSS L1C
+bit 3   U:1 qzss_L1S - - QZSS L1S
+bit 4   U:1 qzss_L2C - - QZSS L2C
+bit 5   U:1 qzss_L5 - - QZSS L5
+22 + n·28 X2 navicSup - - NavIC supported signals
+A non-zero value indicates NavIC is supported
+A zero value indicates NavIC is not supported
+bit 0   U:1 navic_L5 - - NavIC L5
+24 + n·28 X2 lbandSup - - Lband supported
+A non-zero value indicates Lband is supported
+A zero value indicates Lband is not supported
+bit 0   U:1 lband_L1 - - supported range: 1539-1559 MHz
+26 + n·28 U1[6] reserved0 - - Reserved
+End of repeated group (numPlans times)
+3.14.3 UBX-MON-HW3 (0x0a 0x37)
+3.14.3.1 I/O pin status
+Message UBX-MON-HW3
+I/O pin status
+Type Periodic/polled
+Comment This message contains information speciﬁc to each HW I/O pin, for example whether the pin is set as Input
+or Output.
+For the antenna supervisor status and other RF status information, see the UBX-MON-RF message.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x0a 0x37 22 + nPins·6 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 U1 nPins - - The number of I/O pins included
+2 X1 flags - - Flags
+bit 0   U:1 rtcCalib - - RTC is calibrated
+bit 1   U:1 safeBoot - - Safeboot mode (0 = inactive, 1 = active)
+bit 2   U:1 xtalAbsent - - RTC xtal has been determined to be absent
+3 CH[10] hwVersion - - Zero-terminated hardware version string (same as
+that returned in the UBX-MON-VER message)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 84 of 224
+C1-Public

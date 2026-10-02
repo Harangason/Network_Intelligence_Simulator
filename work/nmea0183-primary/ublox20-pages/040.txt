@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+8 navStat string - G3 Navigation Status:
+• NF = No Fix
+• DR = Dead reckoning only solution
+• G2 = Stand alone 2D solution
+• G3 = Stand alone 3D solution
+• D2 = Diﬀerential 2D solution
+• D3 = Diﬀerential 3D solution
+• RK = Combined GPS + dead reckoning solution
+• TT = Time only solution
+9 hAcc numeric m 2.1 Horizontal accuracy estimate
+10 vAcc numeric m 2.0 Vertical accuracy estimate
+11 SOG numeric km/h 0.007 Speed over ground
+12 COG numeric deg 77.52 Course over ground
+13 vVel numeric m/s 0.007 Vertical velocity (positive downwards)
+14 diffAge numeric s - Age of diﬀerential corrections (blank when DGPS is not
+used)
+15 HDOP numeric - 0.92 HDOP, Horizontal Dilution of Precision
+16 VDOP numeric - 1.19 VDOP, Vertical Dilution of Precision
+17 TDOP numeric - 0.77 TDOP, Time Dilution of Precision
+18 numSvs numeric - 9 Number of satellites used in the navigation solution
+19 reserved numeric - - Reserved, always set to 0
+20 DR numeric - - DR used
+21 cs hexadecimal - *5B Checksum
+22 CRLF character - - Carriage return and line feed
+2.8.3 RATE (PUBX,40)
+2.8.3.1 Set NMEA message output rate
+Message NMEA-PUBX-RATE
+Set NMEA message output rate
+Type Set
+Comment Set/Get message rate conﬁguration (s) to/from the receiver.
+• Send rate is relative to the event a message is registered on. For example, if the rate of a navigation
+message is set to 2, the message is sent every second navigation solution.
+Information Class/ID: 0xf1 0x40 Number of fields: 11
+Structure $PUBX,40,msgId,rddc,rus1,rus2,rusb,rspi,reserved*cs\r\n
+Example $PUBX,40,GLL,1,0,0,0,0,0*5D\r\n
+Payload:
+Field Name Format Unit Example Description
+0 PUBX string - $PUBX Message ID, UBX protocol header, proprietary sentence
+1 ID numeric - 40 Proprietary message identiﬁer
+2 msgId string - GLL NMEA message identiﬁer
+3 rddc numeric cycles 1 output rate on DDC
+• 0 disables that message from being output on this
+port
+• 1 means that this message is output every epoch
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 40 of 224
+C1-Public

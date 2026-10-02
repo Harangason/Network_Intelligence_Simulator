@@ -1,0 +1,53 @@
+TC_N_18_CS: Clear Monitoring - Success
+Test case name Clear Monitoring - Success
+Test case Id TC_N_18_CS
+Use case Id(s) N06
+Requirement(s) N06.FR.01, N06.FR.05
+System under test Charging Station
+Description CSMS clears a monitor that is identified by its id.
+Purpose To test that Charging Station clears the monitor.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+- Component "ChargingStation", variable "AvailabilityState"
+- Component "EVSE", variable "AvailabilityState"
+Reusable State(s):
+N/a
+Main (Test scenario)
+2. Charging Station responds with:
+ClearVariableMonitoringResponse
+1. Test System sends:
+ClearVariableMonitoringRequest with:
+- id = { ID1, ID2 }
+4. Charging Station responds with:
+GetMonitoringReportResponse
+Verify monitors are cleared
+3. Test System sends GetMonitoringReportRequest with:
+- requestId = <Generated requestId>
+- monitoringCriteria is absent
+- componentVariable[0].component.name = "ChargingStation"
+- componentVariable[0].variable.name = "AvailabilityState"
+- componentVariable[1].component.name = "EVSE"
+- componentVariable[1].component.evse.id = 1
+- componentVariable[1].variable.name = "AvailabilityState"
+Tool validations
+* Step 2:
+Message: ClearVariableMonitoringResponse with (in arbitrary order):
+clearMonitoringResult[1]:
+- status = Accepted
+- id = <ID1>
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+clearMonitoringResult[2]:
+- status = Accepted
+- id = <ID2>
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+* Step 4:
+Message: GetMonitoringReportResponse with:
+- status = EmptyResultSet
+- statusInfo is absent or statusInfo.reasonCode = "NotFound"
+Post scenario validations:
+N/A
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 480/914 Part 6 - Test Cases

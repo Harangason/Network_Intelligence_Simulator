@@ -1,0 +1,58 @@
+TC_Q_117_CS: Frequency Support - Central V2X control - push
+Test case name Frequency Support - Central V2X control - push
+Test case Id TC_Q_117_CS
+Use case Id(s) Q07
+Requirement(s) K28.FR.05, K28.FR.06, K28.FR.09
+System under test Charging Station
+Description To allow an EV to be used for frequency support, with control at the CSMS.
+Purpose To verify if the Charging Station is able to support DynamicControl charging profiles with the CSMS pushing
+changes to the CS.
+Prerequisite(s) - Charging station supports SupportsDynamicProfiles.
+- EV and charging station support ISO15118-20 or CHAdeMO
+- V2XChargingCtrlr.SupportedOperationModes contains LocalFrequency
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+IF <Configured EVProtocol> is CHAdeMO THEN
+State is Authorized
+State is EVConnectedPreSession
+ELSE IF <Configured EVProtocol> is ISO15118 THEN
+State is Iso1511820V2xControlBpt
+State is EVConnectedPreSession
+State is Authorized15118 (for 15118-20)
+END IF
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+chargingProfile.id 123
+chargingProfile.chargingProfilePurpose
+ChargingStationMaxProfile
+chargingProfile.chargingProfileKind Dynamic
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].setpoint 8 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].operationMode CentralFrequency
+4. The Charging Station responds with a
+GetChargingProfilesResponse
+3. The Test System sends a GetChargingProfilesRequest with
+chargingProfile.chargingProfileId 123 requestId <Generated
+requestId>
+5. The Charging Station sends a ReportChargingProfilesRequest
+6. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If tbc is True at Step 5 then step 5 and 6 will be repeated
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 840/1383 Part 6 - Test Cases

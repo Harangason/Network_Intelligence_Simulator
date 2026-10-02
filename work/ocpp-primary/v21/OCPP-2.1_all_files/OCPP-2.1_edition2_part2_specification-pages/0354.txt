@@ -1,0 +1,53 @@
+EV Driver
+EV Charging Station CSMS
+User authorization successful, plugged-in and transaction is started
+set max current(limit)
+switch power on
+TransactionEventRequest(eventType = Updated, transactionId,
+chargingState = Charging, ...)
+TransactionEventResponse(...)
+start charging()
+loop Change according to charging profile
+[for each interval period in charging profile]
+get limit from charging profile():limit
+Charging Station implements charging
+profile via the Control Pilot
+signal whenever maximum current
+needs changing.
+set max current(limit)
+opt [Change of limits by CSMS]
+SetChargingProfileRequest(evseId,chargingProfile.id,[transactionId],
+chargingProfilePurpose: TxProfile, ChargingProfileKind, RecurrencyKind, ValidFrom,
+ValidTo, ChargingSchedule)
+CSMS decides to
+change the charging profile.
+SetChargingProfileResponse(Accepted)
+Stop of user authorization successful
+end charging()
+switch power off
+TransactionEventRequest(eventType = Updated, transactionId,
+triggerReason = StopAuthorized, chargingState = EVConnected, ...)
+TransactionEventResponse(...)
+unplug cable
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Available)
+NotifyEventResponse()
+TransactionEventRequest(eventType = Ended, transactionId, timestamp,
+triggerReason = EVCommunicationLost, ...)
+TransactionEventResponse([IdTokenInfo])
+Figure 124. Sequence Diagram: Central Smart Charging
+Explanation for the above figure:
+• After authorization the EVSE will set a maximum current to use via the Control Pilot signal. This limit is based on a (default)
+charging profile that the EVSE had previously received from the CSMS. The EV starts charging and a
+TransactionEventRequest is sent to the CSMS.
+• While charging is in progress the EVSE will continuously adapt the maximum current or power according to the charging
+profile. Optionally, at any point in time the CSMS may send a new charging profile for the EVSE. The Charging Station will
+then also take this new schedule into account when calculating a new composite schedule. This way the CSMS can
+influence the charging of an ongoing transaction.
+K02 - Central Smart Charging - Requirements
+Table 98. K02 - Requirements
+ID Precondition Requirement definition Note
+K02.FR.01 The CSMS SHALL use charging profiles to stay within the
+limits imposed by any external system.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 341/803 Part 2 - Specification

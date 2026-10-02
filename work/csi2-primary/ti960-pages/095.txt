@@ -1,0 +1,57 @@
+Table 7-55. FWD_CTL1 Register Field Descriptions (continued)
+Bit Field Type Reset Description
+4 FWD_PORT0_DIS R/W 0x1 Disable forwarding of RX Port 0
+0: Forwarding enabled
+1: Forwarding disabled
+3 RX3_MAP R/W 0x0 Map RX Port 3 to CSI-2 Port
+0: CSI-2 Port 0
+1: CSI-2 Port 1
+It is recommended to disable forwarding for a port before changing 
+the port mapping.
+2 RX2_MAP R/W 0x0 Map RX Port 2 to CSI-2 Port
+0: CSI-2 Port 0
+1: CSI-2 Port 1
+It is recommended to disable forwarding for a port before changing 
+the port mapping.
+1 RX1_MAP R/W 0x0 Map RX Port 1 to CSI-2 Port
+0: CSI-2 Port 0
+1: CSI-2 Port 1
+It is recommended to disable forwarding for a port before changing 
+the port mapping.
+0 RX0_MAP R/W 0x0 Map RX Port 0 to CSI-2 Port
+0: CSI-2 Port 0
+1: CSI-2 Port 1
+It is recommended to disable forwarding for a port before changing 
+the port mapping.
+7.6.1.34 FWD_CTL2 Register (Address = 0x21) [Reset = 0x03] 
+FWD_CTL2 is shown in Table 7-56.
+Return to the Summary Table.
+Table 7-56. FWD_CTL2 Register Field Descriptions
+Bit Field Type Reset Description
+7 CSI_REPLICATE R/W 0x0 CSI-2 Replicate Mode
+When set to a 1, the CSI-2 output from port 0 will also be generated 
+on CSI-2 port 1. The same output data is presented on both ports.
+6 FWD_SYNC_AS_AVAIL R/W 0x0 Synchronized Forwarding As Available
+During Synchronized Forwarding, each forwarding engine will wait 
+for video data to be available from each enabled port, prior to 
+sending the video line. Setting this bit to a 1 will allow sending the 
+next video line as it becomes available. For example if RX Ports 0 
+and 1 are being forwarded, port 0 video line is forwarded when it 
+becomes available, rather than waiting until both ports 0 and ports 1 
+have video data available. This operation may reduce the likelihood 
+of buffer overflow errors in some conditions. This bit will have no 
+affect in video line concatenation mode and only affects video lines 
+(long packets) rather than synchronization packets.
+This bit applies to both CSI-2 output ports
+5:4 CSI1_SYNC_FWD R/W 0x0 Enable synchronized forwarding for CSI-2 output port 1
+00: Synchronized forwarding disabled
+01: Basic Synchronized forwarding enabled
+10: Synchronous forwarding with line interleaving
+11: Synchronous forwarding with line concatenation
+Only one of CSI1_RR_FWD and CSI1_SYNC_FWD must be 
+enabled at a time.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 95
+Product Folder Links: DS90UB960-Q1

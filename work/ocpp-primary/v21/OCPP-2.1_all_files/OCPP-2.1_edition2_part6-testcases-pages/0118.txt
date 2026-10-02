@@ -1,0 +1,38 @@
+TC_C_04_CS: Local Stop Transaction - Different idToken
+Test case name Local Stop Transaction - Different idToken
+Test case Id TC_C_04_CS
+Use case Id(s) C01, C04, E07
+Requirement(s) C01.FR.02, C01.FR.03
+System under test Charging Station
+Description The EV Driver tries to stop an ongoing transaction, by locally presenting a different IdToken.
+Purpose To verify whether the Charging Station does not stop the charging session when a different idToken is
+presented, than the one used to start the transaction.
+Prerequisite(s) - The Charging Station supports at least one authorization method described at the following Use cases;
+C01, C04.
+- The Charging Station does NOT use one idToken reader for multiple EVSE.
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+AuthCtrlr.AuthEnabled is true (If implemented AND ReadWrite)
+AuthCtrlr.DisableRemoteAuthorization is false (If implemented)
+Memory State:
+- The "different idToken" does not exist in Authorization Cache or Local Authorization List.
+- The "different idToken" does not have an associated GroupId that matches with the GroupId of the "starting idToken".
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present a different idToken than used to start the transaction.
+1. The Charging Station sends an AuthorizeRequest
+2. The Test System responds with an AuthorizeResponse
+with idTokenInfo.status Accepted
+Note(s):
+- The Charging Station SHALL NOT send a TransactionEventRequest message with an idToken field after receiving an idToken that is
+different, than the one used to start the transaction.
+- The Test System waits <Configured message timeout> seconds, before ending the testcase.
+Tool validations
+N/a
+Post scenario validations:
+- Charging Station has not sent a TransactionEventRequest(Ended).
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 116/1383 Part 6 - Test Cases

@@ -1,0 +1,48 @@
+EV Charging Station CSMS
+Transaction has started
+alt [15118-20 Scheduled mode]
+Not applicable
+[15118-20 Dynamic mode]
+ScheduleExchangeReq( DepartureTime, EVTargetEnergyRequest,
+Dynamic, ... )
+NotifyEVChargingNeedsRequest(
+DepartureTime, EVTargetEnergyRequest, ... )
+NotifyEVChargingNeedsResponse( Accepted )
+SetChargingProfileRequest( v2xSchedule
+"LocalLoadBalancing" )
+SetChargingProfileResponse( Accepted )
+ScheduleExchangeRes()
+PowerDeliveryReq()
+PowerDeliveryRes()
+loop [Updating setpoint dynamically every schedule period]
+Get power reading from grid connection
+alt [load < LocalLoadBalancingLowerThreshold]
+deltaSetpoint = -Load + LocalLoadBalancingLowerThreshold
+setpoint = setpoint + deltaSetpoint
+[load > LocalLoadBalancingUpperThreshold]
+deltaSetpoint = -Load + LocalLoadBalancingUpperThreshold
+setpoint = setpoint + deltaSetpoint
+Adjust power to setpoint
+AC/DC_ChargeLoopReq()
+Continuous charge loop
+AC/DC_ChargeLoopRes( setpoint )
+[CHAdeMO]
+evChargingParameters
+evseChargingParameters
+SoC
+SetChargingProfileRequest( v2xSchedule )
+SetChargingProfileResponse( Accepted )
+loop [Updating power setpoint every schedule period]
+Get power reading from grid connection
+alt [load < LocalLoadBalancingLowerThreshold]
+deltaSetpoint = -Load + LocalLoadBalancingLowerThreshold
+setpoint = setpoint + deltaSetpoint
+[load > LocalLoadBalancingUpperThreshold]
+deltaSetpoint = -Load + LocalLoadBalancingUpperThreshold
+setpoint = setpoint + deltaSetpoint
+Adjust power to setpoint
+Available output current (H'108.3)
+Charging current request (H'102.3)
+Figure 194. V2X Operation Mode LocalLoadBalancing
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 533/803 Part 2 - Specification

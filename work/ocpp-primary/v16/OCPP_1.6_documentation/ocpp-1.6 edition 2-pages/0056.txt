@@ -1,0 +1,37 @@
+5.13. Reserve Now
+Charge Point Central System
+ReserveNow.req(connectorId, expiryDate, idTag, reservationId, [parentIdTag])
+ReserveNow.conf(status)
+Figure 34. Sequence Diagram: Reserve Now
+A Central System can issue a ReserveNow.req to a Charge Point to reserve a connector for use by a specific
+idTag.
+To request a reservation the Central System SHALL send a ReserveNow.req PDU to a Charge Point. The Central
+System MAY specify a connector to be reserved. Upon receipt of a ReserveNow.req PDU, the Charge Point SHALL
+respond with a ReserveNow.conf PDU.
+If the reservationId in the request matches a reservation in the Charge Point, then the Charge Point SHALL
+replace that reservation with the new reservation in the request.
+If the reservationId does not match any reservation in the Charge Point, then the Charge Point SHALL return the
+status value ‘Accepted’ if it succeeds in reserving a connector. The Charge Point SHALL return ‘Occupied’ if the
+Charge Point or the specified connector are occupied. The Charge Point SHALL also return ‘Occupied’ when the
+Charge Point or connector has been reserved for the same or another idTag. The Charge Point SHALL return
+‘Faulted’ if the Charge Point or the connector are in the Faulted state. The Charge Point SHALL return
+‘Unavailable’ if the Charge Point or connector are in the Unavailable state. The Charge Point SHALL return
+‘Rejected’ if it is configured not to accept reservations.
+If the Charge Point accepts the reservation request, then it SHALL refuse charging for all incoming idTags on the
+reserved connector, except when the incoming idTag or the parent idTag match the idTag or parent idTag of the
+reservation.
+When the configuration key: ReserveConnectorZeroSupported is set to true the Charge Point supports
+reservations on connector 0. If the connectorId in the reservation request is 0, then the Charge Point SHALL NOT
+reserve a specific connector, but SHALL make sure that at any time during the validity of the reservation, one
+connector remains available for the reserved idTag. If the configuration key:
+ReserveConnectorZeroSupported is not set or set to false, the Charge Point SHALL return ‘Rejected’
+If the parent idTag in the reservation has a value (it is optional), then in order to determine the parent idTag that
+is associated with an incoming idTag, the Charge Point MAY look it up in its Local Authorization List or
+Authorization Cache. If it is not found in the Local Authorization List or Authorization Cache, then the Charge
+Point SHALL send an Authorize.req for the incoming idTag to the Central System. The Authorize.conf response
+MAY contain the parent-id.
+A reservation SHALL be terminated on the Charge Point when either (1) a transaction is started for the reserved
+idTag or parent idTag and on the reserved connector or any connector when the reserved connectorId is 0, or (2)
+when the time specified in expiryDate is reached, or (3) when the Charge Point or connector are set to Faulted or
+Unavailable.
+51

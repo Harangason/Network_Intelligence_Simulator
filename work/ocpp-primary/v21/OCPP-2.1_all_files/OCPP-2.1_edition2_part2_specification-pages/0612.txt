@@ -1,0 +1,42 @@
+1.45. NotifyChargingLimit
+1.45.1. NotifyChargingLimitRequest
+The message NotifyChargingLimitRequest can be used to communicate a charging limit, set by an external system on the Charging
+Station (Not installed by the CSO via SetChargingProfileRequest), to the CSMS.
+Class
+Field Name Field Type Card. Description
+evseId integer, 0 <= val 0..1 Optional. The EVSE to which the charging limit is set. If
+absent or when zero, it applies to the entire Charging
+Station.
+chargingLimit ChargingLimitType 1..1 Required. This contains the source of the charging limit
+and whether it is grid critical.
+chargingSchedule ChargingScheduleType 0..* Optional. Contains limits for the available power or
+current over time, as set by the external source.
+1.45.2. NotifyChargingLimitResponse
+The NotifyChargingLimitResponse message is sent by the CSMS to the Charging Station in response to a
+NotifyChargingLimitsRequest. No fields are defined.
+1.46. NotifyCustomerInformation
+This contains the field definition of the NotifyCustomerInformationRequest PDU sent by the Charging Station to the CSMS.
+1.46.1. NotifyCustomerInformationRequest
+Class
+Field Name Field Type Card. Description
+data string[0..512] 1..1 Required. (Part of) the requested data. No format
+specified in which the data is returned. Should be human
+readable.
+tbc boolean 0..1 Optional. “to be continued” indicator. Indicates whether
+another part of the monitoringData follows in an
+upcoming notifyMonitoringReportRequest message.
+Default value when omitted is false.
+seqNo integer, 0 <= val 1..1 Required. Sequence number of this message. First
+message starts at 0.
+generatedAt dateTime 1..1 Required. Timestamp of the moment this message was
+generated at the Charging Station.
+requestId integer, 0 <= val 1..1 Required. The Id of the request.
+1.46.2. NotifyCustomerInformationResponse
+1.47. NotifyDERAlarm
+1.47.1. NotifyDERAlarmRequest
+Class
+Field Name Field Type Card. Description
+controlType DERControlEnumType 1..1 Required. Name of DER control, e.g. LFMustTrip
+gridEventFault GridEventFaultEnumType 0..1 Optional. Type of grid event that caused this
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 599/803 Part 2 - Specification

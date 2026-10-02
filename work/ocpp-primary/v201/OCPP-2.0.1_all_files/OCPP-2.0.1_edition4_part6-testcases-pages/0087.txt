@@ -1,0 +1,50 @@
+TC_B_52_CS: Status change during offline period - < Offline Threshold
+Test case name Status change during offline period - < Offline Threshold
+Test case Id TC_B_52_CS
+Use case Id(s) B04
+Requirement(s) B04.FR.02
+System under test Charging Station
+Description A Charging Station sends a notification to the CSMS to inform the CSMS about a Connector status change.
+This can be done in two ways. Via a StatusNotificationRequest or a NotifyEventRequest from the device
+model. When the Charging Station is connected again to the CSMS after having been offline, and the
+Charging Station was shorter offline than the configured threshold, it will report the status of all connector
+that received a status change.
+Purpose To verify whether the Charging Station reports the status of connectors that received a status change after
+having been offline for shorter than the configured threshold with the configuration variable
+OfflineThreshold.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+OCPPCommCtrlr.OfflineThreshold is <Configured offlineThreshold>
+OCPPCommCtrlr.RetryBackOffWaitMinimum is <Configured offlineThreshold> / 2 
+OCPPCommCtrlr.RetryBackOffRandomRange is 0
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does not accept a reconnect.
+2. Manual Action: Connect the EV and EVSE.
+3. The Test System accepts reconnection attempt from the Charging Station.
+4. The Charging Station notifies the CSMS about the current
+state of the configured connector. 5. The Test System responds accordingly.
+Tool validations
+* Step 3:
+Message: StatusNotificationRequest
+- evseId <Configured evseId>
+- connectorId <Configured connectorId>
+- for the connector involved in the transaction: connectorStatus Occupied
+- optionally for other connectors of the same EVSE: connectorStatus Unavailable
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+- eventData[0].evse.id <Configured evseId>
+- eventData[0].connectorId <Configured connectorId>
+- for the connector involved in the transaction: eventData[0].actualValue Occupied
+- optionally for other connectors of the same EVSE: eventData[0].actualValue Unavailable
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 85/914 Part 6 - Test Cases

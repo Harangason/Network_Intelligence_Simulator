@@ -1,0 +1,71 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+11   Configurations
+Note:  When the DH needs to update the value of the parameters described hereafter, it shall send a
+CORE_RESET_CMD/CORE_INIT_CMD sequence after the CORE_SET_CONFIG_CMD, to ensure that the
+new value is used for the parameters.
+If numerous parameters are updated thanks to multiple CORE_SET_CONFIG_CMDs, a single
+CORE_RESET_CMD/ CORE_INIT_CMD sequence is enough after the last CORE_SET_CONFIG_CMD.
+Note:  Any CORE_SET_CONFIG_CMD to one of the following parameters or to the [NCI] standard parameters
+will trigger an EEPROM write cycle. Since the PN7160 EEPROM has a limited number of Erase/Write cycles
+(300 000), it is highly recommended to only use the CORE_SET_CONFIG_CMD during the NCI initialization
+sequence.
+11.1  [PN7160-NCI] extension: System configurations
+PN7160 offers several parameters used to configure the system aspects. System configurations are always
+written into EEPROM memory as mentioned by the syntax ‘RW in E²PROM’ described for each parameter
+below. Among these parameters, some them are persistent after a fw download when the syntax ‘Persistent
+After FwDL’ is mentioned. The benefit is that they can be written only once, since they will never change later
+on. The drawback is that their value needs to be carefully checked, since if it is wrong, it will be wrong forever
+(an FW upload will not solve an issue due to a wrong value of these parameters). For any other proprietary
+parameter described in this user manual, the FW upload will set the parameter back to its default value (see the
+column "default value'). If this value is not correct for the application, the DH needs to overwrite it at boot.
+Name and Rights Description Ext.
+Tag
+Len. Default
+Value
+CLOCK_
+REQUEST_CFG
+RW in E²PROM
+Indicates how the clock is requested to the DH by the PN7160:
+• 0x00: Clock Request is disabled (Not supported)
+• 0x01: Hardware-based Clock Request is enabled: CLK_REQ pin set to
+high when clock requested, otherwise it is set to hi-Z (High Impedance).
+CLK_REQ pin stays high until the NFCC goes into Standby or is reset.
+• 0x02-0xFF: RFU
+0xA0
+0x02
+1 0x01
+CLOCK_SEL_
+CFG
+RW in E²PROM
+Persistent After
+FwDL
+Note:  Bit 4 setting
+is introduced in
+FW 12.50.11.
+Before this FW
+version bit4 is
+RFU.
+Input Clock selection and configuration for the internal 13.56 MHz CLOCK.
+Bit Mask Description
+b7 b6 b5 b4 b3 b2 b1 b0
+x If set to 1b, then a higher voltage is
+given during XTAL kick startup by
+bypassing the internal LDO.
+If set to 0b, the default voltage level
+is given during XTAL kick startup.
+x If set to 1b (XTAL mode), a 27.12
+MHz quartz has to be connected to
+PN7160
+If set to 0b (PLL mode), a clean
+clock signal has to be directly
+provided on the Clock pad
+x x x Any value
+0 0 0 RFU
+0xA0
+0x03
+1 0x08
+Table 98. Core configuration parameters
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+93 / 147

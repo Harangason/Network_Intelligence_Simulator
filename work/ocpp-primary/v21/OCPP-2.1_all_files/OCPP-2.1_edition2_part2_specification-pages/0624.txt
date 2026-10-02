@@ -1,0 +1,41 @@
+1.71. SecurityEventNotification
+1.71.1. SecurityEventNotificationRequest
+Sent by the Charging Station to the CSMS in case of a security event.
+Class
+Field Name Field Type Card. Description
+type string[0..50] 1..1 Required. Type of the security event. This value should be
+taken from the Security events list.
+timestamp dateTime 1..1 Required. Date and time at which the event occurred.
+techInfo string[0..255] 0..1 Optional. Additional information about the occurred
+security event.
+1.71.2. SecurityEventNotificationResponse
+Sent by the CSMS to the Charging Station to confirm the receipt of a SecurityEventNotificationRequest message. No fields are
+defined.
+1.72. SendLocalList
+1.72.1. SendLocalListRequest
+This contains the field definition of the SendLocalListRequest PDU sent by the CSMS to the Charging Station. If no (empty)
+localAuthorizationList is given and the updateType is Full, all IdTokens are removed from the list. Requesting a Differential update
+without or with empty localAuthorizationList will have no effect on the list. All IdTokens in the localAuthorizationList MUST be
+unique, no duplicate values are allowed.
+Class
+Field Name Field Type Card. Description
+versionNumber integer 1..1 Required. In case of a full update this is the version
+number of the full list. In case of a differential update it is
+the version number of the list after the update has been
+applied.
+updateType UpdateEnumType 1..1 Required. This contains the type of update (full or
+differential) of this request.
+localAuthorizationList AuthorizationData 0..* Optional. This contains the Local Authorization List
+entries.
+1.72.2. SendLocalListResponse
+This contains the field definition of the SendLocalListResponse PDU sent by the Charging Station to the CSMS in response to
+SendLocalListRequest PDU.
+Class
+Field Name Field Type Card. Description
+status SendLocalListStatusEnumType 1..1 Required. This indicates whether the Charging Station
+has successfully received and applied the update of the
+Local Authorization List.
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+1.73. SetChargingProfile
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 611/803 Part 2 - Specification

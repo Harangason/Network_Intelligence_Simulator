@@ -1,0 +1,105 @@
+ID Precondition Requirements Note
+Q06.FR.04 When External System sends a single
+setpoint value
+Charging Station SHALL represent this by a
+ChargingProfileType with chargingProfilePurpose =
+ChargingStationExternalConstraints,
+chargingProfileKind = Dynamic and a
+chargingSchedule with one chargingSchedulePeriod
+with operationMode = ExternalSetpoint
+representing the received value of setpoint and
+setpointReactive.
+When applicable this
+also include the L2 and
+L3 values of
+setpoint(Reactive).
+Q06.FR.05 Q06.FR.02 Charging Station SHALL use the value of limit and
+dischargeLimit that External System may vary
+dynamically within the
+ChargingSchedulePeriodType.
+Also applies to L2 and L3
+values.
+Q06.FR.06 Q06.FR.04 Charging Station SHALL use the value of setpoint
+and setpointReactive that External System may vary
+dynamically within the
+ChargingSchedulePeriodType.
+Also applies to L2 and L3
+values.
+Q06.FR.07 When for a charging profile with
+chargingProfilePurpose =
+ChargingStationExternalConst
+raints and chargingProfileKind =
+Dynamic the External System updates
+values within
+ChargingSchedulePeriodType
+Charging Station SHALL update the value of
+dynUpdateTime to the current time.
+Q06.FR.08 When
+ExternalConstraintsProfileDi
+sallowed = true AND
+an External System sends charging
+limits or setpoints
+Charging Station SHALL refuse the settings and not
+create a charging profile for this.
+This overrules Q06.FR.01
+to Q06.FR.04.
+NotifyChargingLimit
+Q06.FR.10 Q06.FR.01 OR Q06.FR.03 Charging Station SHALL send a
+NotifyChargingLimitRequest with
+chargingLimitSource = EMS and with the received
+schedule in chargingSchedule to CSMS.
+Q06.FR.11 ( Q06.FR.02 OR Q06.FR.04 ) AND
+The value of limit, dischargeLimit,
+setpoint, setpointReactive changes
+more than
+SmartChargingCtrlr.LimitChangeSignif
+icance
+Charging Station SHALL send a
+NotifyChargingLimitRequest with
+chargingLimitSource = EMS, isDynamic = true and
+with the received schedule in chargingSchedule to
+CSMS.
+This chargingSchedule
+will only have a single
+period. Also applies to L2
+and L3 values.
+SetpointPriority
+Q06.FR.20 When a chargingSchedulePeriod in a
+charging profile with
+chargingProfilePurpose =
+ChargingStationExternalConst
+raints has operationMode =
+ExternalSetpoint AND
+A charging profile of
+chargingProfilePurpose = TxProfile
+or TxDefaultProfile also defines
+a setpoint or setpointReactive
+Configuration variable
+SmartChargingCtrlr.SetpointPriority defines which
+charging profile the charging station shall apply.
+Q06.FR.21 Q06.FR.20 AND
+SmartChargingCtrlr.SetpointPriority =
+"ExternalControl" OR
+SmartChargingCtrlr.SetpointPriority
+does not exist
+Charging station shall use the setpoint and
+setpointReactive from the active
+ChargingStationExternalConstraints
+profile.
+This is default behavior
+for operationMode
+ExternalSetpoint.
+Q06.FR.22 Q06.FR.20 AND
+SmartChargingCtrlr.SetpointPriority =
+"CSMS"
+Charging station shall use the setpoint and
+setpointReactive from the TxProfile or
+TxDefaultProfile profile that is active, thus
+overruling the external setpoint.
+Only TxProfile and
+TxDefaultProfile
+can contain a
+setpoint(Reactive).
+evseId = 0
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 524/803 Part 2 - Specification

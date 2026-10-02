@@ -1,0 +1,31 @@
+replace all of its functionality.
+An important aspect of the Heartbeat response is time synchronisation. The Ping and Pong frames
+cannot be used for this so at least one original Heartbeat message a day is recommended to ensure a
+correct clock setting on the Charge Point.
+5.4. Reconnecting
+When reconnecting a charge point should not send a BootNotification unless one or more of the
+elements in the BootNotification have changed since the last connection. For the previous SOAP based
+solutions this was considered good practice but when using WebsSocket the server can already make
+the match between the identity and a communciation channel at the moment the connection is
+established. There is no need for an additional message.
+5.5. Network node hierarchy
+The physical network topology is not influenced by a choice for JSON or SOAP. In case of JSON however
+the issues with Network Address Translation (NAT) have been resolved by letting the Charge Point
+open a TCP connection to the Central System and keeping this connection open for communication
+initiated by the Central System. It is therefore no longer necessary to have a smart device capable of
+interpreting and redirecting SOAP calls in between the Central System and the Charge Point.
+6. Security
+Two approaches exist for security with OCPP-J. Either one can rely on network-level security, or one
+uses OCPP-J over TLS. Both approaches are described below.
+It is important that at all times, one of these approaches is used. Practically, this means that a Central
+System SHOULD NOT listen for incoming unencrypted OCPP-J connections from the internet.
+6.1. Network-level security
+For security one MAY rely on the security at a network level. This has historically been done with
+OCPP-S, and on networks that are set up appropriately one can also use OCPP-J without additional
+encryption or authentication measures.
+6.2. OCPP-J over TLS
+Sometimes however a secured network is not available between Charge Point and Central System. In
+that case one can use OCPP-J over TLS. This section explains how this is done.
+The security needed for OCPP communication actually consists of two separate features: encryption
+and charge point authentication.
+15

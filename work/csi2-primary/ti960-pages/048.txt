@@ -1,0 +1,54 @@
+HUB Deserializer
+Serializer
+GPIOx FrameSync
+Generator
+BC_GPIOx
+BC_GPIOx
+BC_GPIOx
+BC_GPIOxSerializer
+GPIOx
+Serializer
+GPIOx
+Serializer
+GPIOx
+FPD-Link III
+FPD-Link III
+FPD-Link III
+FPD-Link III
+Figure 7-17. Internal FrameSync
+FS_HIGH FS_LOW
+FS_LOW =  FS_LOW_TIME * FS_CLK_PD
+FS_HIGH = FS_HIGH_TIME * FS_CLK_PD
+where FS_CLK_PD is the resolution of the FrameSync generator clock
+Figure 7-18. Internal FrameSync Signal
+The following example shows generation of a FrameSync signal at 60 pulses per second. Mode settings:
+• Programmable High/Low periods: FS_GEN_MODE 0x18[1]=0
+• Use port 0 back channel frame period: FS_MODE 0x18[7:4]=0x0
+• Back channel rate of 50 Mbps: BC_FREQ_SELECT for port 0 0x58[2:0]=110b
+• Initial FS state of 0: FS_INIT_STATE 0x18[2]=0
+Based on mode settings, the FrameSync is generated based upon FS_CLK_PD of 12 us.
+The total period of the FrameSync is (1 sec / 60 hz) / 600 ns or approximately 27,778 counts.
+For a 10% duty cycle, set the high time to 2,776 (0x0AD7) cycles, and the low time to 24,992 (0x61A0) cycles:
+• FS_HIGH_TIME_1: 0x19=0x0A
+• FS_HIGH_TIME_0: 0x1A=0xD7
+• FS_LOW_TIME_1: 0x1B=0x61
+• FS_LOW_TIME_0: 0x1C=0xA0
+7.4.24.2.1 Code Example for Internally Generated FrameSync
+WriteI2C(0x4C,0x01) # RX0
+WriteI2C(0x6E,0xAA) # BC_GPIO_CTL0: FrameSync signal to GPIO0/1
+WriteI2C(0x4C,0x12) # RX1
+WriteI2C(0x6E,0xAA) # BC_GPIO_CTL0: FrameSync signal to GPIO0/1
+WriteI2C(0x4C,0x24) # RX2
+WriteI2C(0x6E,0xAA) # BC_GPIO_CTL0: FrameSync signal to GPIO0/1
+WriteI2C(0x4C,0x38) # RX3
+WriteI2C(0x6E,0xAA) # BC_GPIO_CTL0: FrameSync signal to GPIO0/1
+WriteI2C(0x10,0x91) # FrameSync signal; Device Status; Enabled
+WriteI2C(0x58,0x5E) # BC FREQ SELECT: 50 Mbps
+WriteI2C(0x19,0x0A) # FS_HIGH_TIME_1
+WriteI2C(0x1A,0xD7) # FS_HIGH_TIME_0
+WriteI2C(0x1B,0x61) # FS_LOW_TIME_1
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+48 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

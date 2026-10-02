@@ -1,0 +1,68 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  45/50 
+Object0.Length  Length of the first Object in byte  
+Object0.Value  Value of the first Object (Object0.Length bytes)  
+… 
+ObjectN.Id  Identification of the last Object (within the response)  
+ObjectN.Len gth Length of the last Object in byte  
+ObjectN.Value  Value of the last Object (ObjectN.Length bytes)  
+Example of a Read Device Identification request for "Basic device identification" : In this 
+example all information are sent in one response PDU.  
+Request  Response  
+Field Name  Value  Field Name  Value  
+Function  2B Function  2B 
+ MEI Type  0E MEI Type  0E 
+Read Dev Id code  01 Read Dev Id Code  01 
+Object Id  00 Conformity Level  01 
+  More Follows  00 
+  NextObjectId  00 
+  Number Of Objects  03 
+  Object Id  00 
+  Object Length  16 
+  Object Value  " Company identification"  
+  Object Id  01 
+  Object Length  0D 
+  Object Value  " Product code XX"  
+  Object Id  02 
+  Object Length  05 
+  Object Value  "V2.11"  
+ 
+In case of a device that required several transactions to send the response the following 
+transactions is intiated.  
+First transaction :  
+ 
+Request  Response  
+Field Name  Value  Field Name  Value  
+Function  2B Function  2B 
+ MEI Type  0E MEI Type  0E 
+Read Dev Id code  01 Read Dev Id Code  01 
+Object Id  00 Conformity Level  01 
+  More Follows  FF 
+  NextObjectId  02 
+  Number Of Objects  03 
+  Object Id  00 
+  Object Length  16 
+  Object Value  " Company identification"  
+  Object Id  01 
+  Object Length  1C 
+  Object Value  " Product code 
+XXXXXXXXXXXXXXXX"  
+ 
+ 
+Second transaction :  
+ 
+ 
+Request  Response  
+Field Name  Value  Field Name  Value  
+Function  2B Function  2B 
+ MEI Type  0E MEI Type  0E 
+Read Dev Id code  01 Read Dev Id Code  01 
+Object Id  02 Conformity Level  01 
+  More Follows  00 
+  NextObjectId  00 
+  Number Of Objects  03 
+  Object Id  02 
+  Object Length  05 
+  Object Value  "V2.11"  
+ 
+ 

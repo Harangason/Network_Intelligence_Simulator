@@ -1,0 +1,40 @@
+No. Type Description
+8 Remark(s) Only two scenarios are shown in the use case (energy limit and cost limit), but the same scenario
+is also valid for limits of time and state of charge that are supplied by either Charging Station or
+CSMS.
+It is possible to change the limit of a transaction even when energy transfer is already in progress,
+and it can be done more than once.
+If more than one limit is given, for example both a time and an energy limit, then whichever limit is
+reached first, determines the end of energy transfer.
+In order for a Charging Station to stop exactly on time when a cost limit is given, cost will have to
+be calculated locally at the Charging Station. If Charging Station does not support local cost
+calculation, and a cost limit is given, then it will use the value of the cost updates from CSMS (in
+TransactionEventResponse or CostUpdatedRequest) to determine when the cost limit is reached
+or exceeded.
+See section I Tariff and Cost for information on tariffs and cost calculation.
+A Charging Station reports the limits that it supports in configuration key
+"TxCtrlr.SupportedLimits".
+NOTE
+Following diagrams only show parameters related to the use case. More parameters are required in these
+messages.
+Two examples are shown. All limits can be set by either Charging Station or CSMS.
+EV Driver
+Charging Station CSMS
+EV Driver has plugged in and is authorized
+(TxStartPoint = PowerPathClosed)
+TransactionEventRequest(Started, idToken = AA12345 )
+TransactionEventResponse(idTokenInfo.status = Accepted)
+enter energy limit 20 kWh
+for transaction
+TransactionEventRequest(Updated, ...,
+transactionInfo.transactionLimit.maxEnergy = 20000,
+triggerReason = LimitChanged)
+TransactionEventResponse()
+Transaction continues.
+When energy limit reached...
+TransactionEventRequest(Updated, ...,
+triggerReason = EnergyLimitReached, chargingState = SuspendedEVSE)
+TransactionEventResponse()
+Figure 75. Sequence diagram for transaction with limited energy
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 215/803 Part 2 - Specification

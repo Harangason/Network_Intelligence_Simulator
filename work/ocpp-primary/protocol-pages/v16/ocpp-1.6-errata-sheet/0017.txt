@@ -1,0 +1,31 @@
+New text At receipt of a soft reset request, the Charge Point SHALL stop ongoing transactions gracefully and send StopTransaction.req for every
+ongoing transaction. It should then restart the application software (if possible, otherwise restart the processor/controller).
+Old text At receipt of a hard reset the Charge Point SHALL attempt to terminate any transaction in progress normally as in StopTransaction and
+then perform a reboot.
+New text At receipt of a hard reset request, the Charge Point SHALL restart (all) the hardware, it is not required to gracefully stop ongoing
+transaction. If possible the Charge Point sends a StopTransaction.req for previously ongoing transactions after having restarted and
+having been accepted by the Central System via a BootNotification.conf. This is a last resort solution for a not correctly functioning Charge
+Point, by sending a "hard" reset, (queued) information might get lost.
+3.37. Page 53, section: 5.16: Unclear ChargingProfiles should persist reboots
+Added in errata sheet v4.0
+There is no text that explain that it is expected of a Charge Point to store ChargingProfiles in persistent memory.
+Additional text ChargingProfiles set via SetChargingProfile.req SHALL be persistent across reboots/power cycles.
+3.38. Page 55, section 5.16: Missing requirement about ChargingSchedule’s
+ChargingRateUnit
+Added in errata sheet v4.0
+The following note must be added at the end of this section:
+
+If an invalid value is used for an enumeration in ChargingProfile or ChargingSchedule, e.g.
+when using a value for chargingRateUnit that is not 'A' or 'W', then Charge Point SHALL
+respond with RPC Framework CALLERROR: PropertyConstraintViolation (JSON) or SOAP Fault:
+Sender, ProtocolError (SOAP).
+3.39. Page 55, section: 5.16: SetChargingProfile may be rejected
+Added in errata sheet v4.0
+The following notes must be added at the end of this section:
+
+If an invalid value for connectorId is used in SetChargingProfile.req, then the Charge Point
+SHALL respond with RPC Framework CALLERROR: PropertyConstraintViolation (JSON) or SOAP
+Fault: Sender, ProtocolError (SOAP).
+ If the Charge Point does not support smart charging, then it SHALL respond with RPC
+Framework CALLERROR: NotSupported (JSON) or SOAP Fault: Receiver, NotSupported (SOAP).
+16

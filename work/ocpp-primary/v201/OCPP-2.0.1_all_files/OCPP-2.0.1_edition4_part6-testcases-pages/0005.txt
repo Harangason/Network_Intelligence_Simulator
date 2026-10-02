@@ -1,0 +1,46 @@
+2. Test Cases Charging Station
+General pre conditions & tool validations
+General conditions/validations are overruled by testcase specific conditions/validations, unless specifically stated otherwise.
+General pre conditions:
+• Charging Station is Accepted by the CSMS
+• Charging Station has a stable active connection to the CSMS
+• Charging Station connectors are available
+• Charging Station is Idle, with no active transactions
+• Charging Station is clear of faults
+• Charging Station has no charging schedules active
+• Charging Station has no active reservations
+• The Configuration variable AuthCtrlr.LocalPreAuthorize is set to false.
+• Charging Station has no more OCPP messages to be send in queue
+• Charging Station is not busy with transfer of diagnostics
+• Charging Station is not busy with download of firmware
+• Charging Station is not upgrading firmware
+• Charging Station is ready to accept/start a charging session
+• Charging Station has no Display message configured
+• Charging Station has no active custom monitors
+General tool rules/validations:
+• TransactionEventRequest messages don’t have to be sent in chronologica l order. However the provided seqNo are
+sequentially numbered in chronological order. This way the CSMS is able to determine whether all messages of a
+transaction have been received.
+• After connecting/disconnecting the EV and EVSE, the Charging Station SHALL report the new status of its connector and
+report any queued TransactionEventRequest(s). These message are allowed to be sent in any order.
+• If the transaction was authorized with Reusable State Authorized remote, then the first TransactionEventRequest sent after
+receiving a RequestStartTransactionRequest message will contain triggerReason with value _RemoteStart (This will overrule
+the step specific tool validations) AND will contain transactionInfo.remoteStartId
+• The first TransactionEventRequest of a transaction MUST contain eventType Started.
+• The first TransactionEventRequest sent after connecting the EVSE and EV MUST contain evse.id and evse.connectorId
+• The first TransactionEventRequest sent after presenting the idToken MUST contain idToken with value <Configured valid
+idToken fields>
+• If the energy transfer was stopped with Reusable State StopAuthorized local, then the _stoppedReason of the last
+TransactionEventRequest of that transaction with eventType Ended, must have value Local OR be omitted.
+• When validating/comparing time / dateTime values, the Test System will  in most cases accept a configurable deviation. The
+certification labs will configure a deviation of 4 seconds.
+• Every FirmwareStatusNotificationRequest sent for a firmware update SHALL contain t he same requestId as the
+UpdateFirmwareRequest that started the firmware update.
+• The list of ChargingSchedulePeriod elements in a chargingSchedule SHALL be ordered by increasing values of
+ChargingSchedulePeriod.startPeriod. This means the list is in chronological order.
+• When idToken type NoAuthorization is configured to be used, the Test System will act/validate differently. No
+AuthorizeRequest is expected anymore and the value of the idToken at the TransactionEventRequest should be an empty
+string "". Additionally many testcases like Authorization cache, local authorization list, groupIdToken, etc. Will not work for
+this idToken type.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 3/914 Part 6 - Test Cases

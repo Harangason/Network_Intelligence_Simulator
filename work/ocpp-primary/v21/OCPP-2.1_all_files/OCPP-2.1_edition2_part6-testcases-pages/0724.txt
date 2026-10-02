@@ -1,0 +1,29 @@
+Tool validations
+* Step 2:
+Message SetVariableMonitoringResponse
+- setMonitoringResult[0].id <not omitted>
+- setMonitoringResult[0].status Accepted
+- setMonitoringResult[0].type Delta
+- setMonitoringResult[0].component = <Configured non-numeric delta component variable>
+- setMonitoringResult[0].variable = <Configured non-numeric delta component variable>
+* Step 4:
+Message SetVariableMonitoringResponse
+- setMonitoringResult[0].status Rejected
+- setMonitoringResult[0].type Delta
+- setMonitoringResult[0].component = <Configured numeric delta component variable>
+- setMonitoringResult[0].variable = <Configured numeric delta component variable>
+* Step 6:
+Message GetMonitoringReportResponse
+- status Accepted
+* Step 7:
+Message NotifyMonitoringReportRequest
+Must contain a monitor with
+- monitor[0].component = <Configured non-numeric delta component variable>
+- monitor[0].variable = <Configured non-numeric delta component variable>
+- monitor[0].variableMonitoring[0].id = <SetVariableMonitoringResponse.setMonitoringResult[0].id of step 2>
+- monitor[0].variableMonitoring[0].value = 1
+- monitor[0].variableMonitoring[0].type = Delta
+Post scenario validations:
+- All report parts have been received
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 722/1383 Part 6 - Test Cases

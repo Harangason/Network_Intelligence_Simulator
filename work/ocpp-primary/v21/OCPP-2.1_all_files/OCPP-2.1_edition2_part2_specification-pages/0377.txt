@@ -1,0 +1,56 @@
+No. Type Description
+5 Prerequisite(s) Ongoing transaction(s).
+An external system that can set/clear a charging limit/schedule on Local Controller via another
+connection than OCPP.
+Configuration variable ExternalControlSignalsEnabled = true.
+6 Postcondition(s) Successful postcondition:
+The ongoing transactions will be limited by the received charging limit from the external system.
+The CSMS is informed of the new limit/schedule imposed by the external system.
+Failure postcondition:
+The CSMS is not informed about the changed charging limit.
+The External Control System is not able to change the charging limit.
+7 Error handling n/a
+8 Remark(s) n/a
+External Control System Local Controller Charging Stations CSMS
+Set grid limit
+NotifyChargingLimitsRequest(chargingLimitSource, [chargingLimitGridCritical],...)
+NotifyChargingLimitsResponse()
+Recalculate Charging Schedules
+loop [All affected EVSEs]
+SetChargingProfileRequest(evseId, chargingProfile)
+SetChargingProfileResponse(status)
+Release grid limit
+ClearedChargingLimitRequest(chargingLimitSource,...)
+ClearedChargingLimitResponse()
+loop [All affected EVSE's]
+ClearChargingProfileRequest(...)
+ClearChargingProfileResponse(status)
+Figure 135. Sequence Diagram: External Charging Limit with Local Controller.
+K14 -  External Charging Limit with Local Controller - Requirements
+Table 110. K14 - Requirements
+ID Precondition Requirement definition
+K14.FR.01 When an external charging
+limit/schedule is received
+The total load of all Charging Stations SHALL NOT exceed this given limit.
+K14.FR.02 K14.FR.01
+AND
+Charging limit changed by more
+than: LimitChangeSignificance
+The Local Controller SHALL inform the CSMS of the new charging
+limit/schedule imposed by the external system by sending a
+NotifyChargingLimitRequest.
+K14.FR.03 When an external charging
+limit/schedule is released
+The local controller SHALL notify the CSMS by sending a
+ClearedChargingLimitRequest.
+K14.FR.04 K14.FR.03 The local controller SHALL clear the hard limit on Charging Stations by
+sending a ClearChargingProfileRequest message to the Charging
+Stations.
+K14.FR.05 When the Local Controller receives
+an external charging limit/schedule
+It SHALL send a SetChargingProfileRequest to all Charging Stations for
+which the charging profile has changed.
+K14.FR.06 K14.FR.05 The Local Controller SHALL NOT set chargingProfilePurpose to
+ChargingStationExternalConstraints.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 364/803 Part 2 - Specification

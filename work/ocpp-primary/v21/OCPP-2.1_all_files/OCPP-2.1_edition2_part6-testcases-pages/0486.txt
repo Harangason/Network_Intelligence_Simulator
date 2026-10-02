@@ -1,0 +1,50 @@
+TC_K_09_CS: Clear Charging Profile - Clearing a TxDefaultProfile - With ongoing
+transaction
+Test case name Clear Charging Profile - Clearing a TxDefaultProfile - With ongoing transaction
+Test case Id TC_K_09_CS
+Use case Id(s) K10
+Requirement(s) K10.FR.07
+System under test Charging Station
+Description If the CSMS wishes to clear some or all of the charging profiles that were previously sent to the Charging
+Station, then the CSMS sends a ClearChargingProfileRequest to the Charging Station.
+Purpose To verify if the Charging station is able to accept the request and clear a TxDefaultProfile by the CSMS as
+described at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+SmartChargingCtrlr.LimitChangeSignificance is 1.0
+Memory State:
+SetChargingProfile with
+ChargingProfile 1:
+chargingProfilePurpose is TxDefaultProfile
+chargingProfileKind should be Absolute
+stackLevel should be 0
+evseId <Configured evseId>
+startSchedule <current dateTime>
+numberPhases <Configured numberPhases>
+ChargingSchedule:
+duration 400 + <Configured max time deviation>
+chargingRateUnit <Configured chargingRateUnit>
+startPeriod 0, limit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Reusable State:
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+GetCompositeScheduleResponse
+1. The Test System sends a GetCompositeScheduleRequest
+with
+evseId is <Configured evseId>
+4. The Charging Station responds with a
+ClearChargingProfileResponse
+3. The Test System sends a ClearChargingProfileRequest with
+chargingProfileCriteria.chargingProfilePurpose TxDefaultProfile
+5. The Charging Station responds with a
+GetCompositeScheduleResponse
+6. The Test System sends a GetCompositeScheduleRequest
+with evseId <Configured evseId>
+duration is 300
+chargingRateUnit <Configured chargingRateUnit>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 484/1383 Part 6 - Test Cases

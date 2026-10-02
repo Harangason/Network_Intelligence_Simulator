@@ -1,0 +1,44 @@
+TC_Q_103_CSMS: V2X Authorisation - ISO15118-20 - Charging needs rejected
+Test case name V2X Authorisation - ISO15118-20 - Charging needs rejected
+Test case Id TC_Q_103_CSMS
+Use case Id(s) Q01
+Requirement(s) Q01.FR.04
+System under test CSMS
+Description Authorization of an EV by the CSMS to start a V2X power transfer loop.
+Purpose To check if the CSMS rejects a NotifyEVChargingNeedsRequest when the EV requests a
+EnergyTransferModes that is not allowed.
+Prerequisite(s) CSMS supports ISO15118-20
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is ISO15118-20 transaction just started exposing:
+- <allowedEnergyTransferModes>
+- <transactionId>
+Main (Test scenario)
+Charging Station CSMS
+Agree on energy transfer mode
+1. Test System sends a NotifyEVChargingNeedsRequest with
+evseId <Configured evseId>
+chargingNeeds.requestedEnergyTransfer one different than
+mentioned in <allowedEnergyTransferModes> or if omitted
+AC_BPT 
+chargingNeeds.availableEnergyTransfer [AC_single_phase,
+AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]
+chargingNeeds.controlMode ScheduledControl
+chargingNeeds.v2xChargingParameters.maxChargePower
+1234W
+chargingNeeds.v2xChargingParameters.maxDischargePower
+0W
+2. CSMS SHALL respond with a
+NotifyEVChargingNeedsResponse
+Tool validations
+* Step 2:
+Message: NotifyEVChargingNeedsResponse
+- status must be Rejected
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1338/1383 Part 6 - Test Cases

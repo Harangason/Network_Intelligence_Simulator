@@ -1,0 +1,37 @@
+ To prevent mismatch between transactions and a TxProfile, The Central System SHALL include
+the transactionId in a SetChargingProfile.req if the profile applies to a specific transaction.
+These situations are described below.
+5.16.1. Setting a charging profile at start of transaction
+If the Central System receives a StartTransaction.req the Central System SHALL respond with a
+StartTransaction.conf. If there is a need for a charging profile, The Central System MAY choose to send a
+SetChargingProfile.req to the Charge Point.
+It is RECOMMENDED to check the timestamp in the StartTransaction.req PDU prior to sending a charging profile
+to check if the transaction is likely to be still ongoing. The StartTransaction.req might have been cached during
+an offline period.
+5.16.2. Setting a charge profile in a RemoteStartTransaction request
+The Central System MAY include a charging profile in a RemoteStartTransaction request.
+If the Central System includes a ChargingProfile, the ChargingProfilePurpose MUST be set to TxProfile and the
+transactionId SHALL NOT be set.
+
+The Charge Point SHALL apply the given profile to the newly started transaction. This
+transaction will get a transactionId assigned by Central System via a StartTransaction.conf.
+When the Charge Point receives a SetChargingProfile.req, with the transactionId for this
+transaction, with the same StackLevel as the profile given in the RemoteStartTransaction.req,
+the Charge Point SHALL replace the existing charging profile, otherwise it SHALL install/stack
+the profile next to the already existing profile(s).
+5.16.3. Setting a charging profile during a transaction.
+The Central System MAY send a charging profile to a Charge Point to update the charging profile for that
+transaction. The Central System SHALL use the SetChargingProfile.req PDU for that purpose. If a charging profile
+with the same chargingProfileId, or the same combination of stackLevel / ChargingProfilePurpose, exists on the
+Charge Point, the new charging profile SHALL replace the existing charging profile, otherwise it SHALL be added.
+The Charge Point SHALL then re-evaluate its collection of charge profiles to determine which charging profile will
+become active. In order to ensure that the updated charging profile applies only to the current transaction, the
+chargingProfilePurpose of the ChargingProfile MUST be set to TxProfile. (See section: Charging Profile Purposes)
+5.16.4. Setting a charging profile outside of a transaction
+The Central System MAY send charging profiles to a Charge Point that are to be used as default charging profiles.
+The Central System SHALL use the SetChargingProfile.req PDU for that purpose. Such charging profiles MAY be
+sent at any time. If a charging profile with the same chargingProfileId, or the same combination of stackLevel /
+ChargingProfilePurpose, exists on the Charge Point, the new charging profile SHALL replace the existing charging
+profile, otherwise it SHALL be added. The Charge Point SHALL then re-evaluate its collection of charge profiles to
+determine which charging profile will become active.
+54

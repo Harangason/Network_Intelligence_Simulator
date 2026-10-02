@@ -1,0 +1,68 @@
+C20 - Cancellation after start of transaction - Requirements
+ID Precondition Requirements Note
+C20.FR.01 When EV Driver stops the
+session at Charging Station
+after a transaction has been
+started and no cost has been
+incurred
+Charging Station SHALL send a
+TransactionEventRequest with eventType = Ended
+and triggerReason = StopAuthorized and any
+other relevant fields.
+C20.FR.02 When EV Driver does not
+connect EV in time after a
+transaction has been started,
+and an EVConnectionTimeout
+occurs
+Charging Station SHALL send a
+TransactionEventRequest with eventType = Ended
+and triggerReason = EVConnectTimeout
+C20.FR.03 ( C20.FR.01 OR C20.FR.02 )
+AND
+central cost calculation is used
+CSMS SHALL respond with a
+TransactionEventResponse with totalCost = 0
+Prerequisite of this use case is
+that no costs have been
+incurred.
+C20.FR.04 C20.FR.01 OR C20.FR.02 Charging Station SHALL instruct payment terminal
+to release the authorization amount and cancel the
+payment.
+C20.FR.05 C20.FR.04 Charging Station SHALL send a
+NotifySettlementRequest with transactiondId of
+transaction, idToken of the ad hoc payment in
+pspRef, and status = Canceled and
+settlementTime set to current time.
+This notifies CSMS that the
+DirectPayment idToken has not
+been charged for the
+transaction.
+C20.FR.06 ( C20.FR.01 OR C20.FR.02 )
+AND
+local cost calculation is used
+Charging Station SHALL include in
+TransactionEventRequest with eventType = Ended
+a costDetails with totalCost = 0 and totalUsage = 0
+C21 - Settlement at end of transaction
+New in OCPP 2.1
+No. Type Description
+1 Name Settlement at end of transaction
+2 ID C21
+3 Objective Settle the amount of charging session and generate receipt for the EV Driver.
+4 Description When the transaction ends, the EV Driver is shown the total cost. The amount that is being settled,
+and the successful settlement status and time are sent to the CSMS and a receipt is provided.
+Actors EV Driver, Payment Terminal, CSMS, Charging Station
+Scenario description URL to receipt is provided by CSMS: PaymentCtrlr.ReceiptByCSMS = true, SettlementByCSMS =
+false
+1. When transaction ends, Charging Station sends a TransactionEventRequest with
+eventType = Ended and costDetails to CSMS.
+2. Charging Station shows the cost breakdown in costDetails to EV Driver.
+3. Charging Station instructs payment terminal to settle the payment for the amount in
+costDetails.totalCost.
+4. When payment is settled, Charging Station sends a NotifySettlementRequest with
+transactionId of the transaction, pspRef with value of idToken, status = Settled,
+settlementAmount and settlementTime and optionally vatNumber, vatCompany.
+a. CSMS responds with a NotifySettlementResponse with receiptUrl.
+b. Charging Station displays receiptUrl from CSMS to EV Driver.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 136/803 Part 2 - Specification

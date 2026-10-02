@@ -1,0 +1,33 @@
+TC_E_11_CS: Start transaction options - DataSigned
+Test case name Start transaction options - DataSigned
+Test case Id TC_E_11_CS
+Use case Id(s) E01(S4)
+Requirement(s) E01.FR.04, E01.FR.07, E01.FR.10, E01.FR.15, E01.FR.16
+System under test Charging Station
+Description OCPP 2.x.x has a flexible transaction mechanism that allows the transaction start and stop points to be
+configured differently. This test covers one of the start options.
+Purpose To verify if the Charging Station starts a transaction when the EV and EVSE are connected and it has been
+configured to do so.
+Prerequisite(s) - The Charging Station does NOT have the following configuration; The mutability of TxStartPoint is
+ReadOnly AND (the value DataSigned is NOT set OR (ParkingBayOccupancy OR EVConnected OR
+Authorized), is set).
+- If the mutability of TxStartPoint is ReadWrite, then the value DataSigned must be supported.
+Before (Preparations)
+Configuration State:
+If the mutability of TxStartPoint is ReadWrite then TxStartPoint contains DataSigned
+SampledDataCtrlr.SignReadings is true
+Memory State:
+N/a
+Reusable State(s):
+State is Authorized
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Connect the EV and EVSE.
+1. The Charging Station notifies the CSMS about the status
+change of the connector. 2. The Test System responds accordingly.
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+5. The Charging Station sends a TransactionEventRequest
+6. The Test System responds with a TransactionEventResponse
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 178/914 Part 6 - Test Cases

@@ -1,0 +1,40 @@
+No. Type Description
+Scenario description #3 maxOfflineDuration has elapsed, invalidAfterOfflineDuration = true
+1. The Charging Station restores connection to the CSMS.
+2. The offline period lasted longer than maxOfflineDuration of the (V2X) charging profile.
+This charging profile stopped being active after maxOfflineDuration seconds.
+3. While offline, Charging Station selected the next valid charging profile with stack level #1
+and is now using a charging profile that only has operation mode ChargingOnly.
+4. When connection to CSMS is restored, Charging Station will re-evaluate its charging
+profiles. The charging profile with stack level #2 has invalidAfterOfflineDuration = true and
+is therefore no longer eligible.
+5. Charging Station continues the charging profile with stack level #1 as the valid profile.
+6. Charging Station will continue with charging-only operations according to the charging
+profile.
+5 Prerequisites Charging Station is offline
+6 Post conditions
+7 Remarks The requirements for this use case are covered by K01 - SetChargingProfile requirements about
+maxOfflineDuration.
+Charging Station CSMS
+Transaction has started
+SetChargingProfileRequest( 1, TxProfile, chargingProfile{ schedule with ChargingOnly } )
+SetChargingProfileResponse( Accepted )
+SetChargingProfileRequest( 2, TxProfile, chargingProfile{ schedule with CentralSetpoint } )
+SetChargingProfileResponse( Accepted )
+TxProfile #2 with stackLevel 2 active with operationMode CentralSetpoint
+TxProfile #1 with stackLevel 1 as fallback with operationMode ChargingOnly.
+CSMS connection is lost
+alt [t <= maxOfflineDuration]
+CSMS connection is restored
+continue with profile #2 CentralSetpoint
+[t > maxOfflineDuration]
+fallback to profile #1
+alt [invalidAfterOfflineDuration = false]
+CSMS connection is restored
+return to using profile #2 CentralSetpoint
+[invalidAfterOfflineDuration = true]
+CSMS connection is restored
+continue using profile #1 ChargingOnly
+Figure 196. V2X Operation Resuming After Offline
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 538/803 Part 2 - Specification

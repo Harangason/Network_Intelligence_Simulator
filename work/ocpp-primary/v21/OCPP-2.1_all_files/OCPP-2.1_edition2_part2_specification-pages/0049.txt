@@ -1,0 +1,41 @@
+No. Type Description
+8 Remark(s) The Charging Station Operator may act as a certificate authority for the Charging Station Operator
+hierarchy.
+The applicable Certification Authority SHALL check the information in the CSR.
+If it is correct, the Certificate Authority SHALL sign the CSR, send it to the CSO, the CSO sends it
+back to the Charging Station in the CertificateSignedRequest message. 
+The certificate authority SHOULD implement strong measures to keep the certificate signing
+private keys secure.
+Even though the messages CertificateSignedRequest (see use cases A02 and A03) and
+InstallCertificateRequest (use case M05 - Install CA Certificate in a Charging Station) are both
+used to send certificates, their purposes are different. CertificateSignedRequest is used to return
+the the Charging Stations own public certificate and V2G certificate(s) signed by a Certificate
+Authority. InstallCertificateRequest is used to install Root certificates.
+For V2G certificate handling see use cases M03 - Retrieve list of available certificates from a
+Charging Station, M04 - Delete a specific certificate from a Charging Station and M06 - Get
+Charging Station Certificate status.
+ISO 15118-20 uses higher security algorithms than ISO 15118-2. A Charging Station that supports
+ISO 15118-20 therefore needs to install two SeccLeafCertificates to support both signature
+algorithms. In that case CSMS needs to request Charging Station via two
+TriggerMessageRequests to send a SignCertificateRequest for the ISO 15118-2 certificate and for
+the ISO 15118-20 certificate. This is reflected in requirements A02.FR.22/23.
+CSMS Charging Station Certificate Authority Server
+CS certificate is almost due
+TriggerMessageRequest(SignCertificate)
+TriggerMessageResponse(Accepted)
+generate new
+public / private key pair
+SignCertificateRequest(csr)
+SignCertificateResponse(Accepted)
+forward CSR
+sign certificate
+return Signed Certificate
+CertificateSignedRequest(certificate)
+Verify validity
+of signed certificate
+CertificateSignedResponse (Accepted/Rejected)
+opt [key valid]
+Switch to new certificate
+Figure 6. Update Charging Station Certificate
+Edition 2, 2025-12-03 A. Security
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 36/803 Part 2 - Specification

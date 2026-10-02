@@ -1,0 +1,61 @@
+No. Type Description
+Scenario description 1 The CSMS asks the Charging Station for the installed charging profiles by sending a
+GetChargingProfilesRequest message.
+2 The Charging Station responds, indicating if it can report Charging Schedules by sending a
+GetChargingProfilesResponse message.
+3 Charging Station sends a number of ReportChargingProfilesRequest messages to CSMS.
+4 The CSMS acknowledges reception of the reports by sending a
+ReportChargingProfilesResponse to the Charging Station for every
+ReportChargingProfilesRequest.
+5 Prerequisites n/a
+6 Postcondition(s) The CSMS knows which charging profiles have been installed in the Charging Station that match
+the requested parameters.
+7 Error Handling When the Charging Station has no charging profiles that match the parameters in the
+GetChargingProfilesRequest the Charging Station SHALL respond with: NoProfiles.
+8 Remarks The charging profiles report can be split over multiple ReportChargingProfilesRequest messages,
+this can be because charging profiles for different charging sources need to be reported, or
+because there is just to much data for one message. To indicate that more reports will follow the
+flag tbc can be used.
+CSMS Charging Station
+GetChargingProfileRequest(requestId = 123, chargingProfile,...)
+GetChargingProfileResponse(status = Accepted)
+loop [while tbc = true]
+ReportChargingProfilesRequest(requestId = 123, ...)
+ReportChargingProfilesResponse()
+Figure 130. Sequence diagram of the use case "Get Charging Profiles"
+K09 - Get Charging Profiles - Requirements
+Table 105. K09 - Requirements
+ID Precondition Requirements Note
+K09.FR.01 When requestId is set in the
+GetChargingProfilesRequest
+The Charging Station SHALL set the requestId in every
+ReportChargingProfilesRequest that is sent as a result of
+this GetChargingProfilesRequest.
+K09.FR.02 When the charging profiles
+are reported in more than
+one
+ReportChargingProfilesReq
+uest
+The Charging Station SHALL set the tbc flag to true for all
+ReportChargingProfilesRequest messages except the
+last.
+K09.FR.03 The CSMS SHALL specify in chargingProfile criteria in
+GetChargingProfilesRequest either:
+- a (list of) chargingProfileId(s) OR
+- one or more of the fields stackLevel,
+chargingLimitSource, chargingProfilePurpose.
+These fields are filter values
+of equal importance, but
+because a chargingProfileId
+uniquely identifies a
+charging profile, the other
+fields are not needed if
+chargingProfileIds are used.
+K09.FR.04 If evseId is set to a value
+greater than 0 in the
+GetChargingProfilesRequest
+The Charging Station SHALL report the installed charging
+profiles for the specified EVSE that match all fields in
+chargingProfile.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 355/803 Part 2 - Specification

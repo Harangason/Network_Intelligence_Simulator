@@ -1,0 +1,66 @@
+MODBUS over serial line specification and implementation guide V1.02  Modbus.org    
+Modbus.org http://www.modbus.org/ 23/44
+Dec 20, 2006 
+3.3.3 Optional Four-Wire MODBUS Definition 
+Optionally, such MODBUS devices also permit to implement a 2-pair bus (4 wires) of mono directional data. The data on the master 
+pair ( RXD1-RXD0 ) are only received by the slaves ; the data on the slave pair ( TXD1-TXD0 ) are only received by the only master. 
+In fact a fifth conductor must also interconnect all the devices of the 4W-bus : the common.  
+In the same way as on a 2W-MODBUS, at any time one driver only has the right for emitting. 
+Such a device must  implement, for each balanced pair, a driver and a transceiver in accordance with EIA/ TIA-485 .  
+( Sometimes this solution has been named “RS422”, which is not correct : the RS422 standard does not support several drivers on  
+one balanced pair.) 
+Common
+D
+R
+Slave 1 Slave n
+TXD0
+D
+R
+TXD1
+5 V
+LT
+D R
+Mast er
+RXD1
+RXD0
+LT
+5 V
+LT
+LT
+Pul l  Down
+P ull U p
+Pul l  Down
+P ull U p
+Mast er  Pai r
+Slave Pair
+Figure 21:
+ General 4-wire topology 
+Optional 4W-MODBUS Circuits Definition 
+Required Circuits 
+on ITr on IDv 
+For 
+device
+Required 
+on device 
+EIA/TIA-485 
+name Description for IDv 
+TXD1 TXD1 Out X B 
+Generator terminal 1, Vb Voltage 
+( Vb > Va for binary 1 [OFF] state ) 
+TXD0 TXD0 Out X A 
+Generator terminal 0, Va Voltage 
+( Va > Vb for binary 0 [ON] state ) 
+RXD1 RXD1 In (1) B’ 
+Receiver terminal 1, Vb’ Voltage 
+( Vb’ > Va’ for binary 1 [OFF] state ) 
+RXD0 RXD0 In (1) A’ Receiver terminal 0, Va’ Voltage 
+( Va’ > Vb’ for binary 0 [ON] state ) 
+Common Common -- X C/C’ Signal and optional Power Supply Common 
+Notes : 
+• For Line Termination (LT), Pull Up and Pull Down resistors, please refer to section  “Multipoint System requirements".
+• Those circuits (1) are required only if an 4W-MODBUS option is implemented.
+• The name of the 5 required circuits must  be used in the documentation related to the device and the Tap ( User Guide, Cabling
+Guide, … ) to facilitate interoperability.
+• Optional electrical interfaces may be added, for example :
+/square4 Power Supply : 5..24 V D.C.
+/square4 PMC circuit : See above ( In 2W-MODBUS Circuits Definition ) the note about this optional circuit.  

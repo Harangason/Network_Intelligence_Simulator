@@ -1,0 +1,47 @@
+No. Type Description
+5 Prerequisites - If authorization according use cases in Functional Block C is applied, it SHALL be finished
+successfully.
+See ISO15118-1, use case Prerequisites F1, page 37.
+6 Postcondition(s) See ISO15118-1, use case End conditions F1, page 37.
+7 Error handling n/a
+8 Remark(s) n/a
+EV Charging Station CSMS
+15118
+if AC Charging
+ChargingStatusReq()
+ChargingStatusRes(MeterInfoRecord { MeterId,
+[MeterReading], MeterStatus,
+SignedMeterReading, timeStamp },ReceiptRequired: True)
+MeteringReceiptReq(Signature to confirm ChargingStatus Data)
+MeteringReceiptRes()
+OCPP
+TransactionEventRequest(eventType = Updated, transactionID,
+timestamp, chargingState = Charging, Signed metervalues)
+TransactionEventResponse()
+Figure 92. Charging Loop with metering information exchange
+J03 - Charging Loop with metering information exchange - Requirements
+Table 92. J03 - Requirements
+ID Precondition Requirement definition Note
+J03.FR.04 When the Charging Station
+receives ISO 15118 signed
+MeteringReceiptReq message
+from EV
+The Charging Station SHOULD NOT pass the
+meter value from the MeteringReceiptReq
+message to CSMS in a
+TransactionEventRequest (eventType =
+Updated) message. Instead, Charging Station
+sends transaction-related meter values as
+described in use case J02.
+This does not imply that a
+Charging Station cannot require EV
+to send MeteringReceiptReq
+messages. An implementation at a
+Charging Station can be such, that
+every meter value from the fiscal
+meter that is sent to CSMS (as per
+use case J02) must first have been
+acknowledged by a
+MeterReceiptReq from the EV.
+Edition 4, 2025-12-03 J. Meter Values
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 236/491 Part 2 - Specification

@@ -1,0 +1,45 @@
+MODBUS over serial line specification and implementation guide V1.02 Modbus.org    
+Modbus.org http://www.modbus.org/ 38/44
+Dec 20, 2006 
+6.2 Appendix B - LRC/CRC Generation 
+6.2.1 LRC Generation 
+The Longitudinal Redundancy Checking (LRC) field is one byte, containing an 8–bit binary value. The LRC value is calculated by the 
+transmitting device, which appends the LRC to the message. The device that receives recalculates an LRC during receipt of the 
+message, and compares the calculated value to the actual value it received in the LRC field. If the two values are not equal, a n error 
+results. 
+The LRC is calculated by adding together successive 8–bit bytes in the message, discarding any carries, and then two’s 
+complementing the result. The LRC is an 8–bit field, therefore each new addition of a character that would result in a value higher than 
+255 decimal simply ‘rolls over’ the field’s value through zero. Because there is no ninth bit, the carry is discarded automatically. 
+A procedure for generating an LRC is: 
+1.
+Add all bytes in the message, excluding the starting ‘colon’ and ending CRLF. Add them into an 8–bit field, so that
+carries will be discarded.
+2.
+Subtract the final field value from FF hex (all 1’s), to produce the ones–complement.
+3.
+Add 1 to produce the twos–complement.
+Placing the LRC into the Message 
+When the 8–bit LRC (2 ASCII characters) is transmitted in the message, the high–order character will be transmitted first, foll owed by 
+the low–order character.  For example, if the LRC value is 61 hex (0110 0001): 
+Colon Addr Func Data
+Count Data Data Data Data LRC
+Hi CR LFLRC
+Lo
+ "6"    "1"
+0x36     0x31
+Figure 29: 
+LRC Character Sequence 
+Example: an example of a C language function performing LRC generation is shown below. 
+The function takes two arguments: 
+unsigned char *auchMsg; A pointer to the message buffer containing binary data to be used for generating the LRC, 
+unsigned short usDataLen; The quantity of bytes in the message buffer. 
+LRC Generation Function 
+static unsigned char LRC(auchMsg, usDataLen) /* the function returns the LRC as a type unsigned char */ 
+unsigned char *auchMsg ; /*  message to calculate LRC upon */ 
+unsigned short usDataLen ; /* quantity of bytes in message */ 
+{ 
+unsigned char uchLRC = 0 ; /* LRC char initialized */ 
+while (usDataLen––) /* pass through message buffer */ 
+uchLRC += *auchMsg++ ; /* add buffer byte without carry */ 
+return ((unsigned char)(–((char)uchLRC))) ; /* return twos complement */ 
+} 

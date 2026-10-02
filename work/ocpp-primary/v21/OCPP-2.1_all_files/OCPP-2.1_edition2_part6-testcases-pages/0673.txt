@@ -1,0 +1,55 @@
+TC_N_03_CS: Get Monitoring Report - with component criteria and
+component/variable
+Test case name Get Monitoring Report - with component criteria and component/variable
+Test case Id TC_N_03_CS
+Use case Id(s) N02
+Requirement(s) N02.FR.01, N02.FR.03,N02.FR.04, N02.FR.05, N02.FR.09, N02.FR.10, N02.FR.13
+System under test Charging Station
+Description CSMS requests a report of monitors that match both the component criteria
+and the given list of components and variables.
+Purpose To test that Charging Station supports reporting of monitoring for both the component criteria
+and a given list of components and optionally with variables.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+The following monitors must be present as 'hard-wired' or 'preconfigured' or must have been configured by CSMS:
+- Component "ChargingStation", variable "Power", monitor type Periodic
+- Component "EVSE", evse <Configured evseId>, variable "AvailabilityState", monitor type Delta
+Note: these are required variables for which a monitor can be expected to exist or it can be configured.
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with:
+GetMonitoringReportResponse
+1. Test System sends GetMonitoringReportRequest with:
+- requestId = <Generated requestId1>
+- monitoringCriteria is ThresholdMonitoring
+- componentVariable[0].component.name = "ChargingStation"
+- componentVariable[0].variable.name = "AvailabilityState"
+- componentVariable[1].component.name = "EVSE"
+- componentVariable[1].component.evse.id = <Configured
+evseId>
+- componentVariable[1].variable.name = "AvailabilityState"
+Note: requesting AvailabilityState from ChargingStation and
+Configured EVSE, but filtered to _ThresholdMonitoring._
+4. Charging Station responds with:
+GetMonitoringReportResponse
+3. Test System sends GetMonitoringReportRequest with:
+- requestId = <Generated requestId2>
+- monitoringCriteria is DeltaMonitoring
+- componentVariable[0].component.name = "ChargingStation"
+- componentVariable[0].variable.name = "AvailabilityState"
+- componentVariable[1].component.name = "EVSE"
+- componentVariable[1].component.evse.id = <Configured
+evseId>
+- componentVariable[1].variable.name = "AvailabilityState"
+Note: requesting AvailabilityState from ChargingStation and
+Configured EVSE, but filtered to _Delta._
+5. Charging Station responds with:
+NotifyMonitoringReportRequest 6. Test System sends NotifyMonitoringReportResponse
+Step 5 and 6 are repeated as often as needed to report all configuration variables.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 671/1383 Part 6 - Test Cases

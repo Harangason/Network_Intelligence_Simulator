@@ -1,0 +1,48 @@
+ID Precondition Requirement definition
+L03.FR.10 Charging Station receives a
+TriggerMessageRequest for
+PublishFirmwareStatusNotifi
+cation
+AND
+last sent
+PublishFirmwareStatusNotificationR
+equest had status = Published
+Charging Station SHALL return a
+PublishFirmwareStatusNotificationRequest with status = Idle.
+L03.FR.11 Charging Station receives a
+TriggerMessageRequest for
+PublishFirmwareStatusNotifi
+cation
+AND
+last sent
+PublishFirmwareStatusNotificationR
+equest had NOT status Published
+Charging Station SHALL return a
+PublishFirmwareStatusNotificationRequest with the last sent status.
+L04 - Unpublish Firmware file on Local Controller
+No. Type Description
+1 Name Unpublish Firmware file on Local Controller.
+2 ID L04
+3 Objective(s) Stop the Local Controller from publishing a firmware update to Charging Stations.
+4 Description Stop serving a firmware update to connected Charging Stations.
+Actors Local Controller, CSMS
+Scenario description 1. The CSMS sends an UnpublishFirmwareRequest to instruct the local controller to unpublish the
+firmware.
+2. The Local Controller unpublishes the firmware.
+3. The local Controller responds with an UnpublishFirmwareResponse.
+5 Prerequisite(s) A firmware successfully published by the Local Controller.
+6 Postcondition(s) Successful postcondition:
+Firmware file no longer published. 
+Failure postcondition:
+n/a
+7 Error handling n/a
+8 Remark(s) The CSMS uses a MD5 checksum over the entire firmware file as a unique identifier to indicate
+which firmware file needs to be unpublished.
+Local Controller CSMS
+UnpublishFirmwareRequest()
+UnpublishFirmwareResponse()
+Figure 152. Sequence Diagram: Unpublishing a firmware file
+L04 - Unpublish Firmware file on Local Controller - Requirements
+Table 124. L04 - Requirements
+Edition 2, 2025-12-03 L. Firmware Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 424/803 Part 2 - Specification

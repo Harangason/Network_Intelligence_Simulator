@@ -1,0 +1,52 @@
+u-blox 20 HPG 2.00 - Interface description
+2.7.17.1 Recommended minimum data
+Message NMEA-Standard-RMC
+Recommended minimum data
+Type Output
+Comment The recommended minimum sentence deﬁned by NMEA for GNSS system data.
+☞ The output of this message is dependent on the currently selected datum (default: WGS84)
+Information Class/ID: 0xf0 0x04 Number of fields: 16
+Structure $xxRMC,time,status,lat,NS,lon,EW,spd,cog,date,mv,mvEW,posMode,navStatus*cs\r\n
+Example $GPRMC,083559.00,A,4717.11437,N,00833.91522,E,0.004,77.52,091202,,,A,V*57\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxRMC string - $GPRMC RMC Message ID (xx = current Talker ID, see NMEA
+Talker IDs table)
+1 time hhmmss.ss - 083559.00 UTC time. See section UTC representation in the
+integration manual for details.
+2 status character - A Data validity status, see position ﬁx ﬂags description
+3 lat ddmm.
+mmmmm
+- 4717.11437 Latitude (degrees and minutes), see format description
+4 NS character - N North/South indicator
+5 lon dddmm.
+mmmmm
+- 00833.91522 Longitude (degrees and minutes), see format
+description
+6 EW character - E East/West indicator
+7 spd numeric knots 0.004 Speed over ground
+8 cog numeric deg 77.52 Course over ground
+9 date ddmmyy - 091202 Date in day, month, year format. See section UTC
+representation in the integration manual for details.
+10 mv numeric deg - Magnetic variation value
+11 mvEW character - - Magnetic variation E/W indicator
+12 posMode character - A Mode Indicator, see position ﬁx ﬂags description  (only
+available in NMEA 2.3 and later)
+13 navStatus character - V Navigational status indicator: V (Equipment is not
+providing navigational status information, ﬁxed ﬁeld,
+only available in NMEA 4.10 and later)
+14 cs hexadecimal - *57 Checksum
+15 CRLF character - - Carriage return and line feed
+2.7.18 TXT
+2.7.18.1 Text transmission
+Message NMEA-Standard-TXT
+Text transmission
+Type Output
+Comment This message outputs various information on the receiver, such as power-up screen, software version etc.
+This message can be conﬁgured using the CFG-INFMSG conﬁguration group.
+Information Class/ID: 0xf0 0x41 Number of fields: 7
+Structure $xxTXT,numMsg,msgNum,msgType,text*cs\r\n
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 35 of 224
+C1-Public

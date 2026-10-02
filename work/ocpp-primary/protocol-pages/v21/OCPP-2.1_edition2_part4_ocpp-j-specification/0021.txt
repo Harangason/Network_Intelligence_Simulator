@@ -1,0 +1,21 @@
+5.4. Reconnecting
+When the connection is lost, the Charging Station SHALL try to reconnect. When reconnecting, the Charging Station SHALL use an
+increasing back-off time with some randomization until it has successfully reconnected. This prevents an overload of the CSMS
+when all Charging Stations reconnect after a restart of the CSMS.
+The first reconnection attempts SHALL be after a back-off time of: RetryBackOffWaitMinimum seconds, plus a random value
+with a maximum of RetryBackOffRandomRange seconds. After every failed reconnection attempt the Charging Station SHALL
+double the previous back-off time, with a maximum of RetryBackOffRepeatTimes, adding a new random value with a maximum
+of RetryBackOffRandomRange seconds to every reconnection attempt. After RetryBackOffRepeatTimes reconnection
+attempts, the Charging Station SHALL keep reconnecting with the last back-off time, not increasing it any further. After a successful
+connection the backoff wait timer SHALL be reset to RetryBackOffWaitMinimum seconds.
+When reconnecting, a Charging Station SHOULD NOT send a BootNotification unless one or more of the elements in the
+BootNotification have changed since the last connection. For the previous SOAP based solutions this was considered good
+practice but when using WebSocket the server can already make the match between the identity and a communication channel at
+the moment the connection is established. There is no need for an additional message.
+5.5. Network node hierarchy
+The physical network topology is not influenced by a choice for JSON or SOAP. In case of JSON however the issues with Network
+Address Translation (NAT) have been resolved by letting the Charging Station open a TCP connection to the CSMS and keeping this
+connection open for communication initiated by the CSMS. It is therefore no longer necessary to have a smart device capable of
+interpreting and redirecting SOAP calls in between the CSMS and the Charging Station.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 19/28 Part 4 - JSON over WebSockets implementation guide

@@ -1,0 +1,48 @@
+u-blox 20 HPG 2.00 - Interface description
+56 + n·24 U2 wholeChips - - whole value of the code phase measurement (0..1022
+for GPS)
+58 + n·24 U2 fracChips - - fractional value of the code phase measurement
+(0..1023)
+60 + n·24 U4 codePhase 2^-21 ms Code phase
+64 + n·24 U1 intCodePhase - ms Integer (part of the) code phase
+65 + n·24 U1 pseuRangeRMS
+Err
+- - pseudorange RMS error index (according to [1]) (0..63)
+66 + n·24 U1[2] reserved4 - - Reserved
+End of repeated group (numSV times)
+3.16.3 UBX-RXM-PMREQ (0x02 0x41)
+3.16.3.1 Power management request
+Message UBX-RXM-PMREQ
+Power management request
+Type Command
+Comment This message requests a power management related task of the receiver.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x02 0x41 8 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 duration - ms Duration of the requested task. The maximum
+supported value is 12 days. Set to 0 to wait for a
+wakeup signal on a pin
+4 X4 flags - - task ﬂags
+bit 1   U:1 backup - - The receiver goes into backup mode for a time period
+deﬁned by duration, provided that it is not connected
+to USB
+3.16.3.2 Power management request
+Message UBX-RXM-PMREQ
+Power management request
+Type Command
+Comment This message requests a power management related task of the receiver.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x02 0x41 16 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 U1[3] reserved0 - - Reserved
+4 U4 duration - ms Duration of the requested task. The maximum
+supported value is 12 days. Set to 0 to wait for a
+wakeup signal on a pin
+8 X4 flags - - task ﬂags
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 121 of 224
+C1-Public

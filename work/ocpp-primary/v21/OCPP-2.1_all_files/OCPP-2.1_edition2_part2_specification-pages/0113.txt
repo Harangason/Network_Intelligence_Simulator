@@ -1,0 +1,40 @@
+EV Driver
+APP
+Charging Station
+CS-001 CSMS
+Transaction already started
+at cable plug-in at EVSE #1
+Start Charging
+Start Charging (CS-001, EVSE #1)
+determine unique id()
+result = 4444
+RequestStartTransactionRequest(evseId = 1
+idToken(id = 4444, type = Central), remoteStartId = 123)
+RequestStartTransactionResponse(Accepted)
+TransactionEventRequest(eventType = Updated, transactionId = AB1234,
+triggerReason = RemoteStart, remoteStartId = 123, meterValues, ...)
+TransactionEventResponse(...)
+Figure 24. Sequence Diagram: Authorization for CSMS initiated transactions
+C05 - Authorization for CSMS initiated transactions Requirements
+Table 47. C05 - Requirements
+ID. Precondition Requirement definition
+C05.FR.01 If the Charging Station receives a
+RequestStartTransactionRequest with an
+IdTokenType of type Central.
+The Charging Station SHALL NOT send an AuthorizeRequest for
+the received IdTokenType.
+C05.FR.02 If the Charging Station has implemented an
+Authorization Cache AND the Charging Station
+receives IdTokenInfo for an IdTokenType of type
+Central in any message
+The Charging Station SHALL NOT store the information in its
+Authorization Cache. (Same as C03.FR.02)
+C05.FR.03 The RemoteStartId SHALL be provided at least once in a
+TransactionEventRequest.
+C05.FR.04 Language SHALL be specified as RFC-4646 tags, see: [RFC5646],
+example: US English is: "en-US".
+C05.FR.05 idToken SHALL also be provided once in the first
+TransactionEventRequest after a
+RequestStartTransactionRequest.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 100/803 Part 2 - Specification

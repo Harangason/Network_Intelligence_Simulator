@@ -1,0 +1,43 @@
+No. Type Description
+Scenario description CSMS specifies a cost limit at remote start
+1. CSMS has a cost limit for the transaction it wants to start on this Charging Station.
+2. CSMS sends a RequestStartTransactionRequest to the Charging Station.
+3. Charging Station starts a transaction as per use case F01 or F02.
+4. In order to communicate the cost limit to the Charging Station, CSMS adds the
+transactionLimit.maxCost element to the first TransactionEventResponse message for
+this transaction.
+5. Charging Station adds transactionInfo.transactionLimit.maxCost (once) in the next
+TransactionEventRequest message.
+6. When the cost for energy transfer reaches transactionInfo.transactionLimit.maxCost,
+Charging Station stops the energy transfer and sends a TransactionEventRequest with
+chargingState = SuspendedEVSE.
+5 Prerequisite(s)
+6 Postcondition(s) Charging Station starts a transaction with given limit(s).
+7 Error handling
+8 Remark(s) If more than one limit is given, for example both a time and an energy limit, then whichever limit is
+reached first, determines the end of energy transfer.
+In order for a Charging Station to stop exactly on time when a cost limit is given, cost will have to
+be calculated locally at the Charging Station.
+NOTE Following diagrams only show parameters related to the use case. More parameters are required in these
+messages.
+Charging Station CSMS
+EV Driver
+request
+remote start
+TxStartPoint = Authorized
+RequestStartTransactionRequest(idToken = ABCD, remoteStartId = 123)
+RequestStartTransactionResponse(status = Accepted)
+opt [AuthorizeRemoteStart = true]
+AuthorizeRequest(idToken = ABCD)
+AuthorizeResponse(idTokenInfo)
+TransactionEventRequest(eventType = Started, remoteStartId = 123, ...)
+TransactionEventResponse(transactionLimit.maxCost = 12.34, ...)
+TransactionEventRequest(Updated, ...,
+transactionInfo.transactionLimit.maxCost = 12.34)
+TransactionEventResponse()
+When cost limit reached
+TransactionEventRequest(Updated, chargingState = SuspendedEVSE, ...,)
+TransactionEventResponse()
+Figure 83. Sequence diagram for remotely started transaction with limited cost
+Edition 2, 2025-12-03 F. Remote Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 237/803 Part 2 - Specification

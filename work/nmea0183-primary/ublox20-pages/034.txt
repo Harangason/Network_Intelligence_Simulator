@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+7 + n·4 cno numeric dBHz 44 Signal strength (C/N0, range: 0-99), null when not
+tracking
+End of repeated group (1…4 times)
+4 + N·4 signalId hexadecimal - - NMEA-deﬁned GNSS signal ID, see Signal Identiﬁers
+table (only available in NMEA 4.10 and later)
+5 + N·4 cs hexadecimal - *7F Checksum
+6 + N·4 CRLF character - - Carriage return and line feed
+2.7.16 RLM
+2.7.16.1 Return link message (RLM)
+Message NMEA-Standard-RLM
+Return link message (RLM)
+Type Output
+Comment The RLM sentence is used to transfer a Return link message from a Cospas-Sarsat recognized Return link
+service provider (RLSP).
+The RLM sentence supports communications to an emitting beacon once a distress alert has been detected,
+located and conﬁrmed. The communications may include acknowledgement of the alert to the emitting
+beacon as well as optional text messages, and may also include remote beacon conﬁguration and testing.
+Information Class/ID: 0xf0 0x0b Number of fields: 7
+Structure $xxRLM,beacon,time,code,body*cs\r\n
+Examples $GARLM,00000078A9FBAD5,083559.00,3,C45B*57\r\n
+$GARLM,F7129D41BC6A78C,034433.02,3,B63CA732AFD419D2*57\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxRLM string - $GARLM RLM message ID (xx = current Talker ID, see NMEA
+Talker IDs table)
+1 beacon hexadecimal - 00000078A
+9FBAD5
+Beacon ID, identiﬁes beacon intended to receive this
+message (ﬁxed length 15 hexadecimal character ﬁeld)
+2 time hhmmss.ss - 083559.00 Time of reception ﬁeld to indicate RLM timestamp in
+UTC. See section UTC representation in the integration
+manual for details.
+3 code character - 3 Message code ﬁeld to identify type of RLM Message
+Service:
+• 0 = Reserved for future RLM services
+• 1 = Acknowledgement service RLM
+• 2 = Command service RLM
+• 3 = Message service RLM
+• 4-E = Reserved for future RLM services
+• F = Test service RLM (currently used only by the
+Galileo program)
+4 body hexadecimal - C45B Message body encapsulates the data parameters
+provided by the RLSP into hexadecimal format.
+5 cs hexadecimal - *57 Checksum
+6 CRLF character - - Carriage return and line feed
+2.7.17 RMC
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 34 of 224
+C1-Public

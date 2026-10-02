@@ -1,0 +1,48 @@
+ID Precondition Requirement definition
+E12.FR.03 When configured to send meter data in the
+TransactionEventRequest(eventType =
+Updated), See: Meter Values - Configuration
+The Charging Station SHALL add the configured measurands to
+the optional meterValue field in the TransactionEventRequest
+(eventType = Updated) sent to the CSMS to provide more details
+during the transaction. (Same as J02.FR.11)
+E12.FR.04 E12.FR.03
+AND
+Offline
+AND
+The Charging Station is running low on memory
+The Charging Station MAY drop TransactionEventRequest
+(eventType = Updated) messages. (Same as J02.FR.12)
+E12.FR.05 E12.FR.04 When dropping TransactionEventRequest(eventType = Updated)
+messages, the Charging Station SHALL drop intermediate
+messages first (2nd message, 4th message, 6th message etc.),
+not start dropping messages from the start or stop adding
+messages to the queue. (Same as J02.FR.13)
+E12.FR.06 E12.FR.03
+AND
+Amount of meter data is too much for 1
+TransactionEventRequest(eventType = Updated)
+The Charging Station MAY split the meter data over multiple
+TransactionEventRequest(eventType = Updated) messages with
+the same timestamp. (Same as J02.FR.14)
+E12.FR.07 When configured to send meter data in the
+TransactionEventRequest(eventType = Ended),
+See: Meter Values - Configuration
+The Charging Station SHALL add the configured measurands to
+the optional meterValue field in the TransactionEventRequest
+(eventType = Ended) sent to the CSMS to provide more details
+about transaction usage. (Same as E08.FR.09)
+E12.FR.08 E12.FR.07
+AND
+The Charging Station is running low on memory
+The Charging Station MAY drop meter data in the
+TransactionEventRequest(eventType = Ended) message. (Same
+as E06.FR.12)
+E12.FR.09 E12.FR.08 When dropping meter data, the Charging Station SHALL drop
+intermediate values first (2nd value, 4th value, 6th etc), not drop
+the start and end values from the list. (Same as E06.FR.13)
+E12.FR.10 SampledDataSignReadings is true The Charging Station SHALL retrieve signed meter values and
+put them in the signedMeterValue field of sampledValues. (Same
+as E06.FR.14)
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 167/491 Part 2 - Specification

@@ -1,0 +1,31 @@
+ 
+14  © Ecma International 2024 
+ 
+11.3.2 Initialisation and SDD for fc/64 and fc/32 
+11.3.2.1 Start and end of communication 
+The start of the Passive communication shall be signalled by the presence of the carrier frequency. The 
+communication shall start with the preamble sequence of at least 48  bits of Manchester encoded ZERO. The 
+end of communication shall be forecasted from the Length field of the frame.  
+After one NFCIP -1 device has finished communication, the other shall delay for a period of at least 8  × 64/fc 
+before starting transmission by sending the preamble sequence as shown in Figure 6. 
+ 
+Figure 6 — Delay between consecutive frames 
+11.3.2.2 Frame format 
+The frame format shall consist of Preamble, SYNC, Length, Payload, and CRC, see Figure 7. 
+The Preamble shall be 48 bits minimum all logical ZEROs. 
+The SYNC shall be 2 bytes. The 1st byte of the SYNC shall be ‘B2’ and the 2nd byte shall be ‘4D’. 
+ 
+Figure 7 — Frame format 
+The Length shall be an 8-bit field and it shall be set to the number of bytes to be transmitted in Payload plus 1. 
+The range of the Length shall be 1 to 255, and other settings are RFU.  
+NOTE 1 The minimum value for the Length was 2 in the last edition of this document. 
+NOTE 2 The range of the Length is harmonized with the NFC Forum Digital Protocol Technical Specification[2]. 
+The Payload shall consist of n 8-bit-bytes of data where n is indicated by the number of data bytes. 
+The CRC shall be calculated according to A.3. 
+11.3.2.3 SDD for fc/64 and fc/32 
+The basic technique of the SDD procedure shall be the time slot method. The number of the slot shall be the 
+integer value beyond zero. The Initiator shall send Polling Requests. The Target shall respond in a time slot 
+randomly chosen from the range specified by the Initiator. The Initiator shall be able to read NFCID2 data (see 
+11.3.2.4) of Target(s) in different time slots. 
+After obtaining NFCID2 data from Target(s) in the operating field, the Initiator may communicate with multiple 
+Targets. 

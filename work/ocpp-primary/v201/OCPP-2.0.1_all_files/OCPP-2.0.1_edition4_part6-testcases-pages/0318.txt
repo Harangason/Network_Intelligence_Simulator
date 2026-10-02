@@ -1,0 +1,29 @@
+Tool validations
+Note: The following steps do not need to be sent in a specific order.
+* Step 1:
+Message: MeterValuesRequest
+- meterValue[0].sampledValue[0].context must be Sample.Clock
+- meterValue[0].sampledValue must contain <An element per configured measurand at the AlignedDataMeasurands>
+Notes:
+- The measurand field may be omitted when the measurand is "Energy.Active.Import.Register"
+- It is possible that measurands are reported on multiple locations or phases, based on the capabilities of the energy meter.
+* Step 3:
+Message: TransactionEventRequest
+- triggerReason must be MeterValueClock
+- metervalue[0].sampledValue[0].context must be Sample.Clock
+- metervalue[0].sampledValue must contain <An element per configured measurand at the AlignedDataMeasurands>
+Notes:
+- The measurand field may be omitted when the measurand is "Energy.Active.Import.Register"
+- It is possible that measurands are reported on multiple locations or phases, based on the capabilities of the energy meter.
+Post scenario validations:
+Message: TransactionEventRequest
+- timestamp <The intervals between the timestamps of the received TransactionEventRequest messages must equal the configured
+value at AlignedDataInterval. However it is allowed to send multiple Meter Value messages per configured interval, in case the
+amount of measured data is too much for one message. But the timestamp of these messages must all be the same.>
+Message: MeterValuesRequest
+- timestamp <The intervals between the timestamps of the received Meter Value messages must equal the configured value at
+AlignedDataInterval. However it is allowed to send multiple Meter Value messages per configured interval, in case the amount of
+measured data is too much for one message. But the timestamp of these messages must all be the same.>
+- None of the provided sampledValues shall have location = EV, except when measurand = SoC.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 316/914 Part 6 - Test Cases

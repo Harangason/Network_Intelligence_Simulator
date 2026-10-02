@@ -1,0 +1,35 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  60 
+To run the software implementation flow using the provided evaluation file after the IP is generated, follow these 
+steps: 
+1. In the Post-Synthesis Constraint Files section, add <ip_instance_path>/eval/constraint.pdc. 
+2. Run the implementation flow. 
+  
+Figure 6.6. Example Evaluation Project Settings 
+Notes: 
+• You need to provide proper timing and physical design constraints to ensure that your design meets the desired 
+performance goals for the FPGA. 
+• The constraint files have been verified during IP evaluation with the evaluation wrapper instantiated directly in the 
+top-level module. 
+• During synthesis, you can ignore clock related warnings as the evaluation IP does not include clock -related 
+constraints at pre-synthesis level. 
+• During post-synthesis, there may be warnings related to dropped constraints. As the IP supports many 
+configurations and parameter combinations, some default constraints may not be applicable to the selected 
+configuration.  
+• In transmitter mode, if Edge Clock Mode is set to Internal, you may encounter a Place and Route error as the edge 
+clock synchronizer clock (eclk_syncclk_o) is illegally mapped to the FPGA I/O. This clock is intended to be 
+connected to a DDR primitive or just left unconnected if unused. You may include the eval_top.sv as a top-level 
+wrapper during IP synthesis stage to achieve a full compilation stage. The eval_top.sv must be set to Include for – 
+Synthesis only and avoid using the file as top-level wrapper for simulation stage. 
+For more information on timing constraints, refer to the Lattice Radiant Timing Constraints Methodology (FPGA-AN-
+02059). 
+6.4. Physical Constraints 
+For MIPI CSI/DSI receiver Soft D-PHY mode, if I/O top-level ports are not automatically routed to MIPI I/O, define the 
+MIPI pins (clk_p_io, d_p_io_*) with IO_TYPE of MIPI_DPHY in the .pdc file. An example is shown in Figure 6.7. 
+ 
+Figure 6.7. Defining MIPI D-PHY Port Pins Using MIPI_DPHY IO_TYPE 

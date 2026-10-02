@@ -1,0 +1,45 @@
+1.43. MeterValues
+1.43.1. MeterValuesRequest
+This contains the field definition of the MeterValuesRequest PDU sent by the Charging Station to the CSMS. This message might be
+removed in a future version of OCPP. It will be replaced by Device Management Monitoring events.
+Class
+Field Name Field Type Card. Description
+evseId integer, 0 <= val 1..1 Required. This contains a number (>0) designating an
+EVSE of the Charging Station. ‘0’ (zero) is used to
+designate the main power meter.
+meterValue MeterValueType 1..* Required. The sampled meter values with timestamps.
+The following Configuration Variables are used to
+configure which measurands are sent:
+- AlignedDataMeasurands -
+AlignedDataUpstreamMeasurands
+1.43.2. MeterValuesResponse
+This contains the field definition of the MeterValuesResponse PDU sent by the CSMS to the Charging Station in response to a
+MeterValuesRequest PDU. This message might be removed in a future version of OCPP. It will be replaced by Device Management
+Monitoring events.
+No fields are defined.
+1.44. NotifyAllowedEnergyTransfer
+1.44.1. NotifyAllowedEnergyTransferRequest
+(2.1) Message sent by CSMS to update the list of authorized energy services, e.g. to allow bidirectional charging for a charging
+session that is already in progress. One example is that the EV has already started a transaction in charging-only mode and
+meanwhile the CSMS has found that this EV is authorized by some secondary actor, such as an aggregating party, to use
+bidirectional charging. This message is then used to give the EV the opportunity to change energy service from charging-only to
+bidirectional charging.
+Another example is that the CSMS wishes to change the active energy service. This is done by updating the list of authorized
+energy services and omitting the currently active energy service.
+Class
+Field Name Field Type Card. Description
+transactionId identifierString[0..36] 1..1 Required. The transaction for which the allowed energy
+transfer is allowed.
+allowedEnergyTransfer EnergyTransferModeEnumType 1..* Required. Modes of energy transfer that are accepted by
+CSMS.
+1.44.2. NotifyAllowedEnergyTransferResponse
+(2.1) Status of NotifyAllowedEnergyServicesRequest. Request should normally not be rejected, unless there are some technical
+problems.
+Class
+Field Name Field Type Card. Description
+status NotifyAllowedEnergyTransferStatu
+sEnumType
+1..1 Required.
+statusInfo StatusInfoType 0..1 Optional.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 598/803 Part 2 - Specification

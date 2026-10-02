@@ -1,0 +1,382 @@
+1-Wire Communication Through Software | Analog Devices (https://www.analog.com/en/resources/technical-articles/1wire-communication-through-software.html)
+citeturn547view0 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({"ref_id":"turn546view1","lineno":8}); Total lines: 376
+L0: cite0†Back to Home L1: 
+L2: # 1-Wire Communication Through Software
+L3: 
+L4: May 30 2002
+L5: 
+L6: [Button: Ã— ]
+L7: 
+L8: #### Figure 1
+L9: ## Abstract
+L10: A microprocessor can easily generate 1-Wire^{®} timing signals if a true bus master is not present (e.g., cite1†DS2480B , the family of DS2482 parts). This application note provides an example, written in 'C', of the basic standard-speed 1-Wire master communication routines. The four basic operations of a 1-Wire bus are Reset, Write 1 bit, Write 0 bit, and Read bit. Byte functions can then be derived from multiple calls to the bit operations.
+L11: The time values provided produce the most robust 1-Wire master for communication with all 1-Wire devices over various line conditions.
+L12: ## Introduction
+L13: 
+L14: A microprocessor can easily generate 1-Wire timing signals if a dedicated bus master is not present. This application note provides an example, written in 'C', of the basic standard-speed 1-Wire master communication routines. Overdrive communication speed is also covered by this document. There are several system requirements for proper operation of the code examples:
+L15:   1. The communication port must be bidirectional, its output is open-drain, and there is a weak pullup on the line. This is a requirement of any 1-Wire bus. See Category 1 in application note 4206, "Choosing the Right 1-Wire® Master for Embedded Application" for a simple example of a 1-Wire master microprocessor circuit.
+L16:   2. The system must be capable of generating an accurate and repeatable 1µs delay for standard speed and 0.25µs delay for overdrive speed.
+L17:   3. The communication operations must not be interrupted while being generated.
+L18: The four basic operations of a 1-Wire bus are Reset, Write 1 bit, Write 0 bit, and Read bit. The time it takes to perform one bit of communication is called a time slot in the device data sheets. Byte functions can then be derived from multiple calls to the bit operations. See Table 1 below for a brief description of each operation and a list of the steps necessary to generate it. Figure 1 illustrates the waveforms graphically.
+L19: Table 2 shows the recommended timings for the 1-Wire master to communicate with 1-Wire devices over the most common line conditions. Alternate values can be used when restricting the 1-Wire master to a particular set of devices and line conditions. See the downloadable worksheet to enter system and device parameters to determine minimum and maximum values.
+L20: Table 1. 1-Wire Operations
+L21: Operation  | Description  | Implementation
+L22: Write 1 bit  | Send a '1' bit to the 1-Wire slaves (Write 1 time slot)  | Drive bus low, delay A
+L23: Release bus, delay B
+L24: Write 0 bit  | Send a '0' bit to the 1-Wire slaves (Write 0 time slot)  | Drive bus low, delay C
+L25: Release bus, delay D
+L26: Read bit  | Read a bit from the 1-Wire slaves (Read time slot)  | Drive bus low, delay A
+L27: Release bus, delay E
+L28: Sample bus to read bit from slave
+L29: Delay F
+L30: Reset  | Reset the 1-Wire bus slave devices and ready them for a command  | Delay G
+L31: Drive bus low, delay H
+L32: Release bus, delay I
+L33: Sample bus, 0 = device(s) present, 1 = no device present
+L34: Delay J
+L35: cite2†Image: Diagram of 1-Wire waveform. L36: 
+L37: Figure 1. 1-Wire waveforms.
+L38: 
+L39: Table 2. 1-Wire Master Timing
+L40: Parameter  | Speed  | Recommended (µs)
+L41: A  | Standard  | 6
+L42: Overdrive  | 1.0
+L43: B  | Standard  | 64
+L44: Overdrive  | 7.5
+L45: C  | Standard  | 60
+L46: Overdrive  | 7.5
+L47: D  | Standard  | 10
+L48: Overdrive  | 2.5
+L49: E  | Standard  | 9
+L50: Overdrive  | 1.0
+L51: F  | Standard  | 55
+L52: Overdrive  | 7
+L53: G  | Standard  | 0
+L54: Overdrive  | 2.5
+L55: H  | Standard  | 480
+L56: Overdrive  | 70
+L57: I  | Standard  | 70
+L58: Overdrive  | 8.5
+L59: J  | Standard  | 410
+L60: Overdrive  | 40
+L61: Worksheet to calculate these values is available for cite3†download .
+L62: ## Code Examples
+L63: 
+L64: This following code samples rely on two common 'C' functions outp and inp to write and read bytes of data to input/output (I/O) port locations. They are typically located in the <conio.h> standard library. These functions can be replaced by platform appropriate functions.
+L65: 
+L66:     // send 'databyte' to 'port'
+L67:     int outp(unsigned port, int databyte);
+L68: 
+L69:     // read byte from 'port'
+L70:     int inp(unsigned port);
+L71: The constant PORTADDRESS in the code (Figure 3) is defined as the location of the communication port. The code assumes bit 0 of this location controls the 1-Wire bus. Setting this bit to 0 drives the 1-Wire line low. Setting this bit to 1 releases the 1-Wire to be pulled up by the resistor pullup or pulled down by a 1-Wire slave device.
+L72: The function tickDelay in the code is a user-generated routine to wait a variable number of 1/4 microseconds. This function varies for each unique hardware platform running so it is not implemented here. Below is the function declaration for the tickDelay along with a function SetSpeed to set the recommended standard and overdrive speed tick values.
+L73: #### Example 1. 1-Wire Timing Generation
+L74: 
+L75:     // Pause for exactly 'tick' number of ticks = 0.25us
+L76:     void tickDelay(int tick); // Implementation is platform specific
+L77: 
+L78:     // 'tick' values
+L79:     int A,B,C,D,E,F,G,H,I,J;
+L80: 
+L81:     //-----------------------------------------------------------------------------
+L82:     // Set the 1-Wire timing to 'standard' (standard=1) or 'overdrive' (standard=0).
+L83:     //
+L84:     void SetSpeed(int standard)
+L85:     {
+L86:             // Adjust tick values depending on speed
+L87:             if (standard)
+L88:             {
+L89:                     // Standard Speed
+L90:                     A = 6 * 4;
+L91:                     B = 64 * 4;
+L92:                     C = 60 * 4;
+L93:                     D = 10 * 4;
+L94:                     E = 9 * 4;
+L95:                     F = 55 * 4;
+L96:                     G = 0;
+L97:                     H = 480 * 4;
+L98:                     I = 70 * 4;
+L99:                     J = 410 * 4;
+L100:             }
+L101:             else
+L102:             {
+L103:                     // Overdrive Speed
+L104:                     A = 1.5 * 4;
+L105:                     B = 7.5 * 4;
+L106:                     C = 7.5 * 4;
+L107:                     D = 2.5 * 4;
+L108:                     E = 0.75 * 4;
+L109:                     F = 7 * 4;
+L110:                     G = 2.5 * 4;
+L111:                     H = 70 * 4;
+L112:                     I = 8.5 * 4;
+L113:                     J = 40 * 4;
+L114:             }
+L115:     }
+L116: Example 2 below shows the code examples for the basic 1-Wire operations.
+L117: #### Example 2. 1-Wire Basic Functions
+L118: 
+L119:     //-----------------------------------------------------------------------------
+L120:     // Generate a 1-Wire reset, return 1 if no presence detect was found,
+L121:     // return 0 otherwise.
+L122:     // (NOTE: Does not handle alarm presence from DS2404/DS1994)
+L123:     //
+L124:     int OWTouchReset(void)
+L125:     {
+L126:             int result;
+L127: 
+L128:             tickDelay(G);
+L129:             outp(PORTADDRESS,0x00); // Drives DQ low
+L130:             tickDelay(H);
+L131:             outp(PORTADDRESS,0x01); // Releases the bus
+L132:             tickDelay(I);
+L133:             result = inp(PORTADDRESS) ^ 0x01; // Sample for presence pulse from slave
+L134:             tickDelay(J); // Complete the reset sequence recovery
+L135:             return result; // Return sample presence pulse result
+L136:     }
+L137: 
+L138:     //-----------------------------------------------------------------------------
+L139:     // Send a 1-Wire write bit. Provide 10us recovery time.
+L140:     //
+L141:     void OWWriteBit(int bit)
+L142:     {
+L143:             if (bit)
+L144:             {
+L145:                     // Write '1' bit
+L146:                     outp(PORTADDRESS,0x00); // Drives DQ low
+L147:                     tickDelay(A);
+L148:                     outp(PORTADDRESS,0x01); // Releases the bus
+L149:                     tickDelay(B); // Complete the time slot and 10us recovery
+L150:             }
+L151:             else
+L152:             {
+L153:                     // Write '0' bit
+L154:                     outp(PORTADDRESS,0x00); // Drives DQ low
+L155:                     tickDelay(C);
+L156:                     outp(PORTADDRESS,0x01); // Releases the bus
+L157:                     tickDelay(D);
+L158:             }
+L159:     }
+L160: 
+L161:     //-----------------------------------------------------------------------------
+L162:     // Read a bit from the 1-Wire bus and return it. Provide 10us recovery time.
+L163:     //
+L164:     int OWReadBit(void)
+L165:     {
+L166:             int result;
+L167: 
+L168:             outp(PORTADDRESS,0x00); // Drives DQ low
+L169:             tickDelay(A);
+L170:             outp(PORTADDRESS,0x01); // Releases the bus
+L171:             tickDelay(E);
+L172:             result = inp(PORTADDRESS) & 0x01; // Sample the bit value from the slave
+L173:             tickDelay(F); // Complete the time slot and 10us recovery
+L174: 
+L175:             return result;
+L176:     }
+L177: This is all for bit-wise manipulation of the 1-Wire bus. The above routines can be built upon to create byte-wise manipulator functions as seen in Example 3.
+L178: #### Example 3. Derived 1-Wire Functions
+L179: 
+L180:     //-----------------------------------------------------------------------------
+L181:     // Write 1-Wire data byte
+L182:     //
+L183:     void OWWriteByte(int data)
+L184:     {
+L185:             int loop;
+L186: 
+L187:             // Loop to write each bit in the byte, LS-bit first
+L188:             for (loop = 0; loop < 8; loop++)
+L189:             {
+L190:                     OWWriteBit(data & 0x01);
+L191: 
+L192:                     // shift the data byte for the next bit
+L193:                     data >>= 1;
+L194:             }
+L195:     }
+L196: 
+L197:     //-----------------------------------------------------------------------------
+L198:     // Read 1-Wire data byte and return it
+L199:     //
+L200:     int OWReadByte(void)
+L201:     {
+L202:             int loop, result=0;
+L203: 
+L204:             for (loop = 0; loop < 8; loop++)
+L205:             {
+L206:                     // shift the result to get it ready for the next bit
+L207:                     result >>= 1;
+L208: 
+L209:                     // if result is one, then set MS bit
+L210:                     if (OWReadBit())
+L211:                             result |= 0x80;
+L212:             }
+L213:             return result;
+L214:     }
+L215: 
+L216:     //-----------------------------------------------------------------------------
+L217:     // Write a 1-Wire data byte and return the sampled result.
+L218:     //
+L219:     int OWTouchByte(int data)
+L220:     {
+L221:             int loop, result=0;
+L222: 
+L223:             for (loop = 0; loop < 8; loop++)
+L224:             {
+L225:                     // shift the result to get it ready for the next bit
+L226:                     result >>= 1;
+L227:                     // If sending a '1' then read a bit else write a '0'
+L228:                     if (data & 0x01)
+L229:                     {
+L230:                             if (OWReadBit())
+L231:                                     result |= 0x80;
+L232:                     }
+L233:                     else
+L234:                             OWWriteBit(0);
+L235: 
+L236:                     // shift the data byte for the next bit
+L237:                     data >>= 1;
+L238:             }
+L239:             return result;
+L240:     }
+L241:     //-----------------------------------------------------------------------------
+L242:     // Write a block 1-Wire data bytes and return the sampled result in the same
+L243:     // buffer.
+L244:     //
+L245:     void OWBlock(unsigned char *data, int data_len)
+L246:     {
+L247:             int loop;
+L248: 
+L249:             for (loop = 0; loop < data_len; loop++)
+L250:             {
+L251:                     data[loop] = OWTouchByte(data[loop]);
+L252:             }
+L253:     }
+L254: 
+L255:     //-----------------------------------------------------------------------------
+L256:     // Set all devices on 1-Wire to overdrive speed. Return '1' if at least one
+L257:     // overdrive capable device is detected.
+L258:     //
+L259:     int OWOverdriveSkip(unsigned char *data, int data_len)
+L260:     {
+L261:             // set the speed to 'standard'
+L262:             SetSpeed(1);
+L263: 
+L264:             // reset all devices
+L265:             if (OWTouchReset()) // Reset the 1-Wire bus
+L266:                     return 0; // Return if no devices found
+L267: 
+--------------------------------------------------------------------------------
+Reading and Writing 1-Wire® Devices Through Serial Interfaces | Analog Devices (https://www.analog.com/en/resources/app-notes/reading-and-writing-1wirereg-devices-through-serial-interfaces.html)
+citeturn547view1 [wordlim: 200] Crawled: today; Content type: text/html; Source: open({"ref_id":"turn545view2","lineno":37}); Total lines: 158
+L13: The first 1-Wire devices, the DS199x series, were produced in SRAM technology. Next the nonvolatile EPROM technology became available, and the DS198x and DS250x series devices were released. These EPROM devices need a 12V programming pulse and are not erasable. The next leap forward was EEPROM technology, which allows programming and erasing at 5V or less. EEPROM technology is found in DS197x, DS243x and DS28Exx series devices.
+L14: To ensure proper power, EEPROM devices may need a master that supports "strong pullup", a feature that temporarily bypasses the 1-Wire pullup resistor with a low-impedance path. The extra power is needed for write cycles and, in case of the cite3†DS1977 , also for reading. Besides EEPROM devices, the strong pullup also powers 1-Wire temperature sensors and special functions such as a SHA-1 engine, which is found in secure 1-Wire devices.
+L15: Temperature logger i Buttons^{®} use SRAM technology and, therefore, do not have any special, external power requirements.
+L16: ### The 1-Wire Interface
+L17: #### General Information
+L18: 1-Wire is the only voltage-based digital system that works with two contacts, data and ground, for half-duplex bidirectional communication. A 1-Wire system consists of a single 1-Wire master and one or more 1-Wire slaves. The 1-Wire concept relies both on a master that initiates digital communication, and on self-timed 1-Wire slave devices that synchronize to the master's signal. The timing logic of master and slave must measure and generate digital pulses of various widths.
+L19: When idle, a high-impedance path between the 1-Wire bus and the operating voltage puts the 1-Wire bus in the logic-high state. Each device on the bus must be able to pull the 1-Wire bus low at the appropriate time by using an open-drain output (wired AND). If a transaction needs to be suspended for any reason, the bus must be left in the idle state so the transaction can resume.
+L20: #### Operating Voltage
+L21: Most 1-Wire slave devices operate over the voltage range of 2.8V (min) to 5.25V (max). With few exceptions, 1-Wire devices have no pin for power supply; they take their energy from the 1-Wire bus (parasitic supply) or from an embedded battery (some i Buttons). The parasitic supply uses an on-chip capacitor (device specific, 800pF or more) and a diode in series with a resistor to tap energy from the 1-Wire bus when the bus voltage is higher than the voltage at the capacitor.
+L22: For the parasite power supply to function properly, the conditions specified in the 1-Wire device data sheets (i.e., V_{PUP}, R_{PUP}, t_{REC}) must be met. The recovery time values apply to a network with one slave. For multiple-slave networks, the recovery time needs to be extended; alternatively one could lower the pullup resistor value or change to a 1-Wire master with active pullup.
+L23: For further reading on this matter refer to application note 3829, "cite4†Determining the Recovery Time for Multiple-Slave 1-Wire Networks. "
+L24: #### Extra Energy
+L25: Usually, the parasitic supply provides enough energy for communication, i.e., addressing and reading from a 1-Wire device as well as writing to SRAM-based devices. Additional energy is required for writing to EEPROMs, reading the DS1977 32KB EEPROM i Button, and using special functions such as temperature converters or running a SHA-1 engine. This energy is to be delivered at certain times in the protocol when the 1-Wire bus is idle.
+L26: Application note 4255, "cite5†How to Power the Extended Features of 1-Wire^{®} Devices ," lists these devices and describes different ways to ensure proper power delivery.
+L27: #### 1-Wire Speeds
+L28: 
+L29: Early 1-Wire devices and UART-based master circuits communicated at a speed of up to 16.3kbps, which is now called "standard speed." To reduce the time needed to read a 64Kbit memory i Button to less than 1 second, a high-speed mode called "overdrive" was added. Almost all 1-Wire devices developed in recent years support overdrive.
+L30: ### 1-Wire Timing
+L31: 
+L32: Data sheets descriptions of 1-Wire timing have changed over time. Most 1-Wire data-sheet descriptions fall into two categories: legacy style (the vast majority), and new style.
+L33: The new-style timing description distinguishes between the perspective of the master and the slave. This approach was introduced in conjunction with a new 1-Wire front-end. (See application note 3925, "cite6†1-Wire Extended Network Standard .") The new style specifies master's requirements as a result of slave performance, and also takes into account the impact of rise and fall times on the 1-Wire bus.
+L34: The legacy style of description places more emphasis on the slave's performance, which occasionally has been misinterpreted. Both descriptive styles use slightly different names for the same parameter (Table 1); not all parameters of one style have a direct match in the other style. In the new style, the recovery time is included in the length of a time slot; in the legacy style, the recovery time is not included.
+L35: Besides these two styles, some data sheets in the DS27xx and DS18xx series use a less-detailed variant of the legacy style. Data sheets of the cite7†DS1921 series adapted the new style to parts that do not have the new 1-Wire front-end.
+L36: The following sections review the timing description in both styles.
+L37: Table 1. Parameters that describe the 1-Wire interface
+L38: Symbol  | Description
+L39: New Style  | Legacy Style
+L40: R_{PUP}  | —  | Pullup resistor (value not specified in legacy style)
+L41: V_{PUP}  | V_{PULLUP}  | 1-Wire pullup voltage
+L42: —  | V_{PULLUP MIN}  | Minimum permissible pullup voltage
+L43: —  | V_{IH MIN}  | Minimum slave-input high voltage
+L44: V_{ILMAX}  | V_{IL MAX}  | Slave's maximum-input low voltage
+L45: V_{IHMASTER}  | —  | Minimum master-input high voltage
+L46: V_{TL}  | —  | Slave's falling-edge switching threshold (new front-end)
+L47: V_{TH}  | —  | Slave's rising-edge switching threshold (new front-end)
+L48: V_{HY}  | —  | Slave's rising-edge switching hysteresis (new front-end)
+L49: t_{F}  | —  | Duration of the falling edge of a master-initiated 1-Wire activity
+L50: t_{RSTL}  | t_{RSTL}  | Reset low time
+L51: ε  | —  | Duration of the rising edge on the 1-Wire bus from 0V to V_{TH} (new front-end)
+L52: —  | t_{R}  | Duration of the rising edge on the 1-Wire bus from V_{IL MAX} to V_{IH MIN}
+L53: t_{PDH}  | t_{PDH}  | Presence-detect high time
+L54: t_{PDL}  | t_{PDL}  | Presence-detect low time
+L55: t_{FPD}  | —  | Presence-pulse fall time (some devices with new front-end)
+L56: t_{MSP}  | —  | Presence-detect sample time, derived from slave performance
+L57: t_{REH}  | —  | Rising-edge hold-off time (new front-end)
+L58: —  | t_{RSTH}  | Reset high time (N/A for the new front-end)
+L59: t_{W1L}  | t_{LOW1}  | Write-one low time
+L60: t_{W0L}  | t_{LOW0}  | Write-zero low time
+L61: t_{REC}  | t_{REC}  | Recovery time
+L62: t_{RL}  | t_{LOWR}  | Read low time, derived from slave performance
+L63: —  | t_{SU}  | Read data setup time
+L64: —  | t_{RDV}  | Minimum time for which data is valid in a read data time slot
+L65: —  | t_{RELEASE}  | Additional time for which data could be valid in a read data time slot
+L66: t_{MSR}  | —  | Read sample time, derived from slave performance
+L67: δ  | —  | Duration of the rising edge on the 1-Wire bus from 0V to V_{IHMASTER}
+L68: t_{SLOT}  | t_{SLOT}  | Legacy style: time to communicate one bit excluding recovery time;
+L69: New style: time to communicate one bit including recovery time
+L70: ### New-Style Timing Description
+L71: #### Reset and Presence Detect
+L72: 1-Wire communication begins with a reset-/presence-detect cycle (Figure 1). To get from idle to active, the voltage on the 1-Wire bus must fall from V_{PUP} below the threshold, V_{TL}. To get from active to idle, the voltage needs to rise from V_{ILMAX} past the threshold, V_{TH}. The time it takes for the voltage to make this rise is seen in Figure 1 as "ε," and its duration depends both on the pullup resistor, R_{PUP}, used and the capacitance of the 1-Wire network attached.
+L73: The voltage V_{ILMAX} is relevant for the slave when determining a logical level, not for triggering any events.
+L74: If the master uses slew-rate control on the falling edge, the master must pull down the line for t_{RSTL} + t_{F} to compensate for the edge. A t_{RSTL} duration of 480µs or longer exits the Overdrive Mode, returning the device to standard speed. If a slave is in Overdrive Mode and t_{RSTL} is no longer than 80µs, the device remains in Overdrive Mode. If a slave is in Overdrive Mode and t_{RSTL} is between 80µs and 480µs, the device will reset but the communication speed is undetermined.
+L75: After the bus master has released the line, it goes into receive mode. Now the 1-Wire bus is pulled to V_{PUP} through the pullup resistor. When the threshold, V_{TH}, is crossed, the slave waits for t_{PDH} and then transmits a presence pulse by pulling the line low for t_{PDL}. To detect a presence pulse, the master must test the logical state of the 1-Wire line at t_{MSP}. The t_{RSTH} window must be at least the sum of t_{PDHMAX}, t_{PDLMAX}, and t_{RECMIN}.
+L76: Immediately after t_{RSTH} is expired, a slave with the new front-end is ready for data communication.
+L77: cite8†Image: Figure 1. Reset and presence pulse. L78: 
+L79: Figure 1. Reset and presence pulse.
+L80: #### Read/Write Time Slots
+L81: 
+L82: After the reset-/presence-detect cycle is completed, a 1-Wire slave is ready for communication using time slots. Each time slot carries a single bit. Write time slots transport data from the bus master to a slave. Read time slots transfer data from a slave to the master. Figure 2 illustrates the definitions of the write and read time slots.
+L83: A time slot begins with the master pulling the data line low. As the voltage on the 1-Wire line falls below the threshold, V_{TL}, a slave starts its internal timing generator, which determines when the data line is sampled during a write time slot and how long data is valid during a read time slot.
+L84: #### Master-to-Slave
+L85: 
+L86: For a write-one time slot, the voltage on the data line must have crossed the V_{TH} threshold before the write-one low time, t_{W1LMAX}, is expired. For a write-zero time slot, the voltage on the data line must stay below the V_{TH} threshold until the write-zero low time, t_{W0LMIN}, is expired. After the V_{TH} threshold has been crossed, a slave needs a recovery time, t_{REC}, before it is ready for the next time slot.
+L87: 
+L88: cite9†Image: Figure 2. Read/write timing diagram. L89: Figure 2. Read/write timing diagram.
+L90: #### Slave-to-Master
+L91: A read-data time slot begins like a write-one time slot. The voltage on the data line must remain below V_{TL} until the read-low time, t_{RL}, is expired. During the t_{RL} window, when responding with a 0, a slave starts pulling the data line low; its internal timing generator determines when this pulldown ends and the voltage starts rising again. When responding with a 1, a slave does not hold the data line low, and the voltage starts rising as soon as t_{RL} is over.
+L92: The sum of t_{RL} + δ (rise time) on one side and the internal timing generator of the slave on the other side define the master sampling window, t_{MSRMIN} to t_{MSRMAX}, in which the master must perform a read from the data line. After reading from the data line, the master must wait until t_{SLOT} is expired.
+L93: #### Improved Network Behavior
+L94: In a 1-Wire environment, line termination is possible only during transients controlled by the bus master (1-Wire driver). 1-Wire networks, therefore, are susceptible to noise from various origins. Depending on the physical size and topology of the network, reflections from end points and branch points can add up, or cancel each other to some extent. Such reflections are visible as glitches or ringing on the 1-Wire communication line.
+L95: Noise coupled onto the 1-Wire line from external sources can also result in signal glitching. A glitch during the rising edge of a time slot can cause a slave device to lose synchronization with the master and, consequently, result in a search ROM command coming to a dead end or cause a device-specific function command to abort.
+L96: To achieve better performance in network applications, the new 1-Wire front-end was developed, which is less sensitive to noise. This new 1-Wire front-end implements the first two, or more, of the following features. Device data sheets use the parameters t_{REH} and t_{FPD} to indicate whether features 3 and 4 are implemented.
+L97:   1. There is additional lowpass filtering in the circuit that detects the falling edge at the beginning of a time slot. This additional filtering does not apply at overdrive speed.
+L98:   2. There is a hysteresis at the low-to-high switching threshold, V_{TH}. If a negative glitch crosses V_{TH} but does not go below V_{TH} - V_{HY}, it will not be recognized (Figure 3a). The hysteresis is effective at any 1-Wire speed.
+L99:   3. (Optional) There is a time window specified by the rising-edge hold-off time, t_{REH}, during which glitches are ignored, even if they extend below the V_{TH} - V_{HY} threshold (Figure 3b, t_{GL} < t_{REH}). Deep voltage droops or glitches that appear late after crossing the V_{TH} threshold and extend beyond the t_{REH} window cannot be filtered out; they are understood as the beginning of a new time slot (Figure 3c, t_{GL} ≥ t_{REH}).
+L100:   4. (Optional) The falling edge of the presence pulse has a controlled slew rate. This provides a better match to the line impedance than a digitally switched transistor. It converts the high-frequency ringing found in traditional devices into a smoother low-bandwidth transition. The slew-rate control is specified by the parameter t_{FPD}, which has different values for standard and overdrive speed.
+L101: cite10†Image: Figure 3. Noise suppression scheme. L102: 
+L103: Figure 3. Noise suppression scheme.
+L104: 
+L105: The new 1-Wire front-end is also referred to as the 1-Wire Extended Network Standard. Application note 3925 (see above under 1-Wire Timing) shows the differences in the timing specifications compared to earlier 1-Wire devices, and includes a table of devices that have the new front-end.
+L106: ### Legacy Style Description
+L107: #### Reset and Presence Detect
+L108: 
+L109: The reset pulse provides a clear starting condition that supersedes any time-slot synchronization. The reset pulse is defined as a single low pulse with a duration of t_{RSTL} followed by a reset-high time, t_{RSTH} (Figure 4). After a reset pulse has been sent, the 1-Wire device waits for the time t_{PDH} and then generates a presence pulse of duration t_{PDL}. No other communication on the 1-Wire bus is allowed during t_{RSTH}.
+L110: cite11†Image: Figure 4. Legacy reset and presence pulse. L111: 
+L112: Figure 4. Legacy reset and presence pulse.
+L113: #### Read/Write Time Slots
+L114: 
+L115: Commands and data are sent to 1-Wire devices by combining write-one and write-zero time slots (Figure 5). To read data, the master has to generate read-data time slots to define the start condition of each bit.
+L116: #### Master-to-Slave
+L117: 
+L118: The duration of a low pulse to write a 1 is t_{LOW1}. To write a 0, the duration of the low pulse is t_{LOW0}. At the end of the active part of each time slot, 1-Wire devices need a recovery time, t_{REC}, to prepare for the next bit. This recovery time is the inactive part of a time slot, since it must be added to the duration of the active part to obtain the time it takes to transfer one bit.
+L119: #### Slave-to-Master
+L120: The read-data time slot looks essentially the same as the write-1 time slot from the master's point of view. Starting at the high-to-low transition, the slave sends a single bit of its addressed contents. If the data bit is a 1, the slave leaves the pulse unchanged. If the data bit is a 0, the slave pulls the data line low for t_{RDV} (Figure 5). In this time frame the data is valid for reading by the master.
+L121: Following t_{RDV} there is an additional time interval, t_{RELEASE}, after which the slave releases the 1-Wire line so that its voltage can return to V_{PULLUP}.
+L122: cite12†Image: Figure 5. Legacy read/write timing diagram. L123: 
+L124: Figure 5. Legacy read/write timing diagram.
+L125: ### Mixing New Front-End Parts with Legacy Parts
+L126: 1-Wire devices with new and legacy front-ends can share the same 1-Wire bus. Since the parameters describing the 1-Wire timing for the new and the old front-end differ somewhat, it is not obvious how to determine a compatible set of timing parameters for the master. Table 2 recommends how to accomplish this task.
+L127: When using the spreadsheet of application note 126, "cite13†1-Wire^{®} Communication Through Software ," these parameters are required as input to calculate the duration of various segments that implement 1-Wire communications. Since the more recent application notes use the terminology of the new front-end, Table 2 is also helpful when working with self-timed 1-Wire masters that connect to a UART, I²C bus, or USB port.
+

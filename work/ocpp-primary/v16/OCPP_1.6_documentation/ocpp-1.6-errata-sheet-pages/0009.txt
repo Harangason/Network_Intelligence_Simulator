@@ -1,0 +1,33 @@
+Outlet (3 phases per connector on both its connectors). Current.Import is set in MeterValuesSampledData.
+MeterValueSampleInterval is set to 300 (seconds). Then the Charge Point should send:
+• a MeterValue.req with: connectorId = 0; with 3 SampledValue elements, one per phase with location =
+Inlet.
+• a MeterValue.req with: connectorId = 1; with 3 SampledValue elements, one per phase with location =
+Outlet.
+• a MeterValue.req with: connectorId = 2; with 3 SampledValue elements, one per phase with location =
+Outlet.
+3.14.4 Unsupported measurands
+When a Central System sends a ChangeConfiguration.req to a Charge Point with one of the following
+configuration keys:
+• MeterValuesAlignedData
+• MeterValuesSampledData
+• StopTxnAlignedData
+• StopTxnSampledData
+If the comma separated list contains one or more measurands that are not supported by this Charge Point, the
+Charge Point SHALL respond with: ChangeConfiguration.conf with: status = Rejected. No changes SHALL be
+made to the currently configuration.
+Added in errata sheet v3.0
+3.14.5 No metering data in a Stop Transaction
+When the configuration keys: StopTxnAlignedData and StopTxnSampledData are set to an empty string, the
+Charge Point SHALL NOT put meter values in a StopTransaction.req PDU.
+3.14. Page 31, section: 3.16.5: Missing description of Start and Stop MeterValues in
+StopTransaction.req
+Added in errata sheet v4.0
+Additional Section should have been added to 3.16:
+3.16.6 Start and Stop MeterValues in StopTransaction.req
+When the Charge Point is configured to provide metering data in the StopTransaction.req, the Charge Point is
+RECOMMENDED to always provide the start (Transaction.Begin) and stop (Transaction.End) values of every
+measurand configured.
+If the Charge Point has to drop meter values because it is running out of memory, it is RECOMMENDED not to
+drop the start and stop values.
+8

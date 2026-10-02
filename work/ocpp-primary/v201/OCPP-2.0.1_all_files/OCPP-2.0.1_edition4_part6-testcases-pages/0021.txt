@@ -1,0 +1,54 @@
+TC_A_23_CS: Update Charging Station Certificate by request of CSMS -
+CertificateSignedRequest Timeout
+Test case name Update Charging Station Certificate by request of CSMS - CertificateSignedRequest Timeout
+Test case Id TC_A_23_CS
+Use case Id(s) A02 & F06
+Requirement(s) A02.FR.17,A02.FR.18
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to update its charging station certificate using the
+TriggerMessageRequest message.
+Purpose To verify if the Charging Station is able to send a new signCertificateRequest when it did not receive a
+certificateSignedRequest after the configured timeout. CSMS will after a delay send a
+CertificateSignedRequest for each SignCertificateRequest that it has accepted.
+Prerequisite(s) - The charging station supports security profile 3
+- The Charging Station supports the CertificateSignedRequest Timeout feature
+Before (Preparations)
+Configuration State:
+SecurityCtrlr.CertSigningWaitMinimum is <Configured CertSigningWaitMinimum>
+SecurityCtrlr.CertSigningRepeatTimes is 1
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+TriggerMessageResponse
+1. The Test System sends a TriggerMessageRequest
+With requestedMessage SignChargingStationCertificate
+3 The Charging Station sends a SignCertificateRequest
+4. The Test System responds with a SignCertificateResponse
+With status Accepted
+5. The Test System does NOT send the
+CertificateSignedRequest and waits for the
+SignCertificateRequest to be resend after the <Configured
+CertSigningWaitMinimum>
+6 The Charging Station sends a SignCertificateRequest
+7. The Test System responds with a SignCertificateResponse
+With status Accepted
+8. The Test System does NOT send the
+CertificateSignedRequest and waits for the
+SignCertificateRequest to be resend after the <Configured
+CertSigningWaitMinimum> times 2
+9 The Charging Station sends a SignCertificateRequest
+10. The Test System responds with a SignCertificateResponse
+With status Accepted
+12. The Charging Station responds with a
+CertificateSignedResponse
+11. The Test System sends a CertificateSignedRequest
+With certificateChain <Certificate generated from the received
+CSR from step 3 and signed by the provided CSMS Root
+certificate>
+certificateType ChargingStationCertificate
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 19/914 Part 6 - Test Cases

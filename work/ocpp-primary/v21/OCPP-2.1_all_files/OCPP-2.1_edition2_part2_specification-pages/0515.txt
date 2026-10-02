@@ -1,0 +1,29 @@
+Figure 184. Example P/F table
+# example FCR table
+"v2xFreqWattCurve": [{47,-10000}, {49.80,-10000}, {49.99,-500}, {49.991,0},
+{50,0}, {50.009,0}, {50.01,500}, {50.20,10000}, {53,10000}]
+aFRR
+The second form of balancing energy is automatic Frequency Restoration Reserve (aFRR). As the secondary reserve, aFRR
+gradually replaces FCR after 30 seconds. Once activated by the grid operator, the power must be fully available within 15 minutes,
+with a certain minimum ramp rate (e.g. 20%) of the offered power/min, and be able to follow a new setpoint every few seconds. It is
+therefore the most demanding balancing reserve product. Operators with sufficiently large energy generation or consumption can
+offer both upward and downward aFRR.
+The aFRR capacity is activated by a signal from the TSO to the CSO. The signal is passed on to affected charging stations via the
+AFRRSignalRequest message. The amount of upward or downward aFRR for a charging station is set in the v2xSignalWattCurve
+element in the ChargingSchedulePeriodType.
+# example aFRR table
+"v2xSignalWattCurve": [{-1,-2000}, {0, 0}, {1,2000}]
+CentralFrequency
+CentralFrequency is similar to LocalFrequency, only in this case the setpoint for frequency support is determined by the CSMS. This
+is used, for instance, when costly calibrated frequency measurements are to be used that can not be installed in each charging
+station. This needs to be used in a charging profile with chargingProfileKind = Dynamic, such that CSMS can continually update the
+setpoint when the frequency changes via the UpdateDynamicScheduleRequest.
+When the charging station does not receive a new setpoint within time, then the charging profile terminates, allowing the charging
+station to fall back to a charging profile with a lower stack level with a different operation mode.
+LocalLoadBalancing
+This operation mode allows an EV to be utilized for load balancing, for example for a building that both consumes energy and
+produces energy from solar panels.
+Because the charging station can read the smart energy meter of the building, the charging station and EV setup can influence the
+resulting load on the grid connection.
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 502/803 Part 2 - Specification

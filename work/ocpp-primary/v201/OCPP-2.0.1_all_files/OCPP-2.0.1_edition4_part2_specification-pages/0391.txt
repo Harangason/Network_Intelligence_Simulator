@@ -1,0 +1,50 @@
+Class
+Field Name Field Type Card. Description
+requestId integer 1..1 Required. Id used to match the
+GetChargingProfilesRequest message with the resulting
+ReportChargingProfilesRequest messages. When the
+CSMS provided a requestId in the
+GetChargingProfilesRequest, this field SHALL contain the
+same value.
+chargingLimitSource ChargingLimitSourceEnumType 1..1 Required. Source that has installed this charging profile.
+tbc boolean 0..1 Optional. To Be Continued. Default value when omitted:
+false. false indicates that there are no further messages
+as part of this report.
+evseId integer 1..1 Required. The evse to which the charging profile applies.
+If evseId = 0, the message contains an overall limit for the
+Charging Station.
+chargingProfile ChargingProfileType 1..* Required. The charging profile as configured in the
+Charging Station.
+1.43.2. ReportChargingProfilesResponse
+The ReportChargingProfilesResponse message is sent by the CSMS to the Charging Station in response to a
+ReportChargingProfilesRequest. No fields are defined.
+1.44. RequestStartTransaction
+1.44.1. RequestStartTransactionRequest
+This contains the field definitions of the RequestStartTransactionRequest PDU sent to Charging Station by CSMS.
+Class
+Field Name Field Type Card. Description
+evseId integer 0..1 Optional. Number of the EVSE on which to start the
+transaction. EvseId SHALL be > 0
+remoteStartId integer 1..1 Required. Id given by the server to this start request. The
+Charging Station will return this in the
+TransactionEventRequest, letting the server know which
+transaction was started for this request.
+idToken IdTokenType 1..1 Required. The identifier that the Charging Station must
+use to start a transaction.
+chargingProfile ChargingProfileType 0..1 Optional. Charging Profile to be used by the Charging
+Station for the requested transaction.
+ChargingProfilePurpose MUST be set to TxProfile
+groupIdToken IdTokenType 0..1 Optional. The groupIdToken is only relevant when the
+transaction is to be started on an EVSE for which a
+reservation for groupIdToken is active, and the
+configuration variable AuthorizeRemoteStart = false
+(otherwise the AuthorizeResponse could return the
+groupIdToken).
+1.44.2. RequestStartTransactionResponse
+This contains the field definitions of the RequestStartTransactionResponse PDU sent from Charging Station to CSMS.
+Class
+Field Name Field Type Card. Description
+status RequestStartStopStatusEnumType 1..1 Required. Status indicating whether the Charging Station
+accepts the request to start a transaction.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 381/491 Part 2 - Specification

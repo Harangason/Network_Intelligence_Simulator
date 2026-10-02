@@ -1,0 +1,42 @@
+NXP Semiconductors PN7160_PN7161
+Near Field Communication (NFC) controller
+sequence of eight clock cycles. Since the controller device generates SCK, this line becomes an input on a
+target device and an output at the controller device.
+• Not Target Select (NSS)
+The target select input line is used to select a target device. It has to be low prior to data transactions and
+must stay low of the duration of the transaction. The NSS line on controller side must be tied high.
+Both controller and target devices must operate with the same timing. The controller device always places data
+on the MOSI line a half cycle before the clock edge SCK, in order for the target device to latch the data.
+For more information about the SPI-bus functionality, see ref.[5].
+11.3  PN7160 clock concept
+There are 4 different clock sources in PN7160:
+• 27.12 MHz clock coming either/or from:
+– Internal oscillator for 27.12 MHz crystal connection on NFC_CLK_XTAL1 and XTAL2 pins
+– External reference clock on pin NFC_CLK_XTAL1. It is internally forwarded to an integrated PLL which
+includes a 1 GHz VCO.
+• 13.56 MHz RF clock recovered from RF field
+• Low-power oscillator 40 MHz
+• Low-power oscillator 370 kHz
+11.3.1  27.12 MHz quartz oscillator
+When enabled, the 27.12 MHz quartz oscillator applied to PN7160 is the time reference for the RF front end
+when PN7160 is behaving in Reader mode or NFCIP-1 Initiator.
+Therefore stability of the clock frequency is an important factor for reliable operation. It is recommended to
+adopt the circuit shown in Figure 11.
+aaa-041133
+NFCC
+NFC_CLK_XTAL1 XTAL2
+crystal
+27.12 MHz cc
+Figure 11. 27.12 MHz crystal oscillator connection
+Table 17 describes the levels of accuracy and stability required on the crystal.
+Symbol Parameter Conditions Min Typ Max Unit
+fxtal crystal frequency ISO/IEC, FCC and FeliCa
+global compliancy
+- 27.12 - MHz
+Δfxtal crystal frequency accuracy full operating range [1] -50 - +50 ppm
+ESR equivalent series resistance - 50 100 Ω
+CL load capacitance - 10 - pF
+Table 17. Crystal requirements
+PN7160_PN7161 All information provided in this document is subject to legal disclaimers. © 2026 NXP B.V. All rights reserved.
+Product data sheet Rev. 4.2 — 22 July 2026 Document feedback
+25 / 70

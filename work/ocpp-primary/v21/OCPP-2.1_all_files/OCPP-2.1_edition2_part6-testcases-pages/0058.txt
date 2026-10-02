@@ -1,0 +1,47 @@
+TC_B_20_CS: Reset Charging Station - Without ongoing transaction - OnIdle
+Test case name Reset Charging Station - Without ongoing transaction - OnIdle
+Test case Id TC_B_20_CS
+Use case Id(s) B11
+Requirement(s) B11.FR.01, B11.FR.03, B11.FR.04, B01.FR.03
+System under test Charging Station
+Description This test case covers how the CSMS can request the Charging Station to reset itself by sending a
+ResetRequest without any ongoing transaction. This could for example be necessary if the Charging Station
+is not functioning correctly.
+Purpose To verify if the Charging Station is able to perform the reset mechanism as described at the OCPP
+specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ResetResponse
+1. The Test System sends a ResetRequest
+with type OnIdle
+Note(s):
+- Charging Station reboots
+3. The Charging Station sends a BootNotificationRequest
+4. The Test System responds with a BootNotificationResponse
+with status Accepted
+5. The Charging Station notifies the CSMS about the current
+state of all connectors. 6. The Test System responds accordingly.
+Tool validations
+* Step 2:
+Message ResetResponse
+- status Accepted
+* Step 5:
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Available"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 56/1383 Part 6 - Test Cases

@@ -1,0 +1,61 @@
+Main (Test scenario)
+18. The Charging Station responds with
+SetDefaultTariffResponse
+17. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System4
+tariff.currency EUR
+repeat next <TariffMaxElements> times with counter <i> starting
+at 0
+tariff.energy.prices[i].priceKwh 1.00
+repeat next <TariffMaxElements> times with counter <i> starting
+at 0
+tariff.chargingTime.prices[i].priceMinute 1.00
+repeat next <TariffMaxElements> times with counter <i> starting
+at 0
+tariff.idleTime.prices[i].priceMinute 1.00
+repeat next <TariffMaxElements> times with counter <i> starting
+at 0
+tariff.fixedFee.prices[i].priceFixed 1.00
+20. The Charging Station responds with
+SetDefaultTariffResponse
+19. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System4
+tariff.currency EUR
+tariff.energy.prices[i].priceKwh 2.00
+Tool validations
+* Step 2:
+Message GetVariablesResponse
+- getVariableResult[0].component.name = TariffCostCtrlr
+- getVariableResult[0].variable.name = MaxElements
+- getVariableResult[0].variable.instance Tariff
+* Step 4:
+Message SetDefaultTariffResponse
+- status must be TooManyElements
+* Step 6:
+Message SetDefaultTariffResponse
+- status must be Accepted
+* Step 8:
+Message SetDefaultTariffResponse
+- status must be TooManyElements
+* Step 10:
+Message SetDefaultTariffResponse
+- status must be Accepted
+* Step 12:
+Message SetDefaultTariffResponse
+- status must be TooManyElements
+* Step 14:
+Message SetDefaultTariffResponse
+- status must be Accepted
+* Step 16:
+Message SetDefaultTariffResponse
+- status must be TooManyElements
+* Step 18:
+Message SetDefaultTariffResponse
+- status must be Accepted
+* Step 20:
+Message SetDefaultTariffResponse
+- status must be DuplicateTariffId
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 411/1383 Part 6 - Test Cases

@@ -1,0 +1,47 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  85 
+Line Period (Per Lane)  = Frame Period/Total Lines 
+   = 16.666 ms/1080 
+   = 15.43148 µs 
+ 
+Total Horizontal Bytes  = Line Period (Per Lane)/Byte Clock Period 
+   = 15.43148 µs/8.77193 ns 
+   = 1759 bytes 
+ 
+Horizontal Blanking Bytes (Per Lane) = Total Horizontal Bytes – Active Horizontal Bytes 
+      = 1759 – 1200 
+      = 559 bytes 
+ 
+The horizontal blanking bytes calculated in the example is the theoretical value however the actual additional 
+horizontal blanking line duration required is much less because of the overheads within a single active line 
+transmission. The overheads are as follows: 
+• HS burst for short packets (Line Start and Line End) 
+• 4 Bytes of packet header for each short and long packet 
+• 2 Bytes of CRC for each long packet 
+• HS to LP state transition (SoT sequence overhead for each HS burst, EoT sequence overhead for each HS burst, and 
+minimum duration in LP-11 state between each HS burst) 
+• TX data path logic delays 
+For details on the timing duration imposed during each HS to LP state transition, refer to the MIPI CSI/DSI TX Protocol 
+Timing Parameters section based on the current configuration in TX. 
+To determine the actual horizontal blanking line duration required, configure the values as follows: 
+• Number of Vertical Blanking Lines Per Frame (IP Wizard GUI) or NUM_LINE_V_BLANKING field (CONFIG_REG1)—
+Set to 0. 
+• Number of Horizontal Active Bytes in Byte Clock Domain (IP Wizard GUI) or NUM_BYTES_ACTIVE_H field 
+(CONFIG_REG2)—Set to 1200 bytes. 
+• Number of Horizontal Blanking Bytes in Byte Clock Domain (IP Wizard GUI) or H_BLANKING_BYTES_TH field 
+(CONFIG_REG1)—Set to the theoretical value in the example calculation. 
+With the initial configuration settings in the example, trigger the IP simulation and analyze the horizontal line blanking 
+duration in the LP-11 state between the Line End HS burst and next Line Start HS burst. For shorter simulation time, run 
+the IP simulation with a small number of lines during initial blanking period calibration. 
+The following IP simulation waveform diagram shows the minimum vertical frame blanking period with LP-11 state 
+between Frame End and the next Frame Start short packet. 
+ 
+Figure 9.1. Minimum Vertical Frame Blanking between Frame End and the Next Frame Start HS Burst Short Packet 
+(Number of Vertical Blanking Lines Per Frame = 0) 
+The following IP simulation waveform diagram shows the horizontal line blanking period of LP-11 state between Line 
+End and the next Line Start short packet. 

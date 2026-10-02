@@ -1,0 +1,57 @@
+TC_L_13_CS: Secure Firmware Update - Unable to download/install firmware with
+ongoing transaction - AllowNewSessionsPendingFirmwareUpdate is false
+Test case name Secure Firmware Update - Unable to download/install firmware with ongoing transaction -
+AllowNewSessionsPendingFirmwareUpdate is false
+Test case Id TC_L_13_CS
+Use case Id(s) L01
+Requirement(s) L01.FR.01,L01.FR.06,L01.FR.07,L01.FR.10,L01.FR.20
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to securely download and install a new firmware by
+sending an UpdateFirmwareRequest with a signingCertificate.
+Purpose To verify if the Charging Station is able to set its available connectors to Unavailable when requested to
+update the firmware, while there is an ongoing transaction.
+Prerequisite(s) - A file server has been setup according to the (by the Charging Station) supported file transfer protocol(s),
+indicated by the configuration variable FileTransferProtocols.
+- The configuration variable AllowNewSessionsPendingFirmwareUpdate is implemented.
+- The Charging Station is unable to download AND install firmware while there is an ongoing transaction.
+Before (Preparations)
+Configuration State:
+AllowNewSessionsPendingFirmwareUpdate is false
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+UpdateFirmwareResponse
+With status Accepted
+1. The Test System sends a UpdateFirmwareRequest
+with firmware.installDateTime <Current DateTime - 2 hours>
+firmware.location <Configured firmware_location>
+firmware.retrieveDateTime <Current DateTime - 2 hours>
+firmware.signingCertificate <Configured signingCertificate>
+firmware.signature <Configured signature>
+3. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status DownloadScheduled
+Note: This step is optional. Part 2 specification only describes
+that this status needs to be send in case the retrieveDateTime is
+in the future. However it is also allowed to send this status if the
+Charging Station schedules the firmware download, because of
+an ongoing transaction.
+4. The Test System responds with a
+FirmwareStatusNotificationResponse
+5. The Charging Station notifies the CSMS about the current
+state of its Available connector(s).
+Note(s):
+- This step needs to be executed for all connectors with
+AvailabilityState Available.
+6. The Test System responds accordingly.
+7. Execute Reusable State ParkingBayUnoccupied for <Configured connectorId>
+Note(s):
+- The Charging Station will proceed to this end state. This will cause the transaction to stop.
+- The Charging Station will start the firmware update process the moment the transaction ends or when all interactions with the EV
+Driver are done (So after the cable has been unplugged, if there is no parking bay sensor).
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 415/914 Part 6 - Test Cases

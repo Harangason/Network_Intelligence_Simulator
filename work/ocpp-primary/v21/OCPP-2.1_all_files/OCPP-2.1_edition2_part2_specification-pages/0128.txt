@@ -1,0 +1,47 @@
+C12 - Start Transaction - Cached Id
+No. Type Description
+1 Name Start Transaction - Cached Id
+2 ID C12
+3 Objective(s) To enable the EV Driver to Online start a transaction by using the Authorization Cache. So the
+Charging Station can respond faster, as no AuthorizeRequest is being sent.
+4 Description This use case describes how the EV Driver is authorized to start a transaction while the Charging
+Station uses Cached IdToken.
+Actors Charging Station, CSMS, EV Driver
+Scenario description 1. The EV Driver plugs in the cable.
+2. The Charging Station starts the transaction.
+3. The EV Driver presents an IdToken.
+4. The Charging Station verifies the IdToken with the Authorization Cache.
+5. The Charging Station updates the transaction.
+6. The Charging Station starts charging.
+7. E02 - Start Transaction - Cable Plugin First applies.
+5 Prerequisite(s) AuthCacheEnabled = true
+LocalPreAuthorize = true
+The Id of the EV Driver is Cached in the Authorization Cache
+Id is valid
+6 Postcondition(s) Successful postcondition:
+The EV Driver is authorized to start a transaction by using the Authorization Cache.
+Failure postcondition:
+The UserId was not found in the Authorization Cache and:
+* Online Charging Station: the Charging Station issues an AuthorizeRequest and that fails too. 
+* In an offline situation, behaviour of the Charging Station is defined by Configuration Variable
+OfflineTxForUnknownIdEnabled.
+7 Error handling When the Charging Station has an IdToken in the Authorization Cache, which is valid in the
+Authorization Cache, but is no longer valid in the CSMS: The Charging Station will receive the
+IdTokenInfo in the TransactionEventResponse which contains the newer invalid status. What
+happens in such a cases depends on the Configuration Variables: MaxEnergyOnInvalidId and
+StopTxOnInvalidId.
+8 Remark(s) If the Charging Station has implemented an Authorization Cache, then upon receipt of a
+AuthorizeResponse message the Charging Station updates the Cache entry.
+For a Cached valid IdToken it is not logical to send AuthorizeRequest. The
+TransactioneventResponse message also contains the IdToken information. If the IdToken has
+become no longer valid, the Charging Station will learn this from this TransactioneventResponse.
+So if the IdToken is no longer valid, the Charging Station might decide to stop the energy offering,
+and depending on the configuration even stop the transaction.
+The scenario description and sequence diagram above are based on the Configuration Variable
+for start transaction being configured as follows:
+TxStartPoint: EVConnected
+This use-case is also valid for other configurations, but then the transaction might start/stop at
+another moment, which might change the sequence in which message are send. For more details
+see the use case: E01 - Start Transaction options.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 115/803 Part 2 - Specification

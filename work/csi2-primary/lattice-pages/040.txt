@@ -1,0 +1,82 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  40 
+Attribute Selectable Values Description 
+available options depend on the enabled color formats, PHY 
+configuration, and timing requirements. 
+Refer to the MIPI CSI/DSI Transmitter Pixel-to-Byte Block and MIPI 
+CSI/DSI Receiver Byte-to-Pixel Block sections for more details. 
+Enable RGB888 Color 
+Format 
+checked, unchecked Enables support for RGB888 (24-bit) color format in the Pixel-to-Byte 
+or Byte-to-Pixel conversion block.2 
+Enable RGB565 Color 
+Format 
+checked, unchecked Enables support for RGB565 (16-bit) color format in the Pixel-to-Byte 
+or Byte-to-Pixel conversion block.2 
+Enable RAW10 Color 
+Format 
+checked, unchecked Enables support for RAW10 (10-bit) color format in the Pixel-to-Byte 
+or Byte-to-Pixel conversion block.2 
+Enable RAW12 Color 
+Format 
+checked, unchecked Enables support for RAW12 (12-bit) color format in the Pixel-to-Byte 
+or Byte-to-Pixel conversion block.2 
+Miscellaneous 
+Line Buffer Depth depthN, depthN×2, 
+depthN×4 
+Defines the depth of the line-buffer FIFO used in the Pixel-to-Byte 
+(P2B) block for TX. The FIFO has a fixed width of 256 bits. The 
+required depth is determined by the number of active pixels per line 
+and the selected bits-per-component. 
+The minimum depth (depthN) is computed as the smallest 
+power-of-two FIFO depth that can hold one full video line, using ceil() 
+to ensure the FIFO is never undersized. You may select depthN×2 or 
+depthN×4 to increase buffering margin when horizontal blanking is 
+short or absent. This attribute is available only when PHY Direction is 
+set to TX. 
+FIFODEPTH = Ceil((Hactive × BPC)/256) 
+depthN = 2𝑐𝑒𝑖𝑙[𝑙𝑜𝑔2(𝐹𝐼𝐹𝑂_𝐷𝐸𝑃𝑇𝐻)] 
+Where 
+Hactive: Number of Active Pixels Per Line 
+BPC: Bits Per Color 
+Pixel Buffer Depth depthN×1, depthN×2, 
+depthN×4, depthN×8 
+Specifies the depth of the internal pixel data buffer on Byte-to-Pixel 
+(B2P) block of RX. The default min setting, depthN, is optimized to 
+use one EBR. 
+ 
+Nexus EBR size = 18432 bits 
+depthN = 2
+𝑓𝑙𝑜𝑜𝑟[𝑙𝑜𝑔2( 𝐸𝐵𝑅 𝑠𝑖𝑧𝑒 (𝑏𝑖𝑡𝑠)
+𝑇𝐷𝐴𝑇𝐴_𝑊𝐼𝐷𝑇𝐻+2)]
+ 
+ 
+Example 1: 
+TDATA_WIDTH = 96 
+depthN = 2^floor[log2(18432/(96+2))] 
+depthN = 128  
+GUI Options: 128, 256, 512, 1024 
+ 
+Example 2: 
+TDATA_WIDTH = 64 
+depthN = 2^floor[log2(18432/(64+2))] 
+depthN = 256 
+GUI Options: 256, 512, 1024, 2048 
+ 
+This setting is available only when PHY Direction is set to RX and 
+Unified Video Streaming Interface (UVSI) == checked. 
+Maximum Buffered Pixels For PHY Direction == TX, 
+[floor((line_buffer_depth 
+/ bits_per_pixel) × 256] 
+ 
+For PHY Direction == RX, 
+Indicates the total number of pixels that can be buffered in the FIFO 
+based on Line Buffer Depth and selected pixel format when PHY 
+Direction is set to TX or Pixel Buffer Depth when PHY Direction is set 
+to RX. 
+Not editable. For information only when Unified Video Streaming 

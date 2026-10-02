@@ -1,0 +1,156 @@
+9.2. Visual Representation of OCPP Information Model
+«BusinessComponent»
+Components::IdentifiedObject
+«Content»
++ MRID: NumericIdentifierType [0..1]
++ ObjectID: IdentifierType [0..*]
++ Name: NameType [0..1]
++ AliasName: NameType [0..*]
++ Description: TextType [0..*]
+DeviceType
+«BusinessComponent»
+RootModel::EVSEType
++ ConnectorId: NumericIdentifierType [0..1]
+«Content»
++ Switch3To1PhaseSupported: IndicatorType [0..1]
+«BusinessComponent»
+TransactionType
+«Content»
++ SeqNo: CounterType [0..1]
++ ChargingState: ChargingStateEnumType [0..1]
++ Offline: IndicatorType [0..1]
++ StartedTimestamp: DateTimeType [0..1]
++ StoppedTimestamp: DateTimeType [0..1]
++ TimeSpentCharging: SecondsType [0..1]
++ StoppedReason: ReasonEnumType [0..1]
++ NumberOfPhasesUsed: CounterType [0..1]
++ MaxAllowedHours: SecondsType [0..1]
++ MaxAllowedKwh: PowerType [0..1]
++ TriggerReason: TriggerReasonEnumType [0..1]
++ RemoteStartID: RequestIdType [0..1]
++ Id: TransactionIdType [0..1]
++ RunningCost: AmountType [0..1]
++ TotalCost: AmountType [0..1]
+«BusinessComponent»
+SmartCharging::ChargingProfileType
++ TransactionId: TransactionIdType [0..1]
+«Content»
++ StackLevel: CounterType [0..1]
++ Primary: IndicatorType [0..1]
++ TimeBase: DateTimeType [0..1]
++ ChargingProfilePurpose:
+ChargingProfilePurposeEnumType [0..1]
++ ChargingProfileKind: ChargingProfileKindEnumType
+[0..1]
++ RecurrencyKind: RecurrencyKindEnumType [0..1]
++ ValidFrom: DateTimeType [0..1]
++ ValidTo: DateTimeType [0..1]
++ ChargingLimitSource: ChargingLimitSourceEnumType
+[0..*]
+«BusinessComponent»
+Components::MessageInfoType
+«Content»
++ Priority: MessagePriorityEnumType [0..1]
++ State: MessageStateEnumType [0..1]
++ StartDateTime: DateTimeType [0..1]
++ EndDateTime: DateTimeType [0..1]
+«BusinessComponent»
+Metering::SampledValueType
+«Content»
++ Value: MeasureType [0..1]
++ Context: ReadingContextEnumType [0..1]
++ Measurand: MeasurandEnumType [0..1]
++ Phase: PhaseEnumType [0..1]
++ Location: LocationEnumType [0..1]
+«BusinessComponent»
+ReservationType
+«Content»
++ CreationTimestamp: DateTimeType [0..1]
++ ExpiryDateTime: DateTimeType [0..1]
+::IdentifiedObject
++ MRID: NumericIdentifierType [0..1]
++ ObjectID: IdentifierType [0..*]
++ Name: NameType [0..1]
++ AliasName: NameType [0..*]
++ Description: TextType [0..*]
+«BusinessComponent»
+Security::IDTokenInfoType
+«Content»
++ Status: AuthorizationStatusEnumType [0..1]
++ CacheExpiryDateTime: DateTimeType [0..1]
++ Language1: LanguageType [0..1]
++ Language2: LanguageType [0..1]
++ ChargingPriority: NumericIdentifierType [0..1]
++ ListID: IdentifierType [0..1]
++ ListEntryTimestamp: DateTimeType [0..1]
+DeviceFunctionType
+«BusinessComponent»
+Metering::MeteringFunctionType
+«BusinessComponent»
+RootModel::EVType
+«BusinessComponent»
+Security::IDTokenType
++ IDToken: TokenType [0..1]
++ Type: IDTokenEnumType [0..1]
+DeviceType
+«BusinessComponent»
+RootModel::ConnectorType
+«Content»
++ ConnectorType: ConnectorEnumType [0..1]
++ CableCapacity: CurrentType [0..*]
++TxnUpdateSampledValue
+0..*
++Reservation
+0..*
++GroupIDToken
+0..1
++Transaction
+0..*
++Connector
+0..1
++TxnStopSampledValue
+0..*
++Transaction
+0..1
++EV
+0..1
++TxnStartSampledValue
+0..*
++EV 0..*
++ChargingProfile 0..*
++Message
+0..*
++Transaction
+0..1
++Transaction 0..1 +Reservation
+0..1
++Reservation 0..*
++Connector 0..1
++Reservation 0..*
++EVSE 0..1
++Reservation
+0..*
++IDToken
+0..1
++Transaction
+0..*
++EVSE
+0..1
++Transaction 0..1
++IDToken 0..*
++EVSE
+0..1
++ChargingProfile 0..*
++Transaction
+0..*
++MeteringFunction
+0..*
++IDTokenInfo0..1
++IDToken 0..1
++ChargingProfile
+0..1
++Transaction
+0..1
+Figure 14. OCPP Information Model: Transactions
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 19/26 Part 1 - Architecture & Topology

@@ -1,0 +1,33 @@
+L03 - Publish Firmware file on Local Controller
+No. Type Description
+1 Name Publish Firmware file on Local Controller.
+2 ID L03
+3 Objective(s) To allow Charging Stations to download a firmware update directly from the Local Controller.
+4 Description The Local Controller downloads and publishes a firmware update at the specified URL. This
+allows the CSMS to send UpdateFirmwareRequests with the URI pointing to the Local Controller,
+to any Charging Station connected to the Local Controller. This allows the site to save bandwidth
+and data on the WAN interface.
+Actors Local Controller, CSMS
+Scenario description 1. The CSMS sends a PublishFirmwareRequest to instruct the Local Controller to download and
+publish the firmware, including an MD5 checksum of the firmware file.
+2. Upon receipt of PublishFirmwareRequest, the Local Controller responds with
+PublishFirmwareResponse.
+3. The Local Controller starts downloading the firmware.
+4. The Local Controller verifies the MD5 checksum.
+5. The Local Controller publishes the firmware file at the URI(s) stated in
+PublishFirmwareStatusNotificationRequest.
+6. The CSMS instructs Charging Stations to update their firmware, as described in Use Case L01 -
+Secure Firmware Update
+5 Prerequisite(s) n/a
+6 Postcondition(s) Successful postcondition:
+The firmware is successfully published by the Local Controller.
+Failure postcondition:
+The Local Controller could not download the firmware file, and has sent the DownloadFailed
+status.
+The Local Controller could not verify the MD5 checksum, and has sent the InvalidChecksum
+status.
+The Local Controller could not publish the firmware file, and has sent the PublishFailed status.
+7 Error handling n/a
+8 Remark(s) For information about MD5 checksum see RFC-1321 [RFC1321].
+Edition 2, 2025-12-03 L. Firmware Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 422/803 Part 2 - Specification

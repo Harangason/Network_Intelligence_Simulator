@@ -1,0 +1,48 @@
+Tool validations
+* Step 2:
+Message: SetVariableMonitoringResponse
+- setMonitoringResult[0].id must be <not omitted>
+- setMonitoringResult[0].status must be Accepted
+- setMonitoringResult[0].type must be Periodic
+- setMonitoringResult[0].severity must be <Configured severity>
+- setMonitoringResult[0].component.name must be <Configured threshold monitor component variable>
+- setMonitoringResult[0].component.evse.id must be <Configured evseId>
+- setMonitoringResult[0].variable.name must be <Configured threshold monitor component variable>
+No message of type NotifyPeriodicEventStream shall be sent with
+- id set to <SetVariableMonitoringResponse.setMonitoringResult[0].id>
+* Step 3:
+Message: OpenPeriodicEventStreamRequest
+- constantStreamData.id must be <not omitted>
+- constantStreamData.variableMonitoringId must be <SetVariableMonitoringResponse.setMonitoringResult[0].id of step 2>
+- constantStreamData.params.interval must be 10 <Configured Clock Aligned MeterValues Interval> * 2      
+- constantStreamData.params.values must be  30 <Configured Clock Aligned MeterValues Interval> * 4        
+* Step 5:
+Message: NotifyEventRequest
+- generatedAt must be <not omitted>
+- eventData[0].trigger must be Periodic
+- eventData[0].actualValue must be <not omitted>
+- eventData[0].variableMonitoringId must be <SetVariableMonitoringResponse.setMonitoringResult[0].id of step 2>
+- eventData[0].severity must be <Configured severity>
+- eventData[0].component.name must be <Configured threshold monitor component variable>
+- eventData[0].component.evse.id must be <Configured evseId>
+- eventData[0].variable.name must be <Configured threshold monitor component variable>
+Post scenario validations:
+No message of type NotifyPeriodicEventStream shall be sent with
+- id set to <SetVariableMonitoringResponse.setMonitoringResult[0].id of step 2> N/a
+6.2.51. Page 755/756 - (2026-02) - TC_N_108_CS - Use existing monitoring
+configurations and check the disabled monitoring events are not sent
+Test case name Set Variable Monitoring - Close Periodic Event Streams
+Test case Id TC_N_108_CS
+…
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+This test requires the Monitoring Base to be set to All.
+- SetMonitoringBaseRequest with monitoringBase = All.
+This test requires the existence of a Periodic monitor on a (numerical) variable. It is not mandated which variables are required to
+be monitored. This test uses the variable "Power" of component "EVSE", which is most likely to be available for monitoring.
+Reusable State(s): N/a
+Main (Test scenario)
+Charging Station CSMS
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 76/116 Errata 2026-06

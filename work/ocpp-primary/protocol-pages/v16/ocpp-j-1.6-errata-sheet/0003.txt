@@ -1,0 +1,33 @@
+1. Scope
+This document contains errata on the OCPP 1.6-J specification (JSON) and JSON-Schema files.
+1.1. JSON Schema files
+With the release of this version of the erratasheet (2025-04) also a OCPP 1.6 JSON Schema file was updated.
+Version information has been added to all the files: ID field. The updated StopTransaction.req JSON Schema file
+for this version is marked with: "urn:OCPP:1.6:2025:04"
+1.2. Terminology and Conventions
+Underlined: when needed to clarify differences, they might be underlined.
+2. Major errata
+Problems with the content/definition of the messages, class and enumerations of the protocol.
+2.1. (2025-04) - MeterValues.json and StopTransaction.json incorrect spelling of
+Celsius V2
+Note: This erratum supersedes erratum: MeterValues.json and StopTransaction.json incorrect spelling of Celsius
+There are several issues with the original erratum that needs to be revised.
+The erratum advises Central System implementers to update their own JSON schemas to also allow the correct
+spelling. This brings risks, as the erratum is easily missed and the JSON schema’s will be used as available on the
+website.
+In addition, the erratum advises the Charge Point implementers to update their messages to use the corrected
+spelling. This poses significant risk as this will cause interoperability issues with all Central Systems that have not
+updated their JSON schemas.
+Finally, while the erratum mentions that the JSON schemas will not be fixed, the MeterValues.req JSON schema
+was updated. Unfortunately the StopTransaction.req JSON schema was missed. Updating the JSON schemas so
+they contain both spellings is the correct decision, because the main purpose of the JSON schemas is that they
+are being used for JSON Schema validation. In this case we always want to allow both spellings, to maximize
+interoperability. The secondary purpose is generating the message data model from them, but even in that case
+the Charge Point implementer makes an active decision on which unit of measure to send. Both spellings would
+be a valid choice, but when a Charge Point implementer reads this erratum, it recommends to use the not
+corrected version of the spelling; Celcius, to maximize interoperability.
+Summary:
+1. The JSON schema StopTransaction.req is updated to also include the corrected spelling Celsius.
+2. Charge Point implementers are advised to remain using the not corrected version of the spelling
+Celcius.
+2

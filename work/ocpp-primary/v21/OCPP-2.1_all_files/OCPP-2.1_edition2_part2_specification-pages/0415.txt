@@ -1,0 +1,65 @@
+EV Charging Station CSMS
+Transaction is active
+User activates PriorityCharging locally
+switch to PriorityCharging profile
+NotifyPriorityChargingRequest( txId, true )
+NotifyPriorityChargingResponse()
+Figure 145. Requesting PriorityCharging locally
+K22 - Requesting priority charging locally - Requirements
+Table 118. K22 - Requirements
+ID. Precondition Requirements Note
+K22.FR.01 User instructs Charging Station (via
+button or display) to request a priority
+charging for the transaction AND
+No PriorityCharging profile is
+present, that is valid for the
+associated EVSE
+Charging Station SHALL notify user it is not
+capable of PriorityCharging.
+K22.FR.02 User instructs Charging Station (via
+button or display) to request a priority
+charging for the transaction AND
+a PriorityCharging profile, that is
+valid for the associated EVSE, has
+been installed earlier.
+Charging Station SHALL stop applying the
+TxDefaultProfile or TxProfile
+charging profile (if active) to this transaction
+and apply the PriorityCharging profile
+instead
+ChargingStationMaxProfi
+le charging profile remains in
+effect.
+K22.FR.03 K22.FR.02 Charging Station SHALL send a
+NotifyPriorityChargingRequest with activated
+= true and transactionId set to the affected
+transaction
+K22.FR.04 User instructs Charging Station (via
+button or display) to end priority
+charging for the transaction
+Charging Station SHALL stop applying the
+PriorityCharging charging profile and
+reapply the TxDefaultProfile or
+TxProfile charging profile (if active) to
+this transaction instead.
+Charging Station UI should not
+allow this option when priority
+charging was not in effect.
+K22.FR.05 K22.FR.04 Charging Station SHALL send a
+NotifyPriorityChargingRequest with activated
+= false and transactionId set to the affected
+transaction
+K22.FR.06 K22.FR.03 OR K22.FR.05 CSMS SHALL respond with
+NotifyPriorityChargingResponse.
+5.5. Dynamic Charging Profiles
+Dynamic charging profiles are a way to provide dynamic charging limit updates without a charging schedule. The mechanism of a
+charging profile with a charging schedule is still used, but the schedule only consists of a single period for which the limits or
+setpoints can be changed dynamically via the UpdateDynamicScheduleRequest or PullDynamicScheduleUpdateResponse message
+from CSMS.
+Dynamic charging profiles are useful for changes in (dis)charging limits that cannot be scheduled, because of their unpredictable
+nature. It matches well with the ISO 15118-20 "dynamic control mode", which does not use a schedule either.
+The use of dynamic charging profiles is suboptimal in combination with ISO 15118-20 "scheduled control mode" or ISO 15118-2,
+which both rely on charging schedules. Any change in a limit or setpoint of the dynamic charging profile will cause a renegotiation
+between EV and Charging Station for a new charging schedule.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 402/803 Part 2 - Specification

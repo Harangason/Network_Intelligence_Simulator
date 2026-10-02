@@ -1,0 +1,35 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Parameter Length Value/Description
+Bit Mask Description
+1 => use Key embedded in the
+REQ (param Nbr 3)
+x x x x Pre-loaded key number (0 to 15)
+0 0 RFU
+3 Embedded Key (optional) 6 Bytes This parameter is present in the MFC_Authenticate_CMD only if bit b4
+is set to logical '1' in Key Selector parameter. If present, this parameter
+defines the value of the Key used for the Authentication.
+Table 56. MFC_Authenticate_REQ parameters...continued
+RSP_ID RSP Name Presence
+of Data Description
+0x40 MFC_Authenticate_RSP No DH gets the “authenticate” cmd status
+Table 57. MFC_Authenticate_RSP
+Value Description Reason
+0x00 STATUS_OK Authentication was successful
+0x03 STATUS_FAILED Authentication failed (wrong key, time-out triggered during
+authentication…)
+0xB0 RF_TRANSMISSION_ERROR Not used
+0xB1 RF_PROTOCOL_ERROR Not used
+0xB2 RF_TIMEOUT_ERROR Not used
+Others RFU
+Table 58. TAG-CMD RF Status code, in the special case of MFC_Authenticate_CMD
+Once a sector is authenticated, PN7160 will automatically encrypt any data sent by the DH to be transferred
+over RF, thanks to the XCHG_DATA_REQ command. The key used is the one used for the sector currently
+authenticated.
+In a symmetrical way, PN7160 will automatically decrypt the data received from RF before it forwards to the DH
+thanks to the XCHG_DATA_RSP response, again using the key of the sector currently authenticated.
+Here is a typical NFC reader for MIFARE Classic sequence, to illustrate the use of the MFC_Authenticate_REQ
+and XCHG_DATA_REQ.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+61 / 147

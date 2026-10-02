@@ -1,0 +1,52 @@
+u-blox 20 HPG 2.00 - Interface description
+2 U1 infoCode - - Provides greater information on what the receiver
+chose to do with the message contents:
+• 0 = The receiver accepted the data
+• 1 = The receiver does not know the time so it
+cannot use the data (To resolve this a UBX-MGA-
+INI-TIME_UTC message should be supplied ﬁrst)
+• 2 = The message version is not supported by the
+receiver
+• 3 = The message size does not match the
+message version
+• 4 = The message data could not be stored to the
+database
+• 5 = The receiver is not ready to use the message
+data
+• 6 = The message type is unknown
+3 U1 msgId - - UBX message ID of the acknowledged message
+4 U1[4] msgPayload
+Start
+- - The ﬁrst 4 bytes of the acknowledged message's
+payload
+3.13.2 UBX-MGA-BDS (0x13 0x03)
+3.13.2.1 BeiDou ephemeris assistance for satellites svId 1..37
+Message UBX-MGA-BDS-EPH
+BeiDou ephemeris assistance for satellites svId 1..37
+Type Input
+Comment This message allows the delivery of BeiDou D1/D2 ephemeris assistance to a receiver.
+See section AssistNow online in the integration manual for details.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x03 88 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 type - - Message type (0x01 for this type)
+1 U1 version - - Message version (0x00 for this version)
+2 U1 svId - - BeiDou satellite identiﬁer (see Satellite Numbering)
+3 U1 reserved0 - - Reserved
+4 U1 SatH1 - - Autonomous satellite Health ﬂag
+5 U1 IODC - - Issue of Data, Clock
+6 I2 a2 2^-66 s/s^2 Time polynomial coeﬃcient 2
+8 I4 a1 2^-50 s/s Time polynomial coeﬃcient 1
+12 I4 a0 2^-33 s Time polynomial coeﬃcient 0
+16 U4 toc 2^3 s Clock data reference time
+20 I2 TGD1 0.1 ns Equipment Group Delay Diﬀerential
+22 U1 URAI - - User Range Accuracy Index
+23 U1 IODE - - Issue of Data, Ephemeris
+24 U4 toe 2^3 s Ephemeris reference time
+28 U4 sqrtA 2^-19 m^0.5 Square root of semi-major axis
+32 U4 e 2^-33 - Eccentricity
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 62 of 224
+C1-Public

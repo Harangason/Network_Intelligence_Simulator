@@ -1,0 +1,31 @@
+7 Implementation Notes
+7.1 Support of QoS Level -1
+Because PUBLISH messages with QoS level -1 could be sent at any time by clients (even with no connection
+setup) a transparent GW needs to maintain for those messages a dedicated MQTT connection with the server. An
+aggregating or hybrid GW may use any aggregating MQTT connection to forward those messages to the server.
+7.2 “Best practice” values for timers and counters
+Table 30 shows the “best practice” values for the timers and counters deﬁned in this speciﬁcation.
+Timer/Counter Recommended value
+TADV greater than 15 minutes
+NADV 2 -3
+TSEARCHGW 5 seconds
+TGW IN F O 5 seconds
+TW AIT greater than 5 minutes
+Tretry 10 - 15 seconds
+Nretry 3 - 5
+Table 30: “Best practice” values for timers and counters
+The “tolerance” of the sleep and keep-alive timers at the server/gateway depends on the duration indicated by
+the clients. For example, the timer values should be 10% higher than the indicated values for durations larger than
+1 minute, and 50% higher if less.
+7.3 Mapping of Topic Ids to Topic Names
+It is strongly recommended that in the gateway the mapping table between topic ids and topic names is imple-
+mented per client (and not by a single shared pool between all clients), to reduce the risk of an incorrect topic id
+from a client matching another client’s valid topic, and thus causing a publication to the wrong topic, which could
+potentially have disastrous consequences.
+7.4 ZigBee related issues
+• In a ZigBee network a gateway need not be hosted by a coordinator node. It should however reside on an
+always-on router node to be able to receive client messages at any time.
+• Due to short payload length of the ZigBee network/APS layer, the maximum length of a MQTT-SN message
+is restricted to 60 octets.
+– END OF DOCUMENT –
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 27

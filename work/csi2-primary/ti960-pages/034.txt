@@ -1,0 +1,53 @@
+or ±3 around the nominal AEQ value specific to Rx port channel characteristics gives a good trade-off in lock 
+time and adaptability. The setting for the AEQ after adaption can be read back from the AEQ_STATUS register 
+0xD3. The suggested AEQ_FLOOR settings are given in Table 7-8.
+Table 7-8. Suggested ADAPTIVE_EQ_FLOOR_VALUE as a Function of Channel Insertion Loss
+CHANNEL INSERTION LOSS AT 2.1 GHz (dB) ADAPTIVE_EQ_FLOOR_VALUE
+Up to –9.4 0
+–9.4 to –13.2 2
+–13.2 to –15.4 4
+–15.4 to –17.8 5
+–17.8 to –19.2 6
+7.4.7.4.3 AEQ Timing
+The dwell time for AEQ to wait for lock or error-free status is also programmable. When checking each EQ 
+setting the AEQ will wait for a time interval, controlled by the ADAPTIVE_EQ_RELOCK_TIME field in the 
+AEQ_CTL2 register before incrementing to the next allowable EQ gain setting. The default wait time is set to 
+2.62 ms based on REFCLK = 25 MHz. When the maximum setting is reached and there is no lock acquired 
+during the programmed relock time, the AEQ will restart adaption at minimum setting or AEQ_FLOOR value.
+7.4.7.4.4 AEQ Threshold
+The DS90UB960-Q1 receiver will adapt by default based on the FPD-Link error checking during the Adaptive 
+Equalization process. The specific errors linked to equalizer adaption, FPD-Link III clock recovery error, packet 
+encoding error, and parity error can be individually selected in AEQ_CTL register 0x42. Errors are accumulated 
+over 1/2 of the period of the timer set by the ADAPTIVE_EQ_RELOCK_TIME. If the number of errors is greater 
+than the programmed threshold (AEQ_ERR_THOLD), the AEQ will attempt to increase the EQ setting.
+7.4.8 Channel Monitor Loop-Through Output Driver
+The DS90UB960-Q1 includes an internal Channel Monitor Loop-through output on the CMLOUTP/N pins. The 
+CMLOUTP/N pins supply a buffered loop-through output driver to observe the jitter after equalization for each of 
+the four RX receiver channels. The CMLOUT monitors the post EQ stage, thus providing the recovered input of 
+the deserializer signal. The measured serial data width on the CMLOUT loop-through is the total jitter including 
+the internal driver, AEQ, back channel echo, and so forth. Each channel also has its own CMLOUT monitor and 
+can be used for debug purposes. This CMLOUT is useful in identifying gross signal conditioning issues.
+Table 7-9 shows the minimum CMLOUT differential eye opening as a measure of acceptable forward channel 
+signal integrity. A CMLOUT eye opening of at least 0.35 UI suggests that the forward channel signal integrity is 
+likely acceptable. However, further testing such as BIST is recommended to verify error-free operation. An eye 
+opening of less than 0.35 UI indicates possible issues with the forward channel signal integrity.
+Table 7-9. CML Monitor Output Driver
+PARAMETER TEST CONDITIONS PIN MIN TYP MAX UNIT
+EW
+Differential Output 
+Eye Opening
+RL = 100 Ω
+(Figure 7-5) CMLOUTP, CMLOUTN 0.35 UI(1)
+(1) Unit Interval (UI) is equivalent to one ideal serialized data bit width. The UI scales with serializer input PCLK frequency (RAW Modes), 
+serializer CLK_IN frequency (CSI-2 Mode, Serializer Non-synchronous Mode) or REFCLK (CSI-2 Mode, Serializer Synchronous 
+Mode).
+CSI-2 Mode, Serializer Synchronous Mode: 1 UI = 1 / ( 160 x REFCLK ) (typ)
+CSI-2 Mode, Serializer Non-synchronous Mode: 1 UI = 1 / ( 80 x CLK_IN) (typ)
+RAW 10-bit mode: 1 UI = 1 / ( 28 x PCLK / 2 )
+RAW 12-bit HF mode: 1 UI = 1 / ( 28 x 2/3 x PCLK )
+RAW 12-bit LF mode: 1 UI = 1 / ( 28 x PCLK )
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+34 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

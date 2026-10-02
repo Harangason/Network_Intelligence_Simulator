@@ -1,0 +1,46 @@
+Chapter 4. Device Model hierarchy
+(New in OCPP 2.1)
+The 3-tier model of the Device Model does not suffice to represent the hierarchy of Charging Stations with a lot of components. If
+there is a need to represent a hierarchy between components, then a set of standard variables can be used for this. To allow
+comprehensive rendering of its components in a UI, a Charging Station may describe the hierarchy of its components using the
+following read-only variables:
+• CommunicationParent (data flow source),
+• ElectricalParent (power flow source),
+• LogicalParent (for a comprehensive overview),
+• PhysicalParent (container).
+These variables point to one or more (using multiple instances of these variables) parent components. Since the Device Model
+does not permit duplicate component names and instances, which might occur in a hierarchy, the optional read-only variable
+"Label" permits specifying a non-unique label to use instead of the component name and instance in a hierarchical rendering.
+See Part 2 of this specification for details on these variables.
+ElectricalFeed
+ComponentName = "ElectricalFeed"
+PowerBank#1
+ComponentName: "PowerBank"
+ComponentInstance: "1"
+ElectricalParent = "ElectricalFeed"
+PowerBank#2
+ComponentName: "PowerBank"
+ComponentInstance: "2"
+ElectricalParent = "ElectricalFeed"
+Fan#1
+ComponentName: "Fan"
+ComponentInstance: "1"
+PhysicalParent: "PowerBank#1"
+Fan#2
+ComponentName: "Fan"
+ComponentInstance: "2"
+PhysicalParent: "PowerBank#1"
+Fan#3
+ComponentName: "Fan"
+ComponentInstance: "3"
+PhysicalParent: "PowerBank#2"
+Label: "Fan#1"
+Fan#4
+ComponentName: "Fan"
+ComponentInstance: "4"
+PhysicalParent: "PowerBank#2"
+Label: "Fan#2"
+wiring wiringpart ofpart of part of part of
+Figure 5. Example of hierarchy in device model
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 11/22 Part 1 - Architecture & Topology

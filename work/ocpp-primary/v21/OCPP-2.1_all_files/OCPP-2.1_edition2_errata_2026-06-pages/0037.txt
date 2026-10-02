@@ -1,0 +1,54 @@
+Main (Test scenario)
+4.  The Charging Station responds with a      
+SetNetworkProfileResponse
+3.  The Test System sends a       SetNetworkProfileRequest  with: 
+-  configurationSlot  is   <Configured non-active configurationSlot>  
+-  connectionData.ocppVersion   OCPP21
+-  connectionData.ocppInterface   Any
+-  connectionData.ocppTransport   JSON
+-  connectionData.messageTimeout   <Configured
+messageTimeout>
+-  connectionData.ocppCsmsUrl   <Configured ocppCsmsUrl> 
+-  connectionData.securityProfile   <Active SecurityProfile> 
+-  connectionData.basicAuthPassword   <Configured
+basicAuthPassword>
+6.  The Charging Station responds with       SetVariablesResponse
+5.  Test System sends     SetVariablesRequest  with 
+-  setVariableData[0].component.name   OCPPCommCtrlr
+-  setVariableData[0].variable.name   NetworkConfigurationPriority
+-  setVariableData[0].attributeValue   <Active configuration 
+slot>,<Non-active configuration slot>  
+Note: For each value in NetworkConfigurationPriority, try to set a NetworkConfiguration instance:
+FOR slot in attributeValue of OCPPCommCtrlr.NetworkConfigurationPriority DO
+4. 8.  Charging Station responds with SetVariablesResponse
+3. 7.  Test System sends SetVariablesRequest with:
+- setVariableData[0].component.name NetworkConfiguration
+- setVariableData[0].component.instance <slot>
+- setVariableData[0].variable.name MessageTimeout
+- setVariableData[0].attributeValue 123
+END FOR
+Tool validations
+* Step 2:
+Message GetVariablesResponse with:
+- getVariableResult[0].component = OCPPCommCtrlr
+- getVariableResult[0].variable = NetworkConfigurationPriority
+- getVariableResult[0].attributeValue = <a list of at least two values>
+- getVariableResult[0].attributeStatus = Accepted
+* Step 4:  
+Message  SetNetworkProfileResponse  with: 
+-  status  =   Accepted
+* Step 6:  
+Message  SetVariablesResponse  with: 
+-  setVariableResult[0].component  =   OCPPCommCtrlr
+-  setVariableResult[0].variable  =   NetworkConfigurationPriority
+-  setVariableResult[0].attributeStatus  =   Accepted
+* Step 4 Step 8 :
+FOR slot in OCPPCommCtrlr.NetworkConfigurationPriority DO
+Message SetVariablesResponse with:
+- setVariableResult[0].component.name NetworkConfiguration
+- setVariableResult[0].component.instance <slot>
+- setVariableResult[0].variable.name MessageTimeout
+- setVariableResult[0].attributeStatus Rejected
+- setVariableResult[0].attributeStatusInfo.reasonCode = PriorityNetworkConf
+END FOR
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 33/116 Errata 2026-06

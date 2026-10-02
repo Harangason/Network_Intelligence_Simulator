@@ -1,0 +1,42 @@
+TC_N_48_CS: Alert Event - Variable monitoring on write only
+Test case name Alert Event - Variable monitoring on write only
+Test case Id TC_N_48_CS
+Use case Id(s) N07
+Requirement(s) N07.FR.10
+System under test Charging Station
+Description NotifyEventRequest reports every Component/Variable for which a VariableMonitoring setting was
+triggered. Only the VariableMonitoring settings that are responsible for triggering an event are included.
+Purpose To verify if the Charging station is able to correctly omit the actualField when a variablemonitor has been
+set to write only as described at the OCPP specification.
+Prerequisite(s) The Charging Station should be able to set a monitor on SecurityCtrlr.BasicAuthPassword and should be
+able to use security profile 1 or 2
+Before (Preparations)
+Configuration State:
+Security profile 1 or 2 is configured
+Memory State:
+A Delta variableMonitoring setting has been set on a SecurityCtrlr.BasicAuthPassword
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a SetVariablesResponse .
+1. The Test System sends a SetVariablesRequest with
+component.name = SecurityCtrlr
+variable.name = BasicAuthPassword
+attributeValue = <Generated password with same length as the
+configured basicAuthPassword>
+3. Execute Reusable State Booted.
+Notes: This step only needs to be executed when SetVariablesResponse status is RebootRequired.
+4. The Charging station sends a NotifyEventRequest
+5. The Test System responds with a NotifyEventResponse .
+Tool validations
+* Step 2:
+Message SetVariablesResponse
+- status must be Accepted or RebootRequired
+* Step 4:
+Message NotifyEventRequest
+- eventData[0].actualValue must be an empty string
+Post scenario validations:
+- N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 520/914 Part 6 - Test Cases

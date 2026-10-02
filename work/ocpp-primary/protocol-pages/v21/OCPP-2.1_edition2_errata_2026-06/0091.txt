@@ -1,0 +1,46 @@
+Main (Test scenario)
+Charging Station CSMS
+Agree on energy transfer mode
+Manual Action: Use EV to communicate EV charging limits:
+BPT true
+controlMode DynamicControl
+maxChargePower 10000 (W)
+maxDischargePower 5000W (W)
+Tool validations
+N/a
+Post scenario validations:
+N/a
+Applied new BPT reusable state at testcases:
+Test case name …
+Test case Id TC_Q_1XX_CS
+…
+Before (Preparations)
+Configuration State:
+…
+Memory State:
+…
+Reusable State(s):
+IF <Configured EVProtocol> is CHAdeMO THEN
+State  is   CHAdeMOV2xControlBpt
+State is Authorized
+State is [evconnectedpresession]
+ELSE IF <Configured EVProtocol> is ISO15118 THEN
+State is Iso1511820V2xControlBpt
+State is [evconnectedpresession]
+State is [authorized15118] (for 15118-20)
+END IF
+Updated note - NotifyEVChargingNeedsRequest also needs to be sent in case of CHAdeMO:
+Text
+Old Note(s):
+- This step is applicable if <Configured EVProtocol> is ISO15118 and is        captured by [authorized15118] (for
+15118-20), but validated on testcase level.
+New Note(s):
+- This step is captured by the preparation steps  , but validated on testcase level.
+Updated note - NotifyEVChargingScheduleRequest is allowed to be sent in case of CHAdeMO:
+Text
+Old Note(s):
+- This step is applicable if <Configured EVProtocol> is ISO15118
+New Note(s):
+- This step is required  if <Configured EVProtocol> is ISO15118, otherwise this step is optional.     
+Preparation steps updated - TC_Q_126_CS & TC_Q_127_CS:
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 87/116 Errata 2026-06

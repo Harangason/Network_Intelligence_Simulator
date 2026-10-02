@@ -1,0 +1,50 @@
+No. Type Description
+Scenario description Charging Station has 2 EVSEs
+1. CSMS sends SetDefaultTariffRequest for tariffId = "Default01" with validFrom = "2024-01-
+01T00:00:00Z" to evseId = 0 (all EVSEs).
+a. Charging Station accepts with SetDefaultTariffResponse.
+2. Charging Station sends AuthorizeRequest for idToken = "ABCD1234".
+a. CSMS responds with AuthorizeResponse with tariffId = "MSP01" and authorizes
+idToken.
+b. Charging Stations starts a transaction for idToken on EVSE #1.
+3. Charging Station sends AuthorizeRequest for idToken = "FBFB0000".
+a. CSMS responds with AuthorizeResponse with tariffId = "MSP02" and authorizes
+idToken.
+4. CSMS sends GetTariffsRequest with evseId = 0 to Charging Station before a transaction is
+started on EVSE #2 and before and EVConnectionTimeout has occurred.
+5. Charging Station returns a GetTariffsResponse with all default tariffs and driver-specific
+tariffs that are present on the Charging Station in an array of tariffAssignments:
+◦ tariffId = "Default01", tariffKind = DefaultTariff, validFrom = "2024-01-
+01T00:00:00Z", evseIds = [1, 2]
+◦ tariffId = "MSP01", tariffKind = DriverTariff, evseIds = [1], idTokens =
+["ABCD1234"]
+◦ tariffId = "MSP02", tariffKind = DriverTariff, idTokens = ["FBFB0000"]
+5 Prerequisites Local cost calculation is supported.
+6 Postcondition(s)
+7 Error Handling
+8 Remarks
+EV Driver 1 EV Driver 2
+Charging Station CSMS
+TxStartPoint = PowerPathClosed
+SetDefaultTariffRequest( evseId = 0, tariff = {"Default01", "0.50 ct/kWh", ""EUR", energy = {...}}} )
+SetDefaultTariffResponse(Accepted)
+EV Driver 1 starts a transaction
+Present charge card ABCD1234
+AuthorizeRequest(idToken = ABCD1234)
+AuthorizeResponse(idTokenInfo.status = Accepted, tariff.tariffIdf = MSP01, ...)
+Plug-in cable
+TransactionEventRequest(eventType = Started, transactionInfo.transactionId = 123,
+transactionInfo.tariffId = MSP01, idToken = ABCD1234, triggerReason = CablePluggedIn, ... )
+TransactionEventResponse(idTokenInfo.status = Accepted)
+EV Driver2 authorizes an idToken
+Present charge card FBFB0000
+AuthorizeRequest(idToken = FBFB0000)
+AuthorizeResponse(idTokenInfo.status = Accepted, tariff.tariffIdf = MSP02, ...)
+CSMS request list of tariffs
+GetTariffsRequest()
+GetTariffsResponse(tariffAssignments{ [tariffId = Default01, validFrom = "2024-01-01T00:00:00Z", evseIds = [1,2]]
+[tariffId = MSP01, evseIds = [1], idTokens = [ABCD1234]]
+[tariffId = MSP02, idTokens = [FBFB0000]] })
+Figure 109. Sequence diagram GetTariffsRequest
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 293/803 Part 2 - Specification

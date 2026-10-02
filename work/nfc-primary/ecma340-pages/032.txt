@@ -1,0 +1,32 @@
+ 
+26  © Ecma International 2024 
+ 
+Byte 14: TO 
+The TO byte shall specify the timeout value of the Target NFCIP -1 device for the data transport protocol, see 
+Figure 22. 
+The timeout calculation for fc/128 shall start with the start of the rising edge of the last modulation sent by the 
+Initiator and stop with the start of the modulation edge of the first modulation sent by the Target.  
+The timeout calculation for fc/64 and fc/32 shall start with the end of the last bit of a frame sent by the Initiator 
+and stop with the start of the first bit of the Length field in a frame sent by the Target.  
+NOTE The definition of timeout calculation is harmonized with the NFC-DEP Protocol defined by NFC Forum. 
+The timeout is specified as follows: 
+ 
+Figure 22 — Coding of the TO byte 
+− bit 8 to bit 5: Shall be set to all ZEROs. 
+− bit 4 to bit 1: WT: Waiting Time. 
+The Response Waiting Time (tRW) shall be calculated by the following formula: 
+tRW = (256 × 16 / fc) × 2WT 
+where 
+  the value of WT shall be range from 0 to 14; 
+  the value of 15 is RFU; 
+  The default value of WT shall be 14; 
+  for WT = 0 tRW = tRW,MIN (302 µs); 
+  for WT = 14 tRW = tRW,MAX (4 949 ms). 
+ 
+Byte 15: PPt 
+The PPt byte specifies optional parameters used by Target device, see Figure 23. The coding of bits shall be 
+as follows: 
+ 
+Figure 23 — Coding of the PPt byte 
+− bit 8: SECt. If set to ONE, the Target supports NFC-SEC; ZERO indicates no support. 
+− bit 7: Shall be set to ZERO. 

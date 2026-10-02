@@ -1,0 +1,137 @@
+"""Source-qualified RS-232 electrical interchange, separate from UART framing."""
+TI='https://www.ti.com/lit/an/slla037a/slla037a.pdf'
+PCB='https://www.ti.com/lit/an/sdaa219/sdaa219.pdf'
+HAND='https://www.ti.com/lit/an/snla037b/snla037b.pdf'
+SOURCES={TI:'TI SLLA037A September2002 pp1-8, actual public authored summary of232-F; no claim full licensed standard reviewed.',PCB:'TI SDAA219 March2026 pp2-7, powerup floating TTL/backbias/seriescap and bidirectionalTVS; suggested parts are not standard defaults.',HAND:'TI SNLA037B April2013 pp2-4, ONpositive/OFFnegative control and actual handshake;2500pF capacitive load maximum.'}
+DECLARATIONS=[]
+def d(k,t,meaning,lo=None,hi=None,unit=None,options=None,source=TI,integer=False):
+ DECLARATIONS.append(dict(key='rs232_'+k,type=t,description=meaning,min=lo,max=hi,unit=unit,options=options,integer=integer,source=source,source_revision=SOURCES[source]))
+for k,meaning,options in [
+ ('profile','Actual TIA232F summary envelope or independently qualified higher-rate device implementation.',['TIA_232_F_TI2002','DEVICE_QUALIFIED','REGISTERED_ACTUAL']),
+ ('role','Actual DTE or DCE connector function, not automatically the same pin mapping.',['DTE','DCE']),
+ ('peer_role','Actual connected peer DTE/DCE role.',['DTE','DCE']),
+ ('wiring','Actual straight DTE/DCE versus crossed nullmodem or separately registered wiring.',['STRAIGHT','NULL_MODEM','REGISTERED_ACTUAL']),
+ ('connector','Actual selected signal connector;9pin is574 subset,232 standard25pin; TTLheader is not RS232.',['DE9_EIA574','DB25_TIA232','REGISTERED_ACTUAL']),
+ ('direction','Actual one-way interchange versus independent Tx/Rx simultaneous communication.',['TX','RX','FULL_DUPLEX']),
+ ('clocking','Actual asynchronous start/stop UART versus synchronous clocked interchange.',['ASYNCHRONOUS','SYNCHRONOUS','REGISTERED_ACTUAL']),
+ ('encoding','Actual selected higher-layer bit/framing codec; RS232 does not mandate UART8N1.',['START_STOP','SYNCHRONOUS_RAW','REGISTERED_ACTUAL']),
+ ('parity','Actual separately configured UART parity; no RS232 default.',['NONE','EVEN','ODD','MARK','SPACE']),
+ ('flow_control','Actual configured handshake; no unlimited no-flow-control capacity assumption.',['NONE','RTS_CTS','DTR_DSR','XON_XOFF','REGISTERED_ACTUAL']),
+ ('data_logic','Actual interpreted RS232 data polarity; MARK1negative,SPACE0positive.',['MARK_1','SPACE_0']),
+ ('control_state','Actual control interchange ONpositive/OFFnegative, distinct dataMARK1negative.',['ON','OFF']),
+ ('power_state','Actual active/poweroff/startup/highZ states, not all valid functional data.',['ACTIVE','POWER_OFF','STARTUP','HIGH_Z']),
+ ('ttl_bias','Actual sourcequalified TTLside input bias; not RS232line termination or automaticLOW.',['INTERNAL','EXTERNAL_PULL_UP','EXTERNAL_PULL_DOWN','FLOATING','REGISTERED_ACTUAL']),
+ ('tvs','Actual protection type: bipolarRS232requiresbidirectionalTVS ifTVSused.',['NONE','BIDIRECTIONAL','UNIDIRECTIONAL','REGISTERED_ACTUAL']),
+ ('outcome','Actual framed/decoded functional result, not legalvoltage alone.',['ACCEPTED','FRAMING_ERROR','PARITY_ERROR','BREAK','FLOW_BLOCKED','UNKNOWN']),
+]:d(k,'select',meaning,options=options,source=PCB if k in('power_state','ttl_bias','tvs')else HAND if k in('control_state','flow_control')else TI)
+for k,meaning,lo,hi,unit in [
+ ('bitrate_bps','Actual per-direction bit rate; standard20k upper envelope, no normative minimum/default115200.',0,None,'bit/s'),
+ ('device_max_bps','Actual local interface capability under stated load, not catalogue typical.',0,None,'bit/s'),
+ ('peer_max_bps','Actual peer interface capability under same configuration/load.',0,None,'bit/s'),
+ ('driver_mark_v','Actual loaded MARK1 output,232F -15..-5V.',None,None,'V'),
+ ('driver_space_v','Actual loaded SPACE0 output,232F+5..+15V.',None,None,'V'),
+ ('receiver_mark_v','Actual receivedMARK1,232F-15..-3V; thresholdregion notvaliddata.',None,None,'V'),
+ ('receiver_space_v','Actual receivedSPACE0,232F+3..+15V.',None,None,'V'),
+ ('receiver_data_v','Actual selected signed data level after load/groundoffset.',None,None,'V'),
+ ('control_v','Actual signed control level; ONpositive/OFFnegative unlike data1.',None,None,'V'),
+ ('receiver_load_ohm','Actual receiving interchange input resistance;3k..7k standard fixture.',0,None,'ohm'),
+ ('driver_off_impedance_ohm','Actual unpowered driver impedance; source>300ohm.',0,None,'ohm'),
+ ('total_load_pf','Actual cable+receiver+protection/stray capacitance;2500pF envelope, not fixed15m.',0,None,'pF'),
+ ('receiver_cap_pf','Actual receiver contribution, not universal20pFexample.',0,None,'pF'),
+ ('cable_pf_m','Actual installedcable mutual+stray capacitance per meter.',0,None,'pF/m'),
+ ('cable_m','Actual physical cable length; no later232-F universal15m maximum.',0,None,'m'),
+ ('other_cap_pf','Actual additional connector/protection/board capacitance.',0,None,'pF'),
+ ('transition_us','Actual transition through-3..+3V; rate-dependent4% unit interval/1mslowrate.',0,None,'us'),
+ ('slew_v_us','Actual driver voltage slew magnitude,232F<=30V/us.',0,None,'V/us'),
+ ('ground_offset_v','Actual measured signal-reference offset, not common-mode-freeTTL.',None,None,'V'),
+ ('data_bits','Actual codec data width, not inferred8bit per RS232 electrical standard.',1,None,'bit'),
+ ('start_bits','Actual START_STOPcodec start position; actual UARTusually1, not standarddefault.',1,None,'bit'),
+ ('parity_bits','Actual selected parity wirecount: NONE0otherwise1.',0,1,'bit'),
+ ('stop_bits','Actual UART1/1.5/2 stopbit duration selected by bothends.',1,2,'bit'),
+ ('character_bits','Actual start+data+parity+stop wirebit duration, possibly1.5stopbit.',0,None,'bit'),
+ ('characters','Actual bounded transaction character count, not65535byte electricalpayloadlimit.',0,None,'character'),
+ ('wire_bits','Actual encoded transaction bitbound, separate electricalcharacter/flow gaps.',0,None,'bit'),
+ ('wire_time_ms','Actual serialized wirebit time at actual clock; excludes flowwait/codecprocessing.',0,None,'ms'),
+ ('flow_wait_bound_ms','Actual bounded hardware/software flowcontrolwait, notunlimitedautomaticbuffer.',0,None,'ms'),
+ ('decode_bound_ms','Actual codec/application decode processing bound.',0,None,'ms'),
+ ('transaction_bound_ms','Actual wire+flowwait+decode chain bound.',0,None,'ms'),
+ ('transaction_limit_ms','Actual complete transaction acceptance limit.',0,None,'ms'),
+ ('age_ms','Actual correlated decoded value age.',0,None,'ms'),
+ ('freshness_ms','Actual consumer freshness bound; no universal500ms.',0,None,'ms'),
+ ('ttl_bias_ohm','Actual externalTTLinputbias resistor;2026guide suggests4.5k..47k but dependsleakage/noise.',0,None,'ohm'),
+ ('external_series_ohm','Actual added RS232line resistor;2026schematicadvice<=50ohm not normative232.',0,None,'ohm'),
+ ('external_cap_pf','Actual extra linecapacitor;2026schematicadvice<=200pF not entire2500pFbudget.',0,None,'pF'),
+ ('chargepump_cap_voltage_v','Actual chargepump capacitor rating, selectedpartvoltage/derating required.',0,None,'V'),
+ ('output_typ_abs_v','Actual selectedpart typicalVoH/VoL magnitude for capacitorratingguideline.',0,None,'V'),
+]:d(k,'number',meaning,lo,hi,unit,source=PCB if k in('ttl_bias_ohm','external_series_ohm','external_cap_pf','chargepump_cap_voltage_v','output_typ_abs_v')else HAND if k=='control_v'else TI,integer=k in('data_bits','start_bits','parity_bits','characters'))
+for k,meaning in [('value_accepted','Actual decoded/processed valueaccepted withfunctional/electricalprovenance.'),('electrical_valid','Actual voltage/load/wiring/powerandnoise validated, notunconfirmeddefault.'),('mapping_valid','Actual dataidentity/units/scaling interpretationverified.'),('codec_verified','Actual peersshareframing/bitrate/flowcontrolconfiguration.'),('power_sequence_verified','Actual startupTTLbias/backbias leakageandpowersequence checked.'),('cts_asserted','ActualRTS_CTSpermission totransmit, notdefaultTrue.'),('dsr_asserted','ActualDTR_DSRpermission, notdefaultTrue.')]:d(k,'boolean',meaning,source=PCB if k=='power_sequence_verified'else TI)
+for k,meaning in [('device_source','Actual exactlocalpart/serialcontroller/load/clock evidence.'),('peer_source','Actual peerpart/serialcontroller/configuration evidence.'),('binding_source','Actual DTE/DCE/pin/crossedline/wiring binding.'),('physical_source','Actual voltage/load/cable/ground/protection source.'),('codec_source','Actual framing/encoding/message/flowcontrol specification, not RS232 byteguess.'),('schedule_source','Actual wiretransactions andflow/control/processing bounds.'),('acceptance_source','Actual functionalrequirementandobservedconsumer acceptance.'),('registered_source','Actual independenthigher-rate/device/clock/codec specification.'),('wave_source','Actual electrical waveform and decoded transaction observation.'),('clock_source','Actualcorrelatedclockanduncertainty.'),('power_source','Actual powersequencing/bias/backbias assessment.')]:d(k,'text',meaning,source=PCB if k=='power_source'else TI)
+REQUIRED=('profile','role','peer_role','wiring','connector','direction','clocking','encoding','device_source','peer_source','binding_source','physical_source','codec_source','schedule_source','acceptance_source')
+REMOVED={k:'Not a universal RS232 requirement; actual electrical/UART/codec configuration now explicit.'for k in('bitrate','arbitration_bitrate','data_bitrate','reserved_bandwidth_percent','sync_method','retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms','gateway_maximum_throughput','gateway_input_buffer','gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
+def semantics():
+ rules=[]
+ def r(k,w=None,source=TI,**kw):rules.append(dict(parameter=k if k=='local_timing_evidence'else'rs232_'+k,when={'rs232_'+a:b for a,b in(w or{}).items()},source=source,source_revision=SOURCES[source],**kw))
+ r('local_timing_evidence',allowed=[])
+ for k in('profile','wiring','clocking','encoding','connector','flow_control'):r('registered_source',{k:'REGISTERED_ACTUAL'},required=True)
+ for role in('DTE','DCE'):
+  r('wiring',{'role':role,'peer_role':role},allowed=['NULL_MODEM','REGISTERED_ACTUAL'])
+  r('wiring',{'role':role,'peer_role':'DCE'if role=='DTE'else'DTE'},allowed=['STRAIGHT','REGISTERED_ACTUAL'])
+ r('encoding',{'clocking':'ASYNCHRONOUS'},allowed=['START_STOP','REGISTERED_ACTUAL'])
+ r('encoding',{'clocking':'SYNCHRONOUS'},allowed=['SYNCHRONOUS_RAW','REGISTERED_ACTUAL'])
+ for k in('bitrate_bps','device_max_bps','peer_max_bps','cable_pf_m'):r(k,exclusive_minimum=0)
+ for k in('bitrate_bps',):
+  r(k,maximum_parameter='rs232_device_max_bps');r(k,maximum_parameter='rs232_peer_max_bps')
+  for required in('device_max_bps','peer_max_bps'):r(required,{'profile':'DEVICE_QUALIFIED'},when_present=['rs232_'+k],required=True)
+ r('registered_source',{'profile':'DEVICE_QUALIFIED'},required=True)
+ w={'profile':'TIA_232_F_TI2002'}
+ r('bitrate_bps',w,maximum=20000)
+ for k,lo,hi in [('driver_mark_v',-15,-5),('driver_space_v',5,15),('receiver_mark_v',-15,-3),('receiver_space_v',3,15),('receiver_load_ohm',3000,7000)]:r(k,w,minimum=lo,maximum=hi)
+ r('total_load_pf',w,maximum=2500);r('slew_v_us',w,maximum=30)
+ r('driver_off_impedance_ohm',w,exclusive_minimum=300)
+ for logic,lo,hi in [('MARK_1',-15,-3),('SPACE_0',3,15)]:r('receiver_data_v',{**w,'data_logic':logic},minimum=lo,maximum=hi)
+ for state,lo,hi in [('ON',3,15),('OFF',-15,-3)]:r('control_v',{**w,'control_state':state},minimum=lo,maximum=hi,source=HAND)
+ r('data_logic',when_present=['rs232_receiver_data_v'],required=True)
+ r('control_state',when_present=['rs232_control_v'],required=True)
+ r('transition_us',w,when_half_open_ranges={'rs232_bitrate_bps':[0,40]},maximum=1000)
+ r('transition_us',w,when_ranges={'rs232_bitrate_bps':[40,20000]},maximum_expression={'product':[.04,1000000,{'power':['rs232_bitrate_bps',-1]}]})
+ r('bitrate_bps',when_present=['rs232_transition_us'],required=True)
+ r('total_load_pf',equal_expression={'sum':[{'product':['rs232_cable_pf_m','rs232_cable_m']},'rs232_receiver_cap_pf','rs232_other_cap_pf']})
+ for k in('cable_pf_m','cable_m','receiver_cap_pf','other_cap_pf'):r(k,when_present=['rs232_total_load_pf'],required=True)
+ w={'encoding':'START_STOP'}
+ for k in('start_bits','data_bits','parity','parity_bits','stop_bits'):r(k,w,when_present=['rs232_character_bits'],required=True)
+ r('character_bits',w,equal_expression={'sum':['rs232_start_bits','rs232_data_bits','rs232_parity_bits','rs232_stop_bits']})
+ r('stop_bits',w,allowed=[1,1.5,2]);r('parity_bits',{'parity':'NONE'},allowed=[0])
+ for parity in('EVEN','ODD','MARK','SPACE'):r('parity_bits',{'parity':parity},allowed=[1])
+ r('wire_bits',w,equal_expression={'product':['rs232_character_bits','rs232_characters']})
+ for k in('characters','character_bits'):r(k,w,when_present=['rs232_wire_bits'],required=True)
+ r('wire_time_ms',equal_ratio={'numerator_parameter':'rs232_wire_bits','factor':1000,'denominator_product':['rs232_bitrate_bps'],'denominator_offset':1})
+ r('wire_time_ms',{'wire_bits':0},allowed=[0])
+ for k in('bitrate_bps','wire_bits'):r(k,when_present=['rs232_wire_time_ms'],required=True)
+ r('transaction_bound_ms',equal_expression={'sum':['rs232_wire_time_ms','rs232_flow_wait_bound_ms','rs232_decode_bound_ms']})
+ for k in('wire_time_ms','flow_wait_bound_ms','decode_bound_ms'):r(k,when_present=['rs232_transaction_bound_ms'],required=True)
+ r('transaction_bound_ms',maximum_parameter='rs232_transaction_limit_ms')
+ r('flow_wait_bound_ms',{'flow_control':'NONE'},allowed=[0])
+ r('age_ms',maximum_parameter='rs232_freshness_ms')
+ r('tvs',allowed=['NONE','BIDIRECTIONAL','REGISTERED_ACTUAL'],source=PCB)
+ for bias in('EXTERNAL_PULL_UP','EXTERNAL_PULL_DOWN'):r('ttl_bias_ohm',{'ttl_bias':bias},required=True,source=PCB);r('power_source',{'ttl_bias':bias},required=True,source=PCB)
+ r('chargepump_cap_voltage_v',minimum_expression={'product':[2,'rs232_output_typ_abs_v']},source=PCB)
+ r('output_typ_abs_v',when_present=['rs232_chargepump_cap_voltage_v'],required=True,source=PCB)
+ w={'value_accepted':True}
+ for k,v in [('outcome','ACCEPTED'),('electrical_valid',True),('mapping_valid',True),('codec_verified',True),('power_sequence_verified',True),('power_state','ACTIVE')]:r(k,w,required=True,allowed=[v])
+ for k in('bitrate_bps','wave_source','clock_source','power_source','age_ms','freshness_ms','transaction_bound_ms','transaction_limit_ms'):r(k,w,required=True)
+ r('ttl_bias',w,allowed=['INTERNAL','EXTERNAL_PULL_UP','EXTERNAL_PULL_DOWN','REGISTERED_ACTUAL'],required=True,source=PCB)
+ r('cts_asserted',{'value_accepted':True,'flow_control':'RTS_CTS'},required=True,allowed=[True])
+ r('dsr_asserted',{'value_accepted':True,'flow_control':'DTR_DSR'},required=True,allowed=[True])
+ return dict(rate_model={'type':'RS232_ACTUAL_DEVICE_AND_CODEC_RATE','fields':[]},required_parameters=['rs232_'+k for k in REQUIRED],native_parameter_prefixes=['rs232_'],parameter_constraints=rules,
+  parameter_evidence_scope='EXPLICIT_LAYER',physical_layer_profile_id='rs232_actual_single_ended_interchange',medium_access_model='DEDICATED_POINT_TO_POINT_INTERCHANGE',arbitration_model_id='ACTUAL_HANDSHAKE_OR_HIGHER_LAYER_CODEC',
+  mechanisms={'encoding':['ACTUAL_HIGHER_LAYER_UART_OR_SYNCHRONOUS_CODEC'],'qualification':['NO_NORMATIVE_MINIMUM_BITRATE_OR_8N1','2500PF_NOT_UNIVERSAL_15M','ELECTRICAL_VALIDITY_NOT_TRANSACTION_CAPACITY']})
+def fields():
+ result=[]
+ for spec in DECLARATIONS:
+  k=spec['key'][6:];v={a:b for a,b in spec.items()if b is not None}
+  v.update(label=k.replace('_',' '),category='timing'if spec.get('unit')in('ms','us','bit/s')else'physical',scope='route',editable=True,required=k in REQUIRED,
+   parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
+  # RS232 has no normative operating-rate/UART/connector/pin/handshake default.
+  # Electrical bounds are limits, not values to manufacture as observations.
+  result.append(v)
+ return result

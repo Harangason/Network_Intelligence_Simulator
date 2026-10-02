@@ -1,0 +1,410 @@
+--- before/backend/communication/technologies/nb_iot.py
++++ after/backend/communication/technologies/nb_iot.py
+@@ -0,0 +1,407 @@
++"""Release-qualified NB-IoT resources and negotiated NAS state, not peak capacity."""
++CAP='https://www.etsi.org/deliver/etsi_ts/136300_136399/136306/18.08.00_60/ts_136306v180800p.pdf'
++RF='https://www.etsi.org/deliver/etsi_ts/136100_136199/136101/18.13.00_60/ts_136101v181300p.pdf'
++PHY='https://www.etsi.org/deliver/etsi_ts/136200_136299/136211/18.00.02_60/ts_136211v180002p.pdf'
++PROC='https://www.etsi.org/deliver/etsi_ts/136200_136299/136213/18.04.00_60/ts_136213v180400p.pdf'
++NAS='https://www.etsi.org/deliver/etsi_ts/124000_124099/124008/18.08.00_60/ts_124008v180800p.pdf'
++STATE='https://www.etsi.org/deliver/etsi_ts/124300_124399/124301/18.09.00_60/ts_124301v180900p.pdf'
++SOURCES={CAP:'ETSI TS136306V18.8.0 August2026 Release18,4.1C/4.2,4.3.4.55/56/62/222/223',
++ RF:'ETSI TS136101V18.13.0 August2026 Release18,5.5-1 footnotes,5.5F/5.6F/6.2.2F/6.5.1F',
++ PHY:'ETSI TS136211V18.0.2 August2025 Release18,10.0/10.1.2/10.1.3.2/6/10.2.2/3',
++ PROC:'ETSI TS136213V18.4.0 September2026 Release18,16.4.1.3/4/5/16.5.1/1.1/1.2',
++ NAS:'ETSI TS124008V18.8.0 March2025 Release18,10.5.5.32 NB-S1/NB-N1 and10.5.7.3/4/4a',
++ STATE:'ETSI TS124301V18.9.0 January2025 Release18,4.7/5.3.11/12/15 and8.2.1.12/13'}
++EDITION='R18_306_18_8_101_18_13_211_18_0_2_213_18_4_NAS_18'
++# Own NB-IoT E-UTRA eligibility and RF intervals, not LTE-M's eligible band list.
++BANDS={
++ 1:('FDD',(1920,1980),(2110,2170)),2:('FDD',(1850,1910),(1930,1990)),
++ 3:('FDD',(1710,1785),(1805,1880)),4:('FDD',(1710,1755),(2110,2155)),
++ 5:('FDD',(824,849),(869,894)),7:('FDD',(2500,2570),(2620,2690)),
++ 8:('FDD',(880,915),(925,960)),11:('FDD',(1427.9,1447.9),(1475.9,1495.9)),
++ 12:('FDD',(699,716),(729,746)),13:('FDD',(777,787),(746,756)),
++ 14:('FDD',(788,798),(758,768)),17:('FDD',(704,716),(734,746)),
++ 18:('FDD',(815,830),(860,875)),19:('FDD',(830,845),(875,890)),
++ 20:('FDD',(832,862),(791,821)),21:('FDD',(1447.9,1462.9),(1495.9,1510.9)),
++ 24:('FDD',(1626.5,1660.5),(1525,1559)),25:('FDD',(1850,1915),(1930,1995)),
++ 26:('FDD',(814,849),(859,894)),28:('FDD',(703,748),(758,803)),
++ 31:('FDD',(452.5,457.5),(462.5,467.5)),41:('TDD',(2496,2690),(2496,2690)),
++ 42:('TDD',(3400,3600),(3400,3600)),43:('TDD',(3600,3800),(3600,3800)),
++ 48:('TDD',(3550,3700),(3550,3700)),54:('TDD',(1670,1675),(1670,1675)),
++ 65:('FDD',(1920,2010),(2110,2200)),66:('FDD',(1710,1780),(2110,2200)),
++ 70:('FDD',(1695,1710),(1995,2020)),71:('FDD',(663,698),(617,652)),
++ 72:('FDD',(451,456),(461,466)),73:('FDD',(450,455),(460,465)),
++ 74:('FDD',(1427,1470),(1475,1518)),85:('FDD',(698,716),(728,746)),
++ 87:('FDD',(410,415),(420,425)),88:('FDD',(412,417),(422,427)),
++ 103:('FDD',(787,788),(757,758)),106:('FDD',(896,901),(935,940))}
++USA={2:((1850.1,1909.9),(1930.1,1989.9)),4:((1710.1,1754.9),(2110.1,2154.9)),
++ 5:((824.1,848.9),(869.1,893.9)),12:((699,715.9),(729,745.9)),13:((777,786.9),(746,755.9)),
++ 17:((704.1,715.9),(734.1,745.9)),25:((1850.1,1914.9),(1930.1,1994.9)),
++ 26:((814.1,848.9),(859.1,893.9)),54:((1670.1,1674.9),(1670.1,1674.9)),
++ 66:((1710.1,1779.9),(2110.1,2199.9)),70:((1695.1,1709.9),(1995.1,2019.9)),
++ 71:((663.1,697.9),(617.1,651.9)),85:((698.1,715.9),(728.1,745.9)),
++ 103:((787.1,787.9),(757.1,757.9)),106:((896,901),(935,940))}
++UL_TBS=[
++ [16,32,56,88,120,152,208,256],[24,56,88,144,176,208,256,344],
++ [32,72,144,176,208,256,328,424],[40,104,176,208,256,328,440,568],
++ [56,120,208,256,328,408,552,680],[72,144,224,328,424,504,680,872],
++ [88,176,256,392,504,600,808,1000],[104,224,328,472,584,712,1000,1224],
++ [120,256,392,536,680,808,1096,1384],[136,296,456,616,776,936,1256,1544],
++ [144,328,504,680,872,1000,1384,1736],[176,376,584,776,1000,1192,1608,2024],
++ [208,440,680,1000,1128,1352,1800,2280],[224,488,744,1032,1256,1544,2024,2536],
++ [256,552,840,1128,1416,1736,2280],[280,600,904,1224,1544,1800,2472],
++ [328,632,968,1288,1608,1928,2536],[336,696,1064,1416,1800,2152],
++ [376,776,1160,1544,1992,2344],[408,840,1288,1736,2152,2536],
++ [440,904,1384,1864,2344],[488,1000,1480,1992,2536]]
++DL_TBS=[
++ [16,32,56,88,120,152,208,256],[24,56,88,144,176,208,256,344],
++ [32,72,144,176,208,256,328,424],[40,104,176,208,256,328,440,568],
++ [56,120,208,256,328,408,552,680],[72,144,224,328,424,504,680,872],
++ [88,176,256,392,504,600,808,1032],[104,224,328,472,584,680,968,1224],
++ [120,256,392,536,680,808,1096,1352],[136,296,456,616,776,936,1256,1544],
++ [144,328,504,680,872,1032,1384,1736],[176,376,584,776,1000,1192,1608,2024],
++ [208,440,680,904,1128,1352,1800,2280],[224,488,744,1032,1256,1544,2024,2536],
++ [256,552,840,1128,1416,1736,2280,2856],[280,600,904,1224,1544,1800,2472,3112],
++ [296,632,968,1288,1608,1928,2600,3240],[336,696,1064,1416,1800,2152,2856,3624],
++ [376,776,1160,1544,1992,2344,3112,4008],[408,840,1288,1736,2152,2600,3496,4264],
++ [440,904,1384,1864,2344,2792,3752,4584],[488,1000,1480,1992,2472,2984,4008,4968]]
++UL_RUS=[1,2,3,4,5,6,8,10]
++DL_REPS=[1,2,4,8,16,32,64,128,192,256,384,512,768,1024,1536,2048]
++EDRX={2:20.48,3:40.96,4:20.48,5:81.92,6:20.48,7:20.48,8:20.48,9:163.84,
++ 10:327.68,11:655.36,12:1310.72,13:2621.44,14:5242.88,15:10485.76}
++DECLARATIONS=[]
++def d(key,kind,meaning,source=CAP,lo=None,hi=None,unit=None,options=None,integer=False):
++    DECLARATIONS.append(dict(key='nbi_'+key,type=kind,description=meaning,source=source,source_revision=SOURCES[source],
++        min=lo,max=hi,unit=unit,options=options,integer=integer))
++for key,meaning,choices,source in [
++ ('edition','Actual reviewed Release18 source set; older or other editions require an independent schema.',[EDITION,'REGISTERED_EDITION'],CAP),
++ ('rat','Actual terrestrial E-UTRA radio band versus independently qualified NR/NTN. No NTN fallback.',['EUTRA_TERRESTRIAL','REGISTERED_RAT'],RF),
++ ('category','Actual combined UL/DL category; NB2 also advertises NB1, not arbitrary mixed pairs.',['NB1','NB2','REGISTERED_CATEGORY'],CAP),
++ ('role','Actual UE versus serving base station; UE RF limits do not define eNodeB output.',['UE','ENODEB'],RF),
++ ('direction','Actual scheduled direction with its own grants, blocks and repetitions.',['UPLINK','DOWNLINK'],PROC),
++ ('deployment','Actual standalone, guardband or inband PCI relation, not an industry template.',['STANDALONE','GUARDBAND','INBAND_SAME_PCI','INBAND_DIFFERENT_PCI'],PHY),
++ ('duplex','Actual serving-band FDD with typeB half duplex, or TDD. Full FDD is not NB1/NB2.',['HD_FDD_TYPE_B','TDD'],RF),
++ ('channel','Actual NPUSCH data or uplink control, or NPDSCH unicast; other services need separate grant rules.',['NPUSCH_1','NPUSCH_2','NPDSCH_UNICAST','REGISTERED_CHANNEL'],PHY),
++ ('grant_kind','Actual reviewed DCI allocation versus independently qualified PUR/EDT/SIB/multiTB.',['DCI_UNICAST','REGISTERED_GRANT'],PROC),
++ ('modulation','Actual grant-selected modulation and optional NB2 capability.',['BPSK','QPSK','16QAM'],PHY),
++ ('ns','Actual network-signalled NS_04/06 has US band edge rules; no regulatory permission from band eligibility.',['OTHER','NS_04','NS_06'],RF),
++ ('power_class','Actual commissioned UE power class; nominal maximum not current radiated output.',['3','5','6','REGISTERED_POWER_CLASS'],RF),
++ ('nas_mode','Actual NB-S1 EPS versus independently registered NB-N1/other core procedures.',['NB_S1','REGISTERED_NAS_MODE'],STATE),
++ ('ciot_path','Actual accepted CP, UP or registered data path. CP can carry IP, non-IP or Ethernet; not automatically UDP.',['CONTROL_PLANE','USER_PLANE','REGISTERED_PATH'],STATE),
++ ('pdn_type','Actual negotiated PDN data type, separate from radio PHY.',['IPV4','IPV6','IPV4V6','NON_IP','ETHERNET','REGISTERED_TYPE'],STATE),
++ ('core_endpoint','Actual SCEF non-IP versus SGi binding or other independently registered core endpoint.',['SCEF','SGI','REGISTERED_ENDPOINT'],STATE),
++ ('rrc_state','Actual RRC idle/connected state for power saving and data transfer.',['IDLE','CONNECTED'],STATE),
++ ('emm_state','Actual normal registered service versus other NAS state.',['NORMAL_SERVICE','OTHER'],STATE),
++ ('timer_receiver','Actual NETWORK interpretation of request versus UE interpretation of received grant; long units differ.',['NETWORK','UE'],NAS),
++ ('nas_procedure_class','Actual applicable EMM/ESM timer table class; additions are not application timeout defaults.',['EMM','ESM','REGISTERED_PROCEDURE'],STATE)]:d(key,'select',meaning,source,options=choices)
++for key,meaning,source in [
++ ('revision','Actual device/firmware/network edition and compatible radio, MAC/RLC/RRC/NAS version references.',CAP),
++ ('registered_source','Actual independent schema for another edition/RAT/category/grant/service; no assumed NR/NTN timing.',CAP),
++ ('device_source','Actual supported band/category/multi-tone/HARQ/optional QAM and certified device capability.',CAP),
++ ('binding_source','Actual canonical UE/cell and explicit independently registered upper/core/backhaul binding.',PHY),
++ ('network_source','Actual serving-cell deployment, admission and resource configuration.',RF),
++ ('regulatory_source','Actual jurisdiction, approved spectrum and deployment permission, not universal frequencies.',RF),
++ ('physical_source','Actual RF link budget, antenna, receiver, interference, thermal and spectral evidence.',RF),
++ ('power_source','Actual band/power/MPR/A-MPR/tolerance and test conditions; band88 absent from selected class table.',RF),
++ ('band_qualification_source','Actual band footnote/special regional restriction qualification, including24/65/66/70/74.',RF),
++ ('scheduler_source','Actual complete shared-cell grants, NPRACH/control/reference/reservations/gaps/HARQ resources.',PROC),
++ ('grant_source','Actual DCI/RAR subcarrier/resource/TBS/repetition and search-space context, not invented allocation.',PROC),
++ ('airtime_source','Actual coded/repeated resource mapping including postponements, guards and control overhead.',PHY),
++ ('mac_rlc_source','Actual MAC/RLC/PDCP segmentation, retry, queues and complete protocol resources.',CAP),
++ ('nas_source','Actual accepted attach/TAU core context, PSM/eDRX and protected signalling evidence.',STATE),
++ ('application_source','Actual application codec/segmentation and functional endpoints, separate from radio TBS.',STATE),
++ ('security_source','Actual protected subscription references, AS/NAS and independently protected application path.',STATE),
++ ('capacity_source','Actual complete radio/core/backhaul/server capacity evidence; category peaks are not service rate.',PROC),
++ ('acceptance_source','Actual E2E/freshness/safety acceptance, distinct from radio or NAS acknowledgements.',CAP),
++ ('ue_ref','Actual commissioned UE reference; no fabricated IMSI/IMEI/keys or default subscriber.',STATE),
++ ('cell_ref','Actual network-assigned serving cell reference, not default CAN identity.',RF),
++ ('subscription_key_ref','Actual protected credential reference, never key contents or a default credential.',STATE),
++ ('frequency_error_source','Actual relative eNodeB carrier measurement and72/tone-slot averaging, not oscillator catalog ppm.',RF),
++ ('tdd_source','Actual TS36.211/331 UL/DL/special-subframe/guard configuration and eligible carrier.',PHY),
++ ('timer_source','Actual requested/received raw NAS IE, receiver, presence, protection and latest negotiation.',NAS),
++ ('reachability_source','Actual paging occasions/PTW/PSM/core buffering and complete downlink delivery bound.',STATE)]:d(key,'text',meaning,source)
++for key,meaning,lo,hi,unit,integer,source in [
++ ('band','Actual eligible terrestrial E-UTRA band; NR n-bands need their own qualified schema.',1,106,None,True,RF),
++ ('carrier_mhz','Actual direction-dependent radio carrier, qualified by band/NS and footnotes.',0,None,'MHz',False,RF),
++ ('channel_khz','Normative NB1/NB2 channel200kHz, not the180kHz grid or useful throughput.',200,200,'kHz',False,RF),
++ ('grid_khz','Normative180kHz transmission grid, separate from serving channel200kHz.',180,180,'kHz',False,PHY),
++ ('scs_khz','Actual UL3.75/15kHz spacing; DL always15kHz.',3.75,15,'kHz',False,PHY),
++ ('grid_tones','Normative grid48 at3.75kHz or12 at15kHz, not allocated tones.',12,48,None,True,PHY),
++ ('tones','Actual contiguous allocated tones1/3/6/12;3.75kHz supports onlysingle-tone.',1,12,None,True,PHY),
++ ('tone_index','Actual DCI subcarrier indication;3.75kHz0..47,15kHz0..18, remaining reserved.',0,63,None,True,PROC),
++ ('first_tone','Actual first tone in the contiguous DCI allocation, not a global channel number.',0,47,None,True,PROC),
++ ('slot_ms','Normative UL slot2ms at3.75kHz or0.5ms at15kHz.',.5,2,'ms',False,PHY),
++ ('symbols_per_slot','Normative seven SC-FDMA symbols in selected NPUSCH resource unit.',7,7,None,True,PHY),
++ ('ru_slots','Normative selected NPUSCH RU16/8/4/2slots, not application cycle.',2,16,None,True,PHY),
++ ('ru_ms','Nominal occupied selected RUslots*slot duration; guards/postponements not included.',1,32,'ms',False,PHY),
++ ('ru_index','Actual DCI resource assignment index0..7 mapping1/2/3/4/5/6/8/10RUs.',0,7,None,True,PROC),
++ ('ru_count','Actual granted RUcount, not alwaysone nor 7 forindex7.',1,10,None,True,PROC),
++ ('rep_index','Actual NPUSCH DCI repetition index0..7 or NPDSCH0..15, not retry limit.',0,15,None,True,PROC),
++ ('repetitions','Actual granted transmission repetitions; ULDCI1..128, DL separatelyqualified.',1,None,None,True,PROC),
++ ('tbs_index','Actual modulation-dependent TBS index, distinct from MCS and application bytes.',0,21,None,True,PROC),
++ ('mcs_index','Actual DCI MCS, single-tone0..10 table or multi-tone/DCI special16QAM context.',0,15,None,True,PROC),
++ ('qam16_index','Actual DCI MCSfor16QAM index with deployment-specific TBS offset.',0,7,None,True,PROC),
++ ('sf_index','Actual NPDSCH resource assignment index0..7; no SIB1table fallback.',0,7,None,True,PROC),
++ ('sf_count','Actual NPDSCH1/2/3/4/5/6/8/10subframes per repetition, not an application cycle.',1,10,None,True,PROC),
++ ('tb_bits','Actual selected grant transport block bits; not application payload or uncoded throughput.',1,None,'bit',True,PROC),
++ ('dl_tb_cap_bits','Normative selected category/optional DL16QAM capability bound; not installed grant.',1,None,'bit',True,CAP),
++ ('ul_tb_cap_bits','Normative selected category UL1000/2536bits; not arbitrary bytes or peakrate.',1,None,'bit',True,CAP),
++ ('soft_channel_bits','Normative category DL soft channel buffer, not free application RAM.',1,None,'bit',True,CAP),
++ ('layer2_cap_bytes','Normative category4000/8000/12000byte L2capability, not assigned application queue.',1,None,'byte',True,CAP),
++ ('harq_processes','Actual configured one or two HARQ processes, optionalNB2capability separate.',1,2,None,True,CAP),
++ ('hd_guard_before_ms','TypeB half-duplex receive-to-transmit guard, not deadline.',1,None,'ms',False,PHY),
++ ('hd_guard_after_ms','TypeB half-duplex transmit-to-receive guard, not deadline.',1,None,'ms',False,PHY),
++ ('tdd_assignment','Actual eligible TDD UL/DL configuration for chosen ULspacing.',1,5,None,True,PHY),
++ ('scheduled_bound_ms','Actual complete grant/control/airtime/postponement upper bound.',0,None,'ms',False,PHY),
++ ('functional_bound_ms','Actual functional complete E2Edeadline, separate from radio ACK.',0,None,'ms',False,CAP),
++ ('nominal_max_power_dbm','Normative selected class nominal maximum23/20/14dBm, not actual output.',None,None,'dBm',False,RF),
++ ('output_power_dbm','Actual measured radiated/transmitted output with MPR/tolerance/source.',None,None,'dBm',False,RF),
++ ('frequency_error_abs_ppm','Actual absolute relativecarriererror<=0.2ppm below/equal1GHz,else<=0.1ppm.',0,None,'ppm',False,RF),
++ ('frequency_average_slots','Normative72/allocatedtone averaging count for actual frequency error.',6,72,None,True,RF),
++ ('packet_bytes','Actual encoded upper-layer bytes inclactualheader; may spanmultiple radio TBs.',0,None,'byte',True,STATE),
++ ('header_bytes','Actual upper-layer/security codec overhead; no universal IP/UDP/Ethernetheader.',0,None,'byte',True,STATE),
++ ('nas_base_timer_s','Actual applicable named NAS procedure timer from its own table.',0,None,'s',False,STATE),
++ ('nas_timer_s','Actual applicable EMMbase+240s or ESMbase+180s inNB-S1, not application default.',0,None,'s',False,STATE),
++ ('t3412_raw','Actual GPRStimer3 octet unit/high3,value/low5, not an arbitrary lifetime.',0,255,None,True,NAS),
++ ('t3412_unit','Actual GPRStimer3 unit0..7;7means extendedT3412IE consideredabsent.',0,7,None,True,NAS),
++ ('t3412_value','Actual T3412 timer multiplier0..31, separate from unit and IE presence.',0,31,None,True,NAS),
++ ('t3412_seconds','Decoded actual accepted T3412 extension;unit6 receiver/protection dependent.',0,None,'s',True,NAS),
++ ('t3324_raw','Actual GPRStimer2 octet, unit high3 and value low5.',0,255,None,True,NAS),
++ ('t3324_unit','Actual timer2 unit0=2s,1=60s,2=360s,3..6interpreted60s,7deactivated.',0,7,None,True,NAS),
++ ('t3324_value','Actual T3324 multiplier0..31;zero can mean immediatePSM, not missing.',0,31,None,True,NAS),
++ ('t3324_seconds','Decoded actual active timer;deactivatedunit7 has no finite seconds.',0,None,'s',True,NAS),
++ ('edrx_raw','Actual octet PTWhigh4,eDRXlow4 forNB-S1, not LTE-Mtable.',0,255,None,True,NAS),
++ ('edrx_code','Actual received eDRXcode0..15;0/1treatedIEabsent,4/6/7/8mapped20.48s.',0,15,None,True,NAS),
++ ('edrx_seconds','Decoded actual effective NB-S1 eDRX cycle20.48..10485.76s.',0,None,'s',False,NAS),
++ ('ptw_code','Actual paging-window code0..15;NBwindow=(code+1)*2.56s.',0,15,None,True,NAS),
++ ('ptw_seconds','Decoded actual NB-S1 PTW2.56..40.96s, not LTE-M1.28step.',2.56,40.96,'s',False,NAS)]:d(key,'number',meaning,source,lo,hi,unit,integer=integer)
++for key,meaning,source in [
++ ('multi_tone_supported','Actual multiTone-r13 capability; mandatoryselectedRelease18, not assumedforotherrelease.',CAP),
++ ('multi_carrier_supported','Actual multiCarrier-r13 capability; doesnotdoubleUEresourceblock or implyaggregation.',CAP),
++ ('nb1_advertised','Actual NB1advertisement requiredalsoNB2, not fabricatedmodemmetadata.',CAP),
++ ('dl_16qam_supported','Actual optional npdsch-16QAM-r17 NB2unicast capability.',CAP),
++ ('ul_16qam_supported','Actual optional band-qualified npusch-16QAM-r17 NB2unicast capability.',CAP),
++ ('qam16_configured','Actual applicable network/search-spaceQAM16configuration, not justcapability.',PROC),
++ ('two_harq_supported','Actual optional NB2twoHARQ-Processes-r14.',CAP),
++ ('cp_supported','Actual NB-S1 UE/network mandatoryCP CIoTsupport, not choiceofactualservicepath.',STATE),
++ ('up_supported','Actual optional UP CIoTsupport;requiresS1-U capability.',STATE),
++ ('s1u_supported','Actual S1-Udata-transfer capability, independently from CPoptimizeddelivery.',STATE),
++ ('ciot_accepted','Actual selectedCIoToptimizationacceptedforcurrentTAI, notrequestedonly.',STATE),
++ ('control_plane_only','Actual network PDNcontrol-plane-only indication;SCEFnonIPrequiresit.',STATE),
++ ('psm_requested','Actual UE request;doesnotmeanPSMwasgrantedoractive.',STATE),
++ ('psm_granted','Actual latestnetworkallocationofusableT3324, distinctfromrequest.',STATE),
++ ('psm_active','Actual PSMstate needsidle/normalservice/nonemergency andgrant.',STATE),
++ ('edrx_requested','Actual requestedextendedDRXIE;notacceptedpagingconfiguration.',STATE),
++ ('edrx_granted','Actual effective latestnetworkeDRXacceptance;0/1receivedcode treatedabsent.',STATE),
++ ('edrx_using','Actual currenteDRXuse requiresgrant andnoemergencyPDN.',STATE),
++ ('emergency','Actual emergencyattach/PDNcontextpreventsPSM/eDRXuse.',STATE),
++ ('t3412_present','Actual effectiveT3412extensionpresence;unit7interpretedasnotincluded.',NAS),
++ ('t3412_integrity','Actual receivedUEgrantintegrityprotection, neededforunit6interpretation.',NAS),
++ ('t3324_active','Actual activeversusdeactivatedtimer2;zeroactivevaluestillvalid.',NAS),
++ ('capacity_confirmed','Actual completecapacityapproval, neverfrompublishedpeak ornominalbandwidth.',PROC)]:d(key,'boolean',meaning,source)
++REQUIRED=['edition','rat','category','role','direction','deployment','duplex','revision','device_source','binding_source',
++ 'network_source','regulatory_source','physical_source','scheduler_source','grant_source','airtime_source','mac_rlc_source',
++ 'nas_source','application_source','security_source','capacity_source','acceptance_source']
++REMOVED={key:'Removed foreign '+key+': NB-IoT category/grants/repetitions/half-duplex/negotiated NAS and explicit core path replace generic CAN/Ethernet/radio defaults.'for key in
++ ('bitrate','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','sync_method','rate_limit_bit_s',
++ 'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms','gateway_maximum_throughput',
++ 'gateway_input_buffer','gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
++
++def semantics():
++    rules=[dict(parameter='local_timing_evidence',allowed=[],source=PHY,source_revision='NB-IoT is not an addressed I2C transaction')]
++    def r(key,when=None,source=CAP,**kw):
++        rules.append(dict(parameter='nbi_'+key,when={'nbi_edition':EDITION,'nbi_rat':'EUTRA_TERRESTRIAL',**{'nbi_'+k:v for k,v in(when or{}).items()}},source=source,source_revision=SOURCES[source],**kw))
++    for key,value in [('edition','REGISTERED_EDITION'),('rat','REGISTERED_RAT'),('category','REGISTERED_CATEGORY'),
++        ('channel','REGISTERED_CHANNEL'),('grant_kind','REGISTERED_GRANT'),('power_class','REGISTERED_POWER_CLASS'),('nas_mode','REGISTERED_NAS_MODE'),('ciot_path','REGISTERED_PATH'),
++        ('pdn_type','REGISTERED_TYPE'),('core_endpoint','REGISTERED_ENDPOINT'),('nas_procedure_class','REGISTERED_PROCEDURE')]:
++        rules.append(dict(parameter='nbi_registered_source',when={'nbi_'+key:value},required=True,source=CAP,source_revision=SOURCES[CAP]))
++    for key in ('multi_tone_supported','multi_carrier_supported','nb1_advertised'):r(key,allowed=[True])
++    for flag in ('dl_16qam_supported','ul_16qam_supported','two_harq_supported'):r(flag,{'category':'NB1'},forbidden=[True])
++    for category,flag,dl,soft,ul,l2 in [('NB1',None,680,2112,1000,4000),('NB2',False,2536,6400,2536,8000),('NB2',True,4968,12800,2536,12000)]:
++        w={'category':category};dw={**w,**({'dl_16qam_supported':flag}if flag is not None else{})}
++        for key,val in [('dl_tb_cap_bits',dl),('soft_channel_bits',soft),('layer2_cap_bytes',l2)]:r(key,dw,allowed=[val])
++        r('ul_tb_cap_bits',w,allowed=[ul])
++    for key in ('dl_tb_cap_bits','soft_channel_bits','layer2_cap_bytes'):r('dl_16qam_supported',{'category':'NB2'},when_present=['nbi_'+key],required=True)
++    for direction,cap in [('UPLINK','ul_tb_cap_bits'),('DOWNLINK','dl_tb_cap_bits')]:
++        r('tb_bits',{'direction':direction},maximum_parameter='nbi_'+cap,source=PROC)
++        r(cap,{'direction':direction},when_present=['nbi_tb_bits'],required=True)
++    r('harq_processes',{'two_harq_supported':False},allowed=[1]);r('harq_processes',{'category':'NB1'},allowed=[1])
++    r('two_harq_supported',when_greater_than={'nbi_harq_processes':1},allowed=[True],required=True)
++    r('category',when_greater_than={'nbi_harq_processes':1},allowed=['NB2'],required=True)
++    # Band-dependent rules apply only to the reviewed terrestrial E-UTRA path.
++    for band,(duplex,ul,dl)in BANDS.items():
++        w={'rat':'EUTRA_TERRESTRIAL','band':band}
++        r('duplex',w,allowed=['HD_FDD_TYPE_B'if duplex=='FDD'else'TDD'],source=RF)
++        for direction,bounds in [('UPLINK',ul),('DOWNLINK',dl)]:r('carrier_mhz',{**w,'direction':direction},minimum=bounds[0],maximum=bounds[1],source=RF)
++        if band!=88:
++            for cls,dbm in [('3',23),('5',20),('6',14)]:r('nominal_max_power_dbm',{**w,'role':'UE','power_class':cls},allowed=[dbm],source=RF)
++    r('band',{'rat':'EUTRA_TERRESTRIAL'},allowed=list(BANDS),source=RF)
++    r('power_source',{'band':88},when_present=['nbi_nominal_max_power_dbm'],required=True,source=RF)
++    for band in(24,65,66,70,74):r('band_qualification_source',{'band':band},when_present=['nbi_carrier_mhz'],required=True,source=RF)
++    for direction,bounds in [('UPLINK',(1627.5,1656.5)),('DOWNLINK',(1526,1536))]:r('carrier_mhz',{'band':24,'direction':direction},minimum=bounds[0],maximum=bounds[1],source=RF)
++    r('carrier_mhz',{'band':24,'direction':'UPLINK'},when_greater_than={'nbi_carrier_mhz':1637.5},minimum=1646.5,source=RF)
++    for band,(ul,dl)in USA.items():
++        for ns in('NS_04','NS_06'):
++            for direction,bounds in [('UPLINK',ul),('DOWNLINK',dl)]:r('carrier_mhz',{'rat':'EUTRA_TERRESTRIAL','band':band,'ns':ns,'direction':direction},minimum=bounds[0],maximum=bounds[1],source=RF)
++    for key in('power_class','nominal_max_power_dbm','output_power_dbm','frequency_error_abs_ppm'):r('role',when_present=['nbi_'+key],allowed=['UE'],required=True,source=RF)
++    for key in('nominal_max_power_dbm','output_power_dbm'):r('power_class',when_present=['nbi_'+key],required=True,source=RF)
++    r('power_source',when_present=['nbi_output_power_dbm'],required=True,source=RF)
++    r('frequency_error_abs_ppm',{'role':'UE'},when_ranges={'nbi_carrier_mhz':[0,1000]},maximum=.2,source=RF)
++    r('frequency_error_abs_ppm',{'role':'UE'},when_greater_than={'nbi_carrier_mhz':1000},maximum=.1,source=RF)
++    for key in('carrier_mhz','tones','frequency_error_source'):r(key,when_present=['nbi_frequency_error_abs_ppm'],required=True,source=RF)
++    r('frequency_average_slots',equal_expression={'product':[72,{'power':['nbi_tones',-1]}]},source=RF)
++    for spacing,count,slot in [(3.75,48,2),(15,12,.5)]:
++        w={'direction':'UPLINK','scs_khz':spacing};r('grid_tones',w,allowed=[count],source=PHY);r('slot_ms',w,allowed=[slot],source=PHY)
++    r('scs_khz',allowed=[3.75,15],source=PHY)
++    r('scs_khz',{'direction':'DOWNLINK'},allowed=[15],source=PHY);r('grid_tones',{'direction':'DOWNLINK'},allowed=[12],source=PHY)
++    for key,val in [('grid_khz',180),('channel_khz',200),('symbols_per_slot',7)]:r(key,allowed=[val],source=RF if key=='channel_khz'else PHY)
++    r('channel',{'direction':'DOWNLINK'},allowed=['NPDSCH_UNICAST','REGISTERED_CHANNEL'],source=PHY)
++    r('channel',{'direction':'UPLINK'},allowed=['NPUSCH_1','NPUSCH_2','REGISTERED_CHANNEL'],source=PHY)
++    r('tones',{'direction':'UPLINK','scs_khz':3.75},allowed=[1],source=PHY)
++    r('tones',{'direction':'UPLINK','scs_khz':15},allowed=[1,3,6,12],source=PHY)
++    for tones,slots in [(1,16),(3,8),(6,4),(12,2)]:r('ru_slots',{'channel':'NPUSCH_1','tones':tones},allowed=[slots],source=PHY)
++    r('tones',{'channel':'NPUSCH_2'},allowed=[1],source=PHY);r('ru_slots',{'channel':'NPUSCH_2'},allowed=[4],source=PHY)
++    r('modulation',{'channel':'NPUSCH_2'},allowed=['BPSK'],source=PHY)
++    r('modulation',{'channel':'NPUSCH_1','tones':1},allowed=['BPSK','QPSK'],source=PHY)
++    r('modulation',{'channel':'NPUSCH_1'},when_greater_than={'nbi_tones':1},allowed=['QPSK','16QAM'],source=PHY)
++    r('modulation',{'channel':'NPDSCH_UNICAST'},allowed=['QPSK','16QAM'],source=PHY)
++    for direction,flag in [('UPLINK','ul_16qam_supported'),('DOWNLINK','dl_16qam_supported')]:
++        w={'direction':direction,'modulation':'16QAM'}
++        for key,val in [('category','NB2'),(flag,True),('qam16_configured',True)]:r(key,w,required=True,allowed=[val],source=PROC)
++        r('repetitions',w,allowed=[1],source=PROC)
++    r('ru_ms',equal_expression={'product':['nbi_ru_slots','nbi_slot_ms']},source=PHY)
++    r('tdd_source',{'duplex':'TDD'},required=True,source=PHY)
++    r('tdd_assignment',{'duplex':'TDD','scs_khz':3.75},allowed=[1,4],source=PHY)
++    r('tdd_assignment',{'duplex':'TDD','scs_khz':15},allowed=[1,2,3,4,5],source=PHY)
++    r('tdd_assignment',{'duplex':'TDD','direction':'UPLINK'},required=True,source=PHY)
++    for key in('hd_guard_before_ms','hd_guard_after_ms'):r('duplex',when_present=['nbi_'+key],allowed=['HD_FDD_TYPE_B'],required=True,source=PHY)
++    # This exact table context does not cover PUR, EDT or SIB1/NPUSCHcontrol.
++    for index,count in enumerate(UL_RUS):r('ru_count',{'grant_kind':'DCI_UNICAST','channel':'NPUSCH_1','ru_index':index},allowed=[count],source=PROC)
++    for index in range(8):r('repetitions',{'grant_kind':'DCI_UNICAST','channel':'NPUSCH_1','rep_index':index},allowed=[2**index],source=PROC)
++    r('rep_index',{'grant_kind':'DCI_UNICAST','channel':'NPUSCH_1'},maximum=7,source=PROC)
++    for index,count in enumerate(UL_RUS):r('sf_count',{'grant_kind':'DCI_UNICAST','channel':'NPDSCH_UNICAST','sf_index':index},allowed=[count],source=PROC)
++    for index,count in enumerate(DL_REPS):r('repetitions',{'grant_kind':'DCI_UNICAST','channel':'NPDSCH_UNICAST','rep_index':index},allowed=[count],source=PROC)
++    for index in range(48):
++        w={'grant_kind':'DCI_UNICAST','channel':'NPUSCH_1','scs_khz':3.75,'tone_index':index}
++        r('first_tone',w,allowed=[index],source=PROC);r('tones',w,allowed=[1],source=PROC)
++    r('tone_index',{'grant_kind':'DCI_UNICAST','channel':'NPUSCH_1','scs_khz':3.75},maximum=47,source=PROC)
++    r('tone_index',{'grant_kind':'DCI_UNICAST','channel':'NPUSCH_1','scs_khz':15},maximum=18,source=PROC)
++    for index in range(19):
++        tones,start=(1,index)if index<12 else(3,(index-12)*3)if index<16 else(6,(index-16)*6)if index<18 else(12,0)
++        w={'grant_kind':'DCI_UNICAST','channel':'NPUSCH_1','scs_khz':15,'tone_index':index}
++        r('tones',w,allowed=[tones],source=PROC);r('first_tone',w,allowed=[start],source=PROC)
++    for channel,table,indexkey in [('NPUSCH_1',UL_TBS,'ru_index'),('NPDSCH_UNICAST',DL_TBS,'sf_index')]:
++        for row,values in enumerate(table):
++            for col in range(8):r('tb_bits',{'grant_kind':'DCI_UNICAST','channel':channel,'tbs_index':row,indexkey:col},allowed=values[col:col+1],source=PROC)
++    w={'grant_kind':'DCI_UNICAST','channel':'NPUSCH_1','tones':1}
++    r('mcs_index',w,maximum=10,source=PROC)
++    for mcs in range(11):
++        r('modulation',{**w,'mcs_index':mcs},allowed=['BPSK'if mcs<2 else'QPSK'],source=PROC)
++        r('tbs_index',{**w,'mcs_index':mcs},allowed=[0 if mcs==0 else 2 if mcs==1 else 1 if mcs==2 else mcs],source=PROC)
++    w={'grant_kind':'DCI_UNICAST','channel':'NPUSCH_1'}
++    r('tbs_index',w,when_not={'nbi_modulation':'16QAM'},minimum=0,maximum=13,source=PROC)
++    r('tbs_index',w,when_greater_than={'nbi_tones':1},when_not={'nbi_modulation':'16QAM'},equal_expression='nbi_mcs_index',source=PROC)
++    r('tbs_index',{**w,'modulation':'16QAM'},equal_expression={'sum':['nbi_qam16_index',14]},source=PROC)
++    for channel in('NPUSCH_1','NPDSCH_UNICAST'):r('mcs_index',{'grant_kind':'DCI_UNICAST','channel':channel,'modulation':'16QAM'},allowed=[15],source=PROC)
++    for deployment in('STANDALONE','GUARDBAND','INBAND_SAME_PCI','INBAND_DIFFERENT_PCI'):
++        w={'grant_kind':'DCI_UNICAST','channel':'NPDSCH_UNICAST','deployment':deployment};inband=deployment.startswith('INBAND')
++        r('tbs_index',w,when_not={'nbi_modulation':'16QAM'},maximum=10 if inband else 13,source=PROC)
++        r('tbs_index',{**w,'modulation':'16QAM'},maximum=17 if inband else 21,
++          equal_expression={'sum':['nbi_qam16_index',11 if inband else 14]},source=PROC)
++    r('packet_bytes',equal_expression={'sum':['payload_bytes','nbi_header_bytes']},source=STATE)
++    # Actual filled resource values require their independent selectors.
++    for key,targets in [
++        ('carrier_mhz',['band','ns']),('grid_tones',['scs_khz']),('slot_ms',['scs_khz']),
++        ('ru_slots',['channel','tones']),('ru_ms',['ru_slots','slot_ms']),('ru_count',['grant_kind','ru_index']),
++        ('repetitions',['grant_kind']),('first_tone',['grant_kind','tone_index','scs_khz','channel']),
++        ('tb_bits',['grant_kind','channel','tbs_index']),('tbs_index',['channel','modulation','grant_kind']),
++        ('qam16_index',['modulation','mcs_index']),('frequency_average_slots',['tones']),
++        ('packet_bytes',['header_bytes']),('nominal_max_power_dbm',['band']),
++        ('sf_count',['channel','grant_kind','sf_index']),('edrx_seconds',['nas_mode','edrx_code']),('ptw_seconds',['nas_mode','ptw_code']),('t3412_seconds',['t3412_unit','t3412_value','timer_receiver']),
++        ('t3324_seconds',['t3324_unit','t3324_value'])]:
++        for target in targets:r(target,when_present=['nbi_'+key],required=True)
++    r('modulation',when_present=['nbi_qam16_index'],allowed=['16QAM'],required=True,source=PROC)
++    for channel,targets in [('NPUSCH_1',['ru_index','rep_index','tone_index','mcs_index']),('NPDSCH_UNICAST',['sf_index','rep_index','mcs_index'])]:
++        for key in targets:r(key,{'grant_kind':'DCI_UNICAST','channel':channel},when_present=['nbi_tb_bits'],required=True,source=PROC)
++    r('tbs_index',{'grant_kind':'DCI_UNICAST','channel':'NPDSCH_UNICAST'},when_not={'nbi_modulation':'16QAM'},equal_expression='nbi_mcs_index',source=PROC)
++    r('cp_supported',{'nas_mode':'NB_S1'},allowed=[True],source=STATE)
++    r('s1u_supported',{'nas_mode':'NB_S1','up_supported':True},allowed=[True],required=True,source=STATE)
++    for path,flag in [('CONTROL_PLANE','cp_supported'),('USER_PLANE','up_supported')]:
++        w={'nas_mode':'NB_S1','ciot_path':path}
++        r(flag,w,required=True,allowed=[True],source=STATE);r('ciot_accepted',w,required=True,allowed=[True],source=STATE)
++    for key,val in [('pdn_type','NON_IP'),('control_plane_only',True),('ciot_path','CONTROL_PLANE')]:r(key,{'nas_mode':'NB_S1','core_endpoint':'SCEF'},required=True,allowed=[val],source=STATE)
++    r('ciot_path',{'control_plane_only':True},forbidden=['USER_PLANE'],source=STATE)
++    for cls,increment in [('EMM',240),('ESM',180)]:r('nas_timer_s',{'nas_mode':'NB_S1','nas_procedure_class':cls},equal_expression={'sum':['nbi_nas_base_timer_s',increment]},source=STATE)
++    for key in('nas_base_timer_s','nas_procedure_class'):r(key,when_present=['nbi_nas_timer_s'],required=True,source=STATE)
++    for timer in('t3412','t3324'):
++        r(timer+'_raw',equal_expression={'sum':[{'product':[32,'nbi_'+timer+'_unit']},'nbi_'+timer+'_value']},source=NAS)
++        for key in('unit','value'):r(timer+'_'+key,when_present=['nbi_'+timer+'_raw'],required=True,source=NAS)
++    for unit,seconds in enumerate([600,3600,36000,2,30,60]):r('t3412_seconds',{'t3412_unit':unit},equal_expression={'product':['nbi_t3412_value',seconds]},source=NAS)
++    for receiver,protected,seconds in [('NETWORK',None,1152000),('UE',True,1152000),('UE',False,3600)]:
++        r('t3412_seconds',{'t3412_unit':6,'timer_receiver':receiver,**({'t3412_integrity':protected}if protected is not None else{})},equal_expression={'product':['nbi_t3412_value',seconds]},source=NAS)
++    r('t3412_integrity',{'t3412_unit':6,'timer_receiver':'UE'},when_present=['nbi_t3412_seconds'],required=True,source=NAS)
++    r('t3412_present',{'t3412_unit':7},allowed=[False],source=NAS);r('t3412_seconds',{'t3412_unit':7},allowed=[],source=NAS)
++    r('t3412_present',when_ranges={'nbi_t3412_unit':[0,6]},allowed=[True],source=NAS)
++    for unit,seconds in enumerate([2,60,360,60,60,60,60]):
++        r('t3324_seconds',{'t3324_unit':unit},equal_expression={'product':['nbi_t3324_value',seconds]},source=NAS)
++        r('t3324_active',{'t3324_unit':unit},allowed=[True],source=NAS)
++    r('t3324_active',{'t3324_unit':7},allowed=[False],source=NAS);r('t3324_seconds',{'t3324_unit':7},allowed=[],source=NAS)
++    r('edrx_raw',{'nas_mode':'NB_S1'},equal_expression={'sum':[{'product':[16,'nbi_ptw_code']},'nbi_edrx_code']},source=NAS)
++    for key in('ptw_code','edrx_code'):r(key,{'nas_mode':'NB_S1'},when_present=['nbi_edrx_raw'],required=True,source=NAS)
++    for code,seconds in EDRX.items():r('edrx_seconds',{'nas_mode':'NB_S1','edrx_code':code},allowed=[seconds],source=NAS)
++    for code in(0,1):
++        w={'nas_mode':'NB_S1','edrx_code':code};r('edrx_granted',w,allowed=[False],source=NAS);r('edrx_seconds',w,allowed=[],source=NAS)
++    r('ptw_seconds',{'nas_mode':'NB_S1'},equal_expression={'product':[{'sum':['nbi_ptw_code',1]},2.56]},source=NAS)
++    for key in('psm_active','edrx_using'):
++        w={'nas_mode':'NB_S1',key:True};r('emergency',w,allowed=[False],required=True,source=STATE);r('timer_source',w,required=True,source=STATE)
++    for key,val in [('psm_granted',True),('rrc_state','IDLE'),('emm_state','NORMAL_SERVICE'),('t3324_active',True)]:r(key,{'nas_mode':'NB_S1','psm_active':True},allowed=[val],required=True,source=STATE)
++    r('t3324_unit',{'nas_mode':'NB_S1','psm_granted':True},forbidden=[7],required=True,source=STATE)
++    for key in('t3324_raw','t3324_value','t3324_active','timer_source'):
++        r(key,{'nas_mode':'NB_S1','psm_granted':True},required=True,source=STATE)
++    r('t3324_seconds',{'nas_mode':'NB_S1','psm_active':True},required=True,source=STATE)
++    r('edrx_granted',{'nas_mode':'NB_S1','edrx_using':True},allowed=[True],required=True,source=STATE)
++    r('edrx_code',{'nas_mode':'NB_S1','edrx_granted':True},minimum=2,required=True,source=NAS)
++    for key in('edrx_raw','edrx_seconds','ptw_code','ptw_seconds','timer_source'):
++        r(key,{'nas_mode':'NB_S1','edrx_granted':True},required=True,source=NAS)
++    return dict(rate_model={'type':'NB_IOT_CATEGORY_GRANT_REPETITION_AND_NEGOTIATED_NAS_DEPENDENT','fields':[]},
++        required_parameters=['nbi_'+k for k in REQUIRED],native_parameter_prefixes=['nbi_'],parameter_constraints=rules,
++        physical_layer_profile_id='nb_iot_actual_radio_band_and_deployment',medium_access_model='NETWORK_GRANTS_RANDOM_ACCESS_AND_CE_REPETITIONS',
++        arbitration_model_id='NETWORK_SHARED_CELL_SCHEDULER',mechanisms={
++         'medium_access':['NETWORK_DCI_OR_QUALIFIED_PUR_GRANTS','NPRACH_AND_SHARED_CELL_WORKLOAD'],
++         'framing':['NPUSCH_NPDSCH_RESOURCE_AND_TBS_TABLES','MAC_RLC_SEGMENTATION_DISTINCT_FROM_APPLICATION'],
++         'timing':['HALF_DUPLEX_TYPE_B_OR_TDD_GUARDS','REPETITIONS_POSTPONEMENTS_PSM_EDRX_CORE_DELIVERY'],
++         'security':['AS_NAS_INTEGRITY_DISTINCT_FROM_END_APPLICATION_ACCEPTANCE'],
++         'services':['NB1_NB2','ACTUAL_ACCEPTED_CP_UP_AND_PDN_TYPE']})
++
++def fields():
++    result=[]
++    for spec in DECLARATIONS:
++        key=spec['key'][4:];item={k:v for k,v in spec.items()if v is not None}
++        item.update(label=key.replace('_',' '),category='communication',scope='network',editable=True,required=key in REQUIRED,
++            parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
++        if item['type']in('number','boolean'):item['schema_when']={'nbi_edition':EDITION}
++        proposals=[]
++        def p(value,**when):
++            proposal=dict(when={'nbi_edition':EDITION,'nbi_rat':'EUTRA_TERRESTRIAL',**{'nbi_'+k:v for k,v in when.items()}},value=value,source=spec['source'],source_revision=spec['source_revision'])
++            if proposal not in proposals:proposals.append(proposal)
++        fixed={'channel_khz':200,'grid_khz':180,'symbols_per_slot':7}
++        if key in fixed:p(fixed[key])
++        if key=='scs_khz':p(3.75,direction='UPLINK');p(15,direction='DOWNLINK')
++        for spacing,tones,slot in [(3.75,48,2),(15,12,.5)]:
++            if key=='grid_tones':p(tones,scs_khz=spacing)
++            if key=='slot_ms':p(slot,scs_khz=spacing)
++        for tones,slots in [(1,16),(3,8),(6,4),(12,2)]:
++            if key=='ru_slots':p(slots,channel='NPUSCH_1',tones=tones)
++        if key=='ru_slots':p(4,channel='NPUSCH_2')
++        if key in('hd_guard_before_ms','hd_guard_after_ms'):p(1,duplex='HD_FDD_TYPE_B')
++        for category,flag,dl,soft,ul,l2 in [('NB1',None,680,2112,1000,4000),('NB2',False,2536,6400,2536,8000),('NB2',True,4968,12800,2536,12000)]:
++            vals={'dl_tb_cap_bits':dl,'soft_channel_bits':soft,'ul_tb_cap_bits':ul,'layer2_cap_bytes':l2}
++            if key in vals:p(vals[key],category=category,**({'dl_16qam_supported':flag}if category=='NB2'and key!='ul_tb_cap_bits'else{}))
++        if key=='nominal_max_power_dbm':
++            for band in BANDS:
++                if band!=88:
++                    for cls,power in [('3',23),('5',20),('6',14)]:p(power,rat='EUTRA_TERRESTRIAL',role='UE',band=band,power_class=cls)
++        # Actual band/device/grants/optional capabilities/subscription/timers and
++        # confirmation never receive fabricated values or a category peak rate.
++        if proposals:item.update(conditional_defaults=proposals,default_status='PROPOSED_CONDITIONAL')
++        result.append(item)
++    return result

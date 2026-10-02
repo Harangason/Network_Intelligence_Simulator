@@ -1,0 +1,68 @@
+EV Driver
+CSMS Charging Station
+reserve
+ReserveNowRequest(ConnectorType is specified AND no evseId)
+ReserveNowResponse(status = Accepted)
+opt
+notification
+Figure 79. Sequence Diagram: S3 - Reserve a connector type at a Charging Station
+6 Error handling
+7 Remark(s) It is RECOMMENDED to validate the Identifier with an AuthorizeRequest after reception of
+ReserveNowRequest and before the start of the transaction.
+H01 - Reservation - Requirements
+Table 86. H01 - Requirements
+ID Precondition Requirement definition Note
+H01.FR.01 If the Charging Station is configured
+not to accept reservations.
+The Charging Station SHALL return Rejected.
+H01.FR.02 If the id in the ReserveNowRequest
+matches a reservation in the Charging
+Station.
+The Charging Station SHALL replace that
+reservation with the new reservation in the request.
+H01.FR.03 If the id in the ReserveNowRequest
+does not match any reservation in the
+Charging Station.
+The Charging Station SHALL return the status value
+Accepted if it succeeds in reserving an EVSE.
+H01.FR.04 If the Charging Station receives a
+ReserveNowRequest without evseId
+AND at least one EVSE is Available
+AND H01.FR.18
+The Charging Station SHALL accept the reservation
+AND respond with a ReserveNowResponse with
+status Accepted.
+H01.FR.06 If the Charging Station receives a
+ReserveNowRequest with a connector
+type
+AND at least one EVSE with the
+specified connector type is
+Available
+AND H01.FR.18
+The Charging Station SHALL accept the reservation
+AND respond with a ReserveNowResponse with
+status Accepted.
+H01.FR.07 When the Charging Station has
+Accepted a ReserveNowRequest
+without evseId
+The Charging Station SHALL make sure that at any
+time during the validity of the reservation, one EVSE
+remains available for the reserved IdTokenType.
+H01.FR.09 When the Charging Station has
+Accepted a ReserveNowRequest
+with a connector type
+The Charging Station SHALL make sure that at any
+time during the validity of the reservation, one
+Connector with the specified type remains available
+for the reserved IdTokenType.
+H01.FR.11 When receiving a ReserveNowRequest
+AND
+(all) targeted EVSEs have status
+Reserved or Occupied
+The Charging Station SHALL return Occupied.
+H01.FR.12 When receiving a ReserveNowRequest
+AND (all) targeted EVSEs have status
+Faulted
+The Charging Station SHALL return Faulted.
+Edition 4, 2025-12-03 H. Reservation
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 208/491 Part 2 - Specification

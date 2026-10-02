@@ -1,0 +1,50 @@
+u-blox 20 HPG 2.00 - Interface description
+3.15.5.1 Geofencing status
+Message UBX-NAV-GEOFENCE
+Geofencing status
+Type Periodic/polled
+Comment This message outputs the evaluated states of all conﬁgured geofences for the current epoch's position.
+See section Geofencing in the integration manual for feature details.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x39 8 + numFences·2 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+4 U1 version - - Message version (0x00 for this version)
+5 U1 status - - Geofencing status
+• 0 - Geofencing not available or not reliable
+• 1 - Geofencing active
+6 U1 numFences - - Number of geofences
+7 U1 combState - - Combined (logical OR) state of all geofences
+• 0 - Unknown
+• 1 - Inside
+• 2 - Outside
+Start of repeated group (numFences times)
+8 + n·2 U1 state - - Geofence state
+• 0 - Unknown
+• 1 - Inside
+• 2 - Outside
+9 + n·2 U1 id - - Geofence ID (0 = not available)
+End of repeated group (numFences times)
+3.15.6 UBX-NAV-HPPOSECEF (0x01 0x13)
+3.15.6.1 High precision position solution in ECEF
+Message UBX-NAV-HPPOSECEF
+High precision position solution in ECEF
+Type Periodic/polled
+Comment See important comments concerning validity of position given in section Navigation output ﬁlters in the
+integration manual.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x13 28 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 U1[3] reserved0 - - Reserved
+4 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 93 of 224
+C1-Public

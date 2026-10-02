@@ -1,0 +1,38 @@
+3.15. Page 36, section: 4.7: make it more explicit that MeterValues are required if
+they are configured
+Added in errata sheet v4.0
+The first paragraph of section 4.7 reads:
+"A Charge Point MAY sample the electrical meter or other sensor/transducer hardware to provide extra
+information about its meter values. It is up to the Charge Point to decide when it will send meter values. This can
+be configured using the ChangeConfiguration.req message to data acquisition intervals and specify data to be
+acquired & reported."
+The keyword "MAY" in this text suggests that it is optional to send MeterValues. However, when the value of the
+configuration variable MeterValueSampleInterval has been set to a value greater than zero, then it is mandatory
+to send MeterValues.
+Additional text
+After first section
+When the value of the configuration variable MeterValueSampleInterval and/or ClockAlignedDataInterval has been set to a
+value greater than zero, the Charge Point SHALL send MeterValues at the given interval(s).
+3.16. Page 36, section: 4.7: Not 100% clear which transaction ID to use in a
+MeterValue (multiple transactions during interval)
+Added in errata sheet v4.0
+OCPP 1.6 FINAL Page 38
+It was not 100% clear which transactionId to put a MeterValue.req message for a Clock-Aligned meter value
+sample when during the last period between samples, the previous transaction has ended and a new
+transaction has started.
+Additional text
+Bullet 2
+The transactionId is always the ID of the Transaction that is ongoing (on that connector) at the moment the meter value sample
+is taken. When the TransactionId is set, only MeterValues related to that transaction can be reported. If the values are taken
+from the main energy meter, it is advised NOT to add a transactionId.
+When reporting Meter Values for connectorId 0 (the main energy meter) it is RECOMMENDED NOT to add a TransactionId.
+3.17. Page 37, section: 4.8: Unclear how to handle: StartTransaction.conf with
+idTagInfo not Accepted.
+Added in errata sheet v4.0
+OCPP 1.6 FINAL Page 40
+It is not (clearly) defined what a Charge Point should do when it receives a StartTransaction.conf with
+authorization status other then Accepted, when it is online.
+There is already text that describes what a Charge Point should do, but this text is now in the part explaining
+what to do when the Charge Point is offline. But because it is in that part, it is not clear that it is also they way a
+Charge Point should handle the same situation when it is online.
+9

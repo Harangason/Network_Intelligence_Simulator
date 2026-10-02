@@ -1,0 +1,30 @@
+3.2. JSON Schema files do allow for extra fields within inner objects.
+It is not allowed to add extra fields/values to OCPP messages, this could cause interoperability issues in the field.
+The WSDL files are correct, the original JSON Schema files allow extra fields on inner objects and extra values on
+enums, which was not intended.
+Most of the JSON Schema files have been updated to fix this. The line: "additionalProperties": false has
+been added to the definition of all object and enum definitions.
+3.3. No definition of: 'failure to process the message'
+The OCPP 1.6 spec points to the OCPP-J spec for a definition on how a JSON implementation should respond to a
+request to indicate: 'failure to process message', but there was no definition of: 'failure to process the message'
+in the OCPP-J spec.
+To following text should be added to: Page 9, par 3.2:
+"For a definition on how a server SHALL report a 'failure to process the message', see: CallError"
+To following text should be added to: Page 13, par 4.2.3:
+"When a server needs to report a 'failure to process the message', the server SHALL use a Message Type:
+CallError (MessageTypeNumber = 4)."
+3.4. Page 8, section: 3.2: Missing Charge Point should retry after having received
+HTTP 404.
+When a Charge Point tries to connect the a Central System, the Central System, when it does not know the
+Charge Point might reject the connection by responding with HTTP 404 as defined in Section 3.2.
+The Charge Point is then expected to retry the connection every X times, same as with the BootNotification, but
+this is not specified.
+Addition text for the first bullet in Section 3.2
+Additional text The Charge Point SHALL retry with an appropriate back-off mechanism to prevent overloading the Central System.
+3.5. Page 10, section: 4.1.1: Synchronicity explanation can be improved
+Not clear to all implementers that the Central System does not have to wait for a response from Charging
+Station 1 when sending something to Charging Station 2.
+The following is to be added at the end of the first paragraph
+Additional text This does not mean that the Central System cannot send a message to another Charge Point, while waiting for a response of a
+first Charge Point, this rule is per OCPP-J connection.
+8

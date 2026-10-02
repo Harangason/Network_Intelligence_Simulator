@@ -1,0 +1,61 @@
+Table 7-87. RX_PORT_STS1 Register Field Descriptions (continued)
+Bit Field Type Reset Description
+2 PARITY_ERROR R 0x0 FPD3 parity errors detected
+This flag is set when the number of parity errors detected is greater 
+than the threshold programmed in the PAR_ERR_THOLD registers.
+1: Number of FPD3 parity errors detected is greater than the 
+threshold
+0: Number of FPD3 parity errors is below the threshold
+This bit is cleared when the RX_PAR_ERR_HI/LO registers are 
+cleared.
+1 PORT_PASS R 0x0 Receiver PASS indication
+This bit indicates the current status of the Receiver PASS indication. 
+The requirements for setting the Receiver PASS indication are 
+controlled by the PORT_PASS_CTL register.
+1: Receive input has met PASS criteria
+0: Receive input does not meet PASS criteria
+0 LOCK_STS R 0x0 FPD-Link III receiver is locked to incoming data
+1: Receiver is locked to incoming data
+0: Receiver is not locked
+7.6.1.66 RX_PORT_STS2 Register (Address = 0x4E) [Reset = 0x00] 
+RX_PORT_STS2 is shown in Table 7-88.
+Return to the Summary Table.
+RX port-specific register. The FPD-Link III Port Select register 0x4C configures which unique Rx port registers 
+can be accessed by I2C read and write commands.
+Table 7-88. RX_PORT_STS2 Register Field Descriptions
+Bit Field Type Reset Description
+7 LINE_LEN_UNSTABLE RC 0x0 Line Length Unstable
+If set, this bit indicates the line length was detected as unstable 
+during a previous video frame. The line length is considered to be 
+stable if all the lines in the video frame have the same length. This 
+flag will remain set until read.
+6 LINE_LEN_CHG RC 0x0 Line Length Changed
+1: Change of line length detected
+0: Change of line length not detected
+This bit is cleared on read.
+5 FPD3_ENCODE_ERROR RC 0x0 FPD3 Encoder error detected
+If set, this flag indicates an error in the FPD-Link III encoding has 
+been detected by the FPD-Link III receiver.
+Tihs bit is cleared on read.
+Note, to detect FPD3 Encoder errors, the LINK_ERROR_COUNT 
+must be enabled with a LINK_ERR_THRESH value greater than 1. 
+Otherwise, the loss of Receiver Lock will prevent detection of the 
+Encoder error.
+4 BUFFER_ERROR RC 0x0 Packet buffer error detected. If this bit is set, an overflow condition 
+has occurred on the packet buffer FIFO.
+1: Packet Buffer error detected
+0: No Packet Buffer errors detected
+This bit is cleared on read.
+3 CSI_ERROR R 0x0 CSI-2 Receive error detected
+See the CSI_RX_STS register for details.
+2 FREQ_STABLE R 0x0 Frequency measurement stable
+1 NO_FPD3_CLK R 0x0 No FPD-Link input clock detected
+When set, this bit indicates that no FPD Clock has been detected. 
+This bit will be set if the input frequency is below the setting 
+programmed in the FREQ_LO_THR setting in the FREQ_DET_CTL 
+register.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 111
+Product Folder Links: DS90UB960-Q1

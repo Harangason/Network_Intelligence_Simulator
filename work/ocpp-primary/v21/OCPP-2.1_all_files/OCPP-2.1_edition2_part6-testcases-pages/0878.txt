@@ -1,0 +1,51 @@
+Tool validations
+* Step 1:
+Message NotifyEVChargingNeedsRequest
+- evseId = <Configured evseId>
+For AC charging station:
+- chargingNeeds.requestedEnergyTransfer AC_BPT
+- chargingNeeds.availableEnergyTransfer [AC_single_phase, AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]
+For DC charging station:
+- chargingNeeds.requestedEnergyTransfer DC_BPT
+- chargingNeeds.availableEnergyTransfer [DC, DC_BPT, DC_ACDP, DC_ACDP_BPT]
+- chargingNeeds.controlMode = DynamicControl
+- chargingNeeds.v2xChargingParameters.maxChargePower = 10000 (W)
+- chargingNeeds.v2xChargingParameters.maxDischargePower = 5000 (W)
+* Step 4:
+Message SetChargingProfileResponse
+- status must be Accepted
+* Step 6:
+Message SetChargingProfileResponse
+- status must be Accepted
+* Step 14:
+Message: GetCompositeScheduleResponse
+- status must be Accepted
+- schedule.chargingRateUnit must be <Configured chargingRateUnit>
+- schedule.chargingSchedulePeriod[0].startPeriod must be 0
+- schedule.chargingSchedulePeriod[0].setpoint must be -7 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+* Step 19:
+Message: GetCompositeScheduleResponse
+- status must be Accepted
+- schedule.chargingRateUnit must be <Configured chargingRateUnit>
+- schedule.chargingSchedulePeriod[0].startPeriod must be 0
+- schedule.chargingSchedulePeriod[0].setpoint must be -6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+* Step 26:
+Message: GetCompositeScheduleResponse
+- status must be Accepted
+- schedule.chargingRateUnit must be <Configured chargingRateUnit>
+- schedule.chargingSchedulePeriod[0].startPeriod must be 0
+- schedule.chargingSchedulePeriod[0].setpoint must be -8 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+* Step 33:
+Message: GetCompositeScheduleResponse
+- status must be Accepted
+- schedule.chargingRateUnit must be <Configured chargingRateUnit>
+- schedule.chargingSchedulePeriod[0].startPeriod must be 0
+- schedule.chargingSchedulePeriod[0].setpoint must be -9 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 876/1383 Part 6 - Test Cases

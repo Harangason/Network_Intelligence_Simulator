@@ -1,0 +1,30 @@
+No. Type Description
+Scenario description Settlement when transaction has finished
+1. If cost calculated locally
+a. Charging Station sends a TransactionEventRequest with eventType = Ended and
+costDetails to CSMS.
+b. CSMS responds with TransactionEventResponse.
+c. Charging Station shows the cost breakdown in costDetails to EV Driver.
+2. If cost calculated centrally
+a. Charging Station sends a TransactionEventRequest with eventType = Ended to
+CSMS.
+b. CSMS responds with TransactionEventResponse with totalCost and an
+updatedPersonalMessage.
+c. Charging Station shows the cost breakdown in updatedPersonalMessage to EV
+Driver.
+3. If settlement with PSP via PK
+a. CSMS sends total cost to PK for settling with PSP
+b. PSP sends receipt data or a URL to a receipt to PK.
+c. PK returns receipt data or a URL to the receipt to CSMS.
+4. If settlement with PSP via CSMS
+a. CSMS performs settlement directly with PSP based on the <pspRef>.
+b. PSP returns a receipt data or a URL to a receipt to CSMS.
+5. CSMS may use SetDisplayMessageRequest to display a URL or QR code to a location
+where the EV Driver can retrieve a receipt.
+5 Prerequisites PK is able to communicate with CSMS.
+6 Postcondition(s) CSMS remotely starts a transaction for EV Driver.
+7 Error handling
+8 Remark(s) This was use case C03 in OCPP 2.0.1.
+The communication between CSMS and PK is out of scope of this document.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 143/803 Part 2 - Specification

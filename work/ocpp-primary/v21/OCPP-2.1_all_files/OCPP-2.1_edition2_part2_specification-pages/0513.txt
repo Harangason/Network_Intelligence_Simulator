@@ -1,0 +1,26 @@
+Chapter 2. Smart Charging Extensions for V2X
+Support for bidirectional charging builds upon the smart charging functionality of OCPP, as described in Introduction. Charging
+schedules in a charging profile have been extended with additional attributes to control discharging operations.
+2.1. Setpoint and charge/discharge limits
+A schedule entry ChargingSchedulePeriodType has three fields to influence the charging or discharging. These settings are in
+Watts or Amperes, as defined by the chargingRateUnit of the ChargingScheduleType.
+1. setpoint: the target value for either charging or discharging depending on the sign. Positive values indicate charging, while
+negative values indicate discharging.
+2. limit: the maximum allowed charging limit. Positive values only.
+3. dischargeLimit: the maximum allowed discharging limit. Negative values only.
+Figure 183. Example of using setpoint and limit/dischargeLimit
+2.2. V2X operation modes
+The various V2X use cases support different kind of operations. For example, the charging profile can define a setpoint to follow
+that defines the level of charging or discharging. In other situations there can be an external system, like an EMS, that defines the
+setpoint, or the charging profile can instruct the charging station to use local data, like a power-frequency table or load-balancing
+thresholds, to control the setpoint.
+This mode of operation is defined by the variable OperationMode that is part of a ChargingSchedulePeriodType
+The following operation modes exist, of which the first four are also used for regular smart charging, as described in Introduction.
+1. ChargingOnly
+2. ExternalSetpoint
+3. ExternalLimits
+4. CentralSetpoint
+5. CentralFrequency
+6. LocalFrequency
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 500/803 Part 2 - Specification

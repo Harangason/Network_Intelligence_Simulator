@@ -1,0 +1,89 @@
+ID Precondition Requirement definition Note
+A03.FR.06 The Charging Station SHALL verify the validity of
+the signed certificate in the
+CertificateSignedRequest message, checking that
+the current date (at the time of the update) is within
+the certificate’s validity period, the properties in
+Certificate Properties, and that it is part of the
+Charging Station Operator certificate hierarchy as
+described in Certificate Hierarchy. (Same as
+A02.FR.06)
+When providing a newly signed client
+certificate with a start period that
+equals the current time, the CSMS
+should take into account that there
+might be a slight discrepancy in the
+time between the Charging Station
+and CSMS. This could cause the
+Charging Station to reject the new
+certificate, because in case a small
+time difference exists, the validity
+period might (just) be in the future for
+the device.
+A03.FR.07 If the certificate is not
+valid.
+The Charging Station SHALL respond to the
+CertificateSignedRequest with status Rejected AND
+discard the certificate AND trigger an
+InvalidChargingStationCertificate security event
+(See part 2 appendices for the full list of security
+events). (Same as A02.FR.07)
+A03.FR.08 If the certificate is valid. The Charging Station SHALL respond to the
+CertificateSignedRequest with status Accepted
+AND
+the Charging Station SHALL switch to the new
+certificate by reconnecting the websocket and TLS
+connection. (Same as A02.FR.08)
+A03.FR.10 (A03.FR.08 OR
+A03.FR.24) AND
+The Charging Station
+successfully connected
+to the CSMS using either
+one of the certificates.
+The Charging Station SHALL discard the client
+certificate that is NOT in use. (Same as A02.FR.10)
+This is to prevent having multiple
+client certificates installed at the
+Charging Station, which the CSMS is
+unable to manage.
+A03.FR.11 Upon receipt of a
+SignCertificateRequest
+AND
+It is able to process the
+request
+The CSMS SHALL set status to Accepted in the
+SignCertificateResponse. (Same as A02.FR.11)
+A03.FR.12 Upon receipt of a
+SignCertificateRequest
+AND
+It is NOT able to process
+the request
+The CSMS SHALL set status to Rejected in the
+SignCertificateResponse. (Same as A02.FR.12)
+A03.FR.13 When using different
+certificates for 15118
+connections and the
+Charging Station to
+CSMS connection
+The Charging Station SHALL include the
+certificateType field in the SignCertificateRequest
+to specify which certificate it wants to update.
+(Same as A02.FR.13)
+A03.FR.14 When receiving a
+SignCertificateRequest
+with certificateType
+included
+It is RECOMMENDED for the CSMS to set the
+certificateType field in the CertificateSignedRequest
+to the type of certificate in the
+SignCertificateRequest. (Same as A02.FR.14)
+A03.FR.15 If the Charging Station
+contains more than one
+valid V2G certificate,
+derived from the same
+root certificate.
+The Charging Station SHALL use the newest
+certificate, as measured by the start of the validity
+period. (Same as A02.FR.15)
+Edition 4, 2025-12-03 A. Security
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 38/491 Part 2 - Specification

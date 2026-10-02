@@ -1,0 +1,43 @@
+TC_N_53_CS: Alert Event - Persistant over reboot
+Test case name Alert Event - Persistant over reboot
+Test case Id TC_N_53_CS
+Use case Id(s) N07
+Requirement(s) N07.FR.13
+System under test Charging Station
+Description NotifyEventRequest reports every Component/Variable for which a VariableMonitoring setting was
+triggered. Only the VariableMonitoring settings that are responsible for triggering an event are included.
+Purpose To verify if the Charging station is able to save the variableMonitor data persistent across reboot as
+described at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+Variable monitor is already set with:
+setMonitoringData.component <Configured threshold monitor component variable>
+setMonitoringData.variable <Configured threshold monitor component variable>
+setMonitoringData.value <Configured threshold monitor component variable UpperThreshold trigger value>
+setMonitoringData.type UpperThreshold
+Reusable State:
+Execute Reusable State Booted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+GetMonitoringReportResponse
+1. The Test System sends a GetMonitoringReportRequest with
+monitoringCriteria ThresholdMonitoring
+3. The Charging Station sends a
+NotifyMonitoringReportRequest 4. The Test System responds with a
+NotifyMonitoringReportResponse .
+Note(s):
+- If tbc is True at Step 3 then step 3 and 4 will be repeated
+Tool validations
+* Step 3:
+Message NotifyMonitoringReportRequest
+- requestId <The Id of the request> AND
+- monitor.variableMonitoring.id <SetVariableMonitoringResponse.setMonitoringResult.id in preparation phase> -
+monitor.variableMonitoring.type UpperThreshold
+Post scenario validations:
+- All reports have been received
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 738/1383 Part 6 - Test Cases

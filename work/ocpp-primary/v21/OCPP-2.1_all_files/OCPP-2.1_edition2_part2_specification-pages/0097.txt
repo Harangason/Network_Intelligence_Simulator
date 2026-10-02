@@ -1,0 +1,51 @@
+CSO
+CSMS Charging Station
+reset
+ResetRequest(ImmediateAndResume)
+opt
+notification
+ResetResponse(Accepted)
+loop [for all ongoing transactions]
+TransactionEventRequest(Updated,
+triggerReason = "ResetCommand", chargingState = <state>, ...)
+TransactionEventResponse()
+remember charging state
+stop energy offer
+opt [if cable not permanently attached]
+unlock connector
+reboot
+Continue B01 - Cold Boot Charging Station
+loop [for all EVSEs that had an ongoing transaction]
+opt [if cable not permanently attached]
+lock connector
+alt [if TxAllowEnergyResumption == true]
+return charging state to state it had before reset
+[if TxAllowEnergyResumption == false]
+alt [if charging state was Charging]
+return charging state to SuspendedEVSE
+return charging state to state it had before reset
+TransactionEventRequest(Updated,
+triggerReason = "TxResumed", chargingState = <state>, ...)
+TransactionEventResponse()
+opt [if TxProfile exists for transaction]
+SetChargingProfileRequest(TxProfile)
+SetChargingProfileResponse()
+Figure 21. Sequence Diagram: Reset With Ongoing Transaction
+B13- Reset - With Ongoing Transaction - Without Termination - Requirements
+Table 43. B13 - Requirements
+ID Precondition Requirement definition
+B13.FR.01 When Charging Station receives a ResetRequest
+with type = ImmediateAndResume AND
+TxResumptionTimeout == 0 or non-existent
+Charging Station SHALL respond with ResetResponse with
+status = Rejected. (When transaction resumption is not
+supported by this Charging Station)
+B13.FR.02 When Charging Station receives a ResetRequest
+with type = ImmediateAndResume AND
+No transactions are ongoing on Charging
+Station
+Charging Station SHALL respond with ResetResponse with
+status = Accepted and act according to use case B11 - Reset -
+Without Ongoing Transactions.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 84/803 Part 2 - Specification

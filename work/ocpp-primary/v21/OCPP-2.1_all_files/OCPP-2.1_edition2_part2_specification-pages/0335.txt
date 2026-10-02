@@ -1,0 +1,59 @@
+3.6. Combining Charging Profile Purposes
+Updated in OCPP 2.1
+IMPORTANT Highlighted text in the following paragraphs of this section has been changed.
+As mentioned before, for each charging profile purpose, at any point in time, the leading charging schedule for that purpose is the
+charging schedule that has a schedule period defined for that time and that belongs to a charging profile with the highest stack
+level that is valid at that time, as determined by their validFrom and validTo parameters. The Composite Schedule is then calculated
+by taking the lowest charging limit and setpoint (taking the different chargingRateUnits into account) among the leading profiles of
+the different purposes for each time interval. If a charging profile of chargingProfilePurpose = LocalGeneration is active for the
+EVSE, then this capacity is added on top of the calculated composite schedule.
+When a PriorityCharging profile has been activated (either locally or via a UsePriorityChargingRequest), then this will overrule the
+TxDefaultProfile or TxProfile.
+In case the Charging Station is equipped with more than one EVSE, the limit value of ChargingStationMaxProfile for EVSE 0 is the
+limit for all EVSEs combined.
+The two figures below will be used to give an example of combining multiple charging profiles with different stackLevels and
+Purposes.
+ChargingStationMaxProfile
+TxDefaultProfile
+ChargingStationExternalConstraints
+profile with stackLevel=0
+profile with stackLevel=2
+profile with stackLevel=1
+profile with stackLevel=0
+profile with stackLevel=1
+profile with stackLevel=0
+Figure 121. Multiple valid charging profiles - situation 1
+Suppose that at a certain time interval the valid charging profiles are as in the above figure (situation 1). The composite schedule
+for this time interval will then be the lowest of the charging limits given in the ChargingStationMaxProfile with stackLevel 0, the
+TxDefaultProfile with stackLevel 2 and the ChargingStationExternalConstraints profile with stackLevel 1.
+ChargingStationMaxProfile
+TxProfile
+TxDefaultProfile
+ChargingStationExternalConstraints
+profile with stackLevel=0
+profile with stackLevel=1
+profile with stackLevel=0
+profile with stackLevel=2
+profile with stackLevel=1
+profile with stackLevel=0
+profile with stackLevel=1
+profile with stackLevel=0
+Figure 122. Multiple valid charging profiles - situation 2
+On the other hand, consider the situation in which for a certain time interval the valid charging profiles are as in the above figure
+(situation 2). The composite schedule for this time interval will then be the lowest of the charging limits given in the
+ChargingStationMaxProfile with stackLevel 0, the TxProfile with stackLevel 1 and the ChargingStationExternalConstraints profile
+with stackLevel 1. Note that in this situation the TxProfile overrules the TxDefaultProfile.
+3.7. Example Charging Profile
+This section is informative.
+The following data structure describes a daily default profile that limits the power to 6 kW between 08:00h and 20:00h and to 11 kW
+between 00:00h and 08:00h and between 20:00h and 00:00h.
+ChargingProfile
+chargingProfileId 100
+stackLevel 0
+chargingProfilePurpose TxDefaultProfile
+chargingProfileKind Recurring
+recurrencyKind Daily
+chargingSchedule (List of 1 ChargingSchedule elements)
+ChargingSchedule
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 322/803 Part 2 - Specification

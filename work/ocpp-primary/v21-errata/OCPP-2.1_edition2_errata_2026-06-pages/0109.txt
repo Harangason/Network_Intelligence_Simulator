@@ -1,0 +1,48 @@
+6.3.11. Page 1046/1048/1049 - (2026-02) -
+TC_C_131_CSMS/TC_C_132_CSMS/TC_C_133_CSMS - Sharedsecret configuration
+variable added
+The hardcoded value used for WebPaymentsCtrlr.SharedSecret ("mysharedsecret") has been replaced with a configurable variable
+<Configured sharedsecret>.
+6.3.12. Page 1094/1095 - (2026-02) - TC_E_110_CSMS - Added missing
+Authorization request to initiate transaction
+An explicit authorization request was introduced for improved clarity, and the configured energy limit was standardized to a fixed
+value.
+Test case name Transactions with fixed cost, energy or time - CSMS specifies energy limit
+Test case Id TC_E_110_CSMS
+…
+Main (Test scenario)
+Charging Station CSMS
+1.  The Test System sends an       AuthorizeRequest
+With  idToken.idToken   <Configured valid_idtoken_idtoken> 
+ idToken.type   <Configured valid_idtoken_type> 
+2.  The CSMS responds with an       AuthorizeResponse
+Manual action :  In CSMS, configure energy limit of 10000 (Wh) for this transaction          
+1. 3.  The Test System sends a TransactionEventRequest with
+With eventType is Started
+triggerReason is ChargingStateChanged
+idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+evse.id is <Configured evseId>
+evse.connectorId is <Configured connectorId>
+transactionInfo.transactionId is <transactionId>
+transactionInfo.chargingState is Charging
+transactionInfo.transactionLimit <omitted>
+2. 4.  The CSMS responds with a TransactionEventResponse
+3. 5.  The Test System sends a TransactionEventRequest with
+triggerReason is LimitSet
+transactionInfo.transactionLimit.maxEnergy is <Configured
+energy limit> 10000
+4. 6.  The CSMS responds with TransactionEventResponse
+5. 7.  The Test System sends a TransactionEventRequest with
+eventType is Updated
+triggerReason is EnergyLimitReached
+evse.id is <Configured evseId>
+evse.connectorId is <Configured connectorId>
+transactionInfo.transactionId is <transactionId>
+transactionInfo.transactionLimit.maxEnergy <Configured energy
+limit> 10000
+transactionInfo.transactionLimit.maxTime <omitted>
+transactionInfo.transactionLimit.maxCost <omitted>
+transactionInfo.chargingState SuspendedEVSE
+6. .8  The CSMS responds with a TransactionEventResponse
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 105/116 Errata 2026-06

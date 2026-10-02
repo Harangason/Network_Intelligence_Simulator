@@ -154,6 +154,8 @@ def parameters_for_protocol(
             resolved[key] = value
             if key in {"bitrate", "bitrate_bps"} and _number(value, 0) > 0:
                 rate_evidenced = True
+            if target == 'LIN' and key == 'lin_bitrate_bps' and _number(value, 0) > 0:
+                resolved['_lin_native_rate_evidenced'] = True
             if key in phase_evidenced and _number(value, 0) > 0:
                 phase_evidenced[key] = True
     if explicitly_specified:
@@ -193,6 +195,18 @@ def parameters_for_protocol(
                 phase_evidenced["arbitration_bitrate"] = True
     if target == "CAN_FD":
         rate_evidenced = phase_evidenced['arbitration_bitrate'] and (resolved.get('can_fd_brs') is False or phase_evidenced['data_bitrate'])
+    if target == 'LIN':
+        # Keep the reviewed native LDF clock distinct from an old generic rate.
+        key = 'lin_bitrate_bps'
+        native_source = next((scope for scope in (declared, configured_scope, confirmed)
+                              if key in scope and matching_identity(scope, required=scope is confirmed)
+                              and matching_field(scope,key) and trusted_value(scope,key)), {})
+        if native_source:
+            resolved[key] = native_source[key]
+        scoped_rate_evidenced = resolved.pop('_lin_native_rate_evidenced',False)
+        rate_evidenced = bool(native_source or scoped_rate_evidenced) and _number(resolved.get(key),0)>0
+        if rate_evidenced:
+            resolved['bitrate'] = resolved[key]  # Internal nominal estimator input only.
     if confirmed_parameters is not None:
         resolved["_rate_evidenced"] = rate_evidenced
     if isinstance(effective_configuration.get("local_timing_evidence"), dict):
@@ -217,8 +231,10 @@ def parameters_for_protocol(
         else:
             resolved.pop("bitrate", None)
         resolved["_rate_evidenced"] = rate_evidenced
-    if rate_evidenced:
-        validation = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(protocol, resolved)
+    if rate_evidenced or target=='LIN' or any(key in resolved for key in ('bitrate','bitrate_bps','arbitration_bitrate','data_bitrate')):
+        validation_values = {key:value for key,value in resolved.items()
+                             if not (target=='LIN' and key=='bitrate')}
+        validation = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(protocol, validation_values)
         if validation['status'] != 'VALID':
             resolved['_rate_evidenced'] = False
             resolved['_rate_findings'] = validation['findings']

@@ -1,0 +1,52 @@
+TC_C_116_CS: Settlement at end of transaction - settled by CS, receipt by CSMS
+Test case name Settlement at end of transaction - settled by CS, receipt by CSMS
+Test case Id TC_C_116_CS
+Use case Id(s) C21
+Requirement(s) C21.FR.01, C21.FR.02, C21.FR.04
+System under test Charging Station
+Description In order to test that Charging Station supports settlement at the end of a transaction where the settlement
+is handled by the Charging Station and the receipt is provided by the CSMS.
+Purpose To verify if the Charging Station is able to handle settlement at the end of a transaction where the
+settlement is handled by the Charging Station and the receipt is provided by the CSMS.
+Prerequisite(s) - Charging Station has an integrated Payment Terminal
+Before (Preparations)
+Configuration State:
+TariffCostCtrlr.Enabled[Tariff] is true
+TariffCostCtrlr.Enabled[Cost] is true
+TariffCostCtrlr.Currency is EUR
+PaymentCtrlr.Enabled is true
+PaymentCtrlr.AuthorizationAmount is 50.00
+PaymentCtrlr.AuthorizeDirectPayment is false
+PaymentCtrlr.SettlementByCSMS is false
+PaymentCtrlr.ReceiptByCSMS is true
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.fixedFee.taxRates[0].type MyTax
+tariff.fixedFee.taxRates[0].tax 21
+tariff.fixedFee.prices.priceFixed[0] 15.00
+3. Execute Reusable State AuthorizedPaymentTerminal (Local)
+4. Execute Reusable State EVConnectedPreSession
+5. Execute Reusable State EnergyTransferStarted
+6. Execute Reusable State StopAuthorized (Remote)
+7. Execute Reusable State ParkingBayUnoccupied
+Note(s):
+- Charging Station settles the total cost of the transaction via the payment terminal of: 18.15 EUR
+- Charging Station receives the settlement status from payment terminal
+- The NotifySettlementRequest is sent to the CSMS around the time the transaction ends, so depending on the TxStopPoint it can be
+transmitted during or after steps 6 and 7
+8. The Charging Station sends a NotifySettlementRequest
+9. The Test System responds with a NotifySettlementResponse
+with
+receiptUrl <not omitted>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 202/1383 Part 6 - Test Cases

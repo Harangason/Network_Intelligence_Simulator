@@ -1,0 +1,191 @@
+«BusinessComponent»
+RootModel::EVCCType
+«Content»
++ EMAID: ChargingContractIdentifierType [0..1]
++ ContractSignatureEncryptedPrivateKey: SmallBinaryObjectType [0..1]
++ DHPublicKey: PublicKeyType [0..1]
++ Signature: SignatureType [0..1]
+IdentifiedObject
+«BusinessComponent»
+Security::CertificateChainType
+«Content»
++ Certificate: Base64String800Type [0..1]
++ CertificateSerial: CI20TextType [0..1]
++ ExpiryDate: DateType [0..1]
+::IdentifiedObject
++ MRID: NumericIdentifierType [0..1]
++ ObjectID: IdentifierType [0..*]
++ Name: NameType [0..1]
++ AliasName: NameType [0..*]
++ Description: TextType [0..*]
+DeviceType
+«BusinessComponent»
+RootModel::EVSEType
++ ConnectorId: NumericIdentifierType [0..1]
+«Content»
++ Switch3To1PhaseSupported: IndicatorType [0..1]
+DeviceType
+«BusinessComponent»
+RootModel::ConnectorType
+«Content»
++ ConnectorType: ConnectorEnumType [0..1]
++ CableCapacity: CurrentType [0..*]
+«BusinessComponent»
+RootModel::EVType
+«BusinessComponent»
+ChargingNeedsType
+«Content»
++ RequestedEnergyTransfer: EnergyTransferModeEnumType [0..1]
++ DepartureTime: DateTimeType [0..1]
+«BusinessComponent»
+ACChargingParametersType
+«Content»
++ EnergyAmount: EnergyAmountType [0..1]
++ EVMinCurrent: CurrentType [0..1]
++ EVMaxCurrent: CurrentType [0..1]
++ EVMaxVoltage: VoltageType [0..1]
+«BusinessComponent»
+DCChargingParametersType
+«Content»
++ EVMaxCurrent: NumericIdentifierType [0..1]
++ EVMaxVoltage: NumericIdentifierType [0..1]
++ EnergyAmount: NumericIdentifierType [0..1]
++ EVMaxPower: NumericIdentifierType [0..1]
++ StateOfCharge: PercentageType [0..1]
++ EVEnergyCapacity: NumericIdentifierType [0..1]
++ FullSoC: PercentageType [0..1]
++ BulkSoC: PercentageType [0..1]
+IdentifiedObject
+«BusinessComponent»
+ChargingProfileType
++ TransactionId: TransactionIdType [0..1]
+«Content»
++ StackLevel: CounterType [0..1]
++ Primary: IndicatorType [0..1]
++ TimeBase: DateTimeType [0..1]
++ ChargingProfilePurpose: ChargingProfilePurposeEnumType [0..1]
++ ChargingProfileKind: ChargingProfileKindEnumType [0..1]
++ RecurrencyKind: RecurrencyKindEnumType [0..1]
++ ValidFrom: DateTimeType [0..1]
++ ValidTo: DateTimeType [0..1]
++ ChargingLimitSource: ChargingLimitSourceEnumType [0..*]
+IdentifiedObject
+«BusinessComponent»
+ChargingScheduleType
+«Content»
++ StartSchedule: DateTimeType [0..1]
++ Duration: SecondsType [0..1]
++ ChargingRateUnit: ChargingRateUnitEnumType [0..1]
++ MinChargingRate: NumericType [0..1]
+«BusinessComponent»
+ChargingSchedulePeriodType
+«Content»
++ StartPeriod: SecondsType [0..1]
++ Limit: MeasureType [0..1]
++ NumberPhases: CounterType [0..1]
++ PhaseToUse: NumericType [0..1]
+IdentifiedObject
+«BusinessComponent»
+Transactions::TransactionType
+«Content»
++ SeqNo: CounterType [0..1]
++ ChargingState: ChargingStateEnumType [0..1]
++ Offline: IndicatorType [0..1]
++ StartedTimestamp: DateTimeType [0..1]
++ StoppedTimestamp: DateTimeType [0..1]
++ TimeSpentCharging: SecondsType [0..1]
++ StoppedReason: ReasonEnumType [0..1]
++ NumberOfPhasesUsed: CounterType [0..1]
++ MaxAllowedHours: SecondsType [0..1]
++ MaxAllowedKwh: PowerType [0..1]
++ TriggerReason: TriggerReasonEnumType [0..1]
++ RemoteStartID: RequestIdType [0..1]
++ Id: TransactionIdType [0..1]
++ RunningCost: AmountType [0..1]
++ TotalCost: AmountType [0..1]
+«BusinessComponent»
+CompositeScheduleType
+«Content»
++ Duration: SecondsType [0..1]
++ ChargingRateUnit: ChargingRateUnitEnumType [0..1]
++ StartDateTime: DateTimeType [0..1]
+DeviceType
+«BusinessComponent»
+RootModel::ChargingStationType
+«BusinessComponent»
+Security::X509IssuerSerialType
+«Content»
++ X509IssuerName: IssuerIdentifierType [0..1]
++ X509SerialNumber: IntegerType [0..1]
+«BusinessComponent»
+ChargingLimitType
+«Content»
++ Limit: SingleFractionDigitNumericType [0..1]
++ ChargingRateUnit: ChargingRateUnitEnumType [0..1]
++ ChargingLimitSource: ChargingLimitSourceEnumType [0..1]
++ IsGridCritical: IndicatorType [0..1]
++CertificateChain
+0..*
++ParentCertificate 0..1
++EVSE 0..1
++CompositeSchedule
+0..*
++ChargePoint 0..1
++ChargingProfile 0..*
++EVSE 0..1
++EV
+0..1
++ChargingProfile
+0..1
++Transaction
+0..1
++ChargingSchedule
+0..1
++ChargingNeeds 0..*
++DCChargingParameters
+0..1
++RootCertificate 0..*
++Transaction 0..1
++EV 0..1
++EV 0..1
++EVCC 0..1
++OEMProvisioningCertificate
+0..1
++EVSE 0..1
+{ConnectorUse}
++Connector 0..* +EV
+0..1
++ChargingNeeds
+0..1
++ChildCertificate 0..*
++EVSE 0..*
++ChargingLimit
+0..1
++Connector0..1
++EV
+0..1
++ChargingSchedule0..*
++ChargingSchedulePeriod 0..*
++ContractSignatureCertificateChain 0..1
++EV
+0..*
++ChargingProfile
+0..*
++ChargingProfile 0..*
++ChargingSchedule 0..1
++SAProvisioningCertificateChain
+0..1
++Transaction
+0..*
++Connector 0..1
++ChargingNeeds0..*
++ACChargingParameters
+0..1
++Transaction
+0..*
++EVSE 0..1
++ChargePoint0..1
++CompositeSchedule 0..*
+Figure 15. OCPP Information Model: SmartCharging
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 20/26 Part 1 - Architecture & Topology

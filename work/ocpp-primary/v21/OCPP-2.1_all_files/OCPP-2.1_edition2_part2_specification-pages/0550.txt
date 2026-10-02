@@ -1,0 +1,44 @@
+Charging Station CSMS
+Transaction has started
+SetChargingProfileRequest( 1, TxProfile, chargingProfile{ schedule with ChargingOnly } )
+SetChargingProfileResponse( Accepted )
+SetChargingProfileRequest( 2, TxProfile, chargingProfile{ schedule with CentralSetpoint } )
+SetChargingProfileResponse( Accepted )
+TxProfile #2 with stackLevel 2 active with operationMode CentralSetpoint
+TxProfile #1 with stackLevel 1 as fallback with operationMode ChargingOnly.
+CSMS connection is lost
+alt [t <= maxOfflineDuration]
+continue with profile #2
+[t > maxOfflineDuration]
+fallback to profile #1
+Figure 195. V2X Operation Going Offline
+Q12 - Resuming a V2X operation after an offline period
+New in OCPP 2.1
+No. Type Description
+1 Name Resuming a V2X operation after an offline period
+2 ID Q12
+3 Objective(s) To describe how to resume V2X operations after an offline period.
+4 Description The Charging Station is offline and a V2X charging operation is active on the Charging Station via
+a TxProfile or TxDefaultProfile charging profile.
+Charging Station has a regular (ChargingOnly) charging profile with stack level #1 and a V2X
+(CentralSetpoint) charging profile with stack level #2. If the offline period lasted less than
+maxOfflineDuration seconds, then the V2X operation mode will still be what it was before going
+offline, else it will have reverted back while offline to the next valid charging profile with a lower
+stack level (i.e. #1).
+Actors Charging Station, CSMS
+Scenario description #1 maxOfflineDuration has not elapsed
+1. The Charging Station restores connection to the CSMS.
+2. The offline period lasted less than the value of maxOfflineDuration of the (V2X) charging
+profile. The charging profile therefore remained active during the offline period, and
+nothing changes in this respect when the connection is restored.
+Scenario description #2 maxOfflineDuration has elapsed, invalidAfterOfflineDuration = false
+1. The Charging Station restores connection to the CSMS.
+2. The offline period lasted longer than maxOfflineDuration of the (V2X) charging profile.
+This charging profile stopped being active after maxOfflineDuration seconds.
+3. While offline, Charging Station selected the next valid charging profile with stack level #1
+and is now using a charging profile that only has operation mode ChargingOnly.
+4. When connection to CSMS is restored, Charging Station will re-evaluate its charging
+profiles and now select the charging profile with stack level #2 as the valid profile.
+5. Charging Station will continue with V2X operations according to the charging profile.
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 537/803 Part 2 - Specification

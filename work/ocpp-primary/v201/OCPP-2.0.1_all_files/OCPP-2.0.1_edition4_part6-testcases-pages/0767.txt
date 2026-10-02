@@ -1,0 +1,47 @@
+TC_K_02_CSMS: Set Charging Profile - TxProfile without ongoing transaction on
+the specified EVSE
+Test case name Set Charging Profile - TxProfile without ongoing transaction on the specified EVSE
+Test case Id TC_K_02_CSMS
+Use case Id(s) K01
+Requirement(s) N/a
+System under test CSMS
+Description To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the entire
+Charging Station over a period of time. The CSMS sends a SetChargingProfileRequest to the Charging
+Station to influence the power or current drawn by EVs. The CSMS calculates a ChargingSchedule to stay
+within certain limits, which MAY be imposed by any external system.
+Purpose To verify if the CSMS is able to send a TxProfile and read the charger’s feedback while no transaction is
+ongoing for a specific EVSE as described at the OCPP specification.
+Prerequisite(s) If the CSMS supports sending a TxProfile while there is no transaction ongoing.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Test System responds with a
+SetChargingProfileResponse with
+status Rejected
+1. The CSMS sends a SetChargingProfileRequest -
+chargingProfile.id <Configured chargingProfileId>
+Tool validations
+* Step 1:
+Message SetChargingProfileRequest
+- evseId <Configured evseId> AND
+- chargingProfile.chargingProfilePurpose TxProfile AND
+- chargingProfile.stackLevel <Configured stackLevel> AND
+- chargingProfile.chargingProfileKind Relative AND
+- chargingProfile.chargingSchedule.startSchedule must be omitted AND
+- chargingProfile.chargingSchedule.chargingRateUnit <Configured chargingRateUnit> AND
+- chargingProfile.chargingSchedule.chargingSchedulePeriod.startPeriod 0 AND
+- chargingProfile.chargingSchedule.chargingSchedulePeriod.limit 7.0 or 7000.0 AND
+- chargingProfile.chargingSchedule.chargingSchedulePeriod.numberPhases <Configured numberPhases> where <Configured
+numberPhases> not 3 OR
+- chargingProfile.chargingSchedule.chargingSchedulePeriod.numberPhases <Configured numberPhases> or <omit> where
+<Configured numberPhases> 3
+Post scenario validations:
+- N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 765/914 Part 6 - Test Cases

@@ -1,0 +1,46 @@
+u-blox 20 HPG 2.00 - Interface description
+13 U1 version - - Message version (0x01 for this version)
+14 U1[2] reserved0 - - Reserved
+Start of repeated group (numMeas times)
+16 + n·32 R8 prMes - m Pseudorange measurement [m]. GLONASS inter
+frequency channel delays are compensated with an
+internal calibration table.
+24 + n·32 R8 cpMes - cycles Carrier phase measurement [cycles]. The carrier
+phase initial ambiguity is initialized using an
+approximate value to make the magnitude of the
+phase close to the pseudorange measurement.
+Clock resets are applied to both phase and
+code measurements in accordance with the RINEX
+speciﬁcation.
+32 + n·32 R4 doMes - Hz Doppler measurement (positive sign for approaching
+satellites) [Hz]
+36 + n·32 U1 gnssId - - GNSS identiﬁer (see Satellite Numbering for a list of
+identiﬁers)
+37 + n·32 U1 svId - - Satellite identiﬁer (see Satellite Numbering)
+38 + n·32 U1 sigId - - New style signal identiﬁer (see Signal Identiﬁers).(not
+supported for protocol versions less than 27.00)
+39 + n·32 U1 freqId - - Only used for GLONASS: This is the frequency slot + 7
+(range from 0 to 13)
+40 + n·32 U2 locktime - ms Carrier phase locktime counter (maximum 64500ms)
+42 + n·32 U1 cno - dBHz Carrier-to-noise density ratio (signal strength) [dB-Hz]
+43 + n·32 X1 prStdev 0.01*2^n m Estimated pseudorange measurement standard
+deviation
+bits 3…0   U:4 prStd - - Estimated pseudorange standard deviation
+44 + n·32 X1 cpStdev 0.004 cycles Estimated carrier phase measurement standard
+deviation (note a raw value of 0x0F indicates the value
+is invalid)
+bits 3…0   U:4 cpStd - - Estimated carrier phase standard deviation
+45 + n·32 X1 doStdev 0.002*2^n Hz Estimated Doppler measurement standard deviation.
+bits 3…0   U:4 doStd - - Estimated Doppler standard deviation
+46 + n·32 X1 trkStat - - Tracking status bitﬁeld
+bit 0   U:1 prValid - - Pseudorange valid
+bit 1   U:1 cpValid - - Carrier phase valid
+bit 2   U:1 halfCyc - - Half cycle valid
+bit 3   U:1 subHalfCyc - - Half cycle subtracted from phase
+47 + n·32 U1 reserved1 - - Reserved
+End of repeated group (numMeas times)
+3.16.5 UBX-RXM-RLM (0x02 0x59)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 123 of 224
+C1-Public

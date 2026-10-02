@@ -1,0 +1,60 @@
+EV Driver
+Charging Station CSMS
+Charging Station is Offline and a transaction is ongoing.
+present idToken
+alt [if idToken matches or groupId can be validated]
+stop energy offer
+alt [if cable not permanently attached]
+unlock connector
+Store TransactionEventRequest(eventType = Ended,
+offline = true)
+Connection loss can be minutes, but can also be days.
+Connection restored.
+HeartbeatRequest()
+HeartbeatResponse()
+send queued message()
+TransactionEventRequest(eventType = Ended,
+offline = true)
+TransactionEventResponse()
+Figure 67. Sequence Diagram: Transaction stopped while Charging Station is offline
+E08 - Transaction stopped while Charging Station is offline - Requirements
+Table 70. E08 - Requirements
+ID Precondition Requirement definition Note
+E08.FR.01 If the IdToken presented is the same
+as the IdToken used to start the
+transaction.
+The Charging Station SHALL stop the energy
+offering.
+E08.FR.02 If the IdToken presented has the same
+GroupId as the IdToken used to start
+the transaction.
+The Charging Station SHALL stop the energy
+offering.
+E08.FR.03 (E08.FR.01 OR E08.FR.02)
+AND
+Cable not permanently attached
+The Charging Station SHALL unlock the connector.
+E08.FR.04 (E08.FR.01 OR E08.FR.02) The Charging Station SHALL "generate" a
+TransactionEventRequest (eventType = Ended).
+E08.FR.05 When Offline. The Charging Station MUST queue any
+TransactionEventRequest messages.
+Same as E12.FR.01
+E08.FR.06 After the connection is restored. The Charging Station MUST send queued
+TransactionEventRequest messages.
+E12.FR.02
+E08.FR.07 The flag: offline SHALL be set to TRUE for any
+TransactionEventRequest that occurred while the
+Charging Station was offline.
+E12.FR.02
+E08.FR.08 When a TransactionEventRequest has
+to be created
+The Charging Station SHALL set the message’s
+seqNo field as specified in Sequence Number
+Generation.
+This enables the CSMS
+to track the
+completeness of
+transaction information.
+Same E01.FR.07
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 196/803 Part 2 - Specification

@@ -1,0 +1,55 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  33 
+logic delays) further throttle the serial streaming output and the actual frame rate measured is less than the example 
+above. 
+The horizontal or vertical blanking period required to be inserted in TX can be configured using the following settings 
+from the IP Wizard GUI or CSR registers: 
+• Number of Vertical Blanking Lines Per Frame (NUM_LINE_V_BLANKING field in CONFIG_REG1 register)  
+• Number of Horizontal Blanking Bytes in Byte Clock Domain (H_BLANKING_BYTES_TH field in CONFIG_REG1 
+register) 
+• Number of Horizontal Active Bytes in Byte Clock Domain (NUM_BYTES_ACTIVE_H field in CONFIG_REG2 register)  
+Refer to the Horizontal and Vertical Blanking Period Insertion Tuning section for more details. 
+2.9. MIPI CSI/DSI Receiver PHY Block 
+The PHY block (D-PHY receiver) is the physical interface that receives MIPI D-PHY signals from differential pairs and 
+converts the signals to parallel byte data. The PHY block supports the Soft D-PHY and Hard D-PHY modes. 
+This block performs the following key functions: 
+• Clock recovery: Generates and distributes byte clock (byte_clk_o) from incoming MIPI clock lane. 
+• Deserialization: Uses DDR for 8-bit deserialization. 
+• Word alignment: Detects the 0xB8 SoTp and aligns incoming data. 
+• Low power and high-speed control: Manages LP-HS transitions. 
+• Deskew calibration: Ensures data received on multiple lanes is aligned and synchronized.  This feature is supported 
+only when PHY Mode is set to Hard D-PHY. 
+2.10. MIPI CSI/DSI Receiver Controller Block 
+The RX controller block processes byte data from the PHY into MIPI packet headers and payloads. The block handles 
+lane alignment, lane merging, and depacketization with error detection and correction.  
+This block performs the following key functions: 
+• Lane alignment: Aligns data across multiple lanes using FIFO-based buffering and SoTp detection. 
+• Lane merge: Combines aligned lane data into a single stream, performs width conversion, byte reordering, and 
+propagates end-of-packet indicators. During width conversion, this block merges the data into 32-bit or 64-bit 
+streams based on lane count. The 64-bit controller mode is for PHY Data Width of 16 with 4 data lanes. All other 
+PHY Data Width and lane combinations are treated as 32-bit controller mode. 
+• Depacketization: Extracts headers and payloads. This depacketizer enforces minimum word count requirement 
+based on selected configuration as shown in Table 2.7. This limitation is applicable for supported streaming 
+interfaces. 
+• Error detection and correction: ECC for D-PHY (1-bit correction, 2-bit detection) and CRC for headers and payloads 
+with dedicated error flags. 
+• Byte streaming source: Converts internal short and long packets to the AXI4-Stream protocol in byte domain and 
+handles backpressure. 
+Table 2.7. MIPI CSI/DSI Receiver Word Count Support Limitation 
+PHY Direction PHY Mode Protocol Mode Controller Mode Minimum Word Count 
+Limitation (Bytes) 
+RX Soft D-PHY or Hard 
+D-PHY 
+DSI-2 32-bit 14 
+RX Soft D-PHY or Hard 
+D-PHY 
+CSI-2 32-bit 6 
+RX Hard D-PHY DSI-2 64-bit 34 
+RX Hard D-PHY CSI-2 64-bit 10 
+Note: 
+1. 64-bit controller mode is only supported in Hard D-PHY with 4 lanes configuration. 

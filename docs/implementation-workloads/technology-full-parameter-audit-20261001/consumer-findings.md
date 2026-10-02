@@ -1,0 +1,17 @@
+# Remaining consumer checks
+
+## M-Bus: physical registry versus reviewed semantic metadata
+
+The reviewed module declares `wired_mbus_actual_voltage_current_segment`, polling and collision semantics. `catalog._profile` currently serializes physical/access/arbitration IDs only from a registered physical model, so the emitted M-Bus physical ID is null while its mechanism metadata is present. Source and scalar tests do not prove a physical executor. Consumer consolidation must explicitly resolve or reject the actual wired realization and may not map this unknown realization to CAN, Ethernet, wireless M-Bus or generic physical defaults. Keep capacity MODEL_MISSING until an actual complete model/evidence path is implemented and verified. The same serializer path must be checked for all reviewed native profiles.
+
+## Matter: actual lower binding, proposals and executable evidence
+
+The native profile now distinguishes UDP/IPv6 on Ethernet, Wi-Fi or Thread; TCP and commissioning-only BTP, PAFTP or NTL. Registry representation remains an explicit application layer. During consumer consolidation, resolve the actual canonical interface/selected lower stack and reject contradictory bindings. A text reference to a PHY/transport must not establish a physical executor or a commissioned schedule. General source references, actual SDK compile/dynamic configuration, peer negotiation and credential proofs require provenance resolution.
+
+Verify the same conditional proposal rules in wizard/UI/storage/preflight/capacity/simulation/trace: remote fallback values must not overwrite confirmed peer intervals; local SDK suggestions must remain unverified when configuration overrides are unknown. Preserve lossless hexadecimal uint64 identities. Materialize encoded headers, ACKs, group traffic, segments, retries, ICD wake/Check-In and memory limits only from qualified actual exchanges. The native scalar formula tests and source review do not certify optional commissioning-channel codecs, AEAD/CASE/PASE, DNS-SD parsing, device conformance or runtime capacity. Keep MODEL_MISSING until the actual executable model/evidence path passes its gate.
+
+## MIL-STD-1553: message references and actual controller ownership
+
+The source-defined response and intermessage intervals use parity midpoint to next sync midpoint at specified terminal points A. They are not raw idle times. Capacity/E2E/simulation/trace must resolve the same actual BC/RT identities, both RT-to-RT commands and statuses, propagation and reference offsets; do not blindly add20us words plus measured intervals. Manchester transition counts are not a2Mbit/s transport clock. Broadcast receiving RTs suppress status but a transmitting RT still responds. Busy/invalid-message paths, retransmissions, alternate-bus supersession and dynamic control need actual complete executor evidence.
+
+Keep AppendixA.2 application selection separate from industry templates. BaseC versus Army/Navy/AirForce restrictions, unique addresses and broadcast31 must follow actual options and wiring/capability provenance. Resolve installed cable/stub/fault load/test points and active BC ownership through the physical registry; the native scalar source review does not install a PHY/BC scheduler, certify EMC/MIL-STD-464/noise tests, or establish capacity. Preserve confirmed nondefault addresses, observed clock and timings. Existing MODEL_MISSING must remain honest until the actual executable evidence path has passed the release gate.

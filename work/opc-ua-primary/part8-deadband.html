@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PercentDeadband &#x2013; OPC Unified Architecture - Part 8: Data Access</title>
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/css/site.css?v=V5GQNmsbOl8B9o5m0N4IedP0ikjJeS8mhboD9acFTBw" />
+    <script>
+    (function () {
+        try {
+            var w = parseInt(localStorage.getItem('opc.tocWidth'), 10);
+            if (w >= 180 && w <= 900) {
+                document.documentElement.style.setProperty('--toc-w', w + 'px');
+            }
+        } catch (e) { /* private mode / storage disabled — keep the CSS default */ }
+    })();
+    </script>
+        <link rel="canonical" href="https://reference.opcfoundation.org/specs/OPC-10000-8/7.2" />
+        <meta property="og:url" content="https://reference.opcfoundation.org/specs/OPC-10000-8/7.2" />
+        <meta property="og:title" content="OPC Unified Architecture - Part 8: Data Access - 7.2 PercentDeadband" />
+        <meta name="description" content="The DataChangeFilter in OPC 10000-4 defines the conditions under which a data change notification shall be reported. This filter contains a deadbandValue which&#x2026;" />
+        <meta property="og:description" content="The DataChangeFilter in OPC 10000-4 defines the conditions under which a data change notification shall be reported. This filter contains a deadbandValue which&#x2026;" />
+        <link rel="prev" href="https://reference.opcfoundation.org/specs/OPC-10000-8/7.1" />
+        <link rel="next" href="https://reference.opcfoundation.org/specs/OPC-10000-8/7.3" />
+        <script type="application/ld&#x2B;json">{"@context":"https://schema.org","@type":"TechArticle","headline":"7.2 PercentDeadband","name":"7.2 PercentDeadband","description":"The DataChangeFilter in OPC 10000-4 defines the conditions under which a data change notification shall be reported. This filter contains a deadbandValue which…","url":"https://reference.opcfoundation.org/specs/OPC-10000-8/7.2","inLanguage":"en","isPartOf":{"@type":"TechArticle","name":"OPC Unified Architecture - Part 8: Data Access","url":"https://reference.opcfoundation.org/specs/OPC-10000-8"},"breadcrumb":{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"7 Data Access specific usage of Services","item":"https://reference.opcfoundation.org/specs/OPC-10000-8/7"},{"@type":"ListItem","position":2,"name":"7.2 PercentDeadband","item":"https://reference.opcfoundation.org/specs/OPC-10000-8/7.2"}]}}</script>
+</head>
+<body>
+    <header b-9bvyxychcn class="site-header">
+        <div b-9bvyxychcn class="site-header-inner">
+                <button b-9bvyxychcn class="toc-toggle" aria-label="Open table of contents" aria-expanded="false" aria-controls="toc-pane">
+                    <span b-9bvyxychcn></span><span b-9bvyxychcn></span><span b-9bvyxychcn></span>
+                </button>
+            <a b-9bvyxychcn href="/" aria-label="OPC Foundation home">
+                <img src="/images/opclogo.png" class="site-logo" alt="OPC Foundation" />
+            </a>
+                <span b-9bvyxychcn class="site-header-spec">OPC Unified Architecture - Part 8: Data Access</span>
+                <form class="header-search" action="/specs/OPC-10000-8/search" method="get" role="search">
+                    <input b-9bvyxychcn type="search" name="q" placeholder="Search…" aria-label="Search this specification" />
+                    <button b-9bvyxychcn type="submit">Go</button>
+                </form>
+            <a b-9bvyxychcn class="header-report" href="mailto:webmaster@opcfoundation.org?subject=Online%20Reference%20Problem%20Report&amp;body=Current%20page%3A%20https%3A%2F%2Freference.opcfoundation.org%2Fspecs%2FOPC-10000-8%2F7.2" title="Report Problem" aria-label="Report Problem">
+                <svg b-9bvyxychcn viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                    <path b-9bvyxychcn fill="currentColor" d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z" />
+                </svg>
+            </a>
+        </div>
+    </header>
+
+        <div b-9bvyxychcn class="spec-layout">
+            <nav b-9bvyxychcn id="toc-pane" class="toc-pane" aria-label="Table of contents">
+                        <a b-9bvyxychcn class="version-badge" href="/specs/OPC-10000-8">v1.05.07</a>
+                <ul class="toc-list"><li><a href="/specs/OPC-10000-8/1"><span class="toc-num">1</span><span class="toc-title">Scope</span></a></li><li><a href="/specs/OPC-10000-8/2"><span class="toc-num">2</span><span class="toc-title">Normative references</span></a></li><li><a href="/specs/OPC-10000-8/3"><span class="toc-num">3</span><span class="toc-title">Terms, definitions and abbreviated terms</span></a><ul><li><a href="/specs/OPC-10000-8/3.1"><span class="toc-num">3.1</span><span class="toc-title">Terms and definitions</span></a><ul><li><a href="/specs/OPC-10000-8/3.1.1"><span class="toc-num">3.1.1</span><span class="toc-title">DataItem</span></a></li><li><a href="/specs/OPC-10000-8/3.1.2"><span class="toc-num">3.1.2</span><span class="toc-title">AnalogItem</span></a></li><li><a href="/specs/OPC-10000-8/3.1.3"><span class="toc-num">3.1.3</span><span class="toc-title">DiscreteItem</span></a></li><li><a href="/specs/OPC-10000-8/3.1.4"><span class="toc-num">3.1.4</span><span class="toc-title">ArrayItem</span></a></li><li><a href="/specs/OPC-10000-8/3.1.5"><span class="toc-num">3.1.5</span><span class="toc-title">EngineeringUnits</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/3.2"><span class="toc-num">3.2</span><span class="toc-title">Abbreviated terms</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/4"><span class="toc-num">4</span><span class="toc-title">Concepts</span></a></li><li><a href="/specs/OPC-10000-8/5"><span class="toc-num">5</span><span class="toc-title">Model</span></a><ul><li><a href="/specs/OPC-10000-8/5.1"><span class="toc-num">5.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/5.2"><span class="toc-num">5.2</span><span class="toc-title">SemanticsChanged</span></a></li><li><a href="/specs/OPC-10000-8/5.3"><span class="toc-num">5.3</span><span class="toc-title">Variable Types</span></a><ul><li><a href="/specs/OPC-10000-8/5.3.1"><span class="toc-num">5.3.1</span><span class="toc-title">DataItemType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.2"><span class="toc-num">5.3.2</span><span class="toc-title">AnalogItem VariableTypes</span></a><ul><li><a href="/specs/OPC-10000-8/5.3.2.1"><span class="toc-num">5.3.2.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/5.3.2.2"><span class="toc-num">5.3.2.2</span><span class="toc-title">BaseAnalogType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.2.3"><span class="toc-num">5.3.2.3</span><span class="toc-title">AnalogItemType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.2.4"><span class="toc-num">5.3.2.4</span><span class="toc-title">AnalogUnitType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.2.5"><span class="toc-num">5.3.2.5</span><span class="toc-title">AnalogUnitRangeType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.2.6"><span class="toc-num">5.3.2.6</span><span class="toc-title">AnalogNumberItemType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.2.7"><span class="toc-num">5.3.2.7</span><span class="toc-title">AnalogNumberUnitRangeType</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/5.3.3"><span class="toc-num">5.3.3</span><span class="toc-title">DiscreteItemType</span></a><ul><li><a href="/specs/OPC-10000-8/5.3.3.1"><span class="toc-num">5.3.3.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/5.3.3.2"><span class="toc-num">5.3.3.2</span><span class="toc-title">TwoStateDiscreteType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.3.3"><span class="toc-num">5.3.3.3</span><span class="toc-title">MultiStateDiscreteType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.3.4"><span class="toc-num">5.3.3.4</span><span class="toc-title">MultiStateValueDiscreteType</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/5.3.4"><span class="toc-num">5.3.4</span><span class="toc-title">ArrayItemType</span></a><ul><li><a href="/specs/OPC-10000-8/5.3.4.1"><span class="toc-num">5.3.4.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/5.3.4.2"><span class="toc-num">5.3.4.2</span><span class="toc-title">YArrayItemType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.4.3"><span class="toc-num">5.3.4.3</span><span class="toc-title">XYArrayItemType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.4.4"><span class="toc-num">5.3.4.4</span><span class="toc-title">ImageItemType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.4.5"><span class="toc-num">5.3.4.5</span><span class="toc-title">CubeItemType</span></a></li><li><a href="/specs/OPC-10000-8/5.3.4.6"><span class="toc-num">5.3.4.6</span><span class="toc-title">NDimensionArrayItemType</span></a></li></ul></li></ul></li><li><a href="/specs/OPC-10000-8/5.4"><span class="toc-num">5.4</span><span class="toc-title">Address Space model</span></a></li><li><a href="/specs/OPC-10000-8/5.5"><span class="toc-num">5.5</span><span class="toc-title">Attributes of DataItems</span></a></li><li><a href="/specs/OPC-10000-8/5.6"><span class="toc-num">5.6</span><span class="toc-title">DataTypes</span></a><ul><li><a href="/specs/OPC-10000-8/5.6.1"><span class="toc-num">5.6.1</span><span class="toc-title">Overview</span></a></li><li><a href="/specs/OPC-10000-8/5.6.2"><span class="toc-num">5.6.2</span><span class="toc-title">Range</span></a></li><li><a href="/specs/OPC-10000-8/5.6.3"><span class="toc-num">5.6.3</span><span class="toc-title">NumberRange</span></a></li><li><a href="/specs/OPC-10000-8/5.6.4"><span class="toc-num">5.6.4</span><span class="toc-title">EUInformation</span></a><ul><li><a href="/specs/OPC-10000-8/5.6.4.1"><span class="toc-num">5.6.4.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/5.6.4.2"><span class="toc-num">5.6.4.2</span><span class="toc-title">Extented Unit information and Quantity</span></a></li><li><a href="/specs/OPC-10000-8/5.6.4.3"><span class="toc-num">5.6.4.3</span><span class="toc-title">Definition of EUInformation</span></a></li><li><a href="/specs/OPC-10000-8/5.6.4.4"><span class="toc-num">5.6.4.4</span><span class="toc-title">Mapping of UN/CEFACT to EUInformation</span></a></li><li><a href="/specs/OPC-10000-8/5.6.4.5"><span class="toc-num">5.6.4.5</span><span class="toc-title">Mapping of IEC 62720 to EUInformation</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/5.6.5"><span class="toc-num">5.6.5</span><span class="toc-title">ComplexNumberType</span></a></li><li><a href="/specs/OPC-10000-8/5.6.6"><span class="toc-num">5.6.6</span><span class="toc-title">DoubleComplexNumberType</span></a></li><li><a href="/specs/OPC-10000-8/5.6.7"><span class="toc-num">5.6.7</span><span class="toc-title">AxisInformation</span></a></li><li><a href="/specs/OPC-10000-8/5.6.8"><span class="toc-num">5.6.8</span><span class="toc-title">AxisScaleEnumeration</span></a></li><li><a href="/specs/OPC-10000-8/5.6.9"><span class="toc-num">5.6.9</span><span class="toc-title">XVType</span></a></li></ul></li></ul></li><li><a href="/specs/OPC-10000-8/6"><span class="toc-num">6</span><span class="toc-title">Quantities and Units model</span></a><ul><li><a href="/specs/OPC-10000-8/6.1"><span class="toc-num">6.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/6.2"><span class="toc-num">6.2</span><span class="toc-title">Quantities entry point</span></a></li><li><a href="/specs/OPC-10000-8/6.3"><span class="toc-num">6.3</span><span class="toc-title">Syntax References</span></a><ul><li><a href="/specs/OPC-10000-8/6.3.1"><span class="toc-num">6.3.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/6.3.2"><span class="toc-num">6.3.2</span><span class="toc-title">Using Dictionary References</span></a></li><li><a href="/specs/OPC-10000-8/6.3.3"><span class="toc-num">6.3.3</span><span class="toc-title">Syntax Reference Identifier</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/6.4"><span class="toc-num">6.4</span><span class="toc-title">ObjectTypes</span></a><ul><li><a href="/specs/OPC-10000-8/6.4.1"><span class="toc-num">6.4.1</span><span class="toc-title">QuantityType ObjectType definition</span></a></li><li><a href="/specs/OPC-10000-8/6.4.2"><span class="toc-num">6.4.2</span><span class="toc-title">UnitType and subtypes</span></a><ul><li><a href="/specs/OPC-10000-8/6.4.2.1"><span class="toc-num">6.4.2.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/6.4.2.2"><span class="toc-num">6.4.2.2</span><span class="toc-title">UnitType ObjectType Definition</span></a></li><li><a href="/specs/OPC-10000-8/6.4.2.3"><span class="toc-num">6.4.2.3</span><span class="toc-title">ServerUnitType ObjectType Definition</span></a></li><li><a href="/specs/OPC-10000-8/6.4.2.4"><span class="toc-num">6.4.2.4</span><span class="toc-title">AlternativeUnitType ObjectType Definition</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/6.4.3"><span class="toc-num">6.4.3</span><span class="toc-title">SyntaxReferenceEntryType ObjectType definition</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/6.5"><span class="toc-num">6.5</span><span class="toc-title">References</span></a><ul><li><a href="/specs/OPC-10000-8/6.5.1"><span class="toc-num">6.5.1</span><span class="toc-title">HasEngineeringUnitDetails</span></a></li><li><a href="/specs/OPC-10000-8/6.5.2"><span class="toc-num">6.5.2</span><span class="toc-title">HasQuantity</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/6.6"><span class="toc-num">6.6</span><span class="toc-title">DataTypes</span></a><ul><li><a href="/specs/OPC-10000-8/6.6.1"><span class="toc-num">6.6.1</span><span class="toc-title">AnnotationDataType DataType definition</span></a></li><li><a href="/specs/OPC-10000-8/6.6.2"><span class="toc-num">6.6.2</span><span class="toc-title">LinearConversionDataType DataType definition</span></a></li><li><a href="/specs/OPC-10000-8/6.6.3"><span class="toc-num">6.6.3</span><span class="toc-title">ConversionLimitEnum</span></a></li><li><a href="/specs/OPC-10000-8/6.6.4"><span class="toc-num">6.6.4</span><span class="toc-title">QuantityDimension</span></a></li></ul></li></ul></li><li><a href="/specs/OPC-10000-8/7"><span class="toc-num">7</span><span class="toc-title">Data Access specific usage of Services</span></a><ul><li><a href="/specs/OPC-10000-8/7.1"><span class="toc-num">7.1</span><span class="toc-title">General</span></a></li><li><a class="active" href="/specs/OPC-10000-8/7.2"><span class="toc-num">7.2</span><span class="toc-title">PercentDeadband</span></a></li><li><a href="/specs/OPC-10000-8/7.3"><span class="toc-num">7.3</span><span class="toc-title">Data Access status codes</span></a><ul><li><a href="/specs/OPC-10000-8/7.3.1"><span class="toc-num">7.3.1</span><span class="toc-title">Overview</span></a></li><li><a href="/specs/OPC-10000-8/7.3.2"><span class="toc-num">7.3.2</span><span class="toc-title">Operation level result codes</span></a></li><li><a href="/specs/OPC-10000-8/7.3.3"><span class="toc-num">7.3.3</span><span class="toc-title">LimitBits</span></a></li></ul></li></ul></li><li><a href="/specs/OPC-10000-8/annex-a"><span class="toc-num">Annex A</span><span class="toc-title">OPC COM DA to UA mapping (Normative)</span></a><ul><li><a href="/specs/OPC-10000-8/a-1"><span class="toc-num">A.1</span><span class="toc-title">Introduction</span></a></li><li><a href="/specs/OPC-10000-8/a-2"><span class="toc-num">A.2</span><span class="toc-title">Security Considerations</span></a></li><li><a href="/specs/OPC-10000-8/a-3"><span class="toc-num">A.3</span><span class="toc-title">COM UA wrapper for OPC DA Server</span></a><ul><li><a href="/specs/OPC-10000-8/a-3-1"><span class="toc-num">A.3.1</span><span class="toc-title">Information Model mapping</span></a><ul><li><a href="/specs/OPC-10000-8/a-3-1-1"><span class="toc-num">A.3.1.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/a-3-1-2"><span class="toc-num">A.3.1.2</span><span class="toc-title">Branch</span></a></li><li><a href="/specs/OPC-10000-8/a-3-1-3"><span class="toc-num">A.3.1.3</span><span class="toc-title">Item</span></a></li><li><a href="/specs/OPC-10000-8/a-3-1-4"><span class="toc-num">A.3.1.4</span><span class="toc-title">Property</span></a></li><li><a href="/specs/OPC-10000-8/a-3-1-5"><span class="toc-num">A.3.1.5</span><span class="toc-title">BrowseName and DisplayName Mapping</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/a-3-2"><span class="toc-num">A.3.2</span><span class="toc-title">Data and error mapping</span></a><ul><li><a href="/specs/OPC-10000-8/a-3-2-1"><span class="toc-num">A.3.2.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/a-3-2-2"><span class="toc-num">A.3.2.2</span><span class="toc-title">Value</span></a></li><li><a href="/specs/OPC-10000-8/a-3-2-3"><span class="toc-num">A.3.2.3</span><span class="toc-title">Quality</span></a></li><li><a href="/specs/OPC-10000-8/a-3-2-4"><span class="toc-num">A.3.2.4</span><span class="toc-title">Timestamp</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/a-3-3"><span class="toc-num">A.3.3</span><span class="toc-title">Read data</span></a></li><li><a href="/specs/OPC-10000-8/a-3-4"><span class="toc-num">A.3.4</span><span class="toc-title">Write Data</span></a></li><li><a href="/specs/OPC-10000-8/a-3-5"><span class="toc-num">A.3.5</span><span class="toc-title">Subscriptions</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/a-4"><span class="toc-num">A.4</span><span class="toc-title">COM UA proxy for DA Client</span></a><ul><li><a href="/specs/OPC-10000-8/a-4-1"><span class="toc-num">A.4.1</span><span class="toc-title">Guidelines</span></a></li><li><a href="/specs/OPC-10000-8/a-4-2"><span class="toc-num">A.4.2</span><span class="toc-title">Information Model and Address Space mapping</span></a><ul><li><a href="/specs/OPC-10000-8/a-4-2-1"><span class="toc-num">A.4.2.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/a-4-2-2"><span class="toc-num">A.4.2.2</span><span class="toc-title">Object Nodes</span></a></li><li><a href="/specs/OPC-10000-8/a-4-2-3"><span class="toc-num">A.4.2.3</span><span class="toc-title">Variable Nodes</span></a></li><li><a href="/specs/OPC-10000-8/a-4-2-4"><span class="toc-num">A.4.2.4</span><span class="toc-title">Namespace Indices</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/a-4-3"><span class="toc-num">A.4.3</span><span class="toc-title">Data and error mapping</span></a><ul><li><a href="/specs/OPC-10000-8/a-4-3-1"><span class="toc-num">A.4.3.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/a-4-3-2"><span class="toc-num">A.4.3.2</span><span class="toc-title">Value</span></a></li><li><a href="/specs/OPC-10000-8/a-4-3-3"><span class="toc-num">A.4.3.3</span><span class="toc-title">Quality</span></a></li><li><a href="/specs/OPC-10000-8/a-4-3-4"><span class="toc-num">A.4.3.4</span><span class="toc-title">Timestamp</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/a-4-4"><span class="toc-num">A.4.4</span><span class="toc-title">Read data</span></a></li><li><a href="/specs/OPC-10000-8/a-4-5"><span class="toc-num">A.4.5</span><span class="toc-title">Write data</span></a></li><li><a href="/specs/OPC-10000-8/a-4-6"><span class="toc-num">A.4.6</span><span class="toc-title">Subscriptions</span></a></li></ul></li></ul></li><li><a href="/specs/OPC-10000-8/annex-b"><span class="toc-num">Annex B</span><span class="toc-title">UCUM Symbols (Normative)</span></a><ul><li><a href="/specs/OPC-10000-8/b-1"><span class="toc-num">B.1</span><span class="toc-title">Introduction - License</span></a></li><li><a href="/specs/OPC-10000-8/b-2"><span class="toc-num">B.2</span><span class="toc-title">Representation</span></a></li><li><a href="/specs/OPC-10000-8/b-3"><span class="toc-num">B.3</span><span class="toc-title">Tables of terminal symbols</span></a><ul><li><a href="/specs/OPC-10000-8/b-3-1"><span class="toc-num">B.3.1</span><span class="toc-title">General</span></a></li><li><a href="/specs/OPC-10000-8/b-3-2"><span class="toc-num">B.3.2</span><span class="toc-title">Prefixes</span></a></li><li><a href="/specs/OPC-10000-8/b-3-3"><span class="toc-num">B.3.3</span><span class="toc-title">Base units</span></a></li><li><a href="/specs/OPC-10000-8/b-3-4"><span class="toc-num">B.3.4</span><span class="toc-title">Derived unit atoms</span></a></li><li><a href="/specs/OPC-10000-8/b-3-5"><span class="toc-num">B.3.5</span><span class="toc-title">Customary unit atoms</span></a></li><li><a href="/specs/OPC-10000-8/b-3-6"><span class="toc-num">B.3.6</span><span class="toc-title">Other legacy units</span></a></li></ul></li></ul></li><li><a href="/specs/OPC-10000-8/annex-c"><span class="toc-num">Annex C</span><span class="toc-title">Outline of Syntax References (Informative)</span></a><ul><li><a href="/specs/OPC-10000-8/c-1"><span class="toc-num">C.1</span><span class="toc-title">UCUM syntax reference</span></a></li><li><a href="/specs/OPC-10000-8/c-2"><span class="toc-num">C.2</span><span class="toc-title">QUDT syntax reference</span></a></li><li><a href="/specs/OPC-10000-8/c-3"><span class="toc-num">C.3</span><span class="toc-title">UNECE syntax reference</span></a></li><li><a href="/specs/OPC-10000-8/c-4"><span class="toc-num">C.4</span><span class="toc-title">IEC CDD syntax reference</span></a></li><li><a href="/specs/OPC-10000-8/c-5"><span class="toc-num">C.5</span><span class="toc-title">LATEX_SIUNITX syntax reference</span></a></li></ul></li><li><a href="/specs/OPC-10000-8/bibliography"><span class="toc-title">Bibliography</span></a></li></ul>
+            </nav>
+            <div b-9bvyxychcn id="toc-resizer" class="toc-resizer" role="separator" aria-orientation="vertical"
+                 aria-controls="toc-pane" aria-label="Resize table of contents" tabindex="0"
+                 aria-valuemin="180" aria-valuemax="900"
+                 title="Drag to resize · double-click to reset"></div>
+            <div b-9bvyxychcn class="toc-backdrop" aria-hidden="true"></div>
+            <main b-9bvyxychcn id="content" class="content-pane" role="main">
+                <h3><span class="sec-number">7.2</span> PercentDeadband</h3><p>The <em data-term="datachangefilter" id="t-1">DataChangeFilter</em> in <a class="xref" data-section-id="f664592a-1bf3-4f3f-9efb-daef31e5dfcb" data-anchor="ref_uapart4" data-rid="ref_uapart4" href="/specs/OPC-10000-8/2#ref_uapart4">OPC 10000-4</a> defines the conditions under which a data change notification shall be reported. This filter contains a <em data-term="deadbandvalue" id="t-2">deadbandValue</em> which can be of type <em data-term="absolutedeadband" id="t-3">AbsoluteDeadband</em> or <em data-term="percentdeadband" id="t-4">PercentDeadband</em>. <a class="xref" data-section-id="f664592a-1bf3-4f3f-9efb-daef31e5dfcb" data-anchor="ref_uapart4" data-rid="ref_uapart4" href="/specs/OPC-10000-8/2#ref_uapart4">OPC 10000-4</a> already specifies the behaviour of the <em data-term="absolutedeadband" id="t-5">AbsoluteDeadband</em>. The behaviour of the <em data-term="percentdeadband" id="t-6">PercentDeadband</em> type is specified as follows.</p><p>
+          <em data-term="deadbandtype = percentdeadband" id="t-7">
+            <strong>DeadbandType = PercentDeadband</strong>
+          </em>
+        </p><p>For this type of deadband the <em data-term="deadbandvalue" id="t-8">deadbandValue</em> is defined as the percentage of the <em data-term="eurange" id="t-9">EURange</em>. That is, it applies only to <em data-term="analogitems" id="t-10">AnalogItems</em> with an <em data-term="eurange" id="t-11">EURange</em> <em data-term="property" id="t-12">Property</em> that defines the typical value range for the item. This range shall be multiplied with the <em data-term="deadbandvalue" id="t-13">deadbandValue</em> and then compared to the actual value change to determine the need for a data change notification. The following pseudo code shows how the deadband is calculated:</p><pre><code>	DataChange if (absolute value of (last cached value - current value) &gt;              (deadbandValue/100.0) * ((high-low) of EURange)))</code></pre><p>The range of the <em data-term="deadbandvalue" id="t-14">deadbandValue</em> is from 0,0 to 100,0 per cent. Specifying a <em data-term="deadbandvalue" id="t-15">deadbandValue</em> outside of this range will be rejected and reported with the <em data-term="statuscode" id="t-16">StatusCode</em> Bad_DeadbandFilterInvalid (see <a class="xref" data-section-id="56e5711e-a78f-4604-b669-7ac9c6fe52b2" data-anchor="tbl_61_operation-level-result-codes-for-bad-data-quality" data-rid="tbl_61_operation-level-result-codes-for-bad-data-quality" href="/specs/OPC-10000-8/7.3.2#tbl_61_operation-level-result-codes-for-bad-data-quality">Table 61</a>).</p><p>If the Value of the <em data-term="monitoreditem" id="t-17">MonitoredItem</em> is an array, then the deadband calculation logic shall be applied to each element of the array. If an element that requires a DataChange is found, then no further deadband checking is necessary and the entire array shall be returned.</p>
+
+            </main>
+        </div>
+
+    
+
+    <!-- In-page find bar (Ctrl+F) -->
+    <div b-9bvyxychcn id="find-bar" class="find-bar" hidden aria-label="Find on page">
+        <input b-9bvyxychcn id="find-input" type="text" placeholder="Find on page…" autocomplete="off" spellcheck="false" aria-label="Search text" />
+        <span b-9bvyxychcn id="find-count" class="find-count" aria-live="polite"></span>
+        <button b-9bvyxychcn id="find-prev" class="find-btn" title="Previous (Shift+Enter)">&#x2191;</button>
+        <button b-9bvyxychcn id="find-next" class="find-btn" title="Next (Enter)">&#x2193;</button>
+        <button b-9bvyxychcn id="find-close" class="find-btn find-close-btn" title="Close (Escape)" aria-label="Close">&#x2715;</button>
+    </div>
+
+    <script>
+    // ── ToC mobile drawer ────────────────────────────────────────────────────────
+    (function () {
+        var b = document.body;
+        function closeToc() {
+            b.classList.remove('toc-open');
+            var btn = document.querySelector('.toc-toggle');
+            if (btn) btn.setAttribute('aria-expanded', 'false');
+        }
+        document.addEventListener('click', function (e) {
+            if (e.target.closest('.toc-toggle')) {
+                var open = b.classList.toggle('toc-open');
+                var btn = e.target.closest('.toc-toggle');
+                btn.setAttribute('aria-expanded', String(open));
+            } else if (e.target.closest('.toc-backdrop') || e.target.closest('.toc-list a')) {
+                closeToc();
+            }
+        });
+    })();
+
+    // ── ToC pane resizer ─────────────────────────────────────────────────────────
+    // Writes --toc-w on <html> and persists it; the <head> script above replays it on
+    // the next page, so the width survives normal server-rendered navigation.
+    (function () {
+        var DEFAULT = 300, MIN = 180, KEY = 'opc.tocWidth';
+        var handle = document.getElementById('toc-resizer');
+        var layout = document.querySelector('.spec-layout');
+        if (!handle || !layout) return;
+
+        // Never let the ToC squeeze the content pane below a readable width.
+        function maxWidth() { return Math.max(MIN, Math.min(900, window.innerWidth - 320)); }
+
+        function current() {
+            var v = parseInt(getComputedStyle(document.documentElement)
+                             .getPropertyValue('--toc-w'), 10);
+            return isNaN(v) ? DEFAULT : v;
+        }
+
+        // The width the user asked for, before clamping — kept so a temporarily narrow
+        // window does not permanently shrink their preference.
+        var desired = current();
+
+        function apply(px, persist) {
+            var w = Math.round(Math.max(MIN, Math.min(maxWidth(), px)));
+            document.documentElement.style.setProperty('--toc-w', w + 'px');
+            handle.setAttribute('aria-valuenow', String(w));
+            if (persist) {
+                desired = w;
+                try { localStorage.setItem(KEY, String(w)); } catch (e) { }
+            }
+            return w;
+        }
+
+        handle.setAttribute('aria-valuenow', String(desired));
+
+        handle.addEventListener('pointerdown', function (e) {
+            if (e.button !== 0) return;
+            e.preventDefault();
+            handle.setPointerCapture(e.pointerId);
+            document.body.classList.add('toc-resizing');
+            var originX = layout.getBoundingClientRect().left;
+
+            function onMove(ev) { apply(ev.clientX - originX, false); }
+            function onUp(ev) {
+                handle.removeEventListener('pointermove', onMove);
+                handle.removeEventListener('pointerup', onUp);
+                handle.removeEventListener('pointercancel', onUp);
+                document.body.classList.remove('toc-resizing');
+                apply(ev.type === 'pointercancel' ? current() : ev.clientX - originX, true);
+            }
+            handle.addEventListener('pointermove', onMove);
+            handle.addEventListener('pointerup', onUp);
+            handle.addEventListener('pointercancel', onUp);
+        });
+
+        handle.addEventListener('dblclick', function () {
+            apply(DEFAULT, true);
+        });
+
+        handle.addEventListener('keydown', function (e) {
+            var step = e.shiftKey ? 50 : 10;
+            if (e.key === 'ArrowLeft')       { apply(current() - step, true); }
+            else if (e.key === 'ArrowRight') { apply(current() + step, true); }
+            else if (e.key === 'Home')       { apply(DEFAULT, true); }
+            else return;
+            e.preventDefault();
+        });
+
+        // A narrowed window can invalidate the stored width; re-clamp the *preference*
+        // (not the clamped value) so the chosen width returns when the window grows.
+        // Below the breakpoint the ToC is an overlay drawer sized by the stylesheet
+        // (min(--toc-w, 85vw)) — leave it alone rather than clamping against a viewport
+        // the drawer does not share with the content.
+        var narrow = window.matchMedia('(max-width: 768px)');
+        function sync() { if (!narrow.matches) { apply(desired, false); } }
+        window.addEventListener('resize', sync);
+        sync();
+    })();
+
+    // ── Scroll active ToC item into view on load ─────────────────────────────────
+    (function () {
+        var pane   = document.getElementById('toc-pane');
+        var active = pane && pane.querySelector('.toc-list a.active');
+        if (active) active.scrollIntoView({ block: 'center' });
+    })();
+
+    // ── In-page find bar (Ctrl/Cmd+F) ────────────────────────────────────────────
+    (function () {
+        var bar   = document.getElementById('find-bar');
+        var input = document.getElementById('find-input');
+        var count = document.getElementById('find-count');
+        var marks = [];
+        var cur   = -1;
+        var tocHits = [];   // ToC anchors holding a match — declipped while the find bar is open
+
+        // Content first, then the ToC: reading matches come before navigational ones.
+        function getPanes() {
+            var content = document.getElementById('content') ||
+                          document.querySelector('.content-pane') ||
+                          document.querySelector('main');
+            var toc = document.getElementById('toc-pane');
+            return [content, toc].filter(Boolean);
+        }
+
+        function clearMarks() {
+            marks.forEach(function (m) {
+                if (!m.parentNode) return;
+                m.parentNode.replaceChild(document.createTextNode(m.textContent), m);
+            });
+            getPanes().forEach(function (p) { p.normalize(); });
+            tocHits.forEach(function (a) { a.classList.remove('find-hit'); });
+            tocHits = [];
+            marks = [];
+            cur   = -1;
+        }
+
+        function highlightIn(pane, query) {
+            var lq = query.toLowerCase();
+            var walker = document.createTreeWalker(pane, NodeFilter.SHOW_TEXT, {
+                acceptNode: function (node) {
+                    var tag = node.parentElement && node.parentElement.tagName;
+                    return (tag === 'SCRIPT' || tag === 'STYLE')
+                        ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT;
+                }
+            });
+            var nodes = [];
+            var node;
+            while ((node = walker.nextNode())) nodes.push(node);
+            nodes.forEach(function (textNode) {
+                var text = textNode.textContent;
+                var lt   = text.toLowerCase();
+                var pos  = 0;
+                var frags = [];
+                var found = false;
+                while (pos < text.length) {
+                    var idx = lt.indexOf(lq, pos);
+                    if (idx < 0) { frags.push(document.createTextNode(text.slice(pos))); break; }
+                    found = true;
+                    if (idx > pos) frags.push(document.createTextNode(text.slice(pos, idx)));
+                    var m = document.createElement('mark');
+                    m.textContent = text.slice(idx, idx + query.length);
+                    frags.push(m);
+                    marks.push(m);
+                    pos = idx + lq.length;
+                }
+                if (!found) return;
+                var parent = textNode.parentNode;
+                var ref    = textNode.nextSibling;
+                // ToC titles are ellipsised to one line, so a match in the middle of a long
+                // title would be invisible — declip the entry that holds it.
+                var anchor = parent.closest ? parent.closest('.toc-list a') : null;
+                if (anchor && !anchor.classList.contains('find-hit')) {
+                    anchor.classList.add('find-hit');
+                    tocHits.push(anchor);
+                }
+                parent.removeChild(textNode);
+                frags.forEach(function (f) { parent.insertBefore(f, ref); });
+            });
+        }
+
+        function highlight(query) {
+            clearMarks();
+            count.textContent = '';
+            if (!query) return;
+            getPanes().forEach(function (pane) { highlightIn(pane, query); });
+            if (marks.length > 0) { scrollToMark(0); }
+            else { count.textContent = 'No results'; }
+        }
+
+        function inToc(m) {
+            return !!(m.closest && m.closest('#toc-pane'));
+        }
+
+        var tocOpenedByFind = false;
+        function setDrawer(open) {
+            document.body.classList.toggle('toc-open', open);
+            var btn = document.querySelector('.toc-toggle');
+            if (btn) btn.setAttribute('aria-expanded', String(open));
+        }
+
+        function scrollToMark(idx) {
+            if (!marks.length) return;
+            marks.forEach(function (m, i) { m.className = i === idx ? 'find-current' : ''; });
+            var m = marks[idx];
+            // On mobile the ToC is an off-screen drawer — open it before scrolling into it,
+            // and put it back when the walk returns to the content pane.
+            if (window.matchMedia('(max-width: 768px)').matches) {
+                if (inToc(m)) { setDrawer(true); tocOpenedByFind = true; }
+                else if (tocOpenedByFind) { setDrawer(false); tocOpenedByFind = false; }
+            }
+            m.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            cur = idx;
+            count.textContent = (cur + 1) + ' of ' + marks.length + (inToc(m) ? ' · contents' : '');
+        }
+
+        function openBar() { bar.hidden = false; input.focus(); input.select(); }
+        function closeBar() {
+            clearMarks();
+            if (tocOpenedByFind) { setDrawer(false); tocOpenedByFind = false; }
+            bar.hidden = true; input.value = ''; count.textContent = '';
+        }
+
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); openBar(); }
+            if (e.key === 'Escape' && !bar.hidden) closeBar();
+        });
+        input.addEventListener('input', function () { highlight(input.value); });
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (marks.length) scrollToMark(e.shiftKey
+                    ? (cur - 1 + marks.length) % marks.length
+                    : (cur + 1) % marks.length);
+            }
+        });
+        document.getElementById('find-prev').addEventListener('click', function () {
+            if (marks.length) scrollToMark((cur - 1 + marks.length) % marks.length);
+        });
+        document.getElementById('find-next').addEventListener('click', function () {
+            if (marks.length) scrollToMark((cur + 1) % marks.length);
+        });
+        document.getElementById('find-close').addEventListener('click', closeBar);
+    })();
+
+    // ── Term click → keyword search ───────────────────────────────────────────────
+    (function () {
+        document.addEventListener('click', function (e) {
+            var el = e.target.closest('em[data-term]');
+            if (!el) return;
+            e.preventDefault();
+            var term = el.getAttribute('data-term');
+            if (!term) return;
+            var form   = document.querySelector('.header-search');
+            var action = form ? form.getAttribute('action') : null;
+            if (!action) {
+                var m = window.location.pathname.match(/^\/specs\/([^/]+)/);
+                action = m ? '/specs/' + m[1] + '/search' : null;
+            }
+            if (action) window.location.href = action + '?q=' + encodeURIComponent(term) + '&tab=term';
+        });
+    })();
+    </script>
+</body>
+</html>

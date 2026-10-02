@@ -1,0 +1,93 @@
+Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+5 of 95ELM327DSK
+IgnMon / RTS (pin 15)
+This input pin can serve one of two functions,
+depending on how the Power Control options
+(PP 0E) are set.
+If both bit 7 and bit 2 of PP 0E are ‘1’s, this pin will
+act as an Ignition Monitor. This will result in a switch
+to the Low Power mode of operation, should the
+IgnMon signal go to a low level, as would happen if
+the vehicle’s ignition were turned off. An internal
+‘debounce’ timer is used to ensure that the ELM327
+does not shut down for noise at the input.
+When the voltage at pin 15 is again restored to a
+high level, and a time of 1 or 5 seconds (as set by
+PP 0E bit 1) passes, the ELM327 will perform a
+‘Warm Start’ and return to normal operation. A low to
+high transition at pin 15 will in fact restore normal
+operation, regardless of the setting of PP 0E bit 2, or
+whether pin 15 was the initial cause for the low
+power mode. This feature allows a system to control
+how and when it switches to low power standby
+operation, but still have automatic wakeup by the
+ignition voltage, or even by a pushbutton.
+If either bit 7 or bit 2 of PP 0E are ‘0’, this pin will
+function as an active low ‘Request To Send’ input.
+This can be used to interrupt the OBD processing in
+order to send a new command, or as previously
+mentioned, to highlight the fact that the ignition has
+been turned off. Normally kept at a high level, this
+input is brought low for attention, and should remain
+so until the Busy line (pin 16) indicates that the
+ELM327 is no longer busy, or until a prompt
+character is received (if pin 16 is being used for
+power control).
+This input has Schmitt trigger wave shaping. By
+default, pin 15 acts as the RTS interrupt input.
+PwrCtrl / Busy (pin 16)
+This output pin can serve one of two functions,
+depending on how the Power Control options
+(PP 0E) are set.
+If bit 7 of PP 0E is a ‘1’ (the default), this pin will
+function as a Power Control output. The normal state
+of the pin will be as set by PP 0E bit 6, and the pin
+will remain in that state until the ELM327 switches to
+the Low Power mode of operation, when the output
+changes to the opposite level. This output is typically
+used to control enable inputs, but may also be used
+for relay circuits, etc. with suitable buffering. The
+discussion on page 85 (‘Modifications for Low Power
+Standby Operation’) provides more detail on how to
+use this output.
+If bit 7 of PP 0E is a ‘0’, pin 16 will function as a
+‘Busy’ output, showing when the ELM327 is actively
+processing a command (the output will be at a high
+level), or when it is idle, ready to receive commands
+(the output will be low).
+By default, bit 7 of PP 0E is ‘1’, so pin 16 provides
+the Power Control function.
+RS232Tx (pin 17)
+This is the RS232 data transmit output. The signal
+level is compatible with most interface ICs (the
+output is high when idle), and there is sufficient
+current drive to allow interfacing using only a PNP
+transistor, if desired.
+RS232Rx (pin 18)
+This is the RS232 receive data input. The signal
+level is compatible with most interface ICs (when at
+idle, the level should be high), but can be used with
+other interfaces as well, since the input has Schmitt
+trigger wave shaping.
+VSS (pin 19)
+Circuit common must be connected to this pin.
+VDD (pin 20)
+This pin is the positive supply pin, and should always
+be the most positive point in the circuit. Internal
+circuitry connected to this pin is used to provide
+power on reset of the ELM327 processor, so an
+external reset signal is not required. Refer to the
+Electrical Characteristics section for further
+information.
+ISO K (pin 21) and ISO L (pin 22)
+These are the active high output signals which are
+used to drive the ISO 9141 and ISO 14230 buses to
+an active (dominant) level. Many new vehicles do not
+require the L Line – if yours does not, you can simply
+leave pin 22 open-circuited.
+CAN Tx (pin 23) and CAN Rx (pin 24)
+These are the two CAN interface signals that must
+be connected to a CAN transceiver IC (see the
+Pin Descriptions (continued)
+ELM327

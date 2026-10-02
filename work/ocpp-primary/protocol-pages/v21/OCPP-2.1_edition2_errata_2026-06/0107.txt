@@ -1,0 +1,49 @@
+Main
+(Test scenario)
+11.  The Test System sends a       SecurityEventNotificationRequest 
+with
+-  type   ResetOrReboot
+12.  The CSMS responds with a     
+SecurityEventNotificationResponse
+11. 13.  The Test System sends a TransactionEventRequest.
+- eventType Updated
+- triggerReason TxResumed
+- idToken is omitted
+12. 14.  The CSMS responds with a TransactionEventResponse.
+14. 16.  The Test System responds with a
+SetChargingProfileResponse
+with status Accepted
+13. 15.  The CSMS sends a SetChargingProfileRequest
+Tool validations
+* Step 1:
+… * Step 13 15 :
+Message: SetChargingProfileRequest must either contain an identical chargingProfile as in Step 1 or identical from the time of
+step 11 onwards.
+Message:  SetChargingProfileRequest
+-  chargingProfile.chargingProfilePurpose   TxProfile
+6.3.8. Page 1026 - (2026-06) - TC_C_51_CSMS - Corrected OCSP response and
+removed post scenario validations
+The OCSP response was previously incorrectly marked as valid, this has now been corrected to indicate a revoked status.
+Post-scenario validations have been removed, as they are not applicable to the CSMS.
+Test case name Authorization using Contract Certificates 15118 - Online - Local contract certificate validation - Rejected
+Test case Id TC_C_51_CSMS
+…
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System sends an AuthorizeRequest
+With idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+iso15118CertificateHashData contains <hashes from configured
+(V2G) certificate chain
+2. The CSMS sends an OCSP request to responder URL of
+iso15118CertificateHashData to check validity
+3. The Test System OCSP service responds that certificate is
+valid revoked . 4. The CSMS responds with a AuthorizeResponse
+Tool validations
+…
+Post scenario validations:
+EV is not authorized and shall not charge:
+Charging Station does not send TransactionEventRequest with:
+- triggerReason = Authorized or chargingState = Charging
+N/a
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 103/116 Errata 2026-06

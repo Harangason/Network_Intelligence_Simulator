@@ -1,0 +1,36 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 67
+13.4  Other Application Pins
+The FLT pin is a high-impedance node; therefore, leakage should be kept below 1 μA or average pulse-
+width distortion tolerance could be adversely affected. In order to minimize vibration and shock effects on
+PLL locking, the capacitor used on FLT should be tolerant of vibrations typical in the application. Capaci-
+tors with X7R dielectrics are more sensitive to shock than metal-film, tantalum, and other ceramic capaci-
+tors, such as C0G and X8R. The tolerance of the FLT capacitor must not vary by more than 20 % over all
+conditions. This includes the tolerance attributed to process, as well as degradation over life and tempera-
+ture. Since component selection (and layout) of the FLT circuitry impact the sensitivity to vibrations, each
+design should be tested over the full environmental stress conditions of the intended application.
+For normal operation, the ERR/BOOT pin should be pulled to 2.5 V. In order to support the Customer Configu-
+ration Interface, the on-board pull-up resistor on ERR/BOOT must not be less than 10 kΩ; however, the actual
+resistor value should be chosen based on the input leakage of the INIC pin and on the other devices con-
+nected to the line. Note that ERR/BOOT may be pulled up to 3.3 V, however a small amount of power will be
+wasted since, after initialization, this pin is an output driven at a 2.5 V level.
+The OS81050 RSOUT pin is an optional output that allows INIC to reset the EHC. When used, the RSOUT
+pin should be pulled high by an on-board resistor (10 kΩ recommended) and connected to the Reset pin of
+the EHC. The INIC RSOUT line should be isolated from other signals that may reset the EHC (e.g. do not
+wire-or with other open-drain lines). INIC drives RSOUT low to reset the EHC when one of two events
+occurs:
+/square6 the Reset.Start(Target)  INIC function is called and the Target parameter specifies the EHC as 
+the device to be reset, or
+/square6 the watchdog timer expires and the WatchdogMode() INIC function indicates the EHC should be 
+reset.
+The length of the reset pulse on RSOUT is 10 ms. For more information on the RSOUT pin, refer to the
+OS8105x/6x INIC API User’s Manual [2].
+When an external crystal is used, the XTI and XTO pins should be connected directly to the crystal (e.g. no
+series resistance). The crystal used must be 256 ×Fs and should comply with the specifications outlined in
+Section 13.6. If an external clock is used in lieu of a crystal oscillator, it must be connected to XTI and sup-
+port drive levels to the 2.5 V supply (as specified in Section 11.4).
+The JTAG Port pins TMS, TCK, TDI, and TDO require pull-up resistors to 3.3 V, regardless of whether or
+not the JTAG port is used.
+When the 2.5 V OS81050 digital pins interface with external logic, level-translation may be
+required if the external logic is controlled by a different supply voltage.

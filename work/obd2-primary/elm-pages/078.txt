@@ -1,0 +1,81 @@
+78 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+the default setting for PP 0E turns these hand-shaking
+signals off, so you will need to change that in order to
+use them.
+We are often asked about connecting the ELM327
+to 3.3V logic, which is quite popular. Many hope that
+they can just insert a resistor or two and have it work.
+Unfortunately, that is not the case, mostly because the
+ELM327 has Schmitt waveshaping on the RS232 Rx
+input (pin 18), and so may need as much as 4V for a
+high input (although it often works with less). To
+ensure that there’s enough voltage, we recommend
+using a level translator circuit such as the TXB0102
+from Texas Instruments (www.ti.com), the ST2129
+from ST Microelectronics (www.st.com), or the Analog
+Devices (www.analog.com) ADuM1201 as shown
+here. We have been using the ADuM1201 with the
+Raspberry Pi lately, because it offers galvanic isolation
+(to 2500 Vrms) in addition to the level translation, so
+protects the Pi from occasional wiring problems. Note
+that for complete isolation you must use separate
+commons for the 5V and the 3.3V power supplies. The
+one disadvantage with the ‘1201 over the others is that
+it draws about 1 mA, which can be an issue if you are
+trying to use the low power mode with your ELM327.
+A popular question that we receive is “Can I
+upgrade my firmware with a file download?”. The
+answer to this is no, the ELM327 can not be upgraded
+in this way - your integrated circuit must be replaced.
+The next question which usually follows is “Can I
+simply replace an old ELM327 chip with a new one to
+upgrade the firmware?”
+The answer to this last question is basically yes.
+We say basically because there was a change
+between versions 1.3a and 1.4 when we added the
+power control feature. This change modified how pins
+15 and 16 were used (they took on dual roles), and
+that may affect your circuit.
+If your circuit board is older and was designed for
+use with a v1.3a or older version of our ELM327 chip,
+then you have to look at what pins 15 and 16 were
+used for. Almost all of the early boards followed our
+example and left pin 16 open, and pin 15 tied to +5V. If
+your circuit did this, there is no problem - you may
+simply replace the old chip with a new one.
+If your circuit board used pins 15 and 16 for
+handshaking with a microprocessor or other device,
+then you may need to take extra steps. Usually this
+only requires turning off the low power control by
+setting b7 of PP 0E to 0.
+If you are replacing a v1.4b or a v2.0 integrated
+circuit with a newer one, then there are no concerns.
+Please note that there are several clone products
+available that use integrated circuits that mimic the
+ELM327 at a software level. They do not necessarily
+mimic the hardware. For this reason, you should not
+replace a clone chip with a genuine ELM chip, unless
+you are absolutely certain that all 28 pins of the
+integrated circuits are identical.
+7 9 10 11 12 13 14
+15161718192021
++3.3V
++5V
+n.c.
++5V
+your microprocessor
+Tx Rx
+TxRx
+ADuM1201
+Busy RTS
+327
+8
+1 2 3 4
+5678
++5V
++3.3V
+Microprocessor Interfaces (continued)
+Upgrading Versions

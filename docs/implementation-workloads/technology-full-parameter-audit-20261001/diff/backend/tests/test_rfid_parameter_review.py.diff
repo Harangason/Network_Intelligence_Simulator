@@ -1,0 +1,174 @@
+--- before/backend/tests/test_rfid_parameter_review.py
++++ after/backend/tests/test_rfid_parameter_review.py
+@@ -0,0 +1,171 @@
++"""LF/HF/UHF identity, directional modulation and actual evidence isolation."""
++from copy import deepcopy
++import pytest
++from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
++from backend.communication.technologies import rfid as P
++def actual(profile=P.UHF):
++ return {**{'rfid_'+k:'synthetic-'+k for k in P.REQUIRED},'rfid_profile':profile,'rfid_role':'READER'}
++def status(x):return registry.validate_parameters('rfid',x)['status']
++def proposal(profile,configuration):
++ x={**actual(profile),'rfid_configuration':configuration}
++ for f in registry.parameter_fields('rfid'):
++  for d in f.get('conditional_defaults',[]):
++   if all(x.get(k)==v for k,v in d['when'].items()):x[f['key']]=d['value']
++ return x
++def test_rfid_umbrella_has_no_own_bitrate_can_queue_255payload_or_capacity_certificate():
++ p=registry.profile('rfid');assert p['rate_model']['fields']==[]and p['max_payload_bytes']is None
++ assert p['capacity_evidence']['status']=='MODEL_MISSING'and status(actual())=='VALID'
++ f=registry.parameter_fields('rfid');assert len(f)==len({v['key']for v in f})and not set(P.REMOVED)&{v['key']for v in f}
++ assert status({})=='UNVERIFIED'
++ for bad in({'bitrate_bps':500000},{'nominal_bitrate_bps':500000},{'mtu_bytes':1500},{'local_timing_evidence':{'confirmed':True}}):assert status({**actual(),**bad})=='INVALID'
++ assert status({**actual(),'payload_bytes':2000})=='VALID'
++@pytest.mark.parametrize('field',registry.parameter_fields('rfid'),ids=lambda f:f['key'])
++def test_rfid_every_exported_field_type_and_outer_bounds(field):
++ base=actual({P.HF:P.HFP,P.LF:P.LFP}.get(field.get('source'),P.UHF))
++ k=field['key'];assert status({**base,k:'wrong'if field['type']=='number'else 1})=='INVALID'
++ for edge,delta in [('min',-1),('max',1)]:
++  if field.get(edge)is not None:assert status({**base,k:field[edge]+delta})=='INVALID'
++@pytest.mark.parametrize('profile',[P.UHF,P.HFP,P.LFP])
++def test_rfid_individual_profile_defaults_are_valid_proposals_not_actual_evidence(profile):
++ config='SELECTED_FACTORY'if profile==P.LFP else'LOWEST_MANDATORY_BASELINE'
++ x=proposal(profile,config);assert status(x)=='VALID'
++ for k in('tag_id','region_id','device_source','crc_valid','data_accepted','frame_source'):
++  f=next(v for v in registry.parameter_fields('rfid')if v['key']=='rfid_'+k);assert 'default'not in f and 'conditional_defaults'not in f
++ assert not x.get('rfid_data_accepted')and'bitrate'not in x
++def test_rfid_slowest_supported_mandatory_gen2_baseline_not_unattainable40khz_endpoint():
++ x=proposal(P.UHF,'LOWEST_MANDATORY_BASELINE')
++ assert x['rfid_blf_hz']==160000 and x['rfid_m']==8 and x['rfid_tag_rate_bps']==20000
++ assert x['rfid_tari_us']==12.5 and x['rfid_rtcal_us']==31.25 and x['rfid_trcal_us']==50
++ assert status(x)=='VALID'
++ assert status({**x,'rfid_blf_hz':40000,'rfid_trcal_us':200,'rfid_blf_calibration_product':8000000})=='INVALID'
++def test_rfid_hf_lowest_proposal_distinct_selected_reader_factory_high_rate():
++ low=proposal(P.HFP,'LOWEST_MANDATORY_BASELINE');high=proposal(P.HFP,'SELECTED_FACTORY')
++ assert low['rfid_hf_rate']=='LOW'and low['rfid_hf_tag_rate_bps']==6620
++ assert high['rfid_hf_rate']=='HIGH'and high['rfid_hf_tag_rate_bps']==26480
++ assert low['rfid_carrier_hz']==13560000 and status(low)==status(high)=='VALID'
++@pytest.mark.parametrize('profile,bad',[(P.UHF,{'rfid_hf_rate':'LOW'}),(P.UHF,{'rfid_host_baud':9600}),
++ (P.HFP,{'rfid_tari_us':12.5}),(P.HFP,{'rfid_lf_charge_ms':50}),(P.LFP,{'rfid_m':8}),(P.LFP,{'rfid_hf_coding':'ONE_OF_4'})])
++def test_rfid_air_families_cannot_share_foreign_parameters(profile,bad):assert status({**actual(profile),**bad})=='INVALID'
++@pytest.mark.parametrize('profile,carrier',[(P.UHF,915000000),(P.HFP,13560000),(P.LFP,134200)])
++def test_rfid_carrier_not_tag_bitrate_or_host_baud(profile,carrier):
++ assert status({**actual(profile),'rfid_carrier_hz':carrier})=='VALID'
++ assert status({**actual(profile),'rfid_carrier_hz':500000})=='INVALID'
++def gen2():return proposal(P.UHF,'LOWEST_MANDATORY_BASELINE')
++def test_rfid_gen2_pie_calibration_envelope_and_exact_divide_ratio_identity():
++ x={**gen2(),'rfid_pulsewidth_us':4,'rfid_rise_us':4,'rfid_fall_us':4};assert status(x)=='VALID'
++ for bad in({'rfid_rtcal_us':30},{'rfid_trcal_us':100},{'rfid_pulsewidth_us':1},{'rfid_pulsewidth_us':7},
++  {'rfid_rise_us':5},{'rfid_modulation_depth_percent':50},{'rfid_delimiter_us':14},{'rfid_dr_denominator':3},
++  {'rfid_blf_calibration_product':9000000},{'rfid_tag_rate_bps':160000}):assert status({**x,**bad})=='INVALID'
++def test_rfid_gen2_source_table_rounded33_3us_and640k_endpoint_not_false_exact_failure():
++ x={**actual(),'rfid_command':'QUERY','rfid_blf_method':'ANALOG','rfid_dr':'64_3','rfid_dr_numerator':64,'rfid_dr_denominator':3,
++  'rfid_tari_us':6.25,'rfid_rtcal_us':15.625,'rfid_trcal_us':33.3,'rfid_blf_hz':640000,'rfid_blf_calibration_product':21312000}
++ assert status(x)=='VALID';assert status({**x,'rfid_blf_calibration_product':23000000})=='INVALID'
++@pytest.mark.parametrize('m,encoding',[(1,'FM0'),(2,'MILLER'),(4,'MILLER'),(8,'MILLER')])
++def test_rfid_gen2_tag_rate_blf_per_m_not_raw_rf_carrier(m,encoding):
++ x={**gen2(),'rfid_m':m,'rfid_tag_encoding':encoding,'rfid_tag_rate_bps':160000/m,'rfid_tpri_us':6.25};assert status(x)=='VALID'
++ assert status({**x,'rfid_m':3})=='INVALID';assert status({**x,'rfid_tpri_us':50})=='INVALID'
++ assert status({**x,'rfid_tag_encoding':'MILLER'if m==1 else'FM0'})=='INVALID'
++@pytest.mark.parametrize('code,hz',[(1,640000),(2,427000),(3,320000),(4,256000),(7,160000)])
++def test_rfid_gen2_queryx_required_digital_blf_not_legacy_only_query_table(code,hz):
++ x={**actual(),'rfid_command':'QUERYX','rfid_blf_method':'DIGITAL','rfid_dblf':code,'rfid_blf_hz':hz};assert status(x)=='VALID'
++ assert status({**x,'rfid_blf_hz':hz+1})=='INVALID'
++ x.pop('rfid_dblf');assert status(x)=='UNVERIFIED'
++@pytest.mark.parametrize('code,hz',[(5,500000),(6,100000)])
++def test_rfid_gen2_optional_queryx_rates_require_actual_tag_support(code,hz):
++ x={**actual(),'rfid_command':'QUERYX','rfid_blf_method':'DIGITAL','rfid_dblf':code,'rfid_blf_hz':hz};assert status(x)=='UNVERIFIED'
++ assert status({**x,'rfid_optional_blf_capable':False})=='INVALID'
++ assert status({**x,'rfid_optional_blf_capable':True})=='VALID'
++ assert status({**x,'rfid_optional_blf_capable':True,'rfid_blf_hz':700000})=='INVALID'
++@pytest.mark.parametrize('q',[0,1,4,15])
++def test_rfid_inventory_q_is_exponent_not_tagcount_or_capacity_proof(q):
++ x={**actual(),'rfid_q':q,'rfid_slots':2**q,'rfid_slot_counter':2**q-1,'rfid_slot_phase':'LOAD_ROUND'};assert status(x)=='VALID'
++ assert status({**x,'rfid_slots':2**q+1})=='INVALID';assert status({**x,'rfid_slot_counter':2**q})=='INVALID'
++def test_rfid_queryx_init0_slot32767_sentinel_not_q0_round_slot0():
++ x={**actual(),'rfid_command':'QUERYX','rfid_init':False,'rfid_q':0,'rfid_slot_counter':32767,'rfid_slot_phase':'WAIT_QUERYY','rfid_matching_selection':True};assert status(x)=='VALID'
++ assert status({**x,'rfid_slot_counter':0})=='INVALID'
++ assert status({**x,'rfid_init':True})=='INVALID'
++def test_rfid_countdown_after_unacknowledged_reply_wraps_zero_to32767_even_q0():
++ x={**actual(),'rfid_command':'QUERYREP','rfid_slot_phase':'COUNTDOWN','rfid_q':0,'rfid_slot_counter':32767};assert status(x)=='VALID'
++ x.pop('rfid_slot_phase');assert status(x)=='UNVERIFIED'
++@pytest.mark.parametrize('cmd,bits',[('QUERY',5),('QUERYX',16),('QUERYY',16),('QUERYREP',0),('ACK',0),('SELECT',16),('READ',16),('WRITE',16)])
++def test_rfid_crc_depends_on_actual_command_not_one_global_crc(cmd,bits):
++ x={**actual(),'rfid_command':cmd,'rfid_command_crc_bits':bits};assert status(x)=='VALID'
++ assert status({**x,'rfid_command_crc_bits':16 if bits!=16 else 5})=='INVALID'
++def test_rfid_query_rn16_vs_queryx_optional_rn16_crc5():
++ x={**actual(),'rfid_command':'QUERY','rfid_reply_crc_bits':0};assert status(x)=='VALID'
++ assert status({**x,'rfid_replycrc':True})=='INVALID'
++ for flag,bits in[(False,0),(True,5)]:
++  y={**x,'rfid_command':'QUERYX','rfid_replycrc':flag,'rfid_reply_crc_bits':bits};assert status(y)=='VALID'
++  assert status({**y,'rfid_reply_crc_bits':16})=='INVALID'
++def test_rfid_gen2_crc_polynomial_preset_residue_distinct_can_and_each_other():
++ x={**actual(),'rfid_crc16_polynomial':0x1021,'rfid_crc16_preset':65535,'rfid_crc16_residue':0x1D0F,
++  'rfid_crc5_polynomial':9,'rfid_crc5_preset':9,'rfid_crc5_residue':0};assert status(x)=='VALID'
++ for k in('crc16_polynomial','crc16_preset','crc16_residue','crc5_polynomial','crc5_preset','crc5_residue'):
++  assert status({**x,'rfid_'+k:x['rfid_'+k]+1 if x['rfid_'+k]<65535 else 65534})=='INVALID'
++def timing():return {**gen2(),'rfid_tpri_us':6.25,'rfid_frt_fraction':.07,'rfid_t1_us':62.5,'rfid_t2_us':20,
++ 'rfid_frt_source':'synthetic-source-qualifiedtolerance','rfid_temperature_range':'NOMINAL',
++ 'rfid_tag_state':'REPLY','rfid_t3_us':0,'rfid_t4_us':62.5,'rfid_t5_us':10000,'rfid_t6_us':10000,'rfid_t7_us':250}
++def test_rfid_all_gen2_link_intervals_use_real_blf_rtcal_frt_and_state():
++ x=timing();assert status(x)=='VALID'
++ for bad in({'rfid_t1_us':50},{'rfid_t1_us':70},{'rfid_t2_us':18},{'rfid_t2_us':126},
++  {'rfid_t4_us':63},{'rfid_t5_us':50},{'rfid_t6_us':20001},{'rfid_t7_us':249}):assert status({**x,**bad})=='INVALID'
++ assert status({**x,'rfid_tag_state':'OPEN','rfid_t2_us':10000})=='VALID'
++def test_rfid_timing_missing_actual_tolerance_not_auto_zero():
++ x=timing();x.pop('rfid_frt_fraction');assert status(x)=='UNVERIFIED'
++def test_rfid_frt_depends_on_query_method_rate_and_temperature_column():
++ x=timing();assert status(x)=='VALID';assert status({**x,'rfid_frt_fraction':.10})=='INVALID'
++ x.pop('rfid_frt_source');assert status(x)=='UNVERIFIED'
++ y={**actual(),'rfid_command':'QUERYX','rfid_dblf':1,'rfid_frt_fraction':.08,'rfid_frt_source':'synthetic'};assert status(y)=='INVALID'
++ y.update(rfid_frt_fraction=.07);assert status(y)=='VALID'
++def test_rfid_queryy_init_chain_t8_not_generic_retransmission_timeout():
++ x={**gen2(),'rfid_command':'QUERYX','rfid_init':False,'rfid_t8_us':93.75};assert status(x)=='VALID'
++ assert status({**x,'rfid_t8_us':130})=='INVALID';assert status({**x,'rfid_init':True})=='INVALID'
++@pytest.mark.parametrize('kind',['DELAYED','IN_PROCESS'])
++def test_rfid_delayed_and_inprocess_replies_always_extended_even_trext_false(kind):
++ x={**actual(),'rfid_reply_type':kind,'rfid_trext':False};assert status(x)=='UNVERIFIED'
++ assert status({**x,'rfid_extended_reply':False})=='INVALID';assert status({**x,'rfid_extended_reply':True})=='VALID'
++def test_rfid_packet_pc_counts_xpc_without_overwriting_stored_epc_length():
++ x={**actual(),'rfid_ack_data':1,'rfid_truncated':False,'rfid_xpc_supported':True,'rfid_epc_words':29,
++  'rfid_xpc_words':2,'rfid_packet_pc_l':31,'rfid_reply_data_bits':528};assert status(x)=='VALID'
++ for bad in({'rfid_packet_pc_l':29},{'rfid_reply_data_bits':496},{'rfid_epc_words':30}):assert status({**x,**bad})=='INVALID'
++ assert status({**x,'rfid_truncated':True,'rfid_packet_pc_l':0,'rfid_reply_data_bits':123})=='VALID'
++@pytest.mark.parametrize('rate,subs,bps',[('LOW','ONE',6620),('HIGH','ONE',26480),('LOW','TWO',6670),('HIGH','TWO',26690)])
++def test_rfid_hf_every_source_rate_subcarrier_combination(rate,subs,bps):
++ x={**actual(P.HFP),'rfid_hf_rate':rate,'rfid_hf_subcarriers':subs,'rfid_hf_tag_rate_bps':bps,'rfid_hf_coding':'ONE_OF_256'};assert status(x)=='VALID'
++ assert status({**x,'rfid_hf_tag_rate_bps':bps+10})=='INVALID'
++def test_rfid_hf_127byte_fifo_not_full_message_limit():
++ x={**actual(P.HFP),'rfid_hf_fifo_bytes':127,'payload_bytes':2000};assert status(x)=='VALID'
++ assert status({**x,'rfid_hf_fifo_bytes':128})=='INVALID'
++def test_rfid_lf_zero_burst_request_resets_factory_not_zero_airtime():
++ x={**actual(P.LFP),'rfid_lf_charge_request_ms':0,'rfid_lf_charge_ms':50,'rfid_lf_program_request_ms':0,'rfid_lf_program_ms':17};assert status(x)=='VALID'
++ assert status({**x,'rfid_lf_charge_ms':1})=='INVALID';assert status({**x,'rfid_lf_program_ms':1})=='INVALID'
++ assert status({**x,'rfid_lf_charge_request_ms':100,'rfid_lf_charge_ms':100})=='VALID'
++ assert status({**x,'rfid_lf_charge_request_ms':100,'rfid_lf_charge_ms':50})=='INVALID'
++@pytest.mark.parametrize('mode',P.LF_TIMINGS)
++def test_rfid_every_lf_manufacturer_modulation_template_is_explicit_and_industry_neutral(mode):
++ x={**actual(P.LFP),'rfid_configuration':'SELECTED_FACTORY','rfid_lf_modulation':mode}
++ for f in registry.parameter_fields('rfid'):
++  for d in f.get('conditional_defaults',[]):
++   if all(x.get(k)==v for k,v in d['when'].items()):x[f['key']]=d['value']
++ assert status(x)=='VALID'
++ for k,v in zip(P.LF_TIME_KEYS,P.LF_TIMINGS[mode]):
++  if v is not None:assert x['rfid_lf_'+k+'_us']==v
++  else:assert status({**x,'rfid_lf_'+k+'_us':1})=='INVALID'
++def test_rfid_lf_host_lmp41bytes_supply_coil_limits_are_device_specific():
++ x={**actual(P.LFP),'rfid_host_protocol':'LMP','rfid_host_frame_bytes':41,'rfid_lf_supply_v':5,'rfid_lf_logic_supply_v':5,
++  'rfid_lf_inductance_uh':47,'rfid_lf_antenna_q':15,'payload_bytes':2000};assert status(x)=='VALID'
++ for bad in({'rfid_host_frame_bytes':42},{'rfid_lf_logic_supply_v':3.3},{'rfid_lf_inductance_uh':48},{'rfid_lf_antenna_q':21}):assert status({**x,**bad})=='INVALID'
++def accepted():return {**actual(),'rfid_data_accepted':True,'rfid_outcome':'ACCEPTED','rfid_crc_valid':True,'rfid_identity_valid':True,
++ 'rfid_mapping_valid':True,'rfid_region_valid':True,'rfid_tag_id':'synthetic-EPC','rfid_identity_source':'syntheticbinding','rfid_frame_source':'syntheticreply',
++ 'rfid_airtime_bound_ms':10,'rfid_age_ms':10,'rfid_freshness_ms':20}
++@pytest.mark.parametrize('bad',[{'rfid_outcome':'COLLISION'},{'rfid_outcome':'NO_REPLY'},{'rfid_crc_valid':False},
++ {'rfid_identity_valid':False},{'rfid_mapping_valid':False},{'rfid_region_valid':False},{'rfid_age_ms':21},
++ {'rfid_airtime_bound_ms':21},{'rfid_tag_state':'KILLED'}])
++def test_rfid_rate_carrier_or_rn16_alone_does_not_certify_new_identified_value(bad):
++ assert status(accepted())=='VALID';assert status({**accepted(),**bad})=='INVALID'
++def test_rfid_missing_correlated_device_evidence_remains_unverified():
++ x=accepted();x.pop('rfid_identity_source');assert status(x)=='UNVERIFIED'
++def test_rfid_confirmed_actual_antenna_bursts_and_rates_remain_unchanged():
++ x={**actual(P.LFP),'rfid_carrier_hz':134200,'rfid_lf_charge_ms':100,'rfid_lf_program_ms':25,
++  'parameter_provenance':{'rfid_lf_charge_ms':{'value':100,'status':'CONFIRMED'}}};before=deepcopy(x)
++ assert status(x)=='VALID'and x==before

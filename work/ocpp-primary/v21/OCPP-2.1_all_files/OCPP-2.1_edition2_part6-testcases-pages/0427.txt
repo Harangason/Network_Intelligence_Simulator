@@ -1,0 +1,36 @@
+Main (Test scenario)
+10. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed after the <Configured
+ev_connection_timeout> expires, if the transaction has been
+started. So in the case TxStartPoint contains
+ParkingBayOccupancy OR Authorized
+11. The Test System responds with a
+TransactionEventResponse
+13. The Charging Station responds with GetTariffsResponse
+12. The Test System sends a GetTariffsRequest with
+evseId <Configured evseId>
+Tool validations
+* Step 2:
+Message TransactionEventRequest
+- transactionInfo.tariffId must be Test System1
+* Step 5:
+Message GetTariffsResponse
+- status must be Accepted
+- tariffAssignments[0].tariffId must be Test System1
+- tariffAssignments[0].tariffKind must be DriverTariff
+- tariffAssignments[0].idTokens[0] must be <Configured valid_idtoken_idtoken>
+* Step 8:
+Message GetTariffsResponse
+- status must be NoTariff
+* Step 10:
+Message: TransactionEventRequest
+- triggerReason must be EVConnectTimeout
+- transactionInfo.stoppedReason must be Timeout
+* Step 13:
+Message GetTariffsResponse
+- status must be NoTariff
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 425/1383 Part 6 - Test Cases

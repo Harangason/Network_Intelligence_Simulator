@@ -1,0 +1,47 @@
+TC_C_45_CS: Authorization by GroupId - Master pass - Not able to start transaction
++ groupId
+Test case name Authorization by GroupId - Master pass - Not able to start transaction + groupId
+Test case Id TC_C_45_CS
+Use case Id(s) C09
+Requirement(s) C16.FR.03
+System under test Charging Station
+Description This test case covers how a Charging Station can authorize an action for an EV Driver based on GroupId
+information. This could for example be used if 2 people regularly use the same EV: they can use their own
+IdToken (e.g. RFID card), and can deauthorize transactions that were started with the other idToken (with
+the same GroupId).
+Purpose To verify if the Charging Station is able to correctly handle the Authorization of an idToken with the same
+GroupId as the MasterPassGroupId according to the mechanism as described in the OCPP specification.
+Prerequisite(s) - The Charging station supports MasterPass feature.
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+TxCtrlr.TxStartPoint should contain Authorized or PowerPathClosed and not contain ParkingBayOccupancy or EVConnected
+AuthCtrlr.MasterPassGroupId is <Configured MasterPassGroupId>
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present configured masterpass idToken
+1. The Charging Station sends an AuthorizeRequest
+2. The Test System responds with an AuthorizeResponse with
+- idTokenInfo.status Accepted
+- idTokenInfo.groupIdToken.idToken <Configured
+masterPassGroupId>
+Note: The Charging Station will not authorize the transaction and send a TransactionEventRequest (in case of TxStartPoint
+Authorized).
+3. Execute Reusable State EVConnectedPreSession
+4. The Charging Station will NOT send a
+TransactionEventRequest with
+chargingState Charging and
+triggerReason ChargingStateChanged
+Tool validations
+* Step 1:
+Message AuthorizeRequest
+- idToken.idToken <Configured valid_idtoken_idtoken>
+- idToken.type <Configured valid_idtoken_type>
+Post scenario validations:
+- N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 137/914 Part 6 - Test Cases

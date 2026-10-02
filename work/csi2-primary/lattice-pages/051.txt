@@ -1,0 +1,68 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  51 
+Field Name Description Access Default 
+0x4 = 4 pixels per clock 
+[7:4] SUPPORTED_COLOUR_FORMAT Supported colour format. 
+0x0 – RGB888  
+0x1 – RGB565 
+0x2 – RAW10 
+0x3 – RAW12 
+RO Color Format1 
+[31:8] RSVD Reserved. RO 0x0 
+Note: 
+1. The default value is based on the configurations set for the corresponding attribute in the IP Parameter Description section. 
+5.1.4. PHY_CONFIG_REG (0x210) 
+Table 5.5. PHY_CONFIG_REG (0x210) Register 
+Field Name Description Access Default 
+[2:0] NUM_LANES Active lanes 1–4 (bounded by MAX_SUPPORTED_LANES). 
+1: x1 lane 
+2: x2 lane 
+4: x4 lane 
+RW Number of D-
+PHY Lanes1 
+[3] NUM_LANES_UPDATE Write enable for NUM_LANES. Write a 1 to update the 
+NUM_LANES bitfield. 
+WO 0x0 
+[31:4] RSVD Reserved. RO 0x0 
+Note: 
+1. The default value is based on the configurations set for the corresponding attribute in the IP Parameter Description section. 
+5.1.5. CONFIG_REG0 (0x220) 
+Table 5.6. CONFIG_REG0 (0x220) Register 
+Field Name Description Access Default 
+[14:0] T_SKEW_INITIAL Period of initial skew calibration in word clock cycle. 
+This register is applicable only when PHY Mode == 
+Hard D-PHY. 
+ 
+Example: 
+PHY Mode = Hard D-PHY 
+Line Rate Per Lane = 2500.0 Mbps 
+PHY Data Width = 16 
+T_SKEW_INITIAL = 2049 (0x0801) 
+Byte Clock Period = PHY Data Width / Line Rate Per 
+Lane × 1000 = 16 / 2500.0 × 1000 = 6.4 ns 
+ 
+Programming T_SKEW_INITIAL with a value of 2049 
+(0x0801) sets a skew calibration period of 2049 × 6.4 
+ns. When triggered via the CAL_INITIAL_TRIGGER_EN 
+register bit, this results in a calibration time of 
+approximately 13113.6 ns across the serial links. 
+RW Period of Initial 
+Skew 
+Calibration1 
+[15] RSVD0 — RO 0x0 
+[27:16] T_SKEW_PERIODIC Period of periodic skew calibration in word clock cycle. 
+This register is applicable only when PHY Mode == 
+Hard D-PHY. 
+ 
+Example: 
+PHY Mode = Hard D-PHY 
+Line Rate Per Lane = 2500.0 Mbps 
+PHY Data Width = 16 
+RW Period of 
+Periodic Skew 
+Calibration1 

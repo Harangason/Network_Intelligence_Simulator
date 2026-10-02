@@ -1,0 +1,220 @@
+"""MQTT revision, stream binding, framing, sessions and directional QoS regressions."""
+from copy import deepcopy
+import pytest
+from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.communication.technologies import mqtt as MQ
+
+def actual(version='V5_0'):
+    x={'mq_'+k:'synthetic-actual-'+k for k in MQ.REQUIRED}
+    x.update(mq_version=version,mq_transport='TCP',mq_role='CLIENT',mq_direction='CLIENT_TO_SERVER',
+        mq_packet_kind='CONNECT',mq_phase='NEW',mq_ordered_stream=True,mq_lossless_stream=True,mq_bidirectional_stream=True,
+        mq_client_id='ClientA',mq_client_id_bytes=7,mq_client_id_profile='PORTABLE_1_23',
+        mq_will_flag=False,mq_will_qos=0,mq_will_retain=False,mq_username_flag=False,mq_password_flag=False,
+        mq_keepalive_s=30,mq_effective_keepalive_s=30)
+    x['mq_clean_start'if version=='V5_0'else'mq_clean_session']=False
+    if version=='V5_0':x['mq_server_keepalive_present']=False
+    return x
+
+def status(x):return registry.validate_parameters('mqtt',x)['status']
+
+def publish(version='V5_0',qos=1,topic='sensor/temp',body=8):
+    x=actual(version);topic_bytes=len(topic.encode('utf-8'))
+    header=2+topic_bytes+(2 if qos else 0)+(1 if version=='V5_0'else 0)
+    remaining=header+body;vbi=1 if remaining<=127 else 2 if remaining<=16383 else 3 if remaining<=2097151 else 4
+    x.update(mq_packet_kind='PUBLISH',mq_qos=qos,mq_dup=False,mq_retain=False,mq_flags=2*qos,
+        mq_topic=topic,mq_topic_bytes=topic_bytes,mq_variable_header_bytes=header,
+        payload_bytes=body,mq_packet_payload_bytes=body,mq_remaining_length=remaining,
+        mq_remaining_length_bytes=vbi,mq_packet_bytes=1+vbi+remaining)
+    if qos:x.update(mq_packet_id=9,mq_packet_id_unused=True)
+    if version=='V5_0':x.update(mq_properties_bytes=0,mq_property_length_bytes=1)
+    return x
+
+def test_mqtt_no_own_ethernet_rate_or_can_queue_retry_defaults():
+    fields=registry.parameter_fields('mqtt');keys=[f['key']for f in fields]
+    assert len(keys)==len(set(keys));assert not set(MQ.REMOVED)&set(keys)
+    assert registry.parameter_defaults_review('mqtt')['values']=={}
+    assert registry.profile('mqtt')['domain']=='generic_networking'
+    assert registry.profile('mqtt')['capacity_evidence']['status']=='MODEL_MISSING'
+    for version in ('V3_1_1','V5_0'):assert status(actual(version))=='VALID'
+    for patch in ({'bitrate':10000000},{'mtu_bytes':1500},{'duplex':'FULL'},{'vlan_id':0},
+        {'queue_size':256},{'retry_limit':3},{'local_timing_evidence':{'technology':'CAN'}}):
+        assert status({**actual(),**patch})=='INVALID'
+    assert not any('default'in f for f in fields if f['key'].startswith('mq_'))
+    for key in ('mq_keepalive_s','mq_message_expiry_s','mq_client_id','mq_packet_id','mq_initial_quota'):
+        assert not next(f for f in fields if f['key']==key).get('conditional_defaults')
+
+@pytest.mark.parametrize('field',registry.parameter_fields('mqtt'),ids=lambda f:f['key'])
+def test_mqtt_every_declared_type_and_own_bounds(field):
+    base=actual('V3_1_1') if field['key']=='mq_clean_session' else actual()
+    wrong='not-number'if field['type']=='number'else 1
+    assert status({**base,field['key']:wrong})=='INVALID'
+    for edge,offset in [('min',-1),('max',1)]:
+        if field.get(edge)is not None:assert status({**base,field['key']:field[edge]+offset})=='INVALID'
+
+@pytest.mark.parametrize('key,value',[('mq_ordered_stream',False),('mq_lossless_stream',False),
+    ('mq_bidirectional_stream',False),('mq_transport','UDP'),('mq_protocol_level',4)])
+def test_mqtt_actual_ordered_stream_and_revision_cannot_fall_back_to_bare_udp(key,value):
+    assert status({**actual(),key:value})=='INVALID'
+    assert status({**actual(),'mq_transport':'TLS'})=='UNVERIFIED'
+    assert status({**actual(),'mq_transport':'TLS','mq_security_source':'synthetic-TLS-policy','mq_port':8883})=='VALID'
+
+@pytest.mark.parametrize('version',['V3_1_1','V5_0'])
+@pytest.mark.parametrize('qos',[0,1,2])
+def test_mqtt_publish_header_payload_identifier_and_fixed_flags(version,qos):
+    x=publish(version,qos);assert status(x)=='VALID'
+    for patch in ({'mq_variable_header_bytes':x['mq_variable_header_bytes']+1},
+        {'mq_packet_bytes':x['mq_packet_bytes']+1},{'mq_flags':15},
+        {'mq_remaining_length':x['mq_remaining_length']+1},{'payload_bytes':9}):
+        assert status({**x,**patch})=='INVALID'
+    if qos:
+        assert status({**x,'mq_packet_id_unused':False})=='INVALID'
+        x.pop('mq_packet_id');assert status(x)=='UNVERIFIED'
+    else:
+        assert status({**x,'mq_packet_id':9})=='INVALID'
+        assert status({**x,'mq_dup':True})=='INVALID'
+
+@pytest.mark.parametrize('version',['V3_1_1','V5_0'])
+@pytest.mark.parametrize('length,bytes_',[(0,1),(127,1),(128,2),(16383,2),(16384,3),
+    (2097151,3),(2097152,4),(268435455,4)])
+def test_mqtt_vbi_boundaries_use_minimal_bytes_and_complete_packet_limit(version,length,bytes_):
+    # Only framing scalar checks here, not a valid complete encoded control packet.
+    x={**actual(version),'mq_packet_kind':'CONNACK','mq_direction':'SERVER_TO_CLIENT','mq_remaining_length':length,
+       'mq_remaining_length_bytes':bytes_,'mq_packet_bytes':1+bytes_+length}
+    assert status(x)=='VALID'
+    assert status({**x,'mq_remaining_length_bytes':bytes_%4+1})=='INVALID'
+    x=actual();x.update(mq_properties_bytes=length,mq_property_length_bytes=bytes_)
+    assert status(x)=='VALID';assert status({**x,'mq_property_length_bytes':bytes_%4+1})=='INVALID'
+
+def test_mqtt_receive_cap_full_packet_and_send_quota_are_directional_not_payload_or_qos0_cap():
+    x={**publish(),'mq_receive_maximum':2,'mq_initial_quota':2,'mq_send_quota':1,'mq_inflight':2,
+       'mq_maximum_packet_size':26,'mq_maximum_qos':1,'mq_maximum_qos_present':True}
+    assert status(x)=='VALID'
+    for patch in ({'mq_inflight':3},{'mq_initial_quota':3},{'mq_send_quota':0},
+        {'mq_send_quota':3},{'mq_maximum_packet_size':25},{'mq_maximum_qos':0}):
+        assert status({**x,**patch})=='INVALID'
+    x={**publish(qos=0),'mq_receive_maximum':1,'mq_initial_quota':1,'mq_send_quota':0}
+    assert status(x)=='VALID'
+    # Requested subscription QoS may exceed server's supported publish level.
+    x={**actual(),'mq_packet_kind':'SUBSCRIBE','mq_packet_id':10,'mq_packet_id_unused':True,
+       'mq_maximum_qos':0,'mq_subscription_qos':2,'mq_flags':2}
+    assert status(x)=='VALID'
+
+@pytest.mark.parametrize('present,key,value',[('receive_maximum_present','receive_maximum',65535),
+    ('maximum_qos_present','maximum_qos',2),('topic_alias_maximum_present','topic_alias_maximum',0),
+    ('session_expiry_present','session_expiry_s',0),('will_delay_present','will_delay_s',0),
+    ('payload_format_present','payload_format',0),('retain_available_present','retain_available',True),
+    ('request_response_info_present','request_response_info',False),('request_problem_info_present','request_problem_info',True)])
+def test_mqtt5_absent_property_defaults_are_exact_and_not_forced_actual_proposals(present,key,value):
+    x={**actual(),'mq_'+present:False,'mq_'+key:value};assert status(x)=='VALID'
+    other=not value if isinstance(value,bool)else value-1 if value else 1
+    assert status({**x,'mq_'+key:other})=='INVALID'
+    assert status({**actual('V3_1_1'),'mq_'+key:value})=='INVALID'
+    field=next(f for f in registry.parameter_fields('mqtt')if f['key']=='mq_'+key)
+    assert field['conditional_defaults'][0]['when']['mq_version']=='V5_0'
+
+def test_mqtt5_optional_uint32_expiry_and_packet_cap_not_generic_positive_can_timers():
+    x={**actual(),'mq_session_expiry_s':4294967295,'mq_message_expiry_s':0,
+       'mq_maximum_packet_size':4294967295,'mq_receive_maximum':65535}
+    assert status(x)=='VALID'
+    assert status({**x,'mq_maximum_packet_size':0})=='INVALID'
+    assert status({**x,'mq_receive_maximum':0})=='INVALID'
+    assert status({**x,'mq_maximum_qos_present':True,'mq_maximum_qos':2})=='INVALID'
+
+def test_mqtt_keepalive_zero_override_and_silence_bound_are_not_e2e_deadlines():
+    x={**actual(),'mq_server_keepalive_present':True,'mq_server_keepalive_s':40,
+       'mq_effective_keepalive_s':40,'mq_disconnect_silence_s':60}
+    assert status(x)=='VALID'
+    for patch in ({'mq_effective_keepalive_s':30},{'mq_disconnect_silence_s':40},
+        {'mq_disconnect_silence_s':60.001}):assert status({**x,**patch})=='INVALID'
+    x.update(mq_server_keepalive_s=0,mq_effective_keepalive_s=0);x.pop('mq_disconnect_silence_s')
+    assert status(x)=='VALID';assert status({**x,'mq_disconnect_silence_s':0})=='INVALID'
+    assert status({**actual('V3_1_1'),'mq_keepalive_s':0,'mq_effective_keepalive_s':0})=='VALID'
+
+def test_mqtt_clientid_zero_and_password_presence_have_distinct_revision_rules():
+    x={**actual('V3_1_1'),'mq_client_id':'','mq_client_id_bytes':0,'mq_client_id_profile':'SERVER_ASSIGNED'}
+    assert status(x)=='INVALID';x['mq_clean_session']=True;assert status(x)=='VALID'
+    x={**actual(),'mq_client_id':'','mq_client_id_bytes':0,'mq_client_id_profile':'SERVER_ASSIGNED'}
+    assert status(x)=='VALID'
+    x.update(mq_packet_kind='CONNACK',mq_direction='SERVER_TO_CLIENT');assert status(x)=='UNVERIFIED'
+    x.update(mq_assigned_client_id='Assigned',mq_assigned_client_id_bytes=8);assert status(x)=='VALID'
+    x={**actual('V3_1_1'),'mq_password_flag':True,'mq_password_bytes':0,'mq_credential_source':'synthetic-token-reference'}
+    assert status(x)=='INVALID'
+    x={**actual(),'mq_password_flag':True,'mq_password_bytes':0,'mq_credential_source':'synthetic-token-reference'}
+    assert status(x)=='VALID'
+    assert status({**actual(),'mq_will_payload_bytes':0})=='INVALID'
+    x={**actual(),'mq_client_id':'a'*24,'mq_client_id_bytes':24};assert status(x)=='INVALID'
+    x.update(mq_client_id_profile='REGISTERED',mq_registered_source='synthetic-broker-acceptance');assert status(x)=='VALID'
+
+def test_mqtt_utf8_counts_preserve_bom_whitespace_and_payload_null_is_not_topic_null():
+    x=publish(topic='\ufeffPrüfer/🌡');assert status(x)=='VALID'
+    assert status({**x,'mq_topic_bytes':len(x['mq_topic'])})=='INVALID'
+    assert status(publish(topic=' '))=='VALID'
+    for topic in ('sensor/+', 'sensor/#','a\x00b','a\ud800b'):
+        bad={**publish(),'mq_topic':topic,'mq_topic_bytes':3};assert status(bad)=='INVALID'
+    x=publish(topic='a'*65535);assert status(x)=='VALID'
+    x=publish(topic='a'*65536);assert status(x)=='INVALID'
+    x=publish(body=3);x.update(mq_payload_format=1,mq_payload_text='a\x00b');assert status(x)=='VALID'
+    assert status({**x,'mq_payload_text':'éé'})=='INVALID'
+
+def test_mqtt5_alias_mapping_is_connection_scoped_with_directional_receiver_cap():
+    x={**publish(topic=''),'mq_topic_alias':2,'mq_topic_alias_maximum':2,'mq_alias_mapped':True,
+       'mq_alias_connection_id':actual()['mq_connection_id']}
+    assert status(x)=='VALID'
+    for patch in ({'mq_topic_alias':0},{'mq_topic_alias':3},{'mq_alias_mapped':False},
+        {'mq_alias_connection_id':'previous-connection'},{'mq_topic_alias_maximum':0}):
+        assert status({**x,**patch})=='INVALID'
+    assert status(publish(topic=''))=='UNVERIFIED'
+    assert status(publish('V3_1_1',topic=''))=='INVALID'
+
+@pytest.mark.parametrize('filter_', ['#','+','/','a/+/b','#','a/#','a//b','/a/','a','+/#'])
+def test_mqtt_valid_topicfilters_allow_empty_levels_and_terminal_wildcard(filter_):
+    x={**actual(),'mq_topic_filter':filter_,'mq_topic_filter_bytes':len(filter_.encode('utf-8'))}
+    assert status(x)=='VALID'
+
+@pytest.mark.parametrize('filter_', ['a+','a#','a/#/b','a/+b','a/b#','a\x00b',''])
+def test_mqtt_bad_topicfilters_are_not_silently_normalized(filter_):
+    x={**actual(),'mq_topic_filter':filter_,'mq_topic_filter_bytes':len(filter_.encode('utf-8'))}
+    assert status(x)=='INVALID'
+
+def test_mqtt5_shared_subscription_name_and_no_local_are_individually_scoped():
+    filter_='$share/workers/sensor/+'
+    x={**actual(),'mq_subscription_kind':'SHARED','mq_no_local':False,
+       'mq_topic_filter':filter_,'mq_topic_filter_bytes':len(filter_)}
+    assert status(x)=='VALID';assert status({**x,'mq_no_local':True})=='INVALID'
+    for filter_ in ('$share//sensor/+','$share/a+/sensor/+','$share/a#/sensor/+','$share/a/'):
+        assert status({**x,'mq_topic_filter':filter_,'mq_topic_filter_bytes':len(filter_)})=='INVALID'
+
+def test_mqtt_ack_correlates_directional_pending_identifier_and_connection():
+    x={**actual(),'mq_packet_kind':'PUBACK','mq_direction':'SERVER_TO_CLIENT','mq_phase':'RESPONSE',
+       'mq_packet_id':65535,'mq_request_packet_id':65535,'mq_request_connection_id':actual()['mq_connection_id'],
+       'mq_pending_match':True,'mq_flags':0}
+    assert status(x)=='VALID'
+    for patch in ({'mq_packet_id':0},{'mq_packet_id':1},{'mq_connection_id':'other'},
+        {'mq_pending_match':False},{'mq_flags':2}):assert status({**x,**patch})=='INVALID'
+    x.pop('mq_request_packet_id');assert status(x)=='UNVERIFIED'
+
+def test_mqtt5_redelivery_requires_reconnect_existing_session_original_id_and_dup():
+    x={**publish(),'mq_phase':'REDELIVERY','mq_reconnected':True,'mq_session_present':True,
+        'mq_clean_start':False,'mq_request_packet_id':9,'mq_dup':True,'mq_flags':10}
+    assert status(x)=='VALID'
+    for patch in ({'mq_reconnected':False},{'mq_session_present':False},{'mq_clean_start':True},
+        {'mq_request_packet_id':8},{'mq_dup':False},{'mq_packet_kind':'PUBACK'}):
+        assert status({**x,**patch})=='INVALID'
+    x={**actual(),'mq_packet_kind':'AUTH','mq_authentication_data_bytes':65535}
+    assert status(x)=='UNVERIFIED';x.update(mq_authentication_method='actual-method',mq_connect_authentication_method='actual-method',
+        mq_authentication_method_bytes=13,mq_connect_authentication_method_bytes=13)
+    assert status(x)=='VALID';assert status({**x,'mq_authentication_method':'other'})=='INVALID'
+    assert status({**actual('V3_1_1'),'mq_packet_kind':'AUTH'})=='INVALID'
+
+def test_mqtt_confirmed_topics_sessions_and_zero_keepalive_survive_foreign_defaults():
+    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.engineering.project_context import current_project_id
+    x={**publish(topic='\ufeffPrüfer/🌡'),'mq_keepalive_s':0,'mq_effective_keepalive_s':0,
+        'mq_session_expiry_s':4294967295,'mq_packet_id':65535}
+    group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}
+    parameters={'technology':'mqtt','technology_parameters':{'mqtt':group}}
+    service=WorkflowStatusService(current_project_id());service.save_parameters(parameters)
+    assert service.get()['parameters']==parameters
+    bad=deepcopy(parameters);bad['technology_parameters']['mqtt']['values']['bitrate']=10000000
+    with pytest.raises(ValueError):service.save_parameters(bad)
+    assert service.get()['parameters']==parameters

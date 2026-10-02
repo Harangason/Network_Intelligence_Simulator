@@ -1,0 +1,31 @@
+Main (Test scenario)
+11. Execute Reusable State RebootBeforeFirmwareInstallation
+Note: This step only needs to be executed if the Charging Station needs to reboot before firmware installation.
+12. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Installing
+Note(s):
+- This step only needs to be executed if the Charging Station did
+NOT reboot before firmware installation, at step 11.
+13. The Test System responds with a
+FirmwareStatusNotificationResponse
+Note: Step 14 through 17 can be send in a different order.
+14. The Charging Station notifies the CSMS about the current
+state of all connectors.
+Note(s):
+- This step only needs to be executed if the connectors were
+previously set to Unavailable (at step 9) and the Charging Station
+did not report setting them back to Available (after the reboot
+sequence at step 11) yet.
+- And if the Charging Station did not become inoperative after the
+firmware update failure. It is recommended for a Charging Station
+to fallback to the previous firmware after a firmware update
+failure.
+15. The Test System responds accordingly.
+16. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status InstallVerificationFailed or InstallationFailed
+17. The Test System responds with a
+FirmwareStatusNotificationResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 613/1383 Part 6 - Test Cases

@@ -1,0 +1,70 @@
+MODBUS over serial line specification and implementation guide V1.02 Modbus.org    
+Modbus.org http://www.modbus.org/ 17/44
+Dec 20, 2006 
+2.5.2.1 MODBUS Message ASCII Framing 
+A MODBUS message is placed by the transmitting device into a frame that has a known beginning and ending point.  This allows 
+devices that receive a new frame to begin at the start of the message, and to know when the message is completed.  Partial 
+messages must be detected and errors must be set as a result. 
+The address field of a message frame contains two characters. 
+In ASCII mode, a message is delimited by specific characters as Start-of-frames and End-of-frames. A message must  start with a 
+‘colon’ ( : ) character (ASCII 3A hex), and end with a ‘carriage return – line feed’ (CRLF) pair (ASCII 0D and 0A hex). 
+Remark : The LF character can be changed using a specific MODBUS application command ( see MODBUS application protocol 
+specification). 
+The allowable characters transmitted for all other fields are hexadecimal 0–9, A–F (ASCII coded). The devices monitor the bus 
+continuously for the ‘colon’ character.  When this character is received, each device decodes the next character until it detec ts the 
+End-Of-Frame.  
+Intervals of up to one second may elapse between characters within the message. Unless the user has configured a longer timeout , 
+an interval greater than 1 second means an error has occurred.  Some Wide-Area-Network application may require a timeout in the  4 
+to 5 second range. 
+A typical message frame is shown below. 
+Start Address Function Data LRC End
+1 char
+:
+2 chars 2 chars 2 chars 2 chars
+CR,LF
+0 up to 2x252 char(s)
+Figure 17: 
+ASCII Message Frame 
+Remark : Each data byte needs two characters for encoding.  Thus, to ensure compatibility at MODBUS application level between 
+ASCII mode and RTU mode, the maximum data size for ASCII data field (2x252) is the double the maximum data size for RTU data 
+field (252).  Consequently, the maximum size of a MODBUS ASCII frame is 513 characters. 
+The ASCII framing requirements are synthesized in the following state diagram. Both "master" and "slave" points of view are 
+expressed in the same drawing : 
+Reception
+Reception of ":"
+character Reception of character
+ / Concatenation of
+character into
+reception buffer
+Waiting "End
+of Frame"
+Idle
+Comment
+If frame OK
+/bright processing frame
+If frame NOK
+/bright delete entire frame
+(ready to receive or to emit)
+Reception of "LF" character
+/ control frame (LRC, Parity,
+Slave addr.)
+Reception of ":"
+character  /  Empty
+reception buffer
+Reception of "CR"
+character
+Reception of ":"
+character  /  Empty
+reception buffer
+Emission
+start
+Emission Demand
+Emission
+Sending of “:”
+Sending of
+all characters
+Emission End
+Sending of  “CR”
+Sending of  “LF”
+Figure 18: 
+ASCII Transmission mode State diagram 

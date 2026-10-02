@@ -1,0 +1,52 @@
+Main (Test scenario)
+6. 4.  The Test System responds with a
+SetChargingProfileResponse with
+status Accepted
+5. 3.  The CSMS sends a SetChargingProfileRequest
+Manual Action :  Request the CSMS to clear the charging profile with <chargingProfileId from step 3>            
+6.  The Test System responds with a      
+ClearChargingProfileResponse  with 
+ status   Accepted
+5.  The CSMS sends a      ClearChargingProfileRequest  with 
+ chargingProfileId   <chargingProfileId from step 3>    AND 
+ chargingProfileCriteria   omit
+Manual Action: Configure variable MaxExternalConstraintsId on the CSMS
+8. The Test System responds with SetVariablesResponse
+7. The CSMS sends SetVariablesRequest with:
+- variable.name MaxExternalConstraintsId
+- component.name SmartChargingCtrlr
+- attributeValue 2147400000
+Manual Action :  Request the CSMS to send a TxDefaultProfile Charging Profile        
+10.  The Test System responds with a      
+SetChargingProfileResponse  with 
+ status   Accepted
+9.  The CSMS sends a      SetChargingProfileRequest
+Tool validations
+* Step 3:  
+Message  SetChargingProfileRequest
+ chargingProfile.id  must be greater than      10
+* Step 5:  
+Message  ClearChargingProfileRequest
+ chargingProfile.id  must be <chargingProfileId from step 1>      
+* Step 5 9 :
+Message SetChargingProfileRequest
+chargingProfile.id must be greater than 2147400000
+Post scenario validations:
+- N/a
+6.3.16. Page 1304-1306 - (2026-02) - TC_N_102_CSMS/TC_N_103_CSMS - added
+without userinfo
+The first attempt needs to be without to check it is not accepted.
+Test case Id TC_N_102_CSMS / TC_N_103_CSMS
+…
+Main (Test scenario)
+Charging Station CSMS
+…
+3. The Test System uploads log file to
+<GetLogRequest.log.remoteLocation of step 1 without userinfo >
+using HTTP POST
+4. The CSMS responds using HTTP
+…
+6.3.17. Page 1336 - (2026-02) - TC_Q_102_CSMS - Test case removed
+This testcases has been removed, because as a CSMS cannot be forced to omit the energyModes. In addition, there is also no
+added benefit to test this.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 108/116 Errata 2026-06

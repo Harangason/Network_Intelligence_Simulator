@@ -1,0 +1,44 @@
+Main (Test scenario)
+13. The Charging Station notifies the CSMS about the current
+state of all connectors.
+Note(s):
+- This step is optional. The Charging Station may wants to set its
+connectors to Unavailable, before proceeding installing the new
+firmware.
+14. The Test System responds accordingly.
+15. Execute Reusable State RebootBeforeFirmwareInstallation
+Note: This step only needs to be executed if the Charging Station needs to reboot before firmware installation.
+16. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Installing
+Note(s):
+- This step only needs to be executed if the Charging Station did
+NOT reboot before firmware installation, at step 15.
+17. The Test System responds with a
+FirmwareStatusNotificationResponse
+18. Execute Reusable State RebootBeforeFirmwareActivation
+Note: This step only needs to be executed if the Charging Station needs to reboot before firmware activation.
+19. The Test System waits for the Charging Station to reconnect.
+Note: This step only needs to be executed if the Charging Station did not reboot/reconnect up until this point. The Charging Station
+should at least reconnect to reestablish the protocol version handshake.
+Note: Step 20 through 25 can be send in a different order.
+20. The Charging Station notifies the CSMS about the current
+state of all connectors.
+Note(s):
+- This step only needs to be executed if the connectors were
+previously set to Unavailable (at step 13) and the Charging Station
+did not report setting them back to Available (after a reboot
+sequence at step 15 or 18) yet.
+21. The Test System responds accordingly.
+22. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Installed
+23. The Test System responds with a
+FirmwareStatusNotificationResponse
+24. The Charging Station sends a
+SecurityEventNotificationRequest
+With type FirmwareUpdated
+25. The Test System responds with a
+SecurityEventNotificationResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 616/1383 Part 6 - Test Cases

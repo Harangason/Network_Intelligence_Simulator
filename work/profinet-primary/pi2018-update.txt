@@ -1,0 +1,2304 @@
+PAGE 1
+PROFINET System Description
+Technology and Application
+PAGE 2
+
+PAGE 3
+PROFINET System Description I
+Contents 
+Introduction   . . . . . . . . . . . . . . . . . . . 3
+Information on the Contents  . . . . 4
+1 . PROFINET at a glance  . . . . . . . . . . . 5
+1.1 Ten Reasons for PROFINET ............ 5
+1.2 Conformance Classes ................ 6
+2 . Modeling and Engineering   . . . . . 6
+2.1 System Model of a PROFINET  
+System .............................. 6
+2.2 Device Model of an IO Device ........ 7
+2.3 Device Descriptions  ................. 8
+2.4 Communication Relations  ........... 8
+2.5 Addressing PROFINET Devices  ....... 9
+2.6 Engineering of an IO System ......... 9
+2.7 Web Integration ..................... 10
+3 . Basic Functions  . . . . . . . . . . . . . . . . . 10
+3.1 Cyclic Data Exchange  ................ 10
+3.2 Acyclic Data Exchange ............... 11
+3.3 Device/Network Diagnostics ......... 12
+4 . Network Diagnostics and 
+Management  . . . . . . . . . . . . . . . . . . . 12
+4.1 Network Management Protocol ...... 12
+4.2 Neighborhood Detection  ............ 12
+4.3 Representation of the Topology ...... 13
+4.4 Device Replacement ................. 13
+4.5 Integration of Network Diagnostics  
+into the IO System Diagnostics ....... 13
+5 . Synchronous Real-Time  . . . . . . . . . 13
+5.1 Cycle Synchronization  ............... 14
+5.2 Mixed Operation ..................... 14
+5.3 Optimized IRT Mode ................. 15
+6 . Optional Functions  . . . . . . . . . . . . . 15
+6.1 Multiple Access to Field Devices ...... 15
+6.2 Extended Device Identification AMR .. 16
+6.3 Individual Parameter Server .......... 16
+6.4 Dynamic Reconfiguration (DR)  ....... 17
+6.5 Reporting System – Time Stamping  .. 17
+6.6 Fast Start Up ......................... 17
+6.7 Higher Availability through Media  
+Redundancy  ........................ 17
+6.8 Higher Availability through System  
+Redundancy  ........................ 18
+6.9 Calling an Engineering Tool .......... 19
+7 . Integration of other  
+Communication Systems  . . . . . . . . 19
+7.1 Integration of Fieldbuses ............. 19
+7.2 Integration of IO-Link ................ 20
+8 . Application Profiles  . . . . . . . . . . . . . 20
+8.1 PROFIsafe  ........................... 21
+8.2 PROFIdrive  .......................... 21
+8.3 PROFIenergy  ........................ 21
+9 . PROFINET for Process  
+Automation  . . . . . . . . . . . . . . . . . . . . 22
+10 . Network Installation  . . . . . . . . . . . . 23
+10.1 Network Configuration ............. 23
+10.2 Cables for PROFINET ................ 24
+10.3 Connectors ......................... 24
+10.4 Security ............................ 25
+11 . PROFINET Technology and  
+Certification   . . . . . . . . . . . . . . . . . . . 25
+11.1 Technology Support ................ 26
+11.2 Tools for Product Development ..... 26
+11.3 Certification Test .................... 26
+12 . Standardization  . . . . . . . . . . . . . . . . 26
+13 . PROFIBUS & PROFINET  
+International (PI)  . . . . . . . . . . . . . . . 26
+14 . Outlook  . . . . . . . . . . . . . . . . . . . . . . . . 28
+14.1 Time-Sensitive Networking  
+(TSN) ............................... 28
+14.2 Open Platform Communications  
+Unified Architecture (OPC UA)  ...... 28
+14.3 Industrie 4.0 ........................ 28
+14.4 The Procedure of PI ................. 29
+15 . Glossary  . . . . . . . . . . . . . . . . . . . . . . . IV
+16 . References  . . . . . . . . . . . . . . . . . . . . . VI
+PAGE 4
+PROFINET System DescriptionII
+List of Figures
+Fig. 1: PROFINET satisfies all requirements of 
+automation technology .............. 3
+Fig. 2:  Structure of Conformance Classes  .... 6
+Fig. 3: Communication paths for PROFINET .. 6
+Fig. 4: Device model of a PROFINET field  
+device ............................... 7
+Fig. 5:  Addressing of IO data in PROFINET on  
+the basis of slots and subslots  ........ 7
+Fig. 6: GSD and engineering tool ............ 8
+Fig. 7: Application and communication  
+relations ............................. 8
+Fig. 8: A field device can be accessed by  
+multiple application relations ......... 8
+Fig. 9: Name assignment .................... 9
+Fig. 10:  Assignment of definitions in the GSD  
+file to IO devices when configuring  
+the system ........................... 9
+Fig. 11: Real-time communication with cycle  
+time monitoring  ..................... 11
+Fig. 12: Diagnostic model for signaling faults  
+with different priority  ................ 12
+Fig. 13: PROFINET field devices know their 
+neighbors ............................ 12
+Fig. 14:  System topology ..................... 13
+Fig. 15: PROFINET IO supports convenient  
+device replacement without an 
+engineering tool ..................... 13
+Fig. 16: Integration of network diagnostics  
+into the IO system diagnostics ........ 13
+Fig. 17: IRT communication divides the bus  
+cycle into a reserved interval (red)  
+and an open interval (green)  ......... 13
+Fig. 18:  Synchronization of the cycles in an  
+IRT domain  .......................... 14
+Fig. 19:  Mixed operation of synchronized and 
+unsynchronized applications ......... 14
+Fig. 20: Packing of individual frames into a  
+group frame ......................... 15
+Fig. 21: Shared device: Access by multiple 
+controllers to different modules in a 
+device ............................... 15
+Fig. 22:  Shared input: Multiple controllers  
+read the same inputs on a device ..... 16
+Fig. 23: Clarifying I&M and AMR data roles .... 16
+Fig. 24:  A parameter server can be used to 
+automatically reload backed-up  
+data during device replacement ...... 16
+Fig. 25: Configuration changes without  
+interruption of operation thanks to 
+redundant connection  ............... 17
+Fig. 26: Principle of time synchronization ..... 17
+Fig. 27: Preventing circulation of frames  
+through logical separation of  
+the bus .............................. 18
+Fig. 28: Scalable system redundancy with 
+PROFINET ............................ 19
+Fig. 29: Integration of fieldbus systems ....... 20
+Fig. 30: Integration of IO-Link  ................ 20
+Fig. 31: The "black channel" principle ......... 21
+Fig. 32: Interoperability through PROFIdrive .. 21
+Fig. 33: PROFINET in process automation ..... 22
+Fig. 34: Ethernet networks in industrial  
+environments usually have line  
+topology ............................. 24
+Fig. 35: PROFINET offers a range of industrial  
+plug connectors  ..................... 25
+Fig. 36: Security concept with multiple  
+security zones ........................ 25
+Fig. 37: Structure of standards ................ 27
+Fig. 38: PROFIBUS & PROFINET  
+International (PI) ..................... 27
+Fig. 39: OPC enables uniform communication 
+with different systems ................ 28
+Fig. 40: TSN integration in PROFINET  ......... 29
+Fig. 41: PROFINET and OPC UA ............... 29
+List of Tables 
+Tab. 1: List of basic functions  ................ 10
+Tab. 2:  List of I&M data 0-5 ................... 11
+Tab. 3: List of possible optional functions  .... 15
+Tab. 4: Network installation for different  
+Conformance Classes ................. 23
+PAGE 5
+PROFINET System Description 3
+Introduction
+Ever-shorter innovation cycles for new products 
+makes the continuous evolution of automation 
+technology a necessity. The use of fieldbus 
+technology has represented a significant 
+development since the early 90s. It has made it 
+possible to migrate from centralized automation 
+systems to decentralized ones. PROFIBUS, the 
+global market leader, has set the benchmark here 
+for more than 25 years.
+In today's automation technology, Ethernet 
+and Information Technology (IT) are calling the 
+shots with established standards like TCP/IP and 
+XML. Integrating information technology into 
+automation opens up significantly better commu-
+nication options between automation systems, 
+extensive configuration and diagnostic possi-
+bilities and system-wide service functionality. 
+The transition from PROFIBUS to the Ethernet-
+based PROFINET enables the integration of these 
+functions as an integral component of PROFINET 
+from the very beginning.
+PROFINET is the open standard for indus-
+trial Ethernet, covering all the requirements of 
+automation technology (Figure 1). Whether the 
+application involves production automation, 
+process automation or drives (with or without 
+functional safety), PROFINET is the first choice across 
+the board. This technology has become standard 
+in the automotive industry, widely disseminated 
+in machine building and well-proven in the food 
+and packaging, logistics and process industries. 
+PROFINET has found its way into every area of 
+application. New application areas are constantly 
+emerging, such as marine and rail applications and 
+even day-to-day operations, such as in a beverage 
+store. 
+PROFINET is currently the communication backbone 
+for Industrie 4.0 in automation technology. Thanks 
+to its open architecture, a PROFINET network makes 
+all Ethernet-based IT functions fully available, 
+enables open access to devices and enables the 
+easy integration of other standards, such as OPC 
+UA.
+PROFINET is standardized in IEC 61158 and IEC 
+61784. The ongoing development of PROFINET 
+offers users a long-term solution for the implemen-
+tation of their automation tasks.
+For system and machine manufacturers, the 
+use of PROFINET minimizes the cost of instal-
+lation, engineering and commissioning. For 
+system operators, PROFINET offers ease of system 
+expansion and high system availability through 
+autonomously running system units and low 
+maintenance requirements.
+The mandatory certification of all PROFINET devices 
+also ensures a high-quality standard.
+Fig. 1: PROFINET satisfies all requirements of automation technology
+PAGE 6
+PROFINET System Description4
+Chapters 7 to 9 are dedicated to the integration of 
+other technologies (such as fieldbuses), profiles and 
+specific process automation topics with PROFINET 
+and describe the additional benefits for PROFINET 
+systems.
+Chapter 10 describes relevant aspects of PROFINET 
+networks, such as topologies, cables, connectors, 
+web integration and security.
+Chapter 11 is directed at product managers and 
+provides information on product implementation 
+and certification.
+Chapter 12 provides an overview of the relevant 
+standards for PROFINET. 
+Chapter 13 provides information on PROFIBUS 
+& PROFINET International (PI), the world's largest 
+interest group for industrial automation.
+Chapter 14 considers future developments in the 
+PROFINET environment.
+Information on the Contents
+This document describes all essential aspects of 
+the PROFINET technology. Individual topics are 
+explained, and references to detailed information 
+are provided. It is not necessary to follow the 
+many links in the guideline to have a general 
+understanding of the system description.
+A true-to-detail representation of a network is 
+often omitted within the figures, with a simplified 
+schematic representation being shown instead.
+Chapter 1 introduces PROFINET and provides 
+an overview of the market position and modular 
+design.
+Chapter 2 describes the underlying models and 
+the engineering of a PROFINET system.
+Chapters 3 to 5 cover the basic functions of 
+PROFINET communication from the perspective of 
+Conformance Classes.
+Chapter 6 contains a brief description of optional 
+features used in different applications.
+PAGE 7
+PROFINET System Description 5
+1 . PROFINET at a Glance
+PROFINET is the communication standard 
+for automation from PROFIBUS & PROFINET 
+International (PI).
+Its modular range of functions makes PROFINET 
+a flexible system for all applications and markets. 
+PROFINET is the networking solution of production 
+and process automation, from applications with 
+functional safety requirements and the entire 
+spectrum of drive technology to isochronous 
+motion control applications. The use of application 
+profiles allows optimal usage of PROFINET in all 
+areas of automation engineering.
+1 .1 Ten Reasons for PROFINET
+1 . Ease of use
+The user-friendliness of PROFINET minimizes 
+the costs of installation, engineering and 
+commissioning for machine and system builders.
+The system owner profits from ease of system 
+expansion, high system availability and fast and 
+efficient communication.
+2 . Flexible network topology
+PROFINET is switched Ethernet. To make out 
+cost-effective and easy, many PROFINET devices 
+already have a switch with two or more ports 
+integrated into them. PROFINET is 100% Ethernet-
+compatible as per IEEE standards and fullfills system 
+requirements with its flexible topology. Line, ring 
+and star structures are easy to implement with 
+copper and fiber-optic cables. PROFINET enables 
+wireless communication with WLAN and Bluetooth.
+3 . Integrated diagnostics
+PROFINET includes intelligent diagnostic concepts 
+for field devices and networks. Acyclically 
+transmitted diagnostic data provides important 
+information on the status of the devices and 
+communication and enables a user-friendly 
+representation of the network.
+4 . Integrated safety
+PROFIsafe, the tried-and-tested technology for 
+PROFIBUS functional safety, is also available for 
+PROFINET. The ability to use the same cable for 
+standard and safety-related communication yields 
+savings for devices, engineering and setup.
+5 . High availability
+PROFINET integrates automatically responding 
+redundancy solutions. The defined concepts for 
+system redundancy and Dynamic Reconfiguration 
+(DR) increase system availability considerably.
+6 . Scalable real time
+Communication takes place over the same cable 
+in all applications, from simple control tasks to 
+highly demanding motion control applications. 
+For high-precision closed-loop control tasks, 
+deterministic and isochronous transmission of 
+time-critical process data with a jitter of less than 1 
+µs is possible.
+7 . A powerful system base
+PROFINET fulfills the most wide-ranging 
+requirements with its consistent, Ethernet-based 
+communication. From data-intensive parameter 
+configuration to extremely fast IO data transmission, 
+PROFINET enables automation in real time and 
+IT integration with a single system. This is a basic 
+requirement for Industrie 4.0.
+8 . Support for energy optimization
+With the PROFIenergy profile integrated into 
+PROFINET devices, the energy use in an automation 
+system can be measured using a standardized 
+method and controlled by selectively switching 
+functions on and off without additional hardware.
+9 . Sensor/actuator integration
+IO-Link, the globally standardized IO technology 
+(IEC 61131-9) for communicating with sensors 
+and actuators, can be optimally integrated into 
+PROFINET. This enables digital communication up 
+to the sensor/actuator level.
+The same applies for the established sensor/
+actuator interfaces in the process industry. For 
+the 4 – 20 mA, HART and PROFIBUS PA interfaces, 
+options for universal engineering, diagnostics and 
+maintenance are available. 
+10 . Global support
+With its network of Competence Centers, 
+the PROFIBUS & PROFINET International (PI) 
+organization offers solid training and consultation 
+across the globe. Establishment of the proven 
+certification process achieves a high standard 
+of quality for PROFINET products and their 
+interoperability in systems.
+PAGE 8
+PROFINET System Description6
+1 .2 Conformance Classes
+As a broad standard, PROFINET offers a large 
+number of functions. These functions are divided 
+into Conformance Classes in a clear way. They 
+provide a practical summary of the various different 
+minimum property values.
+Fig. 2: Structure of Conformance Classes
+There are three Conformance Classes (CC) which 
+build upon one another (see Figure 2).
+Conformance Class A (CC-A) provides basic functions 
+for PROFINET with real-time (RT) communication. 
+All IT services can be used without restriction. 
+Typical applications are found, for example, in 
+business automation. Wireless communication is 
+specified for this class.
+Conformance Class B (CC-B) expands PROFINET to 
+include network diagnostics using IT mechanisms 
+and topology information of the network.
+Conformance Class C (CC-C) describes the basic 
+functions for devices with hardware-supported 
+bandwidth reservation and synchronization 
+Isochronous Real-Time (IRT) communication and is 
+thus the basis for isochronous applications.
+The Conformance Classes also serve as the basis for 
+certification and cabling guidelines.
+Building upon the three Conformance Classes (A, 
+B and C), which describe the basic communication 
+properties, there are currently seven application 
+classes which combine a required scope of 
+functions for certain applications.
+A detailed description of the Conformance 
+Classes can be found in the document entitled 
+"The PROFINET Conformance Classes" [7.041]  
+(www.profibus.com/pncc).
+2 . Modeling and 
+Engineering
+This section presents the models of a PROFINET 
+system and explains the addressing options.
+2 .1 System Model of a PROFINET  
+ System
+PROFINET follows the provider/consumer model 
+for data exchange. This means that both the IO 
+controller and IO device spontaneously send cyclic 
+data independently. 
+The following device classes are defined for 
+PROFINET (Figure 3):
+Fig. 3: Communication paths for PROFINET
+IO controller: This is typically the Programmable 
+Logic Controller (PLC) in which the automation 
+program runs. The IO controller provides output 
+data to the configured IO devices in its role as 
+provider and is the consumer of input data.
+IO device: An IO device is a distributed IO field 
+device connected to one or more IO controllers via 
+PROFINET. The IO device is the provider of input 
+data and the consumer of output data from the  
+IO controller.
+IO supervisor: This can be a programming device 
+(PG), personal computer (PC) or human machine 
+interface (HMI) device for commissioning or 
+diagnostic purposes.
+A system unit contains at least one IO controller and 
+one or more IO devices. IO supervisors are usually 
+integrated only temporarily for commissioning or 
+troubleshooting purposes.
+PAGE 9
+PROFINET System Description 7
+2 .2 Device Model of an IO Device
+The technical and functional options of all field 
+devices are described using the device model, 
+which is oriented toward a modular device (Figure 
+4). 
+PROFINET differentiates between compact field 
+devices, in which the degree of expansion is 
+already specified in the as-delivered condition 
+and cannot be changed by the user, and modular 
+field devices, in which the degree of expansion 
+can be customized for a specific application when 
+the system is configured. In its logical structure, a 
+PROFINET field device is always modular in design. 
+Modularity in the logical sense, however, does 
+not require actual modularity in the electrical and 
+mechanical design sense. 
+An IO device is usually comprised of a communi-
+cation module with Ethernet interface and (physical 
+or virtual) modules assigned to it. The assigned 
+modules handle the actual process data traffic. The 
+access point for communication (Ethernet interface 
+with data processing) is called the DAP (Device 
+Access Point). 
+The following structures are standardized for an IO 
+device:
+• The device model consists of slots, subslots, 
+modules, submodules and channels.
+• The slot designates the insertion slot of a 
+module in an IO field device. A field device 
+usually has two or more slots.
+• A module is comprised of one or more submo-
+dules or provides available subslots into which 
+submodules can be inserted.
+• The modules themselves have no task other 
+than to provide structuring. The actual inputs 
+and outputs (channels) are implemented in its 
+submodules. The granularity of the channels 
+(bitwise, bytewise or wordwise division of 
+IO data) is determined by the manufacturer. 
+Acyclic services always address submodules. 
+Therefore, a module always contains at least 
+one submodule.
+• The data content of a submodule is always 
+accompanied by status information.
+The index specifies the data within a submodule 
+inserted into a slot/subslot which can be read or 
+written acyclically using read/write services. For 
+example, parameters can be written to a module, 
+or manufacturer-specific module data can be read 
+out on the basis of an index. Specific indexes are 
+defined in the standard here. Additional indexes 
+can be freely defined by the manufacturer.
+The submodule is the owner of the user data, 
+diagnostics, channels, actual configuration, records 
+and I&M data. Cyclic IO data of the submodule in 
+the device is addressed by specifying the slot/
+subslot combination of the insertion slot. They can 
+be freely defined by the manufacturer. For acyclic 
+data communication via read/write services, an 
+application can specify the data of the submodule 
+to be addressed using slot, subslot and index 
+(Figure 5).
+Fig. 5: Addressing of IO data in PROFINET on the 
+basis of slots and subslots
+Fig. 4: Device model of a PROFINET field device
+
+PAGE 10
+PROFINET System Description8
+To avoid user profiles (e.g. for PROFIdrive, weighing 
+and dosing) from having competing definitions, 
+each of the profiles is assigned its own application 
+process identifier (API).
+Additional information on the device model can be 
+found in the design recommendation for PROFINET 
+field devices, which is available as a free download 
+(www.profibus.com/pnfd).
+2 .3 Device Descriptions
+To enable system engineering, the GSD files (General 
+Station Description) of the field devices to be confi-
+gured are required. This XML-based GSD describes 
+the properties and functions of the PROFINET field 
+device, including its modules and submodules. It 
+contains all data relevant for engineering as well as 
+for data exchange with the field device.
+In particular, GSD files enable the engineering of a 
+PROFINET system or PROFINET application without 
+the devices used having to be physically present.
+The GSD is essential for a PROFINET field device, 
+as engineering is impossible without it. Every 
+manufacturer of a PROFINET field device must 
+create an associated GSD file. It will be checked as 
+part of the certification test.
+The engineering tool obtains knowledge about the 
+device using the GSD data. The GSD file is read into 
+the engineering tool (e.g. programming device) 
+once for this purpose (Figure 6). The field device can 
+then be configured, for example, from the product 
+catalog of the engineering tool.
+Fig. 6: GSD and engineering tool
+Additional detailed information on the GSD can be 
+found in the design recommendation for PROFINET 
+field devices, which is available as a free download 
+(www.profibus.com/pnfd).
+2 .4 Communication Relations
+To establish communication between the higher-
+level controller and an IO device, the communi-
+cation paths must be established. These are set 
+up by the IO controller during system startup 
+based on the configuration data received from 
+the engineering system. This specifies the data 
+exchange explicitly.
+All data exchange is embedded into an AR (Appli-
+cation Relation) (Figure 7). Within the AR, CRs 
+(Communication Relations) specify the data expli-
+citly. As a result, all data for device modeling, 
+including the general communication parameters, 
+are downloaded to the IO device. An IO device can 
+have multiple ARs established from different IO 
+controllers, for example, for shared devices.
+Fig. 7: Application and communication relations
+The communication channels for cyclic data 
+exchange (IO data CR), acyclic data exchange 
+(record data CR) and alarms (alarm CR) are set up 
+simultaneously.
+Multiple IO controllers can be used in a PROFINET 
+system (Figure 8). If these IO controllers are to be 
+able to access the same data in the IO devices, this 
+must be specified during parameter configuration 
+(shared devices and shared inputs).
+Fig. 8: A field device can be accessed by multiple 
+application relations
+An IO controller can establish one AR each with 
+multiple IO devices. Within an AR, several IO CRs 
+on different APIs can be used for data exchange. 
+This can be useful, for example, if more than one 
+user profile (PROFIdrive, encoder etc.) is involved 
+in communication and different submodules are 
+required.
+PAGE 11
+PROFINET System Description 9
+MAC address and OUI (organizationally unique identifier)
+Each PROFINET device is addressed using its globally unique MAC address. This MAC address consists of 
+a company code (bits 24 to 47) as an OUI (Organizationally Unique Identifier) and a consecutive number 
+(bits 0 to 23). With an OUI, up to 16,777,214 products of a single manufacturer can be identified.
+Bit value 47 to 24 Bit value 23 to 0
+00 0E CF XX XX XX
+Company code -> OUI Consecutive number
+The OUI is available free of charge from the IEEE Standards Department. 
+PI provides all device manufacturers which do not want to apply for their own OUI with four K-areas of 
+the PI OUI. This service allows companies to acquire MAC addresses directly from the PI Support Center. 
+The OUI of PI is 00-0E-CF.
+2 .5 Addressing PROFINET  
+ Devices 
+Ethernet devices always communicate using their 
+unique MAC address (see box).
+In a PROFINET system, each field device receives a 
+symbolic name which uniquely identifies the field 
+device within the IO system (Figure 9). The device is 
+identified and configured with this name within the 
+engineering process. The exact MAC & IP addresses 
+are resolved using this name when the PROFINET 
+application is started.
+The DCP protocol (Discovery and basic Configu-
+ration Protocol) is used for this. The device name 
+is assigned to the individual IO device and thus 
+to its MAC address by an engineering tool using 
+the DCP protocol during commissioning (device 
+initialization). Optionally, the name can also be 
+automatically assigned by the IO controller to the 
+IO device by means of a specified topology based 
+on neighborhood detection. Assignment of the IP 
+address occurs from the project via DCP , using the 
+generally common and internationally widespread 
+DHCP (Dynamic Host Configuration Protocol) or 
+using manufacturer-specific mechanisms. In the 
+latter two cases, the IP addresses are read out of 
+the controller automatically via DCP so that no 
+manual access is required here either. The options 
+supported by a field device are defined in the GSD 
+file for the respective field device.
+Fig. 9: Name assignment
+2 .6 Engineering of an IO System
+Each IO controller manufacturer also provides 
+an engineering tool for configuring a PROFINET 
+system.
+During parameter configuration, the IO controllers 
+and IO devices are defined in a PROFINET system. 
+The desired properties of the cyclic data exchange 
+within the communication relations are specified 
+for this.
+For each IO device, the intended population of the 
+slots and subslots with modules and submodules 
+must be defined. The possible population varia-
+tions are saved in the GSD. At the same time, more 
+precise behavior and properties of the devices 
+and modules/submodules can be specified using 
+parameters. The configuring engineer configures 
+the real system, so to speak, symbolically in the 
+engineering tool. Figure 10 shows the relationship 
+between GSD definitions, the configuration and the 
+real device view.
+During commissioning, the configuration of the 
+PROFINET IO system is downloaded to the IO 
+controller. This means that the IO controller has all 
+the information for addressing and data exchange 
+with the IO devices.
+Fig. 10: Assignment of definitions in the GSD 
+file to IO devices when configuring the 
+system
+PAGE 12
+PROFINET System Description10
+Either the devices of the PROFINET system are now 
+assigned to the device name with the engineering 
+tool or the IO controller is informed of the planned 
+topology. Based on the topology information, the 
+IO controller automatically provides the device 
+names and gives all planned IO devices their IP 
+address during system startup. An IO controller 
+always initiates system power-up after a startup/
+restart based on the configuration data without any 
+intervention by the user. During system startup, the 
+IO controller establishes a uniquely specified Appli-
+cation Relation (AR) with the associated Communi-
+cation Relations (CR) for each configured IO device. 
+This specifies the cyclic IO data, alarms, exchange 
+of acyclic read/write services and the expected 
+modules/submodules. .
+2 .7 Web Integration
+PROFINET expands Ethernet to include automation-
+specific functions without restricting existing 
+properties. This enables, among other things, 
+the use of web technologies such as access to 
+an integrated web server on the field devices. 
+Depending on the implementation in the devices, 
+diagnostic information can be called up beyond 
+network boundaries with standard web browsers, 
+for example. PROFINET itself does not define any 
+specific content or format. Rather, it allows for an 
+open and free implementation.
+3 . Basic Functions
+The basic functions of Conformance Class A include: 
+• The cyclical exchange of IO data with real-time 
+properties. 
+• Acyclic data traffic for reading and writing 
+need-based data (parameters and diagnostic 
+data), including the identification and mainte -
+nance function (I&M) for reading out device 
+information. 
+• A flexible alarm model for signaling device and 
+network errors with three alarm levels (mainte-
+nance requirement, urgent maintenance requi-
+rement and diagnostics).
+Requirement Technical function/
+solution
+Cyclic data exchange PROFINET with RT 
+communication
+Acyclic parameter 
+data/
+Device identification 
+(HW/FW)
+Read Record/
+Write Record
+IM0, 1, 2, 3
+IM 4 (F-submodules)
+IM 5 (communication 
+module)
+Devices/Network 
+diagnostics (alarms)
+Diagnostics and 
+maintenance
+Tab. 1: List of basic functions
+3 .1 Cyclic Data Exchange
+Cyclic IO data is transmitted via the "IO data CR" 
+unacknowledged as real-time data between the 
+provider and consumer in a parameterizable time 
+frame. The update time can be specified indivi-
+dually for connections to the individual devices 
+and are thus adapted to the requirements of the 
+application. Likewise, different update times can be 
+selected for the input and output data within the 
+range of 250 µs to 512 ms (Figure 11).
+The connection is monitored using a time 
+monitoring setting derived from a multiple of the 
+update time. During data transmission in the frame, 
+the data of a submodule is followed by a provider 
+status. This status information is evaluated by the 
+respective consumer of the IO data. It can use this 
+information to evaluate the validity of the data 
+from the cyclic data exchange alone. In addition, 
+the consumer statuses for the counter direction 
+are transmitted. The data in the message frames 
+is followed by accompanying information about 
+their validity and redundancy and which evaluates 
+the diagnostic status (data status and transfer 
+status). The cycle information (cycle counter) of the 
+provider is also specified so that its update time can 
+be determined easily. Failure of cyclic data to arrive 
+is monitored by the respective consumer in the 
+communication relation. If the configured data fails 
+to arrive within the monitoring time, the consumer 
+sends an error message to the application.
+The cyclic data exchange can be realized with 
+standard Ethernet controllers and takes place 
+without any TCP/IP information directly on layer 2 
+with Ethertype 0x8892.
+PAGE 13
+PROFINET System Description 11
+Fig. 11: Real-time communication with cycle time 
+monitoring
+For the network infrastructure with CC-A devices, 
+commercially available switches which meet at 
+least the following requirements can be used:
+• Support of 100 Mbps full duplex with auto 
+crossover and auto negotiation according to 
+IEEE 802.3.
+• Prioritization of cyclic data with VLAN tag 
+priority 6 according to IEEE 802.1Q or TCI.PCP 
+in the latest IEEE 802.1.
+• Support of neighborhood detection with the 
+Link Layer Discovery Protocol (LLDP) according 
+to IEEE 802.1AB, i.e. these messages with their 
+special Ethertype may not be forwarded by the 
+switch.
+3 .2 Acyclic Data Exchange
+Acyclic data exchange using the "record data CR" 
+can be used for parameter configuration and other 
+configuration of the IO devices or reading out status 
+information. This is accomplished with read / write 
+services based on UDP , in which the data records 
+are distinguished by the index. In addition to this 
+access, the devices can be accessed manufacturer-
+specifically via web server, OPC UA,… These access 
+variants, which are not specified in PROFINET, are 
+summarized under the synonym TCP / IP . In addition 
+to the data records which are freely definable by 
+device manufacturers, the following system data 
+records are defined:
+Diagnostic information about the network and 
+the devices can be read out by the user from any 
+device at any time. 
+Identification and Maintenance (I&M) data 
+supports unique identification of the devices, 
+modules and submodules and their versions. This 
+identification information is an important basis for 
+maintaining the system and for asset management. 
+For example, this allows inferences to be drawn 
+regarding incorrect behavior or unsupported 
+functionality in a field device. This information 
+is specified in the I&M data structures. The I&M 
+functions are subdivided into six different blocks 
+(IM0 to IM5) and can be addressed separately using 
+their index. 
+IThe IM0 function provides information about the 
+hardware and firmware versions of the field device 
+and must be supported by each device. 
+The IM1 – 3 data contain system-dependent infor -
+mation, such as the installation location and date, 
+and are created during configuration and written to 
+the device. 
+IM4 is used for a signature with PROFIsafe. 
+IM5 is mandatory if the PROFINET device contains 
+a separate communication module with its own 
+hardware/firmware (see Figure 23). The IM5 data 
+provides information about the communication 
+module of a field device, comparable to an elect -
+ronic nameplate. A differentiation can thus be 
+made between the HW/FW versions of the commu-
+nication module and the actual device. The actual 
+device reports its HW/FW versions via IM0.
+The I&M guideline entitled "Identification & 
+Maintenance Functions" [3.502] provides further 
+information on this concept and is available 
+for download free of charge for members  
+(www.profibus.com/imf).
+IM0 Main function HW/FW version
+IM1 TAG_FUNCTION TAG_LOCATION System designation, location designation
+IM2 INSTALLATION_ DATE Installation date
+IM3 DESCRIPTOR Comment
+IM4 SIGNATURE Signature
+IM5 Communication modul HW/FW version
+Tab. 2: List of I&M data 0-5
+PAGE 14
+PROFINET System Description12
+3 .3 Device/Network Diagnostics
+A status-based maintenance approach is currently 
+gaining relevance for operation and maintenance. 
+It is based on the capability of devices and compo -
+nents to determine their state and to communicate 
+them using agreed-upon mechanisms. A system for 
+reliable signaling of alarms and status messages by 
+the IO devices to the IO controller was defined for 
+PROFINET for this purpose.
+This alarm concept covers both system-defined 
+events (such as removal and insertion of modules) 
+as well as signaling of faults which were detected 
+in the controller technology utilized (e.g. defective 
+load voltage or wire break). This is based on a state 
+model which defines "good" and "defective" states 
+as well as (optionally) the "maintenance required" 
+and "maintenance demanded" pre-warning levels. 
+A typical example of "maintenance required" is 
+the loss of media redundancy. When a redundant 
+connection is lost, "maintenance required" is 
+signaled, but all nodes can still be reached.
+Diagnostic alarms must be used if the error or 
+event occurs within an IO device or in conjunction 
+with the connected components. They can signal 
+an incoming or outgoing fault status (Figure 12).
+Fig. 12: Diagnostic model for signaling faults with 
+different priority
+In addition, the user can define corresponding 
+process alarms for messages from the process, 
+e.g. limit temperature exceeded. In this case, the IO 
+device may still be operable. These process alarms 
+can be prioritized differently from the diagnostic 
+alarms.
+The "Diagnosis for PROFINET IO" [7.142] documen-
+tation provides additional information on these 
+concepts and is available for download free of 
+charge for members (www.profibus.com/dpn).
+4 . Network Diagnostics and 
+Management
+In Conformance Class B, the network diagnostics 
+of all PROFNET devices is expanded and topology 
+detection is introduced. This information is 
+compiled in the management information base 
+(MIB) and the extensions to the Link Layer Discovery 
+Protocol (LLDP-EXT MIB) and can be read out from 
+each PROFINET device using the Simple Network 
+Management Protocol (SNMP) or the acyclic 
+PROFINET services for the physical device object 
+(PDEV).
+4 .1 Network Management Protocol
+In existing networks, SNMP has established itself 
+as the de facto standard for maintenance and 
+monitoring of network components and their 
+functions. For diagnostic purposes, SNMP can 
+access network components in order to read out 
+network-specific statistical data as well as port-
+specific data and information for neighborhood 
+detection. In order to monitor PROFINET devices 
+even with established management systems, the 
+implementation of SNMP is mandatory for devices 
+of Conformance Classes B and C.
+4 .2 Neighborhood Detection
+Fig. 13: PROFINET field devices know their  
+neighbors
+Automation systems can be flexibly constructed as 
+a star, tree, line or ring structure.
+PROFINET field devices use the LLDP protocol 
+according to IEEE 802.1AB to exchange the available 
+addressing information over each port. This allows 
+the respective port neighbor to be uniquely 
+identified and the physical structure of the network 
+to be determined. In Figure 13 – as an example – 
+the "delta" device is connected to "port010" of 
+"switch1" via "port001" .
+PAGE 15
+PROFINET System Description 13
+With this neighborhood detection, a preset/actual 
+comparison of the topology is possible and changes 
+to topology during operation can be recognized 
+immediately. This is also the basis for automatic 
+naming during device replacement.
+4 .3 Representation of the Topology
+Fig. 14: System topology
+A system owner can use a suitable tool to graphi-
+cally display a system topology and port-granular 
+diagnostics (Figure 14). The information found 
+during neighborhood detection is collected using 
+the SNMP protocol for this purpose. This provides 
+the system owner with a quick overview of the 
+system status.
+4 .4 Device Replacement
+If a field device fails in a known topology, it is 
+possible to check whether the replacement device 
+has been reconnected in the proper position. It is 
+even possible to replace devices without the use of 
+an engineering tool. When replaced, a device at a 
+given position in the topology receives the same 
+name and parameters as its predecessor (Figure 15).
+Fig. 15: PROFINET IO supports convenient device 
+replacement without an engineering tool 
+The controller knows the "neighborhood" of the 
+devices and checks it following a device repla-
+cement. Using this information and the degree of 
+expansion of the device, it identifies whether or not 
+it is a replacement device. 
+4 .5 Integration of Network  
+ Diagnostics into the IO System 
+ Diagnostics
+Fig. 16: Integration of network diagnostics into 
+the IO system diagnostics
+For the integration of network diagnostics into the 
+IO system diagnostics, it must also be possible to 
+model a switch as a PROFINET IO device. Acting as 
+an IO device, this type of switch can signal identified 
+network errors of a lower-level Ethernet line and 
+specific operating states to its IO controller by trans-
+mitting acyclic alarms using the "alarm CR" (number 
+1 in Figure 16). In this way, network diagnostics can 
+be integrated into the IO system diagnostics. Access 
+from a network manager (number 2 in Figure 16) 
+remains possible.
+5 . Synchronous Real-Time
+Fig. 17: IRT communication divides the bus cycle 
+into a reserved interval (red) and an open 
+interval (green)
+PAGE 16
+PROFINET System Description14
+Conformance Class C includes all necessary 
+network-wide synchronization functions for appli-
+cations with the most stringent requirements 
+for deterministic behavior. Networks based on 
+Conformance Class C enable applications having 
+a jitter of less than 1 microsecond (1 µs). The cyclic 
+data packets are transferred as synchronized 
+packets during a reserved bandwidth (red phase) 
+(Figure 17). All other packets, such as packets for 
+diagnostics or TCP/IP , share the remaining Ethernet 
+bandwidth (green phase).
+By default, the minimum update rate is defined 
+at 250 µs in Conformance Class C. For maximum 
+control performance, this can be reduced to as 
+low as 31.25 µs, depending on the hardware used. 
+In order to expand quantity structures when cycle 
+times are set at less than 250 µs, a message frame 
+optimization method (Dynamic Frame Packing, 
+or DFP) is incorporated. With this method, nodes 
+which are wired together in a line structure are 
+addressed with one frame. In addition, for cycle 
+times less than 250 µs, TCP/IP communication is 
+fragmented and transmitted in smaller packets.
+The isochronism (Greek "iso" = same + "chronos" = 
+time) can be related to the communication itself as 
+well as to the application. 
+These concepts and the planning procedure 
+are explained in detail in the "PROFINET IRT 
+Engineering" [7.172] document. This is available 
+for download free of charge for members  
+(www.profibus.com/pnirt).
+The most important elements are summarized as 
+follows.
+5 .1 Cycle Synchronization
+Fig. 18: Synchronization of the cycles in an IRT 
+domain
+In order for the bus cycles to run synchronously 
+(at the same time) with a maximum deviation of 1 
+µs, all devices involved in synchronous communi-
+cation must have a common clock. A clock master 
+uses synchronization frames to synchronize all local 
+clock pulse generators of devices within a clock 
+system (IRT domain) to the same clock (Figure 18). 
+For this purpose, all of the devices involved in this 
+type of clock system must be connected directly 
+to one another without crossing through any 
+non-synchronized devices. Multiple independent 
+clock systems can be defined in one network.
+To achieve the desired accuracy for the synchroni-
+zation and synchronous operation, the run-time on 
+each connecting cable (cable delay) must be deter-
+mined via measurement using defined Ethernet 
+frames. Together with the forwarding times of the 
+device or switches, all time ratios in the IRT system 
+are known and can be figured into the synchroni-
+zation. If the IO controller (clock master) in Figure 
+18 sends out a synchronization frame with the time 
+of the clock master which reaches IO device 3 after 
+10 µs, IO device 3 experiences the frame having 
+been underway for 10 µs and that the conveyed 
+time of the clock master is 10 µs old and can set its 
+own clock to it as the clock slave. IO controllers and 
+IO devices derive the cycle from this time. Special 
+hardware precautions must be taken for imple -
+menting this clock synchronization.
+The high-precision time synchronization of all 
+communication nodes is a requirement for division 
+of the bandwidth and the transmission times in 
+the red and green phase (Figure 17). In each cycle, 
+the synchronous data is first transmitted in the 
+red phase. This red phase is protected from delays 
+caused by other data and allows a high level of 
+determinism. In the subsequent open green phase, 
+all other data are transmitted according to IEEE 
+802.1Q and the specified priorities. The division of 
+the individual phases may vary. If forwarding of the 
+data before the start of the next reserved phase is 
+not assured, these frames are stored temporarily 
+and sent in the next green phase.
+5 .2 Mixed Operation
+Fig. 19: Mixed operation of synchronized and 
+unsynchronized applications
+PAGE 17
+PROFINET System Description 15
+A combination of synchronous and asynchronous 
+communication within an automation system is 
+possible if certain preconditions are met. Figure 19 
+shows an expample of a mixed operation. In this 
+example, a synchronizable switch has been integ-
+rated in the field device for devices 1 to 3. The other 
+two devices are connected via a standard Ethernet 
+port and thus communicate asynchronously. The 
+switch ensures that this occurs only during the 
+green phase.
+5 .3  Optimized IRT Mode
+When the timescales are subject to stringent requi-
+rements, the efficiency of the topology-oriented 
+synchronized communication can be optimized 
+using Dynamic Frame Packing (DFP) (Figure 20). 
+For a line structure, the synchronous data of several 
+devices is optionally combined into one Ethernet 
+frame. In addition, the individual cyclic real-time 
+data can be extracted for each node so that the 
+remaining frame, and thus the delivery time, are 
+shortened. Because the data from the field devices 
+to the controller is also strictly synchronized, this 
+data can be assembled by the switch in a single 
+Ethernet frame. Ideally, only one frame is then 
+transmitted for all involved field devices in the red 
+phase. This frame is disassembled or assembled in 
+the corresponding switch, if required.
+Fig. 20: Packing of individual frames into a group 
+frame
+DFP is optional for systems with stringent requi-
+rements. The functionalities of the other phases 
+are retained, i.e. mixed operation is also possible 
+here. To achieve short bus cycles as low as 31.25 
+µs, however, the green phase must also be sharply 
+reduced. To accomplish this, the standard Ethernet 
+frames for the application are transparently disas-
+sembled into smaller fragments, transmitted in 
+small pieces and reassembled.
+6 . Optional Functions
+PROFINET also offers a variety of optional functions 
+not included in devices as standard by way of 
+Conformance Classes and application classes 
+(Table 3). If additional functions are to be used, this 
+must be checked on a case-by-case basis using the 
+device properties (data sheet, manuals and General 
+Station Description file, GSD file).
+Requirement Technical 
+function/solution
+Multiple access to inputs by 
+various controllers
+Shared input
+Division of device functions 
+across multiple submodules 
+on different controllers
+Shared device
+Extended device identifi-
+cation
+Asset 
+Management 
+Record (AMR)
+Automatic parameter confi-
+guration of devices using 
+parameter sets
+Individual 
+parameter server
+Configuration changes 
+during operation
+Dynamic Reconfi-
+guration (DR)
+Time stamping of IO data Reporting system
+Fast restart after voltage 
+recovery
+Fast Start Up 
+(FSU)
+Higher availability through 
+ring redundancy
+MRP/MRPD
+Call of a device-specific 
+engineering tool
+Tool Calling 
+Interface (TCI)
+Tab. 3: List of possible optional functions
+6 .1 Multiple Access to Field Devices
+Fig. 21: Shared device: Access by multiple con-
+trollers to different modules in a device
+The starting point for shared devices is the parallel 
+and independent access of two (or more) different 
+controllers to the same device (Figure 21). In the 
+PAGE 18
+PROFINET System Description16
+case of a shared device, the user configures a fixed 
+assignment of different submodules used in a device 
+to a selected controller. One possible application of 
+a shared device is in applications with functional 
+safety in which a fail-safe CPU controls the safe 
+portion of the device and a standard controller 
+controls the standard IO within the same station. 
+In the safety scenario, the F-CPU uses the fail-safe 
+portion to safely switch off the supply voltage of 
+the outputs or activate drive-based safety functions 
+(e.g. Safe Torque Off, STO), for example.
+Fig. 22: Shared input: Multiple controllers read 
+the same inputs on a device
+In the case of a shared input, there is parallel access 
+to the same input by two different controllers 
+(Figure 22). Thus, an input signal which must be 
+processed in two different controllers of a system 
+does not have to be wired twice or transferred via 
+CPU-to-CPU communication.
+6 .2 Extended Device Identification 
+ AMR
+Asset Management Record (AMR)
+AMR data is data from externally connected devices. 
+The differences between I&M data and AMR data 
+are shown in Figure 23.
+Internal components (firmware and/or hardware) 
+of a device with a PROFINET interface which can 
+be replaced or updated for maintenance or repair 
+purposes can be represented either using I&M data 
+or an AM record. Using the Asset Management 
+Record (AMR), it is thus possible to integrate 
+device information outside the PROFINET appli-
+cation space into PROFINET mechanisms, e.g. HW/
+FW versions of locally connected devices or driver 
+versions.
+The structure of the AMR is based on IM0 but offers 
+additional options for representing versions with a 
+text string field.
+Fig. 23: Clarifying I&M and AMR data roles
+6 .3 Individual Parameter Server
+The individual parameter server functionality 
+is available for backing up and reloading other 
+optional individual parameters of a field device 
+(Figure 24).
+Fig. 24: A parameter server can be used to  
+automatically reload backed-up data  
+during device replacement
+The basic parameter configuration of the submo -
+dules of an IO device is carried out using the 
+parameters defined in the GSD file of the IO 
+device. A GSD file contains module parameters 
+of the peripheral modules described as submo -
+dules, among other things. They are stored as 
+static parameters and can be loaded from the IO 
+controller to an IO device during system power-up. 
+With some IO devices, it is either impossible or 
+insufficient to initialize parameters using the GSD 
+approach due to the quantities, the user guidance 
+or the security requirements involved. Such data 
+for specific devices and technologies is referred 
+to as individual parameters (iPar). Often, these 
+parameters can be specified only during commis-
+sioning. If a submodule of such an IO device fails, 
+the parameters must be reloaded into the new 
+submodule after the submodule is replaced. An 
+additional tool is not needed for this. The individual 
+parameter server provides the system owner with 
+a convenient and standardized solution for this 
+which saves the current individual parameters and 
+loads them into the new submodule(s) after repla-
+cement.
+PAGE 19
+PROFINET System Description 17
+6 .4 Dynamic Reconfiguration (DR)
+As with redundancy, uninterrupted system 
+operation also plays a critical role in process 
+automation in the case of configuration changes 
+to devices and the network or for the insertion, 
+removal or replacement of devices or individual 
+modules (Figure 25).
+Fig. 25: Configuration changes without interrup-
+tion of operation thanks to redundant 
+connection
+All of these Dynamic Reconfiguration (DR) measures 
+are carried out in PROFINET without any inter -
+ruption and without adversely affecting network 
+communication. This ensures that system repairs, 
+modifications and expansions can be performed 
+without a system shutdown during continuous 
+production processes.
+This concept is described in detail in the "PN 
+High Availability" [7.242] document and is 
+available as a free download for members  
+(www.profibus.com/hapn).
+6 .5 Reporting System – Time  
+ Stamping
+In large systems, the ability to assign alarms and 
+status messages to a sequence of events is often 
+required. For this purpose, optional time stamping 
+of these messages is possible in PROFINET IO. In 
+order to time stamp data and alarms, the relevant 
+field devices must have the same time of day. 
+To accomplish this, a master clock and the time 
+synchronization protocol IEEE 802.1 AS are used to 
+set the clocks to the same time (Figure 26).
+Fig. 26: Principle of time synchronization
+The time-of-day master sends synchronization 
+frames to the time-of-day slaves at certain time 
+intervals. The cable and switch delay times are 
+taken into account during their path through the 
+network. As a result, the time-of-day slaves know 
+how long the synchronization message took to go 
+from the master clock to the slave and can take this 
+into account in the time-of-day setting. 
+For time-of-day synchronization, PROFINET uses 
+the generalized precision time protocol (gPTP), 
+which is specified in IEEE 802.1 AS. 
+Cycle synchronization for IRT and drive control 
+(Chapter 5) generally occurs according to the same 
+procedure. A network-wide cycle and the relative 
+times based on the clock master are of impor -
+tance, too. However an absolute time of day is not 
+required, here. 
+6 .6 Fast Start Up
+Fast Start Up (FSU) defines an optimized system 
+power-up in which data exchange begins much 
+faster starting with the second power-up, as many 
+parameters are already stored in the field device. 
+This optional feature can be used in parallel with 
+standard power-up (which is still used after a 
+power-on in the case of the first power-up or 
+reset). The communication parameters are stored 
+persistently for this. A typical application would be 
+the changing of robot tools, for example. . 
+6 .7 Higher Availability through  
+ Media Redundancy
+Wherever a production disruption can lead to high 
+economic losses or a risk to the environment, high 
+availability is required. To minimize the risk of a 
+system standstill, redundant structures are selected. 
+PROFINET provides various different options for 
+communication, from simple media redundancy to 
+complete system redundancy. Media redundancy is 
+based on ring structures which quickly enable an 
+alternative communication path in case of a fault. A 
+variety of different options are available for system 
+redundancy, depending on the requirement. 
+Media redundancy
+Daisy chaining multiport switches allowed the 
+star topology widely used in Ethernet to be effec -
+tively combined with a line structure. This combi-
+nation is especially well-suited for control cabinet 
+connection, i.e. line connection between control 
+cabinets and star connection to the process-level 
+field devices. If the connection between two field 
+devices in a line is interrupted, the field devices 
+PAGE 20
+PROFINET System Description18
+situated after the interruption are no longer acces-
+sible. If increased availability is required, provisions 
+must be made for redundant communication paths 
+when planning the system, and field devices/
+switches which support the redundancy concept of 
+PROFINET must be used.
+A redundant communication path can than be 
+formed efficiently by closing a line to form a ring. 
+In the event of an error, the connection to all nodes 
+is ensured via the alternative connection. This 
+achieves a tolerance for one fault. Organizational 
+measures must be taken to ensure that this fault is 
+eliminated before a second one occurs.
+PROFINET has the following two mechanisms 
+for setting up ring-shaped media redundancy, 
+depending on the requirements:
+Media Redundancy Protocol (MRP)
+The MRP protocol according to IEC 62439-2 
+describes PROFINET redundancy with a typical 
+reconfiguration time of less than 200 ms for commu-
+nication paths with TCP/IP and RT frames after a 
+fault. Error-free operation of an automation system 
+involves a Media Redundancy Manager (MRM) and 
+several Media Redundancy Clients (MRC) arranged 
+in a ring as shown in Figure 27.
+Fig. 27: Preventing circulation of frames through 
+logical separation of the bus
+The task of a Media Redundancy Manager (MRM) is 
+to check the functional capability of the configured 
+ring structure. This is done by sending out cyclic 
+test frames (control frames). As long as it receives 
+all of its test frames back, the ring structure is intact. 
+For all other frames, the redundancy manager 
+logically opens the ring. Through this behavior, an 
+MRM converts a ring structure into a line structure 
+and thus prevents the circulation of frames.
+A Media Redundancy Client (MRC) is a switch that 
+acts only as a "passer" of frames and generally does 
+not assume an active role. In order for it to be integ-
+rated into a ring, it must have at least two switch 
+ports.
+Media Redundancy for Planned Duplication 
+(MRPD)
+IEC 61158 describes the redundancy concept MRPD 
+(Media Redundancy for Planned Duplication) 
+for IRT communication, which enables smooth 
+switchover from one communication path to 
+another in the event of a fault and is used together 
+with MRP . This concept is based on ring redun-
+dancy. The IO controller sends the IO data to the 
+devices in both directions of the ring at the same 
+time. During system power-up, the IO controller 
+loads the information of the communication paths 
+for both communication channels (directions) in to 
+the individual nodes in the ring. Thus it is immaterial 
+which node fails because the loaded "schedule" 
+for both paths is available in the field devices and 
+is monitored and adhered to without exception. 
+Loading of the "schedule" alone is sufficient to 
+exclude frames from circulating in this variant: the 
+recipient rejects the second (duplicate) frame.
+6 .8 Higher Availability through  
+ System Redundancy
+Higher availability of the system is achieved when 
+critical components are doubled. This is why the 
+controllers are always designed with redundancy 
+and, in most cases, coupled closely to one another 
+on a company-specific basis to increase system 
+availability. If a controller should fail, the second 
+controller takes over operation within a very short 
+period of time, usually without interrupting the 
+process. For redundant communication between 
+the controllers and the devices, PROFINET offers a 
+scalable solution (see Figure 28).
+S2 redundancy
+Simple and easy communication with a redundant 
+controller is achieved with S2 redundancy. The 
+redundant IO controller is connected at the 
+respective end of a PROFINET line. The IO devices 
+establish two connections to the redundant 
+controller: one to the "left" and one to the "right. " 
+One of the connections is active and connects 
+the IO device to the active part of the redundant 
+controller. If the active connection is interrupted 
+or the active IO controller fails, switching to the 
+second connection occurs in a very short period of 
+time.
+PAGE 21
+PROFINET System Description 19
+R1 redundancy
+With R1 redundancy, two PROFINET networks are 
+installed. One network is assigned to each part of 
+the redundant IO controller. The IO devices feature 
+a separate communication interface for each 
+network, i.e. their communication interfaces are 
+designed for redundancy. To increase availability 
+even further, both PROFINET networks can also be 
+implemented as MRP rings. This enables the system 
+to handle more than one fault, to an extent. 
+A combination of S2, R1 and MRP
+Using a "Y-switch" , an R1 system can be connected 
+to an S2 system. The S2 system can also be an MRP 
+ring if necessary. This makes it possible to connect 
+IO devices (S2) which do not feature a redundant 
+communication interface to an R1 system. 
+Additional information on system redundancy 
+can be found in the "PN High Availability" [7.242] 
+guideline (www.profibus.com/hapn).
+6 .9 Calling an Engineering Tool
+Complex devices such as drives, laser scanners, etc. 
+often have their own tools (engineering software 
+and other tools) for changing settings on these IO 
+devices. With the Tool Calling Interface (TCI), these 
+device tools can now be called directly from the 
+engineering system for parameter configuration 
+and diagnostics. In this case, the communication 
+of PROFINET is used directly to control the settings 
+in the field device. In addition to the directly integ-
+rated device tools, other technologies such as the 
+Electronic Device Description Language (EDDL) 
+and the Field Device Tool (FDT) can also be used 
+with appropriate adaptation software. TCI consists 
+of the following main components:
+Call interface: The user can call up various field 
+device user interfaces (Device Tools, or DT) from 
+the engineering system. Functions are primarily 
+initiated in the device tools through user inter -
+action.
+Communication interface: The TCI communi-
+cation server allows the field device user interface 
+(DT) to communicate with the field device.
+7 . Integration of other 
+Communication Systems
+7 .1 Integration of Fieldbuses
+PROFINET specifies a model for integrating existing 
+PROFIBUS systems and other fieldbus systems such 
+as INTERBUS and DeviceNet (Figure 29). This means 
+that any combination of fieldbus and PROFINET-
+based systems can be configured. Thus, a conti-
+nuous technology transition from fieldbus-based 
+systems to PROFINET is possible. The following 
+requirements are taken into consideration here:
+• The system owner would like to be able to 
+easily integrate existing installations into a new 
+PROFINET system to be installed.
+• System and machine manufacturers would 
+like the ability to use their proven and familiar 
+devices for PROFINET automation projects 
+without any modifications as well.
+• Device manufacturers would like the ability 
+to integrate their existing field devices into 
+PROFINET systems without the need for costly 
+modifications.
+Fig. 28: Scalable system redundancy with PROFINET
+PAGE 22
+PROFINET System Description20
+Fig. 29: Integration of fieldbus systems
+Fieldbus solutions can be easily and seamlessly 
+integrated into a PROFINET system using proxies 
+and gateways. The proxy acts as a representative 
+of the fieldbus devices. It integrates the nodes 
+connected to a lower-level fieldbus system into 
+the higher-level PROFINET system. This makes it 
+possible to use the features of the fieldbuses in 
+the world of PROFINET as well. The devices and 
+software tools are also supported in the usual 
+manner and integrated into the handling of the 
+PROFINET system.
+7 .2 Integration of IO-Link
+An IO-Link system provides the advantage of 
+simple, uniform wiring and a considerably reduced 
+variety of interfaces for the connection of sensors/
+actuators. This enables consistent communication 
+between sensors/actuators and the controller.
+IO-Link is a serial, bi-directional point-to-point 
+connection for signal transmission and energy 
+supply underlying any desired network, such as 
+PROFINET (Figure 30).
+Fig. 30: Integration of IO-Link
+In the configuration of the automation system, the 
+IO-Link system is represented by the IO-Link master 
+and integrated into the PROFINET system using the 
+appropriate device description (e.g. GSD file). The 
+IO-Link master itself can be a PROFINET node or part 
+of a modular IO system connected to PROFINET. In 
+both cases, the number of ports, the address range 
+and the module properties are described in the 
+device description of the IO-Link master. 
+The IO-Link system description provides a compre -
+hensive overview and is available as a download 
+(www.profibus.com/iolsd).
+8 . Application Profiles
+By default, PROFINET transfers the specified data 
+transparently. It is up to the user to interpret the sent 
+or received data in the user program of a PC-based 
+solution or Programmable Logic Controller indivi-
+dually.
+Application profiles are joint specifications 
+concerning certain properties, performance 
+characteristics and behavior of devices and systems 
+developed by manufacturers and users. The term 
+"profile" can apply to a few specifications for a parti-
+cular device class or a comprehensive set of speci-
+fications for applications in a particular industry 
+sector.
+Application profiles specify the form, i.e. syntax 
+and meaning, in which process data and selected 
+device parameters and device functions are 
+exchanged between the nodes via the communi-
+cation system. Application profiles thus describe 
+the set of properties which must be implemented 
+by "profile-compliant" devices in this class. 
+In general, a differentiation is made between two 
+groups of application profiles:
+General application profiles which can be used 
+for different applications (examples of these include 
+the PROFIsafe and PROFIenergy profiles).
+Specific application profiles which were 
+developed in each case only for a specific type 
+of application, such as PROFIdrive or devices for 
+process automation.
+These application profiles are specified by PI based on 
+market demand and are available on the PI website  
+(www.profibus.com/download/profiles).
+PAGE 23
+PROFINET System Description 21
+8 .1 PROFIsafe
+The PROFIsafe designation refers to the protocol 
+defined in IEC61784-3-3 for the implementation of 
+functional safety (fail-safe) and is recognized by IFA 
+and TÜV. PROFIsafe can be used with PROFIBUS and 
+PROFINET alike. Fail-safe (F) is the ability to reliably 
+protect a system from hazards or to reduce the risk 
+to an acceptable level with corresponding technical 
+and organizational measures.
+The use of PROFIsafe enables elements of a fail-safe 
+controller to be transferred directly to standard, 
+non-safety-related process data on the same 
+network. The need for additional wiring is elimi-
+nated.
+For PROFIsafe, the transmission channels are merely 
+"black channels" as illustrated in Figure 31. 
+F-messages between an F-host (safety control) and 
+its F-submodules are transported as the payload in 
+PROFINET frames. The PROFIsafe protocol spares 
+users from having to conduct the safety assessment 
+of their individual backplane bus system and other 
+channels beyond PROFINET. It thus guarantees the 
+functional safety of the complete path, from the 
+sender of an F-signal (e.g. F-submodule in a remote 
+bus terminal) to the receiver (F-host) and vice versa. 
+This is achieved through additional safety measures 
+of the F-messages.
+The measures include: consecutive numbering 
+of F-messages ("sign-of-life"), a time expectation 
+with acknowledgment ("watchdog"), an identifier 
+between sender and recipient ("F-address") and a 
+data integrity check (Cyclic Redundancy Check, or 
+CRC).
+Fig. 31: The "black channel" principle
+An introduction to PROFIsafe can be found 
+in the "PROFIsafe System Description" 
+[4.341], which is available as a free download  
+(www.profibus.com/pssd).
+The specification for PROFIsafe [3.192] is 
+available as a free download for members 
+(www.profibus.com/download/profisafe).
+8 .2 PROFIdrive
+The PROFIdrive designation refers to the speci-
+fication of a standardized drive interface for 
+PROFIBUS and PROFINET. This application-oriented 
+profile, which has been standardized in IEC 
+61800-7, contains standard definitions (syntax and 
+semantics) for the communication between drives 
+and automation systems, thus assuring manufac -
+turer independence (Figure 32), interoperability, 
+investment protection and simplified commissi-
+oning.
+Fig. 32: Interoperability through PROFIdrive
+The PROFIdrive application profile provides the 
+foundation for many drive tasks in the field of indus-
+trial automation engineering. It defines the device 
+behavior and the procedure for accessing the drive 
+data of electric drives and also optimally integrates 
+the additional PROFIsafe and PROFIenergy profiles.
+An introduction to PROFIdrive can be found 
+in the "PROFIdrive System Description" 
+[4.321], which is available as a free download  
+(www.profibus.com/pdsd).
+The specification is available under [3.172] 
+and is offered as a download for members  
+(www.profibus.com/pdpdt).
+8 .3 PROFIenergy
+The high cost of energy and compliance with legal 
+obligations are compelling the industry to engage 
+in energy conservation. Recent trends toward the 
+use of efficient drives and optimized production 
+processes have been accompanied by significant 
+energy savings. However, in today's systems and 
+production units, it is common for numerous energy 
+consuming loads to continue running during 
+pauses. PROFIenergy addresses this situation.
+PAGE 24
+PROFINET System Description22
+PROFIenergy enables active and effective energy 
+management. By purposefully switching off  
+unneeded consumers, energy demand and thus 
+energy costs can be significantly reduced. PROFINET 
+nodes in which PROFIenergy functionality is imple-
+mented can use the commands to react flexibly 
+to idle times. In this way, individual devices or 
+unneeded portions of a machine can be shut down 
+during short pauses, while a whole system can 
+be shut down in an orderly manner during long 
+pauses. Using PROFIenergy, it is also possible to 
+measure and optimize the energy consumption of 
+production (reading out energy values). The speci-
+fication for PROFIenergy is available under [3.802]. 
+Members can obtain it directly as a download  
+(www.profibus.com/download/profienergy).
+9 . PROFINET for Process 
+Automation
+Compared to factory automation, process 
+automation has a few special characteristics which 
+significantly influence the use of automation.
+Extra-long service life:
+Systems can have a service life of many decades. 
+This results in system owners' demanding the 
+functional coexistence of older and newer techno -
+logies and for consistent technology transitions for 
+the integration of existing devices. Consistency is 
+also based on the existing engineering, diagnostics 
+and maintenance tools.
+Extreme reliability:
+In addition, requirements for the reliability of 
+process systems, particularly in continuous 
+processes, are often considerably greater than in 
+production systems. In classical applications in 
+the process industry, system standstills can lead to 
+considerable disruptions and downtimes and lead 
+to damage to systems or the environment.
+Figure 33 shows an example of the solution options 
+for the process industry.
+Powerful gateways enable the consistent integ-
+ration of PROFIBUS DP and PROFIBUS PA fieldbuses 
+and the existing development of the wide product 
+spectrum available there. Communication includes 
+the exchange of cyclic and acyclic data, the integ-
+ration and parameter configuration of the devices, 
+diagnostics and maintenance. 
+Available devices with 4 – 20 mA or HART interfaces 
+can communicate using corresponding remote IO 
+systems over PROFNET. 
+Devices in hazardous zones can also be integrated 
+in these ways.
+Field devices in the process industry without 
+explosion-prevention requirements are increa-
+singly being networked directly via PROFINET. This 
+applies in particular for devices with high data 
+volumes or short response times. 
+Solutions are in development to use Ethernet 
+(Advanced Physical Layer or APL) for the limited-
+energy bus feed of devices in hazardous areas 
+(Zone 1).
+Fig. 33: PROFINET in process automation
+
+PAGE 25
+PROFINET System Description 23
+The reliability of the system is achieved through 
+redundancy solutions extending from simple media 
+redundancy to complete system redundancy, 
+depending on the process-technical requirements. 
+A white paper in which the current and 
+future technological developments are 
+described is available for PROFINET in process 
+automation. It is available as a download  
+(www.profibus.com/pnipa).
+The PA profile for PROFINET specifies typical 
+functions of process control devices and is 
+available as a free download for members 
+(www.profibus.com/pcd).
+10 . Network Installation
+PROFINET is based on a 100 Mbps, full-duplex 
+Ethernet network. Faster communication is also 
+possible on all transmission sections (e.g. between 
+switches, PC systems and camera systems).
+PROFINET defines not only functionality, but the 
+passive infrastructure components (cabling and 
+connectors) as well. Communication may take 
+place via copper or fiber-optic cables. In a confor -
+mance Class A (CC-A) network, communication is 
+also allowed over wireless transmission systems 
+(Bluetooth and WLAN) (Table 4).
+The cabling guideline defines 2-pair cabling 
+according to IEC 61784-5-3 for all Conformance 
+Classes. For transmission systems with Gigabit 
+cabling requirements, 4-pair cabling may also be 
+used.
+For a CC-A network, complete networking with 
+active and passive components according to ISO/
+IEC11801 is allowed, taking the CC-A cabling 
+guideline into consideration. Likewise, active infra-
+structure components (e.g. switches) according to 
+IEEE 801.x can be used if they support the VLAN tag 
+with prioritization.
+Easy-to-understand and systematically struc -
+tured instructions have been prepared to enable 
+problem-free planning, installation and commis-
+sioning of PROFINET networks: [8.061], [8.071] 
+and [8.081]. These are available to any interested 
+party on the PI website. These manuals should be 
+consulted for further information (www.profibus.
+com/pnig).
+10 .1 Network Configuration
+PROFINET field devices are always connected as 
+network components via switches. Switches integ-
+rated in the field device are typically used for this. 
+Using an integrated switch, the field device can 
+make two (or more) ports available externally. 
+This makes devices like this ideal for line, star, tree 
+and ring structures. PROFINET-suitable switches 
+must support "auto negotiation" (negotiation of 
+transmission parameters) and "auto crossover" 
+(autonomous crossing of send and receive lines). 
+As a result, communication can be established 
+automatically and fabrication of the transmission 
+cable is uniform: 1:1 wired cables can be used 
+throughout.
+In addition, the switches must support VLAN 
+tagging with prioritization. 
+VLAN tagging with prioritization is the basis for 
+reliable RT communication in PROFINET networks. 
+Network cabling and infrastructure  
+components
+Solution Conformance 
+Class
+Passive network components (connectors 
+and cables)
+RJ45, M12 and M8 A, B and C
+Copper and fiber-optic transmission systems TX, FX and LX A, B and C
+Wireless connections WLAN and Bluetooth A
+IT switch With VLAN tag according to IEEE 802.x A
+Switch with device function PROFINET with RT B
+Switch with device function and bandwidth 
+reservation
+PROFINET with IRT C
+Tab. 4: Network installation for different Conformance Classes
+PAGE 26
+PROFINET System Description24
+PROFINET supports the following topologies for 
+Ethernet communication:
+• Line topology, which primarily connects 
+terminals with integrated switches in the field 
+(Figure 34).
+• Star topology, which requires a central switch 
+located preferably in the control cabinet.
+• Ring topology, in which a line is closed to form 
+a ring in order to achieve media redundancy.
+• Tree topology, in which the topologies 
+mentioned above are combined.
+10 .2 Cables for PROFINET 
+The maximum segment length for electrical data 
+transmission with copper cables between two 
+nodes (field devices or switches) is 100 m. The 
+copper cables are implemented uniformly in AWG 
+22. The installation guideline defines different cable 
+types that have been optimally adapted to their 
+respective industrial applications. Sufficient system 
+reserves allows installations that are suitable for 
+industraial use with no limitation on transmission 
+distance.
+PROFINET cables types conform to the cable types 
+required in industry:
+PROFINET type A: Standard permanently-routed 
+cable, no movement after installation
+PROFINET type B: Standard flexible cable, 
+occasional movement or vibration
+PROFINET type C: Special applications: Highly-
+flexible, constant movement (tow-chain or torsion, 
+for example)
+PROFINET type R: Robot applications, tested speci-
+fically for this application
+Fiber-optic data transmission with fiber-optic 
+cable has several advantages over copper:
+• Electrical isolation when equipotential bonding 
+is difficult to achieve
+• Immunity against extreme Electromagnetic 
+Compatibility (EMC) disturbances
+• Transmission over distances of up to several 
+kilometers without using repeaters
+For short distances, the use of 1 mm Polymer Optic 
+Fibers (POF) is supported, the handling of which 
+conforms optimally to industrial applications.
+10 .3 Connectors
+Connectors are classified based on their degree 
+of environmental protection. They have been 
+subdivided into one class for use inside protected 
+environments, such as in a control cabinet, and one 
+class for use outside of control cabinets such as 
+those located directly in the field (Figure 35).
+The selection of suitable PROFINET plug connectors 
+is dependent upon the application. If the emphasis 
+is on a universal network which is to be office-
+compatible, electrical data transmission occurs via 
+RJ 45, which is prescribed universally for ‘inside’ 
+environmental conditions. For ‘outside’ environ-
+ments, a push-pull plug connector also fitted with 
+the RJ 45 connector for electrical data transmission 
+has been developed. M12 and M8 variants are also 
+specified for PROFINET. 
+For optical data transmission with Polymer Optic 
+Fibers, the SCRJ plug connector based on the SC 
+plug connector is specified. The SCRJ is used both 
+for inside environments as well as in combination 
+with a push-pull housing for use in outside environ-
+ments.
+At the same time, plug connectors are also specified 
+for the power supply, depending on the topology 
+and the supply voltage. Besides the push-pull plug 
+connector, a 7/8" plug connector, a hybrid plug 
+connector, an M12 A or an M12 L plug connector can 
+be used. The differences between these connectors 
+lie in their connectible cross sections and thus their 
+maximum amperages.
+Fig. 34: Ethernet networks in industrial environments usually have line topology
+PAGE 27
+PROFINET System Description 25
+Detailed information on PROFINET plugs can 
+be found in the "PROFINET Cabling and Inter -
+connection Technology" guideline available for 
+download (www.profibus.com/pncit).
+10 .4 Security
+For networking within a larger production facility 
+or over the Internet, PROFINET relies on a layered 
+security concept. This recommends a security 
+concept optimized for the specific application 
+case, with one or more upstream security zones 
+(see Figure 36). On the one hand, this unburdens 
+the PROFINET devices, and on the other, it allows 
+the security concept to be optimized to changing 
+security requirements in a consistent automation 
+engineering solution.
+Fig. 36: Security concept with multiple security 
+zones
+The security concept provides for the protection of 
+both individual devices as well as whole networks 
+from unauthorized access. In addition, there are 
+security modules that will allow networks to be 
+segmented and thus also separated and protected 
+from a safety standpoint. Only explicitly identified 
+and authorized messages reach the devices located 
+inside such segments from the outside. Additional 
+information regarding security can be found in the 
+"PROFINET Security Guideline" [7.002], which is 
+available for download (www.profibus.com/pnsg).
+11 . PROFINET Technology 
+and Certification
+PROFINET is standardized in IEC 61158 and IEC 
+61784-2. It enables devices in industrial systems to 
+be networked together and exchange their data 
+with one another in a standardized way. Approp -
+riate quality assurance measures are required to 
+ensure interoperability in automation systems. 
+For this reason, PI has established a certification 
+process for PROFINET devices in which certificates 
+are issued based on test reports from accredited 
+test labs. While PI certification of a field device is 
+not yet required for PROFIBUS, the guidelines for 
+PROFINET have changed such that any field device 
+bearing the name PROFINET must be certified. 
+Since 1990, experience with PROFIBUS has shown 
+that a very high-quality standard is needed in order 
+to protect automation systems as well as system 
+owners and field device manufacturers.
+Fig. 35: PROFINET offers a range of industrial plug connectors
+PAGE 28
+PROFINET System Description26
+11 .1 Technology Support
+Device manufacturers who wish to develop an 
+interface for PROFINET can develop field devices 
+based on existing Ethernet controllers. Alternatively, 
+member companies of PI offer many options for 
+efficient implementation of a PROFINET interface. 
+To make development easier for device manufac -
+turers, PI Competence Centers and member 
+companies offer PROFINET base technology 
+(enabling technology). Consulting services and 
+special developer training programs are also 
+available. Before starting a PROFINET development 
+project, device manufacturers should always 
+perform an analysis to determine whether internal 
+development of a PROFINET device is cost-effective 
+or whether the use of a ready-made communi-
+cation module will satisfy their requirements.
+More detailed information on this topic can be 
+found in the "PROFINET Technology – The Easy Way 
+to PROFINET" [4.271] (www.profibus.com/pntb )  
+and "PROFINET Field Devices – Recommendations 
+for Design and Implementation" [8.201] (www.
+profibus.com/pnfd) brochures , which can be 
+downloaded from the PI website.
+Targeted information on implementation is also 
+available here: www.profibus.com/pni.
+11 .2 Tools for Product Development
+Software tools are made available to device 
+manufacturers for the development and checking 
+of their products. A GSDML editor assists the 
+manufacturer when creating the GSD file for its 
+product. With this GSDML editor, these files can be 
+created properly and checked.
+For PROFINET, free of charge test bundle with 
+test descriptions and testing tools is available 
+for PI members. This same test bundle is used by 
+the test labs for certification testing as well. Visit:  
+www.profibus.com/certification).
+11 .3 Certification Test
+Accredited PI Test Labs perform the largely 
+automated certification test to all manufacturers. 
+Test experts at PI Test Labs are available to provide 
+support in carrying out tests and evaluating the 
+results. The test scope is described in a test speci-
+fication. The tests are implemented as so-called 
+black box tests in which the tester acts as a real 
+application.
+The defined test cases developed for use during 
+a certification test are real world-oriented and are 
+based on industrial automation. This affords all 
+users the maximum possible assurance for use of 
+the field device in a system from the beginning. 
+PI awards the PROFINET certificate to the manufac -
+turer based on the test report from an accredited 
+PI Test Labs. A product must have this certificate 
+in order use the PROFINET designation. For the 
+system manufacturer/operator, the use of certified 
+products means time savings during commissi-
+oning and stable behavior for the entire service 
+life. For this reason, end-users are encouraged to 
+request certificates from their suppliers for the 
+field devices used in accordance with the utilized 
+Conformance Class, application class and profiles.
+12 . Standardization
+The PROFINET concept was defined in close collabo-
+ration with end-users based on standard Ethernet 
+according to IEEE 802 in IEC 61158 and IEC 61784. 
+Figure 37 lists additional specifications of other 
+functionalities in the form of different joint profiles. 
+These form the basis for device- and application-
+specific profiles. Instructions are then created for 
+the necessary planning, engineering and commissi-
+oning steps. The bases of these form the guidelines 
+used in the engineering of PROFINET systems.
+13 . PROFIBUS & PROFINET 
+International (PI)
+As far as maintenance, ongoing development and 
+market penetration are concerned, open techno -
+logies need a company-independent institution 
+which can serve as a working platform. This was 
+achieved for the PROFIBUS and PROFINET techno -
+logies through the founding of the PROFIBUS 
+Nutzerorganisation e.V. (PNO) in 1989 as a non-profit 
+interest group for manufacturers, users and insti-
+tutions. The PNO is a member of PI (PROFIBUS & 
+PROFINET International), an umbrella group which 
+was founded in 1995. With its 25 Regional PI Associ-
+ations (RPA) and approximately 1,400 members, PI 
+is represented on every continent and is the world’s 
+largest interest group in the field of industrial 
+communication (Figure 38).
+PAGE 29
+PROFINET System Description 27
+Fig. 38: PROFIBUS & PROFINET International (PI)
+The key tasks performed by PI are:
+• Maintenance and ongoing development of 
+PROFIBUS and PROFINET
+• Promotion of the worldwide use of PROFIBUS 
+and PROFINET
+• Protection of investment for users and 
+manufacturers by influencing the development 
+of standards
+• Representation of the interests of members to 
+standards bodies and unions
+• Worldwide technical support of companies 
+through PI Competence Centers (PICC)
+• Quality assurance through product certifi-
+cation based on conformity tests at PI Test Labs 
+(PITL)
+• Establishment of a worldwide training standard 
+through PI Training Centers (PITC)
+Technology development
+PI has handed responsibility for technology 
+development over to PNO Germany. The advisory 
+board of PNO Germany oversees development 
+activities. Technology development takes place 
+in the context of more than 40 Working Groups 
+(WG) with input from approximately 1,000 experts, 
+mostly from engineering departments of member 
+companies.
+Technical support
+PI supports more than 60 accredited PI Compe -
+tence Centers (PICC) worldwide. These facilities 
+provide users and manufacturers with various 
+types of advice and support. As institutions under 
+PI, they are independent service providers and 
+adhere to mutually agreed-upon rules. PICCs are 
+regularly checked for their suitability as part of an 
+individually tailored accreditation process. Contact 
+information for each can be found on the website.
+Certification
+PI supports approximately. 10 accredited PI Test 
+Labs (PITL) worldwide, which assist in the certi-
+fication of products with a PROFIBUS/PROFINET 
+interface. As institutions under PI, they are manufac-
+turer independent test service providers and 
+adhere to mutually agreed-upon rules. The testing 
+services provided by the PITLs are regularly audited 
+in accordance with a strict accreditation process to 
+ensure that they meet the necessary quality requi-
+rements. Contact information for each can be found 
+on the website.
+Training
+More than 30 PI Training Centers have been set 
+up with the aim of establishing a global training 
+standard for engineers and technicians. Accre -
+ditation of the Training Centers and the experts 
+Fig. 37: Structure of standards
+PAGE 30
+PROFINET System Description28
+based there ensures the quality of the training 
+and thus the quality of the engineering and instal-
+lation services for PROFIBUS and PROFINET. Current 
+addresses can be found on the website.
+Internet
+Current information on PI and the PROFIBUS and 
+PROFINET technologies is available on the PI 
+website www.profibus.com or www.profinet.com 
+. This includes, for example, an online product 
+finder, a glossary, a variety of web-based training 
+content and the download area containing speci-
+fications, profiles, installation guidelines and other 
+documents. 
+14 . Outlook
+Current further developments in industrial 
+automation are predominantly engaged with the 
+topic of Industrie 4.0. This primarily concerns indus-
+trial communication, as IT networks and automation 
+networks are increasingly merging. Two important 
+building blocks for Industrie 4.0 are TSN and  
+OPC UA. 
+14 .1 Time-Sensitive Networking (TSN)
+The goal of TSN is the provision of means for 
+implementing real-time-capable Ethernet. While 
+PROFINET was developed for automation, TSN 
+targets a larger area of application and is fully 
+specified in the IEEE 802 organization, which is 
+relevant for Ethernet. Future areas of application 
+will include audio/video streaming and real-time 
+networks in the automotive field and in industrial 
+systems. TSN is comprised of many individual IEEE 
+standards, not all of which are required for a TSN 
+network. To define a TSN profile for optimal use 
+in industrial plants, the IEC an IEEE hafe formed a 
+Joint Working Group with the aim of publishing it 
+as standard IEC/IEEE 60802.
+To achieve open, real-time-capable Ethernet, TSN 
+uses principles comparable to those with IRT:
+• High-precision time synchronization
+• Processing of communication in cycles
+• Division of communication cycles into a 
+real-time phase and a phase for the remaining 
+traffic
+• Communication planning
+• Consideration of alternate communication 
+paths
+Detailed information on TSN is available on the IEEE 
+website: https://1.ieee802.org/tsn/.
+14 .2 Open Platform Communications  
+ Unified Architecture (OPC UA)
+OPC is a standardized interface for data exchange 
+between different technological systems in indus-
+trial networks and is based on the client/server 
+principle. An OPC client requests data from an OPC 
+server and provides it to its application. The OPC 
+server receives data and maps it to OPC objects 
+(see Figure 39). OPC drivers for the various different 
+communication methods used in the automation 
+system mask those differences below the OPC 
+server. 
+Fig. 39: OPC enables uniform communication 
+with different systems 
+The latest specification for OPC is OPC Unified 
+Architecture (OPC UA). As opposed to the OPC 
+Classic specification, it is platform-independent. 
+With OPC UA, the transmission of machine data, 
+interfaces, security mechanisms and the semantic 
+structure of data are described. OPC UA uses a 
+service-oriented, Internet-friendly architecture.
+For Industrie 4.0 and the interaction with TSN, 
+expansions were made to OPC UA to enable a 
+publish/subscribe mechanism, for example.
+OPC UA is described in a series of IEC standards. 
+The coordination and further development 
+of these standards occur at the OPC Found-
+ation. Detailed information on OPC UA can 
+be found on the OPC Foundation website:  
+https://opcfoundation.org.
+14 .3 Industrie 4 .0
+With Industrie 4.0, the digitalization of indus-
+trial production is to be improved through the 
+use of the latest communication technologies. 
+Intelligently networked systems are to enable 
+production which is as self-organizing as possible. 
+In addition, networking is to allow the entire life 
+cycle of a product to be recorded, from the initial 
+idea to development, production, maintenance 
+and recycling. The basis for this is internatio -
+nally standardized communication technologies, 
+PAGE 31
+PROFINET System Description 29
+interfaces and object descriptions. The networking 
+of machines, devices, sensors, actuators and people 
+is of great importance. 
+To ensure standardized communication among 
+machines and with higher-level systems and cloud 
+services, uniform international communication 
+standards are required. OPC UA and TSN are two 
+building blocks for achieving this goal. 
+14 .4 The Procedure of PI
+TSN and PROFINET
+PI is currently working on the use of TSN for 
+PROFINET. The advantages:
+• Use of future-proof IEEE technology with data 
+rates from 10 Mbps to 10 Gbps
+• Scalable integration
+• User interaction remains unchanged
+• Network convergence through support of 
+the IEC/IEEE 60802 TSN industrial automation 
+profile
+Based on the ISO/OSI model, an additional real-
+time-capable foundation is provided by the TSN 
+extensions to Ethernet, which can be used by the 
+protocol layers above. Thus, the PROFINET stack can 
+also use TSN as its foundation. This is why the tried-
+and-tested PROFINET user view of data, parameter 
+configuration, diagnostics and profiles such as 
+PROFIsafe and PROFIdrive can be used without 
+modification (see Figure 40).
+Fig. 40: TSN integration in PROFINET
+OPC UA and PROFINET
+Thanks to its open system structure, OPC UA and 
+PROFINET can use the same network and form an 
+ideal combination for Industrie 4.0. Typical applica-
+tions include:
+• Provisioning asset management and diagnostic 
+information
+• Controller-to-controller communication
+• Vertical communication
+• Linking to cloud services
+The required information is presented using the 
+objects defined in the OPC UA standard and can be 
+used by any manufacturer (see Figure 41).
+Fig. 41: PROFINET and OPC UA
+Furthermore, PI is leveraging its application profiles 
+in its joint working group with the OPC Foundation 
+with the aim of creating open information models. 
+These can be made easily available to IT systems 
+via OPC UA. PI’s application expertise is resulting 
+in the development of companion specifications 
+for OPC UA. Companion specifications describe 
+the data objects and sequences for certain areas 
+of application, comparable to the application 
+profile definitions. The first companion specifica-
+tions describe the mapping of the diagnostic and 
+asset management information and deal with the 
+topic of PROFIsafe over OPC UA for controller-to-
+controller communication. 
+Additional information on Industrie 4.0 and the 
+procedure used by PI can be found on the PI website 
+(www.profibus.com/i40):
+PAGE 32
+PROFINET System DescriptionIV
+15 . Glossary
+Abbreviations used in this document:
+AMR   Asset Management Record
+APL  Advanced Physical Layer
+API  Application Process Identifier/Instance
+AR  Application Relation
+ASIC   Application-specific integrated circuit
+CC   Conformance Class
+CR  Communication Relations
+DAP   Device access point
+DFP  Dynamic Frame Packing
+DR  Dynamic Reconfiguration
+DT  Device Tool
+EDDL  Electronic device description language
+EMC  Electromagnetic compatibility
+F   Fail-safe
+FDT  Field Device Tool
+FSU  Fast Start Up
+gPTP   Generalized Precision Time Protocol
+GSD   General Station Description
+GSDML   GSD Markup Language
+IEEE   Institute of Electrical and Electronics Engineers
+IEC   International Electrotechnical Commission
+IO controller  Controller in which the automation program runs
+IO device  Decentralized field device
+IO-Link  Communication standard for actuators and sensors
+IO supervisor PC/PG for commissioning and diagnostic purposes
+IP codes  International Protection codes
+IP20   Protected against solid foreign objects with diameter of 12.5 mm or more
+IP65   Protected from dust and water jets
+IP67   Protected from dust and temporary immersion
+IRT   Isochronous Real-Time
+IT  Information Technology
+I&M   Identification and Maintenance
+LC  Lucent Connector
+LLDP  Link Layer Discovery Protocol
+FOC   Fiber-Optic Cable
+MAC   Media Access Control
+M12   Circular connector with metric thread
+MRP  Media Redundancy Protocol
+MRPD  Media Redundancy for Planned Duplication
+OPC  Open Platform Communication
+OPC UA  OPC Unified Architecture
+PAGE 33
+PROFINET System Description V
+OUI  Organizationally Unique Identifier
+PC   Personal computer
+PDEV   Physical Device
+PG  Programming device
+PI   PROFIBUS & PROFINET International
+PICC   PI Competence Center
+PITL   PI Test Lab
+PNO   PROFIBUS Nutzerorganisation e.V. (www.profibus.de)
+POF   Polymer Optical Fibers
+RJ   Registered jack (standardized socket)
+RJ45   Standardized connector for Ethernet
+RPA   Regional PI Association
+SCRJ   Connector for FOC transmission
+SIL   Safety Integrity Level
+SNMP   Simple Network Management Protocol
+SoE   Sequence of Events
+PLC   Programmable Logic Controller
+TCI  Tool Calling Interface
+TCP/IP  Transmission Control Protocol/Internet protocol
+TSN  Time-Sensitive Networking 
+VLAN  Virtual Local Area Network
+WG   Working Group
+XML   Extensible Markup Language
+PAGE 34
+PROFINET System DescriptionVI
+16 . References
+This system description is based on the PI documents listed below, which can be downloaded from the PI 
+website (some of these documents are only free of charge for members). In addition, useful manuals for 
+system planners and owners are also listed. The materials can also be ordered through the following link: 
+www.profibus.com/orderform.
+PROFINET Installation Guidelines:
+[8.061] PROFINET Design Guideline
+[8.071] PROFINET Guideline for Cabling and Assembly
+[8.081] PROFINET Guideline for Commissioning
+ www.profibus.com/download/profinet-installation-guidelines/
+System descriptions, guidelines and recommendations from PI:
+[4.321] PROFIdrive Technology and Application - System Description
+ www.profibus.com/pdsd
+[4.341] PROFIsafe Technology and Application - System Description
+ www.profibus.com/pssd
+[4.271] The easy Way to PROFINET Technology
+ www.profibus.com/pntb
+[7.002] PROFINET Security Guideline
+ www.profibus.com/pnsg
+[7.041] PROFINET IO Conformance Classes, Guideline for PROFINET IO
+ www.profibus.com/pncc
+[7.242] High Availibility for PROFINET
+ www.profibus.com/hapn
+[7.142] Diagnosis for PROFINET, Guideline for PROFINET
+ www.profibus.com/dpn
+[7.162] Fiber Optic Diagnosis, Guideline for PROFINET
+ www.profibus.com/download/fiber-optic-diagnosis
+[7.172] PROFINET IRT Engineering, Guideline for PROFINET
+ www.profibus.com/pnirt
+[7.182] Topology and Asset Discovery for PROFINET, Guideline for PROFINET
+ www.profibus.com/download/topology-and-asset-discovery-for-profinet/
+[8.201] PROFINET Field Devices, Recommendations for Design and Implementation
+ www.profibus.com/pnfd
+[10.391] IO-Link Technology and Application - System Description
+ www.profibus.com/iolsd
+[2.252] PROFINET Cabling and Interconnection Technology
+ www.profibus.com/pncit
+Profile secification:
+[3.172] PROFIdrive - Profile Drive Technology
+ www.profibus.com/pdpdt
+[3.192] PROFIsafe 
+ www.profibus.com/download/profisafe
+[3.502] Profile Guidelines Part 1: Identification & Maintenance Functions
+ www.profibus.com/imf
+[3.802] PROFIenergy
+ www.profibus.com/download/profienergy
+[3.042] Process Control Devices
+ www.profibus.com/pcd
+PAGE 35
+PROFINET System Description  
+Technology and Application
+Version November 2018 
+Order Number 4.132
+Publisher:
+PROFIBUS Nutzerorganisation e. V. (PNO)
+PROFIBUS & PROFINET International (PI)
+Ohiostraße 8 ·  76149 Karlsruhe  ·  Germany
+Phone: +49 721 986 197 0  ·  Fax: +49 721 98 61 97 11 
+E-Mail:  info@profibus.com
+www.profibus.com  ·  www.profinet.com
+Exclusion of Liability
+Although the PROFIBUS Nutzerorganisation e.V. (PNO) has taken the most care in compiling the 
+information contained in this brochure, it cannot guarantee that the content is completely error-free, 
+and the PROFIBUS Nutzerorganisation e.V. (PNO) can assume no liability, regardless of the legal basis 
+for any potential claims. The information in this brochure is reviewed on a regular basis. Any necessary 
+corrections will be made in subsequent editions. We would be grateful for any suggestions as to how 
+the content could be improved.
+ 
+Any designations that appear in this brochure could potentially constitute trademarks. Any use of such 
+trademarks by third parties for their own ends risks infringing the rights of the proprietors concerned.
+ 
+This brochure is not intended to serve as a substitute for the relevant IEC standards, such as IEC 61158 
+and IEC 61784, or the relevant specifications and guidelines of PROFIBUS & PROFINET International. In 
+case of doubt, these standards, specifications, and guidelines are authoritative.
+© Copyright by PROFIBUS Nutzerorganisation e.V. (PNO) 2018. All rights reserved.
+PAGE 36
+PROFIBUS Nutzerorganisation e. V. (PNO)
+PROFIBUS & PROFINET International (PI)
+Ohiostraße 8  ·  76149 Karlsruhe  ·  Germany
+Phone:  +49 721 986 197 0  ·  Fax:  +49 721 98 61 97 11
+E-Mail:  info@profibus.com
+www.profibus.com  ·  www.profinet.com
+© Copyright by PI 11/18 – all rights reserved – 4.132
+For additional information go to:  
+www.profinet.com

@@ -1,0 +1,50 @@
+"chargingProfile": {
+  "id": 11, "stackLevel": 2, "chargingProfilePurpose": "TxDefaultProfile",
+  "chargingProfileKind": "Recurring", "recurrencyKind": "Weekly",
+  "chargingSchedule": [ {
+    "id": 1, "startSchedule": "2020-01-05T00:00:00", "duration": 86400,
+    "chargingRateUnit": "W",
+    "chargingSchedulePeriod": [ { "startPeriod": 0, "limit": 999999 } ]
+  } ]
+}
+(3) TxDefaultProfile, stack #3: overruling Christmas Day 2020 to no limit, fixed date 2020-12-25.
+Note, that this profile is only valid in the year 2020.
+"chargingProfile": {
+  "id": 12, "stackLevel": 3, "chargingProfilePurpose": "TxDefaultProfile",
+  "chargingProfileKind": "Absolute",
+  "validFrom": "2020-01-01T00:00:00", "validTo": "2021-01-01T00:00:00",
+  "chargingSchedule": [ {
+    "id": 1, "startSchedule": "2020-12-25T00:00:00", "duration": 86400,
+    "chargingRateUnit": "W",
+    "chargingSchedulePeriod": [ { "startPeriod": 0, "limit": 999999 } ]
+  } ]
+}
+NOTE
+Normally, when no limits are desired for charging, one will not define a charging schedule period for those hours
+(see stack level #1 for hours outside 17:00h - 20:00h). However, when overruling a charging schedule by one from
+a profile with a higher stack level, it is not possible to define a charging schedule period that has no limit.
+Therefore, the charging schedules for stack #2 and #3 in the above example use a (arbitrary) high value of
+999999.
+3.8. Avoiding Phase Conflicts
+In the situation where a ChargingStationMaxProfile or a ChargingStationExternalConstraints define a value for
+numberPhases or phaseToUse, then a possible conflict might arise if such values are also specified in a TxDefaultProfile or
+TxProfile. The following rules apply in that case:
+numberPhases
+The lowest value for a schedule period of all applicable profiles is used for the composite schedule period. If
+ChargingStationMaxProfile has numberPhases = 2 or 3 and TxProfile has numberPhases = 1, then the value 1 is
+used. The same applies to the reverse situation.
+phaseToUse
+When there is a conflicting value of phaseToUse between the schedule periods of applicable profiles, then there is no way to
+create a composite schedule period. For example, a CSMS should not submit a charging profile of purpose
+ChargingStationMaxProfile for phaseToUse = 1 and then a TxProfile for phaseToUse = 3, because the charging
+station will not know which value has preference. Therefore, a SetChargingProfileRequest that causes such a conflict will
+have to be rejected.
+When a relative TxProfile is being used and different phases occur in various schedule periods, then it may become
+difficult to detect if and where such a phase conflict occurs. A charging station should only accept a
+SetChargingProfileRequest when it can be certain, that there is a no risk of a phase conflict. This means, that when the
+charging station is not able to verify that no phase conflict occurs in any schedule period (which can happen when the
+TxProfile is received for a transaction, but charging has not yet started, so that start time of the first schedule period is
+not known), that it cannot accept a charging profile if any of the schedule periods contains a value for phaseToUse that
+differs from the value used in the ChargingStationMaxProfile or ChargingStationExternalConstraints.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 324/803 Part 2 - Specification

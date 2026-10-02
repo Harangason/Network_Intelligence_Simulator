@@ -1,0 +1,52 @@
+ID Precondition Requirement definition
+M06.FR.06 The Charging Station SHALL request and cache the OCSP status
+for its V2G certificates.
+M06.FR.07 After the Charging Station Certificate has been updated, The
+Charging Station SHALL refresh the cached OCSP data by
+sending a GetCertificateStatusRequest for the new certificate,
+and also for the intermediate certificates.
+M06.FR.08 The CSMS SHALL format the response data according to
+OCSPResponse as defined in IETF RFC 6960, formatted
+according to ASN.1 [X.680].
+M06.FR.09 The OCSPResponse data SHALL be DER encoded.
+M06.FR.10 The Charging Station SHALL refresh the cached OCSP data at
+least once a week.
+M07 - Get Vehicle Certificate Chain Revocation Status
+New in OCPP 2.1
+No. Type Description
+1 Name Get Vehicle Certificate Chain Revocation Status
+2 ID M07
+3 Objective(s) To let Charging Station check validity of the vehicle certificate chain using OCSP and certificate
+revocation lists.
+4 Description Charging Station requests CSMS to check whether certificates are revoked. Depending on the
+information in the certificate, this requires checking via OCSP ("Authority Info Access" field in
+certificate) or CRL ("CRL Distribution Points" field).
+This check is required by ISO 15118-20 during the TLS handshake. The results are allowed to be
+cached at CSMS or Charging Station for at most one week by ISO 15118-20.
+Actors Charging Station, CSMS
+Scenario description 1. Charging Station sends a GetCertificateChainStatusRequest with a list of certificates that need
+to be validated via an OCSP request and/or via their certificate revocation list.
+2 For each certificate, CSMS first checks the status in cached data from earlier OCSP or CRL
+checks, less than a week old.
+3 If the certificate is not present in the cached status information, CSMS will issue an OCSP
+request or download the CRL.
+4 CSMS responds with a GetCertificateChainStatusResponse with the result for each certificate.
+5 Prerequisite(s) n/a
+6 Postcondition(s) When the request is successful the response contains the status for each certificate.
+7 Error handling If (part of) the request is not successful, the status of the certificates for which no status could be
+retrieved is Failed.
+8 Remark(s) Charging Stations that have unrestricted access to the internet might be able to fetch a CRL from
+a CRL distribution point themselves.
+Charging Station CSMS
+GetCertificateChainStatusRequest( certificates: [ {{ "00123456789", ...], }, source: "OCSP", urls: ...},
+{{ "987654321", ...], }, source: "CRL", urls: ...})
+GetCertificateChainStatusResponse( certificateStatus = [ {{"00123456789", ...}, "OCSP", "Good", "20250201T0000"},
+{{"987654321", ...},"CRL", "Good", "20250201T0000" ])
+Figure 164. Request Certificate Revocation List from CSMS
+Request for two certificates
+GetCertificateChainStatusRequest
+{
+    "certificateStatusRequests": [
+    {
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 446/803 Part 2 - Specification

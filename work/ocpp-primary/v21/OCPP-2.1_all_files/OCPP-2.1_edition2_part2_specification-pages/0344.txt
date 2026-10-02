@@ -1,0 +1,111 @@
+ID Precondition Requirement definition Note
+K01.FR.35 The list of ChargingSchedulePeriod elements in a
+chargingSchedule SHALL be ordered by increasing values
+of ChargingSchedulePeriod.startPeriod.
+This means the list is in
+chronological order
+K01.FR.36 When validFrom of a
+ChargingProfile is set
+The Charging Station SHALL consider the ChargingProfile
+to be valid when current time >= validFrom.
+K01.FR.37 When validTo of a
+ChargingProfile is set
+The Charging Station SHALL consider the ChargingProfile
+to be valid when current time < validTo.
+K01.FR.38 When
+chargingProfilePurpose =
+ChargingStationMaxPr
+ofile
+chargingProfileKind SHALL NOT be Relative
+K01.FR.39 When
+chargingProfilePurpose is
+TxProfile
+The CSMS SHALL NOT send a ChargingProfile with a
+stackLevel - transactionId combination that already exists
+in another ChargingProfile (with different id) with purpose
+TxProfile.
+This is to ensure that no two
+charging profiles with same
+stack level and purpose can
+be valid at the same time.
+(See also K01.FR.06)
+K01.FR.40 When chargingProfileKind of
+a ChargingProfile is
+Absolute or Recurring
+A value for startSchedule SHALL exist in the
+ChargingSchedule of the ChargingProfile.
+This determines start date-
+time of the schedule and of
+the recurrency sequence.
+K01.FR.41 When chargingProfileKind of
+a ChargingProfile is
+Relative
+The field startSchedule SHALL be absent in the
+ChargingSchedule of the ChargingProfile.
+A relative profile starts from
+when the profile is
+activated. (See K01.FR.42)
+K01.FR.42
+(2.1)
+K01.FR.41 Charging Station SHALL start the first
+ChargingSchedulePeriod at the moment the Charging
+Station is ready to deliver energy, i.e. when the EV driver
+is authorized and the EV is connected.
+If PowerPathClosed is a
+TxStartPoint, then this will
+concur with the start of a
+transaction.
+K01.FR.43 When a
+SetChargingProfileRequest
+with a value for
+numberPhases is received
+AND
+the EVSE is of type AC AND
+the Charging Station cannot
+ensure that no more than
+the received numberPhases
+will be used
+The Charging Station SHALL respond with status =
+Rejected
+Is is recommended to
+include reasonCode =
+"InvalidSchedule".
+Note that even when for
+example the ChargingProfile
+defines 3 phases and the
+Charging Station is able to
+charge with 3 phases, it is
+not guaranteed that the EV
+or cable are able to charge
+with 3 phases.
+Based on received
+MeterValues the CSMS can
+determine the used number
+of phases.
+Please refer to requirement
+K01.FR.50 and K01.FR.51,
+for correctly calculating the
+limits per phase.
+K01.FR.44
+(2.1)
+When a
+SetChargingProfileRequest
+with a value for
+numberPhases or
+phaseToUse is received
+AND
+the EVSE is of type DC AND
+DCInputPhaseControl is
+false or does not exist
+The Charging Station SHOULD respond with
+SetChargingProfileResponse with status = Rejected
+and reasonCode = "NoPhaseForDC"
+A Charging Station may
+accept the charging profile
+when it is capable of using
+the phase information to
+control the DC EVSE input
+phases from the grid. See
+K01.FR.54.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 331/803 Part 2 - Specification

@@ -1,0 +1,56 @@
+TC_B_49_CS: Migrate to new ConnectionProfile - Fallback after
+NetworkProfileConnectionAttempts per NetworkConfigurationPriority failed -
+Same CSMS Root
+Test case name Migrate to new ConnectionProfile - Fallback after NetworkProfileConnectionAttempts per
+NetworkConfigurationPriority failed - Same CSMS Root
+Test case Id TC_B_49_CS
+Use case Id(s) B10
+Requirement(s) B10.FR.03, B10.FR.07
+System under test Charging Station
+Description The CSMS updates the connection details on the Charging Station. For instance in preparation of a
+migration to a new CSMS.
+Purpose To verify if the Charging Station is able to correctly handle the fallback mechanism in the case it fails to
+connect to the other CSMS.
+Prerequisite(s) - The Charging Station supports C-47: mechanism implemented & Reconnect after
+NetworkProfileConnectionAttempts
+- At least two configuration slots for networkConnectionProfiles must be supported
+Before (Preparations)
+Configuration State:
+OCPPCommCtrlr.NetworkProfileConnectionAttempts is 1
+OCPPCommCtrlr.RetryBackOffRepeatTimes is 0
+OCPPCommCtrlr.RetryBackOffRandomRange is 0
+OCPPCommCtrlr.RetryBackOffWaitMinimum is <Configured RetryBackOffWaitMinimum>
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetNetworkProfileResponse
+1. The Test System sends a SetNetworkProfileRequest
+with configurationSlot is <Configured configurationSlot> or
+<Configured configurationSlot2> depending on which one is
+already in use
+- connectionData.messageTimeout <Configured
+messageTimeout> or <Configured messageTimeout2>
+- connectionData.ocppCsmsUrl <ocppCsmsUrl that is not
+currently active>
+- connectionData.ocppInterface <Configured ocppInterface> or
+<Configured ocppInterface2>
+- connectionData.ocppVersion OCPP20
+- connectionData.securityProfile <Configured securityProfile> or
+<Configured securityProfile2>
+Note(s):
+- The Test System checks the ActiveNetworkProfile variable to
+see which slot is currently active.
+- The Test System prevents overwriting the NetworkProfile at the
+active slot, as this is not recommended.
+4. The Charging Station responds with a SetVariablesResponse
+3. The Test System sends a SetVariablesRequest
+with variable.name is "NetworkConfigurationPriority"
+component.name is "OCPPCommCtrlr"
+attributeValue is <configurationSlot set at Step 1, the other
+configured configurationSlot>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 79/1383 Part 6 - Test Cases

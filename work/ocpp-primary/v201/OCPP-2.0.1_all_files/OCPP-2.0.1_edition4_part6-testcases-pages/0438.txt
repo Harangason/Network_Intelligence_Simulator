@@ -1,0 +1,49 @@
+TC_M_31_CS: Install CA certificate - AdditionalRootCertificateCheck - Reconnect
+using new CSMS Root - Fallback mechanism
+Test case name Install CA certificate - AdditionalRootCertificateCheck - Reconnect using new CSMS Root - Fallback
+mechanism
+Test case Id TC_M_31_CS
+Use case Id(s) M05
+Requirement(s) M05.FR.14
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to install new Root CA certificates using the
+InstallCertificateRequest message.
+Purpose To verify if the Charging Station is able to reconnect to the CSMS using the old CSMS Root certificate, when
+validating the CSMS certificate using the new CSMS Root certificate fails.
+Prerequisite(s) - The Charging Station supports Security Profile 2 or 3. - The Charging Station has the configuration variable
+AdditionalRootCertificateCheck implemented with value true
+- The at the Test System configured new CSMSRootCertificate must be signed by the old CSMS Root
+certificate.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+CertificateInstalled for certificateType CSMSRootCertificate and certificate <Configured (new) CSMS Root certificate 2>
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ResetResponse
+1. The Test System sends a ResetRequest
+with type OnIdle
+4. During the TLS handshake the Charging Station validates the
+CSMS certificate. 
+Note(s):
+- This connection attempt fails, because the Charging Station will
+use the new CSMS Root certificate to validate the CSMS
+certificate.
+3. During the TLS handshake the Test System provides a CSMS
+certificate which is signed by the <Configured old CSMS Root
+certificate>
+5. The Charging Station re-validates the CSMS certificate. 
+Note(s):
+- This connection attempt succeeds, because the Charging
+Station will now use the old CSMS Root certificate to validate the
+CSMS certificate.
+6. Execute Reusable State Booted
+8. The Charging Station responds with a
+GetInstalledCertificateIdsResponse
+7. The Test System sends a GetInstalledCertificateIdsRequest
+with certificateType is CSMSRootCertificate
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 436/914 Part 6 - Test Cases

@@ -1,0 +1,94 @@
+ELM327
+56 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Using J1939
+This section provides a few examples which show
+how to monitor an SAE J1939 data bus, and how to
+make requests of devices that are connected to it.
+To begin, you will need to configure the ELM327
+for J1939 operation, at the correct baud rate. Protocol
+A is predefined for J1939 at 250 kbps, which is what
+most applications require. To use protocol A, send:
+>AT SP A
+ Protocols B and C may also be used with J1939,
+if you wish to experiment with other baud rates. To use
+them for J1939, the option value (in PP 2C or 2E) must
+be set to 42, and the baud rate divisor (in PP 2D or 2F)
+must be set to the appropriate value. Perhaps the
+simplest way to provide an alternate rate is to use the
+AT PB command, that allows you to set both the
+options byte (which is always 42), and the baud rate
+divisor (which is 500k ÷ the desired baud rate) at the
+same time. For example, to set protocol B for J1939
+operation at 500 kbps, simply send:
+>AT PB 42 01
+then send:
+>AT SP B
+to begin. Note that this setting will not be maintained if
+the IC is reset, so if you want a more permanent
+setting, you should store the values in PP 2C and 2D.
+J1939 often provides slowly broadcast information,
+and for this reason, the ELM327 automatically sets a
+response timeout (AT ST time) as required by the
+message (typically 1.25 seconds, but it varies). If this
+is too long for you, or if you are using an older version
+of our product (ie. v1.3a or older), then you might want
+to set this time manually (we recommend starting with
+AT ST FF for the older ICs). You will not do any harm
+if you set the timeout with a newer chip, but the timing
+will not be optimal as you will stop the ELM327 from
+varying the setting based on the type of message
+being received.
+The ELM327 also offers one other variation on the
+timer setting - the ability to extend the AT ST time by
+switching a x5 timer multiplier on (see the JTM5
+command description). This may be useful or even
+necessary when requesting data that will have a
+multiline response, if similar data is already flowing. In
+these circumstances, there can only be one message
+like this at a time on the bus, so the response to your
+request might have to wait while an initial response
+completes (and this could take more than the normal
+ST time, since broadcast responses must be spaced
+at least 50 msec apart). If you know that a reply should
+be coming, and you are seeing ‘NO DATA’ responses,
+then send AT JTM5 and try it again, as that may be
+the problem. Restore the timer multiplier to normal with
+AT JTM1.
+Once the J1939 protocol is selected, and the
+timeout value has been adjusted, the ELM327 is ready
+for a command. The first one that we will send is called
+a DM1 or ‘diagnostic message 1’, which provides the
+currently active diagnostic trouble codes. DM1 is one
+of more than 50 predefined diagnostic messages, and
+is special in that it is the only one that is broadcast
+continually over the bus at regular intervals. The
+ELM327 has an AT command that is used to obtain
+the DM1 trouble codes:
+>AT DM1
+If you are connected to a vehicle, you should now
+see messages printed at one second intervals. If you
+are only connected to a single device (for example,
+with a simulator on the bench, or to a device with a
+single CAN data port), you may see data with
+<RX ERROR printed beside it. This is because the
+receipt of the data is not being acknowledged by any
+device on the bus (certainly not the ELM327, as it is by
+default a completely silent monitor). See our ‘AN05 -
+Bench Testing OBD Interfaces' application note for
+more information on this, and some advice on what to
+do. If you have a v1.4b or newer chip, you do not have
+to take special measures, however. Simply turn off the
+silent monitoring with:
+>AT CSM 0
+and there should be no more RX ERRORs. Once you
+have this sorted out, repeat the request. If all goes
+well, you should see several replies, similar to this:
+00 FF 00 00 00 00 FF FF
+00 FF 00 00 00 00 FF FF
+You will likely need to stop the flow of data by
+pressing any key on the keyboard. This is because the
+DM1 command is actually a special form of a
+monitoring command, and all monitoring needs to be
+stopped by the user. The response means that there
+are currently no active trouble codes, by the way.

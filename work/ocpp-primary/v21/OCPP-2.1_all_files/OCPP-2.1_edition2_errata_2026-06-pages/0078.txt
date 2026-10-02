@@ -1,0 +1,46 @@
+Tool validations
+* Step 10:
+Message: SetVariableMonitoringResponse
+- setMonitoringResult[0].id must be <SetVariableMonitoringResponse.setMonitoringResult[0].id of step 2>
+- setMonitoringResult[0].status must be Accepted
+- setMonitoringResult[0].type must be Periodic
+- setMonitoringResult[0].severity must be <Configured severity>
+- setMonitoringResult[0].component.name must be <Configured threshold  monitor component>
+- setMonitoringResult[0].component.evse.id must be <Configured evseId>
+- setMonitoringResult[0].variable.name must be <Configured threshold  monitor component variable>
+* Step 11:
+Message: NotifyPeriodicEventStream
+- id must be <OpenPeriodicEventStreamRequest.constantStreamData.id of step 3>
+* Step 12:
+Message ClosePeriodicEventStreamRequest
+- id <OpenPeriodicEventStreamRequest.constantStreamData.id of step 3>
+* Step 14:
+Message: NotifyEventRequest
+- generatedAt must be <not omitted>
+- eventData[0].trigger must be Periodic
+- eventData[0].actualValue must be <not omitted>
+- eventData[0].variableMonitoringId must be <SetVariableMonitoringResponse.setMonitoringResult[0].id of step 2>
+- eventData[0].severity must be <Configured severity>
+- eventData[0].component.name must be <Configured threshold  monitor component>
+- eventData[0].component.evse.id must be <Configured evseId>
+- eventData[0].variable.name must be <Configured threshold  monitor component variable>
+Post scenario validations:
+* After step 12 no message of type NotifyPeriodicEventStream may be sent with
+- id set to <OpenPeriodicEventStreamRequest.constantStreamData.id of step 3>
+N/a
+6.2.50. Page 753/754 - (2026-02) - TC_N_106_CS - Use existing monitoring
+configurations and check the disabled monitoring events are not sent
+Test case name Set Variable Monitoring - Set Frequent Periodic Variable Monitoring - CSMS rejects
+stream
+Test case Id TC_N_106_CS
+…
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+This test requires the Monitoring Base to be set to All.
+- SetMonitoringBaseRequest with monitoringBase = All.
+Reusable State(s): N/a
+Main (Test scenario)
+Charging Station CSMS
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 74/116 Errata 2026-06

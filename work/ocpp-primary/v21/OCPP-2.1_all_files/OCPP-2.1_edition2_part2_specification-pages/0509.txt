@@ -1,0 +1,49 @@
+P02 - Data Transfer to the CSMS
+No. Type Description
+1 Name Data Transfer to the CSMS
+2 ID P02
+3 Objective(s) To send information from the Charging Station to the CSMS for a function which is not supported
+by OCPP.
+4 Description This use case covers the functionality of sending a DataTransfer message to the CSMS from the
+Charging Station.
+Actors Charging Station, CSMS
+Scenario description 1. The Charging Station sends information to the CSMS for a function not supported by OCPP
+with DataTransferRequest.
+2. The CSMS responds to the Charging Station with DataTransferResponse.
+5 Prerequisite(s) n/a
+6 Postcondition(s) Successful postcondition: 
+DataTransferRequest is received Successfully and Accepted
+Failure postcondition:
+Message has been accepted but the contained request is Rejected.
+In all other cases the usage of status Accepted or Rejected and the data element is part of the
+vendor-specific agreement between the parties involved.
+7 Error handling n/a
+8 Remark(s) Data Transfer is used if information for a function is not supported by OCPP.
+The length of data in both the request and response message is undefined and should be agreed
+upon by all parties involved.
+Charging Station CSMS
+DataTransferRequest(vendorId, [messageId], [data])
+DataTransferResponse(status, [data])
+Figure 182. Sequence Diagram: Data Transfer to the CSMS
+P02 - Data Transfer to the CSMS - Requirements
+Table 151. P02 - Requirements
+ID Precondition Requirement definition
+P02.FR.01 The vendorId in the request message SHOULD be known to the
+Charging Station and uniquely identify the vendor-specific
+implementation.
+P02.FR.02 The Charging Station SHALL only use DataTransferRequest for a
+function which is not supported by OCPP. (Same as P01.FR.01)
+P02.FR.03 The VendorId SHOULD be a value from the reversed DNS
+namespace, where the top tiers of the name, when reversed,
+should correspond to the publicly registered primary DNS name
+of the Vendor organization. (Same as P01.FR.02)
+P02.FR.04 The messageId in the request message MAY be used to indicate
+a specific message or implementation. (Same as P01.FR.03)
+P02.FR.05 The length of data in both the request and response message is
+undefined and it is RECOMMENDED that this is agreed upon by
+all parties involved. (Same as P01.FR.04)
+P02.FR.06 If the recipient of the request has no
+implementation for the specific vendorId.
+The recipient SHALL return a status UnknownVendor.
+Edition 2, 2025-12-03 P. DataTransfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 496/803 Part 2 - Specification

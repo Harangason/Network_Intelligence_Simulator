@@ -1,0 +1,55 @@
+TC_K_119_CS: Priority Charging - Requesting priority charging locally
+Test case name Priority Charging - Requesting priority charging locally
+Test case Id TC_K_119_CS
+Use case Id(s) K22
+Requirement(s) K22.FR.01, K22.FR.02, K22.FR.03, K22.FR.04, K22.FR.05
+System under test Charging Station
+Description To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the entire
+Charging Station over a period of time. The CSMS sends a SetChargingProfileRequest to the Charging
+Station to influence the power or current drawn by EVs. The CSMS calculates a ChargingSchedule to stay
+within certain limits, which MAY be imposed by any external system.
+Purpose To verify if the Charging station supports priority charging initiated locally.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+Memory State:
+A chargingprofile with:
+ChargingProfilePurpose TxDefaultProfile AND
+StackLevel 1 AND
+Duration <omitted> AND
+limit 6
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Request the CS to start priority charging for the transaction
+Note(s):
+- The Charging Station will notify the EV driver that it is not capable of priority charging at this moment.
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.chargingProfilePurpose PriorityCharging
+chargingProfile.chargingSchedule.chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule.duration <Omitted>
+chargingProfile.chargingSchedule.chargingSchedulePeriod.star
+tPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod.limi
+t 10 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Manual Action: Request the CS to start priority charging for the transaction
+3. The Charging Station sends a NotifyPriorityChargingRequest
+4. The Test System responds with a
+NotifyPriorityChargingResponse
+6. The Charging Station responds with a
+GetCompositeScheduleResponse
+5. The Test System sends a GetCompositeScheduleRequest
+with
+evseId <Configured evseId>
+duration 60
+chargingRateUnit <Configured chargingRateUnit>
+Manual Action: Request the CS to stop priority charging for the transaction
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 572/1383 Part 6 - Test Cases

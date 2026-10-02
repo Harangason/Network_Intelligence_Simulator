@@ -1,0 +1,48 @@
+TC_C_42_CS: Authorization by GroupId - Not stopped by GroupId
+Test case name Authorization by GroupId - Not stopped by GroupId
+Test case Id TC_C_42_CS
+Use case Id(s) C09
+Requirement(s) C09_FR_11
+System under test Charging Station
+Description This test case covers how a Charging Station can authorize an action for an EV Driver based on GroupId
+information. This could for example be used if 2 people regularly use the same EV: they can use their own
+IdToken (e.g. RFID card), and can deauthorize transactions that were started with the other idToken (with
+the same GroupId).
+Purpose To verify if the Charging Station is able to correctly handle the Authorization of idTokens with the same
+GroupId, while one of them is invalid, according to the mechanism as described in the OCPP specification.
+Prerequisite(s) - The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present valid idToken with <Configured GroupId>
+1. The Charging Station sends an AuthorizeRequest
+2. The Test System responds with an AuthorizeResponse with
+- idTokenInfo.status Accepted
+- idTokenInfo.groupIdToken.idToken <Configured
+groupIdToken>
+3. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed when TxStartPoint contains
+Authorized OR the transaction already started. So in the case
+TxStartPoint contains ParkingBayOccupancy
+4. The Test System responds with a TransactionEventResponse
+with
+- idTokenInfo.status Accepted
+- idTokenInfo.groupIdToken.idToken <Configured
+groupIdToken>
+5. Execute Reusable State EnergyTransferStarted
+Manual Action: Present invalid idToken with <Configured GroupId>
+6. The Charging Station sends an AuthorizeRequest
+7. The Test System responds with an AuthorizeResponse with
+- idTokenInfo.status Invalid
+- idTokenInfo.groupIdToken.idToken <Configured
+groupIdToken>
+Note(s): Test System will wait to see if CS indeed doesn’t send a TransactionEventRequest
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 131/914 Part 6 - Test Cases

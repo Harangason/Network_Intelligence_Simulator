@@ -1,0 +1,50 @@
+u-blox 20 HPG 2.00 - Interface description
+3 CRLF character - - Carriage return and line feed
+2.7.3 GBQ
+2.7.3.1 Poll a standard message (Talker ID GB)
+Message NMEA-Standard-GBQ
+Poll a standard message (Talker ID GB)
+Type Poll request
+Comment Polls a standard NMEA message if the current Talker ID is GB
+Information Class/ID: 0xf0 0x44 Number of fields: 4
+Structure $xxGBQ,msgId*cs\r\n
+Example $EIGBQ,RMC*28\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGBQ string - $EIGBQ GBQ Message ID (xx = Talker ID of the device requesting
+the poll)
+1 msgId string - RMC Message ID of the message to be polled
+2 cs hexadecimal - *28 Checksum
+3 CRLF character - - Carriage return and line feed
+2.7.4 GBS
+2.7.4.1 GNSS satellite fault detection
+Message NMEA-Standard-GBS
+GNSS satellite fault detection
+Type Output
+Comment This message outputs the results of the Receiver Autonomous Integrity Monitoring Algorithm (RAIM).
+• The ﬁelds errLat, errLon and errAlt output the standard deviation of the position calculation, using all
+satellites that pass the RAIM test successfully.
+• The ﬁelds errLat, errLon and errAlt are only output if the RAIM process passed successfully (i.e.
+no or successful edits happened). These ﬁelds are never output if 4 or fewer satellites are used for
+the navigation calculation (because, in such cases, integrity cannot be determined by the receiver
+autonomously).
+• The ﬁelds prob, bias and stdev are only output if at least one satellite failed in the RAIM test.
+If more than one satellites fail the RAIM test, only the information for the worst satellite is output in this
+message.
+Information Class/ID: 0xf0 0x09 Number of fields: 13
+Structure $xxGBS,time,errLat,errLon,errAlt,svid,prob,bias,stddev,systemId,signalId*cs\r\n
+Examples $GPGBS,235503.00,1.6,1.4,3.2,,,,,,*40\r\n
+$GPGBS,235458.00,1.4,1.3,3.1,03,,-21.4,3.8,1,0*5B\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGBS string - $GPGBS GBS Message ID (xx = current Talker ID, see NMEA
+Talker IDs table)
+1 time hhmmss.ss - 235503.00 UTC time to which this RAIM sentence belongs. See
+section UTC representation in the integration manual
+for details.
+2 errLat numeric m 1.6 Expected error in latitude
+3 errLon numeric m 1.4 Expected error in longitude
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 26 of 224
+C1-Public

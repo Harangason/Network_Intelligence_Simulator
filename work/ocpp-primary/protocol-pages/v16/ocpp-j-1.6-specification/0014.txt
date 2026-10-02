@@ -1,0 +1,37 @@
+Field Meaning
+Payload Payload is a JSON object containing the arguments
+relevant to the Action. If there is no payload JSON
+allows for two different notations: null or and
+empty object \{}. Although it seems trivial we
+consider it good practice to only use the empty
+object statement. Null usually represents
+something undefined, which is not the same as
+empty, and also \{} is shorter.
+For example, a BootNotification request could look like this:
+[2,
+ "19223201",
+ "BootNotification",
+ {"chargePointVendor": "VendorX", "chargePointModel": "SingleSocketCharger"}
+]
+4.2.2. CallResult
+If the call can be handled correctly the result will be a regular CallResult. Error situations that are
+covered by the definition of the OCPP response definition are not considered errors in this context.
+They are regular results and as such will be treated as a normal CallResult, even if the result is
+undesirable for the recipient.
+A CallResult always consists of 3 elements: The standard elements MessageTypeId and UniqueId and a
+payload, containing the response to the Action in the original Call. The syntax of a call looks like this:
+[<MessageTypeId>, "<UniqueId>", {<Payload>}]
+Table 5: CallResult Fields
+Field Meaning
+UniqueId This must be the exact same ID that is in the call
+request so that the recipient can match request
+and result.
+Payload Payload is a JSON object containing the results of
+the executed Action. If there is no payload JSON
+allows for two different notations: null or and
+empty object \{}. Although it seems trivial we
+consider it good practice to only use the empty
+object statement. Null usually represents
+something undefined, which is not the same as
+empty, and also \{} is shorter.
+12

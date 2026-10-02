@@ -1,0 +1,66 @@
+No. Type Description
+8 Remark(s) See ISO15118-1, use case Requirements H1, page 44 for the trigger.
+The scenario description and sequence diagram above are based on the Configuration Variable
+for stop transaction being configured as follows.
+TxStopPoint: ParkingBayOccupancy, EVConnected, Authorized, PowerPathClosed
+This use-case is also valid for other configurations, but then the transaction might stop at another
+moment, which might change the sequence in which message are sent. For more details see the
+use case: E06 - Stop Transaction options
+EV Charging Station CSMS
+15118
+PowerDeliveryReq(ChargeProgress=Stop)
+open contactor
+PowerDeliveryRes()
+SessionStopReq()
+SessionStopRes()
+unplug cable
+OCPP
+TransactionEventRequest(eventType = Ended)
+TransactionEventResponse()
+Figure 74. End of charging process
+Source: ISO15118-1
+E15 - End of charging process - Requirements
+Table 76. E15 - Requirements
+ID Precondition Requirement definition
+E15.FR.01 When configured to send meter data in the
+TransactionEventRequest (eventType = Ended),
+See: Meter Values - Configuration
+The Charging Station SHALL add the configured measurands to
+the optional meterValue field in the TransactionEventRequest
+(eventType = Ended) sent to the CSMS to provide more details
+about transaction usage. (Same as E08.FR.09)
+E15.FR.02 E15.FR.01
+AND
+The Charging Station is running low on memory
+The Charging Station MAY drop meter data in the
+TransactionEventRequest(eventType = Ended) message. (Same
+as E06.FR.12)
+E15.FR.03 E15.FR.02 When dropping meter data, the Charging Station SHALL drop
+intermediate values first (2nd value, 4th value, 6th etc), not drop
+the start and end values from the list. (Same as E06.FR.13)
+E15.FR.04 When TxStopPoint contains "Authorized" or
+"PowerPathClosed" or "EnergyTransfer" AND
+Charging Station has not yet sent a
+TransactionEventRequest with triggerReason =
+StopAuthorized when it receives a ISO 15118
+SessionStopReq(Terminate) message from the
+EV
+Charging Station SHALL send a TransactionEventRequest
+message with eventType = Ended and triggerReason =
+StopAuthorized and stoppedReason = StoppedByEV to
+inform the CSMS that the charging transaction has been stopped
+(by the EV).
+E15.FR.05 When TxStopPoint does not contain
+"Authorized" or "PowerPathClosed" or
+"EnergyTransfer" AND
+Charging Station has not yet sent a
+TransactionEventRequest with triggerReason =
+StopAuthorized when it receives a ISO 15118
+SessionStopReq(Terminate) message from the
+EV
+Charging Station SHALL send a TransactionEventRequest
+message with eventType = Updated and triggerReason =
+StopAuthorized to inform the CSMS that the authorization
+has ended.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 213/803 Part 2 - Specification

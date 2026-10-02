@@ -1,0 +1,57 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  50 
+5. Register Description 
+The control and status register (CSR) interface is implemented using an AXI4-Lite subordinate interface and is used to 
+configure, control, and monitor the IP. 
+5.1. MIPI CSI/DSI Transmitter Register Description 
+Table 5.1. Summary of MIPI CSI/DSI Transmitter Registers 
+Address 
+Offset 
+Register Name Description 
+0x000 STATUS_REG Status register  
+0x020 CONTROLLER_STATUS_REG Controller status register 
+0x044 CONVERTER_STATUS_REG1 Pixel-to-Byte converter status Register 1 
+0x210 PHY_CONFIG_REG PHY configuration register 
+0x220 CONFIG_REG0 Configuration Register 0 
+0x240 CONFIG_REG1 Configuration Register 1 
+0x244 CONFIG_REG2 Configuration Register 2 
+ 
+5.1.1. STATUS_REG (0x000) 
+Table 5.2. STATUS_REG (0x000) Register 
+Field Name Description Access Default 
+[2:0] MAX_SUPPORTED_LANES Maximum number of lanes supported (1–4).  
+1: x1 lane 
+2: x2 lane 
+4: x4 lane 
+RO Number of D-
+PHY Lanes1 
+[3] PHY_READY When the PHY Mode == Soft D-PHY, this signal indicates 
+the completion of the synchronization sequence and 
+signifies that the PHY is ready. When the PHY Mode == 
+Hard D-PHY, this signal directly indicates that PHY is 
+ready. 
+RO 0x0 
+[4] INIT_SKEWCAL_DONE Initial skew calibration is complete. This register is 
+applicable only when PHY Mode == Hard D-PHY. 
+RO 0x0 
+[31:5] RSVD Reserved. RO 0x0 
+Note: 
+1. The default value is based on the configurations set for the corresponding attribute in the IP Parameter Description section. 
+5.1.2. CONTROLLER_STATUS_REG (0x020) 
+Table 5.3. STATUS_REG (0x000) Register 
+Field Name Description Access Default 
+[0] CFG_READY Configuration ready. RO 0x0 
+[31:1] RSVD Reserved. RO 0x0 
+ 
+5.1.3. CONVERTER_STATUS_REG1 (0x044) 
+Table 5.4. CONVERTER_STATUS_REG1 (0x044) Register 
+Field Name Description Access Default 
+[3:0] PPC Pixel per clock. 
+0x1 = 1 pixel per clock 
+0x2 = 2 pixels per clock 
+RO Pixels Per Clock1 

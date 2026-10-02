@@ -1,0 +1,59 @@
+2.3. GroupId
+C09 - Authorization by GroupId
+No. Type Description
+1 Name Authorization by GroupId
+2 ID C09
+3 Objective(s) To enable 2 EV drivers with different IdTokens to be authorized using the same GroupId.
+4 Description This use cases covers how a Charging Station can authorize an action for an EV Driver based on
+GroupId information. This could for example be used if 2 people regularly use the same EV: they
+can use their own IdToken (e.g. RFID card), and can deauthorize transactions that were started
+with the other idToken (with the same GroupId).
+Actors Charging Station, CSMS, EV Driver1, EV Driver2
+Scenario description 1. EV Driver 1 presents an IdToken.
+2. The Charging Station sends AuthorizeRequest to the CSMS to request authorization.
+3. Upon receipt of AuthorizeRequest, the CSMS responds with AuthorizeResponse. This response
+message includes the GroupId.
+4. The Charging Station stores the GroupIdToken with the authorization information of EV Driver
+1.
+5. EV Driver 2 presents an IdToken.
+6. The Charging Station sends AuthorizeRequest to the CSMS to request authorization.
+7. Upon receipt of AuthorizeRequest, the CSMS responds with AuthorizeResponse. This response
+message includes the GroupId.
+8. Based on the matching GroupId information in both responses, the Charging Station authorizes
+the action.
+5 Prerequisite(s) EV Driver 1 and EV Driver 2 have the same GroupId.
+6 Postcondition(s) GroupId is known by the Charging Station.
+7 Error handling n/a
+8 Remark(s) IdTokenType data used as groupId may often use a shared central account identifier for the
+GroupId, instead of using one of the idTokens belonging to an account.
+The groupId mechanism as described in this use case also works when using the Authorization
+Cache, as the groupId is stored in the cache.
+EVDriver1 EVDriver2
+Charging Station CSMS
+present IdToken(001)
+opt [if IdToken is not present in the Local Authorization List or Authorization Cache.]
+AuthorizeRequest(IdToken = 001)
+AuthorizeResponse(groupIdToken = 123, status)
+opt
+notification
+TransactionEventRequest(eventType = Started, triggerReason = Authorized, ...)
+TransactionEventResponse(...)
+present IdToken(002)
+opt [if the IdToken used for stopping the transaction is different from the IdToken that started the transaction AND NOT
+(The GroupIdTokens used to start and stop the transaction are present in either the Local Authorization List or Authorization Cache AND
+they are the same).]
+AuthorizeRequest(IdToken = 002)
+AuthorizeResponse(groupIdToken = 123, status)
+TransactionEventRequest(eventType = Ended, triggerReason = StopAuthorized, stoppedReason = Local, ...)
+TransactionEventResponse(...)
+opt
+notification
+Figure 28. Sequence Diagram:  Authorization by GroupId
+C09 - Authorization by GroupId - Requirements
+Table 50. C09 - Requirements
+ID Precondition Requirement definition
+C09.FR.02 IdTokens that are part of the same group for authorization
+purposes SHALL have a common group identifier in the optional
+groupIdToken element in IdTokenInfo
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 98/491 Part 2 - Specification

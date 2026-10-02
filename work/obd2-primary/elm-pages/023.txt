@@ -1,0 +1,90 @@
+23 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+AT Command Descriptions (continued)
+or ‘BUS INIT’, etc. messages when the protocol is
+reactivated.
+NL [ Normal Length messages ]
+Setting the NL mode on forces all sends and
+receives to be limited to the standard seven data bytes
+in length, similar to the other ELM32x OBD ICs. To
+allow longer messages, use the AL command.
+The ELM327 does not require a change to AL to
+allow longer message lengths for the KWP protocols to
+be received. You can simply leave the IC set to the
+default setting of NL, and all of the received bytes will
+be shown.
+PB xx yy [ set Protocol B parameters ]
+This command allows you to change the protocol
+B (USER1) options and baud rate without having to
+change the associated Programmable Parameters.
+This allows for easier protocol changes while testing.
+To use this feature, simply set xx to the value for
+PP 2C, and yy to the value for PP 2D, and issue the
+command. The next time that the protocol is initialized
+it will use these values. For example, to set protocol B
+for use with 500kbps J1939, simply use the command:
+>AT PB 42 01
+As another example, assume that you wish to
+monitor a system that uses 11 bit CAN at 33.3 kbps. If
+you do not want any special formatting, this means a
+value of 11000000 or C0 hex for PP 2C, and 15
+decimal or 0F hex for PP 2D. Simply send these
+values to the ELM327 with the command:
+>AT PB C0 0F
+then start monitoring with:
+>AT MA
+if you see CAN ERRORs, and realize that you wanted
+an 83.3 kbps baud rate, then close the protocol, and
+send the new values:
+>AT PC
+OK
+>AT PB C0 06
+OK
+>AT MA
+Values passed in this way do not affect any that
+are stored as the 2C and 2D Programmable
+Parameters, and are lost if the ELM327 is reset. If you
+want to make your settings persist over power cycles,
+then you may wish to store them in the Programmable
+Parameter for CAN protocols USER1 or USER2.
+PC [ Protocol Close ]
+There may be occasions where it is desirable to
+stop (deactivate) a protocol. Perhaps you are not using
+the automatic protocol finding, and wish to manually
+activate and deactivate protocols. Perhaps you wish to
+stop the sending of idle (wakeup) messages, or have
+another reason. The PC command is used in these
+cases to force a protocol to close.
+PP hh OFF [ turn Prog. Parameter hh OFF ]
+This command disables Programmable Parameter
+number hh. Any value assigned using the PP hh SV
+command will no longer be used, and the factory
+default setting will once again be in effect. The actual
+time when the new value for this parameter becomes
+effective is determined by its type. Refer to the
+Programmable Parameters section (page 70) for more
+information on the types.
+Note that ‘PP FF OFF’ is a special command that
+disables all of the Programmable Parameters, as if you
+had entered PP OFF for every possible one.
+It is possible to alter some of the Programmable
+Parameters so that it may be difficult, or even
+impossible, to communicate with the ELM327. If this
+occurs, there is a hardware means of resetting all of
+the Programmable Parameters at once. Connect a
+jumper from circuit common to pin 28, holding it there
+while powering up the ELM327 circuit. Hold it in
+position until you see the RS232 Receive LED begin to
+flash (which indicates that all of the PPs have been
+turned off). At this point, remove the jumper to allow
+the IC to perform a normal startup. Note that a reset of
+the PPs occurs quite quickly – if you are holding the
+jumper on for more than a few seconds and do not see
+the RS232 receive light flashing, remove the jumper
+and try again, as there may be a problem with your
+connection.
+PP hh ON [ turn Programmable Parameter hh ON ]
+This command enables Programmable Parameter
+number hh. Once enabled, any value assigned using

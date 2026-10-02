@@ -1,0 +1,48 @@
+u-blox 20 HPG 2.00 - Interface description
+4 U4 entryCount - - Number of log entries to transfer in total including
+the ﬁrst entry to be transferred. If it is larger than
+the log entries available starting from the ﬁrst entry
+to be transferred, then only the available log entries
+are transferred followed by a UBX-ACK-NAK. The
+maximum is 256.
+8 U1 version - - Message version (0x00 for this version)
+9 U1[3] reserved0 - - Reserved
+3.12.6 UBX-LOG-STRING (0x21 0x04)
+3.12.6.1 Store arbitrary string in on-board ﬂash
+Message UBX-LOG-STRING
+Store arbitrary string in on-board ﬂash
+Type Command
+Comment This message can be used to store an arbitrary byte string in the on-board ﬂash memory. The maximum
+length that can be stored is 256 bytes.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x21 0x04 [0..n] see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+Start of repeated group (N times)
+0 + n U1 bytes - - The string of bytes to be logged (maximum 256)
+End of repeated group (N times)
+3.13 UBX-MGA (0x13)
+The messages in the UBX-MGA class are used for sending GNSS assistance (A-GNSS, aiding)
+information to the receiver as well as backing up the navigation database from the receiver to a host.
+3.13.1 UBX-MGA-ACK (0x13 0x60)
+3.13.1.1 Multiple GNSS acknowledge message
+Message UBX-MGA-ACK-DATA0
+Multiple GNSS acknowledge message
+Type Output
+Comment This message is sent by a u-blox receiver to acknowledge the receipt of an assistance message.
+Acknowledgments are enabled by setting the CFG-NAVSPG-ACKAIDING item.
+See section Flow control in the integration manual for details.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x60 8 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 type - - Type of acknowledgment:
+• 0 = The message was not used by the receiver
+(see infoCode ﬁeld for an indication of why)
+• 1 = The message was accepted for use by the
+receiver (the infoCode ﬁeld will be 0)
+1 U1 version - - Message version (0x00 for this version)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 61 of 224
+C1-Public

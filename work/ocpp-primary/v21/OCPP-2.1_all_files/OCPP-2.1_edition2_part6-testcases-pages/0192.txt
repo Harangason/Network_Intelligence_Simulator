@@ -1,0 +1,44 @@
+TC_C_108_CS: Integrated Payment Terminal - VAT number validation
+Test case name Integrated Payment Terminal - VAT number validation
+Test case Id TC_C_108_CS
+Use case Id(s) C18
+Requirement(s) C18.FR.08
+System under test Charging Station
+Description To start/authorize a transaction from a payment terminal connected directly to the Charging Station.
+Purpose To verify that the Charging Station can let CSMS validate VAT numbers.
+Prerequisite(s) - Charging Station supports VAT number validation
+- Charging Station has an integrated Payment Terminal
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: EV Driver types in a VAT number
+1. The Charging Station sends a VatNumberValidationRequest
+2. The Test System responds with a
+VatNumberValidationResponse with
+vatNumber = <invalidVatNumber of step 1>
+evseId = <VatNumberValidationRequest.evseId of step 1>
+status = Rejected
+Manual Action: EV Driver types in a VAT number
+3. The Charging Station sends a VatNumberValidationRequest
+4. The Test System responds with a
+VatNumberValidationResponse with
+vatNumber = <validVatNumber of step 3>
+evseId = <VatNumberValidationRequest.evseId of step 3>
+status = Accepted
+Tool validations
+* Step 1:
+Message VatNumberValidationRequest
+- evseId must be <evse id> or <omitted>
+* Step 3:
+Message VatNumberValidationRequest
+- evseId must be <evse id> or <omitted>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 190/1383 Part 6 - Test Cases

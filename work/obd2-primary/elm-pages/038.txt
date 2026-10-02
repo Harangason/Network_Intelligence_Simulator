@@ -1,0 +1,37 @@
+38 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+based on any active inputs that are present. If you
+need to follow the SAE J1978 order, you should send
+the ELM327 an AT SS command first, or step through
+each protocol with the TP command.
+The automatic search works well with OBDII
+systems, but may not be what you need if you are
+experimenting. During a search, the ELM327 ignores
+any headers that you have previously defined (since
+there is always a chance that your headers may not
+result in a response), and it uses the default OBD
+header values for each protocol. It will also use
+standard requests (ie 01 00) during the searches. If
+this is not what you want, the results may be a little
+frustrating.
+To use your own header (and data) values when
+attempting to connect to an ECU, do not tell the
+ELM327 to use protocol 0. Instead, tell it to either use
+Selecting Protocols (continued)
+only your target protocol (ie. AT SP n), or else tell it to
+use yours with automatic searches allowed on failure
+(ie AT SP An). Then send your request, with headers
+assigned as required. The ELM327 will then attempt to
+connect using your headers and your data, and only if
+that fails (and you have chosen the protocol with AT
+SP An) will it search using the standard OBD default
+values.
+In general, 99% of all users find that enabling the
+memory (setting pin 5 to 5V) and using the ‘Auto’
+option when searching (you may need to send AT
+SP 0) works very well. After the initial search, the
+protocol used by your vehicle becomes the new
+default, but it is still able to search for another, without
+your having to say AT SP 0 again.

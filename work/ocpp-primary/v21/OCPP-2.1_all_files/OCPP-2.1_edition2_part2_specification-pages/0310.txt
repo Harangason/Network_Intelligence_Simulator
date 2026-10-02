@@ -1,0 +1,73 @@
+ID. Precondition Requirements Notes
+I11.FR.05 When a Charging Station receives a
+ChangeTransactionTariffRequest and tariff
+has a value for currency that differs from the
+currently active tariff
+Charging Station SHALL respond with
+ChangeTransactionTariffResponse with status
+= NoCurrencyChange.
+It is not allowed to
+switch currency within
+a transaction.
+I11.FR.06 When a Charging Station receives a
+ChangeTransactionTariffRequest AND
+NOT ( I11.FR.01 to I11.FR.05 )
+Charging Station SHALL respond with
+ChangeTransactionTariffResponse with status
+= Accepted.
+Change of tariff is
+accepted when none
+of the above error
+conditions apply.
+I11.FR.07 I11.FR.06 Charging Station SHALL send a
+TransactionEventRequest with triggerReason =
+TariffChanged and transactionInfo.tariffId
+set to the id of the new tariff (and include any
+other relevant fields).
+The new tariff is
+applied regardless
+whether a tariff was
+already associated
+with transaction or
+not.
+I11.FR.08 I11.FR.07 Charging Station SHALL from this moment on
+apply the new tariff to the transaction.
+There is no retroactive
+calculation of tariffs.
+I12 - Local Cost Calculation - Cost Details of Transaction
+New in OCPP 2.1
+No. Type Description
+1 Name Local Cost Calculation - Cost Details of Transaction
+2 ID I12
+3 Objective(s) To calculate cost and provide CSMS with details about the cost
+4 Description Charging Station calculates cost of the transaction locally and returns a break-down of the cost at
+end of the transaction for every charging period for which a different tariff element was active.
+CSMS can use this to generate invoices or Charge Detail Records for EMSPs.
+Actors Charging Station, CSMS, EV Driver
+Scenario description Cost calculation during transaction
+1. EV Driver starts charging
+2. If a driver-specific tariff was provided at authorization, use the driver-specific tariff.
+3. Else use the default tariff.
+4. Charging Station continuously displays running cost to EV Driver.
+5. While the transaction is active Charging Station provides running cost updates in
+TransactionEventRequest messages, depending on RunningCostEnabled.
+6. During the transaction Charging Station may include (depending on
+RunningCostEnabled) in the TransactionEventRequest with eventType = Updated a
+costDetails field of type CostDetailsType with a breakdown of the cost of the transaction.
+a. chargingPeriods are omitted from costDetails that are sent during a transaction in
+order to limit the amount of data.
+b. costDetails includes the running total price for time, energy, fixed fee, reservation
+and the overall running total price of the transaction.
+7. When the transaction ends Charging Station includes in the TransactionEventRequest
+with eventType = Ended a costDetails field of type CostDetailsType with a breakdown of
+the cost of the transaction.
+a. costDetails has a list of one or more chargingPeriods, where each period
+corresponds to a period with different pricing.
+b. costDetails also includes the total price for time, energy, fixed fee, reservation and
+the overall total price of the transaction.
+5 Prerequisites A tariff was set via SetDefaultTariffRequest or in response to an AuthorizeRequest.
+TariffEnabled = true and CostEnabled = true.
+6 Postcondition(s) CSMS received a costDetails with a breakdown of costs at end of transaction.
+7 Error Handling
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 297/803 Part 2 - Specification

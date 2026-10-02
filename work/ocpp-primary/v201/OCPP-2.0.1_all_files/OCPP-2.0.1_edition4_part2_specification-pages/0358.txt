@@ -1,0 +1,53 @@
+O03 - Get All DisplayMessages
+No. Type Description
+1 Name Get All DisplayMessages
+2 ID O03
+3 Objective(s) Enable a CSO to retrieve all messages currently configured in a Charging Station.
+4 Description This use case describes how a CSO can request all the installed DisplayMessages configured via
+OCPP in a Charging Station.
+The Charging Station can remove messages when they are out-dated, or transactions have ended.
+It can be very useful for a CSO to be able to view to current list of messages, so the CSO knows
+which messages are (still) configured.
+Actors CSO, CSMS, Charging Station
+Scenario description 1. The CSO asks the CSMS to retrieve all messages.
+2. The CSMS sends a GetDisplayMessagesRequest message to the Charging Station.
+3. The Charging Station responds with a GetDisplayMessagesResponse Accepted, indicating it
+has configured messages and will send them.
+4. The Charging Station sends one or more NotifyDisplayMessagesRequest messages to the
+CSMS (depending on the amount of messages to be sent).
+5. The CSMS responds to every notify with a NotifyDisplayMessagesResponse message.
+5 Prerequisites There is at least one message configured in the Charging Station
+6 Postcondition(s) n/a
+7 Error Handling n/a
+8 Remarks Only messages configured via OCPP can be retrieved via a GetDisplayMessagesRequest.
+CSO
+CSMS Charging Station
+Get all messages
+GetDisplayMessagesRequest(requestId)
+GetDisplayMessagesResponse(Accepted)
+loop [for each DisplayMessages part]
+NotifyDisplayMessagesRequest(requestId, messageInfo, tbc)
+NotifyDisplayMessagesResponse()
+opt
+notification
+Figure 141. Get All DisplayMessages sequence diagram
+O03 - Get All DisplayMessages - Requirements
+Table 134. O03 - Requirements
+ID Precondition Requirement definition
+O03.FR.01 When all fields except requestId in a
+GetDisplayMessagesRequest are omitted AND
+at least one display message is configured.
+The Charging Station SHALL respond with Accepted.
+O03.FR.02 O03.FR.01 The Charging Station SHALL send all configured
+DisplayMessages via NotifyDisplayMessagesRequest.
+O03.FR.03 O03.FR.02
+AND
+There are more DisplayMessages than the
+Charging Station can send in 1
+NotifyDisplayMessagesRequest
+The Charging Station SHALL split the DisplayMessages over
+multiple NotifyDisplayMessagesRequest messages.
+O03.FR.04 O03.FR.03 The Charging Station SHALL set the tbc field is true in every
+NotifyDisplayMessagesRequest messages, except the last.
+Edition 4, 2025-12-03 O. Display Message
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 348/491 Part 2 - Specification

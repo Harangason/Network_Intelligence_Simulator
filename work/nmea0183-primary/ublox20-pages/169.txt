@@ -1,0 +1,31 @@
+u-blox 20 HPG 2.00 - Interface description
+Note that this is an arbitrary example and any number of items of any value storage size can be
+concatenated the same way.
+6.6 Conﬁguration transactions
+The conﬁguration interface supports two mechanisms of conﬁguration: the ﬁrst is a transactionless
+mechanism where sent conﬁguration changes are applied immediately to the conﬁguration layer(s)
+requested. The second mechanism is a conﬁguration transaction.
+A transaction oﬀers a way of queuing multiple conﬁguration changes. It is particularly useful where
+diﬀerent conﬁguration keys depend on each other in such a way that sending one before the other
+can cause the conﬁguration to be rejected. The queued conﬁguration change requests are stored
+then checked collectively before being applied to the receiver.
+A transaction can have the following states described in the ﬁgure below.
+When starting a transaction, specify the layer(s) to apply the changes to. This list of conﬁguration
+layer(s) must be observed throughout the transaction states. Modifying the conﬁguration layer(s)
+mid-transaction causes the transaction to be aborted and consequently, no queued changes will be
+applied.
+In the start transaction state, the receiver locks the conﬁguration database so that changes from
+another entity or message cannot be applied. It is possible to send a conﬁguration key-value pairs
+with the start transaction state. These are queued waiting to be applied.
+In the ongoing state, a conﬁguration key and value must be sent. The receiver aborts the transaction
+and does not apply any changes if this condition is violated. Key-value pairs sent in the ongoing state
+are queued waiting to be applied.
+In the apply state, the receiver collectively checkes the queued changes and applied them to the
+requested conﬁguration layer(s). Note that any additional key-value pairs sent within the apply state
+are ignored.
+Note that a transaction can only come from a single source, a UBX-CFG-VALSET message or a UBX-
+CFG-VALDEL message. This means that in any given transaction it is not possible to mix a delete
+UBXDOC-304424225-19888 - R01
+ 
+6 Conﬁguration interface Page 169 of 224
+C1-Public

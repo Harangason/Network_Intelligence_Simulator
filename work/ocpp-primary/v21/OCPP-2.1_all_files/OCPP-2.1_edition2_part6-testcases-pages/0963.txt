@@ -1,0 +1,53 @@
+TC_A_06_CSMS: TLS - server-side certificate - TLS version too low
+Test case name TLS - server-side certificate - TLS version too low
+Test case Id TC_A_06_CSMS
+Use case Id(s) A00
+Requirement(s) A00.FR.314,A00.FR.315,A00.FR.409,A00.FR.416,A00.FR.417,A00.FR.418
+System under test CSMS
+Description The CSMS uses a server-side certificate to identify itself to the Charging Station, when using security profile
+2 or 3.
+Purpose To verify whether the CSMS is able to terminate the connection when it notices the used TLS version is
+lower than 1.2.
+Prerequisite(s) The CSMS supports security profile 2 and/or 3
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System terminates the connection and initiates a
+TLS handshake with a TLS version lower than 1.2 and sends a
+Client Hello to the CSMS.
+2. The CSMS notices that the TLS version is lower than 1.2 and
+terminates the connection.
+3. The Test System initiates a TLS handshake with TLS version
+1.2 or higher and sends a Client Hello to the CSMS. 4. The CSMS responds with a Server Hello
+With the <Configured server certificate>
+5. The Test System performs the following actions:
+Send client certificate
+Client Key Exchange
+Certificate verify
+Change Cipher Spec
+Finished
+Note(s):
+- The client certificate is only sent when the CSMS uses security
+profile 3.
+6. The CSMS performs the following actions:
+Change Cipher Spec
+Finished
+7. The Test System sends a HTTP upgrade request to the CSMS
+Note(s):
+- The HTTP request only contains a username/password
+combination when the CSMS uses security profile 2.
+8. The CSMS upgrades the connection to a (secured) WebSocket
+connection.
+9. The Test System sends a BootNotificationRequest
+with reason PowerUp
+chargingStation.model <Configured model>
+chargingStation.vendorName <Configured vendorName>
+10. The CSMS responds with a BootNotificationResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 961/1383 Part 6 - Test Cases

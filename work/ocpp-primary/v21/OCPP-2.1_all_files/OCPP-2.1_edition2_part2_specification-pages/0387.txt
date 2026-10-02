@@ -1,0 +1,36 @@
+No. Type Description
+Scenario description #2 Using Dynamic charging schedule
+1. Assume CSMS has set a ChargingProfile with chargingProfilePurpose =
+TxDefaultProfile, chargingProfileKind = Relative and a chargingSchedule with
+chargingRateUnit = W and 1 chargingSchedulePeriod that defines a limit = 5000.
+2. An external energy management system provides a (dynamic) value for the local
+generation by means of a protocol. Charging Station represents this input internally as a
+ChargingProfile with chargingProfilePurpose = LocalGeneration, chargingProfileKind =
+Dynamic and a chargingSchedule with chargingRateUnit = W and 1
+chargingSchedulePeriod with operationMode = ExternalLimits.
+3. The value for limit in the LocalGeneration charging profile is continuously updated
+with the value from the external system.
+a. If the charging limit changed by more than: LimitChangeSignificance, the
+Charging Station sends a NotifyChargingLimitRequest message to CSMS with a
+chargingLimit that has chargingLimitSource = EMS and isLocalGeneration = true,
+and the local generation charging schedule from that moment onwards.
+b. Charging Station internally calculates a composite schedule that allows for a
+maximum power consumption of 5000 W (from TxDefaultProfile) plus limit
+from LocalGeneration.
+5 Prerequisites EMS is able to measure (and possibly predict) the amount of local generation, and send it to
+Charging Station in a way that it can recognize it as local generation.
+Configuration variable ExternalControlSignalsEnabled = true.
+6 Post conditions Charging Station can use available energy from local generation in addition to the local grid
+capacity.
+7 Error Handling
+8 Remarks If the external system provides a limit via a protocol that is not OCPP, e.g. ModBus, then Charging
+Station can represent this as an Absolute charging profile, that is replaced when the limit
+changes, or as a Dynamic charging profile with a single charging schedule period with
+operationMode = ExternalLimits in which the limit is dynamically updated.
+It is up to the Charging Station implementation to decide whether to represent the external limits
+for LocalGeneration as an Absolute charging profile that is replaced by a new charging profile
+with the same chargingProfile.id upon each change of the external limit, or as a Dynamic charging
+profile with an operationMode = ExternalLimits in which the limit is changed upon each
+change of the external limit.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 374/803 Part 2 - Specification

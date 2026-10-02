@@ -1,0 +1,43 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  88 
+Vertical Frame Blanking Duration = 16666 µs – (1080 x 14.1187 µs) 
+    = 1417.804 µs 
+ 
+Number of Vertical Blanking Lines Per Frame = Vertical Frame Blanking Duration/(Number of Horizontal Active Bytes in 
+Byte Clock Domain x Byte Clock Period) 
+ = 1417.804 µs / (1200 x 8.77193 ns) 
+ = ~134 lines 
+ 
+To determine the actual vertical frame blanking duration required, configure the values as follows: 
+• Number of Vertical Blanking Lines Per Frame (IP Wizard GUI) or NUM_LINE_V_BLANKING field (CONFIG_REG1)—
+Set to the calculated value in the example    
+• Number of Horizontal Active Bytes in Byte Clock Domain (IP Wizard GUI) or NUM_BYTES_ACTIVE_H field 
+(CONFIG_REG2)—Set to 1200 
+• Number of Horizontal Blanking Bytes in Byte Clock Domain (IP Wizard GUI) or H_BLANKING_BYTES_TH field 
+(CONFIG_REG1)—Set to 0 
+With the initial configuration settings in the example, trigger the IP simulation and analyze the vertical frame blanking 
+duration in the LP-11 state between the Frame End HS burst and next Frame Start HS burst. 
+The following IP simulation waveform diagram shows the minimum horizontal line blanking period with LP-11 state 
+between Line End and the next Line Start short packet. 
+ 
+Figure 9.4. Minimum Horizontal Line Blanking between Line End and the Next Line Start HS Burst Short Packet 
+(Number of Horizontal Blanking Bytes in Byte Clock Domain = 0) 
+Measured Line Period  = 14134 ns (from simulation) 
+ 
+Expected Frame Period  = (Active Lines x Line Period) + Vertical Frame Blanking Duration 
+ 
+Vertical Frame Blanking Duration = 16666 µs – (1080 x 14134 ns) 
+    = 1401.28 µs 
+ 
+Number of Vertical Blanking Lines Per Frame = Vertical Frame Blanking Duration/(Number of Horizontal Active Bytes in 
+Byte Clock Domain x Byte Clock Period) 
+ = 1401.28 µs / (1200 x 8.77193 ns) 
+ = ~133 lines 
+ 
+The following IP simulation waveform diagram shows the vertical frame blanking period of LP-11 state between Frame 
+End and the next Frame Start short packet with the latest Number of Vertical Blanking Lines Per Frame value. 

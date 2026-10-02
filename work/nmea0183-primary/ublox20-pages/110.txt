@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+4 U4 iTOW - ms GPS time of week of the navigation epoch.
+See the description of iTOW for details.
+8 U4 dur - s Passed survey-in observation time
+12 I4 meanX - cm Current survey-in mean position ECEF X coordinate
+16 I4 meanY - cm Current survey-in mean position ECEF Y coordinate
+20 I4 meanZ - cm Current survey-in mean position ECEF Z coordinate
+24 I1 meanXHP - 0.1_mm Current high-precision survey-in mean position ECEF
+X coordinate. Must be in the range -99..+99.
+The current survey-in mean position ECEF X
+coordinate, in units of cm, is given by
+meanX + (0.01 * meanXHP)
+25 I1 meanYHP - 0.1_mm Current high-precision survey-in mean position ECEF
+Y coordinate. Must be in the range -99..+99.
+The current survey-in mean position ECEF Y
+coordinate, in units of cm, is given by
+meanY + (0.01 * meanYHP)
+26 I1 meanZHP - 0.1_mm Current high-precision survey-in mean position ECEF
+Z coordinate. Must be in the range -99..+99.
+The current survey-in mean position ECEF Z
+coordinate, in units of cm, is given by
+meanZ + (0.01 * meanZHP)
+27 U1 reserved1 - - Reserved
+28 U4 meanAcc - 0.1_mm Current survey-in mean position accuracy
+32 U4 obs - - Number of position observations used during survey-
+in
+36 U1 valid - - Survey-in position validity ﬂag, 1 = valid, otherwise 0
+37 U1 active - - Survey-in in progress ﬂag, 1 = in-progress, otherwise 0
+38 U1[2] reserved2 - - Reserved
+3.15.20 UBX-NAV-TIMEBDS (0x01 0x24)
+3.15.20.1 BeiDou time solution
+Message UBX-NAV-TIMEBDS
+BeiDou time solution
+Type Periodic/polled
+Comment This message reports the precise BDS time of the most recent navigation solution including validity ﬂags and
+an accuracy estimate.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x24 20 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+4 U4 SOW - s BDS time of week (rounded to seconds)
+8 I4 fSOW - ns Fractional part of SOW (range: +/-500000000).
+The precise BDS time of week in seconds is:
+SOW + fSOW * 1e-9
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 110 of 224
+C1-Public

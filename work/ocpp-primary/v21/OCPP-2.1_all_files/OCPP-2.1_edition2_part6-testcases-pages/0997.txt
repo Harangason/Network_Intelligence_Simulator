@@ -1,0 +1,32 @@
+Main (Test scenario)
+7. The Test System notifies the CSMS about the current state of
+all connectors.
+For <Configured connectorId>:
+Message: StatusNotificationRequest
+- connectorStatus Occupied
+Message: NotifyEventRequest
+- trigger Delta
+- actualValue "Occupied"
+- component.name "Connector"
+- variable.name "AvailabilityState"
+For <Other connector(s)>:
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- trigger Delta
+- actualValue "Available"
+- component.name "Connector"
+- variable.name "AvailabilityState"
+8. The CSMS responds accordingly.
+Tool validations
+* Step 1:
+Message ResetRequest
+- type Immediate
+- evseId must be omitted
+* Step 6:
+Message BootNotificationResponse
+- status Accepted
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 995/1383 Part 6 - Test Cases

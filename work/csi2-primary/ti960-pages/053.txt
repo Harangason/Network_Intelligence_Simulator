@@ -1,0 +1,32 @@
+Notes:
+FSx FrameStart for Sensor X
+FEx FrameEnd for Sensor X
+SxLy Line Y for Sensor X video frame
+SxLN Last line for Sensor X video frame
+All packets would have the same VC-ID.
+7.4.25.4.1 Code Example for Line-Interleaved CSI-2 Forwarding
+# "*** RX0 VC=0 ***"
+WriteI2C(0x4c,0x01) # RX0
+WriteI2C(0x70,0x1f) # RAW10_datatype_yuv422b10_VC0
+# "*** RX1 VC=0 ***"
+WriteI2C(0x4c,0x12) # RX1
+WriteI2C(0x70,0x1f) # RAW10_datatype_yuv422b10_VC0
+# "*** RX2 VC=0 ***"
+WriteI2C(0x4c,0x24) # RX2
+WriteI2C(0x70,0x1f) # RAW10_datatype_yuv422b10_VC0
+# "*** RX3 VC=0 ***"
+WriteI2C(0x4c,0x38) # RX3
+WriteI2C(0x70,0x1f) # RAW10_datatype_yuv422b10_VC0
+#  "CSI_PORT_SEL"
+WriteI2C(0x32,0x01) # CSI0 select
+#  "CSI_EN"
+WriteI2C(0x33,0x01) # CSI_EN & CSI0 4L
+# "*** CSI0_SYNC_FWD synchronous forwarding with line interleaving ***"
+WriteI2C(0x21,0x28) # synchronous forwarding with line interleaving
+#  "*** FWD_PORT all RX to CSI0"
+WriteI2C(0x20,0x00) # forwarding of all RX to CSI0
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 53
+Product Folder Links: DS90UB960-Q1

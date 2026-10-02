@@ -1,0 +1,40 @@
+TC_N_17_CS: Set Monitoring Level - Out of range
+Test case name Set Monitoring Level - Out of range
+Test case Id TC_N_17_CS
+Use case Id(s) N05
+Requirement(s) N05.FR.02
+System under test Charging Station
+Description CSMS sets a monitoring level with an out of range value.
+Purpose To test that Charging Station rejects monitoring message with out of range severity.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+2. Charging Station responds with:
+SetMonitoringLevelResponse
+1. Test System sends:
+SetMonitoringLevelRequest with:
+severity = 10
+4. Charging Station responds with:
+SetMonitoringLevelResponse
+3. Test System sends:
+SetMonitoringLevelRequest with:
+severity = -1
+Tool validations
+* Step 2:
+Message: SetMonitoringLevelResponse with:
+- status = Rejected
+- statusInfo is absent or statusInfo.reasonCode = "ValueOutOfRange" or statusInfo.reasonCode = "ValueTooHigh"
+* Step 4:
+Message: SetMonitoringLevelResponse with:
+- status = Rejected
+- statusInfo is absent or statusInfo.reasonCode = "ValueOutOfRange" or statusInfo.reasonCode = "ValueTooLow"
+Post scenario validations:
+N/A
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 691/1383 Part 6 - Test Cases

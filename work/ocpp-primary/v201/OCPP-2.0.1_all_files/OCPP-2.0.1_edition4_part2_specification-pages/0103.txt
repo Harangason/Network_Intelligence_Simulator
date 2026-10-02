@@ -1,0 +1,37 @@
+2.2. ISO 15118 Authorization
+This authorization section originates from ISO15118-1 for the use of Plug & Charge functionalities.
+C07 - Authorization using Contract Certificates
+No. Type Description
+1 Name Authorization using Contract Certificates
+2 ID C07
+Reference ISO15118-1 D2
+3 Objective(s) See ISO15118-1, use case Objective D2, page 26.
+4 Description See ISO15118-1, use case Description D2 (first bullet), page 26.
+Actors EV, Charging Station, CSMS
+Scenario description 15118:
+See ISO15118-1, use case Description D2, Scenario Description, first 2 bullets, page 26.
+OCPP:
+3. The Charging Station sends an AuthorizeRequest message to the CSMS containing the eMAID
+and data needed for an OCSP request with regards to the contract certificate and certificate
+chain.
+4. The CSMS replies with an agreement or non-agreement, and the certificate status.
+5. Service starts after successful authorization of the IDs.
+Alternative scenario(s) C01 - EV Driver Authorization using RFID
+C02 - Authorization using a start button
+C03 - Authorization using credit/debit card
+C04 - Authorization using PIN-code
+C05 - Authorization for CSMS initiated transactions
+C06 - Authorization using local id type
+C08 - Authorization at EVSE using ISO 15118 External Identification Means (EIM)
+C15 - Unknown Offline Authorization
+5 Prerequisites A contract Certificate is installed in the EV.
+6 Postcondition(s) The validity of the Contract Certificate is determined.
+7 Error handling
+8 Remark(s) In edition 1 of 15118, the message timeout of the PaymentDetailsReq/Res message is 5 seconds.
+In case certificate verification cannot be completed in that time it is possible to complete this
+during the AuthorizationReq/Res, which can be extended up to 60 seconds.
+When the Charging Station is offline, it is recommended to omit the payment option for ISO 15118
+contract certificates from the ServiceDiscoveryRes and revert to External Identification Means
+(use case C08), because certificate status cannot be checked.
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 93/491 Part 2 - Specification

@@ -1,0 +1,58 @@
+TC_F_19_CS: Trigger message - FirmwareStatusNotification - Downloading
+Test case name Trigger message - FirmwareStatusNotification - Downloading
+Test case Id TC_F_19_CS
+Use case Id(s) F06
+Requirement(s) F06.FR.04,F06.FR.05,F06.FR.10,L01.FR.26
+System under test Charging Station
+Description The CSMS can request a Charging Station to send Charging Station-initiated messages. In the request the
+CSMS indicates which message it wishes to receive.
+Purpose To verify if the Charging Station is able to send a FirmwareStatusNotificationRequest with status
+Downloading, after receiving a TriggerMessageRequest while downloading a firmware file.
+Prerequisite(s) The Charging Station supports sending FirmwareStatusNotifications triggered by a
+TriggerMessageRequest.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+UpdateFirmwareResponse
+1. The Test System sends a UpdateFirmwareRequest
+firmware.location is <Configured firmware_location>
+firmware.retrieveDateTime is <Current dateTime - 2 hours>
+firmware.installDateTime is omitted
+firmware.signingCertificate is <Configured signingCertificate>
+firmware.signature is <Configured invalid firmware signature>
+3. The Charging Station sends a
+FirmwareStatusNotificationRequest 4. The Test System responds with a
+FirmwareStatusNotificationResponse
+6. The Charging Station responds with a
+TriggerMessageResponse
+5. The Test System sends a TriggerMessageRequest
+With requestedMessage FirmwareStatusNotification
+7. The Charging Station sends a
+FirmwareStatusNotificationRequest 8. The Test System responds with a
+FirmwareStatusNotificationResponse
+Note: Step 9 through 14 are cleanup to prevent an ongoing firmware update after the testcase is already ended. The behavior part of
+these steps is part of TC_L_06_CS and therefore not part of the scope for this testcase.
+9. The Charging Station sends a
+FirmwareStatusNotificationRequest.
+With status Downloaded
+10. The Test System responds with a
+FirmwareStatusNotificationResponse.
+11. The Charging Station sends a
+FirmwareStatusNotificationRequest.
+With status InvalidSignature
+12. The Test System responds with a
+FirmwareStatusNotificationResponse.
+13. The Charging Station sends a
+SecurityEventNotificationRequest.
+With type InvalidFirmwareSignature
+14. The Test System responds with a
+SecurityEventNotificationResponse.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 335/1383 Part 6 - Test Cases

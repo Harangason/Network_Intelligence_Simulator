@@ -1,0 +1,62 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  22/50 
+ 
+Response  
+Function code  1 Byte  0x08  
+Sub-function  2 Bytes   
+Data  N x 2 Bytes   
+ 
+Error  
+Error code  1 Byte  0x88  
+Exception code  1 Byte  01 or 03 or 04  
+ 
+6.8.1  Sub-function codes supported by the serial line devices  
+Here the list of sub -function codes supported by the serial line devices. Each sub -function 
+code is then listed with an example of the data field contents that would apply for that 
+diagnostic.  
+ 
+Sub-function code  Name  
+Hex  Dec  
+00 00 Return Query Data  
+01 01 Restart Communications Option  
+02 02 Return Diagnostic Register  
+03 03 Change ASCII Input Delimiter  
+04 04 Force Listen Only Mode  
+ 05.. 09  RESERVED  
+0A 10 Clear Counters and Diagnostic Register  
+0B 11 Return Bus Message Count  
+0C 12 Return Bus Communication Error Count  
+0D 13 Return Bus Exception Error Count  
+0E 14 Return Server  Message Count  
+0F 15 Return Server  No Response Count  
+10 16 Return Server  NAK Count  
+11 17 Return Server  Busy Count  
+12 18 Return Bus Character Overrun Count  
+13 19 RESERVED  
+14 20 Clear Overrun Counter and Flag  
+N.A.  21 ... 65535  RESERVED  
+ 
+00 Return Query Data  
+The data passed in the request data field is to be returned (looped back) in the response. The 
+entire response message should be identical to the request.  
+Sub-function  Data Field (Request)  Data Field (Response)  
+00 00  Any Echo Request Data  
+ 
+01 Restart Communications Option  
+The remote device serial line port must be initialized and restarted, and all of its 
+communications event counters are cleared. If the port is currently in Listen Only Mode, no 
+response is returned. This function is the only one that brings the port out of Lis ten Only 
+Mode. If the port is not currently in Listen Only Mode, a normal response is returned. This 
+occurs before the restart is executed.  
+When the remote device receives the request, it attempts a restart and executes its power –up 
+confidence tests. Succe ssful completion of the tests will bring the port online.  
+A request data field contents of FF 00 hex causes the port’s Communications Event Log to be 
+cleared also. Contents of 00 00 leave the log as it was prior to the restart.  
+Sub-function  Data Field (Req uest)  Data Field (Response)  
+00 01  00 00  Echo Request Data  
+00 01  FF 00  Echo Request Data  
+ 
+02 Return Diagnostic Register  
+The contents of the remote device’s 16 –bit diagnostic register are returned in the response.  
+Sub-function  Data Field (Request)  Data Field  (Response)  
+ 00 02  00 00  Diagnostic Register Contents  

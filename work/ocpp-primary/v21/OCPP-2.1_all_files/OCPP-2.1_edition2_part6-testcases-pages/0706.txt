@@ -1,0 +1,48 @@
+TC_N_27_CS: Get Customer Information - Accepted + data
+Test case name Get Customer Information - Accepted + data
+Test case Id TC_N_27_CS
+Use case Id(s) N09
+Requirement(s) N09.FR.02, N09.FR.05
+System under test Charging Station
+Description The CSMS sends a message to the Charging Station to retrieve IdToken customer information, for example
+to be compliant with local privacy laws. The Charging Station notifies the CSMS by sending one or more
+reports.
+Purpose To verify if the Charging Station accepts the request and correctly sends the information as described at
+the OCPP specification.
+Prerequisite(s) - The Charging Station needs to support Local Authorization and either the Local Authorization List or
+Authorization Cache.
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+LocalAuthListCtrlr.Enabled is set to true
+AuthCtrlr.LocalPreAuthorize is set to true
+AuthCacheCtrlr.Enabled is set to true
+Memory State:
+IdTokenCached for <Configured valid IdToken fields> (If implemented)
+IdTokenLocalAuthList for <Configured valid IdToken fields> (If implemented)
+Reusable State:
+State is Authorized (local)
+State is ParkingBayUnoccupied
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+CustomerInformationResponse
+1. The Test System sends a CustomerInformationRequest with
+- report true 
+- idToken <Configured valid idToken fields> 
+3. The Charging Station sends a
+NotifyCustomerInformationRequest 4. The Test System responds with a
+NotifyCustomerInformationResponse .
+Note(s):
+- If tbc is True at Step 3 then step 3 and 4 will be repeated
+Tool validations
+* Step 2:
+Message CustomerInformationResponse
+- status Accepted
+* Step 3:
+Message NotifyCustomerInformationRequest
+- data Not empty
+Post scenario validations:
+- All report parts have been received
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 704/1383 Part 6 - Test Cases

@@ -1,0 +1,95 @@
+33 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Talking to the Vehicle (continued)
+That is because rpm is sent in increments of 1/4 rpm!
+To convert to the actual engine speed, we need to
+divide the 6904 by 4. A value of 1726 rpm is much
+more reasonable.
+Note that these examples asked the vehicle for
+information without regard for the type of OBD protocol
+that the vehicle uses. This is because the ELM327
+takes care of all of the data formatting and translation
+for you. Unless you are going to do more advanced
+functions, there is really no need to know what the
+protocol is.
+The above examples showed only a single line of
+response for each request, but the replies often
+consist of several separate messages, either from
+multiple ECUs responding, or from one ECU providing
+messages that need to be combined to form one
+response (see ‘Multiline Responses’ on page 43). In
+order to be adaptable to this variable number of
+responses, the ELM327 normally waits to see if any
+more are coming. If no response arrives within a
+certain time, it assumes that the ECU is finished. This
+same timer is also used when waiting for the first
+response, and if that never arrives, causes ‘NO DATA’
+to be printed.
+There is a way to speed up the retrieval of
+information, if you know how many responses will be
+sent. By telling the ELM327 how many lines of data to
+receive, it knows when it is finished, so does not have
+to go through the final timeout, waiting for data that is
+not coming. Simply add a single hex digit after the
+OBD request bytes - the value of the digit providing the
+maximum number of responses to obtain, and the
+ELM327 does the rest. For example, if you know that
+there is only one response coming for the engine
+temperature request that was previously discussed,
+you can send:
+>01 05 1
+and the ELM327 will return immediately after obtaining
+only one response. This may save a considerable
+amount of time, as the default time for the AT ST timer
+is 200 msec. (The ELM327 still sets the timer after
+sending the request, but that is only in case the single
+response does not arrive.)
+Some protocols (like J1850 PWM) require an
+acknowledgement from the ELM327 for every
+message sent. If you provide a number for the
+responses that is too small, the ELM327 will return to
+the prompt too early, and you may cause bus
+congestion while the ECU tries several times to resend
+the messages that were not acknowledged. For this
+reason, you must know how many responses to
+expect before using this feature.
+As an example, consider a request for the vehicle
+identification number (VIN). This number is 17 digits
+long, and typically takes 5 lines of data to be
+represented. It is obtained with mode 09, PID 02, and
+should be requested with:
+>09 02
+or with:
+>09 02 5
+if you know that there are five lines of data coming. If
+you should mistakenly send 09 02 1, you might cause
+problems.
+This ability to specify the number of responses
+was really added with the programmer in mind. An
+interface routine can determine how many responses
+to expect for a specific request, and then store that
+information for use with subsequent requests. That
+number can then be added to the requests and the
+response time can be optimized. For an individual
+trying to obtain a few trouble codes, the savings are
+not really worth the trouble, and it’s easiest to just
+make a request, without regard to how many
+responses are expected.
+We offer one additional warning when trying to
+optimize the speed at which you obtain information
+from vehicles. Prior to the APR2002 release of the
+J1979 standard, sending J1850 requests more
+frequently than every 100 msec was forbidden. With
+the APR2002 update, scan tools were allowed to send
+the next request without delay if it was determined that
+all the responses to the previous request had been
+received. Vehicles made prior to this time may not be
+able to tolerate requests at too fast a rate, so use
+caution with them.
+Hopefully this has shown how typical requests are
+made using the ELM327. If you are looking for more
+information on modes and PIDs, it is available from
+the SAE (www.sae.org), from ISO (www.iso.org), or
+from various other sources on the web.

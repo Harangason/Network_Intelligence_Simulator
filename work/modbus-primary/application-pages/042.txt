@@ -1,0 +1,43 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  42/50 
+ 
+Figure 29: MODBUS encapsu lated Interface Transport  
+ 
+The Network Interface  can be any communication stack used to send MODBUS PDUs, such 
+as TCP/IP, or serial line.  
+A MEI Type  is a MODBUS Assigned Number and therefore will be unique,  the value between 
+0 to 255 are Reserved accordi ng to Annex A (Informative) except for MEI Type 13 and MEI 
+Type 14.  
+The MEI Type is used by MEI Transport implementations to dispatch a method invocation to 
+the indicated interface.  
+Since the MEI Transport service is interface agnostic, any specific behav ior or policy required 
+by the interface must be provided by the interface, e.g. MEI transaction processing, MEI 
+interface error handling, etc.  
+ 
+Request  
+Function code  1 Byte  0x2B  
+MEI Type*  1 Byte  0x0D or 0x0E  
+MEI type specific data  n Bytes   
+ 
+* MEI = MODBUS Encapsulated Interface  
+Response  
+Function code  1 Byte  0x2B  
+MEI Type  1 byte  echo of MEI Type in 
+Request  
+MEI type specific data   n Bytes   
+ 
+Error  
+Function  code  1 Byte  0xAB :  
+Fc 0x2B + 0x80  
+Exception code  1 Byte  01 or 02 or 03 or  04 
+ 
+As an example see Read device identification request.  
+ 
+6.20  43 / 13 (0x2B / 0x0D) CANopen General Reference Request and Response PDU  
+The CANopen General reference Command is an encapsulation of the services that will be 
+used to access (read from or write to) t he entries of a CAN -Open Device Object Dictionary as 
+well as controlling an d monitoring the CANopen system, and devices.   
+The MEI Type 13 (0x0D) is a MODBUS Assigned Number licensed to CiA for the CANopen 
+General Reference.  
+The system is intended to work within the limitations of existing MODBUS networks. 
+Therefore, the information needed to query or modify the object dictionaries in the system is 

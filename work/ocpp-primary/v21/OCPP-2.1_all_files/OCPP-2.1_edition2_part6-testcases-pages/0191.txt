@@ -1,0 +1,37 @@
+TC_C_107_CS: Integrated Payment Terminal - Payment Terminal and CSMS
+authorises
+Test case name Integrated Payment Terminal - Payment Terminal and CSMS authorises
+Test case Id TC_C_107_CS
+Use case Id(s) C18
+Requirement(s) C18.FR.01, C18.FR.02, C18.FR.04, C18.FR.05, C18.FR.06
+System under test Charging Station
+Description To start/authorize a transaction from a payment terminal connected directly to the Charging Station.
+Purpose To verify if the Charging Station is able to handle authorization using a locally connected payment terminal.
+Prerequisite(s) - Charging Station has an integrated Payment Terminal
+Before (Preparations)
+Configuration State:
+- PaymentCtrlr.Enabled = true
+- *PaymentCtrlr.AuthorizationAmount = 25.00
+- PaymentCtrlr.AuthorizeDirectPayment = true
+- PaymentCtrlr.PaymentDetails = CardLast4Digits
+Memory State:
+N/a
+Reusable State(s):
+State is DefaultTariffConfigured
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State AuthorizedPaymentTerminal (Local)
+2. Execute Reusable State EVConnectedPreSession
+3. Execute Reusable State EnergyTransferStarted
+Tool validations
+* Step 1, 2 and 3 combined:
+In the first TransactionEventRequest message that contains idToken
+- idToken must be <Not empty>
+- idToken.type must be DirectPayment
+- idToken.additionalInfo[0].additionalIdToken must be <not omitted>
+- idToken.additionalInfo[0].type must be CardLast4Digits
+- transactionInfo.transactionLimit.maxCost must be 25.00
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 189/1383 Part 6 - Test Cases

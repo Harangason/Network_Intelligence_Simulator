@@ -1,0 +1,46 @@
+TC_B_102_CS: Reset ImmediateAndResume - With ongoing transaction - Energy
+Transfer Suspended
+Test case name Reset ImmediateAndResume - With ongoing transaction - Energy Transfer Suspended
+Test case Id TC_B_102_CS
+Use case Id(s) B13
+Requirement(s) B13.FR.03, B13.FR.04, B13.FR.20, B13.FR.23, B13.FR.25, B13.FR.30
+System under test Charging Station
+Description This test case covers how the CSMS can remotely request the Charging Station to reset itself by sending a
+ResetRequest during a transaction. When ResetRequest "ImmediateAndResume" is sent the charging
+stations reboots and resumes transactions after reboot.
+Purpose To verify if the Charging Station is able to perform the reset mechanism while there is an ongoing
+transaction as described at the OCPP specification.
+Prerequisite(s) The Charging Station supports transaction resumption after a reboot.
+Before (Preparations)
+Configuration State:
+TxCtrlr.ResumptionTimeout = 999
+TxCtrlr.AllowEnergyTransferResumption = false
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State Booted with reset type ImmediateAndResume
+2. The Charging Station sends a TransactionEventRequest
+This step is optional: In some cases, a Charging Station might re-
+detect the cable being plugged in after a reboot.
+3. The Test System responds with a TransactionEventResponse
+4. The Charging Station sends a TransactionEventRequest
+5. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 2:
+Message TransactionEventRequest
+- eventType = Updated
+- triggerReason = CablePluggedIn
+- transactionInfo.transactionId <transactionId remained the same>
+* Step 4:
+Message TransactionEventRequest
+- eventType = Updated
+- triggerReason = TxResumed
+- transactionInfo.chargingState SuspendedEVSE
+- transactionInfo.transactionId <transactionId remained the same>
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 95/1383 Part 6 - Test Cases

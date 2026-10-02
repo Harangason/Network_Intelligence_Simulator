@@ -1,0 +1,262 @@
+--- before/backend/communication/technologies/knx_tp.py
++++ after/backend/communication/technologies/knx_tp.py
+@@ -0,0 +1,259 @@
++"""KNX TP1 wire, installed segment and selected PHY/host evidence are distinct."""
++TI='https://www.ti.com/lit/an/swra497/swra497.pdf'
++NCN='https://www.onsemi.com/pdf/datasheet/ncn5120-d.pdf'
++TOPOLOGY='https://www.knx.org/news/new-knx-tp1-256-topology-more-devices-and-fewer-line-repeaters'
++CABLE='https://www.knx.org/news/trade-talk-knx-twisted-pair-its-not-just-little-piece-wire'
++ETS='https://support.knx.org/hc/en-us/articles/360022048579-Topology-panel-Detailed'
++SECURE='https://support.knx.org/hc/en-us/articles/360012689639-KNX-Data-Secure'
++CALIMERO='https://raw.githubusercontent.com/calimero-project/calimero-core/61360088c59fd5f593608c971059437b37e0a836/src/tuwien/auto/calimero/'
++GROUP=CALIMERO+'GroupAddress.java'
++MEDIUM=CALIMERO+'link/medium/KNXMediumSettings.java'
++SOURCES={TI:'TI SWRA497, December2015; reviewed TP wire/telegram/timing/address/check sections pp6-13, overview expressly not full KNX specification',
++ NCN:'ONsemi NCN5120, September2024 Rev8; reviewed PHY/digital state/UART/SPI/repetition/host marker/CRC sections pp16,24-35,43-50; qualified component behavior, not every TP PHY',
++ TOPOLOGY:'KNX Association2019-07-10 TP1-64/256 fan-in formula, independent supply loading',
++ CABLE:'KNX Association2018-12-05 approved0.8mm cable,1000m segment/350m PSU-device, actual device voltage evidence still required',
++ ETS:'KNX Association topology detailed, updated2026-09-01; actual manufacturer current versus explicitly estimated10mA device/320mA supply',
++ SECURE:'KNX Association Data Secure, updated2026-09-23; separately commissioned AES128 per group/end device',
++ GROUP:'Calimero v2.6 exact61360088c59fd5f593608c971059437b37e0a836 GroupAddress.java;16bit address/5bitmain versus TI2015 legacy15bit overview',
++ MEDIUM:'Calimero same pinned v2.6 KNXMediumSettings.java; TP1 medium code2/9600bits per second; constructorzero address not allocated identity'}
++DECLARATIONS=[]
++
++
++def d(key,kind,meaning,source=TI,lo=None,hi=None,unit=None,options=None,integer=False):
++    DECLARATIONS.append(dict(key='ktp_'+key,type=kind,description=meaning,source=source,source_revision=SOURCES[source],
++        min=lo,max=hi,unit=unit,options=options,integer=integer))
++
++
++for key,meaning,options,source in [
++ ('profile','Actual reviewed TP implementation: TI overview does not qualify a chip or full standard.',['TP1_DEVICE_QUALIFIED','NCN5120_REV8','REGISTERED_TP_PROFILE'],TI),
++ ('role','Actual endpoint/repeater/line-area coupler/monitor; each segment and other medium independent.',['END_DEVICE','REPEATER','COUPLER','BUS_MONITOR'],TOPOLOGY),
++ ('frame_kind','Actual standard versus extended data versus ACK versus polling; distinct lengths/bit slots.',['STANDARD_DATA','EXTENDED_DATA','ACK','POLLING','REGISTERED_SERVICE'],TI),
++ ('host_kind','Actual selected PHY-host link, not the9600bit/s TP line.',['UART8','UART9','SPI','ANALOG','REGISTERED_HOST'],NCN),
++ ('host_parity','Actual host UART parity, separate from TP per-character even parity.',['NONE','EVEN','REGISTERED_PARITY'],NCN),
++ ('host_order','Actual PHY-host bit order, distinct from address byte order.',['LSB_FIRST','MSB_FIRST'],NCN),
++ ('host_frame_end','Actual NCN host silence versus escaped marker framing.',['SILENCE','MARKER','REGISTERED_FRAME_END'],NCN),
++ ('spi_master','Actual clock owner on the PHY-host link; NCN5120 is SPI master.',['PHY','HOST','REGISTERED_OWNER'],NCN),
++ ('device_state','Actual NCN state; NORMAL alone allows TP communication.',['RESET','POWER_UP','SYNC','STOP','NORMAL'],NCN),
++ ('address_kind','Actual individual versus group versus broadcast destination.',['INDIVIDUAL','GROUP','BROADCAST'],TI),
++ ('group_edition','Actual legacy15bit overview versus pinned/current qualified16bit group layout.',['TI2015_LEGACY_15BIT','CALIMERO_V2_6_16BIT','REGISTERED_GROUP_LAYOUT'],GROUP),
++ ('group_style','Actual raw/two/three-level view of same group address.',['RAW','TWO_LEVEL','THREE_LEVEL'],GROUP),
++ ('power_basis','Actual measured/datasheet load versus explicitly estimated ETS fallback.',['MEASURED','DATASHEET','ETS_ESTIMATE'],ETS),
++ ('cable_profile','Actual approved0.8mm TP cable versus separately qualified realization.',['KNX_APPROVED_0_8','REGISTERED_CABLE'],CABLE),
++ ('ack_kind','Actual observed positive ACK/NACK/BUSY/no response; no default positive acknowledgment.',['ACK','NACK','BUSY','NONE','INVALID'],TI)]:d(key,'select',meaning,source=source,options=options)
++
++for key,meaning,source in [
++ ('revision','Actual full selected KNX TP1 link/application/security edition, not generic CAN parameters.',TI),
++ ('device_source','Actual chip/board/firmware capabilities and qualified standard/extended frames.',NCN),
++ ('physical_source','Actual approved cable/PSU/choke/pulse/equalization/oscillator/EMC realization.',CABLE),
++ ('binding_source','Actual canonical independent TP port/segment; hostUART/SPI or couplerIP/RF has its own registered path.',MEDIUM),
++ ('commissioning_source','Actual ETS physical/group address/filter/object/DPT configuration; no zero-address placeholder.',ETS),
++ ('application_source','Actual DPT/APCI/TPCI/application codec and bytes;ACK is not execution completion.',TI),
++ ('encoding_source','Actual standard/extended telegram,per-byte parity/odd column check;not RF FT3 CRC.',TI),
++ ('schedule_source','Actual shared TP contention,priority,byte pauses,repetitions/ACK/polling and all traffic.',TI),
++ ('capacity_source','Actual TP capacity plus independently sized UART/SPI/coupler paths and approved load.',TOPOLOGY),
++ ('acceptance_source','Actual functional E2E/freshness/safety distinct from positive local L_Data.con.',NCN),
++ ('host_source','Actual selected PHY-host baudrate,UART/SPI mode/owner/frame buffer/service/escaping.',NCN),
++ ('host_buffer_source','Actual implementation send-offset/frame buffer limits and extended-frame acceptance.',NCN),
++ ('address_source','Actual selected edition-specific group layout/allocated address and coupler filters.',GROUP),
++ ('power_source','Actual approved PSU/voltage/current derating/all device loads; ETS estimates remain estimates.',ETS),
++ ('checksum_source','Actual complete wire bytes/odd column check and parity decoding, no invented checksum.',TI),
++ ('coupler_source','Actual filtering/hop/repeater rules,translation and independently qualified other medium.',TOPOLOGY),
++ ('polling_source','Actual polling master/slave slots/state and service codec, not regular dataframe.',NCN),
++ ('registered_profile_source','Actual alternate registered TP/host/service schema,implementation and test proof.',TI),
++ ('security_source','Actual Data Secure endpoint/group commissioning and protected keys, no IP Secure copy.',SECURE),
++ ('group_key_ref','Actual protected Data Secure group key reference,not secret/defaultkey.',SECURE)]:d(key,'text',meaning,source=source)
++
++for key,meaning,lo,hi,unit,integer,source in [
++ ('bitrate_bps','TP1 information rate9600bit/s,independent of hostSPI/UART clock.',9600,9600,'bit/s',True,MEDIUM),
++ ('start_bits','TP character start bit count1.',1,1,'bit',True,TI),
++ ('data_bits','TP character8data bits,not UART9mode9data bits.',8,8,'bit',True,TI),
++ ('parity_bits','TP character1evenparitybit.',1,1,'bit',True,TI),
++ ('stop_bits','TP character1stopbit.',1,1,'bit',True,TI),
++ ('pause_bits','TP inter-character pause2bitperiods,not UART additionalstopbits.',2,2,'bit',True,TI),
++ ('character_bits','TP byte occupies13bits including2bitpause.',13,13,'bit',True,TI),
++ ('idle_bits','Actual initial free medium wait at least50TP bitperiods;5.2ms overviewrounded.',50,None,'bit',True,TI),
++ ('idle_ms','Actual free medium wait converted from exact9600bit/s,not rounded5.2ms equality.',0,None,'ms',False,TI),
++ ('ack_bound_ms','Actual ACK-response bound;overview1.56ms rounded,15TPbitperiods is1.5625ms.',0,None,'ms',False,TI),
++ ('active_pulse_us','Actual qualified active-zero pulse,overview35us nominal not full tolerance proof.',0,None,'us',False,TI),
++ ('equalization_us','Actual qualified equalization pulse,overview69us rounded nominal.',0,None,'us',False,TI),
++ ('pulse_drop_v','Actual active voltage drop,overviewapproximately6..9V; requires measured PHY evidence.',0,None,'V',False,TI),
++ ('supply_nominal_v','Actual approvedPSU nominal voltage,association29V proposal not measurednodevoltage.',0,None,'V',False,CABLE),
++ ('bus_voltage_v','Actual local devicebusvoltage under load and signaltransients.',0,None,'V',False,CABLE),
++ ('device_min_v','Actual selecteddevice voltage minimum,not universalTI20vsassociation21V assumption.',0,None,'V',False,CABLE),
++ ('device_max_v','Actual selecteddevice voltage maximum.',0,None,'V',False,CABLE),
++ ('supply_current_ma','Actual qualified availablecurrent or explicitly estimatedETS320mA,not universal640mA.',0,None,'mA',False,ETS),
++ ('device_current_ma','Actual individualdevicebuscurrent or explicitly estimatedETS10mA.',0,None,'mA',False,ETS),
++ ('segment_load_ma','Actual sum of all device/coupler current on this segment,not one device*guessedcount.',0,None,'mA',False,ETS),
++ ('tp64_count','Actual legacyTP1-64 electricalfan-in4 devicesincludingcouplers.',0,256,None,True,TOPOLOGY),
++ ('tp256_count','ActualTP1-256 electricalfan-in1 devicesincludingcouplers.',0,256,None,True,TOPOLOGY),
++ ('fan_in','Actualweightedfan-in4*n64+n256,max256;notpowerproof.',0,256,None,True,TOPOLOGY),
++ ('segment_length_m','ActualtotalcablelengthonapprovedTPsegment,max1000m not operating default.',0,1000,'m',False,CABLE),
++ ('psu_device_distance_m','Actualcabledistancefrompowerupplytodevice,max350m.',0,350,'m',False,CABLE),
++ ('cable_diameter_mm','Actualapprovedsolidconductor0.8mm versus independentlyqualifiedcable.',0,None,'mm',False,CABLE),
++ ('source_address','Actual16bitallocatedindividualaddress,not constructor0.0.0.',0,65535,None,True,TI),
++ ('area','Actualindividualaddressarea4bits.',0,15,None,True,TI),
++ ('line','Actualindividualaddressline4bits.',0,15,None,True,TI),
++ ('device_number','Actualindividualaddressdevice8bits.',0,255,None,True,TI),
++ ('destination_address','Actual16bitwiregroup/individualdestination,legacygroup15bitswhenexplicit.',0,65535,None,True,GROUP),
++ ('group_main','Actualmain group4legacy/5current bits.',0,31,None,True,GROUP),
++ ('group_middle','Actualthree-levelmiddlegroup3bits.',0,7,None,True,GROUP),
++ ('group_sub','Actualthree-levelsubgroup8bits versus two-level11bits.',0,2047,None,True,GROUP),
++ ('hop_count','ActualKNX3bitnetworkroutingcounter,7specialnondecrementforwarding,not IP TTL.',0,7,None,True,TI),
++ ('priority_code','Actual2bitTPpriority code,notCANidentifierorpriority0..7.',0,3,None,True,NCN),
++ ('repeat_bit','ActualTPcontrolrepeatbit1original/0repeated.',0,1,None,True,TI),
++ ('tpdu_octets','ActualselectedTPDUlength1..16standard;extended buffer/device supports independently proven.',1,255,'Byte',True,TI),
++ ('length_field','ActualencodedTPDUlengthminus1,standard4bitsversusextended8bits.',0,254,'Byte',True,TI),
++ ('frame_octets','ActualcompleteTPwiretelegramincluding7standard/8extended overheadoctets.',1,None,'Byte',True,NCN),
++ ('wire_checksum','Actualoddcolumnparitycheckbyte,notCRCCCITT/FT3CRC16.',0,255,None,True,TI),
++ ('host_bitrate_bps','ActualNCN UART19200/38400 orSPI125000/500000,not9600TPline.',1,None,'bit/s',True,NCN),
++ ('host_data_bits','ActualUART8data bitsinboth8/9bitNCNmodes,9thbitisparity.',1,None,'bit',True,NCN),
++ ('host_stop_bits','ActualUART1stopbit,notTP2bitpause.',1,None,'bit',True,NCN),
++ ('host_cpol','ActualselectedNCN SPI mode0CPOL.',0,1,None,True,NCN),
++ ('host_cpha','ActualselectedNCN SPI mode0CPHA.',0,1,None,True,NCN),
++ ('host_crc_octets','ActualoptionalhostCRC2bytes,notTPwireFCS.',0,None,'Byte',True,NCN),
++ ('host_crc_polynomial','ActualhostCRC16CCITT0x1021.',0,65535,None,True,NCN),
++ ('host_crc_initial','ActualhostCRCinitial0xffff.',0,65535,None,True,NCN),
++ ('host_crc_xorout','ActualhostCRCfinalxor0.',0,65535,None,True,NCN),
++ ('host_end_silence_ms','ActualNCN hostenddetector2.6ms,notTPidleschedule.',0,None,'ms',False,NCN),
++ ('host_marker','ActualNCN hostmarker0xCB,escapedbydoublingwhenoccursindata.',0,255,None,True,NCN),
++ ('busy_retries','ActualNCN3bitBUSYretrycounterdefault3,notsharedNACKcounter.',0,7,None,True,NCN),
++ ('nack_retries','ActualNCN3bitNACKretrycounterdefault3.',0,7,None,True,NCN),
++ ('worst_attempts','ActualNCNworstNACK+BUSY+1 whenretriesenabled,notCANretrylimit.',1,None,None,True,NCN),
++ ('busy_idle_bits','ActualNCNwaitatleast150TPbitperiodsafterBUSY.',0,None,'bit',True,NCN),
++ ('nack_idle_bits','ActualNCNwaitatleast50TPbitperiodsafterNACK/error/noACK.',0,None,'bit',True,NCN),
++ ('ack_timeout_bits','ActualNCNnoACKtimeout30TPbitperiods,distinctfromreceiverACKresponsebound.',0,None,'bit',True,NCN),
++ ('sync_idle_bits','ActualNCNstartupSYNC40freeTPbitperiods,notnormalTX50.',0,None,'bit',True,NCN),
++ ('poll_slot','ActualNCNslavepollingindex0..14,notgroupallocatedidentity.',0,14,None,True,NCN),
++ ('data_secure_key_octets','ActualAES128DataSecurekey16bytes,notsecretvalue.',16,16,'Byte',True,SECURE),
++ ('functional_bound_ms','ActualfunctionalE2EbudgetindependentofTPACK/retry/localconfirmation.',0,None,'ms',False,TI)]:d(key,'number',meaning,source=source,lo=lo,hi=hi,unit=unit,integer=integer)
++for key,meaning,source in [('repeated','Actual retransmission state used to decode invertedrepeatbit.',TI),
++ ('tx_enabled','Actual enabled transmission,notassumedvalidwhileNCNpowerup/sync/stop.',NCN),
++ ('host_crc_enabled','Actual selected optionalPHY-hostCRCCCITT.',NCN),
++ ('retries_enabled','ActualNCNrepeatflag,disabledmeansoneattempt.',NCN),
++ ('auto_ack','ActualNCNautoACKenabledonlywithcommissionedphysicaladdress;reset-onlydeactivation.',NCN),
++ ('power_confirmed','Actual power loadingverified,ETSestimateneverconfirmedactual.',ETS),
++ ('data_secure','ActualindependentlycommissionedDataSecureendpoint/groups.',SECURE),
++ ('security_confirmed','Actualsecurecommissioningverified.',SECURE),
++ ('capacity_confirmed','ActualwholeTPcapacityandscheduleverified.',TI)]:d(key,'boolean',meaning,source=source)
++
++REMOVED={k:'Removed inherited '+k+': TP1wire/priority/ACK/parity, actual power/fan-in, selectedPHY-host and independentcoupler evidence replace CAN/Ethernet queue/retry/sync/gateway assumptions.'for k in
++ ('bitrate','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','sync_method','rate_limit_bit_s',
++ 'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms','gateway_maximum_throughput',
++ 'gateway_input_buffer','gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
++REQUIRED=['profile','role','frame_kind','revision','device_source','physical_source','binding_source','commissioning_source',
++ 'application_source','encoding_source','schedule_source','capacity_source','acceptance_source','bitrate_bps']
++
++
++def semantics():
++    rules=[dict(parameter='local_timing_evidence',allowed=[],source='docs/GENERATION_RULE_MANAGER.md',source_revision='TP1 native link evidence is not I2C transaction evidence')]
++    def r(key,when=None,source=TI,**kw):rules.append(dict(parameter='ktp_'+key,when={'ktp_'+k:v for k,v in(when or{}).items()},source=source,source_revision=SOURCES[source],**kw))
++    r('registered_profile_source',{'profile':'REGISTERED_TP_PROFILE'},required=True)
++    for key,value in [('frame_kind','REGISTERED_SERVICE'),('host_kind','REGISTERED_HOST'),('group_edition','REGISTERED_GROUP_LAYOUT')]:
++        r('registered_profile_source',{key:value},required=True)
++    r('host_source',when_present=['ktp_host_kind'],required=True,source=NCN)
++    r('idle_ms',equal_expression={'product':['ktp_idle_bits',1000/9600]})
++    r('ack_bound_ms',maximum=15*1000/9600)
++    r('source_address',equal_expression={'sum':[{'product':['ktp_area',4096]},{'product':['ktp_line',256]},'ktp_device_number']})
++    r('length_field',equal_expression={'subtract':['ktp_tpdu_octets',1]})
++    for kind,overhead,maximum in [('STANDARD_DATA',7,16),('EXTENDED_DATA',8,255)]:
++        r('tpdu_octets',{'frame_kind':kind},maximum=maximum)
++        r('length_field',{'frame_kind':kind},maximum=maximum-1)
++        r('frame_octets',{'frame_kind':kind},equal_expression={'sum':['ktp_tpdu_octets',overhead]})
++    for flag,bit in [(True,0),(False,1)]:r('repeat_bit',{'repeated':flag},allowed=[bit])
++    r('destination_address',{'address_kind':'BROADCAST'},allowed=[0])
++    r('destination_address',{'address_kind':'GROUP','group_edition':'TI2015_LEGACY_15BIT'},maximum=32767)
++    r('group_main',{'group_edition':'TI2015_LEGACY_15BIT'},maximum=15)
++    r('group_sub',{'group_style':'THREE_LEVEL'},maximum=255)
++    r('group_middle',{'group_style':'TWO_LEVEL'},allowed=[])
++    for style,expr in [('THREE_LEVEL',{'sum':[{'product':['ktp_group_main',2048]},{'product':['ktp_group_middle',256]},'ktp_group_sub']}),
++        ('TWO_LEVEL',{'sum':[{'product':['ktp_group_main',2048]},'ktp_group_sub']})]:
++        r('destination_address',{'address_kind':'GROUP','group_style':style},equal_expression=expr)
++    r('address_source',when_present=['ktp_group_edition'],required=True,source=GROUP)
++    r('fan_in',source=TOPOLOGY,equal_expression={'sum':[{'product':['ktp_tp64_count',4]},'ktp_tp256_count']})
++    r('segment_load_ma',source=ETS,maximum_parameter='ktp_supply_current_ma')
++    r('bus_voltage_v',source=CABLE,minimum_parameter='ktp_device_min_v',maximum_parameter='ktp_device_max_v')
++    r('device_min_v',source=CABLE,maximum_parameter='ktp_device_max_v')
++    r('power_source',when_present=['ktp_power_basis'],required=True,source=ETS)
++    r('power_confirmed',{'power_basis':'ETS_ESTIMATE'},allowed=[False],source=ETS)
++    r('cable_diameter_mm',{'cable_profile':'KNX_APPROVED_0_8'},allowed=[.8],source=CABLE)
++    r('coupler_source',{'role':'COUPLER'},required=True,source=TOPOLOGY)
++    r('polling_source',{'frame_kind':'POLLING'},required=True,source=NCN)
++    for kind in ('ACK','POLLING'):
++        for key in ('tpdu_octets','length_field'):r(key,{'frame_kind':kind},allowed=[])
++    ncn={'profile':'NCN5120_REV8'}
++    r('host_source',ncn,required=True,source=NCN);r('host_kind',ncn,required=True,source=NCN)
++    for kind in ('UART8','UART9'):
++        base={**ncn,'host_kind':kind}
++        r('host_bitrate_bps',base,allowed=[19200,38400],source=NCN)
++        r('host_data_bits',base,allowed=[8],source=NCN);r('host_stop_bits',base,allowed=[1],source=NCN)
++        r('host_parity',base,allowed=['EVEN'if kind=='UART9'else'NONE'],source=NCN)
++        r('host_order',base,allowed=['LSB_FIRST'],source=NCN)
++        for key in ('host_cpol','host_cpha','spi_master'):r(key,base,allowed=[],source=NCN)
++    spi={**ncn,'host_kind':'SPI'}
++    r('host_bitrate_bps',spi,allowed=[125000,500000],source=NCN)
++    for key in ('host_cpol','host_cpha'):r(key,spi,allowed=[0],source=NCN)
++    r('host_order',spi,allowed=['LSB_FIRST'],source=NCN);r('spi_master',spi,allowed=['PHY'],source=NCN)
++    for key in ('host_data_bits','host_stop_bits','host_parity'):r(key,spi,allowed=[],source=NCN)
++    for key in ('host_bitrate_bps','host_data_bits','host_stop_bits','host_parity','host_cpol','host_cpha','spi_master','host_crc_enabled',
++        'host_crc_octets','host_crc_polynomial','host_crc_initial','host_crc_xorout','host_end_silence_ms','host_marker','host_frame_end',
++        'device_state','busy_retries','nack_retries','worst_attempts','retries_enabled','auto_ack',
++        'busy_idle_bits','nack_idle_bits','ack_timeout_bits','sync_idle_bits','poll_slot'):
++        r(key,{**ncn,'host_kind':'ANALOG'},allowed=[],source=NCN)
++    for kind in ('UART8','UART9','SPI'):
++        r('frame_octets',{**ncn,'host_kind':kind},maximum=64,source=NCN)
++    r('host_buffer_source',ncn,when_present=['ktp_frame_octets'],required=True,source=NCN)
++    r('tx_enabled',ncn,when_not={'ktp_device_state':'NORMAL'},allowed=[False],source=NCN)
++    r('worst_attempts',{**ncn,'retries_enabled':True},equal_expression={'sum':['ktp_busy_retries','ktp_nack_retries',1]},source=NCN)
++    r('worst_attempts',{**ncn,'retries_enabled':False},allowed=[1],source=NCN)
++    for key,value,minimum in [('busy_idle_bits',150,True),('nack_idle_bits',50,True),('ack_timeout_bits',30,False),('sync_idle_bits',40,False)]:
++        r(key,ncn,source=NCN,**({'minimum':value}if minimum else{'allowed':[value]}))
++    for key,value in [('host_crc_octets',2),('host_crc_polynomial',0x1021),('host_crc_initial',65535),('host_crc_xorout',0)]:
++        r(key,{**ncn,'host_crc_enabled':True},allowed=[value],source=NCN)
++        r(key,{'host_crc_enabled':False},allowed=[],source=NCN)
++        r('host_crc_enabled',when_present=['ktp_'+key],required=True,source=NCN)
++    r('host_end_silence_ms',{**ncn,'host_frame_end':'SILENCE'},allowed=[2.6],source=NCN)
++    r('host_marker',{**ncn,'host_frame_end':'MARKER'},allowed=[203],source=NCN)
++    r('host_marker',{'host_frame_end':'SILENCE'},allowed=[],source=NCN)
++    r('host_end_silence_ms',{'host_frame_end':'MARKER'},allowed=[],source=NCN)
++    r('source_address',{**ncn,'auto_ack':True},required=True,source=NCN)
++    for key in ('security_source','group_key_ref','data_secure_key_octets'):r(key,{'data_secure':True},required=True,source=SECURE)
++    for key in ('security_source','group_key_ref','data_secure_key_octets','security_confirmed'):r(key,{'data_secure':False},allowed=[],source=SECURE)
++    return {'rate_model':{'type':'EXPLICIT_TP1_WIRE_AND_SEPARATE_HOST','fields':[]},'required_parameters':['ktp_'+k for k in REQUIRED],
++        'native_parameter_prefixes':['ktp_'],'parameter_constraints':rules,'mechanisms':{'framing':['TP_CHARACTER_PARITY_AND_ODD_COLUMN_CHECK_NOT_RF_CRC'],
++        'arbitration':['TP1_DOMINANT_ZERO_COLLISION_AND_NATIVE_PRIORITY'],
++        'physical':['SEGMENT_FAN_IN_AND_POWER_BUDGET_SEPARATE'],
++        'flow_control':['TP_ACK_BUSY_NACK_REPEAT_VERSUS_PHY_HOST_CONFIRMATION'],
++        'acceptance':['LOCAL_ACK_AND_APPLICATION_E2E_SEPARATE']}}
++
++
++def fields():
++    result=[];required=set(semantics()['required_parameters'])
++    for spec in DECLARATIONS:
++        item={k:v for k,v in spec.items()if v is not None};key=item['key'].removeprefix('ktp_')
++        item.update(label=key.replace('_',' '),category='communication',scope='network',required=item['key']in required,
++            editable=True,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
++        fixed={'bitrate_bps':9600,'start_bits':1,'data_bits':8,'parity_bits':1,'stop_bits':1,'pause_bits':2,'character_bits':13}
++        proposals=[]
++        def p(value,**conditions):proposals.append(dict(when={'ktp_'+k:v for k,v in conditions.items()},value=value,source=item['source'],source_revision=item['source_revision']))
++        if key in fixed:item.update(default=fixed[key],default_status='PROPOSED_STANDARD')
++        if key=='supply_nominal_v':p(29,cable_profile='KNX_APPROVED_0_8')
++        if key=='cable_diameter_mm':p(.8,cable_profile='KNX_APPROVED_0_8')
++        if key in ('device_current_ma','supply_current_ma'):p(10 if key=='device_current_ma'else 320,power_basis='ETS_ESTIMATE')
++        if key in ('busy_retries','nack_retries'):p(3,profile='NCN5120_REV8')
++        if key in ('busy_idle_bits','nack_idle_bits','ack_timeout_bits','sync_idle_bits'):
++            p({'busy_idle_bits':150,'nack_idle_bits':50,'ack_timeout_bits':30,'sync_idle_bits':40}[key],profile='NCN5120_REV8')
++        if key=='host_bitrate_bps':
++            for kind,value in [('UART8',19200),('UART9',19200),('SPI',125000)]:p(value,profile='NCN5120_REV8',host_kind=kind)
++        if key in ('host_data_bits','host_stop_bits','host_parity'):
++            for kind in ('UART8','UART9'):p(8 if key=='host_data_bits'else 1 if key=='host_stop_bits'else'EVEN'if kind=='UART9'else'NONE',profile='NCN5120_REV8',host_kind=kind)
++        if key in ('host_cpol','host_cpha','spi_master'):p('PHY'if key=='spi_master'else 0,profile='NCN5120_REV8',host_kind='SPI')
++        if key=='host_order':
++            for kind in ('UART8','UART9','SPI'):p('LSB_FIRST',profile='NCN5120_REV8',host_kind=kind)
++        if key in ('host_crc_octets','host_crc_polynomial','host_crc_initial','host_crc_xorout'):
++            p({'host_crc_octets':2,'host_crc_polynomial':0x1021,'host_crc_initial':65535,'host_crc_xorout':0}[key],profile='NCN5120_REV8',host_crc_enabled=True)
++        if key=='host_marker':p(203,profile='NCN5120_REV8',host_frame_end='MARKER')
++        if key=='host_end_silence_ms':p(2.6,profile='NCN5120_REV8',host_frame_end='SILENCE')
++        if key=='data_secure_key_octets':p(16,data_secure=True)
++        if proposals:item.update(conditional_defaults=proposals,default_status='PROPOSED_CONDITIONAL')
++        result.append(item)
++    return result

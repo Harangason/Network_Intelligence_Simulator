@@ -1,0 +1,54 @@
+TC_R_102_CS: Configure DER control - Clearing controlTypes
+Test case name Configure DER control settings at CS - clearing controlTypes
+Test case Id TC_R_102_CS
+Use case Id(s) R04
+Requirement(s) R04.FR.02, R04.FR.05, R04.FR.30, R04.FR.37, R04.FR.41, R04.FR.42, R04.FR.44
+System under test Charging Station
+Description Setting some controlTypes and let the Charging Station clear them.
+Purpose To check if the CS behaves correctly when clearing controlTypes in different ways.
+Prerequisite(s) EV supports DER Controls
+Configured <CS supported controlType1/2> may not be enterService or gradient.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Clearing all controls
+2. The Charging Station sends a ClearDERControlResponse
+1. The Test System sends a ClearDERControlRequest with
+isDefault true
+4. The Charging Station sends a ClearDERControlResponse
+3. The Test System sends a ClearDERControlRequest with
+isDefault false
+6. The Charging Station sends a
+GetDERControlResponse
+5. The Test System sends a
+GetDERControlRequest with only a requestId
+Installing default control1 and control2
+8. The Charging Station sends a SetDERControlResponse
+7. The Test System sends a SetDERControlRequest with
+controlId control1
+isDefault true
+controlType <CS supported controlType1>
+*.priority 6
+10. The Charging Station sends a SetDERControlResponse
+9. The Test System sends a SetDERControlRequest with
+controlId control2
+isDefault true
+controlType <CS supported controlType2>
+*.priority 6
+Installing scheduled control3 and control4
+12. The Charging Station sends a SetDERControlResponse
+11. The Test System sends a SetDERControlRequest with
+controlId control3
+isDefault false
+controlType <CS supported controlType1>
+*.priority 6
+*.startTime <Current DateTime + 24 hours>
+*.duration 300
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 885/1383 Part 6 - Test Cases

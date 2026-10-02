@@ -1,0 +1,44 @@
+Chapter 1. Messages
+1.1. Authorize
+1.1.1. AuthorizeRequest
+This contains the field definition of the AuthorizeRequest PDU sent by the Charging Station to the CSMS.
+Class
+Field Name Field Type Card. Description
+certificate string[0..5500] 0..1 Optional. The X.509 certificate chain presented by EV and
+encoded in PEM format. Order of certificates in chain is
+from leaf up to (but excluding) root certificate. Only
+needed in case of central contract validation when
+Charging Station cannot validate the contract certificate.
+idToken IdTokenType 1..1 Required. This contains the identifier that needs to be
+authorized.
+iso15118CertificateHashDa
+ta
+OCSPRequestDataType 0..4 Optional. Contains the information needed to verify the
+EV Contract Certificate via OCSP. Not needed if
+certificate is provided.
+1.1.2. AuthorizeResponse
+This contains the field definition of the AuthorizeResponse PDU sent by the CSMS to the Charging Station in response to an
+AuthorizeRequest.
+Class
+Field Name Field Type Card. Description
+certificateStatus AuthorizeCertificateStatusEnumTy
+pe
+0..1 Optional. Certificate status information. - if all certificates
+are valid: return 'Accepted'. - if one of the certificates was
+revoked, return 'CertificateRevoked'.
+idTokenInfo IdTokenInfoType 1..1 Required. This contains information about authorization
+status, expiry and group id.
+1.2. BootNotification
+1.2.1. BootNotificationRequest
+This contains the field definition of the BootNotificationRequest PDU sent by the Charging Station to the CSMS.
+Class
+Field Name Field Type Card. Description
+reason BootReasonEnumType 1..1 Required. This contains the reason for sending this
+message to the CSMS.
+chargingStation ChargingStationType 1..1 Required. Identifies the Charging Station
+1.2.2. BootNotificationResponse
+This contains the field definition of the BootNotificationResponse PDU sent by the CSMS to the Charging Station in response to a
+BootNotificationRequest.
+Class
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 361/491 Part 2 - Specification

@@ -1,0 +1,74 @@
+Q09 - Local V2X control for load balancing - Requirements
+Table 159. Q09 - Requirements
+ID. Precondition Requirements Note
+Q09.FR.01 When Charging Station receives a
+SetChargingProfileRequest with a
+ChargingSchedulePeriodType with
+operationMode =
+LocalLoadBalancing AND
+V2XSupportedOperationModes
+does not contain
+"LocalLoadBalancing"
+Charging Station SHALL respond with
+SetChargingProfileResponse with status =
+Rejected and statusInfo.reasonCode =
+"UnsupportedParam".
+Q09.FR.02 When Charging Station receives a
+SetChargingProfileRequest with a
+ChargingSchedulePeriodType with
+operationMode =
+LocalLoadBalancing AND
+( (
+V2XLocalLoadBalancing[UpperT
+hreshold] or
+V2XLocalLoadBalancing[LowerT
+hreshold] are not set ) OR
+(
+V2XLocalLoadBalancing[UpperO
+ffset] or
+V2XLocalLoadBalancing[LowerO
+ffset] are not set ) OR
+(
+V2XLocalLoadBalancing[UpperT
+hreshold] is not greater than
+V2XLocalLoadBalancing[LowerT
+hreshold] ))
+Charging Station SHALL respond with
+SetChargingProfileResponse with status =
+Rejected and statusInfo = "MissingDevModelInfo"
+Q09.FR.03 During a ChargingSchedulePeriodType
+with operationMode =
+LocalLoadBalancing
+Charging Station SHALL continously read the power
+reported by the upstream grid meter
+Q09.FR.04 Q09.FR.03 Charging Station SHALL calculate the power
+setpoint as follows:
+If Load > UpperThreshold
+    DeltaSetpoint =
+        UpperThreshold
+        + UpperOffset - Load
+Else If Load <
+LowerThreshold
+    DeltaSetpoint =
+        LowerThreshold
+        + LowerOffset - Load
+Else
+    DeltaSetpoint = 0
+setpoint = setpoint
+        + DeltaSetpoint
+"Load" is power from
+upstream meter. Positive
+values for consumption
+of energy.
+Q09.FR.05 Q09.FR.03 AND
+limit and/or dischargeLimit are set
+Charging Station SHALL cap the maximum
+(positive) value of setpoint to the value of limit and
+cap the minimum (negative) value of setpoint to the
+value of dischargeLimit.
+This also applies to L2
+and L3 values.
+Q10 - Idle, minimizing energy consumption
+New in OCPP 2.1
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 534/803 Part 2 - Specification

@@ -1,0 +1,81 @@
+E16.FR.17 If CSMS or Charging Station wish to
+remove a certain transaction limit
+CSMS or Charging Station SHALL set the value of
+this limit to a high enough value, such that it is no
+longer relevant as a limit.
+Once a limit is set in a
+transaction, it cannot be
+unset, only changed.
+E16.FR.18 When CSMS sends a
+TransactionEventResponse with a
+transactionLimit in response to a
+TransactionEventRequest message
+with offline = true
+CSMS SHOULD NOT expect a confirmation from
+Charging Station for the transactionLimit in
+TransactionEventRequest messages that have
+offline = true.
+The queued messages
+with offline = true are
+historical messages
+from the offline period
+and not a response to
+setting the
+transactionLimit. See
+also E16.FR.03.
+E16.FR.19 When the granularity of the
+measurements on Charging Station of
+transactionLimit values is such that it
+may not be possible to stop exactly on
+the limit
+Charging Station SHOULD try to avoid exceeding
+the transactionLimit values.
+For example, if an energy
+meter only reports in
+1000 Wh increments and
+the maxEnergy limit is set
+to 2300 Wh, then
+Charging Station should
+stop at 2000 Wh.
+E16.FR.20 When Charging Station receives
+TransactionEventResponse with a
+transactionLimit that is does not
+support
+Charging Station MAY report this as a
+NotifyEventRequest message with trigger =
+Alerting and eventNotificationType =
+HardWiredNotification for component =
+"TxCtrlr", variable = "SupportedLimits" and
+actualValue set to the not-supported limit:
+"maxEnergy", "maxCost", "maxTime" or "maxSoC".
+See also E16.FR.12
+2.4. Resuming transactions
+E17 - Resuming transaction after forced reboot
+New in OCPP 2.1
+No. Type Description
+1 Name Resuming transaction after forced reboot
+2 ID E17
+3 Objective(s) To show how a transaction can be resumed after it has been interrupted as result of a forced
+reboot of the Charging Station. This allows a transaction to survive interruptions, such as power
+outages or critical software faults.
+4 Description A transaction is running at the Charging Station. The Charging Station gets shut down
+unexpectedly, e.g. due to a software fault, watchdog event, maintenance mode activation or
+power loss at the Charging Station. If the interruption lasts no longer than the configured
+TxResumptionTimeout, then the Charging Station will resume the transaction. If the
+interruption exceeds the timeout, then the transaction will end. The configuration variable
+TxAllowEnergyTransferResumption can be set to false if for a resumed transaction the
+automatic resumption of energy transfer to the vehicle is not allowed.
+Actors Charging Station, CSMS
+Scenario description #1 Resuming transaction before TxResumptionTimeout seconds
+1. Configuration variable TxResumptionTimeout has been set to a value > 0.
+2. An ongoing transaction is interrupted, for example as a result of power loss.
+3. Charging Station reboots when power is restored.
+4. If the interruption occurred less (or equal) than TxResumptionTimeout seconds ago,
+then Charging Station resumes the transaction in the charging state from before the
+interruption.
+a. If TxAllowEnergyTransferResumption = false then energy transfer is not
+allowed anymore on the resumed transaction.
+b. Charging State sends TransactionEventRequest with eventType = Updated and
+triggerReason = TxResumed.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 218/803 Part 2 - Specification

@@ -1,0 +1,29 @@
+ID Precondition Requirement definition
+B11.FR.07 B11.FR.01
+AND
+Charging Station cannot perform the reset now,
+but has scheduled the reset for later
+The Charging Station SHALL respond with a status =
+Scheduled.
+B11.FR.08 B11.FR.01
+AND an evseId parameter is supplied
+AND
+ResetResponse has status = Accepted.
+The Charging Station MAY send a NotifyEventRequest for
+component = "Connector", variable = "AvailabilityState",
+actualValue = "Unavailable" and trigger = "Delta" for the EVSE,
+and SHALL start a reset of the EVSE that is referred to by evseId
+parameter.
+B11.FR.09 B11.FR.01
+AND an evseId parameter is supplied
+AND
+Charging Station does not support resetting an
+individual EVSE
+The Charging Station SHALL return a ResetResponse with status
+= Rejected
+B11.FR.10 When the Charging Station supports resetting of
+an individual EVSE
+The Charging Station SHOULD set the device model variable
+AllowReset to true for the EVSE.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 78/803 Part 2 - Specification

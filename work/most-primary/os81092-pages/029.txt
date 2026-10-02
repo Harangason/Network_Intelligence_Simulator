@@ -1,0 +1,62 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 29
+OS81092
+The number of ChannelAddresses supported is based on the MediaLB Port sp eed and the size of the logical channels
+associated with the ChannelAddresses. The total number of physical channels available at a given MediaLB Port speed is
+indicated in Table 8-1. The mapping of specific physical channels into a logical channel is arbitrary and managed by the
+MediaLB Controller. Generally, logical channels are created by the EHC using the CreateSocket() INIC function.
+Once per network frame, the MediaLB Controller generates a unique 16-bit FRAMESYNC pattern on the signal information
+line (MLBSIG). The end of the FRAMESYNC pattern defines byte and physical channel boundaries, and indicates that the
+MediaLB frame boundary occurs one quadlet later. Physical Channel 0 (PC0), defined as the first physical channel of
+the MediaLB frame, is always used as the SystemChannel. The FRAMESYNC pattern represents a special ChannelAddress,
+which grants the MediaLB Controller (OS81092) PC0 for system administration.
+As illustrated in Figure 8-2, one quadlet after the ChannelAddress is sent by the Controller, the Device associated with that
+ChannelAddress sends out a MediaLB Command on MLBSIG, while simultaneously sending the corresponding Data over
+MLBDAT. All MediaLB Devices, including the OS81092 Controller, compare the ChannelAddress to their internal Channel
+Address table to determine whether they are the intended receiver.
+FIGURE 8-2: MediaLB DATA STRUCTURE
+When the OS81092 Controller is a receiving Device, it places the RxStatus response on MLBSIG one byte after the Medi-
+aLB Command is sent by the transmitting Device. To accept the Data, an RxStatus response of ReceiverReady is sent. To
+reject the Data, an RxStatus response of ReceiverBusy is sent.
+TABLE 8-1: AVAILABLE MediaLB BANDWIDTH
+MediaLB Speed Quadlets per 
+MediaLB Frame Physical Channels Available
+Physical Channels *
+Bytes Available 
+per Frame *
+256Fs 8 PC0 - PC7 7 28
+512Fs 16 PC0 - PC15 15 60
+1024Fs 32 PC0 - PC31 31 124
+* PC0 (first physical channel of the Me diaLB frame) is always used as the SystemChannel; therefore, 
+the bytes of this physical channel are not available for application data.
+Note: In accordance with the MediaLB Specification [3], the OS81092 does not
+acknowledge synchronous data transmissions (RxStatus default response of
+ReceiverReady).
+MLBSIG
+MLBDAT
+4-byte delay
+(1 quadlet = 1 physical channel) (1 quadlet = 1 physical channel)
+Controller:
+ChannelAddress
+TX Device:
+Command
+RX Device:
+RxStatus
+TX Device:
+Data
+TX Device:
+Data
+TX Device:
+Data
+TX Device:
+Data
+Receiving Device accepts 
+or rejects the Data using 
+the RxStatus field.
+Controller grants the 
+Transmitting Device access to 
+the logical channel associated 
+with the ChannelAddress.
+Transmitting Device sends its 
+Command and associated Data 
+on the logical channel associated 
+with the ChannelAddress.

@@ -1,0 +1,40 @@
+Chapter 9. Energy management topologies supported by OCPP
+(New in OCPP 2.1)
+This chapter describes various topologies that can be used when combining an external actor for energy management with
+Charging Stations. The external actor can be a full-fledged (home) energy management system, often abbreviated as EMS or HEMS,
+but it can also be a smart meter that provides a maximum power limit. It is not meant to be an exhaustive list of possibilities, and in
+the future other topologies may become possible.
+In the diagrams the following convention is used for the connectors between components:
+Legend
+a b
+measurements
+control
+ocpp
+9.1. Parallel control of charging station by CSMS and smart meter
+In this setup a Charging Station is connected to a smart meter of the grid connection for the premise. The smart meter provides a
+charging limit to the Charging Station, such that the power consumption of the Charging Station will be reduced if the capacity of
+the grid connection is about to be reached.
+Site
+Charging
+Station
+Smart Meter
+Grid
+Connection
+CSMS
+Third Parties
+e.g. aggregator
+OCPP
+Figure 12. Parallel control by CSMS and smart meter
+9.2. Parallel control of charging location by CSMS and EMS
+In this setup a Charging Location with one or more Charging Stations is equipped with an Energy Management System (EMS).
+CSMS controls the Charging Stations via OCPP, but local load-balancing on-site is controlled by the EMS. EMS will have its own
+connection to a Charging Station, using its own protocol, for example Modbus. If a Charging Station receives a charging constraint
+from EMS, then it will represent this constraint internally as an OCPP charging profile with purpose
+ChargingStationExternalConstraints. This charging profile is combined with other charging profiles that it might receive
+from CSMS. When such an external constraint is received by the Charging Station, it will immediately report this constraint to CSMS
+via the NotifyChargingLimitRequest message. A limitation of this topology is that EMS is not aware of OCPP information that is
+exchanged between Charging Station and CSMS. EMS can therefore not know who is charging at a Charging Station, or what the
+specific charging needs of a user are. Local balancing based on user needs (e.g. time of departure) or priorities is not possible in
+this topology.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 18/22 Part 1 - Architecture & Topology

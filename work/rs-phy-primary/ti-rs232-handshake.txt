@@ -1,0 +1,316 @@
+PDF_PAGE1
+Application Report
+SNLA037B–October 1993–Revised April 2013
+AN-914 Understanding Power Requirements in RS-232
+Applications
+.....................................................................................................................................................
+ABSTRACT
+This application note covers the RS-232 circuit functions, an explanation of hardware handshaking, a step
+by step analysis of the hardware handshaking between a local and remote terminal, and power
+requirements/dissipation of the DS14C335.
+Contents
+1 Introduction .................................................................................................................. 2
+2 RS-232 Handshaking Circuits ............................................................................................. 2
+3 Hardware Handshake Flow ................................................................................................ 3
+4 Power Consumption ........................................................................................................ 4
+5 DS14C335 and Power Consumption ..................................................................................... 5
+6 Other Industry Standards (RS-232) ...................................................................................... 7
+7 Conclusion ................................................................................................................... 8
+8 References ................................................................................................................... 8
+List of Figures
+1 Direction of Flow from DTE/DCE ......................................................................................... 2
+2 DTE to DCE Interface ...................................................................................................... 3
+3 Graphical Illustration of Hardware Handshaking........................................................................ 4
+4 Load Seen by the Driver ................................................................................................... 4
+5 Simultaneous Conduction and ICC......................................................................................... 5
+6 DS14C335 Supply Current vs Frequency vs Driver Loads, All Driver and Receiver Switching.................. 6
+7 DS14C335 Supply Current vs Frequency vs Driver Loads, One Driver (TXD) Switching......................... 6
+8 DS14C335 Supply Current vs Frequency (Receiver), One Receiver (RXD) Switching ........................... 6
+9 DS14C335 Supply Power vs Data Rate ................................................................................. 7
+10 Noise Margin Comparison ................................................................................................. 8
+All trademarks are the property of their respective owners.
+1SNLA037B–October 1993–Revised April 2013 AN-914 Understanding Power Requirements in RS-232 Applications
+Submit Documentation Feedback
+Copyright © 1993–2013, Texas Instruments Incorporated
+PDF_PAGE2
+DTE DCE
+DCD
+RXD
+TXD
+DTR
+GND
+DSR
+RTS
+CTS
+RI
+Introduction www.ti.com
+1 Introduction
+As the popularity of asynchronous serial communication became widely accepted by the industry, the RS-
+232 standard gained very wide acceptance. The use of this standard is visible in almost all Industrial,
+Portable, Desktop, Data Acquistion and Test Measurement applications using a serial port for
+communication. Even though the standard specifies a maximum data rate for RS-232 of 20 kbps, some
+applications need for higher speed is overwhelming. More and more applications today require at least
+120 kbps to support Laplink, a popular communication software used by Laptop/Desktop computers for
+fast file transfer between two computers. RS-232 type Drivers and Receivers must also support this higher
+data rate to be Laplink compatible.
+2 RS-232 Handshaking Circuits
+In a Terminal (DTE-Data Terminal Equipment) to Modem (DCE-Data Circuit Terminating Equipment)
+application, as shown in Figure 2, commonly only eight dedicated lines are required. Even though the
+standard defines a 25 pin connection, the de-facto 9 pin connector is very popular. These lines are DCD,
+RXD, TXD, DTR, DSR, RTS, CTS, RI and GND and are shown in Figure 1. Note that ON is defined as a
+positive voltage and OFF is a negative voltages on the cable. Table 1 lists these dedicated lines along
+with their respective functions.
+Figure 1. Direction of Flow from DTE/DCE
+Table 1. Dedicated Lines and Functions
+Signal Name Description
+When this circuit is OFF locally, it indicates to the local terminal that the remote DTE
+has not switched its RTS circuit ON yet and the local terminal can gain control over the
+DCD: Data Carrier Detect (DCE to DTE) carrier line if needed. When this circuit is ON locally, it indicates to the local terminal
+that the remote modem has received a RTS ON condition from its terminal and the
+remote DTE is in control over the carrier line
+RXD: Receive Data (DCE to DTE) Receive data circuit from modem to DTE.
+TXD: Transmit Data (DTE to DCE) Transmit data circuit from DTE to modem.
+The DTR pin is generally ON when the terminal is ready to establish communication
+channel through its modem. By keeping the DTR circuit ON the DTE lets an “auto
+DTR: Data Terminal Ready (DTE to DCE) answer”modem accept the call unattended. The DTR circuit is OFF, only when the
+DTE does not want its modem to accept calls from remote locations. This is known as
+local mode.
+Both modems switch their DSR circuit ON when a communication path has beenDSR: Data Set Ready (DCE to DTE) established between the two sites (local and remote modem)
+When a terminal is ready to transmit data, it switches the RTS circuit ON, indicating to
+the local modem that it is ready to transmit data. This information also gets passed toRTS: Request To Send (DTE to DCE) the remote modem. The RTS line controls the direction of data transmission. During
+transmit mode, the line is ON and during receive mode it's OFF.
+When CTS switches ON, the local modem is ready to receive data from its DTE andCTS: Clear To Send (DCE to DTE) the local modem has control over the telephone lines for data transmission.
+When the modem receives a call, the RI circuit switches ON/OFF in sequence with the
+RI: Ring Indicator (DCE to DTE) phone ringing informing the DTE that a call is coming in. This indicates that a remote
+modem is requesting a dial-up connection.
+GND Ground, signal common
+2 AN-914 Understanding Power Requirements in RS-232 Applications SNLA037B–October 1993–Revised April 2013
+Submit Documentation Feedback
+Copyright © 1993–2013, Texas Instruments Incorporated
+PDF_PAGE3
+www.ti.com Hardware Handshake Flow
+Figure 2. DTE to DCE Interface
+3 Hardware Handshake Flow
+A step by step analysis of handshaking illustrates how each circuit is used to establish communication
+between a local and a remote site. To keep the subject simple, assumption has been made that
+transmission is from Local to Remote only. Hardware handshaking is shown in Figure 3 .
+1. Local DTE switches DTR ON and local modem dials the phone number of the remote modem.
+2. If DTR at remote location is ON, the remote modem's RI turns ON/OFF in sequence with the phone
+ringing, indicating a call coming in.
+3. The remote modem returns an answer-back tone to the local modem. Upon detection of this tone, the
+local modem and the remote modem establishes the on-line connection. At this point both modems
+switch their DSR pins ON indicating that a connection has been established.
+4. The local DTE switches RTS ON indicating that it is ready to send data. This signal gets passed on to
+the remote modems DCD circuit.
+5. The local modem checks to make sure that local DCD is OFF, which indicates that the remote modem
+is not in control of the carrier line.
+6. The local modem then switches CTS ON to the local DTE to inform that it can start sending data.
+Locally the DCD circuit stays OFF. On the remote modem DCD stays ON. RTS is held ON by the local
+DTE throughout the duration of the connection.
+7. The local DTE sends data through TXD to modem for transmittal.
+8. The remote modem receives the data and sends the data to its terminal via the RXD circuit.
+9. When data transmittal is finished, local DTE drops RTS, which drops the DCD at remote modem and
+CTS at local modem. Transmission of data can be discontinued by hanging up the phone line, by the
+DTE dropping its DTR circuit, by disconnecting the modem cable from the DTE.
+10. Now, either DTE is ready to start all over again and gain control of the telecommunication line.
+3SNLA037B–October 1993–Revised April 2013 AN-914 Understanding Power Requirements in RS-232 Applications
+Submit Documentation Feedback
+Copyright © 1993–2013, Texas Instruments Incorporated
+PDF_PAGE4
+Power Consumption www.ti.com
+Figure 3. Graphical Illustration of Hardware Handshaking
+From the above explanations, in half-duplex communication, we can derive that in transmit mode, only
+one driver (TXD) is switching (up to 120 kbps) while the other drivers/receivers are at some known steady
+state (not switching). Similarly, on a receive mode, only one receiver (RXD) is switching while other lines
+maintain known steady state levels.
+4 Power Consumption
+Based on the above observations, lets determine how ICC, frequency, internal/external capacitance and
+load resistance play a role in power consumption for the DS14C335. Total power consumption is the static
+and the dynamic power combined. CMOS devices typically consume minimal power in a static condition.
+This can be calculated simply by multiplying ICC with VCC.
+Under a loaded condition, the external loading of the driver directly effects the power dissipation of the
+device and application. The RS-232 driver is normally connected to a cable and a receiver at the far end.
+Since the transition time of the driver is set to be substantially longer than the cable delay, the cable load
+represents a lumped capacitive load and a series resistance. The series resistance on short cables (< 200
+feet) can be neglected since it is very small compared to the receiver input resistance. This means the
+cable may be modeled as a lumped capacitive load equal to the capacitance per unit length multiplied by
+the length of the cable. 1000 pF is commonly used to represent a 20 foot cable, and 2500 pF is used as
+the maximum specified cable load. The receiver input resistance is specified to be between 3 kΩ and 7
+kΩ, 5 kΩ is used as a typical, and 3 kΩ is the worst case from a power point of view. This equivalent load
+is illustrated in Figure 4.
+Figure 4. Load Seen by the Driver
+Where: — RS = Cable series resistance.
+— CL = Cable load capacitance.
+RIN = Input resistance of the Receiver.
+4 AN-914 Understanding Power Requirements in RS-232 Applications SNLA037B–October 1993–Revised April 2013
+Submit Documentation Feedback
+Copyright © 1993–2013, Texas Instruments Incorporated
+PDF_PAGE5
+www.ti.com DS14C335 and Power Consumption
+A channel that is in a steady state is loaded by the receivers input impedance since the cable capacitance
+has charged up. The output current of the driver is determined by the output voltage of the driver (VOH or
+VOL) divided by the input resistance of the receiver. For example, a 7V level, across the 3 kΩ load,
+requires 2.3 mA.
+Dynamic power consumption has three major components. The switching current (spike current, also
+commonly called Conduction Overlap Current) during transitions, external load resistance and external
+load capacitance transient dissipation.
+When the voltages to an NMOS/PMOS pair are in transition, both transistors turn on partially, creating a
+relatively low impedance path between the supply rails (V+ and V−). This is known as simultaneous
+conduction and is illustrated in Figure 5. As input frequency increases, the period decreases. At some
+point the output transistors fail to charge and discharge fully causing both upper and lower output
+transistor to stay on momentarily. This simultaneous conduction increases ICC as the input signal's
+frequency is increased.
+The charging and discharging of the large load capacitance CL contributes to power consumption as well.
+The external load capacitance increases power in the same manner as the internal capacitance. A
+channel that is switching at speed is affected by all the components described previously. These new
+components contribute to the increased output current sourced or sunk by the driver to charge or
+discharge the capacitive load. This component of the load current will increase if the external capacitance
+is increased and also if the switching rate of the device is increased.
+Figure 5. Simultaneous Conduction and ICC
+5 DS14C335 and Power Consumption
+TI's DS14C335 is a 3 X 5 Driver/Receiver combination providing a one-chip solution for a 9 pin RS-232
+DTE application. Figure 6 shows a worst case situation where all 3 drivers and 5 receivers are switching
+under different loading conditions. Under this worst case condition, at 10 kHz (20 kbps), supply current is
+30 mA (2500 pF). Under a no load condition, supply current stays relatively flat. Figure 7 shows a true RS-
+232 application where one driver (TXD) is switching while the other two are driver (DTR and RTS) remain
+High (loaded) as shown in Figure 3. At 10 kHz, supply current reads 26 mA (2500 pF), under this real
+world RS-232 application. Decreasing the capacitive load also decreases the supply current as shown in
+Figure 7. Figure 8 illustrates one receiver (RXD) switching. Supply current is almost constant under this
+operating condition.
+5SNLA037B–October 1993–Revised April 2013 AN-914 Understanding Power Requirements in RS-232 Applications
+Submit Documentation Feedback
+Copyright © 1993–2013, Texas Instruments Incorporated
+PDF_PAGE6
+DS14C335 and Power Consumption www.ti.com
+Figure 6. DS14C335 Supply Current vs Frequency vs Driver Loads, All Driver and Receiver Switching
+Figure 7. DS14C335 Supply Current vs Frequency vs Driver Loads, One Driver (TXD) Switching
+Figure 8. DS14C335 Supply Current vs Frequency (Receiver), One Receiver (RXD) Switching
+6 AN-914 Understanding Power Requirements in RS-232 Applications SNLA037B–October 1993–Revised April 2013
+Submit Documentation Feedback
+Copyright © 1993–2013, Texas Instruments Incorporated
+PDF_PAGE7
+www.ti.com Other Industry Standards (RS-232)
+Looking at the Supply Power vs Data Rate (Figure 9) we can see that under multiple driver switching and
+at a maximum data rate of 120 kbps, the supply power is 120 mW (2500 pF load). With one driver
+switching and the other two driver output at High (RS-232 Application), the supply power at maximum data
+rate of 120 kbps drops to 103 mW (2500 pF load).
+Figure 9. DS14C335 Supply Power vs Data Rate
+The DS14C335 also offers a SHUTDOWN (SD) feature where the device can be de-activated by applying
+a logic High on the SD pin. This will lower the supply current to less than 1 μA (typical). In addition, in this
+mode one receiver (R5) remains active to monitor RI (Ring Indicator). This active receiver can sense
+incoming calls and inform the power management circuit to activate the device. SHUTDOWN mode saves
+battery life when the serial port is not used. In this mode, power dissipation is only 3.3 μW allowing battery
+charge to be used by other active circuitry.
+6 Other Industry Standards (RS-232)
+RS-562 is another standard that is gaining popularity in the Industry. RS-562 is compatible to RS-232,
+however, there are some trade-offs. Table 2 illustrates a comparison and the major differences between
+the two standards.
+Table 2. Comparison and Major Differences between RS-232 and RS-562
+Specifications RS-232 RS-562
+Mode of Operation Single-ended Single-ended
+Receiver Input 3 kΩ to 7 kΩ 3 kΩ to 7 kΩ
+Resistance (Ω)
+Receiver Sensitivity ±3V ±3V
+Driver Output Current ±6.67 mA (300Ω) ±6.67 mA (300Ω)
+(Powered Off, ±2V)
+Driver Output Short ≤100 mA ≤60 mA
+Circuit Current Limit
+Number of Drivers and 1 Driver 1 Driver
+Receivers Allowed 1 Receiver 1 Receiver
+Max Cable Length ∼50′ (2500 pF) 2500 pF (20 kbps)
+1000 pF (64 kbps)
+Max Data Rate 20 kbps 64 kbps
+Driver Output ±5V Min ±3.7V Min
+±15V Max ±13.2V Max
+Driver Load 3 kΩ to 7 kΩ 3 kΩ to 7 kΩ
+Driver Slew Rate ≤30 V/μs ≤30 V/μs
+7SNLA037B–October 1993–Revised April 2013 AN-914 Understanding Power Requirements in RS-232 Applications
+Submit Documentation Feedback
+Copyright © 1993–2013, Texas Instruments Incorporated
+PDF_PAGE8
+Conclusion www.ti.com
+Even though RS-562 standard specifies data rates greater than RS-232, the DS14C335 (RS-232) far
+exceeds the 64 kbps of RS-562. The most significant difference between the two standards is the noise
+margin. As shown in Figure 10, RS-232 devices have a noise margin of 2V or greater. Typically for
+DS14C335, the noise margin is 4.5V (7.5V − 3V) whereas RS-562 has a noise margin as low as 700 mV
+(3.7V − 3V). A lower noise margin (RS-562) means limited rejection of external noise, crosstalk and
+ground potential differences which can all commonly occur in RS-232 type communication.
+Figure 10. Noise Margin Comparison
+7 Conclusion
+Design Engineers are plagued with ground shift, noise problems and a noise margin of only 700 mV is not
+acceptable in many applications. RS-232 ensures a 2V noise margin and TI's DS14C335 is the preferred
+choice for applications requiring data rates pushing 120 kbps. Also, we have observed that in a half-
+duplex RS-232 DTE to DCE application, the supply current of the device is lower than simultaneous
+switching of all drivers and receivers as the application only requires one driver (TXD) or one receiver
+(RXD) switching at a time while the rest of the drivers/receivers maintain known steady state levels. Along
+with the power dissipation calculations, a discussion of the SHUTDOWN feature was also presented. This
+SHUTDOWN mode is highly desirable for any application that is battery powered, as it saves battery
+charge when the serial port is inactive.
+8 References
+Piecewise analysis and accurate emulation yield precise power estimates, William Hall and Ray Mentzer,
+EDN March 16, 1992.
+CMOS, the Ideal Logic Family, Stephen Calebotta, Texas Instruments, Application Note AN-77.
+54C/74C Family Characteristics, Thomas P. Redfern, Texas Instruments, Application Note AN-90 .
+HC-MOS Power Dissipation, Kenneth Karakotsios, Texas Instruments, Application Note AN-303 .
+RS-232 Made Easy: Connecting Computers, Printers, Terminals and Modems, Martin D. Seyer.
+8 AN-914 Understanding Power Requirements in RS-232 Applications SNLA037B–October 1993–Revised April 2013
+Submit Documentation Feedback
+Copyright © 1993–2013, Texas Instruments Incorporated
+PDF_PAGE9
+IMPORTANT NOTICE
+Texas Instruments Incorporated and its subsidiaries (TI) reserve the right to make corrections, enhancements, improvements and other
+changes to its semiconductor products and services per JESD46, latest issue, and to discontinue any product or service per JESD48, latest
+issue. Buyers should obtain the latest relevant information before placing orders and should verify that such information is current and
+complete. All semiconductor products (also referred to herein as “components”) are sold subject to TI’s terms and conditions of sale
+supplied at the time of order acknowledgment.
+TI warrants performance of its components to the specifications applicable at the time of sale, in accordance with the warranty in TI’s terms
+and conditions of sale of semiconductor products. Testing and other quality control techniques are used to the extent TI deems necessary
+to support this warranty. Except where mandated by applicable law, testing of all parameters of each component is not necessarily
+performed.
+TI assumes no liability for applications assistance or the design of Buyers’products. Buyers are responsible for their products and
+applications using TI components. To minimize the risks associated with Buyers’products and applications, Buyers should provide
+adequate design and operating safeguards.
+TI does not warrant or represent that any license, either express or implied, is granted under any patent right, copyright, mask work right, or
+other intellectual property right relating to any combination, machine, or process in which TI components or services are used. Information
+published by TI regarding third-party products or services does not constitute a license to use such products or services or a warranty or
+endorsement thereof. Use of such information may require a license from a third party under the patents or other intellectual property of the
+third party, or a license from TI under the patents or other intellectual property of TI.
+Reproduction of significant portions of TI information in TI data books or data sheets is permissible only if reproduction is without alteration
+and is accompanied by all associated warranties, conditions, limitations, and notices. TI is not responsible or liable for such altered
+documentation. Information of third parties may be subject to additional restrictions.
+Resale of TI components or services with statements different from or beyond the parameters stated by TI for that component or service
+voids all express and any implied warranties for the associated TI component or service and is an unfair and deceptive business practice.
+TI is not responsible or liable for any such statements.
+Buyer acknowledges and agrees that it is solely responsible for compliance with all legal, regulatory and safety-related requirements
+concerning its products, and any use of TI components in its applications, notwithstanding any applications-related information or support
+that may be provided by TI. Buyer represents and agrees that it has all the necessary expertise to create and implement safeguards which
+anticipate dangerous consequences of failures, monitor failures and their consequences, lessen the likelihood of failures that might cause
+harm and take appropriate remedial actions. Buyer will fully indemnify TI and its representatives against any damages arising out of the use
+of any TI components in safety-critical applications.
+In some cases, TI components may be promoted specifically to facilitate safety-related applications. With such components, TI’s goal is to
+help enable customers to design and create their own end-product solutions that meet applicable functional safety standards and
+requirements. Nonetheless, such components are subject to these terms.
+No TI components are authorized for use in FDA Class III (or similar life-critical medical equipment) unless authorized officers of the parties
+have executed a special agreement specifically governing such use.
+Only those TI components which TI has specifically designated as military grade or “enhanced plastic”are designed and intended for use in
+military/aerospace applications or environments. Buyer acknowledges and agrees that any military or aerospace use of TI components
+which have not been so designated is solely at the Buyer's risk, and that Buyer is solely responsible for compliance with all legal and
+regulatory requirements in connection with such use.
+TI has specifically designated certain components as meeting ISO/TS16949 requirements, mainly for automotive use. In any case of use of
+non-designated products, TI will not be responsible for any failure to meet ISO/TS16949.
+Products Applications
+Audio www.ti.com/audio Automotive and Transportation www.ti.com/automotive
+Amplifiers amplifier.ti.com Communications and Telecom www.ti.com/communications
+Data Converters dataconverter.ti.com Computers and Peripherals www.ti.com/computers
+DLP® Products www.dlp.com Consumer Electronics www.ti.com/consumer-apps
+DSP dsp.ti.com Energy and Lighting www.ti.com/energy
+Clocks and Timers www.ti.com/clocks Industrial www.ti.com/industrial
+Interface interface.ti.com Medical www.ti.com/medical
+Logic logic.ti.com Security www.ti.com/security
+Power Mgmt power.ti.com Space, Avionics and Defense www.ti.com/space-avionics-defense
+Microcontrollers microcontroller.ti.com Video and Imaging www.ti.com/video
+RFID www.ti-rfid.com
+OMAP Applications Processors www.ti.com/omap TI E2E Community e2e.ti.com
+Wireless Connectivity www.ti.com/wirelessconnectivity
+Mailing Address: Texas Instruments, Post Office Box 655303, Dallas, Texas 75265
+Copyright © 2013, Texas Instruments Incorporated

@@ -1,0 +1,60 @@
+MODBUS over serial line specification and implementation guide V1.02 Modbus.org    
+Modbus.org http://www.modbus.org/ 35/44
+Dec 20, 2006 
+6 Appendix 
+6.1 Appendix A - Management of Serial Line Diagnostic Counters 
+6.1.1 General description 
+MODBUS Serial Line defines a list of diagnostic counters to allow performance and error management. 
+These counters are accessible using the MODBUS application protocol and its Diagnostic function (function code 08).  
+Each counter can be get by a sub-function code bound to the counter number.  All counters can be cleared using the sub-function  
+code 0x0A. 
+The format of the Diagnostic function is described in the MODBUS application protocol specification.  
+Herein is the list of diagnostics and associated sub-function codes supported by a serial line device.   
+Sub-
+function 
+code 
+Counter  
+number 
+Hex Dec 
+Counters Name Comments 
+(for diagram below) 
+0x0B 1 Return Bus Message Count Quantity of messages that the remote device has detected on the 
+communications system since its last restart, clear counters operation, 
+or power–up.  Messages with bad CRC are not taken into account. 
+0x0C 2 Return Bus Communication Error 
+Count 
+Quantity of CRC errors encountered by the remote device since its last 
+restart, clear counters operation, or power–up.  In case of an error 
+detected on the character level, (overrun, parity error), or in case of a 
+message length < 3 bytes, the receiving device is not able to calculate 
+the CRC.  In such cases, this counter is also incremented. 
+0x0D 3 Return Slave Exception Error Count Quantity of MODBUS exception error detected by the remote device 
+since its last restart, clear counters operation, or power–up.  It 
+comprises also the error detected in broadcast messages even if an 
+exception message is not returned in this case.  
+Exception errors are described and listed in "MODBUS Application 
+Protocol Specification" document. 
+0xOE 4 Return Slave Message Count Quantity of messages addressed to the remote device,  including 
+broadcast messages, that the remote device has processed since its 
+last restart, clear counters operation, or power–up. 
+0x0F 5 Return Slave No Response Count Quantity of messages received by the remote device for which it 
+returned no response (neither a normal response nor an exception 
+response), since its last restart, clear counters operation, or power–up. 
+Then, this counter counts the number of broadcast messages it has 
+received. 
+0x10 6 Return Slave NAK Count Quantity of messages addressed to the remote device for which it 
+returned a Negative Acknowledge (NAK) exception response, since its 
+last restart, clear counters operation, or power–up. Exception 
+responses are described and listed in "MODBUS Application Protocol 
+Specification" document. 
+0x11 7 Return Slave Busy Count Quantity of messages addressed to the remote device for which it 
+returned a Slave Device Busy exception response, since its last restart, 
+clear counters operation, or power–up. Exception responses are 
+described and listed in "MODBUS Application Protocol Specification" 
+document 
+0x12 8 Return Bus Character Overrun Count Quantity of messages addressed to the remote device that it could not
+handle due to a character overrun condition, since its last restart, clea r
+counters operation, or power–up. A character overrun is caused by data 
+characters arriv
+ing at the port faster than they can be stored, or by the
+loss of a character due to a hardware malfunction. 

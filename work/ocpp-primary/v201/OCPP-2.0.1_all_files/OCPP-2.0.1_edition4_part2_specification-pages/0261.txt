@@ -1,0 +1,90 @@
+ID Precondition Requirement definition Note
+K01.FR.46 When a
+SetChargingProfileRequest
+with numberPhases = 1 and
+a value for phaseToUse is
+received AND
+the EVSE is of type AC AND
+the EVSE is capable of
+switching the phase
+connected to the EV, which
+is indicated by
+ACPhaseSwitchingSupporte
+d defined as true OR
+the EVSE is already going to
+use the received
+phaseToUse
+The Charging Station SHALL use the phase indicated by
+the received phaseToUse to connect to the EV.
+K01.FR.47 When a
+SetChargingProfileRequest
+with numberPhases = 1 and
+phaseToUse is omitted is
+received AND
+the EVSE is of type AC
+The Charging Station SHALL select the phase on its own.
+K01.FR.48 When a
+SetChargingProfileRequest
+with a value for phaseToUse
+is received AND
+the EVSE is NOT capable of
+switching the phase
+connected to the EV, which
+is indicated by
+ACPhaseSwitchingSupporte
+d not being implemented or
+defined as false AND
+the EVSE is NOT going to
+use the received
+phaseToUse
+The Charging Station SHALL respond with status =
+Rejected.
+It is recommended to
+include reasonCode =
+"InvalidSchedule".
+K01.FR.49 When a
+SetChargingProfileRequest
+without a value for
+numberPhases is received
+AND
+the EVSE is of type AC
+The Charging Station SHALL assume numberPhases = 3
+as a default value.
+Regions with a single phase
+network should always
+provide numberPhases = 1,
+otherwise 3 phases will be
+assumed.
+K01.FR.50 When a
+SetChargingProfileRequest
+with a chargingRateUnit = W
+is received AND
+The charging profile is used
+for AC charging
+The Charging Station SHALL calculate the phase current
+limit via: Current per phase = limit / (Line Voltage *
+numberPhases), in which limit and numberPhases are the
+values from the ChargingSchedulePeriod.
+The "Line Voltage" used in
+the calculation is not the
+measured voltage, but the
+set voltage for the area (for
+example, 230 or 110 V).
+When numberPhases is not
+specified, a value of 3 is
+assumed (see K01.FR.49). It
+is usually more convenient
+to use chargingRateUnit = A
+for AC charging, since in
+that case the power does
+not change depending on
+number of phases in use.
+K01.FR.51 When a
+SetChargingProfileRequest
+with a chargingRateUnit = A
+is received
+The Charging Station SHALL use the provided limits, to
+limit the amount of Ampere per phase, not the sum of all
+phases.
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 251/491 Part 2 - Specification

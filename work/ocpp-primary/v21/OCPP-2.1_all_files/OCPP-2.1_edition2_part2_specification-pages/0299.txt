@@ -1,0 +1,83 @@
+ID. Precondition Requirements Note
+I07.FR.23 If a tariff A is present on EVSE X with
+A.validFrom = T1 AND
+a tariff B is present on EVSE X with a value for
+B.validFrom = T2 AND
+current time is less than A.validFrom (i.e. A is
+not yet valid) AND
+A.validFrom > B.validFrom
+Charging Station SHALL NOT replace the tariff
+A on EVSE X with the new tariff B.
+A becomes valid after
+B, so must not be
+removed.
+I07.FR.24 ( I07.FR.20 OR I07.FR.21 OR I07.FR.22 ) AND
+the tariff A is used in an active transaction on
+EVSE X
+Charging Station SHALL continue to use the
+tariff A for the transaction on EVSE X until the
+transaction has ended.
+The tariff cannot
+change during a
+transaction, unless
+explicitly requested via
+ChangeTransactionTar
+iffRequest.
+Tariff acceptance
+I07.FR.30 I07.FR.14 AND
+EV Driver does not accept the tariff AND
+Charging Station has already started a
+transaction
+Charging Station SHALL deauthorize the
+idToken of the transaction and send a
+TransactionEventRequest with triggerReason =
+"TariffNotAccepted".
+There will be no tariffId
+and no cost
+associated with
+transaction. Without
+authorization, no
+energy will be
+delivered. If
+TxStopPoint contains
+"Authorized" or
+"PowerPathClosed"
+this situation will end
+the transaction with
+stoppedReason =
+DeAuthorized.
+I07.FR.31 I07.FR.14 AND
+EV Driver does not accept the tariff AND
+Charging Station has not yet started a
+transaction
+Charging Station SHALL deauthorize the
+idToken of EV Driver.
+A transaction can still
+be started after this
+when a cable is
+plugged in and
+TxStartPoint =
+"EVConnected", but
+without authorization,
+no energy will be
+delivered.
+I07.FR.32 I07.FR.14 AND
+EV Driver has implicitly or explicitly accepted
+the tariff
+Charging Station SHALL associate the default
+tariff with the transaction by including
+transactionInfo.tariffId once in the next
+TransactionEventRequest message.
+NOTE A "default tariff" is a tariff installed via a SetDefaultTariffRequest message.
+I08 - Local Cost Calculation - Receive Driver Tariff
+New in OCPP 2.1
+No. Type Description
+1 Name Local Cost Calculation - Receive Driver Tariff
+2 ID I08
+3 Objective(s) To receive the driver-specific tariff in response to an AuthorizeRequest.
+4 Description CSMS provides a tariff structure in a AuthorizeResponse that Charging Station must use to
+calculate the cost. This implies that Authorization Cache or Local Authorization List cannot be
+used.
+Actors Charging Station, CSMS, EV Driver
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 286/803 Part 2 - Specification

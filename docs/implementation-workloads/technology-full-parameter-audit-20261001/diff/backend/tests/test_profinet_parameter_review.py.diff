@@ -1,0 +1,121 @@
+--- before/backend/tests/test_profinet_parameter_review.py
++++ after/backend/tests/test_profinet_parameter_review.py
+@@ -0,0 +1,118 @@
++"""PNIO fields must retain their source, layer and actual device constraints."""
++from copy import deepcopy
++import pytest
++from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
++from backend.communication.technologies import profinet as P
++def actual():
++ x={'pn_'+k:'synthetic-'+k for k in P.REQUIRED}
++ x.update(bitrate_bps=100000000,pn_wire_profile='PNIO_2_4',pn_clock_profile='PNIO_2_4',pn_implementation='P_NET_PUBLIC_PINNED',
++  pn_phy='100BASE_TX',pn_duplex='FULL',pn_role='IO_DEVICE',pn_service='CYCLIC_IO',pn_rt_class='RTC1',pn_startup='LEGACY',pn_iocr_type='INPUT')
++ return x
++def status(x):return registry.validate_parameters('profinet',x)['status']
++def test_pn_explicit_native_path_not_can_ethernet_capacity_fallback():
++ p=registry.profile('profinet');assert p['default_stack']==['profinet']and p['max_payload_bytes']is None
++ assert p['capacity_evidence']['status']=='MODEL_MISSING'and status(actual())=='VALID'
++ keys=[v['key']for v in registry.parameter_fields('profinet')];assert len(keys)==len(set(keys))and not set(keys)&set(P.REMOVED)
++ for bad in({'bitrate_bps':500000},{'mtu_bytes':1500},{'nominal_bitrate_bps':500000},{'pn_duplex':'HALF'},{'local_timing_evidence':{'confirmed':True}}):
++  assert status({**actual(),**bad})=='INVALID'
++ assert status({'bitrate_bps':100000000})=='UNVERIFIED'
++@pytest.mark.parametrize('field',registry.parameter_fields('profinet'),ids=lambda f:f['key'])
++def test_pn_every_field_type_and_declared_outer_bound(field):
++ k='bitrate_bps'if field['key']=='bitrate'else field['key']
++ assert status({**actual(),k:'wrong'if field['type']=='number'else 1})=='INVALID'
++ for edge,offset in [('min',-1),('max',1)]:
++  if field.get(edge)is not None:assert status({**actual(),k:field[edge]+offset})=='INVALID'
++def test_pn_source_defaults_no_automatic_device_or_fastest_cycle():
++ f={v['key']:v for v in registry.parameter_fields('profinet')};assert f['bitrate']['default']==100000000
++ for k,v in P.DEFAULTS.items():assert f['pn_'+k]['conditional_defaults'][0]['value']==v
++ assert f['pn_send_clock_factor']['conditional_defaults'][0]['when']=={'pn_clock_profile':'SIMOTION_2023_EVEN'}
++ assert f['pn_send_clock_factor']['conditional_defaults'][0]['value']==32
++ assert f['pn_send_clock_us']['conditional_defaults'][0]['value']==1000
++ for k in('station_name','min_device_interval','data_hold_factor','freshness_us','record_timeout_ms','frame_valid','sync_verified'):
++  assert 'default'not in f['pn_'+k]and 'conditional_defaults'not in f['pn_'+k]
++def test_pn_alternate_phy_requires_actual_source_no_foreign_fixed_rate():
++ x={**actual(),'pn_phy':'REGISTERED_ACTUAL','bitrate_bps':1000000000};assert status(x)=='UNVERIFIED'
++ x['pn_registered_source']='synthetic-alternate-device-PHY';assert status(x)=='VALID'
++ assert status({**actual(),'bitrate_bps':1000000000})=='INVALID'
++def test_pn_advanced_mode_and_public_runtime_not_equivalent_enum_support():
++ assert status({**actual(),'pn_startup':'ADVANCED'})=='INVALID'
++ assert status({**actual(),'pn_rt_class':'RTC2'})=='INVALID'
++ x={**actual(),'pn_implementation':'REGISTERED_ACTUAL','pn_registered_source':'synthetic-runtime','pn_rt_class':'RTC2','pn_startup':'ADVANCED'}
++ assert status(x)=='VALID'
++@pytest.mark.parametrize('rt,csdu,eth',[('RTC1',40,0x8892),('UDP',12,0x0800)])
++def test_pn_csdu_data_status_padding_and_l2_vs_udp_minimum(rt,csdu,eth):
++ x={**actual(),'pn_rt_class':rt,'pn_csdu_bytes':csdu,'pn_io_data_bytes':8,'pn_iops_bytes':1,'pn_iocs_bytes':1,'pn_padding_bytes':csdu-10,'pn_ethertype':eth}
++ assert status(x)=='VALID'
++ for bad in({'pn_padding_bytes':csdu-11},{'pn_csdu_bytes':csdu-1},{'pn_ethertype':0x0800 if eth==0x8892 else 0x8892}):assert status({**x,**bad})=='INVALID'
++ x.pop('pn_padding_bytes');assert status(x)=='UNVERIFIED'
++def test_pn_full_l2_tagged_frame_fcs_and_physical_serialization():
++ x={**actual(),'pn_csdu_bytes':40,'pn_io_data_bytes':8,'pn_iops_bytes':1,'pn_iocs_bytes':1,'pn_padding_bytes':30,
++  'pn_buffer_bytes':64,'pn_mac_bytes':68,'pn_mac_bits':544,'pn_serialization_us':5.44,'payload_bytes':2000}
++ assert status(x)=='VALID'
++ for bad in({'pn_buffer_bytes':68},{'pn_mac_bytes':64},{'pn_mac_bits':68*11},{'pn_serialization_us':544}):assert status({**x,**bad})=='INVALID'
++def test_pn_clock_update_hold_phase_and_actual_min_device_interval():
++ x={**actual(),'pn_send_clock_factor':32,'pn_send_clock_us':1000,'pn_reduction_ratio':4,'pn_update_us':4000,
++  'pn_data_hold_factor':3,'pn_data_hold_us':12000,'pn_phase':4,'pn_min_device_interval':128}
++ assert status(x)=='VALID'
++ for bad in({'pn_send_clock_us':32},{'pn_update_us':1000},{'pn_data_hold_us':3000},{'pn_phase':5},{'pn_min_device_interval':129}):
++  assert status({**x,**bad})=='INVALID'
++ x.pop('pn_data_hold_factor');assert status(x)=='UNVERIFIED'
++@pytest.mark.parametrize('rt,ratio,factor,good',[('RTC1',255,128,True),('RTC1',256,128,False),('RTC1',257,64,True),
++ ('RTC1',512,64,False),('RTC1',512,32,True),('UDP',8191,128,True),('UDP',8192,128,False),
++ ('UDP',8193,64,True),('UDP',16384,64,False),('UDP',16384,32,True)])
++def test_pn_wire_clock_reduction_boundary_ranges(rt,ratio,factor,good):
++ assert(status({**actual(),'pn_rt_class':rt,'pn_reduction_ratio':ratio,'pn_send_clock_factor':factor})=='VALID')is good
++def test_pn_simotion_even_profile_not_generic_odd_clock_or_fastest_hardware():
++ x={**actual(),'pn_clock_profile':'SIMOTION_2023_EVEN','pn_send_clock_factor':32,'pn_reduction_ratio':512};assert status(x)=='VALID'
++ for bad in({'pn_send_clock_factor':4},{'pn_send_clock_factor':12},{'pn_reduction_ratio':3},{'pn_send_clock_factor':64}):assert status({**x,**bad})=='INVALID'
++def test_pn_data_hold_maxima_are_class_specific_not_copied_application_deadlines():
++ x={**actual(),'pn_send_clock_factor':32,'pn_reduction_ratio':1,'pn_data_hold_factor':1920,'pn_data_hold_us':1920000}
++ assert status(x)=='VALID';assert status({**x,'pn_data_hold_factor':1921,'pn_data_hold_us':1921000})=='INVALID'
++ assert status({**x,'pn_rt_class':'UDP','pn_data_hold_factor':7680,'pn_data_hold_us':7680000})=='VALID'
++ x.pop('pn_data_hold_us')
++ assert status({**x,'pn_data_hold_factor':1921})=='INVALID'
++ assert status({**x,'pn_send_clock_factor':32,'pn_reduction_ratio':512,'pn_data_hold_factor':7680})=='INVALID'
++@pytest.mark.parametrize('offset,kind,good',[(4294967295,'BEST_EFFORT',True),(1000000,'BEST_EFFORT',False),
++ (999999,'SCHEDULED',True),(1000000,'SCHEDULED',False),(4294967295,'SCHEDULED',False)])
++def test_pn_offset_best_effort_sentinel_not_deadline(offset,kind,good):
++ assert(status({**actual(),'pn_send_clock_factor':32,'pn_offset_kind':kind,'pn_frame_send_offset_ns':offset})=='VALID')is good
++@pytest.mark.parametrize('rt,kind,fid,good',[('RTC1','INPUT',0xc000,True),('RTC1','INPUT',0xf800,False),
++ ('RTC1','MC_PROVIDER',0xf800,True),('RTC1','MC_CONSUMER',0xfbff,True),('RTC1','MC_PROVIDER',0xfc00,False),('UDP','INPUT',0xc000,True)])
++def test_pn_frame_id_ranges_distinguish_unicast_and_multicast(rt,kind,fid,good):
++ assert(status({**actual(),'pn_rt_class':rt,'pn_iocr_type':kind,'pn_frame_id':fid})=='VALID')is good
++@pytest.mark.parametrize('service,fid',[('HELLO',0xfefc),('GET_SET',0xfefd),('IDENTIFY_REQUEST',0xfefe),('IDENTIFY_RESPONSE',0xfeff)])
++def test_pn_dcp_frame_identifiers_not_cyclic_data(service,fid):
++ x={**actual(),'pn_service':'DCP','pn_dcp_service':service,'pn_frame_id':fid};assert status(x)=='VALID'
++ assert status({**x,'pn_frame_id':0xc000})=='INVALID'
++@pytest.mark.parametrize('previous,factor,ratio,nxt',[(65504,32,1,0),(65472,32,2,0),(5,2,4,8),(8,2,4,16)])
++def test_pn_cycle_counter_normalizes_and_wraps_not_packet_increment(previous,factor,ratio,nxt):
++ x={**actual(),'pn_previous_counter':previous,'pn_send_clock_factor':factor,'pn_reduction_ratio':ratio,'pn_next_counter':nxt}
++ assert status(x)=='VALID';assert status({**x,'pn_next_counter':(nxt+1)%65536})=='INVALID'
++def test_pn_irt_requires_hardware_sync_topology_plan_and_phase_budget():
++ x={**actual(),'pn_implementation':'REGISTERED_ACTUAL','pn_registered_source':'synthetic-IRT-stack','pn_rt_class':'RTC3',
++  'pn_irt_hardware':True,'pn_sync_verified':True,'pn_topology_verified':True,'pn_irt_source':'synthetic-per-port-plan','pn_sync_domain':'synthetic-domain',
++  'pn_send_clock_factor':8,'pn_send_clock_us':250,'pn_red_phase_us':100,'pn_open_phase_us':150}
++ assert status(x)=='VALID'
++ for bad in({'pn_irt_hardware':False},{'pn_sync_verified':False},{'pn_topology_verified':False},{'pn_open_phase_us':250}):assert status({**x,**bad})=='INVALID'
++ x.pop('pn_irt_source');assert status(x)=='UNVERIFIED'
++def test_pn_optional_capabilities_not_universal_defaults():
++ for k in('dfp_enabled','mrp_enabled','shared_device','fast_cycle_capable'):
++  x={**actual(),'pn_'+k:True};assert status(x)=='UNVERIFIED'
++  x['pn_optional_source']='synthetic-enabled-supported-capability';assert status(x)=='VALID'
++@pytest.mark.parametrize('name,good',[('sensor-1.area',True),('a'*63+'.b',True),('a'*64,False),('x..y',False),
++ ('-sensor',False),('sensor-',False),('Sensor',False),('port-001.foo',False),('port-001-12345.foo',False),
++ ('192.168.1.1',False),('x--y',False),('a.'*121+'b',False)])
++def test_pn_declared_ascii_station_grammar_no_parser_bug_copy(name,good):
++ assert(status({**actual(),'pn_station_name':name})=='VALID')is good
++def test_pn_acceptance_requires_iops_frame_mapping_data_valid_run_and_freshness():
++ x={**actual(),'pn_data_accepted':True,'pn_outcome':'ACCEPTED','pn_frame_valid':True,'pn_mapping_valid':True,
++  'pn_state':'DATA_EXCHANGE','pn_station_name':'actual-synthetic-device','pn_iops':128,'pn_data_status':0x35,'pn_age_us':400,'pn_freshness_us':500}
++ assert status(x)=='VALID'
++ for bad in({'pn_data_status':0x31},{'pn_data_status':0x25},{'pn_data_status':0xb5},{'pn_iops':0},{'pn_mapping_valid':False},
++  {'pn_frame_valid':False},{'pn_state':'CONNECTING'},{'pn_age_us':501}):assert status({**x,**bad})=='INVALID'
++ # StationProblem flag being0 does not itself make process data bad.
++ assert status({**x,'pn_data_status':0x15})=='VALID'
++ x.pop('pn_iops');assert status(x)=='UNVERIFIED'
++def test_pn_confirmed_values_lossless_with_foreign_parameters():
++ x={**actual(),'pn_station_name':'user-17','pn_send_clock_factor':16,'pn_reduction_ratio':8,'pn_data_hold_factor':7,'pn_record_timeout_ms':1234};before=deepcopy(x)
++ assert status(x)=='VALID';assert status({**x,'nominal_bitrate_bps':500000})=='INVALID';assert x==before

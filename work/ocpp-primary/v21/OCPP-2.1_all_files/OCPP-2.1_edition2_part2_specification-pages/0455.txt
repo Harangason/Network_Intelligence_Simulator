@@ -1,0 +1,72 @@
+No. Type Description
+Scenario description 1. The CSMS requests the Charging Station to delete an installed certificate by sending a
+DeleteCertificateRequest.
+2. The Charging Station responds with a DeleteCertificateResponse.
+5 Prerequisite(s) n/a
+6 Postcondition(s) The requested certificate was deleted from the Charging Station.
+7 Error handling n/a
+8 Remark(s) For installing the (V2G) Charging Station Certificate, see use cases A02 - Update Charging Station
+Certificate by request of CSMS and A03 - Update Charging Station Certificate initiated by the
+Charging Station. The V2G certificate chain SHOULD NOT include the V2GRootCertificate. This
+SHOULD be installed using Use case M05 - Install CA certificate in a Charging Station.
+It is possible to delete the last (every) installed CSMSRootCertificates. When all
+CSMSRootCertificates are deleted, the Charging Station cannot validate CSMS Certificates, so it
+will not be able to connect to a CSMS. Before a CSMS would ever send a DeleteCertificateRequest
+that would delete the last/all CSMSRootCertificates the CSMS is ADVISED to make very sure that
+this is what is really wanted.
+It is possible to delete the last (every) installed ManufacturerRootCertificates, when all
+ManufacturerRootCertificates are deleted, no "Signed Firmware" can be installed in the Charging
+Station.
+CSMS Charging Station
+DeleteCertificateRequest(certificateHashData)
+DeleteCertificateResponse(status)
+Figure 161. Delete Installed Certificate
+M04 - Delete a specific certificate from a Charging Station - Requirements
+Table 130. M04 - Requirements
+ID Precondition Requirement definition Note
+M04.FR.01 After receiving a
+DeleteCertificateRequest
+The Charging Station SHALL respond with a
+DeleteCertificateResponse.
+M04.FR.02 M04.FR.01 AND The requested
+certificate was found
+The Charging Station SHALL attempt to delete
+it, and indicate success by setting status to
+Accepted in the DeleteCertificateResponse.
+M04.FR.03 M04.FR.01 AND (The deletion fails
+OR
+the Charging Station rejects the
+request to delete the specified
+certificate.)
+The Charging Station SHALL indicate failure by
+setting status to Failed in the
+DeleteCertificateResponse.
+A Charging Station may reject the
+request to prevent the deletion of a
+certificate, if it is the last one from
+its certificate type.
+M04.FR.04 M04.FR.01 AND
+The requested certificate was not
+found
+The Charging Station SHALL indicate failure by
+setting status to NotFound in the
+DeleteCertificateResponse.
+M04.FR.06 M04.FR.01 AND
+When certificateHashData refers to
+the Charging Station Certificate
+(see use case A)
+Charging Station SHALL respond with
+DeleteCertificateReponse with status =
+Failed.
+Deletion of the Charging Station
+Certificate is not allowed via
+DeleteCertificateRequest.
+M04.FR.07 When deleting a certificate The CSMS SHALL use the same hashAlgorithm
+as the Charging Station uses to report the
+certificateHashData for the certificate in the
+GetInstalledCertificateIdsResponse.
+This ensures CSMS uses a
+hashAlgorithm that is supported by
+the Charging Station.
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 442/803 Part 2 - Specification

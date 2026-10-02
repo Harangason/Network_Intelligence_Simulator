@@ -1,0 +1,71 @@
+ELM327
+55 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+J1939 Support (continued)
+the values assigned to the PDU Format field. If the
+PDU Format value begins with ‘F’ (when expressed as
+a hexadecimal number), it is PDU2. Any other value
+for the first digit means that it is a PDU1 Format frame,
+which contains an address.
+To summarize, PDU1 format frames are sent to a
+specific address, and PDU2 frames are sent to all
+addresses. To further complicate matters, however,
+PDU1 frames may be sent to all addresses. This is
+done by sending the message to a special ‘global
+address’ which has the value FF. That is, if you see a
+PDU1 message (where the first digit of the PDU
+Format byte is not an F), and the Destination Address
+is FF, then that message is being sent to all devices.
+The J1939 recommended practices document
+provides a list of addresses that should be used by
+devices. It is particularly important to adhere to this list
+with the ELM327, as the IC uses a fixed address
+method and is not able to negotiate a different one, per
+J1939-81. OBD Service Tools should use either F9 or
+FA as their address (the ELM327 uses F9). If you wish
+to change this, you can use the AT TA (tester address)
+command, or simply define it with the header.
+You may use either the AT SH or the AT CP and
+AT SH commands to assign values for the J1939 ID
+bits, just the same as with the other CAN protocols.
+How these are used was discussed previously, but we
+will repeat it here.
+Since the priority (and DP and EDP) values only
+rarely change, they may be assigned with the CP
+command. By default, the ELM327 uses a priority of 6
+(binary 110), and sets the EDP and DP bits both to 0.
+The default value for the CP setting is then 110+0+0
+(which would be entered as 11000 or 18 in hex). The
+values for the other bytes of the J1939 ID are entered
+with the AT SH command, as shown in Figure 5.
+This has tried to cover the basics of the J1939
+message structure, but if you want more information,
+you should look at the standards mentioned
+previously. One other one that gives good examples of
+actual data is J1939-84 which describes the
+compliance tests and shows the expected responses.
+Even at 250 kbps, J1939 data is transferred at a
+rate that is more than ten times faster than the
+previous heavy duty vehicle standard (SAE J1708),
+and several of the light duty standards. As designers
+build more into each system, the amount of
+information required continues to grow, however, so
+the 500 kbps version of J1939 will be a welcome
+addition.
+SAE J1939 Messages (continued)
+Figure 5. Setting the J1939 CAN ID
+>AT SH xx yy zz>AT CP vv
+5 bits
+only
+Priority PDU
+Format
+Destination
+Address
+Source
+Address
+>AT SH vv xx yy zz
+or:
+Use either: 
+and
+vv xx yy zz
+The values will be used as follows: 

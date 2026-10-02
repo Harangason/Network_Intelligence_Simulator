@@ -1,0 +1,41 @@
+60 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+The NMEA 2000 Standard
+We are occasionally asked about support for the
+NMEA 2000 marine standard. Elm Electronics does
+not provide specific support for this protocol, but our
+ELM327 integrated circuit is very capable of working
+with it.
+While the physical connectors may look quite a bit
+different than those used for J1939, the CAN interface
+and the data format is almost identical to that of the
+J1939 standard. NMEA 2000 uses a 250 kbps data
+rate, so the easiest way to get started is to select the
+ELM327’s predefined protocol A. This is done with the
+set protocol to A command:
+>AT SP A
+When you are finished and want to use the
+ELM327 for standard OBDII protocols, don’t forget to
+send the SP 0 or SP 00 command to reset it.
+Many of the PGNs used for NMEA 2000 have
+values that are greater than 65535, so the DP bit is
+usually set. To monitor for most PGNs then, you can
+not use the short version of the MP command. For
+example, to monitor for the Engine Parameters PGN
+(127488 or hex 1F200), you can not use:
+>AT MP 1F200
+as the ELM327 actually interprets that as a request for
+PGN 1F20, and get 0 replies. To monitor for PGN
+1F200, you must send:
+>AT MP 01F200
+If you keep the above in mind, the ELM327 will
+prove to be a handy tool to use while experimenting
+with NMEA 2000. It does have a couple of limitations
+that must be kept in mind, though. As mentioned with
+J1939, it is not capable of address negotiation. Also,
+the ELM327 does not currently support the Fast
+Packet protocol, which may be an issue for some
+users.
+For more information on the NMEA 2000 standard,
+visit the NMEA web site (http://www.nmea.org).

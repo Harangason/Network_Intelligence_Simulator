@@ -1,0 +1,57 @@
+DSO. Since it is running in the cloud it can even optimize across multiple sites. An EMS in the cloud will likely not be able to react
+fast enough to protect the local grid connection, and it will not be able to control the site when the internet connection is lost. This
+topology therefore adds a local EMS, whose main task is to protect the fuse of the local grid connection, to pass data with local
+load measurements on to the cloud EMS, and to act as a fallback when data connection to the cloud is lost. Charging Stations can
+connect directly to the Cloud EMS acting as a Local Controller, as shown below.
+Site
+Other loadsLocal PV Generation
+Charging
+Station 1
+Charging
+Station 2
+Local EMS
+Grid Connection
+DSO
+Aggregator
+CSMS
+Cloud EMS as
+Local Controller
+Figure 16. Hybrid topology with cloud EMS as Local Controller
+Alternatively, the Local Controller function can be performed by the Local EMS. The Cloud EMS scheduling will be suboptimal,
+however, because in this case it is not aware of the state of ongoing transactions, unless this information is explicitly passed by
+Local EMS to Cloud EMS.
+Site
+Other loadsLocal PV Generation
+Charging
+Station 1
+Charging
+Station 2
+Local EMS as
+Local Controller
+Grid Connection
+DSO
+Aggregator
+CSMS
+Cloud EMS as
+Scheduler
+Figure 17. Hybrid topology with local EMS as Local Controller
+9.6. Parallel control by CSMS and EMS
+(Updated in OCPP 2.1 and moved from chapter 8 to 9)
+Description
+In a (semi-)private situation where a Charging Station is not only connected to the CSMS, but also to an Energy Management
+System, some form of parallel control is possible. OCPP is then used for transaction handling and management of the Charging
+Station, and the Energy Management System provides smart charging controls. OCPP 2.1 supports reporting external smart
+charging control limits. Control limits that EMS provides via its own protocol, are represented (and reported as)
+"ExternalConstraints" charging profiles by the Charging Station.
+When the Energy Management System decides to delay charging, the Energy Management System can impose an external limit
+(e.g. 0) to a Charging Station, which the Charging Station in turn can report to the CSMS via OCPP. The Energy Management System
+might get input from e.g. Local port of a Smart Meter to prevent overloading the grid connection, but can also have other reasons
+for not charging (e.g. weather conditions).
+The protocol between Charging Station and EMS is not specified. Charging limits or schedules can be provided by any means that
+Charging Station supports. This can also be implemented using OCPP messages. See also Part 2, section K 2.4 for some topology
+examples with an EMS.
+NOTE
+An OCPP message exchange between Charging Station and EMS is not a full-fledged OCPP connection in which
+EMS acts as the server. It is a limited solution consisting of a websocket connection over which EMS sends, for
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 21/22 Part 1 - Architecture & Topology

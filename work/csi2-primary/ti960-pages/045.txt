@@ -1,0 +1,67 @@
+7.4.20 CSI-2 Output Bandwidth
+During normal operation, CSI-2 transmitter output bandwidth is reduced as it needs to transition between 
+Low-Power and High-Speed modes. The minimum CSI-2 High-Speed data transmission overhead consists of 
+TLPX, THS-PREPARE, THS-ZERO, THS-SYNC, THS-TRAIL, and THS-EXIT as shown in Figure 6-7. The bandwidth is further 
+reduced when operating in Discontinuous CSI-2 Clock mode as the CSI-2 clock requires additional overhead 
+time to transition between Low-Power and Clock Transmission modes. The minimum CSI-2 Discontinuous Clock 
+timing overhead consists of T CLK-POST, T CLK-TRAIL, T CLK-PREPARE, T CLK-ZERO, and T CLK-PRE as shown in Figure 
+6-6. The typical CSI-2 timing overhead is given in Table 7-16.
+Table 7-16. CSI-2 Transmitter Overhead vs Data Rate
+CSI-2 TX Data Rate
+CSI-2 TX Overhead, tCSI_Overhead [µs]
+Continuous CSI-2 Clock (0x33[1]=1) Discontinuous CSI-2 Clock (0x33[1]=0)
+1.664 Gbps 0.73 1.68
+1.6 Gbps 0.76 1.74
+1.472 Gbps 0.83 1.89
+1.2 Gbps 0.91 1.92
+800 Mbps 0.93 2.06
+400 Mbps 1.30 2.65
+For Best-Effort Round Robin, Basic Synchronized or Line-Interleaved CSI-2 Forwarding, the maximum CSI-2 
+bandwidth for each CSI-2 port is defined in Equation 2.
+active bits/pxl
+active bits/pxl
+CSI _ Overhead
+CSI _ Lanes CSI
+H N 
+BW H N 
+tN f 
+
+ 
+
+(2)
+For Line-Concatenated CSI-2 Forwarding, the maximum CSI-2 output bandwidth for each CSI-2 port is defined 
+in Equation 3.
+sensor active bits/pxl
+LC
+sensor active bits/pxl
+CSI _ Overhead
+CSI _ Lanes CSI
+N H N
+BW N H N
+tN f 
+  
+   
+
+(3)
+where
+• Nsensor is the number of sensors attached to the DS90UB960-Q1
+• Hactive is the horizontal line length of the active video frame in pixels
+• Nbits/pxl is the number of bits per pixel
+• NCSI_Lanes is the number of CSI-2 Lanes
+• fCSI is the CSI-2 TX data rate per lane in Hz
+• tCSI_Overhead is the CSI-2 High-speed data and clock timing overhead as given in Table 7-16
+7.4.20.1 CSI-2 Output Bandwidth Calculation Example
+Assuming the following:
+• Four identical sensors are attached to the DS90UB960-Q1 (Nsensor = 4)
+• Each sensor outputs active video frame with the horizontal line length of 1080 pixels (Hactive = 1080 pixels)
+• Video format is RAW12 (Nbits/pxl = 12 bits/pixel)
+• DS90UB960-Q1 is configured to use a single CSI-2 port with all four CSI-2 lanes enabled (NCSI_Lanes = 4)
+• DS90UB960-Q1 CSI-2 TX is configured to operate at 800 Mbps / lane (fCSI = 800 MHz )
+For Best-Effort Round Robin, Basic Synchronized or Line-Interleaved CSI-2 Forwarding, Equation 2 gives the 
+maximum bandwidth of about 2.60 Gbps (out of 3.2 Gbps for 4 lanes) with continuous CSI-2 clock and about 
+2.12 Gbps without continuous CSI-2 clock.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 45
+Product Folder Links: DS90UB960-Q1

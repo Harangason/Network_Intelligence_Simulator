@@ -1,0 +1,24 @@
+No. Type Description
+Scenario description 1. Voltage at grid connection point exceeds a threshold value from the VoltWatt curve while
+EV is discharging.
+2. CS reports that it is adjusting discharging behavior according to VoltWatt curve via a
+NotifyDERAlarmRequest message with controlType = VoltWatt and gridEventFault =
+OverVoltage.
+3. If CS is a DC station: CS lowers discharging power according to VoltWatt curve.
+4. If CS is an AC station: CS instructs EV via ISO 15118-20 AC_ChargeLoop message to
+lower discharging power. CS repeats this every time the power value on the curve
+changes.
+5. When voltage returns back to normal, CS reports end of this situation, via a
+NotifyDERAlarmRequest with controlType = VoltWatt, gridEventFault = OverVoltage
+and alarmEnded = true.
+6. CS continues to follow the active charging profile.
+5 Prerequisites A VoltWatt curve has been configured at the charging station.
+In case of an AC station, the ISO 15118-20 AC_BPT service is used, or AC_BPT_DER is used
+without installing a VoltWatt curve in the EV, thus requiring the Charging Station to control power
+via the AC_ChargeLoop message. This assumes a discharging transaction was active during the
+entire event.
+6 Post conditions
+7 Error Handling
+8 Remarks
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 564/803 Part 2 - Specification

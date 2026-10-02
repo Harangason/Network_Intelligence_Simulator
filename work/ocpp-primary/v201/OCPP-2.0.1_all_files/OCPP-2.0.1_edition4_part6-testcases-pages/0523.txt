@@ -1,0 +1,49 @@
+TC_N_61_CS: Alert Event - Variable monitoring on numeric
+Test case name Alert Event - Variable monitoring on numeric
+Test case Id TC_N_61_CS
+Use case Id(s) N07
+Requirement(s) N07.FR.10
+System under test Charging Station
+Description NotifyEventRequest reports every Component/Variable for which a VariableMonitoring setting was
+triggered. Only the VariableMonitoring settings that are responsible for triggering an event are included.
+Purpose To verify if the Charging station is able to correctly respond when a nomeric Delta monitor is matched and
+exceeded, as described at the OCPP specification.
+Prerequisite(s) The Charging Station should be able to set a monitor on OCPPCommCtrlr.OfflineThreshold
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+A Delta variableMonitoring setting has been set on a OCPPCommCtrlr.OfflineThreshold
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a SetVariablesResponse .
+1. The Test System sends a SetVariablesRequest with
+component.name = OCPPCommCtrlr
+variable.name = OfflineThreshold
+attributeValue = Current Threshold + 1
+3. Execute Reusable State Booted.
+Notes: This step only needs to be executed when SetVariablesResponse status is RebootRequired.
+Notes: The CS should not send a NotifyEvent as the delta monitor was not exceeded.
+5. The Charging Station responds with a SetVariablesResponse .
+4. The Test System sends a SetVariablesRequest with
+component.name = OCPPCommCtrlr
+variable.name = OfflineThreshold
+attributeValue = Current Threshold + 2
+6. Execute Reusable State Booted.
+Notes: This step only needs to be executed when SetVariablesResponse status is RebootRequired.
+7. The Charging station sends a NotifyEventRequest
+8. The Test System responds with a NotifyEventResponse .
+Tool validations
+* Step 2:
+Message SetVariablesResponse
+- status must be Accepted or RebootRequired+ * Step 5:
+Message SetVariablesResponse
+- status must be Accepted or RebootRequired+ * Step 7:
+Message NotifyEventRequest
+- eventData[0].actualValue must be Current Threshold + 2
+Post scenario validations:
+- N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 521/914 Part 6 - Test Cases

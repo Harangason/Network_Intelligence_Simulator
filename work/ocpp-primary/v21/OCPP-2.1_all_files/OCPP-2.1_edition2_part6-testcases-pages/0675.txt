@@ -1,0 +1,37 @@
+TC_N_04_CS: Get Monitoring Report - for unknown component criteria
+NOTE Since MonitoringCriterionEnum is defined as enumeration, this will most likely already be caught by the JSON
+parser.
+Test case name Get Monitoring Report - for unknown component criteria
+Test case Id TC_N_04_CS
+Use case Id(s) N02
+Requirement(s) N02.FR.02
+System under test Charging Station
+Description CSMS sends a GetMonitoringReport with an invalid value in monitoringCriteria.
+Purpose To test that Charging Station returns a NotSupported return code in response to an invalid value for
+monitoringCriteria.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. Charging Station responds with:
+GetMonitoringReportResponse
+2. Test System sends GetMonitoringReportRequest with:
+- requestId = <Generated requestId>
+- monitoringCriteria = { DeltaMonitoring, <Configured
+Unsupported monitoringCriteria> }
+- *componentVariable is absent
+Tool validations
+* Step 1
+Message: GetMonitoringReportResponse
+- status = NotSupported
+- statusInfo is absent or statusInfo.reasonCode = "UnsupportedParam" or statusInfo.reasonCode = "InvalidValue"
+Post scenario validations:
+N/A
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 673/1383 Part 6 - Test Cases

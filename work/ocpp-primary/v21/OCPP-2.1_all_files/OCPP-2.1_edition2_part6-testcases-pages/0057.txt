@@ -1,0 +1,37 @@
+TC_B_19_CS: Get Custom Report - for unknown component criteria
+NOTE Since ComponentCriterionEnum is defined as enumeration, this will most likely already be caught by the JSON
+parser.
+Test case name Get Custom Report - for unknown component criteria
+Test case Id TC_B_19_CS
+Use case Id(s) B08
+Requirement(s) B08.FR.02
+System under test Charging Station
+Description CSMS sends a GetReport with an invalid value in componentCriteria.
+Purpose To test that Charging Station returns a NotSupported return code in response to an invalid value for
+componentCriteria.
+Prerequisite(s) The Charging Station has one or more not supported componentCriteria.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with:
+GetReportResponse
+1. Test System sends GetReportRequest with:
+- requestId = <Generated requestId
+- componentCriteria = { Available, <Configured Unsupported
+componentCriteria> }
+- *componentVariable is absent
+Tool validations
+* Step 2
+Message: GetReportResponse
+- status = NotSupported
+- statusInfo is absent or statusInfo.reasonCode = "UnsupportedParam" or statusInfo.reasonCode = "InvalidValue"
+Post scenario validations:
+N/A
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 55/1383 Part 6 - Test Cases

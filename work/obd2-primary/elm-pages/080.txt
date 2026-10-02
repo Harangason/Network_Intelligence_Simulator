@@ -1,0 +1,105 @@
+what you are doing while testing.
+The final OBD interface shown is in the bottom left
+corner, and is used for the two J1850 standards. The
+J1850 VPW standard needs a positive supply of up to
+8V while the J1850 PWM needs 5V, so we have
+shown a two level supply that can provide both. This
+dual voltage supply uses a 317L adjustable regulator
+as shown, controlled by the pin 3 output. With the
+resistor values given, the selected voltages will be
+about 8.0V and 5.5V, which works well for most
+vehicles. Note that the 317L is able to maintain
+regulation with a minimum of 1.5 mA of current, so we
+have used a 470 Ω resistor between the output and
+adjust pins. The larger 317 regulator typically requires
+3.5 mA so would need the resistors scaled down
+proportionally. Once suitable voltages have been
+generated, they are driven by the Q1-Q2 combination
+for the Bus+, and Q3 for the Bus-.
+The J1850 VPW input uses a resistor divider,
+similar to that which was used for the ISO input.
+Typical threshold voltages with the resistors shown will
+be about 4.2V (rising) and 2.2V (falling). The J1850
+PWM input is a little different in that it must convert a
+differential input into a single-ended one for use by the
+ELM327. This is done by connecting Q4 across the
+input so that it operates as a difference amplifier. The
+Q4-D3 series combination sets a threshold voltage of
+about 1V (for improved noise immunity), while R11
+limits the current flow, and R12 makes sure that Q4 is
+off when it should be. The circuit works well as shown,
+but the R14 passive pullup time constant can be easily
+affected by stray capacitance - be aware of this if
+connecting test equipment to pin 13.
+Resistor R10 is the final J1850 component. We
+added this to help discharge the data bus more rapidly
+when it was found that some vehicles showed higher
+capacitance than others. The resistor may not be
+required for many vehicles - the choice is yours. If you
+should see reports of BUS ERRORs with a J1850
+vehicle, it may be this capacitance causing problems
+(you will need to ‘scope the signal to be sure).
+Moving on, the R25-R26 voltage divider shown
+connected to pin 2 is used for the vehicle voltage
+monitoring circuitry. The two resistors simply divide the
+battery voltage to a safer level for the ELM327, and
+the capacitor (C2) helps to filter out noise. As shipped,
+the ELM327 expects a resistor divider ratio as shown,
+and sets nominal calibration constants assuming that.
+If your application needs a different range of values,
+simply choose your resistor values to maintain the
+input within the ELM327’s V SS to VDD voltage range,
+and then perform an AT CV to calibrate the ELM327 to
+your new ratio. The maximum voltage that the ELM327
+can show is 99.9V (it’s a software limit, not hardware).
+Four LEDs are shown on pins 25 to 28. These
+have been provided as a visual means of confirming
+circuit activity. They are not essential, but it is nice to
+see the visual feedback.
+On the right side of the circuit, the ELM327’s
+RS232 pins (17 and 18) are shown connected to an
+FTDI USB module. This module makes it very easy to
+connect the ELM327 circuit to your computer - all you
+need is the VCP Driver software, which is available for
+free from the FTDI web site (www.ftdichip.com). The
+module pinout matches a 9 pin D-sub connector, so
+you can simply solder it in where the RS232 circuitry
+used to go. Diode D5 and resistor R32 have been
+added to the interface to prevent the USB supply from
+backfeeding into the ELM327.
+Finally, the crystal shown connected between pins
+9 and 10 is a standard 4.000MHz microprocessor type
+crystal. The 27pF crystal loading capacitors shown are
+typical only, and you may have to select other values
+depending on what is specified for the crystal that you
+use. The crystal frequency is critical to circuit operation
+and must not be altered.
+We often receive requests for parts lists to
+accompany our Example Applications circuits. Since
+this circuit is more complex than most, we have named
+and numbered all of the components and provided a
+summary parts list (Figure 10). Note that these are
+only suggestions for parts. If you prefer another LED
+colour, or have a different general purpose transistor
+on hand, etc., then by all means make the change.  A
+quick tip for those having trouble finding a 0.3” wide
+socket for the ELM327: many of the standard 14 pin
+sockets can be placed end-to-end to form one 0.3”
+wide 28 pin socket. For more help with building and
+testing the circuit, see our ‘AN02 - ELM327 Circuit
+Construction’ application note.
+What if you only want to support one of the
+ELM327’s protocols? Well, you may do that if you
+wish. Simply remove the OBD interfaces that you do
+not require, and connect the rest. Since you must
+never leave a CMOS input floating (open-circuited),
+you will need to add a jumper or two on the unused
+inputs. See the ‘Unused Pins’ section for advice on
+what to connect the pins to.
+Some people still prefer to interface their circuits
+with standard RS232 circuitry. For these, we offer the
+Example Applications (continued)
+80 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com

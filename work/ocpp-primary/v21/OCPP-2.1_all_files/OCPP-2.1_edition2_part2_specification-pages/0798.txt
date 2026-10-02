@@ -1,0 +1,67 @@
+Variable Unit ISO 15118-2 value ISO 15118-20 value
+EnergyImport(MaxSet
+)
+Wh EVEnergyCapacity (DC) EVMaximumEnergyRequest
+(ScheduleExchangeReq,
+AC/DC_ChargeLoopReq)
+EnergyImport(MinSet) Wh - EVMinimumEnergyRequest
+(ScheduleExchangeReq,
+AC/DC_ChargeLoopReq)
+EnergyImport(Target) Wh EVEnergyRequest (DC)
+EAmount (AC)
+EVTargetEnergyRequest
+(ScheduleExchangeReq,
+AC/DC_ChargeLoopReq)
+BatteryCapacity Wh EVEnergyCapacity (DC) BatteryCapacity
+(AC/DC_ChargeLoopReq.DisplayParameters)
+DepartureTime dateTime DepartureTime
+Provided as seconds since message receipt.
+Converted to absolute time.
+DepartureTime (ScheduleExchangeReq,
+AC/DC_ChargeLoopReq)
+Provided as seconds since message receipt.
+Converted to absolute time.
+RemainingTimeBulk s RemainingTimeToBulkSoC
+(CurrentDemandReq)
+-
+RemainingTimeFull(M
+axSet)
+s - -
+RemainingTimeFull s RemainingTimeToFullSoc
+(CurrentDemandReq)
+RemainingTimeToMaximumSOC
+(AC/DC_ChargeLoopReq.DisplayParameters)
+StateOfChargeBulk % BulkSoC -
+StateOfCharge(MaxSe
+t)
+% FullSoC MaximumSOC
+(AC/DC_ChargeLoopReq.DisplayParameters)
+StateOfCharge % DC_EVStatus.EVRESSSOC PresentSOC
+(AC/DC_ChargeLoopReq.DisplayParameters)
+ChargingCompleteBul
+k
+boolean BulkChargingComplete -
+ChargingCompleteFull boolean ChargingComplete ChargingComplete
+(AC/DC_ChargeLoopReq.DisplayParameters)
+Error status values:
+ChargingState
+with a memberlist consisting of the following values:
+* BatteryOvervoltage - <EVTerminationCode>
+* BatteryUndervoltage - …
+* ChargingCurrentDeviation FAILED_ChargingCurrentDifferential …
+* BatteryTemperature FAILED_RESSTemperatureInhibit …
+* VoltageDeviation FAILED_ChargingVoltageOutOfRange …
+* ChargingSystemError FAILED_EVRESSMalfunction …
+* VehicleShiftPosition FAILED_EVShiftPosition …
+* VehicleChargingEnabled - …
+* ChargingSystemIncompatibility FAILED_ChargingSystemIncompatibility …
+* ChargerConnectorLockFault FAILED_ChargerConnectorLockFault …
+NOTE 1: ChargingState variable reports an error status and is not related to the chargingState in a TransactionEventRequest.
+NOTE 2: ISO 15118-20 uses the EVTerminationCode from the SessionStopReq message to signal what has caused the session to
+end.
+Future revisions of ISO 15118-20 will introduce concrete EVTerminationCode values (e.g. urn:iso:std:iso:15118:-
+20:EVTerminationCode:ChargerConnectorLockFault).
+2.16.2. ConnectedEV for CHAdeMO
+Required variables
+Edition 2, 2025-12-03 Referenced Components and Variables
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 785/803 Part 2 - Specification

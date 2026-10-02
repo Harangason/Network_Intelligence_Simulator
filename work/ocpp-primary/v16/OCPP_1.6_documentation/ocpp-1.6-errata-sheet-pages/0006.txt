@@ -1,0 +1,35 @@
+Additional text If a Charge Point contains a Meter that has a register that can be read (instead of counting pulses or some other way of
+measuring the amount of energy etc.) It is RECOMMENDED to send this register value in every MeterValue send instead of
+starting at 0 for every transaction.
+3.10. Page 33, new Chapter about time notations
+In addition to "3.13 Time Zones" to following should have been added about time notations:
+New text 3.14 Time notations
+Implementations MUST use ISO 8601 date time notation. Message receivers must be able to handle fractional seconds and time zone
+offsets (another implementation might use them). Message senders MAY save data usage by omitting insignificant fractions of seconds.
+3.11. Page 35, section: 4.2: Boot Notification: Note on behaviour while not accepted
+by Central system
+Old text While not yet accepted by the Central System, the Charge Point may allow locally authorized transactions if it is configured to do so, as
+described in Local Authorization & Offline Behaviour. Parties who want to implement this behaviour must realize that it is uncertain if
+those transactions can ever be delivered to the Central System.
+New text A Charge Point Operator MAY choose to configure a Charge Point to accept transactions before the Charge Point is accepted by a Central
+System. Parties who want choose to implement this behavior should realize that it is uncertain if those transactions can ever be delivered
+to the Central System.
+After a restart (for instance due to a remote reset command, power outage, firmware update, software error etc.) the Charge Point MUST
+again contact the Central System and SHALL send a BootNotification request. If the Charge Point fails to receive a BootNotification.conf
+from the Central System, and has no in-built non-volatile real-time clock hardware that has been correctly preset, the Charge Point may
+not have a valid date / time setting, making it impossible to later determine the date / time of transactions.
+It might also be the case (e.g. due to configuration error) that the Central System indicates a status other than Accepted for an extended
+period of time, or indefinitely.
+It is usually advisable to deny all charging services at a Charge Point if the Charge Point has never before been Accepted by the Central
+System (using the current connection settings, URL, etc.) since users cannot be authenticated and running transactions could conflict with
+provisioning processes.
+3.12. Page 37, section: 4.5: Relation between FirmwareStatusNotification.req and
+FirmwareUpdate.req is missing.
+There is no description about the relation between FirmwareUpdate.req and FirmwareStatusNotification.req in
+the specification.
+Additional text The FirmwareStatusNotification.req PDUs SHALL be sent to keep the Central System updated with the status of the update
+process, started by the Central System with a FirmwareUpdate.req PDU.
+3.13. Page 38, section: 4.7: Missing description of configuration keys for MeterValues
+There are a couple of required configuration keys that have a huge influence of how MeterValues work. But
+there is no reference or description for them in 4.7 Meter Values:
+5

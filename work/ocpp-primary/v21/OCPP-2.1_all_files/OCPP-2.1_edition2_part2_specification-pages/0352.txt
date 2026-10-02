@@ -1,0 +1,95 @@
+ID Precondition Requirement definition Note
+K01.FR.142
+(2.1)
+When
+v2xChargingParameters of
+NotifyEVChargingNeedsReq
+uest from Charging Station
+does not contain
+maxChargePower_L2 and/or
+maxChargePower_L3
+CSMS SHALL NOT provide values for limit_L2 and/or
+limit_L3 fields in a charging profile.
+If EV does not report L2/L3
+fields then do not provide
+separate limits for them.
+K01.FR.143
+(2.1)
+When CSMS sends a
+SetChargingProfileRequest
+for a chargingProfilePurpose
+that is not TxProfile
+CSMS SHALL NOT provide values for limit_L2 and
+limit_L3 fields in chargingSchedulePeriods of the charging
+profile
+Only a TxProfile is
+submitted after receiving a
+NotifyEVChargingNeedsReq
+uest.
+K01.FR.144
+(2.1)
+( K01.FR.142 OR
+K01.FR.143 ) AND
+Charging Station receives a
+SetChargingProfileRequest
+with values for limit_L2
+and/or limit_L3 fields in a
+charging profile
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and a statusInfo with reasonCode = "PhaseConflict".
+K01.FR.145
+(2.1)
+When CSMS sends a
+SetChargingProfileRequest
+of chargingProfilePurpose =
+TxProfile
+CSMS SHALL NOT provide values for limit_L2 and/or
+limit_L3 fields in a chargingSchedulePeriod without
+providing a value for limit.
+E.g. limit_L2/L3 can only
+exist if limit is also provided,
+because in that case limit
+represents phase L1.
+K01.FR.146
+(2.1)
+K01.FR.145 AND
+Charging Station receives a
+SetChargingProfileRequest
+with values for limit_L2
+and/or limit_L3 fields in a
+charging profile, but no
+value for limit
+Charging Station SHALL respond with
+SetChargingProfileResponse with status = Rejected
+and a statusInfo with reasonCode = "PhaseConflict".
+K01.FR.147
+(2.1)
+In the event that an AC ISO
+15118-20 session is
+ongoing and Charging
+Station falls back to using
+Mode 3 PWM
+communication AND
+charging profiles are active
+that specify limit_L2 and/or
+limit_L3
+Charging Station SHALL use the lowest value of limit,
+limit_L2 and/or limit_L3 as the limit to use for each phase.
+The phrase "limit_L2 and/or
+limit_L3" is used to cater for
+both 2-phase and 3-phase
+situations.
+K02 - Central Smart Charging
+No. Type Description
+1 Name Central Smart Charging
+2 ID K02
+3 Objective(s) To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the
+entire Charging Station over a period of time.
+4 Description The CSMS sends a SetChargingProfileRequest to the Charging Station to influence the power or
+current drawn by the EV. The CSMS calculates a ChargingSchedule to stay within limits which
+MAY be imposed by any external system.
+See: Central Smart Charging
+Actors Charging Station, CSMS, EV, EV Driver
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 339/803 Part 2 - Specification

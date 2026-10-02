@@ -1,0 +1,66 @@
+ID Precondition Requirements Note
+K20.FR.01 Charging Station receives a new
+departure time and/or target
+energy amount from EV
+Charging Station sends a
+NotifyEVChargingNeedsRequest with a
+chargingNeeds element with new departureTime
+and/or a v2xChargingParameters element with new
+evTargetEnergyRequest to CSMS
+K20.FR.02 K20.FR.01 AND
+EV and Charging Station use
+ISO 15118-20 "Scheduled
+Control Mode"
+Behavior is as described in K17 - Renegotiation
+intiated by EV
+K20.FR.03 K20.FR.01 AND
+EV and Charging Station use
+ISO 15118-20 "Dynamic Control
+Mode"
+CSMS calculates a new charging profile and sends
+a SetChargingProfileRequest to Charging Station
+K20.FR.04 K20.FR.03 Charging Stations controls charging of EV via the
+AC/DC_ChargeLoopRes message to match the
+given charging profile limit or setpoint.
+K20.FR.05 K20.FR.01 AND
+Charging Station is offline
+Charging Station SHOULD add timestamp to the
+NotifyEVChargingNeedsRequest with the time
+when charging needs were received from EV
+This will tell CSMS how old this
+data is, if it was not
+immediately sent because of an
+offline period.
+5.4. Priority Charging
+K21 - Requesting priority charging remotely
+New in OCPP 2.1
+No. Type Description
+1 Name Requesting priority charging remotely
+2 ID K21
+3 Objective(s) To let a user request immediate charging via CSMS (e.g. via smartphone app)
+4 Description The user requests CSMS to charge the EV immediately and avoid V2X discharging. CSMS
+instructs CS to charge the EV with the highest power possible under the circumstances. Note, that
+his may be less than the maximum capacity of the CS when other restrictions (e.g. load-
+balancing) are in effect.
+Actors Charging Station, CSMS
+Scenario description 1. The CSMS is triggered to request priority charging for the active transaction at the EVSE
+(how this is done is outside scope of OCPP).
+2. The CSMS sends a UsePriorityChargingRequest message with activate = true for
+transaction transactionId.
+3. If Charging Station has an PriorityCharging profile, then it will respond with
+UsePriorityChargingResponse Accepted.
+4. The Charging Station stops applying the TxDefaultProfile or TxProfile charging
+profile (if active) to this transaction, and applies the PriorityCharging profile instead.
+5. The Charging Station responds with a NotifyPriorityChargingRequest with activated = true
+and transactionId set to the transaction to confirm that it now applies the instant charging
+profile.
+6. The CSMS confirms receipt with a NotifyPriorityChargingResponse.
+5 Prerequisites CSMS has sent a charging profile with chargingProfilePurpose = PriorityCharging to the
+Charging Station for this EVSE or for EVSE #0. The Charging Station is online and a transaction is
+active.
+6 Post conditions The transaction continues using the PriorityCharging profile.
+7 Error Handling If Charging Station has no PriorityCharging profile, then it responds with NoProfile. If it
+cannot activate for other reasons, (e.g. because transactionId does not exist) then it responds
+with Rejected. In both cases, the use case ends.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 399/803 Part 2 - Specification

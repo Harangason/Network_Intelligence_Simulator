@@ -1,0 +1,46 @@
+Value Description
+CRL Checked in a certificate revocation list.
+OCSP Checked via OCSP request.
+3.13. ChangeAvailabilityStatusEnumType
+Enumeration
+Status returned in response to ChangeAvailabilityRequest.
+ChangeAvailabilityStatusEnumType is used by: changeAvailability:ChangeAvailabilityResponse
+Value Description
+Accepted Request has been accepted and will be executed.
+Rejected Request has not been accepted and will not be executed.
+Scheduled Request has been accepted and will be executed when transaction(s) in progress have finished.
+3.14. ChargingProfileKindEnumType
+Enumeration
+Kind of charging profile.
+ChargingProfileKindEnumType is used by: Common:ChargingProfileType
+Value Description
+Absolute Schedule periods are relative to a fixed point in time defined in the schedule. This requires that startSchedule
+is set to a starting point in time.
+Recurring The schedule restarts periodically at the first schedule period. To be most useful, this requires that
+startSchedule is set to a starting point in time.
+Relative Charging schedule periods start when the EVSE is ready to deliver energy. i.e. when the EV driver is
+authorized and the EV is connected. When a ChargingProfile is received for a transaction that is already
+charging, then the charging schedule periods remain relative to the PowerPathClosed moment.
+No value for startSchedule must be supplied.
+Dynamic (2.1) The schedule consists of only one charging schedule period, which is updated dynamically by CSMS.
+3.15. ChargingProfilePurposeEnumType
+Enumeration
+Purpose of the charging profile.
+ChargingProfilePurposeEnumType is used by: Common:ChargingProfileType ,
+clearChargingProfile:ClearChargingProfileRequest.ClearChargingProfileType ,
+getChargingProfiles:GetChargingProfilesRequest.ChargingProfileCriterionType
+Value Description
+ChargingStationExte
+rnalConstraints
+Additional constraints from an external source (e.g. an EMS) that will be incorporated into a local power
+schedule. When applied to evse.Id = 0 it sets a limit to the entire Charging Station.
+Note: In OCPP 2.0.1 this purpose was only allowed on evse.Id = 0. In OCPP 2.1 it can be set to an individual
+EVSE.
+ChargingStationMax
+Profile
+Configuration for the maximum power or current available for an entire Charging Station.
+TxDefaultProfile Default profile that can be configured in the Charging Station. When a new transaction is started, this profile
+SHALL be used, unless it was a transaction that was started by a RequestStartTransactionRequest with a
+ChargingProfile that is accepted by the Charging Station.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 684/803 Part 2 - Specification

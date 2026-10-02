@@ -1,0 +1,48 @@
+B04 - Offline Behavior Idle Charging Station - Requirements
+Table 33. B04 - Requirements
+ID Precondition Requirement definition
+B04.FR.01 After having been Offline AND
+the Offline period exceeds the value of the
+OfflineThreshold Configuration Variable.
+The Charging Station SHALL send StatusNotificationRequest to
+report the current status of all its Connectors.
+B04.FR.02 After having been Offline AND
+the Offline period does NOT exceed the value of
+the OfflineThreshold Configuration Variable.
+The Charging Station SHALL send StatusNotificationRequest to
+report the current status of only the Connectors for which a state
+change occurred.
+2.2. Configuring a Charging Station
+NOTE For managing the configuration of a Charging Station a basic understanding of Device Model concepts is
+essential. These concepts are explained in "OCPP 2.0.1: Part 1 - Architecture & Topology", chapter 4.
+B05 - Set Variables
+No. Type Description
+1 Name Set Variables
+2 ID B05
+3 Objective(s) To give the CSMS the ability to make changes to variables in the Charging Station.
+4 Description A Charging Station can have a lot of variables that can be configured/changed by the CSMS. A
+CSMS can use these variables to for example influence the behavior of a Charging Station. This
+use case describes how the CSMS requests a Charging Station to set the value of variables of a
+component. The CSMS can request to set more than one value per request.
+Actors CSMS, Charging Station
+Scenario description 1. The CSO triggers the CSMS to request setting one or more variables in a Charging Station.
+2. The CSMS sends a SetVariablesRequest to the Charging Station.
+3. The Charging Station responds with a SetVariablesResponse indicating whether it was able to
+execute the change(s).
+5 Prerequisite(s) n/a
+6 Postcondition(s) Successful postconditions:
+1. The change was executed Successfully. 
+Failure postconditions:
+1. The variable is supported, but setting could not be changed, the Charging Station responds with
+the status Rejected.
+2. The variable is not supported, the Charging Station responds with the status UnknownVariable.
+7 Error handling n/a
+8 Remark(s) The attributeType Actual corresponds with the actual value of the Variable, whereas the
+attributeTypes Target, MinSet and MaxSet correspond to the target, minimum and maximum
+values that have been set for this variable.
+This is best explained by an example: the cooling system is configured to operate with a fan
+speed between 1000 and 5000 rpm. These boundaries are represented by the MinSet and MaxSet
+attributes. The current fan speed is represented by the Actual attribute. The desired fan speed is
+represented by the Target attribute.
+Edition 4, 2025-12-03 B. Provisioning
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 53/491 Part 2 - Specification

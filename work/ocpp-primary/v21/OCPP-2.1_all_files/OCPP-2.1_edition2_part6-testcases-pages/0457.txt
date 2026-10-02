@@ -1,0 +1,54 @@
+TC_I_121_CS: Local Cost Calculation - Cost Details of Transaction -
+minCost/maxCost
+Test case name Local Cost Calculation - Cost Details of Transaction - minCost/maxCost
+Test case Id TC_I_121_CS
+Use case Id(s) I12
+Requirement(s) I12.FR.17, I12.FR.38, I12.FR.39, I12.FR.39, I12.FR.40
+System under test Charging Station
+Description Charging Station calculates cost of the transaction locally and returns a break-down of the cost at end of
+the transaction for every charging period for which a different tariff element was active. CSMS can use this
+to generate invoices or Charge Detail Records for EMSPs.
+Purpose To verify if the Charging Station correctly reports the cost and usage details of a transaction.
+Prerequisite(s) - The Charging Station supports local cost calculation using the Tariff mechanism
+(TariffCostCtrlr.Enabled[Tariff] exists and ReadWrite or is true and ReadOnly).
+- The Charging Station supports tariff conditions (TariffCostCtrlr.ConditionsSupported[Tariff] is true)
+Before (Preparations)
+Configuration State:
+- TariffCostCtrlr.Enabled[Tariff] is true
+- TariffCostCtrlr.Enabled[RunningCost] is true
+- TariffCostCtrlr.Enabled[Cost] is true
+- TariffCostCtrlr.Interval[Cost] is 15
+- SampledDataCtrlr.TxUpdatedInterval is 0
+- AlignedDataCtrlr.Interval is 0
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.minCost.exclTax 16.00
+tariff.minCost.inclTax 17.60
+tariff.minCost.taxRates[0].type t10_0
+tariff.minCost.taxRates[0].tax 10.0
+tariff.maxCost.exclTax 35.00
+tariff.maxCost.inclTax 38.50
+tariff.maxCost.taxRates[0].type t10_0
+tariff.maxCost.taxRates[0].tax 10.0
+tariff.chargingTime.prices[0].priceMinute 60.00
+tariff.chargingTime.taxRates[0].type t20_0
+tariff.chargingTime.taxRates[0].tax 20.0
+3. Execute Reusable State EnergyTransferStarted
+Note: The Test System waits 15 seconds
+4. Execute Reusable State StopAuthorized
+Execute Reusable State EVDisconnected
+Execute Reusable State ParkingBayUnoccupied
+5. The Charging Station sends a TransactionEventRequest
+6. The Test System responds with a TransactionEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 455/1383 Part 6 - Test Cases

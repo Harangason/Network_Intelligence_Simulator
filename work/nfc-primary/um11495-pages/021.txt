@@ -1,0 +1,32 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+4.2.4  Read Sequence from the DH
+The DH shall never initiate a spontaneous I2C read request. The DH shall wait until it is triggered by the
+PN7160. To trigger the DH, the PN7160 generates a logical transition from Low to High on its IRQ pin (if the
+IRQ pin is configured to be active High; see Section 11). So after writing any NCI command, the DH shall wait
+until the PN7160 raises its IRQ pin. The DH can then transmit a Read request to fetch the NCI answer from the
+PN7160. When the PN7160 needs to send a spontaneous notification to the DH (for instance an RF Interface
+activation notification), the PN7160 raises the IRQ pin and the DH performs a normal read as described above.
+A DH Read Sequence always starts by the sending of the PN7160 I2C Slave Address followed by the read bit
+(logical ‘1’). Then the DH I2C interface sends an ACK back to the PN7160 for each data Byte received.
+The figure below is an example where the IRQ is raised so the DH can proceed a read.
+Figure 17. I2C Read sequence
+As indicated on the figure above, in case the PN7160 requests a data transfer by raising the IRQ pin and the
+DH tries to initiate a write sequence by positioning the write bit to 0b, the PN7160 keeps the IRQ active until the
+DH starts a read sequence. The DH is not allowed to proceed with a write sequence once the PN7160 has set
+the IRQ pin to its active value (logical ‘1’ in the figure above).
+If PN7160 has another message ready to be sent to the DH before the end of the on-going Read Sequence, the
+IRQ pin will be first deactivated at the end of the on-going Read Sequence and then re-activated to notify to the
+DH that a new message has to be read.
+4.2.5  Split mode
+The PN7160 supports the interruption of a frame transfer, as defined in I2C Bus Specification. This feature is
+only available in Read Mode; it is RFU to use it in Write Mode.
+This can be useful in a system where the I2C bus is shared between several peripherals: it allows the host
+to stop an on-going exchange, to switch to another peripheral (with a different follower address) and then to
+resume the communication with the PN7160.
+Another typical use case for the split mode is to have the DH reading first the NCI packet header, to know what
+the Payload length is. The DH can then allocate a buffer with an appropriate size and read the payload data to
+fill this buffer. This use case is represented on the following picture:
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+21 / 147

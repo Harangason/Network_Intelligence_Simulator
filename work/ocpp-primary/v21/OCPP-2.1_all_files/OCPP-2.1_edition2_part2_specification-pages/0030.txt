@@ -1,0 +1,50 @@
+FR.07 (2.1) When the Charging Station sends an
+OCPP message RPC Framework type
+SEND
+CSMS SHALL NOT respond with a
+message.
+Receipt of a SEND message is not
+acknowledged. The sender will never
+know if the message has been
+received or processed.
+3.1. Time Format Requirements
+This section is normative.
+All time values exchanged between CSMS and Charging Station SHALL be formatted as defined in RFC-3339 [RFC3339].
+Additionally fractional seconds have been given an extra limit. The number of decimal places SHALL NOT exceed the maximum of
+3. However, it is RECOMMENDED to omit fractional seconds entirely, because it is of limited use and omitting it reduces data
+usages.
+It is strongly RECOMMENDED to exchange all time values between CSMS and Charging Station as UTC, with the time zone
+designator 'Z', as specified by RFC-3339 [RFC3339]. This will improve interoperability between CSMS and Charging Station.
+3.1.1. Displaying local time
+When a Charging Station wants to give detailed control of configuring the internal clock to a CSO, it can implement one or more of
+the following Configuration Variables: TimeSource, TimeZone, TimeOffset, NtpSource, NtpServerUri.
+3.1.1.1. Daylight Saving Time
+There are 2 ways a Charging Station can support punctual automated bi-annual changeover between "standard time" and "daylight
+saving time" periods.
+• The transition dates and offsets are known in the Charging Station, based on the configured TimeZone.
+• The transition date and offset is manually configured for every transition via: NextTimeOffsetTransitionDateTime
+and TimeOffsetNextTransition.
+Daylight saving time is used for displaying the current time to the EV driver.
+3.2. Message Timeouts
+This section is normative.
+OCPP does not specify timing requirements for messages. Timing of messages is greatly influenced by the underlying network
+used. A GPRS network has different timing characteristics compared to a land-line. As OCPP does not require a certain type of
+network, but leaves this open for the CSO to select, OCPP cannot require timing constrains.
+If you are looking for some guidance, start with a 30 second timeout on message requests, and tune it for the network used.
+The message timeout setting in a Charging Station can be configured in the messageTimeout field in the
+NetworkConnectionProfile. The purpose of the message timeout is to be able to consider a request message as not sent and
+continue with other tasks when the message did not arrive due to communication errors or software failure. For transaction related
+events, use case E13 - Transaction-related message not accepted by CSMS describes the retry procedure when this happens. See
+also the section Delivering transaction-related messages in Functional Block E.
+A charging station may discover that the connection to CSMS is not functioning correctly when it gets a timeout to a request or
+when the websocket ping is not answered. In such a situation it is advised that the charging station drops the connection and then
+reconnects to CSMS. This will create a fresh session and will possibly connect to a different endpoint of a multi-instance CSMS,
+which may resolve the error.
+3.3. Language support
+This section is informative.
+A CSMS can provide the Charging Station with preferred languages for an EV Driver, enabling the Charging Station to communicate
+with the EV Driver in a language according to his/her preferences.
+For any Charging Station that shows messages on a display it is RECOMMENDED to at least also implement these in "English".
+When the preferred languages for an EV-driver (provided by the CSMS) are not "English" and don’t match any of the other languages
+Edition 2, 2025-12-03 Generic
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 17/803 Part 2 - Specification

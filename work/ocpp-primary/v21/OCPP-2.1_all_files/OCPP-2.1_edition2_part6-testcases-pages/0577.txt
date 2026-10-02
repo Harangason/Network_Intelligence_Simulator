@@ -1,0 +1,51 @@
+Tool validations
+* Step 2:
+Message: GetChargingProfilesResponse
+- status must be NoProfiles
+* Step 3:
+Message: NotifyChargingLimitRequest
+- evseId must be <Configured evseId>
+- chargingLimit.chargingLimitSource must be EMS or Other
+- chargingLimit.isLocalGeneration must be true
+There must be one ChargingSchedulePeriod be reported with
+- chargingSchedule.chargingSchedulePeriod.limit must be 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>_
+* Step 6:
+Message: GetChargingProfilesResponse
+- status must be Accepted
+* Step 7:
+Message ReportChargingProfilesRequest
+- requestId must be Same Id as in the GetChargingProfilesRequest in step 3
+- EVSEId must be <Configured evseId>
+There must be one ChargingProfile be reported with
+- chargingProfile[0].chargingProfilePurpose must be LocalGeneration
+* Step 9:
+Message: NotifyChargingLimitRequest
+- evseId must be <Configured evseId>
+- chargingLimit.chargingLimitSource must be EMS or Other
+IF <NotifyChargingLimitRequest.chargingLimit.isLocalGeneration> is true
+There must be one ChargingSchedulePeriod be reported with
+- chargingSchedule.chargingSchedulePeriod.limit must be 7 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+ELSE
+There must be one ChargingSchedulePeriod be reported with
+- chargingSchedule.chargingSchedulePeriod.limit must be 16 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+END IF
+* Step 11:
+Message: NotifyChargingLimitRequest
+- evseId must be <Configured evseId>
+- chargingLimit.chargingLimitSource must be EMS or Other
+IF <NotifyChargingLimitRequest.chargingLimit.isLocalGeneration> is true
+There must be one ChargingSchedulePeriod be reported with
+- chargingSchedule.chargingSchedulePeriod.limit must be 7 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+ELSE
+There must be one ChargingSchedulePeriod be reported with
+- chargingSchedule.chargingSchedulePeriod.limit must be 16 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+END IF
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 575/1383 Part 6 - Test Cases

@@ -1,0 +1,57 @@
+No. Type Description
+8 Remarks
+Charging Station CSMS
+CSMS removes default tariff Default01
+ClearTariffRequest( tariffIds = [ "Default01" ] )
+ClearTariffResponse( [ tariffId = Default01, status = Accepted ])
+Figure 110. Sequence diagram ClearTariffsRequest
+I10 - Clear Tariffs - Requirements
+ID. Precondition Requirements
+I10.FR.01 Upon receiving a ClearTariffsRequest without parameters
+and tariffs are present in Charging Station
+Charging Station SHALL clear all tariffs in Charging
+Station and respond with ClearTariffsResponse with a list
+of clearTariffResult for each cleared tariffId and status =
+Accepted.
+I10.FR.02 Upon receiving a ClearTariffsRequest with the parameter
+tariffIds
+Charging Station SHALL clear all tariffs in Charging
+Station that have a tariffId that is present in the
+parameter tariffIds, and respond with
+ClearTariffsResponse with a list of cleared tariffIds and
+status = Accepted.
+I10.FR.03 Upon receiving a ClearTariffsRequest with the parameter
+evseId
+Charging Station SHALL clear all tariffs in Charging
+Station that have been set for EVSE evseId, and respond
+with ClearTariffsResponse with a list of cleared tariffIds
+and status = Accepted.
+I10.FR.05 Upon receiving a ClearTariffsRequest with both
+parameters tariffIds and evseId
+Charging Station SHALL only clear tariffs that match both
+parameters, and respond with ClearTariffsResponse with
+a list of cleared tariffIds and status = Accepted.
+I10.FR.06 Upon receiving a ClearTariffsRequest AND no tariffs
+exist, or no tarifss exist that match the parameters
+tariffIds and/or evseId.
+Charging Station SHALL respond with
+ClearTariffsResponse without tariffIds and with status =
+NoTariff.
+I10.FR.07 Upon receiving a ClearTariffsRequest that affects a tariff
+is associated with a transaction, i.e. transaction has
+transactionInfo.tariffId = tariffId
+Charging Station SHALL clear this tariff and report this
+tariff in clearTariffsResult with tariffId and status =
+Accepted, but SHALL continue to use this tariff in the
+transaction until it ends.
+I11 - Local Cost Calculation - Change transaction tariff
+New in OCPP 2.1
+No. Type Description
+1 Name Local Cost Calculation - Change transaction tariff
+2 ID I11
+3 Objective(s) Change the tariff to use during a transaction
+4 Description CSMS changes the tariff that is associated with a transaction. This may be needed when dealing
+with unexpected price changes.
+Actors Charging Station, CSMS, EV Driver
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 295/803 Part 2 - Specification

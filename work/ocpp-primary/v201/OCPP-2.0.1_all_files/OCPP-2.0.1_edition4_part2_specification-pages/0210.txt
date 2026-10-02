@@ -1,0 +1,63 @@
+G03 - Change Availability EVSE - Requirements
+Table 83. G03 - Requirements
+ID Precondition Requirement definition Note
+G03.FR.01 Upon receipt of
+ChangeAvailabilityRequest.
+The Charging Station SHALL respond with
+ChangeAvailabilityResponse.
+As described in
+ChangeAvailabilityStatus
+EnumType.
+G03.FR.02 G03.FR.01 This response message SHALL indicate whether
+the Charging Station is able to change to the
+requested availability.
+G03.FR.03 In the event that CSMS requests the
+Charging Station to change an EVSE
+or Connector to the state it is already
+in.
+The Charging Station SHALL respond with
+availability status Accepted.
+G03.FR.04 When an availability change request
+with ChangeAvailabilityRequest has
+changed the state of a Connector.
+The Charging Station SHALL inform the CSMS of its
+new Connector availability status with
+StatusNotificationRequest or NotifyEventRequest.
+G03.FR.05 When a transaction is in progress
+AND NOT G03.FR.03
+The Charging Station SHALL respond with
+availability status Scheduled to indicate that it is
+scheduled to occur after the transaction has
+finished.
+G03.FR.06 When the availability of an EVSE
+becomes Inoperative (Unavailable,
+Faulted)
+All operative connectors (i.e. not Faulted) of that
+EVSE SHALL become Unavailable.
+G03.FR.07 When the availability of an EVSE
+becomes Operative
+The Charging Station SHALL revert the status of all
+connectors of that EVSE to their original status.
+See Note 1.
+G03.FR.08 When the availability of an EVSE or
+Connector has been set explicitly via
+ChangeAvailabilityRequest
+The set availability state SHALL be persistent
+across reboot/power loss.
+G03.FR.09 The connector is Reserved when an
+EV is connecting AND
+EV driver has not presented an
+IdToken matching the reservation
+Connector status SHALL NOT change. Connector stays
+reserved until IdToken
+matching reservation is
+presented or reservation
+expires.
+NOTE
+1. The Charging Station, EVSEs and Connectors have separate / individual states. This means (for example) that
+when setting a connector to Inoperative, then setting the connected EVSE to Inoperative and thereafter change
+the EVSE back to operative, the connector will remain Inoperative.
+NOTE 2. It is only required to report a status change of a connector. StatusNotificationRequest only supports the
+reporting of connector statuses.
+Edition 4, 2025-12-03 G. Availability
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 200/491 Part 2 - Specification

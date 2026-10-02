@@ -1,0 +1,38 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 45
+OS81092
+13.0 JTAG PORT
+The OS81092 implements a standard 4-pin Test Access Port (TAP) interface (TDI, TDO, TCK, and TMS), as defined
+by the IEEE 1149.1 Test Access Port standard. The optional test-reset input signal (TRST)  is not supported by INIC.
+Therefore, INIC should be reset through RST when a reset at the TAP interface is needed. This port can also be used
+for configuration and debug, as defined in Section 16.6 “Configuration”.
+The test-data input ( TDI) and test-data output ( TDO) pins provide the means of shifting data into and out of the
+OS81092 boundary-scan register (BSR). The TAP interface is controlled by the test clock ( TCK) and the test-mode
+select (TMS) pins. When TMS is low, the OS81092 TAP interface is enabled and the rising edge of TCK clocks in data
+from TMS and TDI. After reset, the TDO pin is high-impedance. TDO is driven by the TAP controller only when in the
+Shift-IR or Shift-DR state. 
+For proper operation, all OS81092 TAP interface pins should be pulled high through resistors. A 4.7 k pull-up resistor
+is recommended for TCK, TDI, and TDO per the IEEE 1149.1 standard. A 47 k resistor is recommended for TMS.
+For more information on the IEEE 1149.1 Test Access Port standard, see IEEE Standard Test Access Port and Bound-
+ary-Scan Architecture [9].
+The OS81092 TAP interface supports all the mandatory boundar y-scan instructions, as specified in the IEEE 1149.1
+standard. Supported instructions include:
+• BYPASS - Selects the bypass register (BYR) to be connected for serial access between TDI and TDO.
+• EXTEST - Selects the boundary-scan resister (BSR) to be connected for serial access between TDI and TDO.
+• SAMPLE/PRELOAD - Captures a snapshot of the data at the digital pins during normal operation, and loads a 
+data pattern into the boundary-scan register (BSR) prior to a new boundary-scan operation.
+• IDCODE - (optional IEEE 1149.1 instruction) Used to read the Manufacturer ID from the identification register 
+(IDR).
+The OS81092 must be placed in Boot Mode before accessing the JTAG Port. In Boot Mode, the INIC Software Stack is
+disabled and the OS81092 waits for manual access through the JTAG Port. In this mode, standard communication chan-
+nels (e.g. Control Port, MediaLB Port) are unavailable. The following sequence should be followed when using the
+OS81092 JTAG Port:
+• Place the OS81092 in Boot Mode:
+- Hold the OS81092 in reset (drive RST pin low),
+- Hold the ERR/BOOT pin low,
+- Release the OS81092 from reset ( RST pin high),
+• Perform JTAG operations,
+• Release the ERR/BOOT pin, and
+• Reset the OS81092 to resume a normal mode of operation.
+Note: The ERR/BOOT pin may be used in the boundary scan after the Configura-
+tion pin hold time (tcphrs) given in Section 15.4.2 “Reset and Power Manage-
+ment” is met.

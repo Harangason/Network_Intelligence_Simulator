@@ -1,0 +1,54 @@
+Tool validations
+* Step 2:
+Message UpdateFirmwareResponse
+- status Accepted
+* Step 3:
+Message FirmwareStatusNotificationRequest
+- status Downloading
+- requestId = <#1>
+* Step 6:
+Message UpdateFirmwareResponse
+- status AcceptedCanceled
+A FirmwareStatusNotificationRequest DownloadFailed or InstallationFailed may be sent for requestId <#1> before or after step 6.
+(The requestId at the FirmwareStatusNotificationRequest messages must refer to the id <#2> from the second
+UpdateFirmwareRequest from this point on)
+* Step 7:
+Message FirmwareStatusNotificationRequest
+- status Downloading
+* Step 9:
+Message FirmwareStatusNotificationRequest
+- status Downloaded
+* Step 11:
+Message FirmwareStatusNotificationRequest
+- status SignatureVerified
+* Step 13:
+Message: StatusNotificationRequest
+- connectorStatus Unavailable
+Or
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Unavailable"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+* Step 16:
+Message FirmwareStatusNotificationRequest
+- status Installing
+* Step 20:
+Message: StatusNotificationRequest
+- connectorStatus Available
+Or
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Available"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+* Step 22:
+Message FirmwareStatusNotificationRequest
+- status Installed
+* Step 24:
+Message SecurityEventNotificationRequest
+- type FirmwareUpdated
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 408/914 Part 6 - Test Cases

@@ -1,0 +1,45 @@
+TC_K_132_CS: Set Charging Profile - useLocalTime unsupported
+Test case name Set Charging Profile - useLocalTime unsupported
+Test case Id TC_K_132_CS
+Use case Id(s) K01
+Requirement(s) K01.FR.123
+System under test Charging Station
+Description Test case to verify that a Charging Station that doesn’t support useLocalTime correctly rejects a
+SetChargingProfileRequest with useLocalTime set to true.
+Purpose To verify that the Charging Station correctly handles a SetChargingProfileRequest with an unsupported
+feature (useLocalTime).
+Prerequisite(s) SmartChargingCtrlr.SupportsFeature[UseLocalTime] is false or absent
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is Booted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.id 1
+chargingProfile.stackLevel 0
+chargingProfile.chargingProfilePurpose TxProfile
+chargingProfile.chargingProfileKind Absolute
+chargingProfile.chargingSchedule.chargingRateUnit A
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].s
+tartPeriod 0
+chargingProfile.chargingSchedule.chargingSchedulePeriod[0].li
+mit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+chargingProfile.chargingSchedule.useLocalTime true
+Tool validations
+* Step 2:
+Message SetChargingProfileResponse
+- status must be Rejected
+- statusInfo.reasonCode must be InvalidSchedule or <omitted>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 592/1383 Part 6 - Test Cases

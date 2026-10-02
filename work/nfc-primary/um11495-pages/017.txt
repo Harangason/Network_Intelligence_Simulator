@@ -1,0 +1,47 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+• Message Type (MT)
+Refer to Section 3.3 for details of the MT field.
+• Packet Boundary Flag (PBF)
+Refer to Section 3.3 for details of the PBF field.
+• Connection Identifier (Conn ID)
+The Connection Identifier (Conn ID) SHALL be used to indicate the previously setup Logical Connection to
+which this data belongs. The Conn ID is a 4-bit field containing a value from 0 to 15.
+• Payload Length (L)
+The Payload Length field indicates the number of Payload bytes present. The Payload Length field is an 8-bit
+field containing a value from 0 to 255.
+3.3.4  Segmentation and Reassembly
+The Segmentation and Reassembly functionality SHALL be supported by both the DH and the NFCC.
+Segmentation and Reassembly of Messages SHALL be performed independently for Control Packets and Data
+Packets of each Logical Connection.
+Any NCI Transport Mapping is allowed to define a fixed Maximum Transmission Unit (MTU) size in bytes. If
+such a Mapping is defined and used, then if either DH or NFCC needs to transmit a Message (either Control or
+Data Message) that would generate a Packet (including Packet Header) larger than the MTU, the Segmentation
+and Reassembly (SAR) feature SHALL be used on the Message.
+The following rules apply to segmenting Control Messages:
+• For each segment of a Control Message, the header of the Control Packet SHALL contain the same MT, GID
+and OID values.
+• From DH to NFCC: the Segmentation and Reassembly feature SHALL be used when sending a Command
+Message from the DH to the NFCC that would generate a Control Packet with a payload larger than the “Max
+Control Packet Payload Size” reported by the NFCC at initialization. Each segment of a Command Message
+except for the last SHALL contain a payload with the length of “Max Control Packet Payload Size”.
+• From NFCC to DH: when an NFCC sends a Control Message to the DH, regardless of the length, it MAY
+segment the Control Message into smaller Control Packets if needed for internal optimization purposes.
+The following rules apply to segmenting Data Messages:
+• For each segment of a Data Message, the header of the Data Packet SHALL contain the same MT and Conn
+ID.
+• From DH to NFCC: if a Data Message payload size exceeds the Max Data Packet Payload Size, of the
+connection then the Segmentation and Reassembly feature SHALL be used on the Data Message.
+• From NFCC to DH: when an NFCC sends a Data Message to the DH, regardless of the payload length
+it MAY segment the Data Message into smaller Data Packets for any internal reason, for example for
+transmission buffer optimization.
+3.4  NCI 2.0 features
+Here is a list of features which are supported in NCI 2.0.
+Item No. Description NCI 2.0
+1 Backward compatibility to NCI 1.0 (Startup sequence: Reset and
+Init)
+Not supported
+Table 3. Features supported in NCI 2.0
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+17 / 147

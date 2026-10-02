@@ -1,0 +1,57 @@
+Description A string with the following comma-separated items:
+“<uri>,<major>,<minor>”.
+<uri> is in the format as used in the SupportedAppProtocolReq message from
+ISO 15118-2 and ISO 15118-20.
+This variable has at most 20 instances; one for each supported protocol version.
+Instances are numbered from 1 to 20 (at most) as a string, i.e. "1", "2", etc, but
+unlike the variable ProcotolSupportedByEV from ConnectedEV for ISO 15118 this
+does not specify a priority, since priority is given by EV.
+Example:
+- ISO15118Ctrlr.ProtocolSupported["1"] = "urn:iso:15118:2:2013:MsgDef,2,0"
+- ISO15118Ctrlr.ProtocolSupported["2"] = "urn:iso:std:iso:15118:-20:DC,1,0"
+2.16. ConnectedEV related
+New in OCPP 2.1
+This section is new, but the ConnectedEV component already existed in OCPP 2.0.1. The full list of variables of the ConnectedEV
+component has been moved from part 2 - Appendices, to part 2 Specification - Referenced Components and Variables.
+2.16.1. ConnectedEV for ISO 15118
+Updated in OCPP 2.1
+Required When supporting V2X
+Component componentName ConnectedEV
+evse * (EVSE to which EV is connected)
+Description
+ConnectedEV is a component that represents a connected vehicle for which data is received via
+an ISO 15118 or CHAdeMO interface. The information that is received, is represented as variables
+of ConnectedEV.
+Required variables
+Variable Unit ISO 15118-2 value ISO 15118-20 value
+Available boolean When true this means an EV is connected.
+When false, all other fields are meaningless and should be empty strings.
+Protocol and static vehicle information
+VehicleId string EVCCID (from SessionSetupReq)
+Six bytes, represented as hexbinary encoded
+string, e.g. "010203040A0B", containing the
+EVCC MAC address.
+EVCCID (from SesstionSetupReq)
+Max 255 bytes with the first 3 bytes
+containing the WMI as defined in ISO
+3780:2009.
+VehicleCertificate["Le
+af"]
+string n/a The PEM encoded X.509 Leaf certificate of
+the vehicle certificate chain
+VehicleCertificate["Su
+bCA1"]
+string n/a The PEM encoded X.509 intermediate
+SubCA1 certificate when present in the
+vehicle certificate chain
+VehicleCertificate["Su
+bCA2"]
+string n/a The PEM encoded X.509 intermediate
+SubCA2 certificate, when present in the
+vehicle certificate chain
+VehicleCertificate["Ro
+ot"]
+string n/a Optional. The PEM encoded X.509 Root
+certificate of the vehicle certificate chain
+Edition 2, 2025-12-03 Referenced Components and Variables
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 783/803 Part 2 - Specification

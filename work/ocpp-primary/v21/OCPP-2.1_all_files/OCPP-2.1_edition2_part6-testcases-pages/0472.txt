@@ -1,0 +1,47 @@
+TC_J_09_CS: Sampled Meter Values - EventType Updated
+Test case name Sampled Meter Values - EventType Updated
+Test case Id TC_J_09_CS
+Use case Id(s) J02 & (E01,E02,E03,E09,E04,E05)
+Requirement(s) J02.FR.01, J02.FR.02, J02.FR.03, J02.FR.04, J02.FR.10, J02.FR.11, J02.FR.14, E02.FR.10, E02.FR.11,
+E03.FR.08, E03.FR.09, E04.FR.06, E04.FR.09, E11.FR.03, E11.FR.06, E12.FR.03, E12.FR.06
+System under test Charging Station
+Description The Charging Station samples the electrical meter or other sensor/transducer hardware to provide
+information about its Meter Values. Depending on configuration settings, the Charging Station will send
+Meter Values.
+Purpose To verify if the Charging Station is able to send sampled Meter Values during the transaction, at the
+TransactionEventRequest with eventType is Updated, when it is configured to do so.
+Prerequisite(s) The Charging Station has an energy meter.
+Before (Preparations)
+Configuration State:
+SampledDataTxUpdatedInterval is <Configured sampled Meter Values Updated interval>
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a TransactionEventRequest
+Note(s):
+- The TransactionEventRequest messages do NOT need to be
+send/received at the exact specified interval. The configured
+measurands must be measured at the configured interval.
+- Multiple TransactionEventRequest messages may be sent per
+configured interval, in case the amount of measured data is too
+much for one message.
+_- The Test System will end the testcase after it has the
+_<Configured transaction duration> is reached._
+2. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- triggerReason must be MeterValuePeriodic
+- sampledValue[0].context must be Sample.Periodic
+- sampledValue must contain <An element per configured measurand at the SampledDataTxUpdatedMeasurands. The measurand
+field may be omitted when the measurand is "Energy.Active.Import.Register">
+Post scenario validations:
+- timestamp <The intervals between the timestamps of the received TransactionEventRequest messages must equal the configured
+value at SampledDataTxUpdatedInterval. However it is allowed to send multiple Meter Value messages per configured interval, in
+case the amount of measured data is too much for one message. But the timestamp of these messages must all be the same.>
+- None of the provided sampledValues shall have location = EV, except when measurand = SoC.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 470/1383 Part 6 - Test Cases

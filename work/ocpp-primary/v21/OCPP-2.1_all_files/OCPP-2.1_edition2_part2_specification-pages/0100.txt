@@ -1,0 +1,49 @@
+Chapter 1. Introduction
+This Functional Block describes all the authorization-related functionalities, it contains different ways of authorizing a user, online
+and/or offline and the AuthorizeRequest message handling/behavior, Authorization Cache functionality, etc.
+When a user wishes to unplug the electric vehicle from the Charging Station, the Charging Station needs to verify that the user is
+either the one that initiated the charging or that the user is in the same group and thus allowed to terminate the charging. Once
+authorized, the Charging Station informs the CSMS that the charging has been stopped.
+• To improve the experience for users, a Charging Station MAY support local authorization of identifiers, using an
+Authorization Cache.
+• The LocalAuthorizeOffline Configuration Variable controls whether a Charging Station will authorize a user when
+offline using the Authorization Cache.
+• The LocalPreAuthorize Configuration Variable controls whether a Charging Station will use the Authorization Cache to
+start a transaction without performing an authorization with the CSMS.
+1.1. ID Tokens
+This section is normative
+OCPP now makes it possible to use many different types of authorization. Where OCPP 1.x only supported RFID, OCPP now also
+supports things like: credit card, PIN-code, a simple start button etc.
+An IDTokenType contains the identifier to use for authorization. It is defined as a combination of a case insensitive string and a
+type. Message data elements of the IDTokenType class (including GroupId) MAY contain any data, that is meaningful to a CSMS
+(e.g. for the purpose of identifying the initiator of charging activity), and Charging Stations MUST NOT make any presumptions as to
+the format or content of such data, other than is provided in the description of the IdTokenType (e.g. by assuming that it is a UID-
+like value that must be hex characters only and/or an even number of digits). IdToken data acquired via local token reader hardware
+is usually a (4, 7 or 10 bytes) UID value of a physical IdToken, typically represented as 8, 14 or 20 hexadecimal digit characters.
+NOTE
+To promote interoperability, based on common practice to date in the case of IdTokenType data has type:
+ISO14443, it is RECOMMENDED that such UIDs be represented as hex representations of the UID bytes.
+According to ISO 14443-3, byte 0 should come first in the hex string. (Most significant nibble of byte 0 first)
+1.1.1. Additional Info
+Updated in OCPP 2.1
+The field additionalInfo of IdTokenType can be used to send extra information about the idToken to the CSMS. This can be used in
+specific situations. For example, when known, the license plate of the vehicle can be added as additionalInfo, which can then be
+passed on to a parking service, or in the case of ad hoc payment with a credit card, the additionalInfo can contain information about
+the credit card authorization.
+When comparing two idTokens, the additionalInfo is disregarded. This also means that the additionalInfo should not be stored in the
+Local Authorization Cache as part of IdTokenType.
+The meaning of an additionalInfo field is determined by its type field. This is a free format string. The supported values need to be
+agreed upon between Charging Station and CSMS. A limited set of values for additionalInfo.type, related to ad hoc payment support,
+is defined in [OCPP2.1-PART2-APPENDIX].
+1.2. Group ID Tokens
+This section is normative
+A CSMS has the ability to treat a set of identity tokens as a "group", thereby allowing any one token in the group to start a
+transaction and for the same token, or another token in the same group, to stop the transaction. This supports the common use-
+cases of families or businesses with multiple drivers using one or more shared electric vehicles on a single recharging contract
+account. IDTokenTypes used as "GroupId" may often use a shared central account identifier for the GroupId, instead of a UID of the
+first/master RFID card of an account.
+Tokens (idTags) are grouped for authorization purposes by specifying a common group identifier in the optional groupIdToken
+element in IdTokenInfo: two IdTokens are considered to be in the same group if their GroupIdTokens match (and they are not
+empty).
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 87/803 Part 2 - Specification

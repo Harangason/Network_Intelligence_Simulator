@@ -1,0 +1,53 @@
+Field Name Field Type Card. Description
+iso15118SchemaVersion string[0..50] 1..1 Required. Schema version currently used for the 15118
+session between EV and Charging Station. Needed for
+parsing of the EXI stream by the CSMS.
+action CertificateActionEnumType 1..1 Required. Defines whether certificate needs to be
+installed or updated.
+exiRequest string[0..11000] 1..1 Required. (2.1) Raw CertificateInstallationReq request
+from EV, Base64 encoded.
+Extended to support ISO 15118-20 certificates. The
+minimum supported length is 11000. If a longer
+exiRequest is supported, then the supported length must
+be communicated in variable
+OCPPCommCtrlr.FieldLength[
+"Get15118EVCertificateRequest.exiRequest" ].
+maximumContractCertificat
+eChains
+integer, 0 <= val 0..1 Optional. (2.1) Absent during ISO 15118-2 session.
+Required during ISO 15118-20 session.
+Maximum number of contracts that EV wants to install.
+prioritizedEMAIDs identifierString[0..255] 0..8 Optional. (2.1) Absent during ISO 15118-2 session.
+Optional during ISO 15118-20 session. List of EMAIDs for
+which contract certificates must be requested first, in
+case there are more certificates than allowed by
+maximumContractCertificateChains.
+1.23.2. Get15118EVCertificateResponse
+Response message from CSMS to Charging Station containing the status and optionally new certificate. NOTE: This message is
+based on CertificateInstallationReq Res from ISO 15118-2.
+Class
+Field Name Field Type Card. Description
+status Iso15118EVCertificateStatusEnum
+Type
+1..1 Required. Indicates whether the message was processed
+properly.
+exiResponse string[0..17000] 1..1 Required. (2/1) Raw CertificateInstallationRes response
+for the EV, Base64 encoded.
+Extended to support ISO 15118-20 certificates. The
+minimum supported length is 17000. If a longer
+exiResponse is supported, then the supported length
+must be communicated in variable
+OCPPCommCtrlr.FieldLength[
+"Get15118EVCertificateResponse.exiResponse" ].
+remainingContracts integer, 0 <= val 0..1 Optional. (2.1) Number of contracts that can be retrieved
+with additional requests.
+statusInfo StatusInfoType 0..1 Optional. Detailed status information.
+1.24. GetBaseReport
+1.24.1. GetBaseReportRequest
+This contains the field definition of the GetBaseReportRequest PDU sent by the CSMS to the Charging Station.
+Class
+Field Name Field Type Card. Description
+requestId integer 1..1 Required. The Id of the request.
+reportBase ReportBaseEnumType 1..1 Required. This field specifies the report base.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 589/803 Part 2 - Specification

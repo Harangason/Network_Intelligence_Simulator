@@ -1,0 +1,18 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Figure 39. Messaging during Frame Aggregated Rf Interface extension
+The NFCC does not support NCI chaining in NCI data packet after the Frame Aggregated RF interface
+extension has been started.
+Note:  If the DH sends an NCI data packet with the PBF bit set to one, the NCI data packet will be rejected by
+the NFCC.
+If the DH needs to send a collection of commands which does not fit a single NCI data packet payload capacity,
+the commands shall be subdivided per set of commands so that each set fit a single NCI data packet payload
+capacity.
+Figure 40. Hudge set of commands during Frame Aggregated Rf Interface extension
+Is a T1T or T2T response is more than 252 bytes, it cannot be embedded in single NCI data packet because the
+TLV aggregated response forwarded by NFCC to the DH has 3 bytes of overlay: the TLV-object type, the TLV-
+object length and the NCI status. As a consequence, the NFCC will forward it to the DH within 2 chained NCI
+data packet where the PBF bit field of the first NCI data packet is set to 1.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+56 / 147

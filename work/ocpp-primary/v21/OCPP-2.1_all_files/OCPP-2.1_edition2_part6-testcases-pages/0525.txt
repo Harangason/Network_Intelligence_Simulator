@@ -1,0 +1,66 @@
+TC_K_41_CS: Get Composite Schedule - Combining chargingProfilePurposes
+Test case name Get Composite Schedule - Combining chargingProfilePurposes
+Test case Id TC_K_41_CS
+Use case Id(s) K08
+Requirement(s) K08.FR.02,K08.FR.04
+System under test Charging Station
+Description The CSMS requests a composite schedule which is a combination of local limits and the prevailing
+Charging Profiles of the different chargingProfilePurposes and stack levels.
+3 ChargingProfiles are submitted with the same startSchedule.
+Purpose To verify if the Charging Station is able to calculate a correct composite schedule and provide this to the
+CSMS on request.
+Prerequisite(s) - ChargingProfileEntries.maxLimit must be > 2
+- The configuration variable PeriodsPerSchedule must be > 2
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+set <startScheduleTime> = <current dateTime> - <Configured max time deviation> seconds
+Note: Set MaxProfile for the next 24 hours:
+SetChargingProfile with
+ChargingProfile 1:
+chargingProfilePurpose is ChargingStationMaxProfile
+chargingProfileKind should be Absolute
+stackLevel should be 0
+evseId 0
+startSchedule <startScheduleTime>
+numberPhases <Configured numberPhases>
+ChargingSchedule:
+duration 86400
+chargingRateUnit <Configured chargingRateUnit>
+startPeriod 0, limit 10 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Note: Set a default profile for 300 seconds
+ChargingProfile 2:
+chargingProfilePurpose is TxDefaultProfile
+chargingProfileKind should be Absolute
+stackLevel should be 0
+evseId <Configured evseId>
+startSchedule <startScheduleTime>
+numberPhases <Configured numberPhases>
+ChargingSchedule:
+duration 300
+chargingRateUnit <Configured chargingRateUnit>
+startPeriod 0,60,120,180,260, limit 6,10,8,15,8 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Note: set a TxProfile for 260 seconds:
+ChargingProfile 3:
+chargingProfilePurpose is TxProfile
+chargingProfileKind should be Absolute
+stackLevel should be 0
+evseId <Configured evseId>
+startSchedule <startScheduleTime>
+numberPhases <Configured numberPhases>
+ChargingSchedule:
+duration 260
+chargingRateUnit <Configured chargingRateUnit>
+startPeriod 0,50,140,200,240, limit 8,11,16,6,12 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 523/1383 Part 6 - Test Cases

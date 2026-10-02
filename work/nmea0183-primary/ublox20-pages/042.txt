@@ -1,0 +1,48 @@
+u-blox 20 HPG 2.00 - Interface description
+0 PUBX string - $PUBX Message ID, UBX protocol header, proprietary sentence
+1 msgId numeric - 03 Proprietary message identiﬁer: 03
+2 n numeric - 11 Number of GNSS satellites tracked
+Start of repeated group (n times)
+3 + n·6 sv numeric - 23 Satellite ID according to UBX svId mapping (see Satellite
+Numbering)
+4 + n·6 s character - - Satellite status:
+• - = Not used
+• U = Used in solution
+• e = Ephemeris available, but not used for
+navigation
+5 + n·6 az numeric deg - Satellite azimuth (range: 0-359)
+6 + n·6 el numeric deg - Satellite elevation (<= 90)
+7 + n·6 cno numeric dBHz 45 Signal strength (C/N0, range 0-99), blank when not
+tracking
+8 + n·6 lck numeric s 010 Satellite carrier lock time (range: 0-64)
+• 0 = code lock only
+• 64 = lock for 64 seconds or more
+End of repeated group (n times)
+3 + n·6 cs hexadecimal - *0D Checksum
+4 + n·6 CRLF character - - Carriage return and line feed
+2.8.5 TIME (PUBX,04)
+2.8.5.1 Poll a PUBX,04 message
+Message NMEA-PUBX-TIME
+Poll a PUBX,04 message
+Type Poll request
+Comment A PUBX,04 message is polled by sending the PUBX,04 message without any data ﬁelds.
+Information Class/ID: 0xf1 0x04 Number of fields: 4
+Structure $PUBX,04*37\r\n
+Example $PUBX,04*37\r\n
+Payload:
+Field Name Format Unit Example Description
+0 PUBX string - $PUBX Message ID, UBX protocol header, proprietary sentence
+1 msgId numeric - 04 Set to 04 to poll a PUBX,04 message
+2 cs hexadecimal - *37 Checksum
+3 CRLF character - - Carriage return and line feed
+2.8.5.2 Time of day and clock information
+Message NMEA-PUBX-TIME
+Time of day and clock information
+Type Output
+Comment
+Information Class/ID: 0xf1 0x04 Number of fields: 12
+Structure $PUBX,04,time,date,utcTow,utcWk,leapSec,clkBias,clkDrift,tpGran,*cs\r\n
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 42 of 224
+C1-Public

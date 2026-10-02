@@ -1,0 +1,40 @@
+TC_C_126_CSMS: Ad hoc payment via stand-alone payment terminal - local cost
+calculation
+Test case name Ad hoc payment via stand-alone payment terminal - local cost calculation
+Test case Id TC_C_126_CSMS
+Use case Id(s) C24
+Requirement(s) C24.FR.01, C24.FR.02, C24.FR.10
+System under test CSMS
+Description In order to test that Charging Station supports ad hoc payment via a stand-alone payment terminal with
+local cost calculation.
+Purpose To verify that the CSMS can properly handle ad hoc payments made via a stand-alone payment terminal
+when using local cost calculation.
+Prerequisite(s) - CSMS is connected with a stand-alone payment terminal
+- Test System has AuthCtrlr.AuthorizeRemoteStart = false
+- Test System has TariffCostCtrlr.Enabled[Cost] = true
+- Test System has TariffCostCtrlr.Currency = "EUR"
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present a payment card to the payment terminal Kiosk for Charging Station with identity <Configured unique
+Charging Station identifier>
+2. The Test System responds with a
+RequestStartTransactionResponse with
+status Accepted
+1. The CSMS sends a RequestStartTransactionRequest
+3. The Test System sends a TransactionEventRequest with
+eventType Started
+idToken <IdToken from step 1>
+idToken.type DirectPayment
+idToken.additionalInfo <additionalInfo>
+transactionInfo.transactionId <transactionId>
+4. The CSMS responds with a TransactionEventResponse
+Settlement
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1044/1383 Part 6 - Test Cases

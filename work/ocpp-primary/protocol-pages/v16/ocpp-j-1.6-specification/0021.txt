@@ -1,0 +1,36 @@
+possible to pretend to be an already-installed and operating charge point. This makes still makes a
+number of conceivable attacks impossible:
+• "reservation" of a charge point by spoofing messages marking it as occupied
+• marking your just-started session on a public charge point as stopped so you won’t have to pay as
+much
+• sending many spoofed transactions and/or errors from already on-boarded charge points to
+confuse a central system operator’s operations
+• send spoofed transactions with another person’s token ID to the central system to incur financial
+damage to the token ID’s owner
+It is RECOMMENDED that the Central System operator makes setting the authorization key part of a
+charge point onboarding procedure, using the new OCPP 1.6 Pending value of the registration status in
+BootNotification.conf. A newly-connecting Charge Point will first get a Pending registration status on its
+first BootNotification.conf. The Central System will then set the Charge Point’s unique authorization key
+with a ChangeConfiguration.req. Only when this ChangeConfiguration.req has been responded to with a
+ChangeConfiguration.conf with a status of Accepted, will the Central System respond to a boot
+notification with an Accepted registration status.
+It is RECOMMENDED that the Central System operator checks for anomalies in the newly-connecting
+charge points. Thus he can try to detect if an attacker has managed to steal the master key or key
+derivation algorithm, and a list of registered charge point identities. For example, if the rate at which
+new charge points connect suddenly increases, this may indicate an attack.
+Storing the credentials
+It is important that the credentials are stored on the Charge Point in such a way that they are not easily
+lost or reset. If the credentials are lost, erased or changed unilaterally, the Charge Point can no longer
+connect to the Central System and requires on-site servicing to install new credentials.
+On the Central System side, it is RECOMMENDED to store the authorization key hashed, with a unique
+salt, using a cryptographic hash algorithm designed for secure storage of passwords. This makes sure
+that if the database containing the charge points' authorization keys is leaked, the attackers still cannot
+authenticate as the charge points to the Central System.
+6.2.3. What it does and does not secure
+The scope of these security measures is limited to authentication and encryption of the connection
+between Charge Point and Central System. It does not address every current security issue in the EV
+Charging IT landscape.
+It does provide the following things:
+• authentication of the Charge Point to the Central System (using HTTP Basic Authentication)
+• encryption of the connection between Charge Point and Central System
+19

@@ -1,0 +1,44 @@
+TC_C_49_CS: Stop Transaction with a Master Pass - Without UI
+Test case name Stop Transaction with a Master Pass - Without UI
+Test case Id TC_C_49_CS
+Use case Id(s) C16
+Requirement(s) C16_FR_02
+System under test Charging Station
+Description This test case covers how somebody with a Master Pass (User) can stop (selected) ongoing transactions,
+so the cable becomes unlocked. This Master Pass can be configured in: MasterPassGroupId. This could for
+example be usefull for Law Enforcement officials.
+Purpose To verify if the Charging Station is able to correctly stop all transactions when an idToken which has the
+MasterPass as GroupId is used and the Charging station does not have an User Interface according to the
+mechanism as described in the OCPP specification.
+Prerequisite(s) - The Charging Station supports at least one authorization method described at the following Use cases;
+C01, C04.
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+AuthCtrlr.MastersPassGroupId is configured
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted for EVSEId 1 and EVSEId 2 if the Charging Station has more than one EVSE. With:
+- <Configured valid_idtoken> for EVSE 1
+- <Configured valid_idtoken2> for EVSE 2
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present configured masterpass idToken
+1. The Charging Station sends an AuthorizeRequest
+2. The Test System responds with an AuthorizeResponse with
+idTokenInfo.status Accepted
+idTokenInfo.groupIdToken.idToken <Configured
+masterPassGroupId>
+3. The Charging Station sends a TransactionEventRequest for
+EVSE 1 (and 2) 4. The Test System responds with a TransactionEventResponse
+with
+idTokenInfo.status Accepted
+idTokenInfo.groupIdToken.idToken <Configured
+masterPassGroupId>
+for EVSE 1 (and 2)
+5. Execute Reusable State EVConnectedPostSession for EVSE 1 (and 2)
+6. Execute Reusable State EVDisconnected for EVSE 1 (and 2)
+7. Execute Reusable State ParkingBayUnoccupied for EVSE 1 (and 2)
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 143/914 Part 6 - Test Cases

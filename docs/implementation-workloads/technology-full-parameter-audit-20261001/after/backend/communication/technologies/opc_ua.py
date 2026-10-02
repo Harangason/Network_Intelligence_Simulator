@@ -1,0 +1,245 @@
+"""OPC UA Client/Server: edition/transport/service bounds, not a physical baud."""
+P4='https://reference.opcfoundation.org/specs/OPC-10000-4/full'
+P6='https://reference.opcfoundation.org/specs/OPC-10000-6/full'
+P7='https://reference.opcfoundation.org/specs/OPC-10000-7/full'
+P8='https://reference.opcfoundation.org/specs/OPC-10000-8/7.2'
+POL='https://profiles.opcfoundation.org/api/profile/get/'
+EDITION='OPC10000_1.05.07'
+SOURCES={P4:'OPC10000-4 v1.05.07: Session, SecureChannel, CreateSubscription, MonitoringParameters, Read and status/timeout definitions; scoped publisher HTML read2026-10-02.',
+ P6:'OPC10000-6 v1.05.07: UACP/UASC headers, directional HEL/ACK limits, sequence numbers, HTTPS and WebSocket mappings. Table-specific ECC/RSA minima, not a generic Ethernet frame.',
+ P7:'OPC10000-7 v1.05.07 profile concepts; actual security/transport profile URI and revision are separately required. No complete current profile inventory claimed.',
+ P8:'OPC10000-8 v1.05.07 section7.2: PercentDeadband0..100 requires AnalogItem EURange, threshold percentage of range width.',
+ POL:'Public current profile API snapshots IDs913,1530,2078,2101,2278 read2026-10-02, with URI/version/lastUpdate.2078 explicitly prohibited,2101 LegacySequenceNumbersFALSE. No numeric releaseStatus label inferred.'}
+UINT32=4294967295
+BINDINGS=('UA_TCP','HTTPS_BINARY','HTTPS_JSON','WS_UACP','WS_JSON','WS_OPENAPI','REGISTERED')
+UACP=('UA_TCP','WS_UACP')
+WS=('WS_UACP','WS_JSON','WS_OPENAPI')
+POLICIES={
+ 'http://opcfoundation.org/UA/SecurityPolicy#None':('NONE',None),
+ 'http://opcfoundation.org/UA/SecurityPolicy#Basic256Sha256':('RSA',None),
+ 'http://opcfoundation.org/UA/SecurityPolicy#Aes128_Sha256_RsaOaep':('RSA',None),
+ 'http://opcfoundation.org/UA/SecurityPolicy#ECC_curve25519_ChaCha20Poly1305':('ECC',False),
+ 'http://opcfoundation.org/UA/SecurityPolicy#ECC_brainpoolP256r1_AesGcm':('ECC',None)}
+FORBIDDEN_POLICY='http://opcfoundation.org/UA/SecurityPolicy#ECC_curve25519'
+DECLARATIONS=[]
+def d(k,t,meaning,lo=None,hi=None,u=None,opts=None,src=P4,integer=False):
+ DECLARATIONS.append(dict(key='ua_'+k,type=t,description=meaning,min=lo,max=hi,unit=u,options=opts,source=src,source_revision=SOURCES[src],integer=integer))
+for k,meaning,opts,src in[
+ ('edition','Actual reviewed service/mapping edition; another edition requires a separately registered schema.',[EDITION],P6),
+ ('binding','Actual endpoint transport and encoding; application OPC UA does not choose an Ethernet PHY.',list(BINDINGS),P6),
+ ('direction','Actual request or response; receiver limits change with direction.',['REQUEST','RESPONSE'],P6),
+ ('security_family','Actual intended SecurityPolicy family, verified from profile URI and revision.',['NONE','RSA','ECC','REGISTERED'],P7),
+ ('security_mode','Actual advertised/selected MessageSecurityMode, separate TLS transport security.',['None','Sign','SignAndEncrypt'],P4),
+ ('subprotocol','Actual WebSocket handshake subprotocol; binary UACP differs JSON/OpenAPI.',['opcua+uacp','opcua+uajson','opcua+openapi'],P6),
+ ('message_type','Actual UACP/UASC message type, not CAN frame ID.',['HEL','ACK','ERR','RHE','OPN','MSG','CLO'],P6),
+ ('chunk_type','Actual chunk continuation/final/abort; control messages are final.',['C','F','A'],P6),
+ ('sequence_phase','Actual first chunk, ordinary next chunk, or qualified wrap.',['FIRST','NEXT','WRAP'],P6),
+ ('item_kind','Actual DataValue or Event monitored item; zero/one queue semantics differ.',['DATA','EVENT'],P4),
+ ('monitoring_mode','Actual disabled, sampling only, or reporting; publishingEnabled does not change it.',['Disabled','Sampling','Reporting'],P4),
+ ('discard_effect','Actual queue replacement on overflow, not generic DROP_NEWEST.',['OLDEST','LAST','IGNORED'],P4),
+ ('data_trigger','Actual DataChangeTrigger; absent filter uses STATUS_VALUE.',['STATUS','STATUS_VALUE','STATUS_VALUE_TIMESTAMP'],P4),
+ ('deadband','Actual DataChangeFilter deadband type; percent requires AnalogItem EURange.',['NONE','ABSOLUTE','PERCENT'],P8),
+ ('outcome','Actual application outcome separate transport/service/individual item status.',['ACCEPTED','REJECTED','PENDING','UNKNOWN'],P4),
+]:d(k,'select',meaning,opts=opts,src=src)
+for k,meaning,src in[
+ ('endpoint','Actual advertised endpoint URL; no invented localhost/4840 application endpoint.',P6),
+ ('transport_profile_uri','Actual endpoint TransportProfileUri and edition, not label-derived physical path.',P7),
+ ('security_policy_uri','Actual configured SecurityPolicy URI; no automatic insecure None or stale archived policy.',POL),
+ ('profile_source','Actual endpoint/profile/edition and supported security mode/URI evidence.',P7),
+ ('peer_source','Actual client/server implementation, operation/encoding/queue and negotiated limits.',P4),
+ ('security_source','Actual trust/certificates/nonces/validation and current policy evidence; do not store access tokens.',P7),
+ ('schedule_source','Actual sampled/published/request traffic, service/scheduler and retry bounds.',P4),
+ ('acceptance_source','Actual correlated per-operation status, data age and functional acceptance requirement.',P4),
+ ('registered_source','Actual rules for different edition or registered transport/security mapping.',P7),
+ ('connection_id','Actual transport connection identity, separate Session and SecureChannel.',P6),
+ ('session_id','Actual Session identity; reconnect does not automatically terminate a Session.',P4),
+ ('pending_connection_id','Actual connection associated with pending request/chunks.',P6),
+ ('chunk_hex','Actual complete UACP wire chunk as octets; headers are little-endian and size includes header.',P6),
+]:d(k,'text',meaning,src=src)
+for k,meaning,lo,hi,u,integer,src in[
+ ('protocol_requested','HEL requested UACP version; current mapping uses zero.',0,UINT32,None,True,P6),
+ ('protocol_revised','ACK negotiated version, no higher than HEL requested.',0,UINT32,None,True,P6),
+ ('hello_rx','Actual client HEL ReceiveBufferSize; whole response chunk, not Ethernet MTU.',0,UINT32,'byte',True,P6),
+ ('hello_tx','Actual client HEL SendBufferSize; whole request chunk.',0,UINT32,'byte',True,P6),
+ ('ack_rx','Actual server ACK ReceiveBufferSize, no higher than client send size.',0,UINT32,'byte',True,P6),
+ ('ack_tx','Actual server ACK SendBufferSize, no higher than client receive size.',0,UINT32,'byte',True,P6),
+ ('client_max_message','HEL maximum unencrypted response body; zero means no limit.',0,UINT32,'byte',True,P6),
+ ('server_max_message','ACK maximum unencrypted request body; zero means no limit.',0,UINT32,'byte',True,P6),
+ ('client_max_chunks','HEL maximum response chunk count; zero means no limit.',0,UINT32,None,True,P6),
+ ('server_max_chunks','ACK maximum request chunk count; zero means no limit.',0,UINT32,None,True,P6),
+ ('endpoint_utf8_bytes','Actual UTF8 endpoint character bytes, distinct binary String four-byte length prefix.',0,None,'byte',True,P6),
+ ('endpoint_encoded_bytes','Actual binary endpoint String byte count including four-byte length prefix; table requires less than4096.',0,4095,'byte',True,P6),
+ ('chunk_bytes','Actual whole UACP/UASC chunk size including eight-byte connection header.',8,UINT32,'byte',True,P6),
+ ('message_body_bytes','Actual unencrypted assembled body size; not encrypted wire bytes or application object size.',0,UINT32,'byte',True,P6),
+ ('message_chunks','Actual chunk count in one message, direction-specific peer bound.',1,UINT32,None,True,P6),
+ ('channel_id','Actual UInt32 SecureChannel identifier in UASC chunk.',0,UINT32,None,True,P6),
+ ('token_id','Actual UInt32 security token; renew does not reset sequence number.',0,UINT32,None,True,P6),
+ ('sequence','Actual UInt32 chunk sequence; legacy and modern policies have distinct wrapping.',0,UINT32,None,True,P6),
+ ('previous_sequence','Actual preceding chunk sequence on same SecureChannel.',0,UINT32,None,True,P6),
+ ('request_id','Actual UASC UInt32 request identity, constant across its chunks and response.',0,UINT32,None,True,P6),
+ ('pending_request_id','Actual pending UASC request identity for response correlation.',0,UINT32,None,True,P6),
+ ('token_requested_ms','Actual OpenSecureChannel requested lifetime, not guaranteed revised lifetime.',0,UINT32,'ms',True,P4),
+ ('token_revised_ms','Actual server granted security token lifetime.',1,UINT32,'ms',True,P4),
+ ('renew_proposal_ms','Source SHOULD renew at75percent of granted lifetime; proposal, not guaranteed scheduler.',0,None,'ms',False,P4),
+ ('session_requested_ms','Actual requested Session timeout; server may revise up or down.',None,None,'ms',False,P4),
+ ('session_revised_ms','Actual granted Session timeout, separate request timeoutHint.',0,None,'ms',False,P4),
+ ('publish_requested_ms','Actual requested publishing interval; zero/negative requests server fastest.',None,None,'ms',False,P4),
+ ('publish_revised_ms','Actual server publishing interval, not assumed100ms or equal requested.',0,None,'ms',False,P4),
+ ('keepalive_requested','Actual requested keep-alive count; zero requests server minimum.',0,UINT32,None,True,P4),
+ ('keepalive_revised','Actual server keep-alive count, not a packet retry count.',1,UINT32,None,True,P4),
+ ('lifetime_requested','Actual requested lifetime count; invalid revisable request values are revised, not transport errors.',0,UINT32,None,True,P4),
+ ('lifetime_revised','Actual granted Subscription lifetime count, at least3*actual keep-alive.',1,UINT32,None,True,P4),
+ ('notifications_limit','Actual maxNotificationsPerPublish; zero means unlimited notifications, not unlimited wire bytes.',0,UINT32,None,True,P4),
+ ('subscription_priority','Actual subscription relative priority Byte, unrelated VLAN PCP. No-special-priority proposal0.',0,255,None,True,P4),
+ ('sampling_requested_ms','Actual sampling request; any negative is interpreted as inherited -1; zero requests fastest practical.',None,None,'ms',False,P4),
+ ('sampling_revised_ms','Actual server sampling interval; at least requested unless request exceeds supported maximum.',0,None,'ms',False,P4),
+ ('sampling_server_max_ms','Actual source-qualified maximum supported sampling interval, not a universal limit.',0,None,'ms',False,P4),
+ ('queue_requested','Actual requested MonitoringParameters queueSize; data/event sentinel meanings differ.',0,UINT32,None,True,P4),
+ ('queue_revised','Actual server queue size, independent request and device capability.',1,UINT32,None,True,P4),
+ ('event_queue_min','Actual server minimum event queue capability.',1,UINT32,None,True,P4),
+ ('event_queue_max','Actual server maximum event queue capability.',1,UINT32,None,True,P4),
+ ('timeout_hint_ms','UInt32 per-call timeoutHint; zero means no timeout; server hint does not prove E2E deadline.',0,UINT32,'ms',True,P4),
+ ('max_age_ms','Actual Read maxAge; zero attempts fresh, >=MaxInt32 attempts cached, best effort may be older.',0,None,'ms',False,P4),
+ ('deadband_value','Actual absolute units or percentage threshold; no engineering-unit fallback.',0,None,None,False,P8),
+ ('eu_low','Actual EURange low in engineering units, not a generic0..100 signal scale.',None,None,None,False,P8),
+ ('eu_high','Actual EURange high in same engineering units.',None,None,None,False,P8),
+ ('deadband_threshold','Derived percent threshold=(percent/100)*(EURange high-low); notification comparison strictly greater.',0,None,None,False,P8),
+ ('service_status','Actual overall UInt32 ServiceResult; Good does not imply every item Good.',0,UINT32,None,True,P4),
+ ('item_status','Actual per-item UInt32 StatusCode, severity separate info bits.',0,UINT32,None,True,P4),
+ ('item_severity','Decoded StatusCode top two bits0Good/1Uncertain/2Bad/3reserved treatedBad.',0,3,None,True,P4),
+ ('ws_opcode','Actual selected WebSocket frame opcode, encoding dependent.',1,2,None,True,P6),
+ ('ws_frame_bytes','Actual complete UA payload bytes carried by frame; separate WS header and TLS.',0,None,'byte',True,P6),
+ ('ws_receiver_limit','Actual receiver internal limit for JSON/OpenAPI, no HEL/ACK negotiation.',1,None,'byte',True,P6),
+ ('age_ms','Actual correlated source data age, not maxAge request or ServerTimestamp alone.',0,None,'ms',False,P4),
+ ('freshness_limit_ms','Actual application accepted source-age limit, no protocol-wide100ms.',0,None,'ms',False,P4),
+]:d(k,'number',meaning,lo,hi,u,src=src,integer=integer)
+for k,meaning,src in[
+ ('legacy_sequence','Actual selected policy LegacySequenceNumbers flag; not inferred from arbitrary URI text.',P6),
+ ('sequence_unused_for_token','Actual sequence not previously used for this TokenId, including after renew.',P6),
+ ('session_activated','Actual successful ActivateSession before session-based services.',P4),
+ ('session_service','Whether current service needs an activated Session; discovery/sessionless are separate.',P4),
+ ('publishing_enabled','Actual notification publishing enable; does not change item monitoring mode.',P4),
+ ('discard_oldest','Actual full-queue policy; false replaces last queued value, queue1 ignores flag.',P4),
+ ('analog_item','Actual AnalogItem with EURange property when percent deadband is used.',P8),
+ ('numeric_item','Actual numeric value supports absolute deadband; events/status changes have different rules.',P4),
+ ('gzip','Actual negotiated/used gzip for HTTPS JSON or WS OpenAPI, not inferred from payload size.',P6),
+ ('uncertain_accepted','Explicit application permission for Uncertain values, not protocol default.',P4),
+ ('data_accepted','Actual functional acceptance of correlated operation/value.',P4),
+]:d(k,'boolean',meaning,src=src)
+REQUIRED=('edition','binding','direction','endpoint','transport_profile_uri','profile_source','peer_source','security_source','schedule_source','acceptance_source','connection_id')
+REMOVED={k:'OPC UA application defines no universal '+k+'; explicitly chosen bearer or native service/peer configuration supplies any applicable value.'for k in('bitrate','mtu_bytes','duplex','vlan_id','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','rate_limit_bit_s','retry_limit','retransmission_enabled','retransmission_rate','retransmission_delay_ms','recovery_ms','link_fault_detect_ms','failover_ms','restore_delay_ms','mtbf_ms','sync_method')}
+def semantics():
+ rules=[]
+ def r(k,w=None,src=P4,**kw):rules.append(dict(parameter=k if k in('bitrate_bps','local_timing_evidence','payload_bytes')else'ua_'+k,when={'ua_'+a:b for a,b in(w or{}).items()},source=src,source_revision=SOURCES[src],**kw))
+ for k in REQUIRED:r(k,required=True)
+ for k in('bitrate_bps','local_timing_evidence'):r(k,allowed=[])
+ for k in('binding','security_family'):r('registered_source',{k:'REGISTERED'},required=True,src=P7)
+ for uri,(family,legacy)in POLICIES.items():
+  r('security_family',{'security_policy_uri':uri},allowed=[family],required=True,src=POL)
+  if legacy is not None:r('legacy_sequence',{'security_policy_uri':uri},allowed=[legacy],src=POL)
+ r('security_policy_uri',forbidden=[FORBIDDEN_POLICY],src=POL)
+ r('security_mode',{'security_family':'NONE'},allowed=['None'],src=P4)
+ for family in('RSA','ECC'):r('security_mode',{'security_family':family},allowed=['Sign','SignAndEncrypt'],src=P4)
+ for b in UACP:
+  w={'binding':b};r('endpoint',w,pattern=r'opc\.tcp://.+'if b=='UA_TCP'else r'opc\.wss://.+',src=P6)
+  for k in('protocol_requested','protocol_revised','hello_rx','hello_tx','ack_rx','ack_tx','security_family','security_policy_uri','security_mode'):r(k,w,required=True,src=P6)
+  for k in('protocol_requested','protocol_revised'):r(k,w,allowed=[0],src=P6)
+  r('protocol_revised',w,maximum_parameter='ua_protocol_requested',src=P6)
+  r('ack_rx',w,maximum_parameter='ua_hello_tx',src=P6);r('ack_tx',w,maximum_parameter='ua_hello_rx',src=P6)
+  for family in('ECC','RSA','NONE'):
+   for k in('hello_rx','hello_tx'):r(k,{**w,'security_family':family},minimum=1024 if family=='ECC' else 8192,src=P6)
+  for k,hello in(('ack_rx','hello_tx'),('ack_tx','hello_rx')):
+   r(k,w,when_half_open_ranges={'ua_'+hello:[0,8192]},minimum=1024,src=P6)
+   r(k,w,when_half_open_ranges={'ua_'+hello:[8192,None]},minimum=8192,src=P6)
+  r('endpoint',w,text_encoding='utf-8',encoded_bytes_parameter='ua_endpoint_utf8_bytes',src=P6)
+  r('endpoint_encoded_bytes',w,equal_expression={'sum':['ua_endpoint_utf8_bytes',4]},src=P6)
+  r('endpoint_utf8_bytes',w,required=True,src=P6);r('endpoint_encoded_bytes',w,required=True,src=P6)
+  for direct,rx,tx,maxmsg,maxchunks in(('REQUEST','ack_rx','hello_tx','server_max_message','server_max_chunks'),('RESPONSE','hello_rx','ack_tx','client_max_message','client_max_chunks')):
+   z={**w,'direction':direct};r('chunk_bytes',z,maximum_parameter='ua_'+rx,src=P6);r('chunk_bytes',z,maximum_parameter='ua_'+tx,src=P6)
+   r('message_body_bytes',z,when_positive=['ua_'+maxmsg],maximum_parameter='ua_'+maxmsg,src=P6)
+   r('message_chunks',z,when_positive=['ua_'+maxchunks],maximum_parameter='ua_'+maxchunks,src=P6)
+  for mt in('HEL','ACK','ERR','RHE','OPN','CLO'):r('chunk_type',{**w,'message_type':mt},allowed=['F'],src=P6)
+  for mt in('HEL','ACK','ERR','RHE','OPN','MSG','CLO'):
+   r('chunk_hex',{**w,'message_type':mt},pattern=r'(?i)'+mt.encode('ascii').hex()+r'(?:43|46|41)(?:[0-9A-Fa-f]{2})*',src=P6)
+  for c in('C','F','A'):r('chunk_hex',{**w,'chunk_type':c},pattern=r'(?:[0-9A-Fa-f]{2}){3}'+c.encode('ascii').hex()+r'(?:[0-9A-Fa-f]{2})*',src=P6)
+  r('chunk_hex',w,pattern=r'(?:[0-9A-Fa-f]{2})+',hex_bytes_parameter='ua_chunk_bytes',hex_octets=[dict(offset=4,width=4,byte_order='little',parameter='ua_chunk_bytes')],src=P6)
+  r('chunk_bytes',w,when_present=['ua_chunk_hex'],required=True,src=P6)
+  for mt in('OPN','MSG','CLO'):
+   z={**w,'message_type':mt};r('chunk_bytes',z,minimum=24 if mt in('MSG','CLO') else 12,src=P6)
+   for k in('channel_id','sequence','request_id','legacy_sequence','sequence_phase','sequence_unused_for_token'):r(k,z,required=True,src=P6)
+   r('sequence_unused_for_token',z,allowed=[True],src=P6)
+   r('chunk_hex',z,hex_octets=[dict(offset=8,width=4,byte_order='little',parameter='ua_channel_id')],src=P6)
+   r('previous_sequence',{**z,'sequence_phase':'NEXT'},required=True,src=P6)
+   r('sequence',{**z,'sequence_phase':'NEXT'},equal_parameter='ua_previous_sequence',equal_parameter_offset=1,src=P6)
+   r('sequence',{**z,'legacy_sequence':False,'sequence_phase':'FIRST'},allowed=[0],src=P6)
+   r('previous_sequence',{**z,'legacy_sequence':False,'sequence_phase':'WRAP'},allowed=[UINT32],required=True,src=P6)
+   r('sequence',{**z,'legacy_sequence':False,'sequence_phase':'WRAP'},allowed=[0],src=P6)
+   r('previous_sequence',{**z,'legacy_sequence':True,'sequence_phase':'WRAP'},minimum=UINT32-1023,required=True,src=P6)
+   r('sequence',{**z,'legacy_sequence':True,'sequence_phase':'WRAP'},maximum=1023,src=P6)
+   for k in('pending_request_id','pending_connection_id'):r(k,{**z,'direction':'RESPONSE'},required=True,src=P6)
+   r('request_id',{**z,'direction':'RESPONSE'},equal_parameter='ua_pending_request_id',src=P6)
+   r('connection_id',{**z,'direction':'RESPONSE'},equal_parameter='ua_pending_connection_id',src=P6)
+ for b,sub in zip(WS,('opcua+uacp','opcua+uajson','opcua+openapi')):
+  r('subprotocol',{'binding':b},allowed=[sub],required=True,src=P6);r('endpoint',{'binding':b},pattern=r'opc\.wss://.+',src=P6)
+ r('ws_opcode',{'binding':'WS_UACP'},allowed=[2],src=P6)
+ r('ws_frame_bytes',{'binding':'WS_UACP'},equal_parameter='ua_chunk_bytes',src=P6)
+ r('ws_opcode',{'binding':'WS_OPENAPI','gzip':False},allowed=[1],src=P6);r('ws_opcode',{'binding':'WS_OPENAPI','gzip':True},allowed=[2],src=P6)
+ for b in('WS_JSON','WS_OPENAPI'):
+  w={'binding':b};r('ws_frame_bytes',w,maximum_parameter='ua_ws_receiver_limit',src=P6);r('ws_receiver_limit',w,when_present=['ua_ws_frame_bytes'],required=True,src=P6)
+  for k in('protocol_requested','protocol_revised','hello_rx','hello_tx','ack_rx','ack_tx','client_max_message','server_max_message','client_max_chunks','server_max_chunks','chunk_hex','chunk_bytes','sequence','channel_id','token_id'):r(k,w,allowed=[],src=P6)
+ for b in('HTTPS_BINARY','HTTPS_JSON'):
+  r('endpoint',{'binding':b},pattern=r'opc\.https://.+',src=P6)
+  for k in('subprotocol','protocol_requested','protocol_revised','hello_rx','hello_tx','ack_rx','ack_tx','chunk_hex','chunk_bytes'):r(k,{'binding':b},allowed=[],src=P6)
+ r('renew_proposal_ms',equal_expression={'product':['ua_token_revised_ms',.75]},src=P4)
+ r('token_revised_ms',when_present=['ua_renew_proposal_ms'],required=True,src=P4)
+ for k in('session_revised_ms','publish_revised_ms'):r(k,exclusive_minimum=0)
+ r('session_activated',{'session_service':True},allowed=[True],required=True)
+ r('session_id',{'session_service':True},required=True)
+ r('lifetime_revised',minimum_expression={'product':['ua_keepalive_revised',3]})
+ r('keepalive_revised',when_present=['ua_lifetime_revised'],required=True)
+ r('sampling_revised_ms',when_ranges={'ua_sampling_requested_ms':[0,1e308]},minimum_expression={'minimum':['ua_sampling_requested_ms','ua_sampling_server_max_ms']})
+ r('sampling_server_max_ms',when_present=['ua_sampling_revised_ms'],required=True)
+ r('sampling_revised_ms',maximum_parameter='ua_sampling_server_max_ms')
+ r('queue_revised',{'item_kind':'DATA'},when_ranges={'ua_queue_requested':[0,1]},allowed=[1])
+ for count in(0,1,UINT32):
+  r('queue_revised',{'item_kind':'EVENT','queue_requested':count},equal_parameter='ua_event_queue_max' if count==UINT32 else 'ua_event_queue_min' if count==1 else None)
+ r('event_queue_min',maximum_parameter='ua_event_queue_max')
+ r('queue_revised',{'item_kind':'EVENT'},minimum_parameter='ua_event_queue_min',maximum_parameter='ua_event_queue_max')
+ r('discard_effect',{'queue_revised':1},allowed=['IGNORED'])
+ for flag,effect in((True,'OLDEST'),(False,'LAST')):r('discard_effect',{'discard_oldest':flag},when_greater_than={'ua_queue_revised':1},allowed=[effect])
+ r('deadband_value',{'deadband':'PERCENT'},maximum=100,src=P8)
+ for k in('analog_item','numeric_item'):r(k,{'deadband':'PERCENT'},allowed=[True],required=True,src=P8)
+ for k in('eu_low','eu_high'):r(k,{'deadband':'PERCENT'},required=True,src=P8)
+ r('eu_high',{'deadband':'PERCENT'},exclusive_minimum_expression='ua_eu_low',src=P8)
+ r('deadband_threshold',{'deadband':'PERCENT'},equal_expression={'product':['ua_deadband_value',.01,{'subtract':['ua_eu_high','ua_eu_low']}]},src=P8)
+ r('numeric_item',{'deadband':'ABSOLUTE'},allowed=[True],required=True)
+ r('item_severity',equal_expression={'floor':[{'product':['ua_item_status',1/(2**30)]}]})
+ r('item_status',when_present=['ua_item_severity'],required=True)
+ r('item_severity',{'data_accepted':True},allowed=[0,1],required=True)
+ r('service_status',{'data_accepted':True},maximum=1073741823,required=True)
+ r('uncertain_accepted',{'data_accepted':True,'item_severity':1},allowed=[True],required=True)
+ r('outcome',{'data_accepted':True},allowed=['ACCEPTED'],required=True)
+ r('age_ms',maximum_parameter='ua_freshness_limit_ms');r('freshness_limit_ms',when_present=['ua_age_ms'],required=True)
+ return dict(rate_model={'type':'APPLICATION_DEPENDENT','fields':[]},required_parameters=['ua_'+k for k in REQUIRED],native_parameter_prefixes=['ua_'],parameter_evidence_scope='EXPLICIT_LAYER',parameter_constraints=rules,
+  physical_layer_profile_id='explicit_opc_ua_endpoint_transport_and_peer',medium_access_model='VERSIONED_SERVICES_ON_ACTUAL_BEARER',arbitration_model_id='ACTUAL_SERVER_MONITORING_AND_SUBSCRIPTION_SERVICE',
+  mechanisms={'framing':['DIRECTIONAL_UACP_CHUNKS','JSON_OPENAPI_DISTINCT_WS_MAPPING'],
+   'delivery':['ACTUAL_REVISED_SESSION_SUBSCRIPTION_MONITORING','POLICY_QUALIFIED_CHUNK_SEQUENCE_AND_CORRELATION'],
+   'qualification':['NO_ETHERNET_CAN_RATE_MTU_OR_QUEUE_DEFAULT','SERVICE_STATUS_DISTINCT_ITEM_QUALITY_AND_FUNCTIONAL_ACCEPTANCE']})
+def fields():
+ result=[]
+ for spec in DECLARATIONS:
+  k=spec['key'][3:];item={key:value for key,value in spec.items()if value is not None}
+  item.update(label=k.replace('_',' '),category='timing'if spec.get('unit')=='ms'else'communication',scope='route',editable=True,required=k in REQUIRED,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
+  defaults=[]
+  if k=='edition':item.update(default=EDITION,default_status='PROPOSED',parameter_origin='TRANSPORT_PROFILE')
+  if k in('protocol_requested','protocol_revised'):
+   defaults=[dict(when={'ua_binding':b,'ua_edition':EDITION},value=0,source=P6,source_revision=SOURCES[P6])for b in UACP]
+  if k in('hello_rx','hello_tx'):
+   defaults=[dict(when={'ua_binding':b,'ua_edition':EDITION,'ua_security_family':fam},value=1024 if fam=='ECC' else 8192,source=P6,source_revision=SOURCES[P6])for b in UACP for fam in('ECC','RSA','NONE')]
+  if k=='queue_requested':defaults=[dict(when={'ua_item_kind':'DATA','ua_edition':EDITION},value=1,source=P4,source_revision=SOURCES[P4])]
+  if k=='sampling_requested_ms':defaults=[dict(when={'ua_item_kind':'DATA','ua_edition':EDITION},value=-1,source=P4,source_revision=SOURCES[P4])]
+  if k=='subscription_priority':item.update(default=0,default_status='PROPOSED',parameter_origin='TRANSPORT_PROFILE')
+  if defaults:item.update(conditional_defaults=defaults,default_status='PROPOSED_CONDITIONAL',parameter_origin='TRANSPORT_PROFILE')
+  if k=='endpoint':item.update(format='ABSOLUTE_URI',allowed_schemes=['opc.tcp','opc.https','opc.wss','https'])
+  result.append(item)
+ return result

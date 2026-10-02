@@ -1,0 +1,55 @@
+AuthorizedPaymentTerminal
+State AuthorizedPaymentTerminal
+System under test Charging Station
+Description This state will prepare the Charging Station, so that the transaction is authorized via a payment terminal.
+This can be done in two ways (The default way is configurable at Test System. This will be used when the
+calling testcase does not define which one to use.):
+A. Using local authorization (Integrated payment terminal)
+B. Using a RequestStartTransactionRequest (Payment kiosk with communication channel to the CSMS)
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+If State is NOT ParkingBayOccupied OR EVConnectedPreSession, then execute Reusable State ParkingBayOccupied
+Main A (Test scenario)
+Charging Station CSMS
+Manual action: Present a payment card to the payment terminal.
+1. The Charging Station sends an AuthorizeRequest
+Note(s):
+- This step needs to be executed, unless
+PaymentCtrlr.AuthorizeDirectPayment = false
+2. The Test System responds with an AuthorizeResponse
+with idTokenInfo.status Accepted
+3. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed when TxStartPoint contains
+Authorized OR the transaction already started. So in the case
+TxStartPoint contains ParkingBayOccupancy or (EVConnected, in
+the case this testcase was initiated from state
+EVConnectedPreSession.)
+4. The Test System responds with a TransactionEventResponse
+Note(s):
+- The first TransactionEventRequest sent after authorization
+contains the idToken field, unless a Start button was used to start
+the transaction. In case there is an idToken used, the
+TransactionEventResponse of this request message contains
+idTokenInfo
+with status Accepted
+Tool validations
+* Step 1:
+Message AuthorizeRequest
+- idToken must be <Not empty>
+- idToken.type must be DirectPayment
+- idToken.additionalInfo[0].additionalIdToken must be <not omitted>
+- idToken.additionalInfo[0].type must be <CardLast4Digits>
+* Step 3:
+Message: TransactionEventRequest
+- triggerReason must be Authorized
+- idToken must be <Not empty>
+- idToken.type must be DirectPayment
+- idToken.additionalInfo[0].additionalIdToken must be <not omitted>
+- idToken.additionalInfo[0].type must be CardLast4Digits
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 953/1383 Part 6 - Test Cases

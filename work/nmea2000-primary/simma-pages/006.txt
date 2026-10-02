@@ -1,0 +1,41 @@
+Chapter 3  CAN Hardware Abstraction Layer 
+ssNMEA2000 User’s Manual   - 6 - 
+Chapter 3 
+ 
+ssCAN Application Program 
+Interface 
+ 
+ 
+The hardware abstraction layer (HAL) is a software module that provides functions for 
+receiving and transmitting controller area network (CAN) data frames.  Because CAN 
+peripherals typically differ from one microcontroller to another, this module is 
+responsible for encompassing all platform depended aspects of CAN communications. 
+ 
+The HAL contains three functions that are responsible for initializing the CAN hardware 
+and handling buffered reception and transmission of CAN frames across multiple ports. 
+ 
+Function Prototype Function Description 
+void can_init ( void ) Initializes CAN hardware 
+uint8_t can_rx ( uint8_t p, can_t *frame ) Receives CAN frame (buffered I/O) 
+uint8_t can_tx ( uint8_t p, can_t *frame ) Transmits CAN frame (buffered I/O) 
+        Table 3-1: HAL functions 
+ 
+3.1 Data Type Definitions 
+      
+         Data type: 
+               can_t  
+       
+            Description: 
+can_t is a data type used to store CAN frames.  It contains the CAN frame 
+identifier, the CAN frame data, and the size of data.  NOTE: If the most 
+significant bit of id (i.e. bit 31) is set, it indicates an extended CAN frame, else it 
+indicates a standard CAN frame. 
+    
+            Definition: 
+        typedef struct { 
+   
+          uint32_t id; 
+          uint8_t buf[8]; 
+          uint8_t buf_len; 
+ 
+        } can_t;  

@@ -1,0 +1,32 @@
+CSO
+CSMS Charging Station
+alt [Reset Charging Station]
+Transactions active on one or more EVSEs
+reset CS
+ResetRequest(OnIdle)
+ResetResponse(Scheduled)
+opt [Avoid starting of new transactions
+on free EVSEs]
+loop [for all connectors of Available EVSEs]
+StatusNotificationRequest(Unavailable,...)
+StatusNotificationResponse(...)
+Wait for transactions to end,
+and optionally set connector(s)
+to Unavailable when a transaction ends.
+reboot Charging Station
+Continue B01 - Cold Boot Charging Station
+[Reset EVSE]
+Transaction active on EVSE
+reset CS
+ResetRequest(OnIdle, evseId)
+ResetResponse(Scheduled)
+Wait for transaction to end,
+and optionally set connector(s)
+to Unavailable when the transaction ends.
+reset EVSE
+loop [for all connectors of EVSE]
+StatusNotificationRequest(Available, evseId, connectorId)
+StatusNotificationResponse()
+Figure 21a: Sequence Diagram: Reset OnIdle With Ongoing Transaction
+Edition 4, 2025-12-03 B. Provisioning
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 72/491 Part 2 - Specification

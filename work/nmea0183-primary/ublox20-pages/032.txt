@@ -1,0 +1,48 @@
+u-blox 20 HPG 2.00 - Interface description
+18 CRLF character - - Carriage return and line feed
+2.7.13 GSA
+2.7.13.1 GNSS DOP and active satellites
+Message NMEA-Standard-GSA
+GNSS DOP and active satellites
+Type Output
+Comment The GNSS receiver operating mode, satellites used for navigation, and DOP values.
+• If less than 12 SVs are used for navigation, the remaining ﬁelds are left empty. If more than 12 SVs are
+used for navigation, only the IDs of the ﬁrst 12 are output.
+• The SV numbers (ﬁelds 'svid') are in the range of 1 to 32 for GPS satellites, and 33 to 64 for SBAS
+satellites (33 = SBAS PRN 120, 34 = SBAS PRN 121, and so on)
+In a multi-GNSS system this message will be output multiple times, once for each GNSS.
+Information Class/ID: 0xf0 0x02 Number of fields: 21
+Structure $xxGSA,opMode,navMode{,svid},PDOP,HDOP,VDOP,systemId*cs\r\n
+Example $GPGSA,A,3,23,29,07,08,09,18,26,28,,,,,1.94,1.18,1.54,1*0D\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGSA string - $GPGSA GSA Message ID (xx = current Talker ID, see NMEA
+Talker IDs table)
+1 opMode character - A Operation mode:
+• M = Manually set to operate in 2D or 3D mode
+• A = Automatically switching between 2D or 3D
+mode
+2 navMode digit - 3 Navigation mode, see position ﬁx ﬂags description
+Start of repeated group (12 times)
+3 + n svid numeric - 29 Satellite number
+End of repeated group (12 times)
+15 PDOP numeric - 1.94 Position dilution of precision
+16 HDOP numeric - 1.18 Horizontal dilution of precision
+17 VDOP numeric - 1.54 Vertical dilution of precision
+18 systemId hexadecimal - 1 NMEA-deﬁned GNSS system ID, see Signal Identiﬁers
+table (only available in NMEA 4.10 and later)
+19 cs hexadecimal - *0D Checksum
+20 CRLF character - - Carriage return and line feed
+2.7.14 GST
+2.7.14.1 GNSS pseudorange error statistics
+Message NMEA-Standard-GST
+GNSS pseudorange error statistics
+Type Output
+Comment This message reports statistical information on the quality of the position solution.
+Information Class/ID: 0xf0 0x07 Number of fields: 11
+Structure $xxGST,time,rangeRms,stdMajor,stdMinor,orient,stdLat,stdLong,stdAlt*cs\r\n
+Example $GPGST,082356.00,1.8,,,,1.7,1.3,2.2*7E\r\n
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 32 of 224
+C1-Public

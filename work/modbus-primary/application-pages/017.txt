@@ -1,0 +1,58 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  17/50 
+Quantity of Input Reg. Lo  01   
+ 
+The contents of input register 9 are shown as the two byte values of 00 0A hex, or 10 decimal.  
+ 
+MB Server Sends mb_exception_rsp EXIT
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+YES
+NO
+NO
+ExceptionCode = 02
+YES
+NO
+ExceptionCode = 03
+YES
+ENTRY
+ReadInputRegisters == OK
+MB Server Sends mb_rsp
+NO
+YES
+0x0001  Quantity of Registers  0x007D
+Function code
+supported
+Starting Address == OK
+AND
+Starting Address + Quantity of Registers == OK
+ExceptionCode = 04
+Request Processing
+ 
+Figure 14: Read Input Registers state diagram  
+ 
+ 
+ 
+ 
+ 
+ 
+6.5 05 (0x05) Write Single Coil  
+This function code is used to write a single output to either ON or OFF in a remote device.  
+The requested ON/OFF state is specified by a constant in the request data field. A value of FF 
+00 hex requests the output to be ON. A value of 00 00 requests it to be OFF. All other values 
+are illegal and will not affect the output.  
+The Request PDU specifi es the address of the coil to be forced. Coils are addressed starting 
+at zero. Therefore coil numbered 1 is addressed as 0. The requested ON/OFF state is 
+specified by a constant in the Coil Value field. A value of 0XFF00 requests the coil to be ON. 
+A value  of 0X0000 requests the coil to be off. All other values are illegal and will not affect the 
+coil.  
+ 
+The normal response is an echo of the request, returned after the coil state has been written.  
+Request  
+Function code  1 Byte  0x05  
+Output Address  2 Bytes  0x0000 to 0xFFFF  
+Output Value  2 Bytes  0x0000 or 0xFF00  
+ 
+Response  
+Function code  1 Byte  0x05  
+Output Address  2 Bytes  0x0000 to 0xFFFF  

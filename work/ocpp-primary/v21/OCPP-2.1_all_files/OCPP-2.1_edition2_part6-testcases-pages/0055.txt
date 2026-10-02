@@ -1,0 +1,51 @@
+TC_B_18_CS: Get Custom Report - with component criteria and
+component/variable
+Test case name Get Custom Report - with component criteria and component/variable
+Test case Id TC_B_18_CS
+Use case Id(s) B08
+Requirement(s) B08.FR.01, B08.FR.03, B08.FR.04, B08.FR.05, B08.FR.11, B08.FR.12, B08.FR.14, B08.FR.15
+System under test Charging Station
+Description CSMS requests a custom report for AvailabilityState of EVSE #1 as Available and with Problem.
+Purpose To test that Charging Station supports a custom report query and that it takes the component criteria into
+account, by first request a selection that should return a value and then requesting a selection that should
+not return a value.
+Prerequisite(s) Charging Station has implemented custom reporting (use case B08).
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Request EVSE::AvailabilityState from _Available components.
+Note 1: EVSE #1 must be available, because a Charging Station without EVSE is useless.
+Note 2: Do not confuse Available with AvailabilityState._
+2. Charging Station responds:
+GetReportResponse
+1. Test System sends GetReportRequest with:
+- requestId = <Generated requestId>
+- componentCriteria = { Available }
+- componentVariable[0].component.name = "EVSE"
+- componentVariable[0].component.evse.id = 1
+- componentVariable[0].variable.name = "AvailabilityState"
+3. Charging Station sends NotifyReportRequest
+4. Test System responds with NotifyReportResponse
+Request EVSE::AvailabilityState from _Problem components.
+Note 1: Assuming EVSE #1 does not have Problem variable set._
+6. Charging Station responds:
+GetReportResponse
+5. Test System sends GetReportRequest with:
+- requestId = <Generated requestId>
+- componentCriteria[0] = Problem
+- componentVariable[0].component.name = "EVSE"
+- componentVariable[0].component.evse.id = 1
+- componentVariable[0].variable.name = "AvailabilityState"
+Tool validations
+* Step 2:
+Message: GetReportResponse with:
+- status = Accepted
+- statusInfo is absent or statusInfo = "NoError"
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 53/1383 Part 6 - Test Cases

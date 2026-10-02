@@ -1,0 +1,219 @@
+"""Version- and device-qualified I3C declarations; no generic CAN rate or packet."""
+MIPI='https://www.mipi.org/resources/I3C-frequently-asked-questions'
+NXP='https://mcuxpresso.nxp.com/api_doc/dev/3802/a00037.html'
+ST='https://www.st.com/resource/en/application_note/an5879-introduction-to-i3c-for-stm32-mcus-stmicroelectronics.pdf'
+PIC_OD='https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-5770D42B-5331-416C-A1BE-AE3586BC832A.html'
+PIC_PP='https://onlinedocs.microchip.com/oxy/GUID-20DC4AC0-78C3-43D4-B405-15D8B752B254-en-US-5/GUID-7A28C34D-4E86-4948-B1AD-706E9862619D.html'
+REVISIONS={MIPI:'Public FAQ v1.2 updated2025-09-04 incl pending errata; not the complete normative specification',
+           NXP:'MCUXpresso SDK2.14.0 I3C_GetDefaultConfig implementation defaults',
+           ST:'AN5879 Rev6 June2026 sections2/4/6/7/8, SDR-only implementation',
+           PIC_OD:'PIC18F04/05/14/15Q20 online edition5 Table45-21; verify exact device PDF',
+           PIC_PP:'PIC18F04/05/14/15Q20 online edition5 Table45-22; verify exact device PDF'}
+VERSIONS=['BASIC_1_0','BASIC_1_1_1','BASIC_1_2','FULL_1_0','FULL_1_1','FULL_1_1_1','FULL_1_2']
+MODES=['SDR','HDR_DDR','HDR_TSP','HDR_TSL','HDR_BT','LEGACY_I2C']
+DECLARATIONS=[]
+def declare(key,kind,meaning,*,unit=None,options=None,minimum=None,maximum=None,source=MIPI,**extra):
+    DECLARATIONS.append(dict(key='i3c_'+key,type=kind,description=meaning,unit=unit,options=options,
+        min=minimum,max=maximum,source=source,source_revision=REVISIONS[source],**extra))
+
+declare('version','select','Actual bus specification flavour and revision; Basic and full features/errata differ.',options=VERSIONS)
+declare('mode','select','SDR is the baseline mode proposal; optional HDR requires negotiated matching device capabilities.',options=MODES,default='SDR')
+declare('implementation','select','Actual implementation, not inferred from industry. MCU defaults and electrical limits apply only to their named devices.',options=['MIPI_DEVICE','MCUX_SDK_2_14','STM32_AN5879','PIC18_Q20'])
+declare('configuration_phase','select','Factory proposal versus actual configured installation. SDK factory settings are not confirmed peer facts.',options=['SDK_DEFAULT_CONFIG','CONFIGURED'])
+declare('role','select','Actual active controller, secondary controller, I3C target or legacy target; one active clock owner.',options=['ACTIVE_CONTROLLER','SECONDARY_CONTROLLER','TARGET','LEGACY_TARGET'])
+declare('bus_kind','select','Actual pure versus legacy mixed bus. Mixed requirements cannot be inferred from an industry name.',options=['PURE','MIXED_FM','MIXED_FM_PLUS'])
+declare('controller_id','text','Actual canonical active controller identity; handoff changes ownership explicitly.')
+for key,meaning in [('device_source','Actual device model/datasheet/revision and limits.'),
+    ('capability_source','Actual matching GETCAPS/BCR/DCR/GETMXDS support and optional mode negotiation.'),
+    ('binding_source','Actual controller/target ports, bus segment and unique assigned addresses.'),
+    ('physical_source','Actual voltage, driver, keeper/pull-up, capacitance, stubs and edge timing proof.'),
+    ('schedule_source','Actual initialization, address arbitration, IBI, handoff, retries, transfer layout and deadlines.'),
+    ('transaction_source','Actual per-mode command/register/content-protocol, padding/integrity and transfer bound.'),
+    ('clock_source','Actual clock register/divider and measured/configured phase clocks, not maximum wire data rate.')]:
+    declare(key,'text',meaning)
+for key,label,maximum in [('pp_clock_hz','Push-pull SDR/data-phase',12500000),
+                           ('od_clock_hz','Open-drain address/arbitration phase',None),
+                           ('legacy_clock_hz','Legacy I2C target phase',1000000),
+                           ('initial_clock_hz','First broadcast disabling spike filters',2500000)]:
+    declare(key,'number','Actual '+label+' clock. Phase rates and protocol overhead are separate; no universal operating default.',unit='Hz',minimum=1,maximum=maximum)
+declare('initial_header','select','First broadcast normally uses Fm/Fm+ timing. Faster/omitted header requires actual spike-filter evidence.',options=['FM_FM_PLUS','ACCURATE_FILTER_2_5M','NO_FILTER_OMIT'])
+declare('initial_filter_source','text','Actual all-target accurate-filter or no-filter evidence; no automatic omission of first broadcast.')
+declare('lanes','number','Actual negotiated data lanes; SDR multilane belongs to full I3C, not Basic.',options=[1,2,4],minimum=1,maximum=4)
+declare('hdr_supported','boolean','Actual matched controller-target support for selected HDR mode, not capability of a different part.')
+declare('scl_drive','select','Actual clock drive: SDR controller push-pull; mode-specific clock handoff requires actual capability.',options=['PUSH_PULL','MODE_SPECIFIC_HANDOFF'])
+declare('sda_phase','select','Actual phase-specific SDA drive; OD arbitration/address is separate from PP data.',options=['OPEN_DRAIN_ADDRESS_PUSH_PULL_DATA','LEGACY_OPEN_DRAIN','HDR_MODE_SPECIFIC'])
+declare('target_stretch','boolean','I3C targets and compatible legacy targets cannot stretch SCL; controller low extension is different.')
+declare('legacy_filter_50ns','boolean','Actual legacy target 50ns spike filter, required for supported mixed buses.')
+declare('legacy_controller_present','boolean','Legacy I2C controllers cannot share an I3C bus.')
+declare('legacy_mode','select','Actual compatible legacy Fast/Fast+ target mode, not Standard/HS/UFm.',options=['FAST','FAST_PLUS'])
+declare('direction','select','Actual private/CCC/legacy transfer direction; no generic Ethernet duplex.',options=['READ','WRITE','BIDIRECTIONAL'])
+declare('address_method','select','Actual dynamic assignment method. SETDASA/SETAASA need static addresses; Hot-Join needs ENTDAA.',options=['ENTDAA','SETDASA','SETAASA','ASSIGNED'])
+declare('dynamic_address','number','Actual unshifted 7-bit unique target address. Broadcast/Hamming neighbours and legacy conflicts are excluded.',minimum=0,maximum=127)
+declare('static_address','number','Actual optional legacy/static 7-bit address; pure I3C targets need not have one.',minimum=0,maximum=127)
+declare('address_purpose','select','Ordinary dynamic address or explicitly proven legacy exception; not automatic0x0A.',options=['ORDINARY','LEGACY_EXCEPTION'])
+declare('address_source','text','Actual assignment and conflict-free address allocation, excluding R/W/parity bits.')
+declare('no_legacy_hs','boolean','Actual absence of conflicting legacy HS targets, needed for exceptional03/04 addresses.')
+declare('no_legacy_10bit','boolean','Actual absence of conflicting legacy10-bit address prefix, needed for78/79/7B.')
+declare('no_legacy_device_id','boolean','Actual absence of conflicting legacy DeviceID use, needed for7D.')
+declare('pid','text','Actual48-bit provisional device ID for ENTDAA, unique identity/arbitration; no vendor placeholder.',pattern=r'[0-9a-fA-F]{12}')
+for key in ('bcr','dcr'):
+    declare(key,'number','Actual8-bit '+key.upper()+' device capability register, not factory placeholder.',minimum=0,maximum=255)
+declare('tsco_ns','number','Actual target turnaround. Older limits12ns and v1.2 limit20ns differ; larger values need limitation/private agreement.',unit='ns',minimum=0)
+declare('bcr_speed_limited','boolean','Actual BCR limitation bit advertised by target.')
+declare('maxrd_tsco_code','number','Actual GETMXDS maxRD turnaround field; private agreement uses code7.',minimum=0,maximum=7)
+declare('tsco_source','text','Actual target datasheet/private turnaround agreement and revision-qualified measurement definition.')
+declare('read_low_ns','number','Actual controller read low duration must exceed turnaround plus SDA edge and setup budget.',unit='ns',minimum=0)
+declare('read_propagation_ns','number','Actual extra target-to-controller propagation/layout delay, not default zero.',unit='ns',minimum=0)
+declare('read_setup_ns','number','Actual receiver setup budget at least3ns per public timing guidance.',unit='ns',minimum=3)
+declare('read_sda_edge_ns','number','Actual target SDA rise/fall budget for read sampling.',unit='ns',minimum=0)
+for key in ('max_read_bytes','max_write_bytes'):
+    declare(key,'number','Actual negotiated meaningful-data limit; absent is unbounded by protocol, not65535-byte default. HDR padding is separate.',unit='Byte',minimum=0,maximum=65535)
+declare('length_source','text','Actual accepted SETMRL/SETMWL and content-protocol minimum/rejected-value policy; no universal minimum.')
+declare('ccc_scope','select','Actual broadcast versus directed command namespace; support/content depends on version.',options=['BROADCAST','DIRECTED'])
+declare('ccc_code','number','Actual common command byte; unknown optional/reserved commands require explicit matching revision and capability.',minimum=0,maximum=254)
+declare('ccc_source','text','Actual command/defining-byte/sub-command format, target support and version/errata.')
+declare('ccc_defining_byte','number','Actual optional command-specific defining byte, not generic payload header.',minimum=0,maximum=255)
+declare('hot_join','boolean','Actual supported/enabled Hot-Join, reserved request address02 is not an assigned target.')
+declare('ibi_data_supported','boolean','Actual BCR support for IBI with data; then first byte is mandatory data byte.')
+declare('ibi_bytes','number','Actual IBI meaningful data bytes, including mandatory data byte when data supported.',unit='Byte',minimum=0)
+declare('ibi_source','text','Actual IBI capability/data format, maximum rate, arbitration and acceptance bounds.')
+declare('handoff','boolean','Actual enabled secondary-controller role handoff, not I2C multicontroller arbitration.')
+declare('handoff_source','text','Actual handoff/DEFTGTS/GETACCCR capabilities, current owner and latency.')
+declare('reset_action','select','Actual target-reset action differs from HDR exit and address reset.',options=['PERIPHERAL_RESET','WHOLE_TARGET_RESET','DEVICE_SPECIFIC'])
+declare('recovery_source','text','Actual reset/recovery/IBI retry and error policy with peer support and bounded schedule.')
+declare('retry_limit','number','Actual software/device retry budget; protocol does not promise universal completion.',unit='attempts',minimum=0)
+declare('hdr_padding_bytes','number','Actual mode/lanes-specific padding; DDR CRC includes pad, HDR-BT CRC excludes last-block pad.',unit='Byte',minimum=0)
+declare('hdr_crc_policy','select','Actual mode integrity framing; never ordinary CAN CRC or universal packet overhead.',options=['DDR_CRC5_INCLUDES_PAD','BT_CRC_VALID_DATA','TERNARY_SPECIFIC'])
+declare('hdr_termination_crc','boolean','Actual negotiated ENDXFER CRC-on-early-termination; initial/new-version default disabled, older peers may not support it.')
+declare('timing_control','select','Actual optional timing capability; Basic1.0 absent, later Basic Async0 only.',options=['NONE','ASYNC_0','ASYNC_1','ASYNC_2','ASYNC_3','SYNCHRONOUS'])
+declare('timing_control_source','text','Actual timestamp/ODR/context capability, selected revision and functional acceptance.')
+declare('kernel_clock_hz','number','Actual STM32 kernel clock, strictly more than2x SCL, not inferred from peripheral type.',unit='Hz',minimum=1,source=ST)
+declare('period_cycles','number','Actual integer STM32 SCL period in kernel clock cycles;96MHz/8 gives12MHz, not12.5.',minimum=1,source=ST)
+for key,label in [('bus_cap_pf','Actual total line capacitance'),('vdd_v','Actual I/O voltage')]:
+    declare(key,'number',label+' and device/board operating constraints;50pF typical is not a universal maximum.',unit='pF' if key.endswith('pf') else 'V',minimum=0,source=ST)
+PIC_TIMINGS={
+ 'od_low_ns':(200,None,PIC_OD), 'initial_high_ns':(200,None,PIC_OD),
+ 'od_high_ns':(None,None,PIC_OD), 'od_digital_high_ns':(32,None,PIC_OD),
+ 'od_sda_rise_ns':(None,300,PIC_OD),'od_sda_fall_ns':(None,12,PIC_OD),'od_setup_ns':(3,None,PIC_OD),
+ 'start_ns':(38.4,50000000,PIC_OD),'stop_ns':(19.2,None,PIC_OD), 'bus_free_ns':(None,None,PIC_OD),
+ 'bus_available_us':(1,None,PIC_OD),'bus_idle_us':(200,None,PIC_OD),'lv_startup_us':(None,630,PIC_OD),
+ 'pp_low_ns':(24,None,PIC_PP),'pp_digital_low_ns':(32,None,PIC_PP),
+ 'pp_high_ns':(24,None,PIC_PP),'pp_digital_high_ns':(32,None,PIC_PP),
+ 'scl_rise_ns':(None,60,PIC_PP),'scl_fall_ns':(None,60,PIC_PP),
+ 'pp_data_hold_ns':(0,None,PIC_PP),'pp_setup_ns':(3,None,PIC_PP),
+ 'restart_after_ns':(19.2,None,PIC_PP),'restart_before_ns':(19.2,None,PIC_PP)}
+for key,(lower,upper,source) in PIC_TIMINGS.items():
+    declare(key,'number','Actual '+key+'; qualified PIC18Q20 table limit only, not a universal I3C/default measurement.',
+            unit='us' if key.endswith('_us') else 'ns',minimum=0,source=source)
+
+REMOVED={key:'Removed inherited '+key+': I3C has distinct clock/drive/address/IBI/CCC phases and actual device software queues/recovery; no CAN/Ethernet packet default.'
+         for key in ('bitrate','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','sync_method',
+                     'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms',
+                     'gateway_maximum_throughput','gateway_input_buffer','gateway_output_buffer',
+                     'gateway_maximum_routes','gateway_maximum_messages_s')}
+REQUIRED=['version','mode','implementation','role','bus_kind','controller_id','device_source','capability_source',
+          'binding_source','physical_source','schedule_source','transaction_source','clock_source','pp_clock_hz','od_clock_hz']
+
+def semantics():
+    rules=[]
+    def rule(key,when=None,source=MIPI,**kw):
+        rules.append(dict(parameter='i3c_'+key,when={('i3c_'+k):v for k,v in (when or {}).items()},
+                          source=source,source_revision=REVISIONS[source],**kw))
+    for bus in ('MIXED_FM','MIXED_FM_PLUS'):
+        for key,value in [('legacy_filter_50ns',True),('legacy_controller_present',False),('target_stretch',False)]:
+            rule(key,{'bus_kind':bus},required=True,allowed=[value])
+        rule('legacy_mode',{'bus_kind':bus},required=True,allowed=['FAST' if bus=='MIXED_FM' else 'FAST_PLUS'])
+        rule('legacy_clock_hz',{'bus_kind':bus},required=True,maximum=400000 if bus=='MIXED_FM' else 1000000)
+    rule('target_stretch',allowed=[False])
+    rule('legacy_controller_present',allowed=[False])
+    rule('role',{'bus_kind':'PURE'},forbidden=['LEGACY_TARGET'])
+    rule('mode',{'bus_kind':'PURE'},forbidden=['LEGACY_I2C'])
+    rule('lanes',allowed=[1,2,4])
+    rule('bus_kind',{'mode':'HDR_TSP'},allowed=['PURE'])
+    for version in VERSIONS:
+        if version=='BASIC_1_0': rule('mode',{'version':version},allowed=['SDR','LEGACY_I2C'])
+        if version.startswith('BASIC_'): rule('mode',{'version':version},forbidden=['HDR_TSP','HDR_TSL'])
+        if version=='FULL_1_0': rule('mode',{'version':version},forbidden=['HDR_BT'])
+        if version.endswith('_1_0'): rule('lanes',{'version':version},allowed=[1])
+        if version.startswith('BASIC_'):
+            rule('timing_control',{'version':version},allowed=['NONE'] if version=='BASIC_1_0' else ['NONE','ASYNC_0'])
+            rule('lanes',{'version':version,'mode':'SDR'},allowed=[1])
+        if not version.endswith('_1_0'): rule('ccc_code',{'version':version,'ccc_scope':'DIRECTED'},forbidden=[134])
+        threshold=20 if version.endswith('_1_2') else 12
+        for key,values in [('bcr_speed_limited',dict(allowed=[True])),('maxrd_tsco_code',dict(allowed=[7])),('tsco_source',{})]:
+            rule(key,{'version':version},when_greater_than={'i3c_tsco_ns':threshold},required=True,**values)
+    for mode in ('HDR_DDR','HDR_TSP','HDR_TSL','HDR_BT'):
+        rule('hdr_supported',{'mode':mode},required=True,allowed=[True])
+        rule('hdr_crc_policy',{'mode':mode},required=True,allowed=['DDR_CRC5_INCLUDES_PAD'] if mode=='HDR_DDR' else ['BT_CRC_VALID_DATA'] if mode=='HDR_BT' else ['TERNARY_SPECIFIC'])
+    for version in ('BASIC_1_0','FULL_1_0'):
+        rule('hdr_termination_crc',{'version':version},allowed=[False])
+    rule('scl_drive',{'mode':'SDR'},allowed=['PUSH_PULL'])
+    rule('sda_phase',{'mode':'SDR'},allowed=['OPEN_DRAIN_ADDRESS_PUSH_PULL_DATA'])
+    rule('sda_phase',{'mode':'LEGACY_I2C'},allowed=['LEGACY_OPEN_DRAIN'])
+    rule('mode',{'implementation':'STM32_AN5879'},allowed=['SDR','LEGACY_I2C'],source=ST)
+    rule('od_clock_hz',{'implementation':'STM32_AN5879'},maximum=4000000,source=ST)
+    rule('mode',{'implementation':'PIC18_Q20'},allowed=['SDR','LEGACY_I2C'],source=PIC_PP)
+    rule('role',{'implementation':'PIC18_Q20'},allowed=['TARGET','LEGACY_TARGET'],source=PIC_PP)
+    for method in ('SETDASA','SETAASA'): rule('static_address',{'address_method':method},required=True)
+    rule('address_method',{'hot_join':True},required=True,allowed=['ENTDAA'])
+    for key in ('pid','bcr','dcr'): rule(key,{'address_method':'ENTDAA'},required=True,source=ST)
+    for role in ('TARGET','SECONDARY_CONTROLLER'):
+        for key in ('dynamic_address','address_purpose','address_source'): rule(key,{'role':role},required=True)
+    rule('dynamic_address',forbidden=[0,1,2,5,6,7,62,94,110,118,122,124,126,127],source=ST)
+    rule('dynamic_address',{'address_purpose':'ORDINARY'},minimum=8,maximum=119,source=ST)
+    for address,key in [(3,'no_legacy_hs'),(4,'no_legacy_hs'),(120,'no_legacy_10bit'),
+                        (121,'no_legacy_10bit'),(123,'no_legacy_10bit'),(125,'no_legacy_device_id')]:
+        rule('address_purpose',{'dynamic_address':address},required=True,allowed=['LEGACY_EXCEPTION'],source=ST)
+        rule(key,{'dynamic_address':address},required=True,allowed=[True],source=ST)
+        rule('address_source',{'dynamic_address':address},required=True,source=ST)
+    rule('ccc_code',{'ccc_scope':'BROADCAST'},maximum=127)
+    rule('ccc_code',{'ccc_scope':'DIRECTED'},minimum=128)
+    rule('ccc_source',when_present=['i3c_ccc_code'],required=True)
+    rule('ibi_bytes',{'ibi_data_supported':True},required=True,minimum=1)
+    rule('ibi_bytes',{'ibi_data_supported':False},allowed=[0])
+    rule('ibi_source',when_present=['i3c_ibi_bytes'],required=True)
+    rule('handoff_source',{'handoff':True},required=True)
+    rule('length_source',when_present=['i3c_max_read_bytes'],required=True)
+    rule('length_source',when_present=['i3c_max_write_bytes'],required=True)
+    rule('timing_control_source',when_not={'i3c_timing_control':'NONE'},when_present=['i3c_timing_control'],required=True)
+    rule('read_low_ns',exclusive_minimum_expression={'sum':['i3c_tsco_ns','i3c_read_sda_edge_ns','i3c_read_setup_ns','i3c_read_propagation_ns']})
+    # An actual profile is essential; do not impose PIC/STM32 timing on every chip.
+    for key,(lower,upper,source) in PIC_TIMINGS.items():
+        rule(key,{'implementation':'PIC18_Q20'},source=source,**({'minimum':lower} if lower is not None else {}),**({'maximum':upper} if upper is not None else {}))
+    rule('bus_cap_pf',{'implementation':'PIC18_Q20'},maximum=50,source=PIC_PP)
+    rule('tsco_ns',{'implementation':'PIC18_Q20'},maximum=12,source=PIC_PP)
+    rule('pp_clock_hz',{'implementation':'PIC18_Q20'},minimum=10000,source=PIC_PP)
+    for bus,free in [('PURE',38.4),('MIXED_FM',1300),('MIXED_FM_PLUS',500)]:
+        rule('bus_free_ns',{'implementation':'PIC18_Q20','bus_kind':bus},minimum=free,source=PIC_OD)
+        rule('od_high_ns',{'implementation':'PIC18_Q20','bus_kind':bus},**({'minimum':24} if bus=='PURE' else {'maximum':41}),source=PIC_OD)
+        if bus!='PURE': rule('pp_digital_high_ns',{'implementation':'PIC18_Q20','bus_kind':bus},maximum=45,source=PIC_PP)
+    rule('pp_clock_hz',{'implementation':'STM32_AN5879'},maximum_ratio={'numerator_parameter':'i3c_kernel_clock_hz','denominator_offset':2},exclusive_maximum_ratio=True,source=ST)
+    rule('pp_clock_hz',{'implementation':'STM32_AN5879'},equal_ratio={'numerator_parameter':'i3c_kernel_clock_hz','denominator_product':['i3c_period_cycles'],'denominator_offset':1},source=ST)
+    for header in ('ACCURATE_FILTER_2_5M','NO_FILTER_OMIT'): rule('initial_filter_source',{'initial_header':header},required=True)
+    rule('initial_clock_hz',{'initial_header':'FM_FM_PLUS'},maximum=1000000)
+    for direction,key in [('READ','max_read_bytes'),('WRITE','max_write_bytes')]:
+        rules.append(dict(parameter='payload_bytes',when={'i3c_direction':direction},maximum_parameter='i3c_'+key,
+                          source=MIPI,source_revision=REVISIONS[MIPI]))
+    return {'rate_model':{'type':'I3C_PHASE_CLOCKS','fields':[]},'required_parameters':['i3c_'+key for key in REQUIRED],
+            'native_parameter_prefixes':['i3c_'],'parameter_constraints':rules,
+            'mechanisms':{'addressing':['VERSION_QUALIFIED_DYNAMIC_AND_OPTIONAL_STATIC_7BIT'],
+                          'integrity':['SDR_ODD_PARITY_TBIT_OR_READ_END_TBIT_MODE_SPECIFIC_HDR'],
+                          'arbitration':['OD_ADDRESS_DAA_IBI_AND_EXPLICIT_CONTROLLER_HANDOFF'],
+                          'timing':['OD_PP_LEGACY_PHASES_AND_ACTUAL_TARGET_READ_BUDGET_SEPARATE']}}
+
+def fields():
+    result=[]
+    required=set(semantics()['required_parameters'])
+    sdk={'i3c_implementation':'MCUX_SDK_2_14','i3c_configuration_phase':'SDK_DEFAULT_CONFIG'}
+    factory={'pp_clock_hz':12500000,'od_clock_hz':2500000,'legacy_clock_hz':400000}
+    for spec in DECLARATIONS:
+        item={k:v for k,v in spec.items() if v is not None}
+        item.update(label=spec['key'].removeprefix('i3c_').replace('_',' '),category='communication',scope='network',
+            required=spec['key']in required,editable=True,integer=spec['type']=='number' and spec['unit']not in {'ns','us','V','pF'},
+            simulation_relevant=False,validation_relevant=True,parameter_origin='DEVICE_CONFIGURATION',
+            default_status='PROPOSED_STANDARD' if 'default'in item else 'UNKNOWN')
+        suffix=spec['key'].removeprefix('i3c_')
+        if suffix in factory:
+            item.update(conditional_defaults=[{'when':sdk,'value':factory[suffix]}],default_status='PROPOSED_CONDITIONAL',source=NXP,source_revision=REVISIONS[NXP])
+        result.append(item)
+    return result

@@ -1,0 +1,50 @@
+Use cases & Requirements
+Remote Transaction Control
+F01 - Remote Start Transaction - Cable Plugin First
+No. Type Description
+1 Name Remote Start Transaction - Cable Plugin First
+2 ID F01
+3 Objective(s) 1. To remotely start a transaction by the CSMS.
+2. To enable a CSO to help an EV Driver that has problems starting a transaction.
+3. To enable third parties (e.g. mobile apps) to control charging transactions via the CSMS.
+4 Description This use case describes how the CSMS remotely requests the Charging Station to start a
+transaction by sending RequestStartTransactionRequest. Upon receipt, the Charging Station
+responds with RequestStartTransactionResponse and a status indicating whether it is able to try
+to start a transaction or not.
+Actors Charging Station, CSMS, CSO
+Scenario description 1. The EV Driver plugs in the cable at the Charging Station.
+2. The Charging Station sends a StatusNotificationRequest to the CSMS to inform it about a
+Connector that became Occupied.
+3. The CSMS responds with a StatusNotificationResponse, confirming that the
+StatusNotificationRequest was received.
+4. The Charging Station sends a TransactionEventRequest (eventType = Started) notifying the
+CSMS about a transaction that has started (even when the driver is not yet known.)
+5. The CSMS responds with a TransactionEventResponse, confirming that the
+TransactionEventRequest was received.
+6. An external trigger (as example in this use case: EV Driver) triggers the remote start.
+7. The CSMS sends a RequestStartTransactionRequest to the Charging Station.
+8 The Charging Station responds with a RequestStartTransactionResponse with the transactionId
+of the already started transaction to the CSMS.
+9. Optionally: the EV Driver is authorized by the CSMS.
+10. The Charging Station sends a TransactionEventRequest (eventType = Updated, chargingState
+= Charging) message to inform the CSMS that the charging has started.
+Alternative scenario(s) Remote Start Transaction - Remote Start First F02 - Remote Start Transaction - Remote Start First
+5 Prerequisite(s) Charging Cable plugged in first.
+6 Postcondition(s) The Charging Station offers energy. If the value of AuthorizeRemoteStart is true, the
+Charging Station will only offer energy when it successfully authorized the IdToken, using Local
+Authorization List, Authorization Cache and/or an AuthorizeRequest.
+7 Error handling n/a
+8 Remark(s) An external trigger can be e.g. a Charging Station Operator or an EV Driver app.
+The RequestStartTransactionResponse contains a status which indicates whether the Charging
+Station has accepted the request and will attempt to start a transaction.
+The CSMS is allowed to send a RequestStartTransactionRequest with IdTokenType of type:
+NoAuthorization. The operator should be aware that if the Charging Station supports local stop
+transaction, this transaction can be stopped by anyone.
+The scenario description and sequence diagram above are based on the Configuration Variable
+for start transaction being configured as follows:
+TxStartPoint: EVConnected
+This use-case is also valid for other configurations, but then the transaction might start/stop at
+another moment, which might change the sequence in which message are send. For more details
+see the use cases: E01 - Start Transaction options.
+Edition 4, 2025-12-03 F. Remote Control
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 175/491 Part 2 - Specification

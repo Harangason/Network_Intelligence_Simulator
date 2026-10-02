@@ -1,0 +1,50 @@
+R DER Control
+TC_R_107_CSMS: Configure DER control settings at CS
+Test case name Configure DER control settings at CS
+Test case Id TC_R_107_CSMS
+Use case Id(s) R04
+Requirement(s) R04.FR.12, R04.FR.14
+System under test CSMS
+Description Setting some DER controls and reboot the charging station. After reboot, retrieving the configured DER
+controls.
+Purpose To check if the CSMS is able to set DER Controls.
+Prerequisite(s) CSMS supports DER Control
+The Test System must report support for the following;
+component.name ACDERCtrlr
+variable.name ModesSupported
+variableAttribute.value [FreqWatt, FreqDroop, LimitMaxDischarge, Gradients, EnterService]
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Test ClearDERControl
+Manual action: trigger CSMS to send a ClearDERControlRequest with isDefault true
+2. The Test System responds with a ClearDERControlResponse
+with
+status Accepted
+1. The CSMS sends a ClearDERControlRequest
+Manual action: trigger CSMS to send a ClearDERControlRequest with isDefault false
+4. The Test System responds with a ClearDERControlResponse
+with
+status Accepted
+3. The CSMS sends a ClearDERControlRequest
+Test SetDERControl
+Manual action: trigger CSMS to send a SetDERControlRequest with isDefault true, controlType FreqDroop with priority 6
+6. The Test System responds with a SetDERControlResponse
+with
+status Accepted
+5. The CSMS sends a SetDERControlRequest
+Manual action: trigger CSMS to send a SetDERControlRequest with isDefault false controlType FreqWatt with a startTime, duration of
+900 and priority 4
+8. The Test System responds with a SetDERControlResponse
+with
+status Accepted
+7. The CSMS sends a SetDERControlRequest
+Manual action: trigger CSMS to send a SetDERControlRequest for controlType EnterService with priority = 1
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1359/1383 Part 6 - Test Cases

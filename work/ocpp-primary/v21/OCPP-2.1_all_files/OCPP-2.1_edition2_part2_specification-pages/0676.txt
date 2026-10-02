@@ -1,0 +1,56 @@
+Class to hold parameters of SetVariableMonitoring request.
+SetMonitoringDataType is used by: SetVariableMonitoringRequest
+Field Name Field Type Card. Description
+id integer, 0 <= val 0..1 Optional. An id SHALL only be given to replace an existing
+monitor. The Charging Station handles the generation of
+id’s for new monitors.
+transaction boolean 0..1 Optional. Monitor only active when a transaction is
+ongoing on a component relevant to this transaction.
+Default = false.
+value decimal 1..1 Required. Value for threshold or delta monitoring. For
+Periodic or PeriodicClockAligned this is the interval in
+seconds.
+type MonitorEnumType 1..1 Required. The type of this monitor, e.g. a threshold, delta
+or periodic monitor.
+severity integer, 0 <= val 1..1 Required. The severity that will be assigned to an event
+that is triggered by this monitor. The severity range is 0-9,
+with 0 as the highest and 9 as the lowest severity level.
+The severity levels have the following meaning:
+0-Danger
+Indicates lives are potentially in danger. Urgent attention
+is needed and action should be taken immediately.
+1-Hardware Failure
+Indicates that the Charging Station is unable to continue
+regular operations due to Hardware issues. Action is
+required.
+2-System Failure
+Indicates that the Charging Station is unable to continue
+regular operations due to software or minor hardware
+issues. Action is required.
+3-Critical
+Indicates a critical error. Action is required.
+4-Error
+Indicates a non-urgent error. Action is required.
+5-Alert
+Indicates an alert event. Default severity for any type of
+monitoring event. 
+6-Warning
+Indicates a warning event. Action may be required.
+7-Notice
+Indicates an unusual event. No immediate action is
+required.
+8-Informational
+Indicates a regular operational event. May be used for
+reporting, measuring throughput, etc. No action is
+required.
+9-Debug
+Indicates information useful to developers for debugging,
+not useful during operations.
+component ComponentType 1..1 Required. Component for which monitor is set.
+variable VariableType 1..1 Required. Variable for which monitor is set.
+periodicEventStream PeriodicEventStreamParamsType 0..1 Optional. (2.1) Optional. When present, events from a
+monitor will be sent via a periodic event stream. Used for
+monitors of type Periodic, PeriodicClockAligned
+or Delta.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 663/803 Part 2 - Specification

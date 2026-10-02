@@ -1,0 +1,49 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  70 
+For more information about the IP including the register map information, refer to  the RISC-V MC CPU IP User Guide 
+(FPGA-IPUG-02300). 
+GPIO IP 
+The general purpose input/output (GPIO) Peripheral Soft IP is a simple IP designed to control GPIO via the Lattice 
+memory mapped interface (LMMI) or APB interface. When configured as an input, the IP can detect the state of a GPIO 
+by reading the state of the associated register. When configured as an output, the IP takes the value written into the 
+associated register and controls the state of the controlled GPIO. In this example design, the IP receives input from DIP 
+switches to determine the demo GUI display status. 
+For more information about the IP including register map information, refer to the GPIO IP User Guide (FPGA-IPUG-
+02076). 
+UART IP 
+The UART Transceiver IP performs serial-to-parallel conversion of data characters received from a peripheral UART 
+device and parallel-to-serial conversion of data characters received from the host locate d inside the FPGA through an 
+APB interface. In this example design, UART is used to interface with the demo GUI.  
+For more information about the IP including register map information, refer to the UART IP User Guide (FPGA-IPUG-
+02105). 
+Interconnects 
+The interconnects convert between protocols to match IP interfaces. Interconnects consist of AHB -Lite interconnect, 
+AHB-Lite to APB bridge and APB interconnect. 
+System Memory 
+The system memory block stores the MEM initialization file of the software application for the RISC-V MC CPU IP. 
+APB CSR 
+The APB CSR is a custom APB target module with pre-defined control registers which is accessible by the RISC-V MC 
+CPU IP. The APB CSR can be used to configure the pattern generator in the pattern subsystem for non-UVSI loopback 
+mode. 
+Target CSR TX 
+The Target CSR TX is a custom APB target module that is responsible for the APB to AXI4-Lite conversion. The RISC-V 
+MC CPU IP can perform read or write transactions to the AXI4-Lite interface of the MIPI CSI TX IP through the Target 
+CSR TX module. 
+Target CSR RX 
+The Target CSR RX is a custom APB target module that is responsible for the APB to AXI4-Lite conversion. The RISC-V 
+MC CPU IP can perform read or write transactions to the AXI4-Lite interface of the MIPI CSI RX IP through the Target 
+CSR RX module. 
+7.4. Data Flow 
+7.4.1. Main Example Design System 
+When the FPGA device is programmed and the example design system is out of reset, the I2C subsystem initializes and 
+enables streaming from the external camera sensor. 
+For RX to TX retransmit mode, the sensor image is transmitted from the camera sensor to the MIPI CSI RX IP through 
+the PHY serial interface. The video stream received is decoded before retransmitted to the UVSI interface input of the 
+MIPI CSI TX IP. 
+For pattern subsystem to TX mode, the video pattern generated from the pattern subsystem is sent to the UVSI 
+interface input of the MIPI CSI TX IP. 

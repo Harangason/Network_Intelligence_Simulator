@@ -1,0 +1,48 @@
+REFCLK
+VDDIO
+VDD11
+PDB(*)
+VDD18
+VPDB_LOW
+ (*) It is recommended to assert PDB (active High) with a microcontroller rather than an RC filter network to help ensure 
+proper sequencing of PDB pin after settling of power supplies.
+VPDB_HIGH
+tr0
+t0
+tr1
+t3
+GND
+GND
+GND
+t2
+t4 t3
+VDD18
+tr0
+GND
+t1
+GPIO t5
+Copyright © 2018, Texas Instruments Incorporated
+Figure 8-18. Power-Up Sequencing
+8.4.2.1 PDB Pin
+The PDB pin is active HIGH and must remain LOW while the VDD pin power supplies are in transition. An 
+external RC network on the PDB pin may be connected to ensure PDB arrives after all the supply pins have 
+settled to the recommended operating voltage. When PDB pin is pulled up to VDD18, a 10-k Ω pullup and a > 
+10-μF capacitor to GND are required to delay the PDB input signal rise. All inputs must not be driven until both 
+power supplies have reached steady state.
+Table 8-6. PDB Reset Signal Pulse Width
+PARAMETER TEST CONDITIONS MIN TYP MAX UNIT
+PDB
+tLRST PDB Reset Low Pulse 2 ms
+8.4.2.2 System Initialization
+When initializing the communications link between the DS90UB960-Q1 deserializer hub and a DS90UB953-Q1 
+serializer, the system timing will depend on the mode selected for generating the serializer reference clock. 
+When synchronous clocking mode is selected, the serializer will re-lock onto the extracted back channel 
+reference clock once available, so there is no need for local crystal oscillator at the sensor module ( Figure 
+8-19). When the DS90UB953-Q1 is operating in non-synchronous mode, or is connecting to DS90UB933-Q1 
+or DS90UB913A-Q1 serializer, the sensor module requires a local reference clock and the timing would follow 
+Figure 8-20.
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+174 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

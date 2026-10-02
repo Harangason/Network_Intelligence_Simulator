@@ -1,0 +1,37 @@
+MODBUS over serial line specification and implementation guide V1.02  Modbus.org    
+Modbus.org http://www.modbus.org/ 8/44
+Dec 20, 2006 
+2.2 MODBUS Addressing rules  
+The MODBUS addressing space comprises 256 different addresses.  
+0 From 1 to 247  From 248 to 255  
+Broadcast 
+address 
+Slave individual addresses Reserved 
+T
+he Address 0 is reserved as the broadcast address.  All slave nodes must  recognise the broadcast address. 
+The MODBUS Master node has no specific address, only the slave nodes must have an address.  This address must  be unique on a 
+MODBUS serial bus.  
+2.3 MODBUS frame description 
+The MODBUS application protocol [1] defines a simple Protocol Data Unit (PDU) independent of the underlying communication layers: 
+Function code Data
+MODBUS PDU
+Figure 5: 
+MODBUS Protocol Data Unit 
+The mapping of MODBUS protocol on a specific bus or network introduces some additional fields on the Protocol Data Unit.  The 
+client that initiates a MODBUS transaction builds the MODBUS PDU, and then adds fields in order to build the appropriate 
+communication PDU. 
+Address field Function code Data CRC (or LRC)
+MODBUS SERIAL LINE PDU
+MODBUS PDU
+Figure 6: 
+MODBUS frame over Serial Line 
+/square4 On MODBUS Serial Line, the Address field only contains the slave address . 
+As described in the previous section the valid slave nodes addresses are in the range of 0 – 247 decimal.  The individual slave  
+devices are assigned addresses in the range of 1 – 247.  A master addresses a slave by placing the slave address in the address  field 
+of the message.  When the slave returns its response, it places its own address in the response address field to let the master  know 
+which slave is responding. 
+/square4 The function code indicates to the server what kind of action to perform.  The function code can be followed by a data field th at 
+contains request and response parameters. 
+/square4 Error checking field is the result of a "Redundancy Checking" calculation that is performed on the message contents.  Two kinds  
+of calculation methods are used depending on the transmission mode  that is being used (RTU or ASCII).   (see 2.5 section, " The 
+two serial Transmission Modes") 

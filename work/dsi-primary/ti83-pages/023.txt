@@ -1,0 +1,47 @@
+SN65DSI83 device I 2C interface conforms to the 2-wire serial interface defined by the I 2C Bus Specification,
+Version 2.1 (January 2000) and supports fast mode transfers up to 400 kbps.
+The device address byte is the first byte received following the start condition from the master device. The 7-bit
+device address for SN65DSI83 device is factory preset to 010110X with the least significant bit being determined
+by the ADDR control input. Table 7-3 clarifies the SN65DSI83 device target address.
+Table 7-3. SN65DSI83 I2C Target Address Description (1) (2)
+BIT 7 (MSB) BIT 6 BIT 5 BIT 4 BIT 3 BIT 2 BIT 1 BIT 0 (W/R)
+0 1 0 1 1 0 ADDR 0/1
+(1) When ADDR = 1, Address cycle is 0x5A (write) and 0x5B (read)
+(2) When ADDR = 0, Address cycle is 0x58 (write) and 0x59 (read)
+ 
+The following procedure is followed to write to the SN65DSI83 device I2C registers:
+1. The master initiates a write operation by generating a start condition (S), followed by the SN65DSI83 device
+7-bit address and a zero-value W/R bit to indicate a write cycle.
+2. The SN65DSI83 device acknowledges the address cycle.
+3. The master presents the subaddress (I 2C register within SN65DSI83 device) to be written, consisting of one
+byte of data, MSB-first.
+4. The SN65DSI83 device acknowledges the subaddress cycle.
+5. The master presents the first byte of data to be written to the I2C register.
+6. The SN65DSI83 device acknowledges the byte transfer.
+7. The master may continue presenting additional bytes of data to be written, with each byte transfer completing
+with an acknowledge from the SN65DSI83 device.
+8. The master terminates the write operation by generating a stop condition (P).
+The following procedure is followed to read the SN65DSI83 I2C registers:
+1. The master initiates a read operation by generating a start condition (S), followed by the SN65DSI83 device
+7-bit address and a one-value W/R bit to indicate a read cycle.
+2. The SN65DSI83 device acknowledges the address cycle.
+3. The SN65DSI83 device transmits the contents of the memory registers MSB-first starting at register 00h. If a
+write to the SN65DSI83 I 2C register occurred prior to the read, then the SN65DSI83 device starts at the
+subaddress specified in the write.
+4. The SN65DSI83 device waits for either an acknowledge (ACK) or a not-acknowledge (NACK) from the
+master after each byte transfer; the I2C master acknowledges reception of each data byte transfer.
+5. If an ACK is received, the SN65DSI83 device transmits the next byte of data.
+6. The master terminates the read operation by generating a stop condition (P).
+The following procedure is followed for setting a starting subaddress for I2C reads:
+1. The master initiates a write operation by generating a start condition (S), followed by the SN65DSI83 device
+7-bit address and a zero-value W/R bit to indicate a write cycle
+2. The SN65DSI83 device acknowledges the address cycle.
+3. The master presents the subaddress (I 2C register within the SN65DSI83 device) to be written, consisting of
+one byte of data, MSB first.
+4. The SN65DSI83 device acknowledges the subaddress cycle.
+5. The master terminates the write operation by generating a stop condition (P).
+www.ti.com
+SN65DSI83
+SLLSEC1I – SEPTEMBER 2012 – REVISED OCTOBER 2020
+Copyright © 2020 Texas Instruments Incorporated Submit Document Feedback 23
+Product Folder Links: SN65DSI83

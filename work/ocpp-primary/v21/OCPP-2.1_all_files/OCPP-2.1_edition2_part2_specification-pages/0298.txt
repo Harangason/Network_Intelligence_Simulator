@@ -1,0 +1,91 @@
+ID. Precondition Requirements Note
+I07.FR.05 Upon receiving a SetDefaultTariffRequest with
+an invalid tariff structure
+Charging Station SHALL respond with
+SetDefaultTariffResponse with status =
+Rejected, optionally with a statusInfo
+element with reasonCode = "InvalidValue".
+I07.FR.06 Upon receiving a SetDefaultTariffRequest with
+an invalid evseId
+Charging Station SHALL respond with
+SetDefaultTariffResponse with status =
+Rejected, optionally with a statusInfo
+element with reasonCode = "UnknownEVSE".
+I07.FR.10 Upon receiving a SetDefaultTariffRequest with
+a valid tariff structure AND
+NOT I07.FR.01-06
+Charging Station SHALL respond with
+SetDefaultTariffResponse with status =
+Accepted
+I07.FR.11 I07.FR.10 AND
+Charging Station receives a
+SetDefaultTariffRequest with a tariff and
+evseId > 0
+Charging Station SHALL install tariff as the
+default tariff at EVSE evseId.
+I07.FR.12 I07.FR.10 AND
+Charging Station receives
+SetDefaultTariffRequest with a tariff and
+evseId = 0
+Charging Station SHALL install tariff as the
+default tariff at each EVSE.
+This is exactly the
+same as sending a
+SetDefaultTariffReque
+st for each individual
+EVSE of the Charging
+Station.
+I07.FR.13 I07.FR.10 Charging Station SHALL store the default tariff
+in persistent memory.
+I07.FR.14 If a default tariff has been installed for an
+EVSE AND
+No driver-specific tariff has been received for
+the idToken for which a transaction has
+started or will be started.
+Charging Station SHALL show and use the
+default tariff for cost calculation.
+A default tariff may
+also be communicated
+through other means
+than the Charging
+Station display.
+I07.FR.17 A startTimeOfDay, endTimeOfDay,
+validFromDate and validToDate in a
+TariffConditionsType or
+TariffConditionsFixedType SHALL be in local
+time.
+This is a five character
+time notation in
+"hh:mm" format.
+I07.FR.18 A validFrom in TariffType SHALL be specified
+in system time.
+This is usually in UTC
+("Z" time zone).
+I07.FR.19 If TariffType has a value for validFrom Charging Station SHALL NOT consider this
+tariff for use until the current time is equal or
+later than validFrom.
+I07.FR.20 If a tariff A is present on EVSE X with no
+validFrom AND
+a tariff B is present on EVSE X with a value for
+validFrom AND
+current time is equal or later than B.validFrom
+(i.e. B is now valid)
+Charging Station SHALL replace the tariff A on
+EVSE X with the new tariff B.
+I07.FR.21 If a tariff A is present on EVSE X with
+A.validFrom = T1 AND
+a tariff B is present on EVSE X with a value for
+B.validFrom = T2 AND
+current time is equal or later than B.validFrom
+(i.e. B is now valid) AND
+A.validFrom <= B.validFrom
+Charging Station SHALL replace the tariff A on
+EVSE X with the new tariff B.
+I07.FR.22 If a tariff A is present on EVSE X with no
+validFrom AND
+a tariff B is installed on EVSE X with no
+validFrom
+Charging Station SHALL replace the tariff A on
+EVSE X with the new tariff B.
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 285/803 Part 2 - Specification

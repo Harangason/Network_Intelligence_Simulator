@@ -1,0 +1,32 @@
+If a transaction for the reserved idTag is started, then Charge Point SHALL send the reservationId in the
+StartTransaction.req PDU (see Start Transaction) to notify the Central System that the reservation is terminated.
+When a reservation expires, the Charge Point SHALL terminate the reservation and make the connector
+available. The Charge Point SHALL send a status notification to notify the Central System that the reserved
+connector is now available.
+If Charge Point has implemented an Authorization Cache, then upon receipt of a ReserveNow.conf PDU the
+Charge Point SHALL update the cache entry, if the idTag is not in the Local Authorization List, with the IdTagInfo
+value from the response as described under Authorization Cache.
+ It is RECOMMENDED to validate the Identifier with an authorize.req after reception of a
+ReserveNow.req and before the start of the transaction.
+5.14. Reset
+Charge Point Central System
+Reset.req(type)
+Reset.conf(status)
+Figure 35. Sequence Diagram: Reset
+The Central System SHALL send a Reset.req PDU for requesting a Charge Point to reset itself. The Central System
+can request a hard or a soft reset. Upon receipt of a Reset.req PDU, the Charge Point SHALL respond with a
+Reset.conf PDU. The response PDU SHALL include whether the Charge Point will attempt to reset itself.
+After receipt of a Reset.req, The Charge Point SHALL send a StopTransaction.req for any ongoing transaction
+before performing the reset. If the Charge Point fails to receive a StopTransaction.conf form the Central System,
+it shall queue the StopTransaction.req.
+At receipt of a soft reset, the Charge Point SHALL stop ongoing transactions gracefully and send
+StopTransaction.req for every ongoing transaction. It should then restart the application software (if possible,
+otherwise restart the processor/controller).
+At receipt of a hard reset the Charge Point SHALL restart (all) the hardware, it is not required to gracefully stop
+ongoing transaction. If possible the Charge Point sends a StopTransaction.req for previously ongoing
+transactions after having restarted and having been accepted by the Central System via a BootNotification.conf.
+This is a last resort solution for a not correctly functioning Charge Points, by sending a "hard" reset, (queued)
+information might get lost.
+ Persistent states: for example: Connector set to Unavailable shall persist.
+5.15. Send Local List
+52

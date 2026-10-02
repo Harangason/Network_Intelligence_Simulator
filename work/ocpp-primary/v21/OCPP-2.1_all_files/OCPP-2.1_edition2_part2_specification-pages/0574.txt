@@ -1,0 +1,101 @@
+R04.FR.17 Charging Station
+receives a
+SetDERControlRequest
+with multiple controls or
+with a control that does
+not match controlType
+Charging Station SHALL respond with
+SetDERControlResponse with status = Rejected
+See R04.FR.16 for mapping of control
+fields to controlType.
+R04.FR.18 A DC Charging Station SHALL report the DER
+controls that it supports in
+DCDERCtrlr.ModesSupported
+For AC Charging Stations see
+R03.FR.03.
+R04.FR.19 CSMS SHOULD NOT send a SetDERControlRequest
+to a DC Charging Station for a controlType that is
+not reported in DCDERCtrlr.ModesSupported.
+NotifyDERStartStop
+R04.FR.20 When a DER control has
+isDefault = false,
+isSuperseded = false and
+startTime equals current
+time
+Charging Station SHALL send a
+NotifyDERStartStopRequest with controlId for this
+control, started = true, and timestamp is current
+time.
+Start of DER control at startTime is
+reported.
+R04.FR.21 ( When a DER control A
+has isDefault = false,
+isSuperseded = false and
+startTime is current time
+) AND
+( another DER control B
+has isDefault = false,
+isSuperseded = false and
+a higher value for priority
+and is currently active )
+Charging Station SHALL send a
+NotifyDERStartStopRequest with controlId = A,
+started = true, and supersededId = B and timestamp
+is current time.
+Starting of A will supersede B.
+R04.FR.22 When a DER control has
+isDefault = false,
+isSuperseded = false and
+startTime + duration
+equals current time
+Charging Station SHALL send a
+NotifyDERStartStopRequest with controlId for this
+control, started = false, and timestamp is current
+time.
+End of DER control after duration is
+reported.
+GetDERControl
+R04.FR.30 Charging Station
+receives a
+GetDERControlRequest
+AND
+no DER controls are
+present on Charging
+Station for given
+isDefault, controlType
+and controlId
+Charging Station SHALL return a status =
+NotFound in GetDERControlResponse.
+A missing isDefault, controlType or
+controlId in the request matches any
+value of isDefault, controlType or
+controlId.
+R04.FR.31 When Charging Station
+receives a
+GetDERControlRequest
+The Charging Station SHALL set the requestId in
+every ReportDERControlRequest to the value of
+requestId in GetDERControlRequest.
+R04.FR.32 When the DER controls
+are reported in more than
+one
+ReportDERControlReque
+st
+Charging Station SHALL set the tbc flag to true for
+all ReportDERControlRequest messages except the
+last.
+R04.FR.33 Charging Station
+receives a
+GetDERControlRequest
+without isDefault,
+controlType and controlId
+AND
+DER controls are present
+on Charging Station
+Charging Station SHALL return a status =
+Accepted and send one or more
+ReportDERControlRequest messages for all
+controls.
+Returns all controls.
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 561/803 Part 2 - Specification

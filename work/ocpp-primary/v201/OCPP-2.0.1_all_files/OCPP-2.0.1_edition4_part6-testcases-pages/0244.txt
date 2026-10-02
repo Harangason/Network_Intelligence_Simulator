@@ -1,0 +1,42 @@
+TC_F_13_CS: Trigger message - TransactionEvent - Specific EVSE
+Test case name Trigger message - TransactionEvent - Specific EVSE
+Test case Id TC_F_13_CS
+Use case Id(s) F06
+Requirement(s) F06.FR.02,F06.FR.04,F06.FR.05,F06.FR.07,F06.FR.10
+System under test Charging Station
+Description The CSMS can request a Charging Station to send Charging Station-initiated messages. In the request the
+CSMS indicates which message it wishes to receive.
+Purpose To verify if the Charging Station is able to send a TransactionEventRequest message for a specific EVSE,
+after receiving a TriggerMessageRequest message.
+Prerequisite(s) The Charging Station supports sending TransactionEvents triggered by a TriggerMessageRequest.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+TriggerMessageResponse
+1. The Test System sends a TriggerMessageRequest
+With requestedMessage TransactionEvent
+evse.id <Configured evseId>
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 2:
+Message: TriggerMessageResponse
+- status must be Accepted
+* Step 3:
+Message: TransactionEventRequest
+- evse.id must be omitted or <Configured evseId>
+- triggerReason must be Trigger
+- transactionInfo.chargingState must be Charging
+- meterValue must be present
+- meterValue[0].sampledValue[0].context must be Trigger
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 242/914 Part 6 - Test Cases

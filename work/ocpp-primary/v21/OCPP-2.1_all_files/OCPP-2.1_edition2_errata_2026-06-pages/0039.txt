@@ -1,0 +1,68 @@
+Main (Test scenario)
+6.  The Charging Station responds with     
+SetNetworkProfileResponse
+5.  The Test System sends a       SetNetworkProfileRequest  with: 
+-  configurationSlot  is   <the active configuration>  
+-  connectionData.ocppVersion   OCPP21
+-  connectionData.ocppInterface   Any
+-  connectionData.ocppTransport   JSON
+-  connectionData.messageTimeout   <Configured
+messageTimeout>
+-  connectionData.ocppCsmsUrl   <Configured ocppCsmsUrl> 
+-  connectionData.securityProfile   <security profile from step 4>    
+-  connectionData.identity  =   <Configured ChargingStationId>  - 
+connectionData.basicAuthPassword   <Configured
+basicAuthPassword>
+6. 8.  The Charging Station responds with
+SetVariablesResponses
+5. 7.  Test System sends SetVariablesRequests for
+- SecurityCtrlr.Identity = <configured ChargingStationId>
+- SecurityCtrlr.BasicAuthPassword = <Configured
+basicAuthPassword> <generated valid password>   
+8. 10.  The Charging Station responds with
+GetVariablesResponse
+7. 9.  Test System sends GetVariablesRequest for
+- NetworkConfiguration[<the active configuration>.Identity
+10. Charging Station reconnects
+9. Test System closes the websocket connection
+Note: Test System reconnects using values from SecurityCtrlr.Identity/BasicAuthPassword
+11.   The Test System closes the WebSocket connection.      
+12.  The Charging Station sends a HTTP upgrade request with an          
+Authorization header, containing a username/password    
+combination (with the    <generated valid password>  ).
+Note(s) :
+ - The Authorization header is formatted as follows:       
+ AUTHORIZATION: Basic <Base64 encoded(<Configured   
+ChargingStationId>:<generated valid password>  )>
+13.  The Test System validates the username/password      
+combination AND upgrades the connection to a (secured)       
+WebSocket connection. 
+12. 15.  The Charging Station responds with
+GetVariablesResponse
+11. 14.  Test System sends GetVariablesRequest for
+- OCPPCommCtrlr.ActiveNetworkProfile
+Note: Restoring the Identity and BasicAuthPassword via SetNetworkProfileRequest and reconnecting.
+14. The Charging Station responds with GetVariablesResponse
+13. Test System sends GetVariablesRequest for
+- NetworkConfiguration[<the active configuration>
+.SecurityProfile
+16. 17.  The Charging Station responds with
+SetNetworkProfileResponse
+15. 16.  The Test System sends a SetNetworkProfileRequest
+with:
+- configurationSlot is <the active configuration>
+- connectionData.ocppVersion OCPP21
+- connectionData.ocppInterface Any
+- connectionData.ocppTransport JSON
+- connectionData.messageTimeout <Configured
+messageTimeout>
+- connectionData.ocppCsmsUrl <Configured ocppCsmsUrl>
+- connectionData.securityProfile <security profile from step 14
+4 >
+- connectionData.identity = <Configured ChargingStationId> -
+connectionData.basicAuthPassword <Configured
+basicAuthPassword>
+18. Charging Station reconnects
+17. Test System closes the websocket connection
+18.   The Test System closes the WebSocket connection.      
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 35/116 Errata 2026-06

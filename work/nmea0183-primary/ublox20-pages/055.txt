@@ -1,0 +1,44 @@
+u-blox 20 HPG 2.00 - Interface description
+bit 6   U:1 osc - - Oscillator parameter
+bit 7   U:1 utc - - UTC correction + GPS leap seconds parameters
+bit 8   U:1 rtc - - RTC
+bit 11   U:1 sfdr - - SFDR Parameters (only available on the ADR/UDR/
+HPS product variant) and weak signal compensation
+estimates
+bit 12   U:1 vmon - - SFDR Vehicle Monitoring Parameter (only available on
+the ADR/UDR/HPS product variant)
+bit 13   U:1 tct - - TCT Parameters (only available on the ADR/UDR/HPS
+product variant)
+bit 15   U:1 aop - - Autonomous orbit parameters
+2 U1 resetMode - - Reset Type
+• 0x00 = Hardware reset (watchdog) immediately
+• 0x01 = Controlled software reset
+• 0x02 = Controlled software reset (GNSS only)
+• 0x04 = Hardware reset (watchdog) after
+shutdown
+• 0x08 = Controlled GNSS stop
+• 0x09 = Controlled GNSS start
+• 0x0a = Hardware reset (via PWSEQ), retaining
+BBR contents
+3 U1 reserved0 - - Reserved
+3.11 UBX-INF (0x04)
+Messages in the UBX-INF class are used to output strings from the ﬁrmware or application code. All
+messages have an associated type to indicate the nature or priority of the message.
+3.11.1 UBX-INF-DEBUG (0x04 0x04)
+3.11.1.1 ASCII output with debug contents
+Message UBX-INF-DEBUG
+ASCII output with debug contents
+Type Output
+Comment This message has a variable length payload, representing an ASCII string.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x04 0x04 [0..n] see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+Start of repeated group (N times)
+0 + n CH str - - ASCII Character
+End of repeated group (N times)
+3.11.2 UBX-INF-ERROR (0x04 0x00)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 55 of 224
+C1-Public

@@ -1,0 +1,45 @@
+TC_K_28_CS: Set Charging Profile - TxDefaultProfile with transaction ongoing
+Test case name Set Charging Profile - TxDefaultProfile with transaction ongoing
+Test case Id TC_K_28_CS
+Use case Id(s) K01
+Requirement(s) K01.FR.32
+System under test Charging Station
+Description The CSMS sets a default schedule for a currently ongoing transaction.
+Purpose To verify if the CSMS and Charging Station are able to exchange messages to set a default schedule for a
+currently ongoing transaction.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+SmartChargingCtrlr.LimitChangeSignificance is 1.0
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest
+with chargingProfile.chargingProfilePurpose is TxDefaultProfile
+chargingProfile.chargingProfileKind is Absolute
+chargingProfile.chargingSchedule[0].duration is <400 +
+<Configured max time deviation> seconds>
+evseId <Configured evseId>
+chargingProfile.chargingSchedule[0].startSchedule <current
+dateTime - <Configured max time deviation> seconds>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].numberPhases <Configured numberPhases>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+4. The Charging Station responds with a
+GetCompositeScheduleResponse
+3. The Test System sends a GetCompositeScheduleRequest
+with evseId <Configured evseId>
+duration is 300
+chargingRateUnit <Configured chargingRateUnit>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 503/1383 Part 6 - Test Cases

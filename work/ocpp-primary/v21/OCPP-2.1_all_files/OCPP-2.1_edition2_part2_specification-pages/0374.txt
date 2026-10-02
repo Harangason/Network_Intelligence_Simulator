@@ -1,0 +1,53 @@
+No. Type Description
+6 Postcondition(s) New transactions will be limited by the received charging limit from the external system.
+The CSMS is informed of the new limit/schedule imposed by the external system.
+7 Error Handling n/a
+8 Remarks The external system could, for example, use IEC 61850 [IEC61850-7-420] or OpenADR [OPENADR]
+to communicate the grid limit to the Charging Station, but this could be any protocol. An example
+of an external system is given, in this case a smart meter that might set an external charging limit
+to protect against overloading the local grid connection, but this could be any other external
+system that sets a charging limit.
+It is up to the Charging Station implementation to decide whether to represent the external limits
+for ChargingStationExternalConstraints as an Absolute or Relative charging profile or
+as a Dynamic charging profile with an operationMode = ExternalLimits.
+External Control System
+(e.g. smart meter) Charging Station CSMS
+Set grid limit
+opt [if charging limit changed more than: LimitChangeSignificance]
+NotifyChargingLimitRequest(evseId, chargingLimit, chargingSchedule)
+NotifyChargingLimitResponse()
+Figure 133. Sequence diagram of the use case "Set / Update External Charging Limit Without Ongoing Transaction"
+K12 - Set / Update External Charging Limit Without Ongoing Transaction -
+Requirements
+Table 108. K12 - Requirements
+ID Precondition Requirements Note
+K12.FR.01 When an external charging
+limit/schedule is received
+while no transactions are
+ongoing
+The total load of all EVSEs SHALL NOT exceed this given
+limit.
+K12.FR.02 K12.FR.01
+AND
+Charging limit changed by
+more than:
+LimitChangeSignifica
+nce
+The Charging Station SHALL inform the CSMS of the new
+charging limit/schedule imposed by the external system
+by sending a NotifyChargingLimitRequest.
+Same as K11.FR.02
+K12.FR.03 K12.FR.02
+AND
+EnableNotifyCharging
+LimitWithSchedules is
+true
+The NotifyChargingLimitRequest SHALL contain the
+charging limit/schedule as set by the external system.
+Same as K11.FR.03
+K12.FR.04 K12.FR.02 The Charging Station SHALL NOT set the
+chargingLimitSource to CSO in the
+NotifyChargingLimitRequest.
+Same as K11.FR.05
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 361/803 Part 2 - Specification

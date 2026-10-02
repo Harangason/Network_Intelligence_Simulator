@@ -1,0 +1,24 @@
+Tool validations
+* Step 2:
+Message: GetMonitoringReportResponse
+- status = EmptyResultSet
+- statusInfo is absent or statusInfo.reasonCode = "NotFound"
+* Step 4:
+Message: GetMonitoringReportResponse
+- status = Accepted
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+* Step 5:
+Message: NotifyMonitoringReportRequest
+- requestId = <Generated requestId>
+- generatedAt = <timestamp at charging station>
+- seqNo = 0
+- monitor.variableMonitoring.type = Delta
+While tbc = true
+Message: NotifyMonitoringReportRequest
+- seqNo is incremented by 1
+- monitor.variableMonitoring.type = Delta
+Post scenario validations:
+Check that nothing is reported for requestId = <Generated requestId1> and a monitor for AvailabilityState of type Delta is reported
+for both ChargingStation and EVSE #1 for requestId = <Generated requestId2>.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 672/1383 Part 6 - Test Cases

@@ -1,0 +1,53 @@
+  "id": "22",
+  "description": [{
+    "format": "ASCII", "language": "en",
+    "content": "0.44 ct/kWh (idle fees of 1 euro per minute apply 5 minutes
+after end of charging, until location becomes less busy). Price incl. VAT"
+  }],
+  "currency": "EUR",
+  "energy": [{
+    "prices": [{
+      "priceKwh": 0.40,    -- per kWh
+      "taxRates": [ { "type": "vat", "tax": 10.0 } ]
+    }]
+  }, {
+    "idleTime": [{
+      "priceMinute": 0.909,
+      "taxRates": [ { "type": "vat", "tax": 10.0 } ]
+    }],
+    "conditions": {
+      "minIdleTime": 300    -- 5 minutes
+    }
+  }]
+}
+The change of tariff will be reflected in the CostDetailsType as a new ChargingPeriodType, and it will be reported in the transaction
+events as a triggerReason = TariffChanged.
+1.3. CostDetails
+At the end of a transaction the Charging Station includes a break-down of the calculated cost in the last TransactionEventRequest
+in a CostDetailsType.
+The CostDetailsType contains a list of ChargingPeriodType that each represent a period during the transaction to which the same
+TariffEnergyPriceType and [tarifftimepricetype] was applied. Whenever a different TariffEnergyPriceType or [tarifftimepricetype]
+becomes valid, because conditions change and a different TariffConditionsType applies, a new ChargingPeriodType is created.
+Note, that a TariffFixedPriceType is only evaluated at start of the transaction.
+A simple energy or time-based tariff without conditions will result in a CostDetailsType with only one ChargingPeriodType.
+CostDetails example for tariff 10 (see above) when charging 10 kWh
+{
+  "chargingPeriods": [{
+    "tariffId": "10",
+    "startPeriod": "2023-04-05T14:01:02Z",
+    "dimensions": [{
+      "type": "energy", -- energy is relevant dimension for tariff
+      "volume": 10000
+    }]
+  }],
+  "totalCost": {
+    "currency": "EUR",
+    "energy": {
+      "exclTax": 2.50,
+      "inclTax": 2.75,
+      "taxRates": [
+        { "type": "federal", "tax": 6.0 },
+        { "type": "state", "tax": 4.0 }
+      ]
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 273/803 Part 2 - Specification

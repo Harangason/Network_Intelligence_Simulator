@@ -1,0 +1,29 @@
+4.1 Transparent Gateway
+For each connected MQTT-SN client a transparent GW will setup and maintain a MQTT connection to the MQTT
+server. This MQTT connection is reserved exclusively for the end-to-end and almost transparent message ex-
+change between the client and the server. There will be as many MQTT connections between the GW and the
+server as MQTT-SN clients connected to the GW. The transparent GW will perform a “syntax” translation be-
+tween the two protocols. Since all message exchanges are end-to-end between the MQTT-SN client and the
+MQTT server, all functions and features that are implemented by the server can be offered to the client.
+Although the implementation of the transparent GW is simpler when compared to the one of an aggregating
+GW, it requires the MQTT server to support a separate connection for each active client. Some MQTT server
+implementations might impose a limitation on the number of concurrent connections that they support.
+Figure 2: Transparent and Aggregating Gateways
+4.2 Aggregating Gateway
+Instead of having a MQTT connection for each connected client, an aggregating GW will have only one MQTT
+connection to the server. All message exchanges between a MQTT-SN client and an aggregating GW end at the
+GW. The GW then decides which information will be given further to the server. Although its implementation
+is more complex than the one of a transparent GW, an aggregating GW may be helpful in case of WSNs with
+very large number of SAs because it reduces the number of MQTT connections that the server has to support
+concurrently.
+5 Message Formats
+5.1 General Message Format
+Message Header Message Variable Part
+(2 or 4 octets) (n octets)
+Table 1: General Message Format
+The general format of a MQTT-SN message is shown in Table 1. A MQTT-SN message consists of two parts:
+a 2- or 4-octet long header and an optional variable part. While the header is always present and contains the same
+ﬁelds, the presence and content of the variable part depend on the type of the considered message.
+5.2 Message Header
+The format of the message header is illustrated in Table 2.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 6

@@ -1,0 +1,26 @@
+No. Type Description
+5 Prerequisites The Charging Station has a payment terminal which is directly connected to the Charging Station.
+An ad hoc tariff has been set as the default tariff as described in use case I07 - Local Cost
+Calculation - Set Default Tariff.
+6 Postcondition(s) EV Driver is authorized to charge.
+7 Error handling When the payment service provider does not authorize the payment card, or when the payment
+terminal fails to communicate, then EV Driver is not authorized by Charging Station. This means
+that when PaymentCtrlr.AuthorizeDirectPayment = true Charging Station will not send an
+AuthorizeRequest.
+8 Remark(s) The communication between PSP and payment terminal, and the API between payment terminal
+and Charging Station are only described at an abstract level in this use case.
+PspRef is the reference from PSP that is used within PSP platform and is used to settle the
+payment. A payment terminal may also have its own transaction or session ID, but for the OCPP
+use case only the reference that is needed to settle the payment is relevant.
+This use case assumes a default tariff and support for local cost calculation. It can also work
+when cost calculation is performed by CSMS, but in that case it will not be possible to stop
+exactly a the maxCost amount.
+Optional VAT number validation:
+1. At any point in time before settlement the Charging Station may send a
+VatNumberValidationRequest to CSMS to verify a VAT number, that was entered by the
+EV Driver, to be included in the receipt.
+2. CSMS verifies the VAT number using a local database or online service, and returns a
+VatNumberValidationResponse with status = Accepted and optional company
+name/address, when number is considered valid, or status = Rejected otherwise.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 130/803 Part 2 - Specification

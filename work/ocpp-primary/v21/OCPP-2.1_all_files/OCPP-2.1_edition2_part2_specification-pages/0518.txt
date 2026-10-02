@@ -1,0 +1,47 @@
+Idle
+This operation mode is used when the EV is to be idle, in order to minimize the energy used by the EV for a period of time.
+The field preconditioningRequest is used to indicate if the EV can go to sleep completely, or should be on standby. The difference
+between sleeping and standby is that when sleeping, the EV is not expected to react quickly to a new schedule, while for standby it
+is expected that the EV can quickly start charging or discharging, when for example a new schedule is sent from the CSMS to the
+charging station.
+Limits and setpoints per operation mode
+The following table lists the charging limits and setpoints that can be set for each charging mode.
+limits and setpoints
+per operation mode
+limit dischargeLimit setpoint setpoint-Reactive
+ChargingOnly required - - -
+CentralSetpoint optional optional required optional
+CentralFrequency optional optional required -
+LocalFrequency - - calculated from
+freq/signal curves
+-
+ExternalSetpoint optional optional set externally -
+ExternalLimits set externally set externally - -
+LocalLoadBalancing - - calculated from load
+and thresholds/offsets
+-
+2.3. Switching V2X operation modes
+The V2X operation mode is defined per ChargingSchedulePeriodType. This means that you can have a different V2X operation
+mode per period in a charging profile. Although this is not a likely scenario, there may be situations where it is known in advance
+that certain hours of the day are "ChargingOnly" and other are "LocalLoadBalancing" or "CentralSetpoint".
+In many cases, though, a change of V2X operation mode is based on circumstances and cannot be planned. In that case the
+charging profile will have to be replaced with a new charging profile that contains a new charging schedule with the desired V2X
+operation mode.
+It is not uncommon that a charging schedule contains only one charging schedule period, because the setpoint or limits are
+determined dynamically during the period. This is the case, for example, with LocalFrequency, ExternalSetpoint, ExternalLimits and
+LocalLoadBalancing.
+2.4. Residual measurand
+With the new measurand Power.Active.Residual the CSMS can easily monitor if the measured power is within margin of the
+power setpoint. When the residual is positive it is charging or discharging at a higher power than the given power setpoint, when
+negative it is charging or discharging at a lower power than the given power setpoint.
+The power residuals are calculated by:
+If Power.Active.Setpoint is None:
+    Power.Active.Residual = 0
+If Power.Active.Setpoint == 0:
+    Power.Active.Residual = Power.Active.Import + Power.Active.Export
+If Power.Active.Setpoint > 0:
+    Power.Active.Residual = Power.Active.Import - Power.Active.Setpoint
+If Power.Active.Setpoint < 0:
+    Power.Active.Residual = Power.Active.Export + Power.Active.Setpoint
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 505/803 Part 2 - Specification

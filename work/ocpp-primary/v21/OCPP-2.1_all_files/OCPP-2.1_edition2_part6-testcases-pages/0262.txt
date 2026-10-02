@@ -1,0 +1,41 @@
+TC_E_54_CS: Stop transaction options - EVDisconnected - EV side (not able to
+charge IEC 61851-1 EV)
+Test case name Stop transaction options - EVDisconnected - EV side (not able to charge IEC 61851-1 EV)
+Test case Id TC_E_54_CS
+Use case Id(s) E06(S2), E10
+Requirement(s) E06.FR.02, E06.FR.15
+System under test Charging Station
+Description OCPP 2.x.x has a flexible transaction mechanism that allows the transaction start and stop points to be
+configured differently. This test covers one of the stop options.
+Purpose To verify if the Charging Station stops a transaction when the EV and EVSE are disconnected at the EV side
+and it has been configured to do so.
+Prerequisite(s) - The Charging Station does NOT have the following configuration; The mutability of TxStopPoint is
+ReadOnly AND (the value EVConnected is NOT set OR (EnergyTransfer OR PowerPathClosed is set)).
+- If the mutability of TxStopPoint is ReadWrite, then the value EVConnected must be supported.
+- The Charging Station does NOT have following configuration combination; StopTxOnEVSideDisconnect
+mutability ReadOnly with value true AND TxStopPoint mutability is ReadOnly and contains Authorized.
+- The Charging Station supports high level communication.
+Before (Preparations)
+Configuration State:
+TxStopPoint contains EVConnected
+StopTxOnEVSideDisconnect is false (If mutability is ReadWrite)
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferSuspended
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Disconnect the EV and EVSE on EV side (EVSE loses connection with EV).
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- triggerReason must be EVCommunicationLost
+- transactionInfo.chargingState must be Idle
+- transactionInfo.stoppedReason must be StoppedByEV or EVDisconnected
+- eventType must be Ended
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 260/1383 Part 6 - Test Cases

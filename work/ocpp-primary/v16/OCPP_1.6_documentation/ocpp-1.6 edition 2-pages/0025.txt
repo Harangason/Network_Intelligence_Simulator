@@ -1,0 +1,36 @@
+
+Please use with extreme caution and only for optional functionality, since it will impact your
+compatibility with other systems that do not make use of this option. We recommend
+mentioning the usage explicitly in your documentation and/or communication. Please
+consider consulting the Open Charge Alliance before turning to this option to add
+functionality.
+3.13. Smart Charging
+This section is normative.
+With Smart Charging a Central System gains the ability to influence the charging power or current of a specific
+EV, or the total allowed energy consumption on an entire Charge Point / a group of Charge Points, for instance,
+based on a grid connection, energy availability on the gird or the wiring of a building. Influencing the charge
+power or current is based on energy transfer limits at specific points in time. Those limits are combined in a
+Charging Profile.
+3.13.1. Charging profile purposes
+A charging profile consists of a charging schedule, which is basically a list of time intervals with their maximum
+charge power or current, and some values to specify the time period and recurrence of the schedule.
+There are three different types of charging profiles, depending on their purpose:
+• ChargePointMaxProfile
+In load balancing scenarios, the Charge Point has one or more local charging profiles that limit the power or
+current to be shared by all connectors of the Charge Point. The Central System SHALL configure such a profile
+with ChargingProfilePurpose set to “ChargePointMaxProfile”. ChargePointMaxProfile can only be set at Charge
+Point ConnectorId 0.
+• TxDefaultProfile
+Default schedules for new transactions MAY be used to impose charging policies. An example could be a policy
+that prevents charging during the day. For schedules of this purpose, ChargingProfilePurpose SHALL be set to
+TxDefaultProfile.
+If TxDefaultProfile is set to ConnectorId 0, the TxDefaultProfile is applicable to all Connectors.
+If ConnectorId is set >0, it only applies to that specific connector.
+In the event a TxDefaultProfile for connector 0 is installed, and the Central System sends a new profile with ConnectorId
+>0, the TxDefaultProfile SHALL be replaced only for that specific connector.
+• TxProfile
+If a transaction-specific profile with purpose TxProfile is present, it SHALL overrule the default charging profile
+with purpose TxDefaultProfile for the duration of the current transaction only. After the transaction is stopped,
+the profile SHOULD be deleted. If there is no transaction active on the connector specified in a charging profile
+of type TxProfile, then the Charge Point SHALL discard it and return an error status in SetChargingProfile.conf.
+20

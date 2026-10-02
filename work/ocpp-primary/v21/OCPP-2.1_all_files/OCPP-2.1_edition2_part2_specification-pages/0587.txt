@@ -1,0 +1,60 @@
+User Charging Station (BSS) CSMS
+User authorized for swapping
+Insert set of empty batteries
+BatterySwapRequest(eventType = BatteryIn, requestId, idToken, batteryData[])
+BatterySwapResponse()
+loop [for each inserted battery]
+Report connector of slot as Occupied
+NotifyEventRequest(component="Connector", evse.id=<slot number>,
+variable="AvailabilityState", value="Occupied")
+NotifyEventResponse()
+Start charging inserted battery
+Present new set of batteries
+User takes out new batteries
+BatterySwapRequest(eventType = BatteryOut, requestId, idToken, batteryData[])
+BatterySwapResponse()
+loop [for each extracted battery]
+Report connector of slot as Available.
+NotifyEventRequest(component="Connector", evse.id=<slot number out>,
+variable="AvailabilityState", value="Available")
+NotifyEventResponse()
+Figure 213. Sequence diagram for swapping batteries
+S03 - Battery Swap In/Out - Requirements
+ID Precondition Requirement definition Note
+S03.FR.01 When a set of batteries is inserted into
+a slot
+Charging Station SHALL send a
+BatterySwapRequest with eventType = BatteryIn,
+a requestId, an idToken set to authorized idToken,
+and batteryData with parameters from each battery
+with evse set to number of the slot where battery is
+inserted
+requestId is used to
+associate BatteryIn and
+BatteryOut events in
+CSMS.
+A set can also consist of
+a single battery.
+S03.FR.02 S03.FR.01 Charging Station SHALL report it as a Connector
+that is Occupied by a NotifyEventRequest for
+variable "AvailabilityState" of the Connector.
+S03.FR.03 When a set of batteries is removed
+from a slot
+Charging Station SHALL send a
+BatterySwapRequest with eventType =
+BatteryOut, the same requestId as used during
+BatteryIn, an idToken set to authorized idToken,
+and batteryData with parameters from the battery
+with evse set to number of the slot where battery is
+taken from.
+S03.FR.04 S03.FR.03 Charging Station SHALL report it as a Connector
+that is Available by a NotifyEventRequest for
+variable "AvailabilityState" of the Connector.
+S03.FR.05 When EV Driver authorizes to perform
+a battery swap AND
+Charging has no (or not enough)
+batteries available for swapping
+Charging Station SHALL refuse the battery swap
+operation.
+Edition 2, 2025-12-03 S. Battery Swapping
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 574/803 Part 2 - Specification

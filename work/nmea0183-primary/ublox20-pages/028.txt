@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+11 sep numeric m 48.0 Geoid separation: diﬀerence between ellipsoid and
+mean sea level
+12 sepUnit character - M Geoid separation units: M (meters, ﬁxed ﬁeld)
+13 diffAge numeric s - Age of diﬀerential corrections (null when DGPS is not
+used)
+14 diffStation numeric - - ID of station providing diﬀerential corrections (null when
+DGPS is not used)
+15 cs hexadecimal - *5B Checksum
+16 CRLF character - - Carriage return and line feed
+2.7.6 GLL
+2.7.6.1 Latitude and longitude, with time of position ﬁx and status
+Message NMEA-Standard-GLL
+Latitude and longitude, with time of position ﬁx and status
+Type Output
+Comment ☞ The output of this message is dependent on the currently selected datum (default: WGS84)
+Information Class/ID: 0xf0 0x01 Number of fields: 10
+Structure $xxGLL,lat,NS,lon,EW,time,status,posMode*cs\r\n
+Example $GPGLL,4717.11364,N,00833.91565,E,092321.00,A,A*60\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGLL string - $GPGLL GLL Message ID (xx = current Talker ID, see NMEA Talker
+IDs table)
+1 lat ddmm.
+mmmmm
+- 4717.11364 Latitude (degrees and minutes), see format description
+2 NS character - N North/South indicator
+3 lon dddmm.
+mmmmm
+- 00833.91565 Longitude (degrees and minutes), see format
+description
+4 EW character - E East/West indicator
+5 time hhmmss.ss - 092321.00 UTC time. See section UTC representation in the
+integration manual for details.
+6 status character - A Data validity status, see position ﬁx ﬂags description
+7 posMode character - A Positioning mode, see position ﬁx ﬂags description (only
+available in NMEA 2.3 and later)
+8 cs hexadecimal - *60 Checksum
+9 CRLF character - - Carriage return and line feed
+2.7.7 GLQ
+2.7.7.1 Poll a standard message (Talker ID GL)
+Message NMEA-Standard-GLQ
+Poll a standard message (Talker ID GL)
+Type Poll request
+Comment Polls a standard NMEA message if the current Talker ID is GL
+Information Class/ID: 0xf0 0x43 Number of fields: 4
+Structure $xxGLQ,msgId*cs\r\n
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 28 of 224
+C1-Public

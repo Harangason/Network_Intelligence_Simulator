@@ -197,6 +197,11 @@ class TechnologyRegistry:
     def rate_profile(self, technology_id: str) -> dict[str, Any]:
         """Resolve only the explicitly declared transport, never an industry fallback."""
         profile = self.profile(technology_id)
+        if profile.get('rate_source_profile_id'):
+            rate_id=self.normalize_id(profile['rate_source_profile_id'])
+            if rate_id not in profile.get('default_stack',()) or rate_id not in self._profiles:
+                raise ValueError(f"{profile['id']}: rate source must be an explicitly registered stack layer")
+            return self.profile(rate_id)
         if (profile.get("rate_model") or {}).get("fields"):
             return profile
         for layer in profile.get("default_stack") or ():
@@ -349,6 +354,14 @@ class TechnologyRegistry:
                 'message': str(exc), 'severity': 'BLOCKER',
             }]}
         rate_fields = {"bitrate_bps", "nominal_bitrate_bps", "data_bitrate_bps"}
+        # A conventional stack declaration is not an actual configured IP path.
+        # Validate the requested profile and explicitly supplied native layers;
+        # report missing layer evidence separately without manufacturing inputs.
+        unverified_stack_layers = [stack_id for stack_id in stack if stack_id != key
+            and self._profiles[stack_id].definition.get('parameter_evidence_scope') == 'EXPLICIT_LAYER'
+            and not any(field.startswith(prefix) for prefix in self._profiles[stack_id].definition.get('native_parameter_prefixes', ())
+                        for field in parameters)]
+        validation_stack = tuple(stack_id for stack_id in stack if stack_id not in unverified_stack_layers)
         supplied_rate_fields = set(parameters) & rate_fields
         stack_rate_fields = {
             field
@@ -364,20 +377,33 @@ class TechnologyRegistry:
         } for field in sorted(supplied_rate_fields - stack_rate_fields)]
         stack_schema_fields = set(profile.get('parameter_schema', {})) | {
             field for stack_id in stack for field in self._profiles[stack_id].definition.get('required_parameters', ())}
+        stack_schema_fields.update(field for stack_id in validation_stack
+            if self._profiles[stack_id].definition.get('parameter_evidence_scope') == 'EXPLICIT_LAYER'
+            for field in self._profiles[stack_id].definition.get('parameter_schema', {})
+            if any(field.startswith(prefix) for prefix in self._profiles[stack_id].definition.get('native_parameter_prefixes', ())))
         registered_fields = {field for item in self._profiles.values()
                              for field in item.definition.get('parameter_schema', {})}
+        native_prefixes = {prefix for stack_id in stack
+                           for prefix in self._profiles[stack_id].definition.get('native_parameter_prefixes', [])}
+        undeclared_native_fields = {field for field in parameters
+                                   if any(field.startswith(prefix) for prefix in native_prefixes)
+                                   and field not in stack_schema_fields}
         findings.extend({
             'stage': 'TECHNOLOGY_PARAMETERS', 'code': 'TECHNOLOGY_PARAMETER_NOT_APPLICABLE',
             'message': f'{field} belongs to another technology, not the declared {key} stack',
             'parameter': field, 'severity': 'BLOCKER',
-        } for field in sorted((set(parameters) & registered_fields) - stack_schema_fields - rate_fields))
+        } for field in sorted(((set(parameters) & registered_fields) - stack_schema_fields - rate_fields)
+                              | undeclared_native_fields))
         shared_parameters = {field: value for field, value in parameters.items() if field not in rate_fields}
-        for stack_id in stack:
+        for stack_id in validation_stack:
             allowed = set(self._profiles[stack_id].rate_model.get("fields") or ()) if stack_id in self._profiles else set()
+            layer_native_fields = {field for field in self._profiles[stack_id].definition.get('parameter_schema', {})
+                if self._profiles[stack_id].definition.get('parameter_evidence_scope') == 'EXPLICIT_LAYER'
+                and any(field.startswith(prefix) for prefix in self._profiles[stack_id].definition.get('native_parameter_prefixes', ()))}
             layer_parameters = {
                 **(shared_parameters if stack_id == key else {
                     field: value for field, value in shared_parameters.items()
-                    if field in self._profiles[stack_id].definition.get('required_parameters', ())}),
+                    if field in self._profiles[stack_id].definition.get('required_parameters', ()) or field in layer_native_fields}),
                 **{field: parameters[field] for field in supplied_rate_fields & allowed},
             }
             for validator in self._validators.get(stack_id, ()):
@@ -396,7 +422,7 @@ class TechnologyRegistry:
                     "parameter": field, "severity": "BLOCKER",
                 } for field in missing)
         required_parameters = sorted({
-            field for stack_id in stack
+            field for stack_id in validation_stack
             for field in self._profiles[stack_id].definition["required_parameters"]
         })
         for field in required_parameters:
@@ -417,6 +443,8 @@ class TechnologyRegistry:
                 "status": "UNVERIFIED" if incomplete else "INVALID" if findings else "VALID",
                 "findings": findings, "required_parameters": required_parameters,
                 "validation_scope": "DECLARED_PROFILE_PARAMETERS",
+                "unverified_stack_layers": unverified_stack_layers,
+                "stack_parameter_completeness": "UNVERIFIED" if unverified_stack_layers or findings else "COMPLETE_SUPPLIED_PARAMETERS",
                 "required_parameter_completeness": "UNVERIFIED"}
 
     def change_parameters(self, previous_technology: str, target_technology: str, parameters: dict[str, Any]) -> dict[str, Any]:

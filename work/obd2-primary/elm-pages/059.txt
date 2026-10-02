@@ -1,0 +1,67 @@
+59 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+02: 00 00 01 5F 05 02 31
+03: 6D 05 03 03 FF FF FF
+if the headers are off. Note that multiframe messages
+always send eight bytes of data, and fill in unused byte
+positions with FFs.
+With the headers off, a multiline response looks
+very similar to the multiline responses for ISO15765-4.
+The first line shows the total number of bytes in the
+message, and the other lines show the segment
+number, then a colon, and the data bytes received.
+Note that the byte count is a hexadecimal value (ie the
+‘012’ shown means that there are 18 bytes of data).
+The single line that shows 012 in the above (the
+total number of data bytes) is actually a special type of
+response, called a ‘Connection Management’ or
+‘TP.CM’ message. It has a specific format, but the only
+bytes that are typically relevant are those that provide
+the total message size in bytes, so that is all that the
+ELM327 normally shows. In order to see the other
+bytes, you must turn CAN Auto Formatting off (AT
+CAF0), and then repeat the request. Note that this will
+only show the entire TP.CM message if you have a
+version 1.4b or newer ELM327.
+ This has been a brief description of how to use
+the ELM327 in a typical J1939 environment. If you can
+monitor for information, make global requests as well
+as specific ones, and receive single or multiframe
+responses, then you have the tools necessary to
+diagnose most vehicle problems.
+Using J1939 (continued)
+Several European heavy duty truck and bus
+manufacturers have joined to form an organization for
+standardizing the way in which information is retrieved
+from these large vehicles. The result of their work is
+the FMS (or Fleet Management Systems) Standard,
+and the Bus-FMS Standard.
+The FMS standard is based on a subset of the
+250 kbps J1939 protocol, which uses only broadcast
+messages for the information. In order to not
+compromise the integrity of the vehicle’s CAN bus, the
+standard also specifies a gateway device to provide
+separation between (potentially unskilled) users and
+the critical control information on the vehicle.
+The information contained in the FMS messages
+is defined by PGNs, using the same PGN numbers as
+for J1939. The difference is that they only define a
+small subset of those specified by J1939.
+To monitor the information provided by an FMS
+gateway, simply use the AT MP command with the
+appropriate PGN number. We should caution that
+some information (VIN, software version, etc.) is only
+transmitted every 10 seconds, so some patience is
+required when waiting for the data.
+The FMS standard is completely open, and still
+The FMS Standard
+continues to evolve. Originally there were different
+documents for Bus and Truck, but now they are
+combined into one. As of this writing, Version 03
+(dated 12.03.2012) is the most recent document. For
+more information, visit either FMS web site:
+FMS Standard:
+www.fms-standard.com
+Bus FMS Standard:
+bus-fms-standard.com

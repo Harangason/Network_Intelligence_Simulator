@@ -1,0 +1,46 @@
+ID Precondition Requirement definition Note
+B09.FR.34
+(2.1)
+B09.FR.10 AND
+On receipt of a
+SetVariablesRequest containing
+the variable
+NetworkConfigurationPriority AND
+the new value adds configuration
+slot(s) to the current value
+The Charging Station SHALL validate the
+NetworkConfiguration component for
+instances equal to the added configuration
+slot(s), and if not successful the Charging
+Station SHALL respond by sending a
+SetVariablesResponse with the corresponding
+setVariableResult with attributeStatus
+Rejected and attributeStatusInfo.reasonCode
+= "InvalidNetworkConf"
+The field additionalInfo can be
+used to provide details about
+which NetworkConfiguration
+variable is invalid.
+Matches B09.FR.02 for
+SetNetworkProfileRequest.
+B09.FR.35
+(2.1)
+The variable
+AllowSecurityProfileDowngrade is
+not implemented or set to false
+AND
+The Charging Station receives a
+SetVariablesRequest for
+NetworkConfiguration.SecurityProf
+ile with an attributeValue that has a
+lower value than the currently
+active 'SecurityProfile'
+The Charging Station SHALL respond with
+SetVariablesResponse with the corresponding
+setVariableResult with attributeStatus
+Rejected and attributeStatusInfo.reasonCode
+= "NoSecurityDowngrade"
+Matches B09.FR.04 for
+SetNetworkProfileRequest.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 73/803 Part 2 - Specification

@@ -1,0 +1,199 @@
+--- before/backend/communication/technologies/powerlink.py
++++ after/backend/communication/technologies/powerlink.py
+@@ -0,0 +1,196 @@
++"""POWERLINK DS301 timings and explicitly selected Multiple-ASnd extension."""
++P='https://www.br-automation.com/downloads_br_productcatalogue/assets/EPSG_301_V-1-5-1_DS-c710608e.pdf'
++MULTI='https://www.br-automation.com/fileadmin/EPSG_302-B_V-1-1-1_DS-39befa02.pdf'
++SOURCES={P:'EPSG DS301 V1.5.1: physical p35, timing pp50-54, node/frame pp69-78, SDO pp132-140, OD pp233-240/248-256, constants p352. Scoped primary PDF text; no hardware certification.',
++ MULTI:'EPSG DS302-B V1.1.1: Multiple-ASnd pp12-16, roles/feature bits/state transitions pp16-22. Selected extension, not universal DS301 capability.'}
++EDITION='DS301_1_5_1';DECLARATIONS=[]
++def d(key,kind,meaning,lo=None,hi=None,unit=None,options=None,integer=False,source=P):
++ DECLARATIONS.append(dict(key='epl_'+key,type=kind,description=meaning,min=lo,max=hi,unit=unit,options=options,integer=integer,source=source,source_revision=SOURCES[source]))
++for key,meaning,options in [
++ ('edition','Actual reviewed communication profile; unreviewed extensions require their own registered schema.',[EDITION]),
++ ('extension','Actual enabled asynchronous extension and peer support.',['NONE','MULTIPLE_ASND_1_1_1']),
++ ('mode','Actual POWERLINK real-time cycle versus non-deterministic service BasicEthernet.',['POWERLINK','BASIC_ETHERNET']),
++ ('role','Actual managing, controlled, diagnostic or legacy-routing node; only one active MN.',['MN','CN','DIAGNOSTIC','ROUTER1']),
++ ('phy','Selected reviewed100BASE-X medium; not arbitrary Ethernet PHY.',['100BASE_TX','100BASE_FX']),
++ ('duplex','Actual physical half/full setting; classic POWERLINK requires HALF.',['HALF','FULL']),
++ ('topology','Actual repeaters versus source-qualified nonconforming switched topology.',['CLASS2_REPEATERS','SWITCHED_NONCONFORMING']),
++ ('wait_method','Actual SoC handling: delayed first request versus dummy252 request.',['DELAY','DUMMY_REQUEST']),
++ ('access','Actual node participation and grant, not all nodes cyclic.',['ISOCHRONOUS','MULTIPLEXED','ASYNC_ONLY']),
++ ('frame','Actual distinct message type, each with its own addresses/headers.',['SOC','PREQ','PRES','SOA','ASND','AINV','LEGACY_ETHERNET']),
++ ('service','Actual ASnd service or separately qualified vendor service.',['IDENT','STATUS','NMT_REQUEST','NMT_COMMAND','SDO','VENDOR','OTHER']),
++ ('sdo_binding','Actual sequence/command bearer with separate headers and capabilities.',['ASND','UDP_IP','PDO_CONTAINER']),
++ ('nmt_state','Actual lifecycle state; physical link does not establish valid PDO.',['INITIALISING','NOT_ACTIVE','PRE_OPERATIONAL_1','PRE_OPERATIONAL_2','READY_TO_OPERATE','OPERATIONAL','STOPPED','BASIC_ETHERNET']),
++ ('outcome','Actual functional consumer outcome, distinct received frame.',['ACCEPTED','REJECTED','PENDING','UNKNOWN'])]:d(key,'select',meaning,options=options,source=MULTI if key=='extension'else P)
++for key,meaning in [
++ ('device_source','Actual firmware/XDD object dictionary and enabled capabilities.'),
++ ('physical_source','Actual cable/hub propagation and jitter, configured PHY and measured behavior.'),
++ ('schedule_source','Actual whole-network CN list, cycle/slots/grants/payloads and worst-case traffic.'),
++ ('mapping_source','Actual PDO active mapping, device profile/version and byte order.'),
++ ('acceptance_source','Actual correlated functional consumption and deadline/freshness evidence.'),
++ ('address_source','Actual unique configured node/MAC identifiers, not generated device guesses.'),
++ ('destination_mac','Actual twelve hexadecimal MAC digits; only selected message multicast constants prescribed.'),
++ ('relative_time_us','Actual optional UInt64 relative cycle clock, decimal text preserves all bits.')]:d(key,'text',meaning)
++for key,meaning,lo,hi,unit in [
++ ('node_id','Actual local role-qualified node ID; dummy/self/broadcast are not existing nodes.',1,254,None),
++ ('source_node','Actual on-wire sender; manager240 distinct configured controlled node.',1,254,None),
++ ('destination_node','Actual frame destination;255 is broadcast,252 dummy only prescribed request.',0,255,None),
++ ('active_mn_count','Actual simultaneous active managers, not redundant candidate count.',0,254,None),
++ ('cn_count','Actual configured regular controlled nodes.',0,239,None),
++ ('cn_capacity','Actual MN supported regular-node count, not all239 assumed.',0,239,None),
++ ('max_cn_id','Actual XDD supported regular CN ID ceiling.',1,239,None),
++ ('cycle_us','Configured network cycle1006h in MICROseconds; specification defines no universal default.',1,4294967295,'us'),
++ ('peer_cycle_us','Actual peer cycle must match selected network.',1,4294967295,'us'),
++ ('cycle_min_us','Actual device cycle minimum, not marketing fastest cycle.',1,4294967295,'us'),
++ ('cycle_max_us','Actual device cycle maximum.',1,4294967295,'us'),
++ ('granularity_us','Actual common admissible cycle step from device XDD.',1,4294967295,'us'),
++ ('iso_tx_max','Actual firmware constant maximum PDO slot payload, no guessed1490 device buffer.',36,1490,'byte'),
++ ('iso_rx_max','Actual receiver constant maximum PDO slot payload.',36,1490,'byte'),
++ ('preq_slot','Configured PReq slot1F8Bh, fixed frame size even with fewer actual PDO bytes.',36,1490,'byte'),
++ ('cn_preq_slot','Actual CN configured PreqActPayloadLimit, must match MN slot.',36,1490,'byte'),
++ ('pres_slot','Actual transmitter configured PresActPayloadLimit, fixed slot size.',36,1490,'byte'),
++ ('pres_rx_limit','Receiver PRes limit1F8Dh;0 ignores,65535 uses actual RxMax.',0,65535,'byte'),
++ ('pdo_bytes','Actual PDO Size field0..1490, distinct configured padded slot.',0,1490,'byte'),
++ ('mapped_bytes','Actual active mapped PDO bytes, bounded by selected slot.',0,1490,'byte'),
++ ('pdo_version','Actual8-bit mapping version, independent EPL header version.',0,255,None),
++ ('expected_pdo_version','Actual receiver configured mapping version.',0,255,None),
++ ('async_mtu','Configured async frame bytes excluding14MAC/4FCS, includes ASnd/IP headers.',300,1500,'byte'),
++ ('segment_interface_mtu','Actual smallest complete interface frame size, including18MAC/FCS.',318,1518,'byte'),
++ ('async_bytes','Actual complete asynchronous Ethernet payload, not only application data.',0,1500,'byte'),
++ ('pres_max_latency_ns','Actual CN worst response latency1F98/3 in NANOseconds.',0,4294967295,'ns'),
++ ('asnd_max_latency_ns','Actual CN worst SoA-to-ASnd start1F98/6, unknown unless device evidence.',0,4294967295,'ns'),
++ ('propagation_ns','Actual selected MN-CN one-way propagation worst case.',0,4294967295,'ns'),
++ ('path_jitter_ns','Actual cumulative physical/hub jitter bound.',0,4294967295,'ns'),
++ ('wait_soc_ns','Configured1F8A/1 wait, must cover slowest participating device.',960,4294967295,'ns'),
++ ('mn_soc_min_ns','Actual MN SoC processing gap requirement.',960,4294967295,'ns'),
++ ('cn_soc_min_ns','Actual slowest active CN SoC gap requirement.',960,4294967295,'ns'),
++ ('pres_timeout_ns','Configured1F92 response-start supervision, not application deadline.',0,4294967295,'ns'),
++ ('async_timeout_ns','Configured1F8A/2 response-start bound, not whole ASnd duration.',250,4294967295,'ns'),
++ ('pres_measured_latency_ns','Actual observed/derived response-start delay including path.',0,4294967295,'ns'),
++ ('soc_ns','SoC serialization including preamble, no IFG.',5760,5760,'ns'),
++ ('soa_ns','SoA serialization including preamble, no IFG.',5760,5760,'ns'),
++ ('preq_ns','PReq fixed slot serialization including wrapper/preamble, no gap.',5760,122080,'ns'),
++ ('pres_ns','PRes fixed slot serialization including wrapper/preamble, no gap.',5760,122080,'ns'),
++ ('ifg_ns','Classic100M interframe minimum gap, distinct latency.',960,960,'ns'),
++ ('async_frame_ns','Actual padded async frame serialization including wrapper/preamble.',5760,122080,'ns'),
++ ('isophase_ns','Actual aggregate isochronous requests/responses/turnarounds/propagation/gaps, excluding separately recorded SoC and WaitSoC.',0,None,'ns'),
++ ('asyncphase_ns','Actual whole asynchronous phase with all selected grants/frames/gaps.',0,None,'ns'),
++ ('idle_ns','Actual remaining idle/guard slack; zero is actual measured choice, not unknown.',0,None,'ns'),
++ ('cycle_total_ns','Actual total cycle budget; phase scalars do not prove schedule coverage.',1,None,'ns'),
++ ('multipl_count','Actual1F98/7 cycle multiplex count;0 disabled,1 valid no multiplex effect.',0,255,None),
++ ('mn_multipl_max','Actual MN device-supported maximum multiplex count.',0,255,None),
++ ('slot_index','Actual assigned multiplex cycle position, within count.',0,254,None),
++ ('poll_interval_us','Actual cyclic poll interval, distinct async scheduler service.',1,None,'us'),
++ ('prescaler','Configured SoC PS flag toggle interval;0disabled, default2.',0,1000,None),
++ ('basic_timeout_us','CN1F99 fallback timeout;0never BasicEthernet, otherwise >cycle.',0,4294967295,'us'),
++ ('mn_startup_us','Actual MN startup wait, separately balanced with CN fallback.',0,4294967295,'us'),
++ ('asnd_max_number','Configured extension maximum ASnd slots per cycle, not actual pending count.',1,255,None),
++ ('mn_asnd_capacity','Actual device maximum asynchronous slots.',1,255,None),
++ ('asnd_sent','Actual asynchronous frames sent in current cycle.',0,255,None),
++ ('asnd_priority','Actual3-bit async scheduling priority, not CAN identifier arbitration.',0,7,None),
++ ('pending_request_code','Actual3-bit RS indication7means7or more, not exact queue depth.',0,7,None),
++ ('remaining_ns','Actual time before nextSoC when deciding AInv.',0,None,'ns'),
++ ('ainv_timeout_ns','Source extension timeout until next invite, distinct application timeout.',0,None,'ns'),
++ ('sdo_history_size','Actual6-bit sliding-window history must be at most31.',1,31,None),
++ ('sdo_send_sequence','Actual6-bit SDO sequence, distinct two connection-status bits.',0,63,None),
++ ('sdo_receive_sequence','Actual6-bit receive sequence.',0,63,None),
++ ('age_us','Actual application data age at consumption.',0,None,'us'),
++ ('freshness_limit_us','Actual application maximum tolerated age.',0,None,'us')]:d(key,'number',meaning,lo,hi,unit,integer=True,source=MULTI if key in('asnd_max_number','mn_asnd_capacity','asnd_sent','remaining_ns','ainv_timeout_ns')else P)
++for key,meaning in [
++ ('autoneg','Actual autonegotiation, not recommended for classic real-time.'),
++ ('phy_conforming','Actual PHY conforms to selected DS301 requirements, not guessed from label.'),
++ ('slot_consistent','Actual full segment slot/MTU/multiplex/prescaler agreement verified.'),
++ ('multiple_asnd_supported','Actual local feature flag16.'),
++ ('peer_multiple_asnd_supported','Actual target supports AInv and node assignmentbit13 enabled.'),
++ ('ainv_sent','Actual additional asynchronous invitation, not initialSoA.'),
++ ('pdo_ready','Actual PReq/PRes RD flag supplied by producer application.'),
++ ('mapping_valid','Actual active PDO mapping and consumer version/limits checked.'),
++ ('frame_valid','Actual CRC/length/reserved bits/address and parser validity.'),
++ ('data_accepted','Actual functional consumer accepted data.'),
++ ('relative_time_supported','Actual optional relative clock capability.'),
++ ('sdo_binding_supported','Actual selected sequence/command transfer capability.')]:d(key,'boolean',meaning,source=MULTI if key in('multiple_asnd_supported','peer_multiple_asnd_supported','ainv_sent')else P)
++REQUIRED=('edition','extension','mode','role','phy','duplex','device_source','physical_source','schedule_source','mapping_source','acceptance_source','address_source')
++REMOVED={k:'Foreign generic '+k+' is not the POWERLINK native cycle/grant/device/PHY setting; replace with source-qualified node/schedule fields.'for k in('mtu_bytes','duplex','vlan_id','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','rate_limit_bit_s','retry_limit','retransmission_enabled','retransmission_rate','retransmission_delay_ms','recovery_ms','link_fault_detect_ms','failover_ms','restore_delay_ms','mtbf_ms','sync_method')}
++def semantics():
++ rules=[]
++ def r(key,when=None,source=P,**kw):
++  name=key if key in('bitrate_bps','payload_bytes','local_timing_evidence')else'epl_'+key
++  rules.append(dict(parameter=name,when={'epl_'+k:v for k,v in(when or{}).items()},source=source,source_revision=SOURCES[source],**kw))
++ for k in REQUIRED:r(k,required=True)
++ r('local_timing_evidence',allowed=[])
++ r('duplex',{'mode':'POWERLINK'},allowed=['HALF']);r('active_mn_count',{'mode':'POWERLINK'},allowed=[1])
++ r('phy_conforming',{'topology':'SWITCHED_NONCONFORMING'},allowed=[False])
++ for role,ids in [('MN',[240]),('CN',list(range(1,240))),('DIAGNOSTIC',[253]),('ROUTER1',[254])]:r('node_id',{'role':role},allowed=ids)
++ r('cn_count',maximum_parameter='epl_cn_capacity');r('node_id',{'role':'CN'},maximum_parameter='epl_max_cn_id')
++ for frame in ('SOC','PREQ','SOA','AINV'):r('source_node',{'frame':frame},allowed=[240])
++ for frame,mac in [('SOC','01111E000001'),('PRES','01111E000002'),('SOA','01111E000003')]:
++  r('destination_node',{'frame':frame},allowed=[255]);r('destination_mac',{'frame':frame},allowed=[mac])
++ r('destination_mac',pattern=r'[0-9A-Fa-f]{12}')
++ r('destination_node',{'frame':'PREQ'},when_not={'epl_wait_method':'DUMMY_REQUEST'},allowed=list(range(1,240))+[253,254])
++ r('destination_node',{'frame':'PREQ','wait_method':'DUMMY_REQUEST'},allowed=list(range(1,240))+[252,253,254])
++ r('cycle_us',minimum_parameter='epl_cycle_min_us',maximum_parameter='epl_cycle_max_us',equal_parameter='epl_peer_cycle_us')
++ for k in('cycle_us','cycle_min_us','cycle_max_us'):
++  r(k,equal_expression={'subtract':['epl_'+k,{'integer_remainder':['epl_'+k,'epl_granularity_us']}]})
++ r('cycle_min_us',maximum_parameter='epl_cycle_max_us')
++ r('preq_slot',maximum_parameter='epl_iso_tx_max',equal_parameter='epl_cn_preq_slot')
++ r('cn_preq_slot',maximum_parameter='epl_iso_rx_max');r('pres_slot',maximum_parameter='epl_iso_tx_max')
++ r('pres_rx_limit',when_ranges={'epl_pres_rx_limit':[1,65534]},minimum=36,maximum=1490,maximum_parameter='epl_iso_rx_max',minimum_parameter='epl_pres_slot')
++ r('pres_slot',{'pres_rx_limit':65535},maximum_parameter='epl_iso_rx_max')
++ for frame,slot in [('PREQ','preq_slot'),('PRES','pres_slot')]:
++  for k in('pdo_bytes','mapped_bytes'):r(k,{'frame':frame},maximum_parameter='epl_'+slot)
++ r('pdo_bytes',minimum_parameter='epl_mapped_bytes');r('pdo_version',equal_parameter='epl_expected_pdo_version')
++ r('async_mtu',maximum_expression={'subtract':['epl_segment_interface_mtu',18]})
++ r('async_bytes',maximum_parameter='epl_async_mtu')
++ for slot,timing in [('preq_slot','preq_ns'),('pres_slot','pres_ns')]:r(timing,equal_expression={'sum':[{'product':[{'sum':['epl_'+slot,28]},80]},640]})
++ r('async_frame_ns',equal_expression={'sum':[{'product':[{'maximum':[{'sum':['epl_async_bytes',18]},64]},80]},640]})
++ r('wait_soc_ns',minimum_expression={'maximum':['epl_mn_soc_min_ns','epl_cn_soc_min_ns']})
++ r('pres_max_latency_ns',{'mode':'POWERLINK'},minimum=960)
++ r('pres_timeout_ns',{'wait_method':'DELAY'},minimum_expression={'sum':['epl_pres_max_latency_ns',{'product':[2,'epl_propagation_ns']}]})
++ r('pres_timeout_ns',{'wait_method':'DUMMY_REQUEST'},minimum_expression={'sum':['epl_cn_soc_min_ns','epl_pres_max_latency_ns',{'product':[2,'epl_propagation_ns']}]})
++ r('pres_measured_latency_ns',maximum_parameter='epl_pres_timeout_ns');r('async_timeout_ns',minimum_parameter='epl_asnd_max_latency_ns')
++ r('cycle_total_ns',equal_expression={'sum':['epl_soc_ns','epl_wait_soc_ns','epl_isophase_ns','epl_soa_ns','epl_asyncphase_ns','epl_idle_ns']},maximum_expression={'product':['epl_cycle_us',1000]})
++ for k in('soc_ns','wait_soc_ns','isophase_ns','soa_ns','asyncphase_ns','idle_ns','cycle_us'):r(k,when_present=['epl_cycle_total_ns'],required=True)
++ r('multipl_count',maximum_parameter='epl_mn_multipl_max')
++ r('multipl_count',{'access':'MULTIPLEXED'},minimum=1)
++ r('slot_index',{'access':'MULTIPLEXED'},maximum_expression={'subtract':['epl_multipl_count',1]})
++ r('poll_interval_us',{'access':'ISOCHRONOUS'},equal_parameter='epl_cycle_us')
++ r('poll_interval_us',{'access':'MULTIPLEXED'},equal_expression={'product':['epl_cycle_us','epl_multipl_count']})
++ r('poll_interval_us',{'access':'ASYNC_ONLY'},allowed=[])
++ r('basic_timeout_us',when_ranges={'epl_basic_timeout_us':[1,4294967295]},exclusive_minimum_expression='epl_cycle_us')
++ r('asnd_max_number',{'extension':'NONE'},allowed=[1]);r('asnd_sent',{'extension':'NONE'},maximum=1)
++ r('ainv_sent',{'extension':'NONE'},allowed=[False],source=MULTI)
++ for k in('multiple_asnd_supported','peer_multiple_asnd_supported'):
++  r(k,{'extension':'MULTIPLE_ASND_1_1_1'},required=True,allowed=[True],source=MULTI)
++ r('asnd_max_number',maximum_parameter='epl_mn_asnd_capacity',source=MULTI);r('asnd_sent',maximum_parameter='epl_asnd_max_number',source=MULTI)
++ r('asnd_max_number',{'ainv_sent':True},minimum=2,source=MULTI)
++ r('asnd_sent',{'ainv_sent':True},required=True,exclusive_maximum_expression='epl_asnd_max_number',source=MULTI)
++ r('ainv_timeout_ns',equal_expression={'sum':[5760,'epl_async_timeout_ns',{'product':['epl_async_mtu',80]},640]},source=MULTI)
++ r('remaining_ns',{'ainv_sent':True},exclusive_minimum_expression='epl_ainv_timeout_ns',source=MULTI)
++ for k in('remaining_ns','ainv_timeout_ns'):r(k,{'ainv_sent':True},required=True,source=MULTI)
++ r('sdo_binding_supported',when_present=['epl_sdo_binding'],required=True,allowed=[True])
++ r('relative_time_supported',when_present=['epl_relative_time_us'],required=True,allowed=[True])
++ r('relative_time_us',pattern=r'[0-9]+',integer_text_maximum=18446744073709551615)
++ w={'data_accepted':True}
++ r('outcome',w,required=True,allowed=['ACCEPTED']);r('frame_valid',w,required=True,allowed=[True])
++ for frame in('PREQ','PRES'):
++  for k in('pdo_ready','mapping_valid'):r(k,{**w,'frame':frame},required=True,allowed=[True])
++ r('mode',w,allowed=['POWERLINK']);r('nmt_state',w,required=True,allowed=['OPERATIONAL'])
++ r('pres_rx_limit',{**w,'frame':'PRES'},exclusive_minimum=0)
++ r('age_us',maximum_parameter='epl_freshness_limit_us');r('freshness_limit_us',when_present=['epl_age_us'],required=True)
++ return dict(rate_model={'type':'FIXED_LINK_RATE','fields':['bitrate_bps'],'fixed_bps':100000000,'minimum_bps':100000000,'maximum_bps':100000000},
++  required_parameters=['epl_'+k for k in REQUIRED],native_parameter_prefixes=['epl_'],parameter_constraints=rules,parameter_evidence_scope='EXPLICIT_LAYER',
++  physical_layer_profile_id='explicit_powerlink_100base_x_half_duplex',medium_access_model='MN_CONTROLLED_ISOCHRONOUS_AND_ASYNC_GRANTS',
++  arbitration_model_id='ACTUAL_POWERLINK_CYCLE_AND_MULTIPLEX_SCHEDULE',mechanisms={'framing':['SOURCE_QUALIFIED_POWERLINK_PDO_VERSUS_ASND'],
++   'qualification':['HALF_DUPLEX_NOT_GENERIC_SWITCHED_ETHERNET','ACTUAL_CYCLE_AND_DEVICE_LIMITS','ASYNC_EXTENSION_EXPLICIT']})
++DEFAULTS={'edition':EDITION,'extension':'NONE','duplex':'HALF','preq_slot':36,'pres_rx_limit':36,'async_mtu':300,
++ 'multipl_count':0,'prescaler':2,'wait_soc_ns':1000,'pres_timeout_ns':25000,'async_timeout_ns':100000,'basic_timeout_us':5000000,
++ 'asnd_max_number':1,'asnd_priority':0,'soc_ns':5760,'soa_ns':5760,'ifg_ns':960}
++def fields():
++ result=[]
++ for spec in DECLARATIONS:
++  k=spec['key'][4:];item={a:b for a,b in spec.items()if b is not None}
++  item.update(label=k.replace('_',' '),category='timing'if spec.get('unit')in('ns','us')else'communication',scope='route',editable=True,
++   required=k in REQUIRED,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',validation_relevant=True,simulation_relevant=False)
++  if k in DEFAULTS:item.update(default=DEFAULTS[k],default_status='PROPOSED',parameter_origin='TRANSPORT_PROFILE')
++  if k=='node_id':item.update(conditional_defaults=[dict(when={'epl_role':role},value=val,source=P,source_revision=SOURCES[P])for role,val in [('MN',240),('DIAGNOSTIC',253),('ROUTER1',254)]],default_status='PROPOSED_CONDITIONAL')
++  result.append(item)
++ return result

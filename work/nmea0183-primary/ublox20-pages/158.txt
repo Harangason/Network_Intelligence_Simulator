@@ -1,0 +1,47 @@
+u-blox 20 HPG 2.00 - Interface description
+5.4.1.1 GPS orbit, clock, bias (OCB)
+Message SPARTN-1X-OCB_GPS
+GPS orbit, clock, bias (OCB)
+Type Input
+Comment This message carries the data for GPS satellite orbits, clocks, biases and other auxiliary information.
+See Secure Position Augmentation for Real-Time Navigation (SPARTN) Interface Control Document, Version
+1.8.0, January 2020 or Secure Position Augmentation for Real-Time Navigation (SPARTN) Interface Control
+Document, Version 2.0.2, February 2022 for a detailed message speciﬁcation.
+Information Class/ID: 0xf6 0x01, Message Type: 0 (0x00), Sub-type: 0 (0x0), Message Size: 5 + nData + crcType
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 X1 spartnByte0 - - SPARTN frame byte 0
+bits 7…0   U:8 preamble - - Preamble (0x73, 's')
+1 X1 spartnByte1 - - SPARTN frame byte 1
+bit 0   U:1 nDataMSB - - Payload length (MSB)
+bits 7…1   U:7 msgType - - Message type
+2 X1 spartnByte2 - - SPARTN frame byte 2
+bits 7…0   U:8 nData - - Payload length (middle 8 bits)
+3 X1 spartnByte3 - - SPARTN frame byte 3
+bits 3…0   U:4 frameCrc - - Frame CRC
+bits 5…4   U:2 crcType - - Message CRC type
+bit 6   U:1 eaf - - Encryption and/or authentication ﬂag
+bit 7   U:1 nDataLSB - - Payload length (LSB)
+Start of repeated group (nData times)
+4 + n U1 data - - Message payload data. Payload data length deﬁned by
+combining nDataMSB, nData and nDataLSB to form a
+10-bit value.
+End of repeated group (nData times)
+4 + nData U1 crc0 - - Message CRC 1st byte
+Start of repeated group (crcType times)
+5 + nData + n U1 crcN - - Message CRC additional bytes
+End of repeated group (crcType times)
+5.4.2 Message type 0, sub-type 1
+5.4.2.1 GLONASS orbit, clock, bias (OCB)
+Message SPARTN-1X-OCB_GLO
+GLONASS orbit, clock, bias (OCB)
+Type Input
+Comment This message carries the data for GLONASS satellite orbits, clocks, biases and other auxiliary information.
+See Secure Position Augmentation for Real-Time Navigation (SPARTN) Interface Control Document, Version
+1.8.0, January 2020 or Secure Position Augmentation for Real-Time Navigation (SPARTN) Interface Control
+Document, Version 2.0.2, February 2022 for a detailed message speciﬁcation.
+Information Class/ID: 0xf6 0x02, Message Type: 0 (0x00), Sub-type: 1 (0x1), Message Size: 5 + nData + crcType
+UBXDOC-304424225-19888 - R01
+ 
+5 SPARTN protocol Page 158 of 224
+C1-Public

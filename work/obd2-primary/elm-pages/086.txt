@@ -1,0 +1,45 @@
+86 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Modifications for Low Power Standby Operation (continued)
+4.7uF tantalum capacitor for stability (and it helps with
+transient capability too).
+Leaving U4’s pin 3 solidly connected to circuit
+common, we now find that the current is about:
+current after mod #3 = 1.1 mA
+and, if we tie pin 3 of the LP2951 to pin 16 of the
+ELM327, the LP current becomes:
+current after mod #4 = 0.9 mA
+We can suggest one more change at this point.
+The MCP2551 shown draws about 0.3 mA when in
+standby mode, and this can be improved upon. By
+replacing this chip with the newer MCP2561, the
+standby current will be reduced even further. Typically,
+you will see a change of at least 0.2 mA, giving:
+current after mod #5 = 0.7 mA
+The current has been reduced considerably
+through the circuit modifications, but why is there still
+current flowing? This is due to a number of things,
+some that you can change, others which you can not.
+The MCP2561 and the ELM327 are never completely
+shut off, but are instead in a low power mode, while
+the LP2950 regulator is operating normally (as the
+MCP2551 and the ELM327 need it). You can not do
+anything about that.
+There are some currents that you may reduce, by
+choice in your design. The R25/R26 resistor pair uses
+current, but do you really need to monitor battery
+voltage? Similarly, the R20/R21 pair passes current,
+but does your application need ISO9141 or ISO14230
+support? The OBD Tx LED flashes when in Low
+Power mode, but do you need it to?  (You may turn it
+off with PP 0F b0, but it only uses about 25 µA on
+average). All of these little currents eventually add up
+to what we’ve measured here.
+These few changes that we have shown have
+reduced the total current from about 30 mA to less
+than 1 mA (or power from 358 mW to 8 mW) - a
+considerable savings, which is enough for most
+applications. We leave any further improvements to
+you.

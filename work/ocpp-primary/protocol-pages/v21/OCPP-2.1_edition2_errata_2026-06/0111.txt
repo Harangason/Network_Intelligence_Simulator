@@ -1,0 +1,49 @@
+Tool validations
+* Step 2 4 :
+Message: TransactionEventResponse
+idTokenInfo.status must be Accepted
+transactionLimit.maxEnergy must be <omitted>
+transactionLimit.maxTime must be <Configured time limit> 120
+transactionLimit.maxCost must be <omitted>
+* Step 4 6 :
+Message: TransactionEventResponse
+transactionLimit must be <omitted>
+Post scenario validations:
+N/a
+6.3.14. Page 1333 - (2026-02) - TC_O_101_CSMS - Updated tool validations
+Tool validations
+* Step 1:
+Message SetDisplayMessageRequest
+- message.id <Generated Id>
+- message.priority <Configured Priority>
+- message.message.language <Not omitted default language> <Not omitted> 
+- message.message.content <Not omitted default language content>
+- message.messageExtra[0].language <Not omitted other language> <Different from message.language>  
+- message.messageExtra]0].content <Not omitted other language content>
+6.3.15. Page 1210 - (2026-02) - TC_K_109_CSMS - Additional test case steps
+added
+The main test scenario was updated to include an initial SetVariablesRequest for MaxExternalConstraintsId to ensure the CSMS is
+accurately tested for updating the chargingProfileId.
+Test case name EMS Control - Set Charging Profile - MaxExternalConstraintsId
+Test case Id TC_K_109_CSMS
+…
+Main (Test scenario)
+Charging Station CSMS
+2. The Test System responds with a GetBaseReportResponse
+with
+status Accepted
+1. The CSMS sends a GetBaseReportRequest
+3. The Test System sends a NotifyReportRequest containing
+requestId <requestId>
+reportData[0].component.name SmartChargingCtrlr
+reportData[0].variable.name MaxExternalConstraintsId
+reportData[0].variableAttribute.value 2147400000
+4. The CSMS responds with a NotifyReportResponse
+Manual Action :  Configure variable MaxExternalConstraintsId on the CSMS     
+2.  The Test System responds with       SetVariablesResponse
+1.  The CSMS sends     SetVariablesRequest  with: 
+-  variable.name   MaxExternalConstraintsId
+-  component.name   SmartChargingCtrlr
+-  attributeValue   10
+Manual Action: Request the CSMS to send a TxDefaultProfile Charging Profile
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 107/116 Errata 2026-06

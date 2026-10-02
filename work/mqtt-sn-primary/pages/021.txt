@@ -1,0 +1,48 @@
+6.1 Gateway Advertisement and Discovery
+This procedure is new and does not exist in MQTT.
+A gateway may announce its presence by broadcasting periodically an ADVERTISE message to all devices
+that are currently parts of the network. A gateway should only advertise its presence if it is connected to a server
+(or is itself a server).
+Multiple gateways may be active at the same time in the same network. In this case they will have different
+ids. It is up to the client to decide to which gateway it wants to connect. However at any point in time a client is
+allowed to be connected to only one gateway.
+A client should maintain a list of active gateways together with their network addresses. This list is populated
+by means of the ADVERTISE and GWINFO messages received.
+The time duration TADV until the gateway sends the next ADVERTISE message is indicated in the Duration
+ﬁeld of the ADVERTISE messages. A client may use this information to monitor the availability of a gateway.
+For example, if it does not receive ADVERTISE messages from a gateway for NADV consecutive times, it may
+assume that the gateway is down and removes it from its list of active gateways. Similarly, gateways in stand-by
+mode will become active (i.e. start sending ADVERTISE messages) if they miss successively a couple of times
+advertisements from a certain gateway.
+Since the ADVERTISE messages are broadcasted into the whole wireless network, the time interval TADV
+between two ADVERTISE messages sent by a gateway should be large enough (e.g. greater than 15 min) to avoid
+bandwidth congestion in the network.
+The large value of TADV will lead to a long waiting time for new clients which are looking for a gateway.
+To shorten this waiting time a client may broadcast a SEARCHGW message. To prevent broadcast storms when
+multiple clients start searching for GW almost at the same time, the sending of the SEARCHGW message is
+delayed by a random time between0 and TSEARCHGW . A client will cancel its transmission of the SEARCHGW
+message if it receives during this delay time a SEARCHGW message sent by another client and identical to the
+one it wants to send, and behaves as if the SEARCHGW message was sent by itself.
+The broadcast radius Rb of the SEARCHGW message is limited, e.g. to a single hop in case of a dense
+deployment of MQTT-SN clients.
+Upon receiving a SEARCHGW message a gateway replies with a GWINFO message containing its id. Simi-
+larly, a client answers with a GWINFO message if it has at least one active gateway in its list of active gateways.
+If the client has multiple GWs in its list, it selects one GW out of its list and includes that information into the
+GWINFO message.
+Like the SEARCHGW message, the GWINFO message is broadcast with the same radius Rb, which is indi-
+cated in the SEARCHGW message. The radius Rb is also given to the underlying layer when these two messages
+are passed down for transmission.
+To give priority to the gateways a client will delay its sending of the GWINFO message for a random time
+TGW IN F O. If during this delay time the client receives a GWINFO message it will cancel the transmission of its
+GWINFO message.
+In case of no response the SEARCHGW message may be retransmitted. In this case the time intervals between
+two consecutive SEARCHGW messages should be increased exponentially.
+6.2 Client’s Connection Setup
+As with MQTT, a MQTT-SN client needs to setup a connection to a GW before it can exchange information with
+that GW. The procedure for setting up a connection with a GW is illustrated in Fig. 3, in which it is assumed that
+the client requests the gateway to prompt for the transfer of Will topic and Will message. This request is indicated
+by setting the Will ﬂag of the CONNECT message. The client then sends these two pieces of information to the
+GW upon receiving the corresponding request messages WILLTOPICREQ and WILLMSGREQ. The procedure
+is terminated with the CONNACK message sent by the GW.
+If Will ﬂag is not set then the GW answers directly with a CONNACK message.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 20

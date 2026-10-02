@@ -1,0 +1,118 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Contents
+1 Introduction ......................................................2
+2 PN7160 architecture overview ........................3
+2.1 Reader/Writer operation in poll mode ................ 4
+2.2 Card emulation operation in listen mode ........... 4
+2.2.1 Card Emulated by the DH-NFCEE .................... 4
+2.2.2 Card Emulation over NFCC ...............................5
+2.3 Peer to Peer operation in listen and poll
+mode ..................................................................6
+2.4 Combined modes of operation .......................... 7
+2.5 DH access to NDEF NFCEE over APDU ...........9
+3 NCI overview .................................................. 10
+3.1 NCI components ..............................................10
+3.1.1 NCI modules ....................................................10
+3.1.2 NCI Core ..........................................................10
+3.1.3 Transport Mappings .........................................10
+3.2 NCI concepts ................................................... 11
+3.2.1 Control Messages ............................................11
+3.2.2 Data Messages ................................................12
+3.2.3 Interfaces ......................................................... 13
+3.2.4 RF Communication ..........................................13
+3.2.5 NFCEE Communication ...................................14
+3.2.6 Identifiers ......................................................... 14
+3.3 NCI Packet Format ..........................................15
+3.3.1 Common Packet Header ................................. 15
+3.3.2 Control Packets ............................................... 15
+3.3.3 Data Packets ................................................... 16
+3.3.4 Segmentation and Reassembly .......................17
+3.4 NCI 2.0 features .............................................. 17
+4 Device Host Interface Link ............................19
+4.1 Overview ..........................................................19
+4.2 I2C Interface .................................................... 19
+4.2.1 Introduction ...................................................... 19
+4.2.2 NCI Transport Mapping ................................... 20
+4.2.3 Write Sequence from the DH .......................... 20
+4.2.4 Read Sequence from the DH .......................... 21
+4.2.5 Split mode ........................................................21
+4.3 SPI Interface ....................................................22
+4.3.1 Introduction ...................................................... 22
+4.3.2 NCI Transport Mapping ................................... 22
+4.3.3 Write Sequence from the DH .......................... 22
+4.3.4 Read Sequence from the DH .......................... 24
+4.3.5 Split mode ........................................................24
+4.3.6 Invalid Sequence from the DH ........................ 25
+5 Compliance to [NCI] and PN7160
+extensions ...................................................... 26
+5.1 Feature-based comparison of [NCI] and
+[PN7160-NCI] ...................................................26
+5.2 Features actually available in PN7160 .............26
+5.3 [NCI] Implementation in the PN7160 ............... 27
+5.3.1 Logical connections and credits ...................... 27
+5.3.2 Compliance to [NCI] control messages ............29
+5.3.3 Compliance to [NCI] RF interfaces .................. 30
+5.3.4 Compliance to [NCI] RF Discovery ..................30
+5.3.5 Compliance to [NCI] configuration
+parameters .......................................................31
+5.3.6 Compliance to [NCI] data messages ............... 33
+5.4 Extensions added to [NCI] to allow full
+control of the PN7160 ..................................... 33
+5.4.1 [PN7160-NCI] extensions to [NCI] RF
+Protocols ..........................................................33
+5.4.2 [PN7160-NCI] extensions to [NCI] Bit Rates
+in NFC-F ..........................................................33
+5.4.3 [PN7160-NCI] [NCI-2.0] Bit Rates in NFC-V .... 33
+5.4.4 [PN7160-NCI] extensions to [NCI] RF
+Interfaces ......................................................... 34
+5.4.5 [PN7160-NCI] extensions to [NCI] Control
+messages .........................................................34
+5.4.6 [PN7160-NCI] extensions to [NCI]
+Configuration parameters ................................ 38
+5.4.7 [PN7160-NCI] extensions to [NCI]
+proprietary parameters space ..........................39
+5.4.8 [PN7160-NCI] extensions to [NCI] Status
+Codes ...............................................................39
+5.4.9 [PN7160-NCI] extensions to [NCI] Reason
+Code in CORE_RESET_NTF ..........................40
+5.4.9.1 [PN7160-NCI] extensions CORE_RESET_
+NTF with Reason Code 0xA0 ..........................40
+5.4.9.2 [PN7160-NCI] extensions CORE_RESET_
+NTF with Reason Code 0xA1 ..........................40
+5.4.9.3 [PN7160-NCI] extensions CORE_RESET_
+NTF with Reason Code 0xA3 ..........................40
+5.4.10 [PN7160-NCI] extensions to [NCI] RF
+Technology & Mode .........................................40
+5.5 Tag deactivation in RF frame interface ............ 41
+5.6 NDEF emulation .............................................. 41
+5.6.1 NDEF NFCEE discovery ................................. 41
+5.6.2 NDEF NFCEE access from DH .......................42
+5.6.3 NDEF NFCEE access from RF End Point ....... 42
+5.6.4 T4T operation: detection of the NDEF
+message from the DH ..................................... 43
+5.6.5 T4T operation: read/write data from the
+NDEF message from the DH ...........................44
+5.6.6 T4T operation: detection of the NDEF
+message from the RF End Point ..................... 45
+5.6.7 T4T operation: read/write data from the
+NDEF message from the RF End Point ...........46
+6 Initialization and operation configuration ....47
+6.1 Reset / Initialization ..........................................47
+6.2 Manufacturer Specific Information in [NCI]
+CORE_INIT_RSP / CORE_RESET_NTF ........ 47
+6.3 Whole sequence to prepare the PN7160
+operation ..........................................................48
+6.3.1 Proprietary command to enable proprietary
+extensions ........................................................49
+6.3.2 Configuration template .....................................50
+6.4 PLL input Clock Management ......................... 50
+6.5 TVDD configurations ........................................51
+6.5.1 CFG1: VDD(UP) connected to VBAT ...............51
+6.5.2 CFG2: VDD(UP) connected to external
+power supply ................................................... 51
+6.6 Dynamic LMA .................................................. 52
+7 Poll side: Reader/Writer Mode ......................54
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+145 / 147

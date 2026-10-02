@@ -1,0 +1,39 @@
+No. Type Description
+Scenario description #2 Charging Stations pulls charging schedule updates from CSMS:
+1. The CSMS has sent a SetChargingProfileRequest message with a chargingProfilePurpose
+TxProfile or TxDefaultProfile and a chargingProfileKind = Dynamic and a
+dynUpdateInterval = 60.
+The chargingProfile contains 1 chargingSchedule with 1 chargingSchedulePeriod which
+has operationMode set to CentralSetpoint and setpoint to the desired active power
+the EV should import or export.
+2. If chargingSchedule.duration has a value, then this specifies how long the
+chargingSchedule remains valid after SetChargingProfileRequest or
+UpdateDynamicScheduleRequest.
+3. The Charging Station will obey the values of the (one and only) chargingSchedulePeriod,
+e.g. it will set the charge or discharge rate of the EV to setpoint.
+4. At dynUpdateInterval seconds after last update of the charging profile, Charging Station
+sends a PullDynamicScheduleUpdateRequest to CSMS.
+5. CSMS responds with PullDynamicScheduleUpdateResponse with new values to use in
+ChargingSchedulePeriodType.
+If chargingSchedule.duration is set and the chargingSchedulePeriod is not updated after duration
+seconds, then the chargingSchedule ends and Charging Station will fall back to the next valid
+charging profile.
+5 Prerequisites Profile purpose must be TxProfile or TxDefaultProfile and profile kind must be Dynamic.
+6 Post conditions Charging profile ends, because no update is received after duration seconds or charging profile is
+no longer the active profile.
+7 Error Handling
+8 Remarks A dynamic charging profile does not necessarily require the use of ISO 15118-20 dynamic control
+mode.
+Example of changing a dynamic setpoint to 2000
+"UpdateDynamicScheduleRequest":
+{
+  "chargingProfileId": 10,
+  "setpoint": 2000
+}
+or
+"PullDynamicScheduleUpdateResponse":
+{
+  "setpoint": 2000
+}
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 518/803 Part 2 - Specification

@@ -1,0 +1,45 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 37
+6.2  MediaLB 5-pin Mode
+The MediaLB 5-pin mode is functionally equivalent to the MediaLB 3-pin mode described in Section 6.1;
+however, two unidirectional data lines and two unidirectional signal information lines exist. Additionally,
+when configured for MediaLB 5-pin mode, the OS81050 supports a data rate of 256 ×Fs or 512 ×Fs
+(1024×Fs not supported).
+The MediaLB 5-pin interface is defined as:
+/square6 MLBDO - unidirectional signal that transports data out of the MediaLB Port
+/square6 MLBDI - unidirectional signal that transports data into the MediaLB Port
+/square6 MLBSO - unidirectional signal that transports signal information out of the MediaLB Port
+/square6 MLBSI - unidirectional signal that transports signal information into the MediaLB Port
+/square6 MLBCLK - MediaLB Controller output signal that clocks data in and out of the MediaLB Port
+The Streaming Port is not available when the MediaLB 5-pin interface is used.
+The MediaLB Controller (OS81050) uses MLBSO to grant bus access to a MediaLB Device (e.g. EHC) and
+receives commands/responses sent out by other MediaLB Devices on MLBSI. The Controller receives
+data for configuration or transmission onto the network on MLBDI; data is transmitted to other MediaLB
+Devices from the network receiver on MLBDO.
+If output signals on external MediaLB Devices can float (even during reset), then pull-down resistors are
+required to keep undriven signal and data lines from affecting the other Devices driving the lines.
+Figure 6-5 shows the OS81050 as an interface between the MOST Network and the MediaLB Port, when
+configured for MediaLB 5-pin mode. Since the OS81050 is the interface to the MOST Network, it must be
+the Controller on the Media Local Bus. Using this interface, MediaLB Devices can access all MOST Net-
+work data types.
+MOST Network
+MLBCLK
+MediaLB 
+Controller
+47 kΩ
+MLBCLK
+MediaLB
+Device
+(EHC)
+MLBSO
+47 kΩ
+MLBSI
+MLBSI MLBSO
+MLBDO
+47 kΩ
+MLBDI
+MLBDI MLBDO
+Network Port
+Figure 6-5: MediaLB 5-pin Mode Two-Node Connection Diagram
+(OS81050)

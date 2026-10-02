@@ -1,0 +1,51 @@
+MonitoringReportCommunicated
+State MonitoringReportCommunicated
+System under test Charging Station
+Description Retrieves the full monitoring report from a Charging Station and makes it available for usage in test cases.
+It is possible to specify reset to a specific MonitoringBase before retrieving the MonitoringReport using the
+argument.
+Argument is exposed variable <resetToMonitoringBase> and has valid values:
+- All - set monitoring base to All
+- FactoryDefault - set monitoring base to FactoryDefault
+- HardWiredOnly - set monitoring base to HardWiredOnly
+- NoReset - do not set monitoring base
+If argument is not specified NoReset will be assumed.
+Exposes <monitoringReportData>
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetMonitoringBaseResponse
+Note:
+Skip if <resetToMonitoringBase> is NoReset
+1. The Test System sends a SetMonitoringBaseRequest with
+monitoringBase <resetToMonitoringBase>
+Note:
+Skip if <resetToMonitoringBase> is NoReset
+4. The Charging Station responds with
+GetMonitoringReportResponse
+3. The Test System sends GetMonitoringReportRequest with
+requestId = <Generated requestId>
+5. The Charging Station sends NotifyMonitoringReportRequest
+6. The Test System responds with
+NotifyMonitoringReportResponse
+Note(s):
+- If NotifyMonitoringReportRequest.tbc is True in Step 5 then step 5 and 6 will be repeated
+All NotifyMonitoringReportRequest.monitor are exposed as <monitoringReportData>
+Tool validations
+* Step 2:
+Message SetMonitoringBaseResponse
+- status Accepted
+* Step 4:
+Message GetMonitoringReportResponse
+- status Accepted
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 943/1383 Part 6 - Test Cases

@@ -1,0 +1,62 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  48 
+Port Type Description 
+clk_n_io Inout Negative differential clock I/O pad for D-PHY implementations. 
+d_p_io[NUMLANE1-1:0] Inout Positive differential data I/O pad for D-PHY implementations. 
+d_n_io[NUMLANE1-1:0] Inout Negative differential data I/O pad for D-PHY implementations. 
+Note: 
+1. Corresponds to the Number of D-PHY Lanes attribute. 
+4.2.3. Unified Video Streaming Interface 
+Table 4.9. Unified Video Streaming Interface Ports 
+Port Type Description 
+axis_vid_tready_i Input AXI4-Stream video ready input from downstream video processing logic. 
+When low, causes the byte-to-pixel converter to pause pixel output and may 
+trigger internal buffering or flow control mechanisms.  
+axis_vid_tvalid_o Output AXI4-Stream video valid output. Indicates availability of valid pixel data on 
+axis_vid_tdata_o. Used for standard AXI4-Stream handshaking protocol.  
+axis_vid_tdata_o[TDATA_WIDT
+H-1:0] 
+Output AXI4-Stream video data output containing converted pixel data in the selected 
+format. Pixel data is packed LSB-first. Multiple pixels are concatenated for 
+Number of Pixel per Clock (PPC) > 1. Valid only when axis_vid_tvalid_o is 
+asserted. Minimum TDATA_WIDTH width is 1 byte and may include padding 
+bits for alignment to byte boundaries. Refer to the Unified Video Streaming 
+Interface (UVSI) section for details. 
+axis_vid_tuser_o[1:0] Output AXI4-Stream video user sideband signals. Provides frame and line timing 
+information. 
+axis_vid_tuser_o [0]: Start of Frame (SOF) – Asserts for first pixel of each 
+frame. 
+axis_vid_tuser_o [1]: Interlaced F1 – Currently unused and is tied to low. 
+axis_vid_tlast_o Output AXI4-Stream video signal indicating the last pixel transfer of a video line. This 
+signal always coincides with the last pixel of the line. 
+ 
+4.2.4. MIPI Byte Streaming Interface 
+Table 4.10. MIPI Byte Streaming Interface Ports 
+Port Type Description 
+axis_byte_tready_i Input AXI4-Stream byte ready input from downstream video processing logic. When 
+low, the byte streamer pauses byte data output and may trigger internal 
+buffering or flow control mechanisms.  
+axis_byte_tvalid_o Output AXI4-Stream byte valid output. Indicates availability of valid byte data on 
+axis_byte_tdata_o. Used for the standard AXI4-Stream handshaking protocol.  
+axis_byte_tdata_o[TDATA_WID
+TH-1:0] 
+Output AXI4-Stream byte data output containing raw MIPI byte data packed as 
+specified in MIPI specifications. Valid only when axis_byte_tvalid_o is 
+asserted.  
+When PHY Mode == Soft D-PHY, TDATA_WIDTH is PHY Data Width × 4. 
+When PHY Mode == Hard D-PHY and Number of D-PHY Lanes == 4, 
+TDATA_WIDTH is PHY Data Width × 4, else TDATA_WIDTH is 32. 
+axis_byte_tuser_o[77:0] Output AXI4-Stream byte user sideband signals.  
+axis_byte_tuser_o[5:2] carries the virtual channel information of Header 1 
+axis_byte_tuser_o[43:40] carries the virtual channel information of Header 2 
+when PHY Data Width is 16. 
+When Protocol Mode is DSI and with MPPT in a single HS burst, the virtual 
+channel may not align with the actual axis_byte_tdata_o.  
+All other remaining bits, even if unused, are still available and driven low. 
+axis_byte_tlast_o Output AXI4-Stream byte signal indicating the last byte transfer of HS packet Asserted 
+once per HS transaction, specifically on the final content beat. 

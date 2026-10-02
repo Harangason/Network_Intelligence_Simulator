@@ -1,0 +1,179 @@
+"""Source-specific ASCII framing, serial timing, function limits and SQL values."""
+from copy import deepcopy
+import pytest
+from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.communication.technologies import modbus_ascii as MA
+
+def actual():
+    x={'ma_'+k:'synthetic-actual-'+k for k in MA.REQUIRED}
+    x.update(bitrate=19200,ma_profile='V1_02',ma_implementation_class='REGULAR',ma_mode='ASCII',
+      ma_role='MASTER',ma_phy='RS485_2W',ma_parity='EVEN',ma_start_bits=1,ma_data_bits=7,ma_stop_bits=1,ma_character_bits=10)
+    return x
+def status(x):return registry.validate_parameters('modbus_ascii',x)['status']
+
+def test_ascii_correct_standard_proposals_and_no_rtu_can_or_tcp_parameters():
+    fields={f['key']:f for f in registry.parameter_fields('modbus_ascii')}
+    assert not set(MA.REMOVED)&set(fields)
+    review=registry.parameter_defaults_review('modbus_ascii')
+    assert review['values']=={'bitrate_bps':19200}
+    assert review['source']==MA.SERIAL
+    assert fields['ma_interchar_timeout_ms']['conditional_defaults'][0]['value']==1000
+    assert fields['ma_parity']['conditional_defaults'][0]['value']=='EVEN'
+    for key in ('ma_slave_address','ma_response_timeout_ms','ma_turnaround_ms','ma_destination_address'):
+        assert 'conditional_defaults'not in fields[key]
+    assert 'default'not in fields['payload_bytes']
+    assert status(actual())=='VALID'
+    for patch in ({'retry_limit':3},{'queue_size':1024},{'qos_priority':3},{'duplex':'FULL'},
+      {'local_timing_evidence':{'source':'I2C'}},{'mm_tpkt_version':3},{'ma_mode':'RTU'}):
+        assert status({**actual(),**patch})=='INVALID'
+    assert registry.profile('modbus_ascii')['capacity_evidence']['status']=='MODEL_MISSING'
+
+@pytest.mark.parametrize('field',registry.parameter_fields('modbus_ascii'),ids=lambda f:f['key'])
+def test_ascii_every_declared_type_and_own_bounds(field):
+    wrong='not-number'if field['type']=='number'else 1
+    assert status({**actual(),field['key']:wrong})=='INVALID'
+    for edge,offset in [('min',-1),('max',1)]:
+        if field.get(edge)is not None:assert status({**actual(),field['key']:field[edge]+offset})=='INVALID'
+
+@pytest.mark.parametrize('parity,stops',[('EVEN',1),('ODD',1),('NONE',2)])
+def test_ascii_seven_data_and_ten_wire_bits_differ_rtu_eight_eleven(parity,stops):
+    x={**actual(),'ma_parity':parity,'ma_stop_bits':stops}
+    assert status(x)=='VALID'
+    for patch in ({'ma_stop_bits':3-stops},{'ma_data_bits':8},{'ma_character_bits':11},
+      {'ma_implementation_class':'BASIC'}):assert status({**x,**patch})=='INVALID'
+
+@pytest.mark.parametrize('pdu,chars',[(1,9),(5,17),(253,513)])
+def test_ascii_pdu_address_lrc_hex_and_delimiters_are_separate_lengths(pdu,chars):
+    x={**actual(),'ma_pdu_bytes':pdu,'ma_data_bytes':pdu-1,'payload_bytes':pdu-1,
+      'ma_frame_chars':chars,'ma_hex_chars':chars-3,'ma_serial_bits':chars*10,
+      'ma_character_time_us':10000000/19200,'ma_serialization_us':chars*10000000/19200}
+    assert status(x)=='VALID'
+    for patch in ({'ma_frame_chars':chars+1},{'ma_serial_bits':chars*11},{'ma_data_bytes':pdu},
+      {'ma_hex_chars':chars},{'payload_bytes':pdu}):assert status({**x,**patch})=='INVALID'
+    assert status({**x,'ma_pdu_bytes':254})=='INVALID'
+    assert status({**x,'ma_serialization_us':x['ma_serialization_us']+1})=='INVALID'
+
+@pytest.mark.parametrize('total,lrc',[(0,0),(1,255),(255,1),(256,0),(65536,0),(267,245)])
+def test_ascii_lrc_uses_binary_sum_before_hex_and_excludes_colon_crlf(total,lrc):
+    x={**actual(),'ma_binary_sum':total,'ma_lrc':lrc}
+    assert status(x)=='VALID'
+    assert status({**x,'ma_lrc':(lrc+1)%256})=='INVALID'
+    x.pop('ma_binary_sum');assert status(x)=='UNVERIFIED'
+
+def test_ascii_actual_hex_and_changed_lf_agreement_not_rtu_gap():
+    x={**actual(),'ma_hex_body':'010300000002FA','ma_hex_chars':14,'ma_pdu_bytes':5,
+      'ma_interchar_timeout_ms':1000,'ma_interchar_gap_bound_ms':1000,'ma_changed_delimiter':False,'ma_lf':10}
+    assert status(x)=='VALID'
+    for patch in ({'ma_hex_body':'010300000002fa'},{'ma_hex_chars':12},{'ma_lf':13},
+      {'ma_interchar_gap_bound_ms':1000.001}):assert status({**x,**patch})=='INVALID'
+    x.update(ma_changed_delimiter=True,ma_lf=33,ma_interchar_timeout_ms=4000)
+    assert status(x)=='UNVERIFIED'
+    x.update(ma_delimiter_source='synthetic-FC8-sub3',ma_timer_source='synthetic-WAN-timeout')
+    assert status(x)=='VALID'
+
+def test_ascii_observed_baud_requires_strict_one_percent_and_receiver_two_percent():
+    x={**actual(),'ma_tx_baud_bps':19200,'ma_rx_tolerance_percent':2}
+    assert status(x)=='VALID'
+    for rate in (19008,19392,19392.0001,19007.9999):assert status({**x,'ma_tx_baud_bps':rate})=='INVALID'
+    for rate in (19008.0001,19391.9999):assert status({**x,'ma_tx_baud_bps':rate})=='VALID'
+    assert status({**x,'ma_rx_tolerance_percent':1.99})=='INVALID'
+    assert status({**actual(),'bitrate':230400})=='VALID'
+
+def test_ascii_master_has_no_slave_address_and_broadcast_does_not_expect_reply():
+    x={**actual(),'ma_exchange':'BROADCAST','ma_destination_address':0,'ma_reply_expected':False,
+      'ma_phase':'REQUEST','ma_function_kind':'PUBLIC','ma_request_function':16,'ma_function':16}
+    assert status(x)=='VALID'
+    for patch in ({'ma_destination_address':1},{'ma_request_function':3},{'ma_reply_expected':True},
+      {'ma_phase':'RESPONSE'},{'ma_slave_address':1},{'ma_active_masters':2},{'ma_outstanding':2}):
+        assert status({**x,**patch})=='INVALID'
+    x=actual();x.update(ma_role='SLAVE');assert status(x)=='UNVERIFIED'
+    x['ma_slave_address']=247;assert status(x)=='VALID'
+    assert status({**x,'ma_slave_address':248})=='INVALID'
+
+@pytest.mark.parametrize('fc,maximum,bytecount',[(1,2000,250),(2,2000,250),(3,125,250),(4,125,250),
+ (15,1968,246),(16,123,246)])
+def test_ascii_quantity_and_binary_pdu_depend_selected_public_function(fc,maximum,bytecount):
+    phase='RESPONSE'if fc<=4 else'REQUEST'
+    pdu=bytecount+(2 if fc<=4 else 6)
+    x={**actual(),'ma_phase':phase,'ma_function_kind':'PUBLIC','ma_request_function':fc,'ma_function':fc,
+      'ma_quantity':maximum,'ma_start_address':65536-maximum,'ma_byte_count':bytecount,'ma_pdu_bytes':pdu}
+    assert status(x)=='VALID'
+    for patch in ({'ma_quantity':maximum+1},{'ma_start_address':65537-maximum},{'ma_byte_count':bytecount+1},
+      {'ma_pdu_bytes':pdu+1}):assert status({**x,**patch})=='INVALID'
+    if fc<=2:
+        x.update(ma_quantity=9,ma_byte_count=2,ma_pdu_bytes=4,ma_start_address=0)
+        assert status(x)=='VALID'
+
+@pytest.mark.parametrize('fc',[1,2,3,4,15,16])
+def test_ascii_encoded_pdu_cannot_confirm_missing_function_specific_quantity(fc):
+    x={**actual(),'ma_phase':'REQUEST','ma_function_kind':'PUBLIC','ma_request_function':fc,'ma_function':fc,
+      'ma_pdu_bytes':5 if fc<=4 else 8,'ma_byte_count':2}
+    assert status(x)=='UNVERIFIED'
+    x.pop('ma_byte_count');assert status(x)=='UNVERIFIED'
+
+def test_ascii_exception_function_and_user_defined_namespaces_are_not_industry_templates():
+    x={**actual(),'ma_phase':'EXCEPTION','ma_function_kind':'PUBLIC','ma_request_function':3,
+      'ma_function':131,'ma_exception_code':2,'ma_pdu_bytes':2}
+    assert status(x)=='VALID'
+    for patch in ({'ma_function':3},{'ma_exception_code':7},{'ma_pdu_bytes':3}):assert status({**x,**patch})=='INVALID'
+    x.update(ma_phase='REQUEST',ma_function_kind='USER_DEFINED',ma_request_function=65,ma_function=65,ma_pdu_bytes=2)
+    assert status(x)=='UNVERIFIED'
+    x['ma_function_source']='synthetic-vendor-FC65';assert status(x)=='VALID'
+    assert status({**x,'ma_request_function':73})=='INVALID'
+
+def test_ascii_single_coil_literal_and_readwrite_quantities_use_own_function():
+    x={**actual(),'ma_phase':'REQUEST','ma_function_kind':'PUBLIC','ma_request_function':5,'ma_function':5,
+      'ma_pdu_bytes':5,'ma_coil_value':65280}
+    assert status(x)=='VALID';assert status({**x,'ma_coil_value':1})=='INVALID'
+    x.update(ma_request_function=23,ma_function=23,ma_read_quantity=125,ma_write_quantity=121,
+      ma_write_byte_count=242,ma_pdu_bytes=252,ma_start_address=65411,ma_write_start_address=65415)
+    x.pop('ma_coil_value')
+    assert status(x)=='VALID'
+    for patch in ({'ma_write_quantity':123},{'ma_write_byte_count':240},{'ma_pdu_bytes':253},
+      {'ma_write_start_address':65416}):assert status({**x,**patch})=='INVALID'
+
+@pytest.mark.parametrize('field,value,wrong_fc',[('ma_coil_value',65280,6),('ma_register_value',65535,5),
+ ('ma_read_quantity',125,16),('ma_write_quantity',121,3),('ma_write_byte_count',242,15),
+ ('ma_write_start_address',0,3),('ma_quantity',125,23),('ma_diagnostic',3,43),('ma_mei_type',14,8)])
+def test_ascii_function_specific_fields_cannot_be_reused_by_another_public_function(field,value,wrong_fc):
+    x={**actual(),'ma_function_kind':'PUBLIC','ma_request_function':wrong_fc,field:value}
+    assert status(x)=='INVALID'
+
+def test_ascii_physical_qualification_rs485_fourwire_is_not_rs422_or_rs232():
+    x={**actual(),'ma_phy':'RS485_4W','ma_common':True,'ma_shielded':True,'ma_terminations_per_pair':2,
+      'ma_devices':28,'ma_device_limit':28,'ma_polarization':True,'ma_polarization_locations':1,
+      'ma_bias_ohm':650,'ma_bias_v':5,'ma_termination':'SERIES_RC','ma_termination_cap_v':10}
+    assert status(x)=='VALID'
+    for patch in ({'ma_bias_ohm':651},{'ma_bias_ohm':449},{'ma_terminations_per_pair':1},
+      {'ma_polarization_locations':0},{'ma_common':False},{'ma_bias_v':24},{'ma_termination_cap_v':9},
+      {'ma_devices':29}):assert status({**x,**patch})=='INVALID'
+    x['ma_device_limit']=29;assert status(x)=='UNVERIFIED'
+    x['ma_device_limit_source']='synthetic-manufacturer-fractional-unit-load';assert status(x)=='VALID'
+    x={**actual(),'ma_phy':'RS232','ma_termination':'NONE','ma_terminations_per_pair':0,'ma_devices':2,'ma_rs232_cap_pf':2500}
+    assert status(x)=='VALID'
+    for patch in ({'ma_devices':3},{'ma_terminations_per_pair':2},{'ma_rs232_cap_pf':2501},
+      {'ma_bias_ohm':650},{'ma_termination_ohm':150},{'ma_common':False}):assert status({**x,**patch})=='INVALID'
+    assert status({**actual(),'ma_rs232_cap_pf':2500})=='INVALID'
+
+def test_ascii_cable_rate_wiring_and_tap_bounds_do_not_apply_global1000m():
+    x={**actual(),'bitrate':9600,'ma_cable':'AWG26_OR_WIDER','ma_four_wire_as_two':False,
+      'ma_trunk_m':1000,'ma_tap_derivations':4,'ma_drop_m':10}
+    assert status(x)=='VALID'
+    for patch in ({'ma_trunk_m':1001},{'ma_drop_m':10.001},{'ma_four_wire_as_two':True}):assert status({**x,**patch})=='INVALID'
+    x.update(ma_four_wire_as_two=True,ma_trunk_m=500);assert status(x)=='VALID'
+    assert status({**x,'ma_trunk_m':500.001})=='INVALID'
+    assert status({**x,'ma_cable':'CAT5','ma_trunk_m':601})=='INVALID'
+
+def test_ascii_confirmed_nondefault_baud_parity_timer_survive_rejected_isolated_sql_edit():
+    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.engineering.project_context import current_project_id
+    x={**actual(),'bitrate':9600,'ma_parity':'NONE','ma_stop_bits':2,'ma_interchar_timeout_ms':4200,
+      'ma_timer_source':'synthetic-WAN-timer','ma_exchange':'UNICAST','ma_destination_address':17}
+    group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}
+    parameters={'technology':'modbus_ascii','technology_parameters':{'modbus_ascii':group}}
+    service=WorkflowStatusService(current_project_id());service.save_parameters(parameters)
+    assert service.get()['parameters']==parameters
+    bad=deepcopy(parameters);bad['technology_parameters']['modbus_ascii']['values']['ma_stop_bits']=1
+    bad['technology_parameters']['modbus_ascii']['provenance']['ma_stop_bits']['value']=1
+    with pytest.raises(ValueError,match='DEPENDENCY_MISMATCH'):service.save_parameters(bad)
+    assert service.get()['parameters']==parameters

@@ -1,0 +1,28 @@
+Figure 3: Connect procedure
+In case the GW could not accept the connection request (e.g. because of congestion or it does not support a
+feature indicated in the CONNECT message), the GW returns a CONNACK message with the rejection reason.
+6.3 Clean session
+With MQTT, when a client disconnects, its subscriptions are not deleted. They are persistent and valid for new
+connections, until either they are explicitly un-subscribed by the client, or the client establishes a new connection
+with the “clean session” ﬂag set.
+In MQTT-SN the meaning of a “clean session” is extended to the Will feature, i.e. not only the subscriptions
+are persistent, but also the Will topic and the Will message. The two ﬂags “CleanSession” and “Will” in the
+CONNECT have then the following meanings:
+• CleanSession=true, Will=true: The GW will delete all subscriptions and Will data related to the client,
+and starts prompting for new Will topic and Will message.
+• CleanSession=true, Will=false: The GW will delete all subscriptions and Will data related to the client,
+and returns CONNACK (no prompting for Will topic and Will message).
+• CleanSession=false, Will=true: The GW keeps all stored client’s data, but prompts for new Will topic and
+Will message. The newly received Will data will overwrite the stored Will data.
+• CleanSession=false, Will=false: The GW keeps all stored client’s data and returns CONNACK (no prompt-
+ing for Will topic and Will message).
+Note that if a client wants to delete only its Will data at connection setup, it could send a CONNECT message
+with “CleanSession=false” and “Will=true”, and sends an empty WILLTOPIC message to the GW when prompted
+to do so. It could also send a CONNECT message with “CleanSession=false” and “Will=false”, and use the
+procedure of Section 6.4 to delete or modify the Will data.
+6.4 Procedure for updating the Will data
+At any time during a connection a client could update its Will data stored in the gateway by sending a WILL-
+TOPICUPD or a WILLMSGUPD message. The information contained in these two messages will overwrite the
+corresponding ones stored in the gateway. Both messages are acknowledged by the gateway. Both messages can
+be used independently from each other.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 21

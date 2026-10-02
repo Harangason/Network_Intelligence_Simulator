@@ -1,0 +1,49 @@
+EV Driver
+EV Charging Station CSMS
+SetChargingProfileRequest(TxDefaultProfile, evseId)
+SetChargingProfileResponse(Accepted)
+Time period between start of transaction and setting of charging profile can be minutes, but can also be days.
+connection loss
+Present IdToken()
+opt [if supported]
+check local authorization list()
+opt [if supported]
+Check Authorization Cache()
+opt
+notification
+alt [LocalAuthorizeOffline=true & (Id in cache or (Id in local list & Valid)) or (OfflineTxForUnknownIdEnabled=true
+& Id not Invalid in local list)]
+lock connector
+start energy offer
+loop Change according to charging profile
+[for each interval period in charging profile]
+get limit from charging profile():limit
+Charging Station implements charging
+profile via the Control Pilot
+signal whenever maximum current
+needs changing.
+set max current(limit)
+Figure 128. Sequence Diagram: Offline Behavior Smart Charging
+K07 - Offline Behavior Smart Charging at Start of Transaction - Requirements
+Table 103. K07 - Requirements
+ID Precondition Requirement definition Note
+K07.FR.01 If a Charging Station goes
+Offline before a transaction
+is started or before a
+transaction-specific
+ChargingProfile with
+purpose TxProfile was
+received.
+The Charging Station SHALL use the charging profiles
+which are available.
+With purpose
+TxDefaultProfile for the
+duration of the current
+transaction only.
+K08 - Get Composite Schedule
+No. Type Description
+1 Name Get Composite Schedule
+2 ID K08
+3 Objective(s) To request the Charging Station to report the composite charging schedule.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 352/803 Part 2 - Specification

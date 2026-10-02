@@ -1,0 +1,104 @@
+37 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Selecting Protocols
+The ELM327 supports several different OBD
+protocols (see Figure 2, at right). As a user, you may
+never have to choose which one it should use (since
+the factory settings cause an automatic search to be
+performed for you), but while experimenting, you may
+want to specify a protocol to be used.
+For example, if you know that your vehicle uses
+the SAE J1850 VPW protocol, you may want the
+ELM327 to use only that protocol, and no others. If
+that is what you want, simply determine the protocol
+number (from Figure 2), then use the ‘Set Protocol’ AT
+Command as follows:
+>AT SP 2
+OK
+From this point on, the default protocol (used after
+every power-up or AT D command) will be protocol 2
+(or whichever one that you have chosen). Verify this
+by asking the ELM327 to describe the protocol:
+>AT DP
+SAE J1850 VPW
+Now what happens if your friend has a vehicle that
+uses ISO 9141-2? How do you now use the ELM327
+interface for that vehicle, if it is set for J1850?
+One possibility is to change your protocol selection
+to allow for the automatic searching for another
+protocol, on failure of the current one. This is done by
+putting an ‘A’ before the protocol number, as follows:
+>AT SP A2
+OK
+>AT DP
+AUTO, SAE J1850 VPW
+Now, the ELM327 will try protocol 2, but will then
+automatically begin searching for another protocol
+should the attempt to connect with protocol 2 fail (as
+would happen when you try to connect to your friend’s
+vehicle).
+The Set Protocol commands cause an immediate
+write to the internal EEPROM, before even attempting
+to connect to the vehicle. This write is time-consuming,
+affects the setting for the next powerup, and may not
+actually be appropriate, if the protocol selected is not
+correct for the vehicle. To allow a test before a write
+occurs, the ELM327 offers one other command - the
+Try Protocol (TP) command.
+Try Protocol is very similar to Set Protocol. It is
+used in exactly the same way as the AT SP command,
+the only difference being that a write to internal
+memory will only occur after a valid protocol is found,
+and only if the memory function is enabled (M0/M1).
+For the previous example, all that needs to be sent is:
+>AT TP A2
+OK
+Many times, it is very difficult to even guess at a
+protocol to try first. In these cases, it is best to simply
+let the ELM327 decide what to use. This is done by
+telling it to use protocol 0 (with either the SP or the TP
+commands).
+To have the ELM327 automatically search for a
+protocol to use, simply send:
+>AT SP 0
+OK
+and when the next OBD command is to be sent, the
+ELM327 will automatically look for one that responds.
+You will see a ‘SEARCHING...’ message, followed by
+a response, after which you can ask the ELM327 what
+protocol it found (by sending AT DP).
+The first versions of the ELM327 used the SAE
+recommended search order (protocol 1, 2, 3, etc.), but
+recent versions of the IC modify the search order
+Figure 2.  ELM327 Protocol Numbers
+Description
+SAE J1850 PWM (41.6 kbaud)
+Protocol
+0
+1
+2
+3
+4
+5
+6
+7
+8
+9
+Automatic
+SAE J1850 VPW (10.4 kbaud)
+ISO 9141-2  (5 baud init)
+ISO 14230-4 KWP (5 baud init)
+ISO 14230-4 KWP (fast init)
+ISO 15765-4 CAN (11 bit ID, 500 kbaud)
+ISO 15765-4 CAN (29 bit ID, 500 kbaud)
+ISO 15765-4 CAN (11 bit ID, 250 kbaud)
+ISO 15765-4 CAN (29 bit ID, 250 kbaud)
+A
+B
+C
+SAE J1939 CAN (29 bit ID, 250* kbaud)
+User1 CAN (11* bit ID, 125* kbaud)
+User2 CAN (11* bit ID, 50* kbaud)
+*user adjustable

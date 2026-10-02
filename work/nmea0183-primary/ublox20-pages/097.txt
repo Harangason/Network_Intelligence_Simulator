@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+• 3-7 = other
+13 + n·6 X1 otherOrb - - Other orbit data available
+bits 4…0   U:5 anoAop
+Usability
+- - How long the receiver will be able to use the orbit data
+from now on:
+• 31 = The usability period is unknown
+• 30 = The usability period is more than 30 days
+• 30 > n > 0 = The usability period is between n-1
+and n days
+• 0 = Data can no longer be used
+bits 7…5   U:3 type - - Type of orbit data:
+• 0 = No orbit data available
+• 1 = AssistNow Oﬄine data
+• 2 = AssistNow Autonomous data
+• 3-7 = Other orbit data
+End of repeated group (numSv times)
+3.15.10 UBX-NAV-POSECEF (0x01 0x01)
+3.15.10.1 Position solution in ECEF
+Message UBX-NAV-POSECEF
+Position solution in ECEF
+Type Periodic/polled
+Comment See important comments concerning validity of position given in section Navigation output ﬁlters in the
+integration manual.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x01 20 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+4 I4 ecefX - cm ECEF X coordinate
+8 I4 ecefY - cm ECEF Y coordinate
+12 I4 ecefZ - cm ECEF Z coordinate
+16 U4 pAcc - cm Position Accuracy Estimate
+3.15.11 UBX-NAV-POSLLH (0x01 0x02)
+3.15.11.1 Geodetic position solution
+Message UBX-NAV-POSLLH
+Geodetic position solution
+Type Periodic/polled
+Comment See important comments concerning validity of position given in section Navigation output ﬁlters in the
+integration manual.
+This message outputs the Geodetic position in the currently selected ellipsoid. The default is the WGS84
+Ellipsoid, but can be changed with the message CFG-NAVSPG-USE_USRDAT.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 97 of 224
+C1-Public

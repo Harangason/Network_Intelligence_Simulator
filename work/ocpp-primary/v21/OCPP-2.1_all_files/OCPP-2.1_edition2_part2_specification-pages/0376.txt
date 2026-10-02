@@ -1,0 +1,50 @@
+External Control System
+(example DSO) Charging Station CSMS
+release grid limit
+opt [if transaction ongoing]
+opt
+recalculate charging schedule
+release charging limit
+ClearedChargingLimitRequest(evseId, chargingLimitSource)
+ClearedChargingLimitResponse()
+opt [if charging rate changed more than: LimitChangeSignificance]
+TransactionEventRequest(eventType = Updated, trigger = ChargingRateChanged, ...)
+TransactionEventResponse(...)
+Figure 134. Sequence diagram of the use case "Release / Reset External Charging Limit"
+K13 - Reset / Release External Charging Limit - Requirements
+Table 109. K13 - Requirements
+ID Precondition Requirements
+K13.FR.01 External charging limit is
+released/removed
+The Charging Station SHALL NOT limit charging anymore based on the
+previously received limit.
+K13.FR.02 K13.FR.01 The Charging Station SHALL notify the CSMS by sending a
+ClearedChargingLimitRequest message.
+K13.FR.03 K13.FR.01 AND
+A transaction is ongoing AND
+Charging rate changed by more
+than: LimitChangeSignificance
+The Charging Station SHALL send a TransactionEventRequest message to
+the CSMS with trigger = ChargingRateChanged.
+K14 - External Charging Limit with Local Controller
+No. Type Description
+1 Name Handle external charging limit with a local controller
+2 ID K14
+3 Objective(s) To adjust the charging limits according to the External Control System requirements.
+4 Description An external control system sends a charging limit to the Local Controller. The Local Controller
+notifies the CSMS, calculates the new charging schedules and sends a
+SetChargingProfileRequest messages to all Charging Stations for which the charging profile has
+changed.
+Actors External control system, Local Controller, Charging Station, CSMS
+Scenario description 1. External control system sends a charging limit/schedule to Local Controller.
+2. Local Controller sends a NotifyChargingLimitRequest message to the CSMS.
+3. Local Controller calculates new Charging Profiles for all connected Charging Stations.
+4. Local Controller sends a SetChargingProfileRequest message to all Charging Stations for
+which the charging profile has changed.
+5. External control releases a charging limit/schedule to Local Controller.
+6. Local Controller sends a ClearedChargingLimitRequest message to the CSMS.
+7. Local Controller clears Charging Profiles for all connected Charging Stations.
+8. Local Controller sends a ClearChargingProfileRequest messages to all affected Charging
+Stations.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 363/803 Part 2 - Specification

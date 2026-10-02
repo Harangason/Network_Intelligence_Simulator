@@ -1,0 +1,45 @@
+u-blox 20 HPG 2.00 - Interface description
+Note that only some combinations of repeated groups of ﬁelds are possible in a single message. See
+also UBX payload decoding.
+3.3.8 UBX payload decoding
+UBX message payloads are designed so that the data (ﬁelds) can be extracted by a single pass
+through the payload from start to end. Fixed-size messages are the trivial case where the oﬀset of
+all ﬁelds is unambiguously deﬁned. Variable-size messages have variable number of repetitions of
+one or multiple groups of ﬁelds. For groups where the number of repetitions is given by the value
+of another ﬁeld, that ﬁeld can always be found at a ﬁxed oﬀset in the message payload before the
+respective group of ﬁelds. Groups whose number of repetitions depend on the payload size can only
+be the last group of ﬁelds in a message and only one such group may exist in a message. See also
+UBX repeated ﬁelds.
+3.4 UBX checksum
+The checksum is calculated over the message, starting and including the class ﬁeld up until, but
+excluding, the checksum ﬁelds (see the ﬁgure UBX frame structure).
+The checksum algorithm used is the 8-bit Fletcher algorithm, which is used in the TCP standard
+RFC 1145). This algorithm works as follows:
+• Buffer[N] is an array of bytes that contains the data over which the checksum is to be
+calculated.
+• The two CK_A and CK_A values are 8-bit unsigned integers, only! If implementing with larger-
+sized integer values, make sure to mask both CK_A and CK_B with the value 0xff after both
+operations in the loop.
+• After the loop, the two U1 values contain the checksum, transmitted after the message
+payload, which concludes the frame.
+1 CK_A = 0, CK_B = 0
+2 For (I = 0; I < N; I++)
+3 {
+4     CK_A = CK_A + Buffer[I]
+5     CK_B = CK_B + CK_A
+6 }
+3.5 UBX message ﬂow
+There are certain features associated with the messages being sent back and forth:
+3.5.1 UBX acknowledgement
+When messages from the class CFG are sent to the receiver, the receiver will send an
+"acknowledge" (UBX-ACK-ACK) or a "not acknowledge" (UBX-ACK-NAK) message back to the
+sender, depending on whether or not the message was processed correctly.
+Some messages from other classes also use the same acknowledgement mechanism.
+3.5.2 UBX polling mechanism
+The UBX protocol is designed so that messages can be polled by sending the message required to
+the receiver but without a payload (or with just a single parameter that identiﬁes the poll request).
+The receiver then responds with the same message with the payload populated.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 47 of 224
+C1-Public

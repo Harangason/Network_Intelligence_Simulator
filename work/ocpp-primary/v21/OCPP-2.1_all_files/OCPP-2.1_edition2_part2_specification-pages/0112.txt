@@ -1,0 +1,50 @@
+C05 - Authorization for CSMS initiated transactions
+No. Type Description
+1 Name Authorization for CSMS initiated transactions
+2 ID C05
+3 Objective(s) Enable the CSMS to start a transaction on a Charging Station with a server generated IdToken.
+4 Description When a CSMS needs to start a Transaction on a Charging Station for a Driver that has no RFID, or
+the RFID is not known. For Example, the EV Driver uses an App to start a transaction. The CSMS
+needs to determine an IdToken and tell the Charging Station this is not an RFID, so it should not
+be cached and an authorization is also not needed.
+Actors EV Driver, CSMS, Charging Station
+Scenario description 1. The EV Driver uses his app to start a charging.
+2. The app sends a start request to the CSMS.
+3. The CSMS determines an IdToken. It can generate a unique id to be used as IdToken for this
+transaction or can use a token that is provided by the app (for example the ID of the contract of
+the user).
+4. The CSMS sends a RequestStartTransactionRequest with the IdToken from the previous step
+to the Charging Station.
+5. The Charging Station accepts the RequestStartTransactionRequest by sending a
+RequestStartTransactionResponse with Accepted.
+6. The Charging Station starts charging and sends a TransactionEventRequest (eventType =
+Updated) to notify the CSMS that chargingState has changed.
+Alternative scenario(s) C01 - EV Driver Authorization using RFID
+C02 - Authorization using a start button
+C03 - Authorization using credit/debit card
+C04 - Authorization using PIN-code
+C06 - Authorization using local id type
+C07 - Authorization using Contract Certificates
+C08 - Authorization at EVSE using ISO 15118 External Identification Means (EIM)
+C15 - Unknown Offline Authorization
+5 Prerequisites Cable is plugged in.
+6 Postcondition(s) Transaction ongoing on Charging Station
+7 Error Handling n/a
+8 Remarks IdTokens MAY be (single use) virtual transaction authorization codes or virtual RFID tokens that
+deliberately use a non-standard UID format to avoid possible conflict with real UID values. These
+virtual single use IdTokens are sent with type Central and it is pointless to either cache or
+authorize these tokens.
+This use case uses an App as example, but this is not a requirement. This use case is valid for
+any RequestStartTransactionRequest with a server generated IdToken.
+The scenario description and sequence diagram above are based on the Configuration Variable
+for start transaction being configured as follows:
+TxStartPoint: EVConnected
+This use-case is also valid for other configurations, but then the transaction might start/stop at
+another moment, which might change the sequence in which message are send. For more details
+see the use case: E01 - Start Transaction options.
+This use case assumes that the configuration variable AuthorizeRemoteStart is false. See use
+cases F01 and F02 for requirements with AuthorizeRemoteStart.
+Other idToken types can also be used to remote start charging, such an eMAID of the user that is
+provided by the app.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 99/803 Part 2 - Specification

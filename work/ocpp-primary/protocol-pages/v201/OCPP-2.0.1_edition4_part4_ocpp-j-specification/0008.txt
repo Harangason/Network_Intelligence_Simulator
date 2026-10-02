@@ -1,0 +1,45 @@
+Chapter 3. WebSockets
+For the connection between a Charging Station and a Charging Station Management System (CSMS) using OCPP-J, the CSMS acts
+as a WebSocket server and the Charging Station acts as a WebSocket client.
+3.1. Client request
+To set up a connection, the Charging Station initiates a WebSocket connection as described in [RFC6455] section 4, "Opening
+Handshake".
+OCPP-J imposes extra constraints on the URL and the WebSocket subprotocol, detailed in the following two sections 3.1.1 and
+3.1.2.
+The Client (Charging Station) SHALL keep this WebSocket connection open all the time.
+3.1.1. The connection URL
+To initiate a WebSocket connection, the Charging Station needs a URL ([RFC3986]) to connect to. This URL is henceforth called the
+"connection URL". This connection URL is specific to a Charging Station. The Charging Station’s connection URL contains the
+Charging Station identity so that the CSMS knows which Charging Station a WebSocket connection belongs to. However it is
+RECOMMENDED to let the CSMS NOT solely rely on the connection URL to identify a Charging Station, but to double-check the
+Charging Station’s identity against their authentication credentials.
+A CSMS supporting OCPP-J MUST provide at least one OCPP-J endpoint URL, from which the Charging Station SHOULD derive its
+connection URL. This OCPP-J endpoint URL can be any URL with a "ws" or "wss" scheme. How the Charging Station obtains an
+OCPP-J endpoint URL is outside of the scope of this document.
+To derive its connection URL, the Charging Station modifies the OCPP-J endpoint URL by appending to the path first a '/' (U+002F
+SOLIDUS) and then a string uniquely identifying the Charging Station. This uniquely identifying string has to be percent-encoded /
+URL encoded as necessary as described in [RFC3986].
+Example 1: for a Charging Station with identity "CS001" connecting to a CSMS with OCPP-J endpoint URL
+"ws://csms.example.com/ocpp" this would give the following connection URL:
+ws://csms.example.com/ocpp/CS001
+Example 2: for a Charging Station with identity "RDAM|123" connecting to a CSMS with OCPP-J endpoint URL
+"wss://csms.example.com/ocppj" this would give the following URL:
+wss://csms.example.com/ocppj/RDAM%7C123
+The Charging Station identity datatype is identifierString (For definition see [OCPP2.0.1-PART2] . In addition, the colon ":" character
+SHALL NOT be used, because the unique identifier is also used for the basic authentication username. The colon ":" character is
+used to separate the basic authentication username and the password. The maximum length of the Charging Station identity is: 48
+characters. (Note: Maximum length was chosen to ensure compatibility with EVSE ID from [ISO15118-2]."
+3.1.2. OCPP version negotiation
+The OCPP version(s) MUST be specified in the Sec-Websocket-Protocol field. The client lists the OCPP version(s) it supports in
+order of preference. They SHOULD be one or more of the following values:
+Table 1. OCPP Versions
+OCPP version WebSocket subprotocol name
+1.2 ocpp1.2
+1.5 ocpp1.5
+1.6 ocpp1.6
+2.0 ocpp2.0
+2.0.1 ocpp2.0.1
+The ones for OCPP 1.2, 1.5, 1.6, 2.0 and 2.0.1 are official WebSocket subprotocol name values. They are registered as such with
+IANA.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 6/26 Part 4 - JSON over WebSockets implementation guide

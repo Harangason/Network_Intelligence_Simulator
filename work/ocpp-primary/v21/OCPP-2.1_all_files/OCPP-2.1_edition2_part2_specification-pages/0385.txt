@@ -1,0 +1,57 @@
+No. Type Description
+Scenario description #2 Local EMS as Local Contoller
+The Local EMS acts as a Local Controller and all OCPP traffic passes through it. As such, it is
+aware of the state of ongoing transactions, such as charging schedules imposed by CSMS, state
+of charge of the EV, and planned time of departure.
+EMS in the cloud can easily connect to external sources of information, such as weather
+forecasts and inputs from a DSO or TSO, but since it is not acting as a Local Controller, it will not
+be aware of the state on ongoing transactions, unless this information is passed on between
+Local EMS and Cloud EMS.
+Site
+Other loadsLocal PV Generation
+Charging
+Station 1
+Charging
+Station 2
+Local EMS as
+Local Controller
+Grid_connection
+DSO
+Aggregator
+CSMS
+Cloud EMS as
+Scheduler
+1. Local EMS measures power consumption from other loads in the building, and passes
+this on to Cloud EMS.
+2. Local EMS (as Local Controller) optionally collects data from OCPP traffic about ongoing
+transactions, state of charge and planned time of departure, when available, but since
+scheduling takes place in the Cloud EMS, this information cannot be taking into account,
+unless it Local EMS sends it to Cloud EMS.
+3. Cloud EMS collects data from external inputs, like weather forecasts and DSO/TSO input.
+4. Cloud EMS calculates a power profile for each Charging Station based on information
+received from Local EMS, such as local loads, capacity of the local grid connection and
+the amount of locally generated energy (e.g. PV panels) and optionally information about
+ongoing transactions.
+5. Cloud EMS sends power profiles to Local EMS.
+6. Local EMS (as Local Controller) sends each power profile as a charging profile of
+chargingProfilePurpose = ChargingStationMaxProfile to the Charging Stations, in
+addition to charging profiles (if any) from CSMS towards Charging Stations.
+7. Local EMS (as Local Controller) notifies CSMS of a power limit if it changed by more than
+the configured threshold: LimitChangeSignificance, by sending a
+NotifyChargingLimitRequest message with chargingLimitSource = EMS and (optionally) a
+chargingSchedule that represents the limit(s).
+8. If a transaction is ongoing, and the received charging profile limits have changed more
+than LimitChangeSignificance, Charging Station will send a
+TransactionEventRequest message with trigger = ChargingRateChanged to record that
+a power limitation occurred during the transaction.
+5 Prerequisites EMS and Local Controller are integrated and Local Controller part has load-balancing capability.
+6 Post conditions Charging power is reduced when needed to avoid overloading local grid connection.
+7 Error Handling
+8 Remarks Although the Local Controller functionality of EMS can either run in the cloud or locally, it is often
+more convenient to run it in the cloud, because a cloud instance has more processing power, can
+more easily be connected to a cloud CSMS and Charging Stations, and the interface between
+Cloud EMS and Local EMS is simpler, because no transaction data needs to be exchanged.
+K26 - Smart Charging with Hybrid Local & Cloud EMS - Requirements
+The requirements for this use case are already covered in use case K14.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 372/803 Part 2 - Specification

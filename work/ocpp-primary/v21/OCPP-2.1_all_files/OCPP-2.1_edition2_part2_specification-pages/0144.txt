@@ -1,0 +1,67 @@
+EV Driver
+Payment Service
+Provider
+Integrated
+Payment Terminal Charging Station CSMS
+Assuming TxStart/StopPoint
+is PowerPathClosed
+Default tariff for adhoc payments has been set
+SetDefaultTariffRequest(0, "Adhoc", ...)
+SetDefaultTariffResponse(Accepted)
+alt [Without explicit CSMS authorization]
+present payment card
+authorize card(AuthorizationAmount)
+authorization response(PspRef, status)
+approved card details(
+PspRef,
+cardBin, cardLast4Digits, ...)
+idToken <PspRef> is authorized internally
+[With explicit CSMS authorization]
+present payment card
+authorize card(AuthorizationAmount)
+authorization response(PspRef, status)
+approved card details(
+PspRef,
+cardBin, cardLast4Digits, ...)
+AuthorizeRequest(idToken(id = <PspRef>,
+type = DirectPayment
+additionalInfo([type = CardBin, value=<cardBin>], ...)))
+AuthorizeResponse(idTokenInfo.status = Accepted,
+tariff = {"Adhoc", ...})
+idToken <PspRef> is authorized by CSMS
+opt [VAT number validation]
+enter VAT number
+VatNumberValidationRequest(vatNr)
+VatNumberValidationResponse(status = Accepted, vatNr, address)
+driver plugs-in vehicle
+Transaction starts
+TransactionEventRequest(Started,
+idToken = <PspRef>, type = DirecPayment,
+additionalInfo(type = CardBin,
+additionalToken = "123456",
+transactionLimit.maxCost = 100.0, ...), ...)
+TransactionEventResponse()
+Figure 39. Sequence diagram of an ad hoc authorization
+C18 - Authorization using locally connected payment terminal - Requirements
+ID Precondition Requirements Note
+C18.FR.01 Charging Station SHALL configure payment
+terminal to reserve the amount specified in
+configuration variable
+PaymentCtrlr.AuthorizationAmount when
+authorizing a payment card.
+C18.FR.02 When a payment card is
+presented
+Charging Station SHALL instruct payment terminal
+to request authorization for this card from PSP.
+Communication protocol
+between Charging Station and
+payment terminal and payment
+terminal and PSP is not part of
+OCPP.
+C18.FR.03 When PSP authorizes the
+payment card AND
+PaymentCtrlr.AuthorizeDirectPa
+yment is false
+Charging Station SHALL authorize EV to charge.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 131/803 Part 2 - Specification

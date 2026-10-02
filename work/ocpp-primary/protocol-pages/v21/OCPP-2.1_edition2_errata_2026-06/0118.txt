@@ -1,0 +1,59 @@
+Main (Test scenario)
+Manual Action: Let CSMS trigger a request for swapping batteries
+2. The Test System responds with a
+RequestBatterySwapResponse with
+status Accepted
+1. The CSMS sends a RequestBatterySwapRequest
+Note: Set of two (virtual) batteries are inserted at this point in scenario.
+3. The Test System notifies the CSMS about the status change
+of the slot.
+connectorStatus   Occupied
+4. The CSMS responds accordingly.
+5. The Test System sends a TransactionEventRequest with
+eventType Started
+triggerReason CablePluggedIn
+idToken.idToken ""
+idToken.type NoAuthorization
+evse <Configured evseId> <i>
+evse.connectorId 1
+transactionInfo.transactionId 111-222-333-444-3 <transactionId>
+transactionInfo.chargingState EVConnected
+6. The CSMS responds with a TransactionEventResponse
+7. The Test System notifies the CSMS about the status change
+of the slot. 8. The CSMS responds accordingly.
+9. The Test System sends a TransactionEventRequest with
+eventType Started
+triggerReason CablePluggedIn
+idToken.idToken ""
+idToken.type NoAuthorization
+evse <Configured evseId2>
+evse.connectorId 1
+transactionInfo.transactionId 111-222-333-444-4
+transactionInfo.chargingState EVConnected
+10. The CSMS responds with a TransactionEventResponse
+Note :  Steps 3 through 6 are repeated for each battery inserted         
+11. 7.  The Test System sends a BatterySwapRequest with
+eventType BatteryIn
+requestId <requestId>
+idToken.idToken <Configured valid_idtoken_idtoken>
+batteryData[0].evseId <Configured evseId> 1
+batteryData[0].serialNumber 1234
+batteryData[0].soC 23
+batteryData[0].soH 85
+batteryData[1].evseId <Configured evseId2> 2
+batteryData[1].serialNumber 5678
+batteryData[1].soC 45
+batteryData[1].soH 87
+12. 8.  The CSMS responds with a BatterySwapResponse
+Note: Set of two batteries are extracted at this point in scenario.
+13. The Charging Station sends a TransactionEventRequest with
+eventType Ended
+triggerReason EnergyLimitReached
+idToken.idToken ""
+idToken.type NoAuthorization
+transactionInfo.transactionId 111-222-333-444-1
+transactionInfo.chargingState Idle
+transactionInfo.stoppedReason EVDisconnected
+14. The Test System responds with a
+TransactionEventResponse
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 114/116 Errata 2026-06

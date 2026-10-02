@@ -1,0 +1,21 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+This average consumption can even be further optimized, using the PN7160 feature called “Tag Detector” or
+LPCD. See Section 10.4 for more details.
+2.5  DH access to NDEF NFCEE over APDU
+The PN7160 can emulate an NDEF T4T tag. The DH is in charge of filling the tag with any NDEF message. As
+such, the DH has a read and write access to the NDEF tag emulation in order to update the NDEF data stored
+in the NDEF T4T emulation tag.
+Figure 8. Exchanges between the NDEF_NFCEE and the DH over APDU NFCEE interface
+NDEF message is exchanged according to ISO/IEC7816-4 protocol using the following Command APDU:
+• select: instruction 0xA4 (Selection of applications, or files)
+• Read Binary: instruction 0xB0
+• Update Binary: instruction 0xD6
+The DH exchanges NDEF data through the APDU NFCEE interface.
+The NFCC gives exclusive access to the DH during NDEF data update procedure. This prevents external
+reader to access NDEF message in the same time.
+A dedicated dynamic logical connection has to be created by the DH to the NFCEE_NDEF, in order to allow the
+transport of data between the DH and the NFCEE_NDEF.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+9 / 147

@@ -1,0 +1,28 @@
+• authentication of the Central System to the Charge Point (with a TLS certificate)
+It does not provide:
+• A guarantee that the meter values are not tampered with between the meter and the Central
+System
+• Authentication of the driver
+• Protection against people physically tampering with a charge point
+6.2.4. Applicability to OCPP-S
+The approach of OCPP-J over TLS cannot be applied to OCPP-S. There are two reasons.
+Firstly, in OCPP-S a new TCP connection is created for every request-response exchange. One would
+thus have to do a new TLS handshake for each such request-response exchange, incurring a great
+bandwidth overhead.
+Secondly, in OCPP-S the Charge Point also acts a server, and would thus need a server certificate. It
+would be a great administrative burden to keep track of so many server certificates and the charge
+points they belong to.
+7. Configuration
+The following items in OCPP Get/ChangeConfiguration messages are added to control JSON/WebSockets
+behaviour:
+Table 8: Additional OCPP Keys
+Key Value
+WebSocketPingInterval integer A value of 0 disables client side websocket
+Ping / Pong. In this case there is either no ping /
+pong or the server initiates the ping and client
+responds with Pong. Positive values are
+interpreted as number of seconds between pings.
+Negative values are not allowed.
+ChangeConfiguration is expected to return a
+REJECTED result.
+20

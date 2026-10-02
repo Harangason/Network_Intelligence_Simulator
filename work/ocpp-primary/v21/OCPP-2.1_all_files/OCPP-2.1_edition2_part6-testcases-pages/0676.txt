@@ -1,0 +1,47 @@
+TC_N_05_CS: Set Monitoring Base - success
+Test case name Set Monitoring Base - success
+Test case Id TC_N_05_CS
+Use case Id(s) N03
+Requirement(s) N03.FR.01, N03.FR.03, N03.FR.04, N03.FR.05
+System under test Charging Station
+Description CSMS sends a SetMonitoringBaseRequest for All, FactoryDefault and HardWiredOnly.
+Purpose To test that Charging Station supports all three monitoring base types.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with:
+SetMonitoringBaseResponse
+1. Test System sends SetMonitoringBaseRequest with:
+- monitoringBase = All
+4. Charging Station responds with:
+SetMonitoringBaseResponse
+3. Test System sends SetMonitoringBaseRequest with:
+- monitoringBase = FactoryDefault
+6. Charging Station responds with:
+SetMonitoringBaseResponse
+5. Test System sends SetMonitoringBaseRequest with:
+- monitoringBase = HardWiredOnly
+Tool validations
+* Step 2
+Message: SetMonitoringBaseResponse
+- status = Accepted
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+* Step 4
+Message: SetMonitoringBaseResponse
+- status = Accepted
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+* Step 6
+Message: SetMonitoringBaseResponse
+- status = Accepted
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+Post scenario validations:
+N/A
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 674/1383 Part 6 - Test Cases

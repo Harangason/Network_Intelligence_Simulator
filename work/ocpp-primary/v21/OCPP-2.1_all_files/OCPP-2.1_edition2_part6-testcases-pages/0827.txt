@@ -1,0 +1,32 @@
+Main (Test scenario)
+6. The Charging Station responds with a
+GetChargingProfilesResponse
+5. The Test System sends a GetChargingProfilesRequest with
+chargingProfile.chargingProfileId 123 requestId <Generated
+requestId>
+7. The Charging Station sends a ReportChargingProfilesRequest
+8. The Test System responds with a
+ReportChargingProfilesResponse
+Note(s):
+- If tbc is True at Step 7 then step 7 and 8 will be repeated
+Tool validations
+* Step 2:
+Message: SetChargingProfileResponse
+- status must be Accepted
+* Step 3:
+Message: PullDynamicScheduleUpdateRequest
+- chargingProfileId must be 123
+* Step 6:
+Message: GetChargingProfilesResponse
+- status must be Accepted
+* Step 7:
+Message: ReportChargingProfilesRequest
+Note: The date/time when sending the PullDynamicScheduleUpdateResponse in step 4 is called x:
+- chargingProfile.dynUpdateTime must be <x> (+/- Max Time Deviation)
+- chargingProfile.chargingSchedule.id must be 123
+- chargingProfile.chargingSchedule.chargingSchedulePeriod[0].limit must be 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 825/1383 Part 6 - Test Cases

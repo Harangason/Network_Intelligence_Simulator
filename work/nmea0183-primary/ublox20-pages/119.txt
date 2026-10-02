@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+• 29: UBX-RXM-PMP (SPARTN)
+• 30: UBX-RXM-QZSSL6
+bits 6…5   U:2 errStatus - - Error status of the received correction message
+content based on possibly available error codes or
+checksums:
+• 0: Unknown
+• 1: Error-free
+• 2: Erroneous
+bits 8…7   U:2 msgUsed - - Status of receiver using the input message:
+• 0: Unknown
+• 1: Not used
+• 2: Used
+bits 24…9   U:16 correctionId - - Identiﬁer for the correction stream:
+• For RTCM 3: Reference station ID (DF003) of
+the received RTCM input message. Valid range
+0-4095. Reported only for the standard RTCM
+messages that include the DF003 ﬁeld and for
+the u-blox proprietary RTCM messages 4072.x.
+For all other messages, reports 0xFFFF.
+• For other correction protocols 0xFFFF.
+bit 25   U:1 msgTypeValid - - Validity of the msgType ﬁeld. Set to False e.g. if the
+protocol does not deﬁne msgType.
+bit 26   U:1 msgSubType
+Valid
+- - Validity of the msgSubType ﬁeld. Set to False e.g. if the
+protocol does not deﬁne subtype for the msgType.
+bit 27   U:1 msgInputHandle - - Input handling support of the input message:
+• 0: Receiver does not have input handling support
+for this message
+• 1: Receiver has input handling support for this
+message. Input handling support does not
+necessarily mean that message is supported/
+used by the receiver.
+bits 29…28   U:2 msgEncrypted - - Encryption status of the input message:
+• 0: Unknown
+• 1: Not encrypted
+• 2: Encrypted
+bits 31…30   U:2 msgDecrypted - - Decryption status of the input message:
+• 0: Unknown
+• 1: Not decrypted
+• 2: Decrypted
+8 U2 msgType - - Message type
+10 U2 msgSubType - - Message subtype
+3.16.2 UBX-RXM-MEASX (0x02 0x14)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 119 of 224
+C1-Public

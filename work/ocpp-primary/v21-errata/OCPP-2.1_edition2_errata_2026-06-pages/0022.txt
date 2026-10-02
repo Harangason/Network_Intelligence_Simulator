@@ -1,0 +1,47 @@
+EV Charging Station CSMS
+Transaction has started
+alt [15118-20 Scheduled mode]
+Not applicable
+[15118-20 Dynamic mode]
+ScheduleExchangeReq( DepartureTime, EVTargetEnergyRequest,
+Dynamic, ... )
+NotifyEVChargingNeedsRequest(
+DepartureTime, EVTargetEnergyRequest, ... )
+NotifyEVChargingNeedsResponse( Accepted )
+SetChargingProfileRequest( v2xSchedule
+"LocalLoadBalancing" )
+SetChargingProfileResponse( Accepted )
+ScheduleExchangeRes()
+PowerDeliveryReq()
+PowerDeliveryRes()
+loop [Updating setpoint dynamically every schedule period]
+Get power reading from grid connection
+alt [Load - Setpoint < LowerThreshold + LowerOffset - UpperThreshold]
+Setpoint_new = Setpoint + LowerThreshold + LowerOffset - Load
+[Load - Setpoint > UpperThreshold + UpperOffset - LowerThreshold]
+Setpoint_new = Setpoint + UpperThreshold + UpperOffset - Load
+[Load - Setpoint is between limits]
+Setpoint_new = 0
+Adjust power to setpoint
+AC/DC_ChargeLoopReq()
+Continuous charge loop
+AC/DC_ChargeLoopRes( Setpoint_new )
+[CHAdeMO]
+evChargingParameters
+evseChargingParameters
+SoC
+SetChargingProfileRequest( v2xSchedule )
+SetChargingProfileResponse( Accepted )
+loop [Updating setpoint dynamically every schedule period]
+Get power reading from grid connection
+alt [Load - Setpoint < LowerThreshold + LowerOffset - UpperThreshold]
+Setpoint_new = Setpoint + LowerThreshold + LowerOffset - Load
+[Load - Setpoint > UpperThreshold + UpperOffset - LowerThreshold]
+Setpoint_new = Setpoint + UpperThreshold + UpperOffset - Load
+[Load - Setpoint is between limits]
+Setpoint_new = 0
+Adjust power to setpoint
+Available output current (H'108.3)
+Charging current request (H'102.3)
+Figure 4. V2X Operation Mode LocalLoadBalancing
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 18/116 Errata 2026-06

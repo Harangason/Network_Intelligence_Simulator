@@ -1,0 +1,38 @@
+TC_E_107_CS: Transactions with fixed cost, energy or time - CS specifies time
+limit
+Test case name Transactions with fixed cost, energy or time - CS specifies time limit
+Test case Id TC_E_107_CS
+Use case Id(s) E16
+Requirement(s) E16.FR.01, E16.FR.05, E16.FR.06
+System under test Charging Station
+Description The EV Driver is able to specify an time limit.
+Purpose To verify whether the Charging Station uses the specified time limit to limit the transaction.
+Prerequisite(s) - Charging Station supports manual entering of maximum time amount.
+- TxCtrlr.SupportedLimits contains maxTime
+Before (Preparations)
+Configuration State:
+SampledDataTxUpdatedInterval is <Configured sampled Meter Values Updated interval>
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Enter time limit 3600 seconds for transaction
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+Manual Action: Change time limit to 20 seconds
+Note: Steps 3 and 4 may repeat while entering new limit
+5. The Charging Station sends a TransactionEventRequest
+6. The Test System responds with a TransactionEventResponse
+7. The Charging Station sends a TransactionEventRequest
+8. The Test System responds with a TransactionEventResponse
+Note: Steps 7 and 8 may repeat until time reached
+9. The Charging Station sends a TransactionEventRequest
+10. The Test System responds with a
+TransactionEventResponse
+Note: Step 9 should be triggered when 20 seconds have elapsed since start of transaction
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 305/1383 Part 6 - Test Cases

@@ -1,0 +1,69 @@
+Chapter 2. Types of Smart Charging
+This section is informative.
+2.1. Internal Load Balancing
+The simplest form of smart charging is the Load Balancing use case. This concerns internal load balancing within the Charging
+Station, where the Charging Station controls current/power per EVSE. The Charging Station is configured with a fixed limit, e.g. the
+maximum current of the connection to the grid. The Charging Station in this case is responsible for optimizing charging for all its
+EVSEs. When a charging station is not directly connected to the grid, the energy system of a client will be responsible for the power
+supply.
+This setup is typically used to set limits that are necessary due to known physical limits.
+Charging Station: CS10
+Charging Station: CS11
+Charging Station
+CS10
+EVSE
+1
+EVSE
+2
+Charging Station
+CS11
+EVSE
+2
+EVSE
+1
+CSMS
+CSMS sets known physical
+grid connections limits.
+EV1
+EV2
+OCPP charging profile
+OCPP charging profile
+Control Pilot signal
+or ISO 15118
+Control Pilot signal
+or ISO 15118
+Figure 93. Internal Load Balancing Smart Charging Topology
+2.2. Central Smart Charging
+The next level in smart charging is when the CSMS has the ability to influence the charging power or current of a specific EV, the
+total allowed energy consumption on an entire Charging Station or a group of Charging Stations. Central Smart Charging assumes
+that charge limits are controlled by the CSMS. This could for example be based on a grid connection, energy availability on the grid
+(e.g. capacity forecast from the grid operator (DSO)) or the wiring of a building. In this setup, the CSMS can optimize charging not
+only on one Charging Station, but one level "up": it can optimize more than one Charging Station that share a connection and thus
+calculate a more efficient schedule for charging.
+CSMS
+CSMS receives a capacity
+forecast from an external
+party (e.g. DSO).
+Charging Station
+CS10
+Charging Station
+CS11
+Charging Station
+CS12
+EV1
+EV2
+OCPP charging profile
+OCPP charging profile
+Control Pilot signal
+or ISO 15118
+Control Pilot signal
+or ISO 15118
+Figure 94. Central Smart Charging Topology
+Central Smart Charging can be done with a Control Pilot signal, albeit with some limitations, because an EV cannot communicate
+its charging needs via the Control Pilot signal. In analogy to the Local Smart Charging use case, an EVSE can execute a charging
+schedule by the Control Pilot signal.
+2.3. Local Smart Charging
+Local Smart Charging describes a use case in which smart charging enabled Charging Stations have charging limits controlled
+locally by a Local Controller, not the CSMS. This type of smart charging assumes the existence of a Local Controller, which is a
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 239/491 Part 2 - Specification

@@ -1,0 +1,48 @@
+Field Name Field Type Card. Description
+id identifierString[0..36] 1..1 Required. Id of setting
+gradient GradientType 1..1 Required. Gradient setting
+2.58. GradientType
+Class
+GradientType is used by: Common:GradientGetType , SetDERControlRequest
+Field Name Field Type Card. Description
+priority integer, 0 <= val 1..1 Required. Id of setting
+gradient decimal 1..1 Required. Default ramp rate in seconds (0 if not
+applicable)
+softGradient decimal 1..1 Required. Soft-start ramp rate in seconds (0 if not
+applicable)
+2.59. HysteresisType
+Class
+HysteresisType is used by: Common:DERCurveType
+Field Name Field Type Card. Description
+hysteresisHigh decimal 0..1 Optional. High value for return to normal operation after a
+grid event, in absolute value. This value adopts the same
+unit as defined by yUnit
+hysteresisLow decimal 0..1 Optional. Low value for return to normal operation after a
+grid event, in absolute value. This value adopts the same
+unit as defined by yUnit
+hysteresisDelay decimal 0..1 Optional. Delay in seconds, once grid parameter within
+HysteresisLow and HysteresisHigh, for the EV to return to
+normal operation after a grid event.
+hysteresisGradient decimal 0..1 Optional. Set default rate of change (ramp rate %/s) for
+the EV to return to normal operation after a grid event
+2.60. IdTokenInfoType
+Class
+Contains status information about an identifier. It is advised to not stop charging for a token that expires during charging, as
+ExpiryDate is only used for caching purposes. If ExpiryDate is not given, the status has no end date.
+IdTokenInfoType is used by: Common:AuthorizationData , AuthorizeResponse , TransactionEventResponse
+Field Name Field Type Card. Description
+status AuthorizationStatusEnumType 1..1 Required. Current status of the ID Token.
+cacheExpiryDateTime dateTime 0..1 Optional. Date and Time after which the token must be
+considered invalid.
+chargingPriority integer 0..1 Optional. Priority from a business point of view. Default
+priority is 0, The range is from -9 to 9. Higher values
+indicate a higher priority. The chargingPriority in
+TransactionEventResponse overrules this one.
+language1 string[0..8] 0..1 Optional. Preferred user interface language of identifier
+user. Contains a language code as defined in [RFC5646].
+language2 string[0..8] 0..1 Optional. Second preferred user interface language of
+identifier user. Don’t use when language1 is omitted, has
+to be different from language1. Contains a language
+code as defined in [RFC5646].
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 653/803 Part 2 - Specification

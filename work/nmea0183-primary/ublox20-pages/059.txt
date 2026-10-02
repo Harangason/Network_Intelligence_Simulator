@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x01 for this version)
+1 U1 type - - Message type, 1 for response
+2 U1[2] reserved0 - - Reserved
+4 U4 entryNumber - - Index of the ﬁrst log entry with time = given time,
+otherwise index of the most recent entry with time
+< given time. If 0xFFFFFFFF, no log entry found with
+time <= given time. The indexing of log entries is zero-
+based.
+3.12.4 UBX-LOG-INFO (0x21 0x08)
+3.12.4.1 Poll for log information
+Message UBX-LOG-INFO
+Poll for log information
+Type Poll request
+Comment Upon sending of this message, the receiver returns UBX-LOG-INFO as deﬁned below.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x21 0x08 0 see below CK_A CK_B
+Payload This message has no payload.
+3.12.4.2 Log information
+Message UBX-LOG-INFO
+Log information
+Type Output
+Comment This message is used to report information about the logging subsystem.
+Note:
+• The reported maximum log size will be smaller than that originally speciﬁed in LOG-CREATE due to
+logging and ﬁlestore implementation overheads.
+• Log entries are compressed in a variable length fashion, so it may be diﬃcult to predict log space usage
+with any precision.
+• There may be times when the receiver does not have an accurate time (e.g. if the week number is not
+yet known), in which case some entries will not have a timestamp. This may result in the oldest/newest
+entry time values not taking account of these entries.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x21 0x08 48 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x01 for this version)
+1 U1[3] reserved0 - - Reserved
+4 U4 filestore
+Capacity
+- bytes The capacity of the ﬁlestore
+8 U1[8] reserved1 - - Reserved
+16 U4 currentMaxLog
+Size
+- bytes The maximum size the current log is allowed to grow to
+20 U4 currentLogSize - bytes Approximate amount of space in log currently
+occupied
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 59 of 224
+C1-Public

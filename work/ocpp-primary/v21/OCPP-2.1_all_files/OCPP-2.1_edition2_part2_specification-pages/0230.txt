@@ -1,0 +1,125 @@
+E16.FR.05 During a transaction the
+transactionLimit is reached AND
+TxStopPoint does not contain
+"EnergyTransfer"
+Charging Station SHALL suspend energy transfer
+AND
+send a TransactionEventRequest with
+chargingState = SuspendedEVSE and
+triggerReason CostLimitReached,
+EnergyLimitReached, TimeLimitReached or
+SoCLimitReached, depending on the reached
+limit.
+The triggerReason for
+xxxLimitReached must
+be used, otherwise there
+is no way to know
+whether SuspendedEVSE
+is caused by smart
+charging or by a
+transaction limit.
+E16.FR.06 During a transaction the
+transactionLimit is reached AND
+TxStopPoint contains
+"EnergyTransfer"
+Charging Station SHALL end the transaction AND
+send a TransactionEventRequest with eventType =
+Ended and triggerReason CostLimitReached,
+EnergyLimitReached, TimeLimitReached or
+SoCLimitReached, depending on the reached
+limit.
+The triggerReason for
+xxxLimitReached must
+be used, otherwise there
+is no way to know that
+end of transaction is
+caused by a transaction
+limit.
+E16.FR.07 E16.FR.01 AND
+CSMS also wishes to set one or more
+of the same limits
+CSMS MAY respond with
+TransactionEventResponse with an updated
+transactionLimit .
+CSMS always has the
+last word and can
+overrule the limit from
+Charging Station.
+E16.FR.08 E16.FR.07 AND
+The limit(s) reported by Charging
+Station are lower or equal to the
+limit(s) that CSMS requires
+CSMS SHALL NOT respond with
+TransactionEventResponse with an updated
+transactionLimit.
+The Charging Station
+limit is already below the
+limit that CSMS requires.
+E16.FR.09 The timer for a time limit SHALL be relative to the
+start of the transaction
+(TransactionEventRequest(Started))
+Purpose of a time limit is
+usually to limit the time
+that a station is kept
+occupied. Depending on
+TxStartPoint the start of
+a transaction can be
+some time before energy
+transfer.
+E16.FR.10 When a transactionLimit is set at the
+time when the actual value already
+exceeds the limit
+Charging Station SHALL immediately suspend
+energy transfer or stop the transaction according to
+E16.FR.05 or E16.FR.06.
+Immediately act on
+exceeded limit. This also
+applies when a negative
+limit has been given.
+E16.FR.11 When a transactionLimit.maxCost is
+active AND
+( TariffCostCtrlr.Enabled[Tariff] = false
+OR
+when CSMS has not provided a
+(default) tariff plan )
+CSMS SHALL provide cost updates to Charging
+Station in TransactionEventResponse or
+CostUpdatedRequest.
+Central cost calculation
+is used.
+E16.FR.12 CSMS SHALL NOT send a transactionLimit in a
+TransactionEventResponse that is not reported by
+the Charging Station in configuration key
+TxCtrlr.SupportedLimits.
+E16.FR.13 E16.FR.01 AND
+the limit is not supported by the
+Charging Station
+Charging Station SHALL NOT return this element in
+the transactionInfo.transactionLimit field of the next
+TransactionEventRequest.
+This tells CSMS that the
+limit is not supported.
+E16.FR.14 When chargingState =
+SuspendedEVSE as a result of
+reaching a transactionLimit
+(E16.FR.06) AND
+The transactionLimit is increased
+(either by EV Driver or CSMS)
+Charging Station SHALL resume energy transfer.
+E16.FR.15 E16.FR.11 Charging Station SHALL use the cost update from
+CSMS to determine whether cost limit has been
+reached or exceeded.
+E16.FR.16 When a transactionLimit.maxCost is
+active AND
+( TariffCostCtrlr.Enabled[Tariff] = true
+AND
+CSMS has provided a (default) tariff
+plan )
+Charging Station SHALL NOT use the cost updates
+from CSMS in TransactionEventResponse or
+CostUpdatedRequest to determine the cost, but use
+local cost calculation via the tariff plan.
+Local cost calculation is
+used.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 217/803 Part 2 - Specification

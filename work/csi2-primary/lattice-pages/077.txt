@@ -1,0 +1,49 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  77 
+12. From Raspberry Pi 5 OS, invoke the command terminal window. 
+13. At the terminal, enter the following command: 
+rpicam-hello --mode 1920:1080 --framerate 47 --awbgains 1.1,1.1 --timeout <preview 
+duration in milliseconds> 
+Example: 
+rpicam-hello --mode 1920:1080 --framerate 47 --awbgains 1.1,1.1 --timeout 60000 
+ 
+The preview session terminates automatically when the session has reached the timeout value specified in the 
+command. 
+The framerate option is set to 47 to force the Raspberry Pi 5 camera software to run in the 1920x1080 mode. The 
+actual frame rate is based on the actual video transmission from the FPGA. 
+For more information on the Raspberry Pi 5 OS camera software, refer to the camera software documentation in the 
+Raspberry Pi web page. 
+You must terminate the existing preview session in the Raspberry Pi 5 OS invoked from step 9 before changing the SW1 
+DIP switch setting and performing system reset. Refer to the Setting Up the CertusPro-NX PCIe Vision Board section for 
+details on the SW1 DIP switch settings. After you have changed the SW1 setting and performed system reset, invoke a 
+new preview session per step 9. 
+To terminate the existing preview session, navigate to the command terminal in the Raspberry Pi 5 OS where the 
+current command from step 9 is invoked. On the keyboard connected to the Raspberry Pi 5 board, press the Ctrl+C keys 
+to terminate the current session. 
+7.9.6. Setting Up the Demo GUI Application 
+The demo GUI application is supported only for Windows® Platform. For Linux Platform, you must ensure switch 5 from 
+the Setting Up the CertusPro-NX PCIe Vision Board section is set to the default mode. 
+For default mode, the pattern subsystem is configured to run only in Color Bar Pattern mode and BGGR CFA format.  
+For Pattern Subsystem to TX mode, the pattern subsystem begins data transmission automatically after the ED system 
+is out of reset when default mode is selected. 
+For RX to TX Retransmit mode, the camera sensor begins data transmission automatically after the ED system is out of 
+reset regardless of the switch 5 setting from the SW1 DIP switch. 
+To set up the demo GUI application, follow these steps: 
+1. Launch the video_control_gui.exe located in the <Generated IP component 
+directory>/eval/mipi_vision_interopt/gui/ folder. 
+2. Under UART Configuration, click Refresh. 
+3. Select BaudRate: 115200. 
+4. Select ByteSize: 8. 
+5. Under UART Configuration, click Connect to establish the UART connection. The System Mode and Sensor Mode 
+parameters indicate the current DIP switch settings selected on the FPGA board. The Pattern Subsystem section is 
+greyed out if RX to TX Retransmit Mode is selected current DIP switch setting.  
+6. Optionally, select Logs to display additional log sections in the GUI application. The Sent Log panel displays the 
+command sent out from the GUI when a specific button is clicked. The Command Log panel displays the command 
+received and processed in the RISC-V firmware. The General Log panel displays additional information in the RISC-V 
+firmware. 
+7. Click Read to retrieve the status information from the MIPI CSI TX IP and MIPI CSI RX IP . 

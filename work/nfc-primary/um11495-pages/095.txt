@@ -1,0 +1,82 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Name and Rights Description Ext.
+Tag
+Len. Default
+Value
+Bit Mask Description
+b7 b6 b5 b4 b3 b2 b1 b0
+x Ven_Value
+x Ven_Pulld
+0 0 0 0 0 0 RFU
+Note, in order to force a certain VEN value to be used internally (no matter
+which state the external VEN pin level is in) the VEN_Pulld value HAS to
+be set. Only if VEN_Pulld is set and PVDD is switched off, the internal VEN
+state will be forced to what is specified in VEN_Value.
+TO_BEFORE_
+STDBY_ CFG
+RW in E²PROM
+Timeout used to wait after last DH/NFCEE communication before going into
+standby (from 50 ms to 65.536 s in steps of 1 ms).
+Applies only when the discovery is stopped and Standby mode is activated
+by SET_PWR_MODE_CMD.
+0xA0
+0x09
+2 0x03E8
+=1000 (1 s)
+PMU_CFG
+RW in E²PROM
+Configuration of the Power Management Unit (PMU)
+Byte 0: IRQ Enable
+Bit Mask Description
+b7 b6 b5 b4 b3 b2 b1 b0 1: Enable level IRQ
+0: Disable level IRQ
+x PVDD IRQ
+x Temp sensor IRQ
+0 0 0 0 0 0 RFU
+Byte1: RFU
+Byte 2 and Byte 3: Power and Clock Configuration per power mode
+configuration (Byte 2 for device ON, Byte 3 for Device OFF)
+Bit Mask Description
+b7 b6 b5 b4 b3 b2 b1 b0
+x DC/DC usage in Card mode:
+0b: DCDC bypassed
+1b: DCDC is used
+x DC/DC usage in Reader mode:
+0b: DCDC bypassed
+1b: DCDC is used
+x x Clock source:
+00b: Default configuration given by
+CLOCK_SEL_CFG (PLL or XTAL)
+11b: DLL RF Clock from external RF
+reader
+x x VUP input voltage:
+01b: CFG1
+10b: CFG2
+0xA0
+0x0E
+11 Byte 0:
+0x11
+Byte 1:
+0x01
+Byte 2:
+0xC2
+Byte 3:
+0xB2
+Byte 4:
+0x00
+Byte 5:
+0xDA
+Byte 6: 0x
+1E(600 µs)
+Byte 7:
+0x14
+Byte8: 0x00
+Byte 9:
+0xD0
+Byte 10:
+0x0C
+Table 98. Core configuration parameters...continued
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+95 / 147

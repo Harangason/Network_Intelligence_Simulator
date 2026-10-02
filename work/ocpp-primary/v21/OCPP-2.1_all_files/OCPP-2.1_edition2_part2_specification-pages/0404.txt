@@ -1,0 +1,103 @@
+ID Precondition Requirements Note
+K18.FR.05 K18.FR.02 If the CSMS is able to provide a charging schedule;
+but needs processing time, it SHALL indicate this
+by setting the status field in the
+NotifyEVChargingNeedsResponse to Processing.
+The Charging Station does not
+have to wait for the
+SetChargingProfileRequest.
+CSMS will send it later and
+trigger a renegotiation as per
+use case K16.
+K18.FR.06 The NotifyEVChargingNeedsRequest SHALL
+contain V2XChargingParametersType instead of
+ACChargingParametersType or
+DCChargingParametersType
+ISO 15118-20 charging
+parameters are contained in
+V2XChargingParametersType.
+K18.FR.07 K18.FR.01 AND
+( K18.FR.03 OR K18.FR.05 )
+The CSMS SHALL send a
+SetChargingProfileRequest with
+chargingProfilePurpose = TxProfile and a
+transactionId and at most three chargingSchedule
+elements with one or more
+chargingSchedulePeriods (at most
+SmartChargingCtrlr.PeriodsPerSchedule
+periods), and optionally an absolutePriceSchedule
+or priceLevelSchedule element, that each contain no
+more entries than specified by maxScheduleTuples
+in NotifyEVChargingNeedsRequest.
+The Charging Station will
+calculate the composite
+schedule(s) for the EVSE
+(taking into account a
+ChargingStationMaxProfi
+le or
+ChargingStationExternal
+Constraints if present) and
+will convert that to the
+ScheduleTupleType format for
+ISO 15118-20.
+Maximum number of entries is
+determined by
+MaximumSupportedPoints
+from ScheduleExchangeReq
+message.
+K18.FR.08 K18.FR.01 The CSMS SHOULD send a
+SetChargingProfileRequest to the Charging Station
+within 60 seconds.
+This is to satisfy the ISO 15118-
+20 ScheduleExchangeReq
+timeout. See also K18.FR.20
+K18.FR.09 K18.FR.20
+AND
+EV returns the Id of the selected
+charging schedule and an
+EVPowerProfile in
+PowerDeliveryReq
+Charging Station SHALL verify that provided
+charging profile is within boundaries of the selected
+ChargingSchedule from CSMS.
+K18.FR.10 K18.FR.09 Charging Station SHALL send the EVPowerProfile
+from EV as a chargingSchedule in a
+NotifyEVChargingScheduleRequest message to
+CSMS and set the field selectedChargingScheduleId
+to the Id of the charging schedule selected by EV.
+K18.FR.11 K18.FR.10
+AND
+EV charging profile is within
+limits of CSMS
+ChargingSchedule
+CSMS responds with
+NotifyEVChargingScheduleResponse with status
+Accepted to Charging Station.
+Note: Already checked by
+Charging Station, but CSMS
+does its own check.
+K18.FR.12 K18.FR.10
+AND
+chargingSchedule in
+NotifyEVChargingScheduleReq
+uest is NOT within limits of
+CSMS ChargingSchedule
+CSMS responds with
+NotifyEVChargingScheduleResponse with status
+Rejected to Charging Station.
+K18.FR.13 K18.FR.12 CSMS starts new renegotiation as per use case
+K16.
+K18.FR.14 K18.FR.11 The Charging Station SHOULD take the schedule
+from the NotifyEVChargingScheduleRequest into
+account when calculating the actual composite
+schedule.
+K18.FR.15 K18.FR.03
+AND
+( K18.FR.04 OR Charging
+Station is offline )
+The Charging Station SHALL use the
+TxDefaultProfile (if present) and generate a
+charging schedule within the limits of its composite
+schedule.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 391/803 Part 2 - Specification

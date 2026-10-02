@@ -1,0 +1,56 @@
+Table 7-7. Transmission Channel Requirements for STP / STQ Cable Applications (continued)
+PARAMETER MIN TYP MAX UNIT
+RL Return Loss, SDD11
+½ fBC < f < 0.01 GHz –20 dB
+0.01 GHz < f < 0.5 GHz (f in 
+GHz) –20 + 20(f) dB
+0.5 GHz < f < fFC –10 dB
+IL Insertion Loss, SDD12
+f = 1 MHz –1.1 dB
+f = 5 MHz –1.4 dB
+f = 10 MHz –1.6 dB
+f = 50 MHz –2.7 dB
+f = 100 MHz –3.4 dB
+f = 0.5 GHz –7.8 dB
+f = 1 GHz –12.0 dB
+f = 2.1 GHz –19.6 dB
+IL/
+FEXT Insertion Loss to Far End Crosstalk Ratio f < 2.1 GHz -20 dB
+NEXT Maximum Near End Crosstalk f < 200 MHz -30 dB
+7.4.7.3 Adaptive Equalizer Algorithm
+The AEQ process steps through the allowed equalizer control values to find a value that allows the Clock Data 
+Recovery (CDR) circuit to keep a valid lock condition. The circuit waits for a programmed re-lock time period 
+for each EQ setting, then the circuit checks the results for a valid lock. If a valid lock is detected, the circuit will 
+stop at the current EQ setting and maintain a constant value as long as the lock state persists. If the deserializer 
+loses the lock, the adaptive equalizer will resume the LOCK algorithm and the EQ setting is incremented to 
+the next valid state. When the lock is lost, the circuit will search the EQ settings to find another valid setting to 
+reacquire the serial data stream sent by the serializer that remains locked.
+7.4.7.4 AEQ Settings
+7.4.7.4.1 AEQ Start-Up and Initialization
+The AEQ circuit can be restarted at any time by setting the AEQ_RESTART bit in the AEQ_CTL2 register 
+0xD2. When the deserializer is powered on, the AEQ is continually searching through the EQ settings and 
+could be at any setting when the serializer supplies a signal. If the Rx Port CDR locks to the signal, it may 
+be acceptable for low bit errors, but it may not optimized or overequalized. When connected to a compatible 
+serializer ( DS90UB953-Q1, DS90UB933-Q1 or DS90UB913A-Q1), the DS90UB960-Q1 will restart the AEQ 
+adaption by default after the device achieves the first positive lock indication to supply a more consistent start-up 
+from known conditions.
+With this feature disabled, the AEQ may lock at a relatively random EQ setting based on when the FPD-Link 
+III input signal is initially present. Alternatively, AEQ_RESTART or DIGITAL_RESET0 can be applied once the 
+compatible serializer input signal frequency is stable to restart adaption from the minimum EQ gain value. These 
+techniques allow for a more consistent initial EQ setting following adaption.
+7.4.7.4.2 AEQ Range
+The AEQ circuit can be programmed with minimum and maximum settings used during the EQ adaption. 
+Using the full AEQ range provides the most flexible solution, if the channel conditions are known however, 
+an improved deserializer lock time can be achieved by narrowing the search window for allowable EQ gain 
+settings. For example, in a system use case with a longer cable and multiple interconnects creating higher 
+channel attenuation, the AEQ would not adapt to the minimum EQ gain settings. Likewise, in a system use 
+case with a short cable and low channel attenuation, the AEQ would not generally adapt to the highest EQ 
+gain settings. The AEQ range is determined by the AEQ_MIN_MAX register 0xD5 where AEQ_MAX sets the 
+maximum value of EQ gain. The ADAPTIVE_EQ_FLOOR_VALUE determines the starting value for EQ gain 
+adaption. To enable the minimum AEQ limit, the SET_AEQ_FLOOR bit in the AEQ_CTL2 register 0xD2[2] must 
+also be set. An AEQ range (AEQ_MAX - AEQ_FLOOR) to allow a variation around the nominal setting of –2/+4 
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 33
+Product Folder Links: DS90UB960-Q1

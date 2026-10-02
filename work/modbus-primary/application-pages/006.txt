@@ -1,0 +1,43 @@
+MODBUS Application Protocol Specification V1.1b3 Modbus 
+April 26, 20 12 http://www.modbus.org  6/50 
+4.3 MODBUS Data model 
+MODBUS bases its data model on a series of tables that have distinguishing characteristics. 
+The four primary tables are: 
+Primary tables  Object type  Type of 
+access
+Comments  
+ Discretes Input  Single bit  Read -Only  This type of data can be provided by an I/O system.  
+Coils  Single bit  Read -Write  This type of data can be alterable by an application 
+program.  
+Input Registers  16-bit word Read -Only  This type of data can be provided by an I/O system  
+Holding Registers  16-bit word Read -Write  This type of data can be alterable by an application 
+program.  
+The distinctions between inputs and outputs, and between bit-addressable and word-
+addressable data items, do not imply any application behavior. It is perfectly acceptable, and 
+very common, to regard all four tables as overlaying one another, if this is the most natural 
+interpretation on the target machine in question. 
+For each of the primary tables, the protocol allows individual selection of 65536 data  items, 
+and the operations of read or write of those items are designed to span multiple consecutive 
+data items up to a data size limit which is dependent on the transaction function code.  
+It’s obvious that all the data handled via MODBUS (bits, registers)  must be located in device 
+application memory. But physical address in memory should not be confused with data 
+reference. The only requirement is to link data reference with physical address.  
+MODBUS logical reference numbers, which are used in MODBUS functions, are unsigned 
+integer indices starting at zero. 
+ Implementation examples of MODBUS model
+The examples below show two ways of organizing the data in device. There are different
+organizations possible, but not all are described in this document. Each de vice can have its
+own organization of the data according to its application
+Example 1 : Device having 4 separate blocks 
+The example below shows data organization in a device having digital and analog, inputs and 
+outputs. Each block is separate because data from different blocks have no correlation. Each 
+block is thus accessible with different MODBUS functions. 
+Input Discrete
+MODBUS access
+Device application memory
+MODBUS SERVER DEVICE
+MODBUS RequestCoils
+Input Registers
+Holding
+Registers
+Figure 6 MODBUS Data Model with separate block 

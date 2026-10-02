@@ -1,0 +1,35 @@
+• Length and MsgType: see Section 5.2.
+• ClientId: contains the client id; this ﬁeld is optional and is included by a “sleeping” client when it goes
+to the “awake” state and is waiting for messages sent by the server/gateway, see Section 6.14 for further
+details.
+5.4.20 PINGRESP
+Length MsgType
+(octet 0) (1)
+Table 23: PINGRESP Message
+As with MQTT, a PINGRESP message is the response to a PINGREQ message and means ”yes I am alive”.
+Keep Alive messages ﬂow in either direction, sent either by a connected client or the gateway. Its format is
+illustrated in Table 23: it has only a header and no variable part.
+Moreover, a PINGRESP message is sent by a gateway to inform a sleeping client that it has no more buffered
+messages for that client, see Section 6.14 for further details.
+5.4.21 DISCONNECT
+Length MsgType Duration (optional)
+(octet 0) (1) (2-3)
+Table 24: DISCONNECT Message
+The format of the DISCONNECT message is illustrated in Table 24:
+• Length and MsgType: see Section 5.2.
+• Duration: contains the value of the sleep timer; this ﬁeld is optional and is included by a “sleeping” client
+that wants to go the “asleep” state, see Section 6.14 for further details.
+As with MQTT, the DISCONNECT message is sent by a client to indicate that it wants to close the connection.
+The gateway will acknowledge the receipt of that message by returning a DISCONNECT to the client. A server or
+gateway may also sends a DISCONNECT to a client, e.g. in case a gateway, due to an error, cannot map a received
+message to a client. Upon receiving such a DISCONNECT message, a client should try to setup the connection
+again by sending a CONNECT message to the gateway or server. In all these cases the DISCONNECT message
+does not contain the Duration ﬁeld.
+A DISCONNECT message with a Duration ﬁeld is sent by a client when it wants to go to the “asleep” state.
+The receipt of this message is also acknowledged by the gateway by means of a DISCONNECT message (without
+a duration ﬁeld).
+5.4.22 WILLTOPICUPD
+Length MsgType Flags WillTopic
+(octet 0) (1) (2) (3:n)
+Table 25: WILLTOPICUPD Message
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 17

@@ -1,0 +1,36 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 13
+1.4  MOST NetServices
+The division of services between the OS81050 INIC and the EHC in MOST applications is illustrated in
+Figure 1-3. To accelerate development of MOST applications that use INIC, SMSC offers the MOST
+NetServices API, which provides a seamless software interface between INIC and the EHC. A software
+library is available to provide all services that are relevant for:
+/square6 exchanging application data on the MOST Network,
+/square6 managing hardware port data connections (e.g. sockets),
+/square6 managing high-level system tasks, and
+/square6 using control messages to access INIC for specific operations.
+The MOST NetServices code incorporated into the EHC is divided into two distinct components:
+Basic Services (Layer I) and Applications Socket (Layer II).
+The Basic Services component provides the facilities that enable direct communication with INIC, including:
+a low-level driver for message exchange, message management services, and data wrappers. When
+transmitting data from the EHC to INIC, the wrapper modules pass data to the message management ser-
+vices. Formatted messages are then sent by the low-level driver across the interface between the EHC
+and INIC. When receiving data from INIC, the wrappers reformat the data for compatibility with the MOST
+NetServices code that resides on the EHC.
+The Applications Socket component resides on top of Basic Services and provides the FBlock NBEHC services
+required to implement the full FBlock NetBlock on the node. This component also contains a command
+interpreter, which provides a simple API for developing application FBlocks (e.g. FBlock AudioAmp).
+MOST NetServices code is modular, allowing it to be customized for a particular application. Implemented
+in ANSI C, the MOST NetServices API can be adapted for individual requirements through configuration
+files.
+With respect to the ISO communications model (shown in Figure 1-1):
+/square6 External components (e.g. FOX and FOR) connect the OS81050 and the MOST Network, supporting 
+the Physical Layer.
+/square6 OS81050 supports the Data Link Layer up to a portion of the Session Layer.
+/square6 The EHC must provide the remaining portion of the Session Layer, the Presentation Layer, and the 
+Application Layer. When the MOST NetServices code is integrated:
+/square6 the Basic Services component provides the remaining portion of the Session Layer, and
+/square6 the Application Socket component provides the Presentation Layer and a portion of the Application Layer.
+The OS8105x/6x INIC API User’s Manual [2] defines the FBlocks (and all associated functions) that are sup-
+ported by the OS81050.

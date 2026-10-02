@@ -1,0 +1,52 @@
+TC_E_108_CS: Transactions with fixed cost, energy or time - CS calculates costs
+and specifies limit
+Test case name Transactions with fixed cost, energy or time - CS calculates costs and specifies limit
+Test case Id TC_E_108_CS
+Use case Id(s) E16
+Requirement(s) E16.FR.03, E16.FR.05, E16.FR.06
+System under test Charging Station
+Description CS will set a limit the transaction for the specified cost. CS will use local cost calculation.
+Purpose To verify whether the Charging Station correctly uses local cost calculation.
+Prerequisite(s) - Charging Station supports local cost calculation.
+- Charging Station supports manual entering of maximum cost.
+- TxCtrlr.SupportedLimits contains maxCost
+Before (Preparations)
+Configuration State:
+TariffCostCtrlr.Enabled[Tariff] is true
+TariffCostCtrlr.Enabled[RunningCost] is true
+TariffCostCtrlr.Interval[Cost] is 60
+SampledDataCtrlr.TxUpdatedInterval is 0
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.chargingTime.prices[0].priceMinute 1.00
+tariff.chargingTime.taxRates[0].type "No Tax"
+tariff.chargingTime.taxRates[0].tax 0.00
+tariff.idleTime.prices[0].priceMinute 1.00
+tariff.idleTime.taxRates[0].type "No Tax"
+tariff.idleTime.taxRates[0].tax 0.00
+3. Execute Reusable State EnergyTransferStarted
+4. The Charging Station sends a TransactionEventRequest
+5. The Test System responds with a TransactionEventResponse
+Manual Action: Enter cost limit 2.00 for transaction
+Note: Step 4 and 5 may be repeated while entering limit
+6. The Charging Station sends a TransactionEventRequest
+7. The Test System responds with a TransactionEventResponse
+8. The Charging Station sends a TransactionEventRequest
+9. The Test System responds with a TransactionEventResponse
+Note: Step 8 and 9 will be repeated until limit reached
+10. The Charging Station sends a TransactionEventRequest
+11. The Test System responds with a
+TransactionEventResponse
+Note: Step 10 should trigger automatically after 2 minutes have been elapsed since start of transaction
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 307/1383 Part 6 - Test Cases

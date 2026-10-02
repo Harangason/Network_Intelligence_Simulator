@@ -1,0 +1,54 @@
+Chapter 3. Device Model: Addressing Components and Variables
+The Device Model refers to a generalized mechanism within OCPP to enable any model of Charging Station to report how it is build
+up, so it can be managed from any CSMS. To manage a Charging Station with the Device Model (i.e. "to manage a device") a
+number of messages and use cases is defined to configure and monitor a Charging Station in detail, without defining the structure
+of the Charging Station in advance. To be able do do this, OCPP provides a generalized mechanism to allow the exchange of a wide
+range of information about Charging Station. This version of the Device Model has the 3-tier model (Charging Station, EVSE,
+Connector) as its starting point, which means that any description created with the Device Model follows these three tiers. The
+remainder of this chapter describes how the data (and associated meta-data) looks like that can be exchanged between a Charging
+Station and a CSMS. The use cases and messages that are used to manage a device are not described here, but in Part 2 of the
+specification. This chapter only focuses on the data model.
+3.1. Components
+In OCPP 2.1 , a Charging Station is modelled as a set of "Components", typically representing physical devices (including any
+external equipment to which it is connected for data gathering and/or control), logical functionality, or logical data entities.
+Components of different types are primarily identified by a ComponentName, that is either the name of a standardized component
+(see OCPP part 2c), or a custom/non-standardized component name, for new, pre-standardized equipment, vendor specific
+extensions, etc.
+ChargingStation (TopLevel), EVSE, and Connector represent the three major "tiers" of a Charging Station, and constitute an implicit
+"location-based" addressing scheme that is widely used in many OCPP data structures. Each "tier" has a component of the same
+name, which represents the tier.
+For example, EVSE 1 on a Charging Station is represented by the component named "EVSE" (no instance name) with "evseId = 1". In
+the same manner, Connector 1 on EVSE 1 is represented by the component named "Connector" (no instance name) with "evseId = 1,
+connectorId = 1".
+By default, all components are located at the ChargingStation tier, but individual instances of any component can be associated with
+a specific EVSE, or a specific Connector (on a specific EVSE) by including EVSE or EVSE and Connector identification numbers as
+part of a component addressing reference.
+Additionally, there can be more than one instance of a component (in the functional dimension), representing multi-occurrence
+physical or logical components (e.g. power converter modules, fan banks, resident firmware images, etc.).
+Each distinct component instance is uniquely identified by an (optional) componentInstance addressing key. It is allowed for a
+component to exist without an instance and at the same time also exist with one of more instances. When no componentInstance is
+provided, then the component without an instance is referenced.
+Components do not in themselves hold data: all externally accessible data associated with each component instance is
+represented by a set of variables that can be read, set, and/or monitored for changes. The relationship of a Component with one or
+more Variables is illustrated in below.
+ComponentType
+Name
+Instance [0..1]
+VariableType
+Name
+Instance [0..1]
+EVSEType
+Id
+ConnectorId [0..1]
+1
+0..1
+1
+*
+Figure 2. Component and variables
+The table below illustrates some common components (by their standardized component-names), and examples of the hierarchical
+location levels at which they typically occur for a basic home charger and a typical public Charging Station.
+Basic home charger example configuration
+ChargingStation tier EVSE tier Connector tier
+ChargingStation (itself, as a whole) EVSE (itself, as a whole) Connector (itself, as a whole)
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 5/22 Part 1 - Architecture & Topology

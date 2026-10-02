@@ -1,0 +1,41 @@
+TC_C_26_CS: Offline Authorization - Unknown Id
+Test case name Offline Authorization - Unknown Id
+Test case Id TC_C_26_CS
+Use case Id(s) C15, C13
+Requirement(s) C15.FR.02,C15.FR.06,C15.FR.08,C13.FR.04
+System under test Charging Station
+Description The Charging Station is allowed to allow starting a transaction for unknown idTokens when offline and
+configured to do so.
+Purpose To verify if the Charging Station is able to start a transaction while being offline for an unknown idToken,
+when it is configured to do so.
+Prerequisite(s) - OfflineTxForUnknownIdEnabled is implemented.
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+LocalAuthListEnabled is true (If implemented)
+LocalPreAuthorize is true (If implemented)
+OfflineTxForUnknownIdEnabled is true
+LocalAuthorizeOffline is true
+MaxEnergyOnInvalidId is 0 (If implemented)
+StopTxOnInvalidId is false
+Memory State:
+N/a
+Reusable State(s):
+State is StartOfflineTransaction
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station notifies the CSMS about the current
+state of all connectors. 2. The Test System responds accordingly.
+3. The Charging Stations sends a TransactionEventRequest
+Note(s):
+- The Charging Station will empty its Transaction message queue.
+This will contain one or more TransactionEventRequest messages
+4. The Test System responds with a TransactionEventResponse
+Note(s):
+- The Test System will respond to the TransactionEventRequest
+containing the idToken, with idtokenInfo.status Invalid
+5. Execute Reusable State StopAuthorized
+6. Execute Reusable State EVConnectedPostSession
+7. Execute Reusable State EVDisconnected
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 150/914 Part 6 - Test Cases

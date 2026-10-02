@@ -1,0 +1,29 @@
+New text A Central System MAY deduce the start and end of an Energy Transfer Period from: the MeterValues that are sent during the Transaction,
+the status notifications: Charging, SuspendedEV and/or SuspendedEVSE. etc. Central System implementations need to take into account
+factors such as: Some EVs don’t go to state SuspendedEV: they might continue to trickle charge. Some Charge Point don’t even have a
+electrical meter.
+3.7. Page 18, section 3.12.2: Add description of stacking without duration
+Added in errata sheet v3.0
+When using stacking for Smart Charging: a high stack level without a duration will cause lower profiles to be
+never executed.
+Add note at end of section 3.12.2
+New text NOTE: If you use Stacking without a duration, on the highest stack level, the Charge Point will never fall back to a lower stack level profile."
+3.8. Page 20, section 3.13.1: Effect of updating or deleting TxDefaultProfile during a
+transaction not defined
+Added in errata sheet v4.0
+It was not clear that a new TxDefaultProfile not only applies to running transactions with a TxDefaultProfile, but
+also to running transactions without a ChargingProfile. Furthermore, removing a TxDefaultProfile will cause
+running transactions to continue without a TxDefaultProfile.
+To clarify this best, two additional paragraphs are needed.
+Page Section Additional text
+20 3.13.1 When an new or updated TxDefaultProfile is received and a transaction is ongoing that is not using a ChargingProfile or
+using the current TxDefaultProfile, the transaction SHALL continue, but switch to using the new or updated TxDefaultProfile.
+When TxDefaultProfile is removed, then running transactions, that started with that profile, SHALL continue without a
+TxDefaultProfile.
+54 5.16.3 When the ongoing transaction is not using a ChargingProfile or using the TxDefaultProfile, and a new or updated
+TxDefaultProfile is received, the transaction SHALL continue, but switch to using the new or updated TxDefaultProfile.
+3.9. Page 29, section: 3.1.6: Missing advice to send meter register value if available
+Added in errata sheet v4.0
+When a Charge Point has a meter which allows the value of Meter Register (counter) to be read. It is seen as best
+to send this value instead of start every transaction at 0.
+4

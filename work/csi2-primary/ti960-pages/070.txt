@@ -1,0 +1,63 @@
+• PGEN_BAR_SIZE – Color bar size in bytes. Compute based on datatype and line length in bytes (see details 
+below)
+7.5.12.3.1 Determining Color Bar Size
+The color bar pattern should be programmed in units of a block or word size dependent on the datatype of the 
+video being sent. The sizes are defined in the MIPI CSI-2 specification. For example, RGB888 requires a 3-byte 
+block size which is the same as the pixel size. RAW10 requires a 5-byte block size which is equal to 4 pixels. 
+RAW12 requires a 3-byte block size which is equal to 2 pixels.
+When programming the Pattern Generator, software should compute the required bar size in bytes based on 
+the line size and the number of bars. For the standard eight color bar pattern, that would require the following 
+algorithm:
+• Select the desired data type, and a valid length for that data type (in pixels).
+• Convert pixels/line to blocks/line (by dividing by the number of pixels/block, as defined in the data type 
+specification).
+• Divide the blocks/line result by the number of color bars (8), giving blocks/bar
+• Round result down to the nearest integer
+• Convert blocks/bar to bytes/bar and program that value into the PGEN_BAR_SIZE register
+As an alternative, the blocks/line can be computed by converting pixels/line to bytes/line and divide by bytes/
+block.
+7.5.12.4 Code Example for Pattern Generator
+Follow the example here to configure a 1280x720 pattern with 30 fps rate and fixed color bar. The user can also 
+use the Analog LaunchPad GUI to configure the PatGen register settings based on their desired parameters.
+#Patgen Fixed Colorbar 1280x720p30
+WriteI2C(0x33,0x01) # CSI0 enable
+WriteI2C(0xB0,0x00) # Indirect Pattern Gen Registers
+WriteI2C(0xB1,0x01) # PGEN_CTL
+WriteI2C(0xB2,0x01)
+WriteI2C(0xB1,0x02) # PGEN_CFG
+WriteI2C(0xB2,0x33)
+WriteI2C(0xB1,0x03) # PGEN_CSI_DI
+WriteI2C(0xB2,0x24)
+WriteI2C(0xB1,0x04) # PGEN_LINE_SIZE1
+WriteI2C(0xB2,0x0F)
+WriteI2C(0xB1,0x05) # PGEN_LINE_SIZE0 
+WriteI2C(0xB2,0x00)
+WriteI2C(0xB1,0x06) # PGEN_BAR_SIZE1
+WriteI2C(0xB2,0x01)
+WriteI2C(0xB1,0x07) # PGEN_BAR_SIZE0
+WriteI2C(0xB2,0xE0)
+WriteI2C(0xB1,0x08) # PGEN_ACT_LPF1
+WriteI2C(0xB2,0x02)
+WriteI2C(0xB1,0x09) # PGEN_ACT_LPF0
+WriteI2C(0xB2,0xD0)
+WriteI2C(0xB1,0x0A) # PGEN_TOT_LPF1
+WriteI2C(0xB2,0x04)
+WriteI2C(0xB1,0x0B) # PGEN_TOT_LPF0
+WriteI2C(0xB2,0x1A)
+WriteI2C(0xB1,0x0C) # PGEN_LINE_PD1
+WriteI2C(0xB2,0x0C)
+WriteI2C(0xB1,0x0D) # PGEN_LINE_PD0
+WriteI2C(0xB2,0x67)
+WriteI2C(0xB1,0x0E) # PGEN_VBP
+WriteI2C(0xB2,0x21)
+WriteI2C(0xB1,0x0F) # PGEN_VFP
+WriteI2C(0xB2,0x0A)
+7.5.13 FPD-Link BIST Mode
+An optional At-Speed Built-In Self Test (BIST) feature supports testing of the high-speed serial link and the back 
+channel without external data connections. The BIST mode is enabled by programming the BIST configuration 
+register. This is useful in the prototype stage, equipment production, in-system test, and system diagnostics.
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+70 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

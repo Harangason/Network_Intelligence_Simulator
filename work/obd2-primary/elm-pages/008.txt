@@ -1,0 +1,96 @@
+8 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Communicating with the ELM327
+The ELM327 expects to communicate with a PC
+through an RS232 serial connection. Although modern
+computers do not usually provide a serial connection
+such as this, there are several ways in which a ‘virtual
+serial port’ can be created. The most common devices
+are USB to RS232 adapters, but there are several
+others such as PC cards, ethernet devices, or
+Bluetooth to serial adapters.
+No matter how you physically connect to the
+ELM327, you will need a way to send and receive
+data. The simplest method is to use one of the many
+‘terminal’ programs that are available (HyperTerminal,
+ZTerm, etc.), to allow typing the characters directly
+from your keyboard.
+To use a terminal program, you will need to adjust
+several settings. First, ensure that your software is set
+to use the proper ‘COM’ port, and that you have
+chosen the proper data rate - this will be either 9600
+baud (if pin 6 = 0V at power up), or 38400 baud (if
+PP 0C has not been changed). If you select the wrong
+‘COM’ port, you will not be able to send or receive any
+data. If you select the wrong data rate, the information
+that you send and receive will be all garbled, and
+unreadable by you or the ELM327. Don’t forget to also
+set your connection for 8 data bits, no parity bits, and 1
+stop bit, and to set it for the proper ‘line end’ mode. All
+of the responses from the ELM327 are terminated with
+a single carriage return character and, optionally, a
+linefeed character (depending on your settings).
+Properly connected and powered, the ELM327 will
+energize the four LED outputs in sequence (as a lamp
+test) and will then send the message:
+ELM327 v2.2
+>
+In addition to identifying the version of this IC,
+receiving this string is a good way to confirm that the
+computer connections and terminal software settings
+are correct (however, at this point no communications
+have taken place with the vehicle, so the state of that
+connection is still unknown).
+The ‘>’ character that is shown on the second line
+is the ELM327’s prompt character. It indicates that the
+device is in the idle state, ready to receive characters
+on the RS232 port. If you did not see the identification
+string, you might try resetting the IC again with the AT
+Z (reset) command. Simply type the letters A T and Z
+(spaces are optional), then press the return key:
+>AT Z
+That should cause the leds to flash again, and the
+identification string to be printed. If you see strange
+looking characters, then check your baud rate - you
+have likely set it incorrectly.
+Characters sent from the computer can either be
+intended for the ELM327’s internal use, or for
+reformatting and passing on to the vehicle. The
+ELM327 can quickly determine where the received
+characters are to be directed by monitoring the
+contents of the message. Commands that are
+intended for the ELM327’s internal use will begin with
+the characters ‘AT’, while OBD commands for the
+vehicle are only allowed to contain the ASCII codes for
+hexadecimal digits (0 to 9 and A to F).
+Whether it is an ‘AT’ type internal command or a
+hex string for the OBD bus, all messages to the
+ELM327 must be terminated with a carriage return
+character (hex ‘0D’) before it will be acted upon. The
+one exception is when an incomplete string is sent and
+no carriage return appears. In this case, an internal
+timer will automatically abort the incomplete message
+after about 20 seconds, and the ELM327 will print a
+single question mark (‘?’) to show that the input was
+not  understood (and was not acted upon).
+Messages that are not understood by the ELM327
+(syntax errors) will always be signalled by a single
+Overview
+The following describes how to use the ELM327 to
+obtain information from your vehicle.
+We begin by discussing just how to ‘talk’ to the IC
+using a PC, then explain how to change options using
+‘AT’ commands, and finally we show how to use the
+ELM327 to obtain trouble codes (and reset them). For
+the more advanced experimenters, there are also
+sections on how to use some of the programmable
+features of this integrated circuit as well.
+Using the ELM327 is not as daunting as it first
+seems. Many users will never need to issue an ‘AT’
+command, adjust timeouts, or change the headers. For
+most, all that is required is a PC or smart device with a
+terminal program (such as HyperTerminal or ZTerm),
+and a little knowledge of OBD commands, which we
+will provide in the following sections…

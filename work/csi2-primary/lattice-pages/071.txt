@@ -1,0 +1,45 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  71 
+The video stream is transmitted out from the MIPI CSI TX IP through the PHY serial interface and displayed in the 
+Raspberry Pi 5 OS. 
+7.4.2. RISC-V Subsystem 
+The RISC-V MC CPU streams the application from the system memory and initializes all peripherals in the RISC -V 
+subsystem. After the initialization stage is complete, the RISC-V MC CPU application monitors for any incoming request 
+you send using the demo GUI application. 
+7.5. Clocking Scheme 
+Table 7.2. Clocking Scheme in the Example Design 
+Attribute Description 
+clk_125 125 MHz clock from an on-board oscillator to reference clock input of Sys PLL and reference clock 
+input of the MIPI subsystem 
+ref_clk_out 100 MHz system clock input to the I2C subsystem, and reference clock input to the I2C PLL. 
+sensor_clk_out 27 MHz clock input for the sensor LMMI driver and I2C controller in the I2C subsystem. 
+axis_vid_clk_out 150 MHz video clock input to the MIPI subsystem and pattern subsystem. 
+riscv_clk_out 50 MHz AXI-Lite clock input to the MIPI subsystem and RISC-V subsystem. 
+phy_ref_clk_out 60 MHz Soft D-PHY reference clock input for MIPI TX and RX IPs. 
+i2c_bridge_clk_out 8 MHz as the clock input for the I2C bridge component in the I2C subsystem. 
+pll_clkop 456 MHz PHY clock to the MIPI CSI TX IP in the MIPI subsystem. 
+pll_clkos 90-degree phase shift 456 MHz PHY clock to the MIPI CSI TX IP in the MIPI subsystem. 
+ 
+7.6. Reset Scheme 
+Table 7.3. Reset Scheme in the Example Design 
+Attribute Description 
+resetn_i Active low asynchronous reset input from the on-board push button. This input resets the entire 
+example design system. 
+sensor_rst_n_o Active low asynchronous reset output to the sensor camera. 
+i2c_rst_n_o Active low asynchronous reset output to the I2C subsystem. 
+ref_rst_n_o Active low asynchronous reset output to the MIPI subsystem. 
+axis_vid_rst_n_o Active low asynchronous reset output for the UVSI interface of the MIPI subsystem and pattern 
+subsystem. 
+sys_pll_lock PLL locked output from Sys PLL. 
+i2c_pll_lock PLL locked output from I2C PLL. 
+sensor_pll_lock PLL locked output from sensor PLL. 
+tx_pll_lock PLL locked output from TX PLL. 
+ 
+7.6.1. Reset Overview 
+The figure below shows the reset sequence of this example design system when you power up and program the FPGA 
+device. 

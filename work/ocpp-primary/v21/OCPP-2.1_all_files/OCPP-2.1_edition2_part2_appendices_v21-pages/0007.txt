@@ -1,0 +1,52 @@
+Chapter 3. Standardized Components
+This appendix provides a list of all standardized component names for OCPP 2.1 for controller components and for physical
+components. A summary table listing just all components without variables is provided at the end of this appendix in Summary List
+of Standardized Components.
+3.1. Controller Components
+This is the list of Standardized Controller Components for OCPP 2.1 and typical Variables that might be associated with them.
+IMPORTANT This list does not imply that these Components are required, nor does it imply that the listed Variables are
+required for a Component or no other Variables are allowed to be associated with a Component.
+3.1.1. AlignedDataCtrlr
+Description
+Logical Component responsible for configuration relating to the reporting of clock-aligned meter data.
+Variables Type Description
+Enabled boolean If this variable reports a value of true, Aligned Data is enabled.
+Available boolean If this variable reports a value of true, Aligned Data is supported.
+Interval integer Size (in seconds) of the clock-aligned data interval, intended to be transmitted in
+the MeterValuesRequest message.
+Measurands MemberList Clock-aligned measurand(s) to be included in MeterValuesRequest, every
+AlignedDataInterval seconds.
+SendDuringIdle boolean If set to true, the Charging Station SHALL NOT send clock aligned meter values
+when a transaction is ongoing.
+SignReadings boolean If set to true, the Charging Station SHALL include signed meter values in the
+TransactionEventRequest to the CSMS.
+TxEndedInterval integer Size (in seconds) of the clock-aligned data interval, intended to be transmitted in
+the TransactionEventRequest (eventType = Ended) message.
+TxEndedMeasurands MemberList Clock-aligned periodic measurand(s) to be included in the meterValues element
+of TransactionEventRequest (eventType = Ended) for every
+TxEndedAlignedDataInterval of the transaction.
+3.1.2. AuthCtrlr (Updated in v1.2)
+Description
+Logical Component responsible for configuration relating to the use of authorization for Charging Station use.
+Variables Type Description
+Enabled boolean If set to false, then no authorization is done before starting a transaction or when
+reading an idToken. If an idToken was provided, then it will be put in the idToken
+field of the TransactionEventRequest. If no idToken was provided, then idToken in
+TransactionEventRequest will be left empty and type is set to
+NoAuthorization.
+AdditionalInfoItemsPerMessag
+e
+integer Maximum number of AdditionalInfo items that can be sent in one message.
+AuthorizeRemoteStart boolean Whether a remote request to start a transaction in the form of
+RequestStartTransactionRequest message should be authorized beforehand like
+a local action to start a transaction.
+DisableRemoteAuthorization boolean When set to true this instructs the Charging Station to not issue any
+AuthorizationRequests, but only use Authorization Cache and Local Authorization
+List to determine validity of idTokens.
+LocalAuthorizeOffline boolean Whether the Charging Station, when Offline, will start a transaction for locally-
+authorized identifiers.
+LocalPreAuthorize boolean Whether the Charging Station, when online, will start a transaction for locally-
+authorized identifiers without waiting for or requesting an AuthorizeResponse
+from the CSMS.
+v2.1, 2025-12-03 Chapter 3. Standardized Components
+OCPP 2.1 - © Open Charge Alliance 2025 5/52 Part 2 - Appendices

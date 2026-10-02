@@ -1,0 +1,43 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+Parse the
+MBAP header
+Instantiate a
+MB Transaction
+MB Indication
+discarded
+MB Transaction
+refused
+MB Transaction
+accepted
+Parse The MB
+PDU
+[MBAP OK]
+[Transaction available]
+[OK]
+[No Transaction available]
+[Error on MB PDU]
+[Error on MBAP ]
+Figure 16: MODBUS PDU Checking activity diagram 
+The MODBUS PDU Checking function consists of first parsing the MBAP Header. The 
+Protocol Identifier field has to be checked :  
+ If it is  different from MODBUS protocol type, the indication is simply discarded.
+ If it is correct (= MODBUS protocol type; value 0x00), a MODBUS transaction is
+instantiated.
+The maximum number of MODBUS transactions th e server can instantiate is defined by 
+the "NumberMaxOfTransaction" parameter ( A system or a configuration parameter). 
+In case of no more transactions availabl e, the server builds a MODBUS exception 
+response (Exception code 6 : Server Busy). 
+If a MODBUS transaction is available, it's in itialized in order to memorize the following 
+information:  
+• The TCP c onnection identifier used to send the indication (given by the TCP
+Management)
+• The MODBUS Trans action ID (given in MBAP Header)
+• The Unit Identifier (given in MBAP Header)
+Then the MODBUS PDU is parsed.  The function code is first controlled :  
+ in case of invalidity a MODBUS exception re sponse is built (Exception code 1 : Invalid
+function). 
+ If the function code is accepted, the server initiates the "MODBUS Service
+proces
+sing" activity. 
+October 24, 2006 http://www.Modbus.org 29/46
+Modbus Organization  

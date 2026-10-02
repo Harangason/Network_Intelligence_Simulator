@@ -1,0 +1,35 @@
+ 
+© Ecma International 2024  13 
+ 
+ 
+Key 
+tADT active delay time, sense time between RF off Initiator/Target and Target/Initiator 
+ (768/fc ≤ tADT ≤ 2 559/fc) 
+tRFW RF waiting time. (512/fc) 
+n randomly generated number of time periods for tRFW (0 ≤ n ≤ 3) 
+tARFG active guard time between switching on RF field and start to send command 
+ (tARFG > 1 024/fc) 
+Figure 5 — Response RFCA sequence during activation 
+11.3 Passive communication mode 
+11.3.1 Initialisation and SDD for fc/128 
+Initialisation and SDD for fc/128 shall conform to ISO/IEC  14443-3:2018, Clause 6 with the coding of SAK as 
+specified in Table 2. 
+Table 2 — Coding of SAK 
+bit 8 bit 7 bit 6 bit 5 bit 4 bit 3 bit 2 bit 1 Meaning 
+x x x x x 1 x x UID not complete, see ISO/IEC 14443-3:2018, Table 9. 
+x x 1 x x 0 x x UID complete, see ISO/IEC 14443-3:2018, Table 9. 
+x x 0 x x 0 x x UID complete, see ISO/IEC 14443-3:2018, Table 9. 
+x 1 x x x 0 x x 
+UID complete, Target compliant with the transport 
+protocol specified in Clause 12. Attribute Request is 
+supported. 
+x 0 x x x 0 x x 
+UID complete, Target not compliant with the  
+transport protocol specified in Clause 12.  
+Attribute Request is not supported. 
+The uid0 shall be set to ‘08’. 
+If bit 3 is (1)b  the Initiator shall ignore any other bit of SAK. If bit 3 is (0)b the Initiator shall interpret bit  7 and 
+ignore the other bits. 
+When bit 3 is set to (1)b then the Target should set all other bits of SAK to (0)b.  
+See Annex B for combination of SAK use in the ISO/IEC 14443 series and this document. 
+NOTE If bit 6 is (1)b in SAK then device supports protocol as defined in ISO/IEC 14443-4. 

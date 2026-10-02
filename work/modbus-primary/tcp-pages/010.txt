@@ -1,0 +1,44 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+October 24, 2006 http://www.Modbus.org 10/46
+4.2 TCP CONNECTION MANAGEMENT 
+4.2.1 Connections management Module  
+4.2.1.1 General description 
+A MODBUS communication requires the establishment of a TCP connection between a 
+Client and a Server.  
+The establishment of the connection can be activated either explicitly by the User 
+Application module or automatically by the TCP connection management module.  
+In the first case an application-programming interface has to be provided in the user 
+application module to manage completely the connection. 
+This solution provides 
+flexibility for the application programmer but it  requires a good expertise on TCP/IP 
+mechanism. 
+In the second case the TCP connection management is completely hidden to the user 
+application that only sends and receives MODBUS messages. The TCP connection 
+management module is in charge to estab lish a new TCP connection when it is 
+required.  
+The definition of the number of TCP client and server connections is not on the scope of 
+this document (value n in this document).  Depending on the device 
+capacities the 
+number of TCP connections can be different. 
+Implementation Rules : 
+1) Without explicit user requirement, it is recommended to implement the automatic TCP
+connection management
+2) It is recommended to keep the TCP connection opened with a remote device and not
+to open and close  it for each MODBUS/TCP transaction,
+Remark: However the MODBUS client must be capable of accepting a close request
+from 
+the server and closing the connection. The connection can be reopened when
+required.
+3) It is recommended for a MODBUS Client to open a minimum of TCP connections with
+a remote MODBUS server (with the same IP  address). One connection per application
+could be a good choice.
+4) Several MODBUS transactions can be ac tivated simultaneously on the same TCP
+Connection.
+Remark: If this is done then the MODBUS tr ansaction identifier must be used to
+uniquely identify the matching requests and responses.
+5) In case of a bi-directional communication between two remote MODBUS entities (
+each of them is client and server), it is necessary to open separate connections for
+the client data flow and for the server data flow.
+6) A TCP frame must transport only one MODBUS ADU. It is advised against sending
+multiple MODBUS requests or responses on the same TCP PDU
+Modbus Organization  

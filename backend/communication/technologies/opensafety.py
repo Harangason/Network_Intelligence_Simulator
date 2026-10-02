@@ -1,0 +1,242 @@
+"""Versioned openSAFETY reference bounds, independent of its black channel."""
+COMMIT = '630495210c5aab1b39884b7b5c8feef62e95f245'
+BASE = 'https://raw.githubusercontent.com/rknall/openSAFETY/' + COMMIT + '/'
+INTRO = BASE + 'README.md'
+FRAME = BASE + 'src/eplssrc/SN/SFSint.h'
+SERIALIZER = BASE + 'src/eplssrc/SN/SFSser.c'
+DESERIALIZER = BASE + 'src/eplssrc/SN/SFSdeser.c'
+TYPES = BASE + 'src/eplssrc/SN/EPLStypes.h'
+CONFIG = BASE + 'src/eplssrc/contrib/EPLScfg.h'
+CRC = BASE + 'src/tools/oschecksum/include/oschecksum/crc.h'
+RX = BASE + 'src/eplssrc/SN/SPDOrxConsSm.c'
+TX = BASE + 'src/eplssrc/SN/SPDOapi.h'
+SYNC = BASE + 'src/eplssrc/SN/SPDOrxSyncConsSm.c'
+MAPPING = BASE + 'doc/software/structure_spdo.md'
+SOURCES = {
+    INTRO: 'Archived B&R/IXXAT reference distribution1.4, pinned commit. README demonstration1.4.0; version.txt says1.4. No current complete licensed EPSG/IEC specification or NIS certification claimed.',
+    FRAME: 'SFS frame constants: two headers4/5, payload0..254, short0..8 CRC1 versus long9..254 CRC2, domain1..1023. Read pinned reference.',
+    SERIALIZER: 'Valid six-bit service IDs, serialization and slim-SSDO layout distinct ordinary duplicated payload.',
+    DESERIALIZER: 'Length/header/CRC/subframe validation. SlimSSDO58/59 omits second payload and selects separate long checksum routine.',
+    TYPES: 'Address/TR/UDID/timeout-width/SOD constants; UInt32 timer modular comparison and UInt16 wire consecutive time.',
+    CONFIG: 'Configurable stack limits and demonstration settings; demoSSDO12, Rx/TxSPDO128 are not universal protocol or application defaults.',
+    CRC: 'Reference tools use CRC8 polynomial2F, ordinary CRC16BAAD, slimCRC16AC9A. Do not substitute Modbus, CAN or an older edition polynomial.',
+    RX: 'Actual time synchronization, propagation and SCT consumer checks; first frame after synchronization remains safe until timing validated.',
+    TX: 'Call frequency tied to smallest refresh/SCT, actual application supplied consecutive-time clock; no fixed milliseconds inferred.',
+    SYNC: 'Request tracking, synchronization and actual propagation bounds; request counter and configured unanswered-request count distinct.',
+    MAPPING: 'Pre-operational mapping changes and byte-based mapping; actual valid-connection status and application range checks.'}
+EDITION = 'BR_REFERENCE_1_4_PINNED'
+DECLARATIONS = []
+
+def d(key, kind, meaning, minimum=None, maximum=None, unit=None, options=None, source=FRAME, integer=False):
+    DECLARATIONS.append(dict(key='os_' + key, type=kind, description=meaning,
+        min=minimum, max=maximum, unit=unit, options=options, source=source,
+        source_revision=SOURCES[source], integer=integer))
+
+for key, meaning, options, source in [
+    ('edition', 'Actual reviewed pinned reference version, distinct a claim of full current IEC specification.', [EDITION], INTRO),
+    ('service', 'Actual safety management, process data, ordinary service data or slim service data.', ['SNMT', 'SPDO', 'SSDO', 'SLIM_SSDO'], SERIALIZER),
+    ('direction', 'Actual transmit or receive observation; no assumed controller equals consumer role.', ['TRANSMIT', 'RECEIVE'], TX),
+    ('node_role', 'Actual Safety Node, Configuration Manager or Domain Gateway.', ['SN', 'SCM', 'SDG'], INTRO),
+    ('configuration', 'Actual device configuration versus source demonstration or explicitly requested minimum supported configuration.', ['ACTUAL', 'REFERENCE_DEMO', 'MINIMUM_SUPPORTED'], CONFIG),
+    ('mapping_state', 'Actual node state when changing SOD mappings, not UI progress status.', ['INITIAL', 'PRE_OPERATIONAL', 'OPERATIONAL'], MAPPING),
+    ('outcome', 'Actual functional result separate frame validity or safety certification.', ['ACCEPTED', 'REJECTED', 'PENDING', 'UNKNOWN'], RX),
+]:
+    d(key, 'select', meaning, options=options, source=source)
+for key, meaning, source in [
+    ('bearer_id', 'Actual separately registered black-channel TechnologyProfile, not openSAFETY itself or always Ethernet.', INTRO),
+    ('bearer_source', 'Actual transport topology, framing, service/load/loss and integrity assumptions of black channel.', INTRO),
+    ('device_source', 'Actual stack/device revision, enabled services, configured limits and capabilities.', CONFIG),
+    ('schedule_source', 'Actual traffic, refresh/call frequency/SCT/guarding/synchronization/service bounds.', TX),
+    ('timer_source', 'Actual implementation clock tick and monotonic/wrap behavior, not assumed100ms CAN timer.', TYPES),
+    ('frame_source', 'Actual two-subframe observation including layout, normalized domain/UDID and checksum verification.', DESERIALIZER),
+    ('acceptance_source', 'Actual correlated data acceptance, freshness and application validity requirement.', RX),
+    ('assurance_source', 'Actual hazard/safety-case and certificate applicability evidence; a reference stack is not NIS certification.', INTRO),
+    ('udid_hex', 'Actual six-byte unique device identity, not invented from node number or automatically taken as Ethernet MAC.', TYPES),
+    ('scm_udid_hex', 'Actual configured six-byte Configuration Manager identity for domain/subframe processing.', TYPES),
+    ('mapping_source', 'Actual SOD entries/types/order/max-variable-length and application range-validation evidence.', MAPPING),
+]:
+    d(key, 'text', meaning, source=source)
+for key, meaning, minimum, maximum, unit, integer, source in [
+    ('domain', 'Actual Safety Domain Number, independent black-channel network identifier.', 1, 1023, None, True, FRAME),
+    ('address', 'Actual assigned safety address, independent CAN/IP address.', 1, 1023, None, True, TYPES),
+    ('scm_address', 'Actual Configuration Manager safety address.', 1, 1023, None, True, TYPES),
+    ('time_address', 'Actual ten-bit time request address; zero/not-used depends selected service.', 0, 1023, None, True, FRAME),
+    ('time_request', 'Actual six-bit time-request distinctive number, not a packet retry count.', 0, 63, None, True, TYPES),
+    ('frame_id', 'Actual six-bit service identifier, address high bits encoded separately.', 0, 63, None, True, SERIALIZER),
+    ('data_length', 'Actual openSAFETY LE payload length, excludes redundant copy/headers/checksums.', 0, 254, 'byte', True, FRAME),
+    ('crc_bytes', 'Actual checksum size per subframe, one for LE<=8 and two for LE>=9.', 1, 2, 'byte', True, FRAME),
+    ('crc_polynomial', 'Actual source-version-qualified generator, not a generic CRC16 or an older-edition value.', 0, 65535, None, True, CRC),
+    ('crc_initial', 'Actual reference calculation initial register, zero for these selected checksums.', 0, 65535, None, True, DESERIALIZER),
+    ('subframe1_bytes', 'Actual first subframe including four header bytes, payload and checksum.', 5, 260, 'byte', True, FRAME),
+    ('subframe2_bytes', 'Actual second subframe including five header bytes/checksum and ordinary redundant payload.', 6, 261, 'byte', True, FRAME),
+    ('frame_bytes', 'Actual whole safety frame; ordinary2*LE+11/13, slimLE+11/13; separate bearer.', 11, 521, 'byte', True, DESERIALIZER),
+    ('bearer_overhead_bytes', 'Actual encapsulation overhead on selected black channel, no universal Ethernet22/IP20.', 0, None, 'byte', True, INTRO),
+    ('wire_bytes', 'Actual carried safety frame plus chosen bearer overhead; no physical baud inferred.', 11, None, 'byte', True, INTRO),
+    ('bearer_limit_bytes', 'Actual registered bearer/device unit limit at the declared frame boundary.', 1, None, 'byte', True, INTRO),
+    ('max_ssdo_payload', 'Actual SSDO-server configured maximum8..254; demo12 versus minimum-supported8 distinct actual application payload.', 8, 254, 'byte', True, CONFIG),
+    ('max_tx_spdo_payload', 'Actual configured maximum TxSPDO, reference allows at most254.', 0, 254, 'byte', True, CONFIG),
+    ('max_rx_spdo_payload', 'Actual configured maximum RxSPDO, reference allows at most254.', 0, 254, 'byte', True, CONFIG),
+    ('mapped_bytes', 'Actual sum of mapped maximum sizes in a byte-based mapping, not count of variables.', 0, 254, 'byte', True, MAPPING),
+    ('mapped_entries', 'Actual number of valid SOD mapping entries, matching subindex0.', 0, 253, None, True, TX),
+    ('tick_us', 'Actual duration of one application consecutive-time tick; no literature-wide default from an unspecified target.', 0, None, 'us', False, TX),
+    ('refresh_ticks', 'Actual TxSPDO Refresh Prescale in application ticks, not a global publish period.', 0, 65535, 'tick', True, TX),
+    ('refresh_us', 'Actual refresh time converted with the identified clock tick.', 0, None, 'us', False, TX),
+    ('sct_ticks', 'Actual per-consumer Safety Control Time, not a CAN timeout or functional safety guarantee.', 0, 65535, 'tick', True, RX),
+    ('sct_us', 'Actual SCT converted with source-qualified tick; separate total fault-reaction time.', 0, None, 'us', False, RX),
+    ('tx_call_ticks', 'Actual maximum interval between BuildTxSpdo calls, at most the smallest configured active TxSPDO refresh.', 0, None, 'tick', False, TX),
+    ('rx_check_ticks', 'Actual maximum interval between CheckRxTimeout calls, at most the smallest configured active RxSPDO SCT.', 0, None, 'tick', False, TX),
+    ('minimum_refresh_ticks', 'Actual minimum refresh across all active TxSPDOs, not inferred from one selected connection.', 0, 65535, 'tick', True, TX),
+    ('minimum_sct_ticks', 'Actual minimum SCT across all active RxSPDOs, not inferred from one selected connection.', 0, 65535, 'tick', True, TX),
+    ('elapsed_ticks', 'Actual time since valid consumer data, checked against SCT before accepting data.', 0, 2147483648, 'tick', True, RX),
+    ('propagation_min_ticks', 'Actual permitted minimum propagation delay from SOD.', 0, 65535, 'tick', True, RX),
+    ('propagation_max_ticks', 'Actual permitted maximum propagation delay, not assumed zero or Ethernet delay.', 0, 65535, 'tick', True, RX),
+    ('propagation_ticks', 'Actual synchronized observed propagation delay.', 0, 65535, 'tick', True, RX),
+    ('consecutive_time', 'Actual UInt16 wire consecutive time, modular comparison distinct UInt32 local clock.', 0, 65535, 'tick', True, TYPES),
+    ('previous_consecutive_time', 'Actual last validated wire time on same SPDO producer.', 0, 65535, 'tick', True, RX),
+    ('consecutive_distance', 'Actual UInt16 modular delta; only differences<32768 pass CT_VALID.', 0, 65535, 'tick', True, RX),
+    ('local_clock', 'Actual application UInt32 consecutive timer clock, not necessarily milliseconds.', 0, 4294967295, 'tick', True, TYPES),
+    ('timeout_at', 'Actual UInt32 deadline constructed with same clock and bounded offset.', 0, 4294967295, 'tick', True, TYPES),
+    ('timeout_distance', 'Actual(local_clock-timeout_at)mod2^32; below2^31 means expired.', 0, 4294967295, 'tick', True, TYPES),
+    ('fault_reaction_bound_us', 'Actual assured total detection/stack/application/output fault reaction, not SCT alone.', 0, None, 'us', False, INTRO),
+    ('fault_reaction_required_us', 'Actual hazard-derived maximum accepted reaction time.', 0, None, 'us', False, INTRO),
+    ('age_us', 'Actual accepted source data age distinct frame receipt/CRC/SCT.', 0, None, 'us', False, RX),
+    ('freshness_limit_us', 'Actual application accepted source-age bound, not universal safety-bus default.', 0, None, 'us', False, RX),
+]:
+    d(key, 'number', meaning, minimum, maximum, unit, source=source, integer=integer)
+for key, meaning, source in [
+    ('connection_valid', 'Actual producer connection-valid indication, separate CRC and consumer acceptance.', RX),
+    ('crc1_valid', 'Actual source-qualified first subframe checksum result, not a calculated checksum in this parameter model.', DESERIALIZER),
+    ('crc2_valid', 'Actual source-qualified second subframe checksum result, independent first checksum.', DESERIALIZER),
+    ('subframes_consistent', 'Actual normalized headers/domain/UDID/data agreement after source-defined masking, not raw identical subframes.', DESERIALIZER),
+    ('synchronized', 'Actual completed time synchronization for receiving SPDO data.', RX),
+    ('first_after_sync', 'Actual first frame whose CT is checked after sync; reference keeps data safe on that frame.', RX),
+    ('safe_state', 'Actual consumer safe state, not assumed false because a frame arrived.', RX),
+    ('timeout_expired', 'Actual modular local-clock timeout result under identified reference comparison.', TYPES),
+    ('mapping_changed', 'Whether mappings are currently being modified; only pre-operational state permitted.', MAPPING),
+    ('range_validated', 'Actual application performed mapped object range/type checks, which stack mapping does not provide.', MAPPING),
+    ('data_accepted', 'Actual functional application consumption separate safety certification.', RX),
+    ('safety_case_confirmed', 'Actual complete hazard/system safety case applicability, never defaulted by protocol name.', INTRO),
+    ('certificate_scope_match', 'Actual certificate covers exact device/firmware/system use, not this simulation model.', INTRO),
+    ('safety_accepted', 'Actual externally supported safety assurance result, not a checkbox proving SIL.', INTRO),
+]:
+    d(key, 'boolean', meaning, source=source)
+REQUIRED = ('edition', 'service', 'direction', 'node_role', 'bearer_id', 'bearer_source',
+    'device_source', 'schedule_source', 'timer_source', 'frame_source', 'acceptance_source')
+REMOVED = {key: 'No universal openSAFETY ' + key + '; explicit black-channel/device/SOD bounds replace a foreign transport assumption.'
+    for key in ('bitrate', 'mtu_bytes', 'duplex', 'vlan_id', 'queue_size', 'queue_policy',
+        'qos_priority', 'reserved_bandwidth_percent', 'rate_limit_bit_s', 'retry_limit',
+        'retransmission_enabled', 'retransmission_rate', 'retransmission_delay_ms', 'recovery_ms',
+        'link_fault_detect_ms', 'failover_ms', 'restore_delay_ms', 'mtbf_ms', 'sync_method')}
+
+def semantics():
+    rules = []
+    def r(key, when=None, source=FRAME, **kw):
+        name = key if key in ('bitrate_bps', 'local_timing_evidence', 'payload_bytes') else 'os_' + key
+        rules.append(dict(parameter=name, when={'os_' + k: v for k, v in (when or {}).items()},
+            source=source, source_revision=SOURCES[source], **kw))
+    for key in REQUIRED:
+        r(key, required=True, source=INTRO)
+    for key in ('bitrate_bps', 'local_timing_evidence'):
+        r(key, allowed=[])
+    r('bearer_id', pattern=r'(?i)(?!opensafety$).+')
+    for key in ('udid_hex', 'scm_udid_hex'):
+        r(key, pattern=r'[0-9A-Fa-f]{12}', source=TYPES)
+    for service, ids in [('SNMT', [40,41,42,43,44,45,47]), ('SPDO', [48,49,50,51,52,53]),
+                         ('SSDO', [56,57]), ('SLIM_SSDO', [58,59])]:
+        r('frame_id', {'service': service}, allowed=ids, source=SERIALIZER)
+        for low, high, size in [(0,8,1), (9,254,2)]:
+            limits = {'os_data_length': [low, high]}
+            r('crc_bytes', {'service': service}, when_ranges=limits, allowed=[size])
+            r('crc_polynomial', {'service': service}, when_ranges=limits,
+              allowed=[0x2F if size==1 else 0xAC9A if service=='SLIM_SSDO' else 0xBAAD], source=CRC)
+        multiplier = 1 if service=='SLIM_SSDO' else 2
+        r('frame_bytes', {'service': service}, equal_expression={'sum':[9,
+            {'product':['os_crc_bytes',2]}, {'product':['os_data_length',multiplier]}]}, source=DESERIALIZER)
+        r('subframe2_bytes', {'service': service}, equal_expression={'sum':[5,'os_crc_bytes',
+            0 if service=='SLIM_SSDO' else 'os_data_length']}, source=DESERIALIZER)
+    r('crc_initial', allowed=[0], source=DESERIALIZER)
+    r('subframe1_bytes', equal_expression={'sum':[4,'os_data_length','os_crc_bytes']})
+    for key in ('data_length', 'crc_bytes'):
+        r(key, when_present=['os_frame_bytes'], required=True)
+    r('data_length', when_present=['os_crc_polynomial'], required=True, source=CRC)
+    r('data_length', when_present=['os_crc_bytes'], required=True)
+    r('wire_bytes', equal_expression={'sum':['os_frame_bytes','os_bearer_overhead_bytes']}, source=INTRO)
+    for key in ('frame_bytes', 'bearer_overhead_bytes'):
+        r(key, when_present=['os_wire_bytes'], required=True, source=INTRO)
+    r('wire_bytes', maximum_parameter='os_bearer_limit_bytes', source=INTRO)
+    for service in ('SSDO', 'SLIM_SSDO'):
+        r('data_length', {'service':service}, maximum_parameter='os_max_ssdo_payload', source=CONFIG)
+    r('data_length', {'service':'SPDO', 'direction':'TRANSMIT'}, maximum_parameter='os_max_tx_spdo_payload', source=CONFIG)
+    r('data_length', {'service':'SPDO', 'direction':'RECEIVE'}, maximum_parameter='os_max_rx_spdo_payload', source=CONFIG)
+    r('mapped_bytes', maximum_parameter='os_data_length', source=MAPPING)
+    r('mapping_state', {'mapping_changed':True}, allowed=['PRE_OPERATIONAL'], required=True, source=MAPPING)
+    r('mapping_source', {'mapping_changed':True}, required=True, source=MAPPING)
+    r('tick_us', exclusive_minimum=0, source=TX)
+    for value, ticks in [('refresh_us','refresh_ticks'), ('sct_us','sct_ticks')]:
+        r(value, equal_expression={'product':['os_'+ticks,'os_tick_us']}, source=TX)
+        for key in (ticks, 'tick_us'):
+            r(key, when_present=['os_'+value], required=True, source=TX)
+    r('propagation_min_ticks', maximum_parameter='os_propagation_max_ticks', source=RX)
+    for interval, smallest in [('tx_call_ticks','minimum_refresh_ticks'), ('rx_check_ticks','minimum_sct_ticks')]:
+        r(interval, exclusive_minimum=0, maximum_parameter='os_'+smallest, source=TX)
+        r(smallest, when_present=['os_'+interval], required=True, exclusive_minimum=0, source=TX)
+    r('propagation_ticks', minimum_parameter='os_propagation_min_ticks', maximum_parameter='os_propagation_max_ticks', source=RX)
+    r('consecutive_distance', equal_expression={'integer_remainder':[
+        {'subtract':['os_consecutive_time','os_previous_consecutive_time']},65536]}, source=RX)
+    for key in ('consecutive_time','previous_consecutive_time'):
+        r(key, when_present=['os_consecutive_distance'], required=True, source=RX)
+    r('timeout_distance', equal_expression={'integer_remainder':[
+        {'subtract':['os_local_clock','os_timeout_at']},4294967296]}, source=TYPES)
+    for key in ('local_clock','timeout_at'):
+        r(key, when_present=['os_timeout_distance'], required=True, source=TYPES)
+    r('timeout_expired', when_ranges={'os_timeout_distance':[0,2147483647]}, allowed=[True], source=TYPES)
+    r('timeout_expired', when_ranges={'os_timeout_distance':[2147483648,4294967295]}, allowed=[False], source=TYPES)
+    r('data_accepted', {'first_after_sync':True}, allowed=[False], source=RX)
+    w = {'data_accepted':True}
+    for key in ('crc1_valid','crc2_valid','subframes_consistent','range_validated'):
+        r(key, w, allowed=[True], required=True, source=RX)
+    r('outcome', w, allowed=['ACCEPTED'], required=True, source=RX)
+    for key in ('synchronized','connection_valid'):
+        r(key, {**w,'service':'SPDO','direction':'RECEIVE'}, allowed=[True], required=True, source=RX)
+    r('safe_state', {**w,'service':'SPDO','direction':'RECEIVE'}, allowed=[False], required=True, source=RX)
+    for key in ('sct_ticks','elapsed_ticks','consecutive_time','previous_consecutive_time','consecutive_distance',
+                'propagation_min_ticks','propagation_max_ticks','propagation_ticks','tick_us'):
+        r(key, {**w,'service':'SPDO','direction':'RECEIVE'}, required=True, source=RX)
+    r('timeout_expired', w, allowed=[False], source=TYPES)
+    r('elapsed_ticks', {**w,'service':'SPDO','direction':'RECEIVE'}, exclusive_maximum_expression='os_sct_ticks', source=RX)
+    r('consecutive_distance', {**w,'service':'SPDO','direction':'RECEIVE'}, maximum=32767, source=RX)
+    r('fault_reaction_bound_us', maximum_parameter='os_fault_reaction_required_us', source=INTRO)
+    for key in ('safety_case_confirmed','certificate_scope_match'):
+        r(key, {'safety_accepted':True}, allowed=[True], required=True, source=INTRO)
+    r('assurance_source', {'safety_accepted':True}, required=True, source=INTRO)
+    r('age_us', maximum_parameter='os_freshness_limit_us', source=RX)
+    r('freshness_limit_us', when_present=['os_age_us'], required=True, source=RX)
+    return dict(rate_model={'type':'APPLICATION_DEPENDENT','fields':[]},
+        required_parameters=['os_'+key for key in REQUIRED], native_parameter_prefixes=['os_'],
+        parameter_evidence_scope='EXPLICIT_LAYER', parameter_constraints=rules,
+        physical_layer_profile_id='explicit_opensafety_black_channel_and_device',
+        medium_access_model='VERSIONED_SAFETY_PROTOCOL_ON_REGISTERED_BLACK_CHANNEL',
+        arbitration_model_id='ACTUAL_SPDO_SOD_AND_BLACK_CHANNEL_SERVICE',
+        mechanisms={'framing':['ORDINARY_AND_SLIM_TWO_SUBFRAME_GEOMETRY','VERSION_QUALIFIED_CHECKSUM_FAMILY'],
+            'delivery':['ACTUAL_TIME_SYNC_SCT_PROPAGATION_AND_MAPPING','CONNECTION_STATUS_DISTINCT_SAFETY_ASSURANCE'],
+            'qualification':['NO_CAN_ETHERNET_CLOCK_OR_PAYLOAD_FALLBACK','ACTUAL_SYSTEM_SAFETY_CASE_NOT_PROTOCOL_CERTIFICATION']})
+
+def fields():
+    result = []
+    for spec in DECLARATIONS:
+        key = spec['key'][3:]
+        item = {k:v for k,v in spec.items() if v is not None}
+        item.update(label=key.replace('_',' '), category='timing' if spec.get('unit') in ('tick','us') else 'communication',
+            scope='route', editable=True, required=key in REQUIRED, parameter_origin='DEVICE_CONFIGURATION',
+            default_status='UNKNOWN', validation_relevant=True, simulation_relevant=False)
+        if key=='edition':
+            item.update(default=EDITION, default_status='PROPOSED', parameter_origin='TRANSPORT_PROFILE')
+        if key=='max_ssdo_payload':
+            item.update(conditional_defaults=[dict(when={'os_configuration':mode,'os_edition':EDITION}, value=value,
+                source=CONFIG, source_revision=SOURCES[CONFIG]) for mode,value in [('REFERENCE_DEMO',12),('MINIMUM_SUPPORTED',8)]],
+                default_status='PROPOSED_CONDITIONAL', parameter_origin='TRANSPORT_PROFILE')
+        if key in ('max_tx_spdo_payload','max_rx_spdo_payload'):
+            item.update(conditional_defaults=[dict(when={'os_configuration':'REFERENCE_DEMO','os_edition':EDITION}, value=128,
+                source=CONFIG, source_revision=SOURCES[CONFIG])], default_status='PROPOSED_CONDITIONAL', parameter_origin='TRANSPORT_PROFILE')
+        result.append(item)
+    return result

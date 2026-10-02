@@ -1,0 +1,46 @@
+HOST Deserializer
+SCL
+SDA
+RPU RPU
+RHIGH
+RLOW
+SCL
+SDA
+To other Devices
+IDX
+VDD18
+VI2C VI2C
+Figure 7-22. Serial Control Bus Connection
+The serial control bus consists of two signals, SCL and SDA. SCL is a Serial Bus Clock Input. SDA is the Serial 
+Bus Data Input / Output signal. Both SCL and SDA signals require an external pullup resistor to V I2C, where 
+VI2C is a voltage rail that matches the voltage applied to VDDIO . The pull-up resistor value may be adjusted 
+to account for capacitive loading and data rate requirements. Refer to "I2C Bus Pullup Resistor Calculation" 
+(SLVA689) to determine the pull-up resistor value to VI2C. The signals are either pulled High, or driven Low.
+The IDX pin configures the control interface to one of eight possible device addresses. A pullup resistor and a 
+pulldown resistor may be used to set the appropriate voltage ratio between the IDX input pin (V IDX) and V(VDD18), 
+each ratio corresponding to a specific device address. See Table 7-18, Serial Control Bus Addresses for IDX.
+Table 7-18. Serial Control Bus Addresses for IDX
+NO.
+VIDX VOLTAGE RANGE VIDX TARGET 
+VOLTAGE
+SUGGESTED STRAP RESISTORS 
+(1% TOL)
+PRIMARY ASSIGNED I2C 
+ADDRESS
+VMIN VTYP VMAX VDD18 = 1.80 V RHIGH ( kΩ ) RLOW ( kΩ ) 7-BIT 8-BIT
+0 0 0 0.131 × V(VDD18) 0 OPEN 10.0 0x30 0x60
+1 0.179 × V(VDD18) 0.213 × V(VDD18) 0.247 × V(VDD18) 0.374 88.7 23.2 0x32 0x64
+2 0.296 × V(VDD18) 0.330 × V(VDD18) 0.362 × V(VDD18) 0.582 75.0 35.7 0x34 0x68
+3 0.412 × V(VDD18) 0.443 × V(VDD18) 0.474 × V(VDD18) 0.792 71.5 56.2 0x36 0x6C
+4 0.525 × V(VDD18) 0.559 × V(VDD18) 0.592 × V(VDD18) 0.995 78.7 97.6 0x38 0x70
+5 0.642 × V(VDD18) 0.673 × V(VDD18) 0.704 × V(VDD18) 1.202 39.2 78.7 0x3A 0x74
+6 0.761 × V(VDD18) 0.792 × V(VDD18) 0.823 × V(VDD18) 1.420 25.5 95.3 0x3C 0x78
+7 0.876 × V(VDD18) V(VDD18) V(VDD18) 1.8 10.0 OPEN 0x3D 0x7A
+The Serial Bus protocol is controlled by START, START-Repeated, and STOP phases. A START occurs when 
+SDA transitions Low while SCL is High. A STOP occurs when SDA transitions High while SCL is also HIGH. See 
+Figure 7-23.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 57
+Product Folder Links: DS90UB960-Q1

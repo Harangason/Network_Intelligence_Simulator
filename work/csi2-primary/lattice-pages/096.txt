@@ -1,0 +1,35 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  96 
+Appendix B. Raspberry Pi OS Setup 
+Raspberry Pi 5 OS Software Setup 
+This example design uses the Raspberry Pi OS (64-bit) OS. 
+For more information on setting up the Raspberry Pi 5 OS, refer to the Raspberry Pi Imager software in the Raspberry Pi 
+web page. 
+Setting Up the MIPI CSI Display in the Raspberry Pi 5 OS 
+For more information on desktop setup for the Raspberry Pi 5 OS, refer to the Getting Started documentation in the 
+Raspberry Pi web page. 
+To set up the MIPI CSI display in the Raspberry Pi 5 OS, follow these steps: 
+1. Boot into the Raspberry Pi 5 OS and invoke the command terminal window. 
+2. At the command terminal, type the following command: 
+sudo nano /boot/firmware/config.txt 
+3. In the config.txt file, locate the following setting and modify the value as follows: 
+camera_auto_detect=0 
+4. Add the following command right after the line in step 3: 
+dtoverlay=imx219,cam0 
+5. After completing the changes above, press Ctrl+O. 
+6. Press Enter to save the changes. 
+7. Press Ctrl+X to close the config.txt file. 
+8. Reboot the Raspberry Pi 5 OS for the changes to take effect. 
+Note: The IMX258 camera sensor is not officially supported in the Raspberry Pi 5 OS camera software. To enable the 
+display preview feature, the IMX219 driver is selected in the Raspberry Pi 5 OS. During driver probing at the 
+Raspberry Pi 5 OS boot up stage, the I2C subsystem in the FPGA returns with an ACK response containing the 
+IMX219 chip ID to the Raspberry Pi 5 OS. 
+The following figure shows the camera sensor detected in the Raspberry Pi 5 OS during boot up with the FPGA device 
+programmed and connected to it. 
+ 
+Figure B.1. Camera Sensor Detected in the Raspberry Pi 5 OS 

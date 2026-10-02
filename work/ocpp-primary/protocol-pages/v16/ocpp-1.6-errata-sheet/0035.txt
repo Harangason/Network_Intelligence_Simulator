@@ -1,0 +1,32 @@
+UnlockConnectorOnEVSideDisconnect to be implemented as R for non-fixed cable Charge Points
+In the table describing the variable UnlockConnectorOnEVSideDisconnect change the text of the following rows:
+Accessibility RW (RO in case of fixed cable)
+Description When set to true, the Charge Point SHALL unlock the cable on Charge Point side when the cable is unplugged at the EV. A
+Charge Point with a fixed cable SHALL always report this value as false and SHALL not allow this value to be changed.
+3.86. Page 106, section: 7.45: No UnitOfMeasure for Measurand Frequency.
+There is no UnitOfMeasure for Measurand: Frequency.
+Add to the description for Frequency on page 100,
+section: 7.31:
+OCPP 1.6 does not have a UnitOfMeasure for frequency, the UnitOfMeasure for any
+SampledValue with measurand: Frequency is Hertz.
+3.87. Page 107, section: 7.42: UnlockConnector with unknown ConnectorId
+Added in errata sheet v3.0
+It has not been specified how a Charge Point should respond when a Central System request an Unlock
+Connector for an unknown ConnectorId.
+Preferably the response would have been: "Rejected", so that will be added to OCPP 2.0. For OCPP 1.6 we cannot
+add extra states, so we have to use "NotSupported". "UnlockFailed" should not be used for this, "UnlockFailed" is
+really for when the locking mechanism detects a failed unlock attempt.
+Changes to the table
+VALUE OLD DESCRIPTION NEW DESCRIPTION
+UnlockFailed Failed to unlock the connector. Failed to unlock the connector: The Charge Point has tried to unlock
+the connector and has detected that the connector is still locked or
+the unlock mechanism failed.
+NotSupported Charge Point has no connector lock Charge Point has no connector lock, or ConnectorId is unknown.
+3.88. Page 107, section: 9.4.2: Configuration key:
+"ChargingScheduleAllowedChargingRateUnit" values confusing
+Added in errata sheet v4.0
+The configuration key: ChargingScheduleAllowedChargingRateUnit has two allowed values: 'Current' and
+'Power'. While ChargingRateUnitType (page 80, section: 7.12) has the possible values: 'A' and 'W'. This is
+confusing.
+It would have been better if the allowed values for ChargingScheduleAllowedChargingRateUnit would also
+34

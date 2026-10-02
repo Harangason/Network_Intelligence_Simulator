@@ -1,0 +1,51 @@
+E Transactions
+TC_E_01_CSMS: Start transaction options - PowerPathClosed
+Test case name Start transaction options - PowerPathClosed
+Test case Id TC_E_01_CSMS
+Use case Id(s) E01(S5)
+Requirement(s) E01.FR.05
+System under test CSMS
+Description OCPP 2.x.x has a flexible transaction mechanism that allows the transaction start and stop points to be
+configured differently. This test covers one of the start options.
+Purpose To verify if the CSMS is able to handle a Charging Station that starts a transaction when the power path has
+been closed.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System sends an AuthorizeRequest
+With idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+2. The CSMS responds with an AuthorizeResponse
+3. The Test System notifies the CSMS about the status change
+of the connector.
+Message: StatusNotificationRequest
+- connectorStatus is Occupied
+Message: NotifyEventRequest
+- trigger is Delta
+- actualValue is Occupied
+- component.name is Connector
+- variable.name is AvailabilityState
+4. The CSMS responds accordingly.
+5. The Test System sends a TransactionEventRequest
+With eventType is Started
+triggerReason is ChargingStateChanged
+idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+evse.id is <Configured evseId>
+evse.connectorId is <Configured connectorId>
+transactionInfo.chargingState is SuspendedEVSE
+6. The CSMS responds with a TransactionEventResponse
+7. The Test System sends a TransactionEventRequest
+With eventType is Updated
+triggerReason is ChargingStateChanged
+transactionInfo.chargingState is Charging
+8. The CSMS responds with a TransactionEventResponse
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 680/914 Part 6 - Test Cases

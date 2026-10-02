@@ -1,0 +1,58 @@
+C23 - Increasing authorization amount
+New in OCPP 2.1
+No. Type Description
+1 Name Increasing authorization amount
+2 ID C23
+3 Objective To increase the authorization amount during the transaction when costs are exceeding the
+original authorization amount.
+4 Description Costs of the transaction are exceeding the authorization amount that was reserved when the
+payment session started. If it is supported by the payment terminal, the authorization amount can
+be increased. Support for incremental authorization by the payment terminal is indicated by
+PaymentCtrlr.IncrementalAuthorizationAmount existing with a value > 0.
+Actors EV Driver, Payment Terminal, CSMS, Charging Station
+Scenario description 1. A transaction with an ad hoc payment is active.
+2. Payment terminal initially sets an authorization amount of
+PaymentCtrlr.AuthorizationAmount.
+3. When PaymentCtrlr.IncrementalAuthorizationAmount > 0 and transaction costs exceed
+the current authorization amount minus PaymentCtrlr.IncrementalAuthorizationThreshold
+a. Charging Station instructs payment terminal to increase authorization with
+PaymentCtrlr.IncrementalAuthorizationAmount.
+b. Charging Station increases the transaction limit in transactionInfo.maxCost with
+the same amount.
+5 Prerequisites Transaction was started using ad hoc payment and
+PaymentCtrlr.IncrementalAuthorizationAmount exists and has a value > 0
+6 Postcondition(s) The authorization amount and transactionInfo.maxCost has been increased.
+7 Error handling
+8 Remark(s) If the maximum authorization amount is reached and
+PaymentCtrlr.IncrementalAuthorizationAmount = 0 (or absent), then the energy flow will be halted,
+because transactionInfo.maxCost is reached.
+The authorization amount needs to be increased before is has been depleted in order to avoid
+interruption of the energy flow. The moment when to increase the amount is determined by
+PaymentCtrlr.IncrementalAuthorizationThreshold.
+EV Driver
+Payment Service
+Provider
+Integrated
+Payment Terminal Charging Station CSMS
+Assuming TxStart/StopPoint
+is Authorized
+idToken <PspRef> is authorized for adhoc payment
+TransactionEventRequest(Started, transactionId = "123",
+tariffId = "Adhoc", idToken = <PspRef>, type = DirectPayment,
+additionalInfo(type = "CardBin", additionalIdToken = "123456",
+transactionInfo.transactionLimit.maxCost = 100)
+TransactionEventRequest(...)
+Transaction in progress and cost
+is exceeding current authorization amount
+minus incremental authorization threshold.
+Extend authorization with
+IncrementalAuthorizationAmount (= 50)
+Extend authorization to 150
+Status of authorization extension
+TransactionEventRequest(eventType = Updated
+triggerReason = LimitChanged,
+transactionInfo.transactionLimit.maxCost = 150, ...)
+TransactionEventResponse()
+Figure 45. Sequence diagram showing incremental authorization
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 141/803 Part 2 - Specification

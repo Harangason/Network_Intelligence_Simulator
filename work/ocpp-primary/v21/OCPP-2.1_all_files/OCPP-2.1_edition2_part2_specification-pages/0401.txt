@@ -1,0 +1,78 @@
+ID Precondition Requirements Note
+K17.FR.16
+(2.1)
+K17.FR.07
+EV does not return a
+charging profile
+AND EV is not using
+dynamic control mode
+Charging Station IS RECOMMENDED to return
+an EV charging profile as a chargingSchedule
+in a NotifyEVChargingScheduleRequest
+message to CSMS that matches the charging
+schedule that was selected by the EV (i.e. the
+OCPP charging schedule that is represented by
+the SelectedScheduleTupleId that EV sent in
+PowerDeliveryReq).
+In ISO 15118-2 the EV charging profile and the
+selected schedule are returned as
+ChargingProfile and SAScheduleTupleId in
+PowerDeliveryReq.
+In ISO 15118-20 the EV charging profile and
+the selected schedule are returned as
+EVPowerProfile and SelectedScheduleTupleId.
+(See also K17.FR.18)
+K17.FR.17 K17.FR.01 AND
+Charging Station is
+offline
+Charging Station SHOULD add timestamp to
+the NotifyEVChargingNeedsRequest with the
+time when charging needs were received from
+EV
+This will tell CSMS how old this data is, if it
+was not immediately sent because of an
+offline period.
+K17.FR.18
+(2.1)
+K17.FR.10 Charging Station SHOULD set
+selectedChargingScheduleId in
+NotifyEVChargingScheduleRequest to the Id of
+the chargingSchedule that EV selected from
+the provided ChargingProfileType(s).
+K17.FR.19
+(2.1)
+(K17.FR.03 OR
+K17.FR.05)
+AND controlMode is
+DynamicControl
+The CSMS SHALL send a
+SetChargingProfileRequest with
+chargingProfilePurpose = TxProfile and a
+transactionId and one chargingSchedule
+element with one or more
+chargingSchedulePeriods, and optionally an
+absolutePriceSchedule or priceLevelSchedule
+element, that each contain no more periods
+than specified by maxScheduleTuples in
+NotifyEVChargingNeedsRequest and by device
+model variable
+SmartChargingCtrlr.PeriodsPerSched
+ule.
+The Charging Station will calculate the
+composite schedule for the EVSE (taking into
+account a ChargingStationMaxProfile or
+ChargingStationExternalConstraints
+if present).
+K18 - ISO 15118-20 Scheduled Control Mode
+New in OCPP 2.1
+No. Type Description
+1 Name ISO 15118-20 Scheduled Control Mode
+2 ID K18
+3 Objective(s) To describe the charging process when Charging Stations uses ISO 15118-20 with scheduled
+control mode
+4 Description CSMS provides a charging profile with up to three charging schedules and optional price
+information that try to match the energy needs of EV. EV selects a charging schedule to follow
+and returns its calculated charging schedule back to Charging Station.
+Actors EV, Charging Station, CSMS.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 388/803 Part 2 - Specification

@@ -1,0 +1,52 @@
+6.2.25. Page 294/295/296 - (2026-02) - TC_E_102_CS - Test case and tool
+validations corrected.
+Step 11 was corrected to align with E16.FR.04. Tool validations for transactionInfo.transactionLimit.maxTime removed as they are
+not applicable.
+Test case name Transactions with fixed cost, energy or time - CSMS and CS both specify limits
+Test case Id TC_E_102_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+with
+transactionLimit.maxEnergy 20000
+1.  Execute   Reusable State   EnergyTransferStarted  with: 
+ (At the first TransactionEventResponse)   
+-  transactionLimit.maxEnergy   20000
+3. 2.  The Charging Station sends a TransactionEventRequest
+4. 3.  The Test System responds with a
+TransactionEventResponse
+5. 4.  The Charging Station sends a TransactionEventRequest
+6. 5.  The Test System responds with a
+TransactionEventResponse
+Note: Steps 5 4  and 6 5  may repeat
+Manual Action: Enter energy limit 10 kWh for transaction
+7. 6.  The Charging Station sends a TransactionEventRequest
+8. 7.  The Test System responds with a
+TransactionEventResponse
+9. 8.  The Charging Station sends a TransactionEventRequest
+10. 9.  The Test System responds with a
+TransactionEventResponse
+Note: Steps 9 8  and 10 9  may repeat
+Manual Action: Enter energy limit 40 kWh for transaction
+Note: CS should not allow this or at least not send a higher limit than 20000 as set by CSMS
+11. The Charging Station sends a TransactionEventRequest
+12. The Test System responds with a
+TransactionEventResponse
+10.  The Charging Station SHALL NOT send a         TransactionEventRequest  with   triggerReason  is   LimitSet
+13. 11.  The Charging Station sends a TransactionEventRequest
+14. 12.  The Test System responds with a
+TransactionEventResponse with
+transactionLimit.maxEnergy 2000
+15. 13.  The Charging Station sends a TransactionEventRequest
+16. 14.  The Test System responds with a
+TransactionEventResponse
+17. 15.  The Charging Station sends a TransactionEventRequest
+18. 16.  The Test System responds with a
+TransactionEventResponse
+Note: Steps 17 15  and 18 16  may repeat
+19. 17.  The Charging Station sends a TransactionEventRequest
+20. 18.  The Test System responds with a
+TransactionEventResponse
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 48/116 Errata 2026-06

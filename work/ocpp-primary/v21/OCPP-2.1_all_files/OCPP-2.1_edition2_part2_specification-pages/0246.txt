@@ -1,0 +1,35 @@
+F03 - Remote Stop Transaction
+No. Type Description
+1 Name Remote Stop Transaction
+2 ID F03
+3 Objective(s) 1. To enable a CSO to help an EV Driver who has problems stopping a transaction. or
+2. Enable mobile apps to control transactions via the CSMS.
+4 Description This use case describes how the CSMS requests the Charging Station to stop a transaction.
+Actors Charging Station, CSMS, CSO, EV Driver
+Scenario description 1. An External Trigger triggers a remote stop.
+2. The CSMS requests a Charging Station to stop a transaction by sending
+RequestStopTransactionRequest to the Charging Station with the transactionId of the
+transaction.
+3. The Charging Station responds with RequestStopTransactionResponse and a status indicating
+whether it has accepted the request and a transaction with the given transactionId is ongoing and
+will be stopped.
+4. Charging is stopped, the Charging Station sends TransactionEventRequest (eventType =
+Updated) and, if applicable, unlocks the Connector.
+5. After the EV Driver unplugs the cable, the Charging Station sendsNotifyEventRequest with
+component.name Connector, variable.name AvailabilityState and actualValue Available
+6. The Charging Station ends the transaction and sends a TransactionEventRequest (eventType =
+Ended, stoppedReason = Remote) message to the CSMS.
+5 Prerequisite(s) A transaction is ongoing.
+6 Postcondition(s) Successful postcondition:
+The transaction for which a stop was request has ended.
+Failure postcondition:
+The transaction for which a stop was requested is still ongoing.
+7 Remark(s) This remote request to stop a transaction is equal to a local action to stop a transaction.
+The scenario description and sequence diagram above are based on the Configuration Variable
+for stop transaction being configured as follows.
+TxStopPoint: ParkingBayOccupancy, EVConnected
+This use-case is also valid for other configurations, but then the transaction might stop at another
+moment, which might change the sequence in which message are send. For more details see the
+use case: E06 - Stop Transaction options
+Edition 2, 2025-12-03 F. Remote Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 233/803 Part 2 - Specification

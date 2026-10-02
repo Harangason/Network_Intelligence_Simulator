@@ -1,0 +1,46 @@
+B04 - Offline Behavior Idle Charging Station
+No. Type Description
+1 Name Offline Behavior Idle Charging Station
+2 ID B04
+3 Objective(s) To attain stand-alone operation of the Charging Station.
+4 Description This use case describes that, in the event of unavailability of the communication, the Charging
+Station is designed to operate stand-alone. In that situation, the Charging Station is said to be
+Offline.
+Actors Charging Station, CSMS
+Scenario description 1. The CSMS or communication is unavailable.
+2. The Charging Station operates stand-alone.
+3. The connection is restored.
+4. If the Offline period exceeds the value of the OfflineThreshold Configuration Variable: the
+Charging Station sends a StatusNotificationRequest to the CSMS for each connector. Otherwise it
+only sends a StatusNotificationRequest for Connectors with a status change during the offline
+period. 
+5. The Charging Station sends HeartbeatRequest to the CSMS.
+6. The CSMS responds with HeartbeatResponse.
+5 Prerequisite(s) The BootNotification was previously accepted and the Charging Station is able to operate stand-
+alone.
+6 Postcondition(s) When connection is restored after a period of Offline behavior, the CSMS knows the Charging
+Stations' and EVSEs' state.
+7 Error handling The offline situation is a non-preferred mode of operation that needs to be handled by the
+Charging Station by trying to re-establish the connection.
+8 Remark(s) n/a
+CSMS Charging Station
+loop [while powered up and no other messages]
+HeartbeatRequest()
+HeartbeatResponse(currentTime)
+Connection loss
+Connection loss can be minutes, but can also be days.
+Connection restored
+alt [Offline period exceeds offline threshold]
+loop [for all Connectors]
+StatusNotificationRequest(...)
+StatusNotificationResponse()
+[When status changed while offline]
+loop [for each Connector with status changed during offline period]
+StatusNotificationRequest(...)
+StatusNotificationResponse()
+loop [while powered up and no other messages]
+HeartbeatRequest()
+HeartbeatResponse(currentTime)
+Figure 13. Sequence Diagram: Offline Behavior Idle Charging Station
+Edition 4, 2025-12-03 B. Provisioning
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 52/491 Part 2 - Specification

@@ -1,0 +1,64 @@
+No. Type Description
+4 Description This use case describes how the CSMS requests the Charging Station to send a report about
+configured monitoring settings per component and variable. Optionally, this list can be filtered on
+monitoringCriteria and componentVariables.
+Actors Charging Station, CSMS, CSO
+Scenario description 1. The CSO triggers the CSMS to request a monitoring report from a Charging Station.
+2. The CSMS sends a GetMonitoringReportRequest to the Charging Station.
+3. The Charging Station responds with a GetMonitoringReportResponse.
+4. The Charging Station sends a NotifyMonitoringReportRequest to the CSMS.
+5. The CSMS responds with a NotifyMonitoringReportResponse.
+6. Steps #4 and #5 are repeated until all data of the monitoring report has been sent.
+5 Prerequisite(s) Charging Station supports Monitoring
+6 Postcondition(s) The CSMS received a report about the configured monitoring settings.
+7 Error handling n/a
+8 Remark(s) n/a
+CSO
+CSMS Charging Station
+request for a monitoring report
+GetMonitoringReportRequest(requestId, monitoringCriteria, componentVariables)
+GetMonitoringReportResponse(status)
+loop [for each report part]
+NotifyMonitoringReportRequest(generatedAt, requestId, tbc, reports)
+NotifyMonitoringReportResponse()
+Figure 166. Sequence Diagram: Get Monitoring Report
+N02 - Get Monitoring Report - Requirements
+Table 135. N02 - Requirements
+ID Precondition Requirement definition
+N02.FR.01 NOT N02.FR.10 AND
+When the Charging Station receives a
+GetMonitoringReportRequest for supported
+monitoringCriteria OR without monitoringCriteria
+The Charging Station SHALL send a
+getMonitoringReportResponse with Accepted.
+N02.FR.02 When the Charging Station receives a
+GetMonitoringReportRequest for not supported
+monitoringCriteria
+The Charging Station SHALL send a
+getMonitoringReportResponse with NotSupported.
+N02.FR.03 N02.FR.01 The Charging Station SHALL send the requested information via
+one or more notifyMonitoringReportRequest messages to the
+CSMS.
+N02.FR.04 N02.FR.01 AND
+The GetMonitoringReportRequest contained a
+requestId
+Every notifyMonitoringReportRequest sent for this
+GetMonitoringReportRequest SHALL contain the same
+requestId.
+N02.FR.05 N02.FR.01 AND
+monitoringCriteria and componentVariables are
+NOT both absent.
+The set of monitors reported in one or more
+notifyMonitoringReportRequest messages is limited to the set
+defined by monitoringCriteria and componentVariables.
+N02.FR.06 N02.FR.01 AND
+monitoringCriteria is NOT absent AND
+componentVariables is absent.
+The set of monitors reported in one or more
+notifyMonitoringReportRequest messages is limited to the set
+defined by monitoringCriteria.
+N02.FR.07 The maximum number of componentVariables in one
+GetMonitoringReportRequest message is given by the
+ItemsPerMessageGetReport Configuration Variable
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 455/803 Part 2 - Specification

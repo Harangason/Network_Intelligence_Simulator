@@ -1,0 +1,50 @@
+TC_A_20_CS: Upgrade Charging Station Security Profile - No valid
+CSMSRootCertificate installed
+Test case name Upgrade Charging Station Security Profile - No valid CSMSRootCertificate installed
+Test case Id TC_A_20_CS
+Use case Id(s) A05
+Requirement(s) A05.FR.02
+System under test Charging Station
+Description The CSMS is able to change the connectionData at the Charging Station. By doing this it is able to upgrade
+the connection to a higher security profile.
+Purpose To verify if the Charging Station is able to reject upgrading to a higher security profile when it does not have
+a valid CSMSRootCertificate installed.
+Prerequisite(s) - The Test System connectionData configuration for SUT Charging Station only allows for ip addresses the
+Test System is able to bind.
+- The Charging Station supports at least 2 security profiles, one of which is security profile 1.
+- The Charging Station does not have a valid CSMSRootCertificate installed.
+- The first Test System connectionData configuration slot must be configured for security profile 1.
+- The second Test System connectionData configuration slot must be configured for security profile 2 or 3.
+- The Charging Station is connected using security profile 1.
+- When starting this testcase the Test System will start another webSocket server for the second
+connectionData slot.
+Before (Preparations)
+Configuration State:
+OCPPCommCtrlr.NetworkConfigurationPriority is <ActiveNetworkProfile slot> (All others are removed)
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetNetworkProfileResponse
+1. The Test System sends a SetNetworkProfileRequest
+with - configurationSlot is <Configured configurationSlot2> or
+<Configured configurationSlot> (the one currently not used for
+the active connection)
+- connectionData.messageTimeout <Configured
+messageTimeout2>
+- connectionData.ocppCsmsUrl <ocppCsmsUrl that is not
+currently active>
+- connectionData.ocppInterface <Configured ocppInterface2>
+- connectionData.ocppVersion OCPP20
+- connectionData.securityProfile <Configured securityProfile2>
+4. The Charging Station responds with a SetVariablesResponse
+3. The Test System sends a SetVariablesRequest
+with variable.name is "NetworkConfigurationPriority"
+component.name is "OCPPCommCtrlr"
+attributeValue is <configurationSlot set at step 1>,<previous
+configurationSlot>
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 23/914 Part 6 - Test Cases

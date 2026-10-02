@@ -1,0 +1,54 @@
+Chapter 3. Charging profiles
+3.1. Introduction
+Influencing the charge power or current is based on sending energy transfer limits at specific points in time to a Charging Station.
+Those limits are combined in a ChargingProfile. A ChargingProfile holds the ChargingSchedule which defines a block of charging
+Power or Current limits and can contain a start time and duration. These can be applied to Charging Stations as well as to EVSEs of
+the Charging Stations. In Example ChargingProfile an example of a ChargingProfile is given to illustrate how these charging profiles
+can be used.
+A CSMS can send a charging profile to a Charging Station using the message SetChargingProfileRequest, in the following
+situations:
+• At the start of a transaction to set the charging profile for the transaction
+• In a RequestStartTransaction request sent to a Charging Station
+• During a transaction to change the active profile for the transaction
+• Outside the context of a transaction as a separate message to set a charging profile to a local controller, Charging Station,
+or a default charging profile to an EVSE.
+3.2. Charging profile purposes
+This section describes a number of types of charging profiles that are supported in OCPP. There are four different types of charging
+profiles, depending on their purpose:
+ChargingProfile
+Purpose
+Description
+ChargingStationMaxProfi
+le
+In internal load balancing scenarios, the Charging Station has one or more local charging profiles that
+limit the power or current to be shared by all EVSEs of the Charging Station. The CSMS SHALL configure
+such a profile with ChargingProfilePurpose set to "ChargingStationMaxProfile".
+ChargingStationMaxProfile can only be set at Charging Station evseId 0.
+TxProfile A transaction-specific profile with purpose TxProfile overrules the TxDefaultProfile for the duration of
+the current transaction only or until the TxProfile expires, whichever occurs earlier.
+TxDefaultProfile Default schedules for new transactions that MAY be used to impose charging policies. An example
+could be a policy that prevents charging during the day.
+ChargingStationExternal
+Constraints
+When an external system, not the CSMS, sets a charging limit or schedule, the Charging Station uses this
+purpose to report such a limit/schedule.
+3.3. Charging profile kind
+This section explains the different kinds of charging schedules that can be use in a charging profile, as defined by the value of the
+attribute chargingProfileKind:
+ChargingProfile
+Kind
+Description
+Absolute The charging schedule periods are relative to an absolute point in time defined in the schedule. This
+requires that startSchedule is set to a starting point in time. Use this, for example, to define a schedule
+that reduces charging between 17:00h and 21:00h, regardless of when charging session was started.
+Recurring The charging schedule restarts periodically at the first schedule period. To be most useful, this requires
+that startSchedule is set to a starting point in time. Use this in combination with recurrencyKind = Daily,
+for example, to define a schedule that reduces charging between 17:00h and 21:00h every day,
+regardless of when charging session was started.
+Relative Charging schedule periods should start when the EVSE is ready to deliver energy. i.e. when the EV driver
+is authorized and the EV is connected. When a ChargingProfile is received for a transaction that is
+already charging, then the charging schedule periods should remain relative to the PowerPathClosed
+moment.
+No value for startSchedule should be supplied.
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 241/491 Part 2 - Specification

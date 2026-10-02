@@ -1,0 +1,71 @@
+Resetting Trouble Codes
+The ELM327 is quite capable of resetting
+diagnostic trouble codes, as this only requires issuing
+a mode 04 command. The consequences should
+always be considered before sending it, however, as
+more than the MIL (or ‘Check Engine Light’) will be
+reset. In fact, issuing a mode 04 will:
+- reset the number of trouble codes
+- erase any diagnostic trouble codes
+- erase any stored freeze frame data
+- erase the DTC that initiated the freeze frame
+- erase all oxygen sensor test data
+- erase mode 06 and 07 information
+- not erase permanent (mode 0A) trouble codes 
+(these are reset by the ECU only)
+ Clearing of all of this data is not unique to the
+ELM327 – it occurs whenever any scan tool is used to
+reset the codes. The biggest problem with losing this
+data is that your vehicle may run poorly for a short
+time, while it performs a recalibration.
+To avoid inadvertently erasing stored information,
+the SAE specifies that scan tools must verify that a
+mode 04 is intended (‘Are you sure?’) before actually
+sending it to the vehicle, as all trouble code
+information is immediately lost when the mode is sent.
+Remember that the ELM327 does not monitor the
+content of the messages, so it will not know to ask for
+confirmation of the mode request – this would have to
+be the duty of a software interface, if one is written.
+As stated, to actually erase diagnostic trouble
+codes, one need only issue a mode 04 command. A
+response of 44 from the vehicle indicates that the
+mode request has been carried out, the information
+erased, and the MIL turned off. Some vehicles may
+require a special condition to occur (eg. the ignition on
+but the engine must not be running) before they will
+respond to a mode 04 command.
+That is all there is to clearing trouble codes. Once
+again, do not accidentally send the 04 code!
+Quick Guide for Reading Trouble Codes
+If you do not use your ELM327 for some time, this
+entire data sheet may seem like quite a bit to review
+when your ‘Check Engine’ light eventually comes on,
+and you just want to know why. We offer this section
+as a quick guide to the basics that you will need.
+To get started, connect the ELM327 circuit to your
+PC or PDA and communicate with it using a terminal
+program such as HyperTerminal, ZTerm, ptelnet, or a
+similar program. It should normally be set to either
+9600 or 38400 baud, with 8 data bits, and no parity or
+handshaking.
+The chart at the right provides a quick procedure
+on what to do next:
+36 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+>AT SP 0
+OK
+>0101
+to see how many codes
+(2nd digit of the 3rd byte)
+FIX THE VEHICLE !
+Ignition Key to ON,
+but vehicle not running
+>03
+to see the codes
+(ignore the first byte and
+read the others in pairs)
+>04
+to reset the codes

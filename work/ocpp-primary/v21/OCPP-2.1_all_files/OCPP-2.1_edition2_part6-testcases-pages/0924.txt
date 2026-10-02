@@ -1,0 +1,52 @@
+Authorized
+State Authorized
+System under test Charging Station
+Description This state will prepare the Charging Station, so that the transaction is authorized. This can be done in two
+ways (The default way is configurable at Test System. This will be used when the calling testcase does not
+define which one to use.):
+A. Using local authorization
+B. Using a RequestStartTransactionRequest
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+If Product subtype is Battery Swapping Station, then execute AuthorizedBatterySwapping instead
+If State is NOT ParkingBayOccupied OR EVConnectedPreSession, then execute Reusable State ParkingBayOccupied
+Main A (Test scenario)
+Charging Station CSMS
+Manual Action: Present idToken.
+1. The Charging Station sends an AuthorizeRequest
+Note(s):
+- This step needs to be executed, unless (AuthEnabled is
+implemented with mutability ReadOnly AND the value is set to
+false) OR
+a start button as described at Use case C02 is used (This must be
+configured at the Test System) OR
+the idToken is cached.
+In case the idToken is used for a reservation, sending the
+AuthorizeRequest message is optional.
+2. The Test System responds with an AuthorizeResponse
+with idTokenInfo.status Accepted
+3. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step is executed with eventType Started if:
+TxStartPoint contains Authorized OR
+TxStartPoint contains PowerPathClosed and the test case was
+initiated from the state EVConnectedPreSession
+OR
+- This step is executed with eventType Updated if:
+TxStartPoint contains ParkingBayOccupancy OR
+TxStartPoint contains EVConnected and the test case was
+initiated from the state EVConnectedPreSession.
+4. The Test System responds with a TransactionEventResponse
+Note(s):
+- The first TransactionEventRequest sent after authorization
+contains the idToken field, unless a Start button was used to start
+the transaction. In case there is an idToken used, the
+TransactionEventResponse of this request message contains
+idTokenInfo
+with status Accepted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 922/1383 Part 6 - Test Cases

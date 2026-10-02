@@ -1,0 +1,57 @@
+EV Driver
+Payment Terminal Charging Station CSMS
+Plugin cable
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Occupied)
+NotifyEventResponse()
+TransactionEventRequest(eventType = Started, triggerReason = CablePluggedIn, ...)
+TransactionEventResponse(...)
+present parking ticket(1234)
+AuthorizeRequest(idToken(id = 1234, type = Local))
+AuthorizeResponse(...)
+opt
+notification
+Start Charging
+TransactionEventRequest(eventType = Updated, transactionId = AB1234,
+chargingState = Charging, trigger = Authorized, idToken.id = 1234, meterValues, ...)
+TransactionEventResponse(idTokenInfo.status = Accepted, ...)
+User returns to pick up EV
+present parking
+ticket(1234)
+stop charging(id = 1234)
+Match ticketId
+with TransactionId()
+RequestStopTransactionRequest(transactionId = AB1234)
+RequestStopTransactionResponse(Accepted)
+TransactionEventRequest(eventType = Updated, transactionId = AB1234,
+chargingState = EVConnected, trigger = RemoteStop, idToken.id = 1234, meterValues, ...)
+TransactionEventResponse(...)
+get cost(id = 1234)
+pay for parking
+and charging
+opt
+notification
+Unplug cable
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Available)
+NotifyEventResponse()
+TransactionEventRequest(eventType = Ended, transactionId = AB1234,
+triggerReason = EVCommunicationLost, meterValues, ...)
+TransactionEventResponse(...)
+Figure 25. Sequence Diagram: Authorization using local id type
+C06 - Authorization using local id type - Requirements
+Table 48. C06 - Requirements
+ID Precondition Requirement definition
+C06.FR.01 The Charging Station SHALL only offer energy after
+authorization. (Same as C01.FR.01)
+C06.FR.02 If an IdTokenType with type Local is presented
+by the EV Driver.
+The Charging Station SHALL send AuthorizeRequest to the
+CSMS to request authorization.
+C06.FR.03 AuthorizeRequest SHOULD only be used for the authorization of
+an identifier for charging. (Same as C01.FR.04)
+C06.FR.04 If the CSMS receives an AuthorizeRequest. it SHALL respond with an AuthorizeResponse and SHALL include
+an authorization status value indicating acceptance or a reason
+for rejection.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 102/803 Part 2 - Specification

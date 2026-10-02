@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+4 rus1 numeric cycles 1 output rate on USART 1
+• 0 disables that message from being output on this
+port
+• 1 means that this message is output every epoch
+5 rus2 numeric cycles 1 output rate on USART 2
+• 0 disables that message from being output on this
+port
+• 1 means that this message is output every epoch
+6 rusb numeric cycles 1 output rate on USB
+• 0 disables that message from being output on this
+port
+• 1 means that this message is output every epoch
+7 rspi numeric cycles 1 output rate on SPI
+• 0 disables that message from being output on this
+port
+• 1 means that this message is output every epoch
+8 reserved numeric - - Reserved: always ﬁll with 0
+9 cs hexadecimal - *5D Checksum
+10 CRLF character - - Carriage return and line feed
+2.8.4 SVSTATUS (PUBX,03)
+2.8.4.1 Poll a PUBX,03 message
+Message NMEA-PUBX-SVSTATUS
+Poll a PUBX,03 message
+Type Poll request
+Comment A PUBX,03 message is polled by sending the PUBX,03 message without any data ﬁelds.
+Information Class/ID: 0xf1 0x03 Number of fields: 4
+Structure $PUBX,03*30\r\n
+Example $PUBX,03*30\r\n
+Payload:
+Field Name Format Unit Example Description
+0 PUBX string - $PUBX Message ID, UBX protocol header, proprietary sentence
+1 msgId numeric - 03 Set to 03 to poll a PUBX,03 message
+2 cs hexadecimal - *30 Checksum
+3 CRLF character - - Carriage return and line feed
+2.8.4.2 Satellite status
+Message NMEA-PUBX-SVSTATUS
+Satellite status
+Type Output
+Comment The PUBX,03 message contains satellite status information.
+Information Class/ID: 0xf1 0x03 Number of fields: 5 + n·6
+Structure $PUBX,03,GT{,sv,s,az,el,cno,lck},*cs\r\n
+Example $PUBX,03,11,23,-,,,45,010,29,-,,,46,013,07,-,,,42,015,08,U,067,31,42,025,10,U,195,33 ↲
+,46,026,18,U,326,08,39,026,17,-,,,32,015,26,U,306,66,48,025,27,U,073,10,36,026,28,U, ↲
+089,61,46,024,15,-,,,39,014*0D\r\n
+Payload:
+Field Name Format Unit Example Description
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 41 of 224
+C1-Public

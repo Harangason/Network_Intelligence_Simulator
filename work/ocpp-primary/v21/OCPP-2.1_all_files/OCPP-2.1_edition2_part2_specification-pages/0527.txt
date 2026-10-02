@@ -1,0 +1,69 @@
+EV Charging Station CSMS
+A transaction has started.
+No allowedEnergyTransfer was provided in AuthorizeResponse
+ScheduleExchangeReq( DepartureTime,
+EVTargetEnergyRequest, Scheduled, ... )
+NotifyEVChargingNeedsRequest(
+DepartureTime, EVTargetEnergyRequest,
+requestedEnergyTransfer = DC,
+availableEnergyTransfer = [ DC, DC_BPT ], ... )
+NotifyEVChargingNeedsResponse( Accepted )
+SetChargingProfileRequest( v2xSchedule
+"ChargingOnly" )
+SetChargingProfileResponse( Accepted )
+ScheduleExchangeRes( Schedule )
+PowerDeliveryReq( SelectedScheduleTupleID,
+EVPowerProfile )
+PowerDeliveryRes()
+NotifyEvChargingScheduleRequest( chargingSchedule )
+NotifyEvChargingScheduleResponse ( Accepted )
+EV follows schedule
+check for V2X permission
+based on idToken,
+EVCCID or vehicle certificate
+CSMS allows V2X
+NotifyAllowedEnergyTransferRequest(
+transactionId,
+allowedEnergyTransfer = [ DC, DC_BPT ] )
+NotifyAllowedEnergyTransferResponse( Accepted )
+ChargeLoopReq()
+ChargeLoopRes( EVSENotification =
+ServiceRenegotiation )
+start service renegotiation for DC_BPT
+Figure 189. V2X Operation Mode ChargingOnly before enabling V2X
+Q02 - Charging only (V2X control) before starting V2X - Requirements
+Table 153. Q02 - Requirements
+ID. Precondition Requirements Note
+Q02.FR.01 When Charging Station does not
+request bidirectional power transfer in
+NotifyEVChargingNeedsRequest
+CSMS SHALL send a SetChargingProfileRequest
+message, with chargingSchedulePeriod(s) with field
+operationMode set to ChargingOnly or omitted
+When operationMode is
+omitted, this also
+defaults to
+ChargingOnly.
+Q02.FR.02 Q02.FR.01 CSMS SHALL NOT include fields dischargeLimit,
+setpoint, setpointReactive in the
+ChargingProfileType.
+This also includes the L2
+and L3 variants of those
+fields.
+Q02.FR.03 When CSMS is not able to determine a
+list of allowedEnergyTransfer before
+sending the AuthorizeResponse
+CSMS SHALL omit allowedEnergyTransfer from
+AuthorizeResponse.
+This can happen if it
+could not be determined
+within the short time
+span before the
+response has to be
+returned, e.g. because a
+third party has to be
+requested for
+permission. (Same as
+Q01.FR.08)
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 514/803 Part 2 - Specification

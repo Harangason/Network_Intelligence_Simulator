@@ -1,0 +1,107 @@
+CSMS Charging Station
+SetNetworkProfileRequest(configurationSlot, connectionData)
+Set new credentials()
+SetNetworkProfileResponse(status: Accepted)
+Figure 18. Sequence Diagram: Set Network Connection Profile
+B09 - Requirements
+Table 39. B09 - Requirements when using SetNetworkProfileRequest
+ID Precondition Requirement definition Note
+B09.FR.01 On receipt of the
+SetNetworkProfileRequest
+The Charging Station SHALL validate the
+content, store the new data and if successful,
+respond by sending a
+SetNetworkProfileResponse message, with
+status Accepted
+Matches B09.FR.33 for
+NetworkConfiguration.
+B09.FR.02 On receipt of the
+SetNetworkProfileRequest
+The Charging Station SHALL validate the
+content. If the content is invalid, the Charging
+Station SHALL respond by sending a
+SetNetworkProfileResponse message, with
+status Rejected and an optional
+statusInfo.reasonCode.
+Recommended reasonCode to use
+is "InvalidNetworkConf". The field
+additionalInfo is recommended to
+be used to convey which
+configuration parameter is invalid
+and why.
+Matches B09.FR.34 for
+NetworkConfiguration.
+B09.FR.03 If setting a valid
+NetworkConnectionProfile in a
+SetNetworkProfileRequest fails.
+The Charging Station SHALL respond by
+sending a SetNetworkProfileResponse
+message, with status Failed
+B09.FR.04 The variable
+AllowSecurityProfileDowngrade is
+not implemented or implemented
+and set to false AND
+the Charging Station receives a
+SetNetworkProfileRequest AND
+the NetworkConnectionProfile
+contains a lower securityProfile
+than the currently active security
+profile
+The Charging Station SHALL respond by
+sending a SetNetworkProfileResponse
+message, with status Rejected and optional
+statusInfo.reasonCode.
+Recommended reasonCode to use
+is "NoSecurityDowngrade". The
+field additionalInfo can be used to
+provide more details.
+Matches B09.FR.35 for
+NetworkConfiguration.
+B09.FR.05 When the value of
+configurationSlot in
+SetNetworkProfileRequest does
+not match an entry in valuesList of
+NetworkConfigurationPriority
+The Charging Station SHALL respond by
+sending a SetNetworkProfileResponse
+message with status Rejected with optional
+statusInfo.reasonCode.
+Recommended reasonCode to use
+is "InvalidConfSlot". The field
+additionalInfo can be used to
+provide more details.
+B09.FR.06 A Charging Station SHALL support at least two
+configuration slots for network connection
+profiles.
+B09.FR.07
+(2.1)
+Charging Station and CSMS are strongly
+RECOMMENDED to use the highest security
+profile possible.
+B09.FR.08
+(2.1)
+When receiving a
+GetBaseReportRequest
+Charging Station SHALL include in the report
+the component NetworkConfiguration with
+instances for every configurationSlot that it
+supports with the variables it supports.
+B09.FR.09
+(2.1)
+When Charging Station accepts a
+SetNetworkProfileRequest from
+CSMS for configurationSlot
+Charging Station SHALL update all variables
+corresponding to the NetworkConfiguration
+component with instance configurationSlot.
+B09.FR.10
+(2.1)
+If Charging Station supports
+setting network configuration via
+configuration variables in
+NetworkConfiguration
+Charging Station SHALL report these variables
+with mutability ReadWrite (or WriteOnly in
+case of BasicAuthPassword)
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 70/803 Part 2 - Specification

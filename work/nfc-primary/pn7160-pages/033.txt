@@ -1,0 +1,37 @@
+NXP Semiconductors PN7160_PN7161
+Near Field Communication (NFC) controller
+aaa-013871
+host
+communication
+possible
+tboot
+interface selection
+tt(VDDPAD-VEN)
+VEN
+VDD(PAD)
+VBAT
+Figure 21. VBAT is set up before VDD(PAD)
+See Section 15.2.1 and Section 15.2.2 for the timings values.
+11.5.2.2  VDD(PAD) and VBAT are set up at the same time
+This is the case, when VBAT pin is connected to a PMU/regulator which also supply VDD(PAD).
+aaa-013872
+host
+communication
+possible
+tboot
+tt(VBAT-VEN)
+VEN
+VDD(PAD)
+VBAT
+Figure 22. VDD(PAD) and VBAT are set up in the same time
+See Section 15.2.1 and Section 15.2.2 for the timings values.
+11.5.2.3  PN7160 has been enabled before VDD(PAD) is set up or before VDD(PAD) has been cut-off
+This can be the case when VBAT pin is directly connected to the battery and when VDD(PAD) is generated from a
+PMU. When the battery voltage is too low, then the PMU might no more be able to generate VDD(PAD). When the
+device gets charged again, then VDD(PAD) is set up again.
+As the pins to select the interface are biased from VDD(PAD), when VDD(PAD) disappears the pins might not be
+correctly biased internally and the information might be lost. Therefore it is required to make the IC boot after
+VDD(PAD) is set up again.
+PN7160_PN7161 All information provided in this document is subject to legal disclaimers. © 2026 NXP B.V. All rights reserved.
+Product data sheet Rev. 4.2 — 22 July 2026 Document feedback
+33 / 70

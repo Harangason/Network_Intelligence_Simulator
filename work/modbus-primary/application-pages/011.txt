@@ -1,0 +1,70 @@
+MODBUS Application Protocol Specification V1.1b3 Modbus 
+April 26, 20 12 http://www.modbus.org  11/50 
+5.1 Public Function Code Definition 
+Function Codes  
+code  Sub 
+code  
+(hex)  Section  
+Data 
+Access  
+Bit 
+access  
+Physical Discrete 
+Inputs  
+Read  Discrete Inputs  02 02 6.2 
+Internal Bits  
+ Or 
+ Physical coils  
+Read Coils  01 01 6.1 
+Write Single Coil  05 05 6.5 
+Write Multiple Coils  15 0F 6.11  
+16 bits 
+access  
+Physical Input 
+Registers  
+Read Input Register  04 04 6.4 
+Internal Registers  
+ Or 
+Physical Output 
+Registers  
+Read Holding Registers  03 03 6.3 
+Write Single Register  06 06 6.6 
+Write Multiple Registers  16 10 6.12  
+Read/Write Multiple Registers  23 17 6.17  
+Mask Write Register  22 16 6.16  
+Read FIFO queue  24 18 6.18  
+File record access  
+Read File record  20 14 6.14  
+Write File record  21 15 6.15  
+Diagnostics  
+Read Exception status  07 07 6.7 
+Diagnostic  08 00-18,20 08 6.8 
+Get Com event counter  11 OB 6.9 
+Get Com Event Log 12 0C 6.10  
+Report Server  ID 17 11 6.13  
+Read device Identification 43 14 2B 6.21  
+Other  Encapsulated Interface 
+Transport  
+43 13,14  2B 6.19  
+CANopen General Reference  43 13 2B 6.20  
+6 Function codes descriptions 
+6.1 01 (0x01) Read Coils 
+This function code is used to read from 1 to 2000 contiguous status of coils in a remote 
+device. The Request PDU specifies the starting address, i.e. the address of the first coil 
+specified, and the number of coils. In the PDU Coils are addressed starting  at zero. Therefore 
+coils numbered 1-16 are addressed as 0-15. 
+The coils in the response message are packed as one coil per bit of the data field. Status is 
+indicated as 1= ON and 0= OFF. The LSB of the first data byte contains the output addressed 
+in the query. The other coils follow toward the high order end of this byte, and from low order 
+to high order in subsequent bytes.  
+If the returned output quantity is not a multiple of eight, the remaining bits in the final data 
+byte will be padded with zeros (toward the high order end of the byte). The Byte Count field 
+specifies the quantity of complete bytes of data.  
+Request 
+Function code  1 Byte  0x01  
+Starting Address  2 Bytes 0x0000 to 0xFFFF  
+Quantity of coils  2 Bytes  1 to 2000 (0x7D0)  
+Response 
+Function code  1 Byte  0x01  
+Byte count  1 Byte N* 
+Coil Status  n  Byte  n = N or N+1  

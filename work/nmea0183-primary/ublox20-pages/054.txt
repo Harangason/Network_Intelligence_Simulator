@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+3.10.2.1 Write ﬁle 0xA4: receiver conﬁguration items
+Message UBX-CFG-OTP
+Write ﬁle 0xA4: receiver conﬁguration items
+Type Set
+Comment Writes the conﬁguration data (key ID and value) for one or more conﬁguration items to the OTP memory. Any
+supported conﬁguration item can be set this way, provided there is enough free OTP memory available.
+It is possible to write multiple ﬁles of this type. However, each ﬁle on the OTP memory has its own header,
+which consumes memory. To reduce memory usage, combine the conﬁgurations of multiple items into a
+single ﬁle.
+The same conﬁguration item can be set more than once. In such a case, only the latest value is eﬀective.
+Conﬁguration in the OTP memory is permanent and has limited space. Verify the conﬁguration in advance
+and check the available space before writing the ﬁnal conﬁguration to the OTP memory.
+For details, see section OTP memory in the Integration manual.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x06 0x41 12 + [0..n] see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1[12] cfgHeader - - File header: use u-center tool to compose the message
+Start of repeated group (N times)
+12 + n U1 cfgData - - Conﬁguration data (key and value pairs)
+End of repeated group (N times)
+3.10.3 UBX-CFG-RST (0x06 0x04)
+3.10.3.1 Reset receiver / Clear backup data structures
+Message UBX-CFG-RST
+Reset receiver / Clear backup data structures
+Type Command
+Comment Do not expect this message to be acknowledged by the receiver.
+• Newer FW version will not acknowledge this message at all.
+• Older FW version will acknowledge this message but the acknowledge may not be sent completely
+before the receiver is reset.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x06 0x04 4 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 X2 navBbrMask - - BBR sections to clear. The following special sets apply:
+• 0x0000 Hot start
+• 0x0001 Warm start
+• 0xFFFF Cold start
+bit 0   U:1 eph - - Ephemeris
+bit 1   U:1 alm - - Almanac
+bit 2   U:1 health - - Health
+bit 3   U:1 klob - - Klobuchar parameters
+bit 4   U:1 pos - - Position
+bit 5   U:1 clkd - - Clock drift
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 54 of 224
+C1-Public

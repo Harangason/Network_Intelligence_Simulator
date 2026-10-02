@@ -1,0 +1,48 @@
+Tool validations
+* Step 21 Step 24 : (MaxCost)
+Note:  The value of    TransactionEventRequest.timestamp  of last    TransactionEventRequest.eventType  is Started is called    
+TxStartDateTime :
+Message TransactionEventRequest with eventType Ended from reusable states leading up to ParkingBayUnoccupied must have:
+- costDetails.failureToCalculate must be <omitted>
+- costDetails.failureReason must be <omitted>
+- costDetails.totalCost.currency must be EUR
+- costDetails.totalCost.typeOfCost must be MaxCost
+-  costDetails.totalUsage.chargingTime  must be    <EndChargingTime> - <StartChargingTime>  
+- costDetails.totalCost.chargingTime .exclTax must be 35.00
+- costDetails.totalCost.chargingTime .inclTax must be 42.00
+- costDetails.totalCost.chargingTime .taxRates[0].type t20_0
+- costDetails.totalCost.chargingTime .taxRates[0].tax 20.0
+- costDetails.totalCost.energy must be <omitted>
+- costDetails.totalCost.fixed  must be <omitted>
+- costDetails.totalCost.idleTime must be <omitted>
+- costDetails.totalCost.reservation must be <omitted>
+- costDetails.totalCost.total.exclTax must be costDetails.totalCost.chargingTime.exclTax
+- costDetails.totalCost.total.inclTax must be costDetails.totalCost.chargingTime.inclTax
+- costDetails.chargingPeriods[0].tariffId must be Test System1
+- costDetails.chargingPeriods[0].startPeriod must be <TxStartDateTime>
+- costDetails.chargingPeriods[0].dimensions[0].type must be ChargingTime
+- costDetails.chargingPeriods[0].dimensions[0].volume must be costDetails.totalUsage.chargingTime
+Post scenario validations:
+N/a
+6.2.37. Page 484 - 840 - (2026-06) - Renamed Configuration variable
+The configuration variable <Configured max time deviation> was renamed to <Configured max clock deviation>.
+The following test cases were updated:
+TC_K_09_CS, TC_K_21_CS, TC_K_22_CS, TC_K_23_CS, TC_K_28_CS, TC_K_39_CS, TC_K_40_CS, TC_K_41_CS, TC_K_56_CS ,
+TC_Q_110_CS, TC_Q_117_CS
+6.2.38. Page 525 - (2026-02) - TC_N_52_CS - NotifyEvent steps added
+Test case name Set Variable Monitoring - Removing a VariableMonitor
+Test case Id TC_N_52_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State EnergyTransferStarted or manually trigger the monitor.
+Notes: If componentVariable is set to "Power" or "Current" EnergyTransferStarted will trigger the monitor. If another
+componentVariable is chosen a manual action is needed to trigger the monitor.
+2.  Charging Station sends a      NotifyEventRequest
+3.  Test System responds with a       NotifyEventResponse
+3. 5.  The Charging Station responds with a
+ClearVariableMonitoringResponse
+2. 4.  The Test System sends a ClearVariableMonitoringRequest
+with
+id <monitoringId of monitor set in Memory State>
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 64/116 Errata 2026-06

@@ -1,0 +1,850 @@
+PDF_PAGE1
+September 2002 Mixed-Signal Products
+/C0073/C0110/C0116/C0101/C0114/C0102/C0097/C0099/C0101 /C0067/C0105/C0114/C0099/C0117/C0105/C0116/C0115 /C0102/C0111/C0114
+/C0084/C0073/C0065/C0047/C0069/C0073/C0065/C0262/C0050/C0051/C0050/C0262/C0070
+Design Notes
+SLLA037A
+PDF_PAGE2
+IMPORTANT NOTICE
+Texas Instruments Incorporated and its subsidiaries (TI) reserve the right to make corrections, modifications,
+enhancements, improvements, and other changes to its products and services at any time and to discontinue
+any product or service without notice. Customers should obtain the latest relevant information before placing
+orders and should verify that such information is current and complete. All products are sold subject to TI’s terms
+and conditions of sale supplied at the time of order acknowledgment.
+TI warrants performance of its hardware products to the specifications applicable at the time of sale in
+accordance with TI’s standard warranty. Testing and other quality control techniques are used to the extent TI
+deems necessary to support this warranty. Except where mandated by government requirements, testing of all
+parameters of each product is not necessarily performed.
+TI assumes no liability for applications assistance or customer product design. Customers are responsible for
+their products and applications using TI components. To minimize the risks associated with customer products
+and applications, customers should provide adequate design and operating safeguards.
+TI does not warrant or represent that any license, either express or implied, is granted under any TI patent right,
+copyright, mask work right, or other TI intellectual property right relating to any combination, machine, or process
+in which TI products or services are used. Information published by TI regarding third–party products or services
+does not constitute a license from TI to use such products or services or a warranty or endorsement thereof.
+Use of such information may require a license from a third party under the patents or other intellectual property
+of the third party, or a license from TI under the patents or other intellectual property of TI.
+Reproduction of information in TI data books or data sheets is permissible only if reproduction is without
+alteration and is accompanied by all associated warranties, conditions, limitations, and notices. Reproduction
+of this information with alteration is an unfair and deceptive business practice. TI is not responsible or liable for
+such altered documentation.
+Resale of TI products or services with statements different from or beyond the parameters  stated by TI for that
+product or service voids all express and any implied warranties for the associated TI product or service and
+is an unfair and deceptive business practice. TI is not responsible or liable for any such statements.
+Mailing Address:
+Texas Instruments
+Post Office Box 655303
+Dallas, Texas 75265
+Copyright   2002, Texas Instruments Incorporated
+PDF_PAGE3
+iii Interface Circuits for TIA/EIA-232-F
+Contents
+General Information 1. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+TIA/EIA-232-F Industry Standard for Data Transmission 1. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+TIA/EIA-232-F Specification 3. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+TIA/EIA-232-F Electrical Specification 4. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+Calculating Maximum Line Length 6. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+The DB9S Connector 7. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+Optimized PC Interface Devices 9. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+SN75C185 Power Considerations 10. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+Interface Power-Consumption Calculations 10. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+SN75LP185A and SN75LPE185 High-Speed, Low-Power Devices 13. . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+On-Chip Slew-Rate Limiting 16. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+Internal Noise Filtering 16. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+List of Figures
+1 TIA/EIA-232-F Industry Standard for Data Transmission 2. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+2 232 Transition Time vs Data Rate 3. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+3 TIA/EIA-232-F Electrical Specification 4. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+4 TIA/EIA-232-F Driver Output Current vs C L 5. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+5 Calculating Line Length and Data Rate 7. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+6 232 DB9S Interface 7. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+7 232 Null Modem 9. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+8 The SN75C185 Used as an Optimized PC Interface 9. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+9 Power-Supply Considerations 10. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+10 SN75LP185A Data Signaling-Rate Performance 15. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 
+PDF_PAGE4
+ 
+iv SLLS037A
+PDF_PAGE5
+1
+Interface Circuits for TIA/EIA-232-F
+ABSTRACT
+This design note provides information concerning the designing of TIA/EIA-232-F
+interface circuits. The TIA/EIA-232-F standard is covered including the electrical
+specification, maximum cable lengths, and the DB9S connector. The section tilted
+Optimizing PC Interface Devices  discusses the following topics: SN75C185 power
+considerations, interface power-consumption calculations, the SN75LP1185 and
+SN75LPE185 devices, on-chip slew rate limiting, and internal noise filtering.
+General Information
+This document on ANSI Electronic Industries Association/Telecommunication
+Industry Association TIA/EIA-232-F and ITU V.28 (generally referred to as 232),
+discusses the electrical aspects of the standard, i.e., the physical layer. However,
+the products under discussion in this document are specifically applicable to the
+9-pin DB9S Personal Computer Data Terminal Equipment (DTE) serial interface,
+which is, effectively, a subset of the full 232 standard. As a semiconductor
+manufacturer, TI finds that the majority of 232 applications are moving to this
+interface. Due to the nature of the signals (five receive and three transmit lines),
+the older established 232 products no longer provide an optimum solution. This
+interface is now driving the need for single-chip 232 solutions. Desirable features
+such as single-supply operation, higher data-signaling rates, voltage-clamped
+outputs, increased ESD protection, and power-down modes have become
+essential in today’s interface. In the latter half of this document, we discuss the
+DB9S interface and TI products designed specifically for this application.
+Looking at the DB9 interface one step back into the digital system, there is, in
+most cases, a universal asynchronous receiver/transmitter (UART) or
+asynchronous communication element (ACE). The ACE provides the
+parallel-to-serial conversion and the necessary start/stop bits, parity-bit
+generation, and checking for error-free data transmission. TI manufactures a
+number of ACEs, such as the TL16C552. This integrates two serial ports with
+FIFO buffers together with a PC parallel port.
+TIA/EIA-232-F Industry Standard for Data Transmission
+The EIA introduced the 232 standard in 1962 in an effort to standardize the
+interface between DTE and Data Communication Equipment (DCE). The DTE
+comprises the data source, data link, or both. The DCE provides the functions to
+establish, maintain, and terminate a connection, and to code/decode the signals
+between the DTE and the data channel. Although emphasis then was placed on
+interfacing between a modem unit and DTE, other applications were quick to
+adopt the 232 standard. The growing use of the personal computer (PC) quickly
+ensured that 232 became the industry standard for all low-cost serial interfaces
+between the DTE and peripheral. The mouse, plotter, printer, scanner, digitizer,
+and tracker ball, in addition to the external modems and test equipment, are all
+examples of peripherals that connect to a 232 port (see Figure 1). Using a
+common standard allows widespread compatibility, plus a reliable method for
+interconnecting a PC to peripheral functions.
+PDF_PAGE6
+ 
+2 SLLA037A
+CPU
+Backplane Bus
+ACE
+Other
+Option
+Cards
+DTE
+System
+Dependent
+DX
+RX DCE
+Scope of Standard
+• Electrical and Signal Characteristics
+• Mechanical Interface Characteristics
+• Functional Description of Interchange Circuits
+• Standard Interface for Selected System
+Configurations
+• Recommendations and Explanatory Notes
+Peripheral System
+Host System
+232 Link
+Flat Ribbon or Multicore Cable
+Typically Less Than 15 Meters
+Figure 1. TIA/EIA-232-F Industry Standard for Data Transmission
+The EIA RS-232-C standard, revised in 1969, was superseded by EIA-232-D
+(1986). The EIA-232-D again was superseded by TIA/EIA-232-E, which brings
+it in line with ITU V.24, and V.28 and ISO IS2110. This revision includes an update
+on the rise-time to unit-interval ratio and reverses the changes made by the D
+revision (see Figure 2). Although an older standard with problems such as high
+noise susceptibility, low data rates, and very limited transmission length, 232
+fulfills a vital need as a low-cost communication system. Consequently, new
+products are being developed at a faster rate than ever. The most recent revision
+is the TIA/EIA-232-F, which does not have any technical changes that will create
+compatibility problems with equipment conforming to previous revisions of
+TIA/EIA-232. This latest version brings it in line once again with international
+standards ITU-T V.24, V.28, and ISO/IEC 2110.
+PDF_PAGE7
+ 
+3 Interface Circuits for TIA/EIA-232-F
+TIA/EIA-232-E
+and -F
+0.1
+0.01
+0.001
+0.0001
+10 100 1 k 10 k
+Transition Time – ms
+1
+Data Rate (bit/s)
+10
+100 k 1 M
+100 10 1 0.1 0.01 0.001
+0.0006
+0.006
+0.06
+0.6
+6
+60
+Slew Rate –
+Unit Interval – ms
+20 k 200 k
+sµV/
+EIA-232-D
+5 µs Limit
+V.28
+3% Limit
+30 V/µs Limit
+TIA/EIA-232-E
+and -F
+EIA-232-D
+RS-232-C
+4% Limit
+Figure 2. 232 Transition Time vs Data Rate
+TIA/EIA-232-F Specification
+The standard ensures:
+• Compatible voltage and signal levels
+• Common pin-wiring configurations
+• Minimum amount of control information between the DTE and DCE
+It accomplishes these features by incorporating the following areas in the
+standard:
+• Electrical and Signal Characteristics – Electrical and signal characteristics
+of the transmitted data in terms of signal voltage levels, impedances, and
+rates of change (see Figure 3).
+• Mechanical Interface Characteristics  – Mechanical interface
+characteristics defined as a 25-pin D-type connector with dimensions and pin
+assignments specified in the standard. Although the standard only specifies
+a 25-pin D-type connector, most laptop and desktop PCs today use a 9-pin
+DB9S connector (see The DB9S Connector section of this document). The
+DCE equipment connector is male for the connector housing and female for
+the connection pins. Likewise, the DTE connector is a female housing with
+male connection pins.
+• Handshake Information – A functional description of the interchange circuit
+enables a fully interlocked handshake exchange of data between equipment
+at opposite ends of the communication channel. However, V.24 defines many
+more signal functions than 232, but those that are common are compatible.
+Twenty-two of the 25 connector pins have designated functions, although
+few, if any, practical implementations use all of them. The most commonly
+used signals also are shown in The DB9S Connector  section of this
+document.
+PDF_PAGE8
+ 
+4 SLLA037A
+It is worth noting that, for applications that use the 25-pin D-type connector, often
+there is a problem in communication due to different handshaking signals being
+employed by each system.
+12 V
+–12 V
+5 V
+Signal Conductor
+C
+Reference Common
+TTL/CMOS TTL/CMOS
+Space
+3 V
+–3 V
+3 V
+–3 V
+5 V to 15 V
+0 V
+–5 V to –15 VMark
+?
+Single Interface Line (1 of 25 Maximum) Interchange Signal
+• Receiver Input Impedance, 3 kΩ  to 7 kΩ
+• Driver Power-Off Impedance, >300 Ω
+• Load Capacitance < 2500 pF Includes
+Receiver Input
+• Tx Rise/Fall Time Within Transition Region
+1 ms —  Below 40 bit/s
+4% of Unit Interval —  30 bit/s to 20 kbit/s
+• Slew Rate: 30 V/µs max
+Figure 3. TIA/EIA-232-F Electrical Specification
+TIA/EIA-232-F Electrical Specification
+All 232 circuits carry voltage signals, with the voltage at the connector pins not
+to exceed ±25 V. All pins must be able to withstand a short circuit to any other pin
+without sustaining permanent damage. Each line should have a minimum load
+of 3 kΩ  and a maximum load of 7 kΩ , which usually is part of the receiver circuit.
+A logic 0 is represented by a driven voltage between 5 V and 15 V and a logic 1
+of between –5 V and –15 V. At the receiving end, a voltage between 3 V and 15 V
+represents a 0 and a voltage of between –3 V and –15 V represents a 1. Voltages
+between ±3 V are undefined and lie in the transition region. This effectively gives
+a 2-V minimum noise margin at the receiver.
+The maximum cable length originally was defined in RS-232-C as 15 meters;
+however, this has been revised in EIA-232-D and TIA/EIA-232-E and is now
+specified more correctly as a maximum capacitive load of 2500 pF. This equates
+to about 15 to 20 meters of line length, depending on cable capacitance.
+As mentioned previously, 232 specifies a maximum slew rate of the signal at the
+output of the driver to be 30 V/µs. This limitation is concerned with the problem
+of crosstalk between conductors in a multiconductor cable. The faster the
+transition edge, the greater the amount of crosstalk. This restriction, together with
+the fact that the drivers and receivers use a common signal ground and the
+associated noise introduced by the ground current, severely limits the maximum
+data throughput.
+For this reason, the 232 standard specifies a maximum data rate of 20 kbit/s. The
+standard also specifies the relationship between unit interval and rise time
+through the transition region (3 V to –3 V) or tt. This is the main difference between
+the D and the E revision. This is shown more clearly in Figure 2. EIA-232-D, with
+a data rate of up to 8 kbit/s, specifies the relationship between transition time and
+unit interval or bit time, tb, to be 4% of the maximum data rate. Above 8 kbit/s, the
+transition time is relaxed to a 5-µs maximum, independent of the data rate. Both
+the C and the E revision specify the ratio of tt/tb to be 4% all the way up to 20 kbit/s.
+PDF_PAGE9
+ 
+5 Interface Circuits for TIA/EIA-232-F
+One can extrapolate this further using the 4% figure. With the maximum slew rate
+of 30 V/µs, the maximum achievable data rate is 200 kbit/s; however, in practice,
+this is limited to around 120 kbit/s. A number of software programs operate at
+transfer rates of 116 kbit/s. Furthermore, over longer line lengths, the maximum
+drive current of the line driver becomes the dominant feature affecting data rate,
+displacing the 30-V/ µs slew rate. As the line length increases, the load
+capacitance also increases, requiring more current to maintain the same
+transition time.
+The curves shown in Figure 4 indicate the drive current required to maintain the
+4% relationship at different data rates. In today’s low-power systems, this level
+of output current is not sustainable at above approximately 20 kbit/s. In practice,
+the line length usually is limited to around 3 meters for the higher data rates. Most
+drivers can handle the higher transmission rates over this line length without
+seriously compromising supply current. Also shown is the 256-kbit/s curve, at
+which data rate the 30-V/µs limit is exceeded. As stated earlier, the need for high
+data rates (>200 kbit/s) is widespread throughout the industry.
+25
+15
+0 500 1000 1500
+Driver Output Current – mA
+35
+Load Capacitance – pF
+45
+2000 2500
+5
+TIA/EIA-232-F
+Tx Rise Time = 4% of Unit Interval
+116 kbit/s
+50 kbit/s
+10 kbit/s
+20 kbit/s
+256 kbit/s
+Figure 4. TIA/EIA-232-F Driver Output Current vs C L
+The curves shown in Figure 4 were generated using the following equation, which
+is an approximate equation relating transition time (t t), line capacitance (C l),
+receiver input impedance (Ri), driver short-circuit current (IO), and the initial and
+final line voltage (–3 V and 3 V) of the transition region, Vi and Vf, respectively,
+tt /C0043Ri /C0032Cl /C0032ln/C0551/C0561
+/C0562
+/C0356Ri /C0032IO/C0356/C0041/C0356Vf/C0356
+/C0356Ri /C0032IO/C0356/C0041/C0356Vi/C0356/C0551/C0563
+/C0564
+PDF_PAGE10
+ 
+6 SLLA037A
+Turning this equation around with respect to Cl and canceling Ri, Vi, and Vf gives:
+Cl /C00431
+3 /C0032
+tt
+ln/C0426
+IO/C00411
+IO/C00421/C0427
+The voltage levels, V f and V i, used in this equation are the extremes of the
+transition region. Assuming a typical driver short-circuit current of 20 mA and a
+receiver input resistance of 5 k Ω , the typical time taken to pass through the
+transition region is:
+tt /C0043300 /C0032Cl seconds.
+This equation can be manipulated further to gain a relationship of unit interval with
+line length in terms of load capacitance and short-circuit driver current. The
+equation in Figure 5 assumes conformance to the 4% rule.
+Calculating Maximum Line Length
+So far, line length in terms of load capacitance has been discussed. For practical
+purposes, we must not consider turning this value for load capacitance into true
+line length. The standard states a maximum line capacitance of 2500 pF. The
+input capacitance for a receiver of 20 pF leaves 2480 pF as the maximum line
+capacitance.
+Next, the type of cable to be used must be considered. Standard 232 cable
+supplied by a number of manufacturers has a mutual capacitance of
+approximately 100 pF per meter, but stray capacitance must be added. Stray
+capacitance varies considerably, depending on whether or not the line is
+shielded.
+For shielded cable, stray capacitance typically is double the mutual capacitance.
+As shown in Figure 5, for shielded cable, the maximum line length is 20 meters;
+for unshielded cable, it is more than 40 meters.
+PDF_PAGE11
+ 
+7 Interface Circuits for TIA/EIA-232-F
+Cm
+Cs Cs
+Signal
+Conductor
+Common
+Conductor
+Shield
+Line-Length Calculation
+Maximum Capacitance = 2500 pF
+Receiver I/P Capacitance < 20 pF
+Maximum Line Capacitance = 2480 pF
+Total Line Capacitance/m C C = CM + CS
+Mutual Capacitance of Cable/m C M ≈ 100 pF
+Stray Capacitance/m C S ≈ 200 pF
+Maximum Line Length = 2480/C c
+Standard Cable CM = 24 pF/m
+Maximum Line Length Shielded = 10 Meters
+Unit Interval /C00431/C03243 0.04
+CC In /C0466
+IO/C00411
+IO/C00421/C0467
+Data-Rate Calculation
+IO = Short-Circuit Current of Driver
+Figure 5. Calculating Line Length and Data Rate
+The DB9S Connector
+As mentioned previously, today’s notebooks, laptops, and many desktop PCs,
+with their reduced size, no longer use the standard 25-pin D-type connector
+detailed in the standard but have substituted it for a 9-pin D type. This is
+commonly known as the DB9S connector. Like the 25-pin, the DCE connector is
+a male outer casing with female connection pins, and the DTE is a female outer
+casing with male connecting pins. As the interface is now made up of only nine
+pins, the handshaking lines have been reduced accordingly, but still are sufficient
+for most applications. Figure 6 shows the pin assignments for the interconnect
+cable into the DTE connector. An explanation of the function of each signal is
+given in
+Figure 6.
+CODE DESCRIPTION
+DCD Data Carrier Detect
+DSR Data Set Ready
+ RD Receive Data Line
+RST Request To Send
+ TD Transmit Data Line
+CTS Clear To Send
+DTR Data Terminal Ready
+ RI Ring Indicator
+1
+6
+2
+7
+3
+8
+4
+95
+DB9S Connector
+Figure 6. 232 DB9S Interface
+PDF_PAGE12
+ 
+8 SLLA037A
+Data Carrier Detect (DCD) – Receive Line Signal Detector – The On condition
+on this signal line, as sent by the DCE, informs the DTE that it is receiving a carrier
+signal from the remote DCE that meets its criteria. In modems, this circuit is held
+on as long as it is receiving a signal that can be recognized as a carrier. On
+half-duplex channels, DCD is held off when RTS is in the On condition.
+Data Set Ready (DSR) – This is a signal turned on by the DCE to indicate to the
+DTE that it is connected to the line.
+Receive Data Line (RD) – The signals on the RD line are in serial form. When
+the DCD signal is in the Off condition the RD line must be held in the Mark state.
+Request to Send (RTS) – The signal is turned on by the DTE to indicate now it
+is ready to transmit data. The DCE then must prepare to receive data. In
+half-duplex operation, it also inhibits the receive mode. After some delay, the DCE
+turns the CTS line on to inform the DTE it is ready to receive data. Once
+communication is complete and no more data is transmitted by the DTE, RTS is
+then turned off by the DTE. After a brief delay to ensure that all data that was
+transmitted has been received, the DCE turns CTS off.
+Transmit Data Line (TD) – The signals on this circuit are transmitted serially from
+DTE to DCE. When no data is being transmitted, the signal line is held in the Mark
+state. For data to be transmitted, DSR, DTR, RTS, and CTS must all be in the
+Mark state.
+Clear to Send (CTS) – This signal is turned on by the DCE to indicate to the DTE
+that it is ready to receive data. CTS is turned on in response to the simultaneous
+On condition of the RTS, DSR, and DTR signals.
+Data Terminal Ready (DTR) – This signal, in conjunction with DSR, indicates
+equipment readiness. DTR is turned On by the DTE to indicate to the DCE it is
+ready to receive or transmit data. DTE must be On before the DCE can turn on
+the DSR. When the DTR is turned off by the DTE, the DCE is removed from the
+communication channel when transmission is complete.
+Ring Indicator (RI) – The ring indicator is turned on by the DCE while ringing is
+being received, and is a term left over from the use of the standard in
+telephone-line modem applications. This is used primarily in autoanswer
+systems.
+Signal Ground (pin 5) – This is the ground providing the common ground
+reference for all the interchange circuits, is separate from the protective ground.
+The protective ground is electrically bonded to the equipment frame and usually
+is directly connected to the external ground. Therefore, any static discharges are
+routed directly to ground without affecting the signal lines.
+While all these pins are assigned, not all equipment uses every pin. Consider the
+mouse that can use as few as four lines (signal ground, RI, TD, and RD). Most
+equipment utilizes a minimum of RTS, DTR, TD, RD, CTS, and DSR.
+Also, note the usage of the DTE interface. The majority of equipment uses this
+interface and makes use of the null modem as a means of communication
+between DTEs. The null modem feeds back the RTS signal to the CTS line on
+each interface. Figure 7 details the connections for implementing a full null
+modem for the DB9S connector.
+PDF_PAGE13
+ 
+9 Interface Circuits for TIA/EIA-232-F
+DCD 1
+RD 2
+TD 3
+DTR 4
+GND 5
+DSR 6
+RTS 7
+CTS 8
+RI 9
+1 DCD
+2 RD
+3 TD
+4 DTR
+5 GND
+6 DSR
+7 RTS
+8 CTS
+9 RI
+Figure 7. 232 Null Modem
+Optimized PC Interface Devices
+The DB9S DTE interface has three transmit lines and five receive lines. This is
+an awkward combination for the standard 232 IC configurations in use today.
+Consider the ubiquitous SN75188 and SN75189 quadruple drivers and
+receivers. Implementing this interface requires three ICs: one ’188 and two ’189s.
+Equal combinations of drivers, such as the triple driver/receiver of the
+SN75C1406, still require two chips to implement the interface.
+For this reason, TI developed the SN75C185. By providing the exact
+combinations of driving and receiving elements, along with the necessary
+passive components, a highly-optimized solution can be provided – the
+SN75C185 is just that. The SN75C185 integrates three drivers and five receivers
+and includes the necessary capacitors for driver slew-rate limit (30 V/ µs) and
+receiver filter implementation, all in a single 20-terminal package.
+The designer ’s dilemma is eased further by the use of a flow-through pinout
+architecture (see Figure 8). By aligning one side of the SN75C185 with the pins
+of the DB9S connector and the other side to industry-standard ACEs or UARTs,
+printed circuit board (PCB) layout can be simplified greatly.
+VDD
+RA1
+RA2
+RA3
+DY1
+DY2
+RA4
+DY3
+RA5
+VSS
+VCC
+RY1
+RY2
+RY3
+DA1
+DA2
+RY4
+DA3
+RY5
+GND
+VCC VDD
+VSS
+DCD
+DSR
+RX
+RTS
+TX
+CTS
+DTR
+RI
+SN75C185232 Port
+DB9S
+Connector
+One SN75C185 Replaces:
+2 × SN75189 (5 Cells)
+1 × SN75188 (3 Cells)
+8–12 Capacitors
+≥ 35% Savings in 
+   Board Space
+• Contains Five Receivers and Three Drivers
+• Consumes Less than 8 mW Power
+• Interfaces Easily Between ACE and Serial Port
+Connector (Flow-Through Pinout)
+• Is Available in 0°C to 70°C to 85°C Temperature
+Ranges
+Figure 8. The SN75C185 Used as an Optimized PC Interface
+PDF_PAGE14
+ 
+10 SLLA037A
+Since its introduction in 1989, the footprint of the SN75C185 has become an
+industry standard. This provides for multiple sources and various semiconductor
+processes for addressing different design requirements. TI and others have
+released lower-priced versions at the expense of power and external
+components. The single-chip interface concept also is being applied to the
+peripheral (or DCE) end of the cable as well.
+SN75C185 Power Considerations
+System power consumption often is considered very late in the design cycle. Of
+even more concern is that the power consumption of the interface circuitry, the
+least attractive circuit to design, often is totally overlooked. The consequences
+of this can be catastrophic, especially when using devices in confined spaces.
+These areas normally have very poor air circulation, causing the ambient
+temperature of the whole system to increase.
+These types of problems are particularly difficult to diagnose because failure
+often can be intermittent as devices pass into and out of thermal shutdown.
+For these reasons, low-quiescent-power devices are becoming a necessity for
+modern applications. As digital technologies advance, device power
+consumption decreases, making the interface circuits the limiting factor as far as
+system power consumption is concerned.
+Interface Power-Consumption Calculations
+Before the availability of the SN75C185, common implementations of 232
+required one quadruple-driver package and two quadruple receiver packages. In
+the driver chip, one device is redundant, and in the receiver chips, three devices
+are redundant. However, these devices still would be taking their quiescent
+current and wasting power. To provide the interface signals, three integrated
+circuits were required, while only two-thirds of the capability was being used. The
+calculations that follow demonstrate this difference. When comparing the ’C185
+solution to that provided by the SN75188 and SN75189 devices, the power
+saving is substantial (see Figure 9).
+VDD (12 V) VCC (5 V)
+IDD IIH
+VSS (–12 V)
+ISS
+IIH
+ICC IOL
+0 300 600 900 1200
+SN75189 × 2 SN75188 × 1Device
+Total
+’188/’189
+SN75C185*1
+Pdis – Power Dissipation – mW
+SN75C185
+vs
+SN75188, SN75189 Current Flow
+• Basic Equation Chip Temperature Rises By:
+• 74°C For SN75188 and 25°C For Each Receiver
+• 22°C Only For SN75C185Pdis = Pq + nPis + mPOS
+Figure 9. Power-Supply Considerations
+PDF_PAGE15
+ 
+11 Interface Circuits for TIA/EIA-232-F
+Both implementations require three supply voltages: a 5-V and ±12-V supplies.
+The power dissipated, P dis, within each device is the quiescent power of the
+device, Pq, plus the power dissipated in the input stage, P is, and the power
+dissipated in the output stage, POS, when it is driving the line.
+Hence,
+Pdis /C0043Pq /C0041nPis /C0041mPOS
+Where n is the number of the active input stages and m is the number of active
+output states.
+SN75188/SN75189 Combination – Using the SN75188 for the driver, the
+quiescent power consumption would be 576 mW [(IDD × 12 V) + ISS × 12 V]. In
+addition to this, the power dissipated in the input stage, Pisd, is:
+Pisd /C0043VDD /C0032IIL /C004312 V /C00321.6 mA /C004319.2 mW /C0324driver
+This is multiplied by 4 to take into account all four drivers, putting the fourth driver
+into a defined state to reduce any noise problems introduced by leaving the input
+floating.
+The power dissipated in the output stage, POS, is:
+POS /C0043/C0466VDD /C0042VOH/C0467
+VOH
+RL
+/C0043(12 V /C00429V ) 9V
+3k Ω /C00439m W /C0324driver
+This number is multiplied by 3 to take into account the three drivers active on the
+interface line. The sum gives a total power dissipation of:
+Pdis /C0043576 mW /C0041(4 /C003219.2 mW/C0324driver) /C0041(3 /C00329m W /C0324driver) /C0043680 mW.
+The junction temperature of a DIP device would have risen by 75°C.
+Using the SN75189 receivers, a quiescent power of 130 mW would be dissipated
+by each package. The power dissipated in the output stage has a similar equation
+to that of the driver.
+Pos /C0043VOL /C0032IOL /C00430.45 V /C003210 mA /C0324receiver /C00434.5 mW /C0324receiver
+This power dissipated is multiplied by 5 to take into account the five receivers
+being used. The input stage also can dissipate power.
+Pis /C0043
+/C0466VOH/C0467
+2
+RL
+/C0043(9 V) 2
+3k Ω /C004327 mW /C0324receiver
+Assuming three receivers in one SN75189 and two receivers in the other are
+being used, the power dissipated in the first receiver is:
+Pdis /C0043130 mW /C0041(3 /C003227 mW) /C0041(3 /C00324.5 mW) /C0043225 mW
+The power dissipated in the second receiver is:
+Pdis /C0043130 mW /C0041(2 /C003227 mW) /C0041(2 /C00324.5 mW) /C0043193 mW
+This raises the temperature of the first and second receivers by 25°C and 23°C,
+respectively.
+PDF_PAGE16
+ 
+12 SLLA037A
+The total power dissipated by the SN75188/189 combination is the sum of these
+three powers, which is 1.1 W.
+Using the SN75C185 – The power dissipation of the SN75C185 can be
+calculated in a similar manner. The quiescent power consumption of the
+SN75C185 is equal to:
+Pq /C0043VDD /C0032IDD /C0041/C0356VSS/C0356/C0032ISS /C0041VCC /C0032ICC /C0043(12 V /C0032200 /C0109A)
+/C0041(|–12 V | /C0032200 /C0109A) /C0041(5 V /C0032750 /C0109A) /C00438.55 mW
+The power dissipated in the input stage of the driver, Pis, is:
+Pis /C0043VDD /C0032IIL /C004312 V /C00321 /C0109A /C004312 /C0109W
+This is multiplied by 3 to take into account all of the drivers.
+The power dissipated in the output state of the driver, Pos, is:
+Pos /C0043/C0466VDD /C0042VOH/C0467/C0032
+VOH
+RL
+/C0043(12 V /C004210 V) /C003210 V
+3k Ω /C00436.67 mW
+This number is multiplied by 3 to take into account the three drivers that are
+driving the interface line, resulting in a power dissipation of 20 mW. The power
+dissipated in the output stage of the receiver, Pos, has an equation similar to that
+of the driver:
+Pos /C0043VOL /C0032IOL /C00430.4 V /C00323.2 mA /C00431.28 mW
+This value is multiplied by 5, giving a total 6.4 mW of power dissipated in the
+receiver’s output stages.
+The power dissipated in the input stage, Pis, equals:
+Pis /C0043
+/C0466VOH/C0467
+2
+RL
+/C0043(10 V) 2
+3k Ω /C004333.3 mW /C0324receiver
+This power dissipation also requires multiplying by 5, which gives a total input
+power dissipation of 167 mW.
+Then, by summing all the power contributors, the total power dissipation is
+derived by:
+Pdis /C0043Pq /C00413PIS /C00413POS /C00415PIS /C00415POS /C00438.55 mW /C0041(3 /C00320.012 mW)
+/C0041(3 /C00326.67 mW) /C0041(5 /C003233.3 mW) /C0041(5 /C00321.28 mW) /C0043201 mW
+The total power dissipated by the SN75C185 is 201 mW
+This represents a tremendous power savings, especially when considering that
+the line still is being driven. The temperature rise within the SN75C185 would be
+only 22 °C, enabling it to operate more reliably and with higher ambient
+temperatures.
+PDF_PAGE17
+ 
+13 Interface Circuits for TIA/EIA-232-F
+SN75LP1185 and SN75LPE185 High-Speed, Low-Power Devices
+In systems where high ESD protection [ ±15 kV using the human-body model
+(HBM)], high data signaling rates (>256 kbit/s), and low power consumption are
+of major concern, TI optimized two devices that are to meet these demands.
+Desktop, laptop, and palmtop PCs are all going toward these features. For these
+reasons TI introduced in late 1997 and early 1998 the SN75LP1185 and
+SN75LPE185 DTE devices, respectively, optimized for the DBS9 connector. The
+SN75LP1185 is pin-to-pin compatible with the industry-standard ’185 as shown
+in Figure 8 to allow for easy board-level hookup to the device. The SN75LPE185,
+which comes in a 24-pin package, also has the same footprint as the ’185 on the
+top 20 pins, but has extra pins for disabling the drivers and receivers and a
+power-management pin for added power savings.
+Power Calculations - Power dissipation is calculated below for the SN75LP1185
+using the same method as for the SN75C185. Similar calculations can be done
+for the SN75LPE185.
+The quiescent-power consumption is:
+Pq /C0043/C0466VDD /C0032IDD/C0467/C0041/C0466VSS /C0032ISS/C0467/C0041/C0466VCC /C0032ICC/C0467/C0043(12 V /C0032450 mA)
+/C0041(–12 V /C0032–625 mA) /C0041(5 V /C00321000 mA) /C004317.9 mW
+Power dissipated in the input stage of the driver, PIS, is:
+PIS /C0043VDD /C0032IIL /C004312 V /C00321 /C0109A /C004312 /C0109W
+Since there are three drivers per device, P IS is multiplied by three. The power
+dissipated in the output state of the driver, POS, is:
+POS /C0043/C0466VDD /C0032VOH/C0467/C0032
+VOH
+RL
+/C0043(12 V /C00425V ) /C00325V
+3k Ω /C004311.67 mW
+Again, 11.67 mW per driver results in 35 mW. The power dissipated in the output
+stage of the receiver, POS, is:
+POS /C0043VOL /C0032IOL /C00430.5 V /C00322m A /C00431m W
+Five receivers yield a total of 5 mW of power dissipated in the receiver output
+stages. The power dissipated in each driver input stage, PIS, is:
+PIS /C0043
+/C0466VOH/C0467
+2
+RL
+/C0043(5 V) 2
+3k Ω /C00438.33 mW
+Summation of all power contributions produces the total power dissipation by the
+SN75LP185.
+PDIS /C0043PQ /C00413PIS /C00413POS /C00415PIS /C00415POS /C004317.9 mW /C0041(3 /C003212 µW)
+/C0041(3 /C003211.67 mW) /C0041(5 /C00328.33 mW) /C0041(5 /C00321m W ) /C004399.6 mW
+99.6 mW is roughly half the power consumption of the SN75C185.
+PDF_PAGE18
+ 
+14 SLLA037A
+Device Features and Performance – Both the SN75LP1185 and the
+SN75LPE185 are optimized solutions to a single-chip TIA/EIA-232-F interface for
+IBM serial PC ports. They are designed to transmit and receive 4- µs pulses,
+which are equivalent to 256 kbit/s. Other features such as ±15 KV HBM ESD
+protection, low-power consumption, and on-chip slew-rate limiting are included
+in this family of bipolar devices. Figure 10 (each waveform has a 1-µs time base
+per division) shows how the LP1185 output driver with an input voltage of 0 V to
+5 V performs under several key parameters. Temperature, load resistance, load
+capacitance, and power-supply voltages are varied in three distinct cases to
+separate the fastest, nominal, and slowest frequency response. Since this device
+is manufactured in a bipolar process, the switching performance is at its fastest
+at hot temperatures and slowest in cold temperatures. The maximum slew rate
+of 30 V/ µs was met, while the maximum frequency was measured when the
+output voltage failed to reach the minimum TIA/EIA-232 input-receiver voltage
+specification of ±3 V. As shown by the waveforms, the signal quality of the output
+driver proves the slew-rate-controlling circuitry is functioning properly as it
+monotonically changes across the transition region of the receiver input.
+Max Freq in Figure 10 corresponds to the maximum frequency the output driver
+is capable of sustaining without violating fundamental TIA/EIA-232-F
+specifications (except for the 4% transition-time limit). Frequency (in Hz), is half
+the data signaling rate (in bit/s). Therefore, a maximum frequency of 320 kHz for
+the nominal waveform equates to a data signaling rate of 640 kbit/s.
+PDF_PAGE19
+ 
+15 Interface Circuits for TIA/EIA-232-F
+Temp. = 0°C
+Rload = 3 kΩ
+Cload = 2500 pF
+VDD/VSS = ±9 V
+Max Freq. = 175 kHz
+Vin
+Vout
+Temp. = 25°C
+Rload = 5 kΩ
+Cload = 500 pF
+VDD/VSS = ±12 V
+Max Freq. = 320 kHz
+VinVout
+Vin
+Vout
+Temp. = 70°C
+Rload = 7 kΩ
+Cload = 50 pF
+VDD/VSS = ±15 V
+Max Freq. = 431 kHz
+Figure 10. SN75LP1185 Data Signaling-Rate Performance
+PDF_PAGE20
+ 
+16 SLLA037A
+On-Chip Slew-Rate Limiting
+The TIA/EIA-232-F standard specifies a maximum slew rate through the
+transition region of 30 V/µs. Relating this to capacitance and current, only 100 µA
+of output current into 30-pF load is needed to exceed the slew-rate limit. All
+devices are capable of supplying more than 5 mA. Therefore, if the slew-rate limit
+is not to be exceeded, the switching speed of the driver’s output stage must be
+reduced. An established solution is to place loading capacitors on the output of
+the driver. The value of the loading capacitor required depends on the line length,
+but generally, it is about 330 pF. This capacitor causes the output transistors to
+saturate and short-circuit current limit, thus preventing fast-switching edges.
+There are some major problems with this established process, two being the
+variance in current at which the output short circuits and the line length. For
+example, a device capable of sourcing 10 mA needs a total capacitance of 330
+pF on its output to meet the 30-V/µs slew-rate limit. Placing this value across a
+device capable of sourcing 4 mA limits its slew rate to less that 12 V/µs.
+Another problem encountered is the increase in power dissipation through the
+output stage. Normally, the output voltage of the driver is close to one supply rail,
+so when it tries to switch to the other rail, the active transistor has most of the
+supply voltages across it. The extra external capacitor holds the driver’s voltage
+close to the supply voltage, causing the output transistor to source a large amount
+of current. The combination of the large source current and large voltage causes
+it to dissipate large amounts of power. Operating at these prolonged bursts of high
+current ultimately increases the chip temperature, which can affect the long-term
+life of the device. Devices built using bipolar technologies normally are much
+better able to withstand such effects.
+A better solution, and the one employed by the drivers in SN75C185,
+SN75LP1185, and SN75LPE185, is to place the slew-rate limiting within the chip
+itself. Using similar techniques to those employed for slew-rate-limited
+operational amplifiers, the slew rate of line drivers also can be limited. Using the
+Miller capacitance-multiplying effect, the slew rate of the driver can be slowed.
+The biasing current to the output transistors is unaffected by this technique and
+is more than sufficient to drive the 3-kΩ  load, as offered by the receiver.
+Internal Noise Filtering
+The TIA/EIA-232-F standard states a maximum line cable capacitance of
+2500 pF, which corresponds to an approximate line length of 20 meters. As the
+interface line gets longer, it becomes more susceptible to noise from the
+surrounding environment.
+For operation at high data rates, the use of the differential line might be the best
+solution. If, however, a low-cost and simple single-ended solution is required,
+standard RS-232 devices can be modified to give noise protection. This is
+achieved by slowing down the response of the receiver ’s input. The maximum
+data rate specified in the standard is 20 kbit/s, corresponding to a minimum pulse
+period of 100 µs. Therefore, in normal applications, most devices are much faster
+than specification requires.
+PDF_PAGE21
+ 
+17 Interface Circuits for TIA/EIA-232-F
+To slow older bipolar receivers, such as the SN75189, a capacitor can be placed
+on each of its response-control terminals, requiring an additional four capacitors
+per device, which can be awkward and costly. The effect of this response-control
+capacitor is to set up a low-pass filter on the receiver ’s input. To provide
+long-pulse rejection, the capacitor must be quite large. Furthermore, the filter
+response is asymmetrical, affording protection against positive noise-voltage
+spikes only; negative spikes are unaffected, and tend to attenuate, rather than
+reject, short noise pulses.
+Receivers in the SN75C185 integrate on-chip filtering that rejects fast
+transient-noise pulses. The on-chip filters are more precise than filters
+implemented using external passive components. These filters are totally
+symmetrical, offering protection against both positive and negative noise pulses,
+and have the ability to reject, rather than attenuate, short noise pulses. To
+approach the level of filtering offered by the ’C185 receivers, the standard
+’188-type receivers require much larger capacitors, but still fall well short of
+filtering requirements.
+PDF_PAGE22
+ 
+18 SLLA037A

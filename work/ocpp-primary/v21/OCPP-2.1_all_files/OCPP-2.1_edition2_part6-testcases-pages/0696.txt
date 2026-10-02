@@ -1,0 +1,55 @@
+TC_N_20_CS: Alert Event - Threshold value exceeded
+Test case name Alert Event - Threshold value exceeded
+Test case Id TC_N_20_CS
+Use case Id(s) N07
+Requirement(s) N07.FR.06, N07.FR.07, N07.FR.16, N07.FR.17
+System under test Charging Station
+Description A monitored variable exceeds a threshold monitor and causes a NotifyEventRequest message to be sent.
+Purpose To test that Charging Station supports threshold monitors
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+This test requires the Monitoring Base to be set to All.
+- SetMonitoringBaseRequest with monitoringBase = All.
+Futhermore this test requires the existence of a LowerThreshold and UpperThreshold monitor on a (numerical) variable. Since it is
+not mandated which variables are required to be monitored, this test used the variable "Power" of component "EVSE".
+- setMonitoringData[0].value = <Configured threshold monitor component variable UpperThreshold trigger value>
+- setMonitoringData[0].type = UpperThreshold
+- setMonitoringData[0].severity = 5
+- setMonitoringData[0].component = <Configured threshold monitor component variable>
+- setMonitoringData[0].variable = <Configured threshold monitor component variable>
+Set MonitoringLevel to 8
+Notes:
+- Take a threshold that can easily be exceeded.
+Reusable State(s): N/a
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State EnergyTransferStarted or manually trigger the monitor.
+Notes: If componentVariable is set to "Power" or "Current" EnergyTransferStarted will trigger the monitor. If another
+componentvariable is chosen a manual action is needed to trigger the monitor.
+2. Charging Station sends a NotifyEventRequest with:
+- Power exceeding upper threshold 3. Test System responds with a NotifyEventResponse
+5. Charging Station responds with a
+SetVariableMonitoringResponse with:
+- status Accepted
+4. Test System sends a SetVariableMonitoringRequest with:
+- type LowerThreshold
+- component <Configured threshold monitor component variable>
+- variable <Configured threshold monitor component variable>
+- value <Configured threshold monitor component variable
+LowerThreshold trigger value>
+Notes:
+- Take a threshold that won’t be exceeded.
+6. Execute Reusable State StopAuthorized or manually trigger the second monitor.
+Notes: If componentVariable is set to "Power" or "Current" EnergyTransferStarted will trigger the monitor. If another
+componentvariable is chosen a manual action is needed to trigger the monitor.
+7. Charging Station sends:
+NotifyEventRequest for 2 events:
+- Returning below upper threshold (cleared)
+- Dropping below lower threshold
+8. Test System responds:
+NotifyEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 694/1383 Part 6 - Test Cases

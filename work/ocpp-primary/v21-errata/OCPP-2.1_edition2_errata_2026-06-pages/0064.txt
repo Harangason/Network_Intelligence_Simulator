@@ -1,0 +1,52 @@
+Main (Test scenario)
+9. 11.  The Charging Station sends a TransactionEventRequest
+10. 12.  The Test System responds with a
+TransactionEventResponse
+13.  Execute   Reusable State   Authorized
+11. 14.  Execute Reusable State EnergyTransferStarted
+Note: Reporting costDetails every 15 s, eventually cost > maxCost        
+12. 15.  The Charging Station sends a TransactionEventRequest
+13. 16.  The Test System responds with a
+TransactionEventResponse
+14. 17.  The Charging Station sends a TransactionEventRequest
+15. 18.  The Test System responds with a
+TransactionEventResponse
+16. 19.  The Charging Station sends a TransactionEventRequest
+17. 20.  The Test System responds with a
+TransactionEventResponse
+18. 21.  The Charging Station sends a TransactionEventRequest
+19. 22.  The Test System responds with a
+TransactionEventResponse
+20. 23.  Execute Reusable State StopAuthorized
+Execute Reusable State EVDisconnected
+Execute Reusable State ParkingBayUnoccupied
+21. 24.  The Charging Station sends a TransactionEventRequest
+22. 25.  The Test System responds with a
+TransactionEventResponse
+Tool validations
+Note: In the validation steps the     value of TransactionEventRequest.timestamp of:
+- last   TransactionEventRequest.eventType  =   Started  is called:    TxStartDateTime,
+- the first    TransactionEventRequest  with   chargingState  =   Charging  is called:    StartChargingTime,
+- the next    TransactionEventRequest  in which    chargingState  <>   Charging  is called:    EndChargingTime.  +
+* Step 5 Step 6 : (MinCost)
+Message TransactionEventRequest with eventType Ended from reusable states leading up to ParkingBayUnoccupied must have:
+- costDetails.failureToCalculate must be <omitted>
+- costDetails.failureReason must be <omitted>
+- costDetails.totalCost.currency must be EUR
+- costDetails.totalCost.typeOfCost must be MinCost
+-  costDetails.totalUsage.chargingTime  must be    <EndChargingTime> - <StartChargingTime>  
+- costDetails.totalCost.chargingTime .exclTax must be 16.00
+- costDetails.totalCost.chargingTime .inclTax must be 19.20
+- costDetails.totalCost.chargingTime .taxRates[0].type t20_0
+- costDetails.totalCost.chargingTime .taxRates[0].tax 20.0
+- costDetails.totalCost.energy must be <omitted>
+- costDetails.totalCost.fixed  must be <omitted>
+- costDetails.totalCost.idleTime must be <omitted>
+- costDetails.totalCost.reservation must be <omitted>
+- costDetails.totalCost.total.exclTax must be costDetails.totalCost.chargingTime.exclTax
+- costDetails.totalCost.total.inclTax must be costDetails.totalCost.chargingTime.inclTax
+- costDetails.chargingPeriods[0].tariffId must be Test System1
+- costDetails.chargingPeriods[0].startPeriod must be <TxStartDateTime>
+- costDetails.chargingPeriods[0].dimensions[0].type must be ChargingTime
+- costDetails.chargingPeriods[0].dimensions[0].volume must be costDetails.totalUsage.chargingTime
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 60/116 Errata 2026-06

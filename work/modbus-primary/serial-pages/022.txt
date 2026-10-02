@@ -1,0 +1,48 @@
+MODBUS over serial line specification and implementation guide V1.02  Modbus.org    
+Modbus.org http://www.modbus.org/ 22/44
+Dec 20, 2006 
+3.3.2 Two-Wire MODBUS Definition 
+A MODBUS solution over serial line should implement a “Two-Wire” electrical interface in accordance with EIA/TIA-485 standard. 
+On such a 2W-bus, at any time one driver only has the right for transmitting. 
+In fact a third conductor must also interconnect all the devices of the bus : the common. 
+Pull Up
+5 V
+Pull Down
+Common
+D
+R
+Master
+D
+R
+Slave 1 Slave n
+D1
+D0
+D
+R
+LTLT Balanced Pair
+Figure 20:
+ General 2-Wire Topology 
+2W-MODBUS Circuits Definition 
+Required Circuits 
+on ITr on IDv 
+For 
+device
+Required 
+on device 
+EIA/TIA-485 
+name Description 
+D1 D1 I/O X B/B’ Transceiver terminal 1, V1 Voltage 
+( V1 > V0 for binary 1 [OFF] state ) 
+D0 D0 I/O X A/A’ Transceiver terminal 0, V0 Voltage 
+( V0 > V1 for binary 0 [ON] state ) 
+Common Common -- X C/C’ Signal and optional Power Supply Common 
+Notes : 
+• For Line Termination (LT), Pull Up and Pull Down resistors, please refer to section  “Multipoint System requirements".
+• D0, D1, and Common circuit names must  be used in the documentation related to the device and the Tap ( User Guide, Cabling
+Guide, … ) to facilitate interoperability.
+• Optional electrical interfaces may be added, for example :
+/square4 Power Supply : 5..24 V D.C. 
+/square4 Port mode control : PMC circuit ( TTL compatible ).  When needed, port mode may be controlled either by this external 
+circuit and/or by another way (a switch on the device for example). In the first case while an open circuit PMC will ask for th e 
+2W-MODBUS mode, a Low level on PMC will switch the port into 4W-MODBUS or RS232-MODBUS Mode, depending on the 
+implementation. 

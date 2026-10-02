@@ -1,0 +1,34 @@
+ 
+© Ecma International 2024  27 
+ 
+− bit 6 and bit 5: LRt. Length Reduction value, see Table 6. 
+Table 6 — Definition of LRt 
+LRt LENMAX 
+00 Only Byte 1 to Byte 64 is valid in the Transport Data 
+01 Only Byte 1 to Byte 128 is valid in the Transport Data 
+10 Only Byte 1 to Byte 192 is valid in the Transport Data 
+11 Only Byte 1 to Byte 252 is valid in the Transport Data 
+ 
+− bit 4 and bit 3: Shall be set to ZERO. 
+− bit 2: If bit is set to ONE then it indicates General bytes available. 
+− bit 1: If bit is set to ONE then it indicates the Target uses NAD. 
+Byte 15 to Byte n: Gt[1] to Gt[n] 
+The Gt bytes shall be optional and designate general information. The maximum length of the ATR_RES 
+subtracted by the mandatory bytes gives the maximum number of general bytes.  
+12.6.1.3 Handling of ATR_REQ and ATR_RES 
+12.6.1.3.1 Initiator rules 
+When the Initiator has sent the ATR_REQ and receives a valid ATR_RES the Initiator shall continue with 
+operation. 
+In any other case the Initiator shall retransmit the ATR_REQ before using the deactivation sequence as defined 
+in 12.7. 
+In case of failure of the deactivation sequence it may use the HLTA command only for Passive communication 
+mode at fc/128. The HLTA command is specified in ISO/IEC 14443-3:2018, 6.4.3. 
+12.6.1.3.2 Target rules 
+When the Target has been selected by the last command (for passive communication mode only) and  
+a) Receives a valid ATR_REQ, the Target 
+⎯ shall send its ATR_RES, and 
+⎯ shall disable to receive a subsequent ATR_REQ. 
+b) Receives any other valid or invalid frame, except a HLTA command (see 12.6.1.3.1) only for Passive 
+communication mode at fc/128, the Target 
+⎯ ignores the block, and 
+⎯ remains in receive mode. 

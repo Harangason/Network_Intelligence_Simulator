@@ -1,0 +1,33 @@
+SHALL wait for 60 seconds, and resend the message. In the case when there is a second failure, the Charge Point
+SHALL wait for 120 seconds, before resending the message. If this final attempt fails, the Charge Point SHOULD
+discard the message and continue with the next transaction-related message, if there is any.
+3.8. Connector numbering
+This section is normative.
+To enable Central System to be able to address all the connectors of a Charge Point, ConnectorIds MUST always
+be numbered in the same way.
+Connectors numbering (ConnectorIds) MUST be as follows:
+• ID of the first connector MUST be 1
+• Additional connectors MUST be sequentially numbered (no numbers may be skipped)
+• ConnectorIds MUST never be higher than the total number of connectors of a Charge Point
+• For operations intiated by the Central System, ConnectorId 0 is reserved for addressing the entire Charge
+Point.
+• For operations initiated by the Charge Point (when reporting), ConnectorId 0 is reserved for the Charge
+Point main controller.
+Example: A Charge Point with 3 connectors: All connectors MUST be numbered with the IDs: 1, 2 and 3. It is
+advisable to number the connectors of a Charge Point in a logical way: from left to right, top to bottom
+incrementing.
+3.9. ID Tokens
+This section is normative.
+In most cases, IdToken data acquired via local token reader hardware is usually a (4 or 7 byte) UID value of a
+physical RFID card, typically represented as 8/14 hexadecimal digit characters.
+However, IdTokens sent to Charge Points by Central Systems for remotely initiated charging sessions may
+commonly be (single use) virtual transaction authorization codes, or virtual RFID tokens that deliberately use a
+non-standard UID format to avoid possible conflict with real UID values.
+Also, IdToken data used as ParentIds may often use a shared central account identifier for the ParentId, instead
+of a UID of the first/master RFID card of an account.
+Therefore, message data elements of the IdToken class (including ParentId) MAY contain any data, subject to the
+constraints of the data-type (CiString20Type), that is meaningful to a Central System (e.g. for the purpose of
+identifying the initiator of charging activity), and Charge Points MUST NOT make any presumptions as to the
+format or content of such data (e.g. by assuming that it is a UID-like value that must be hex characters only
+and/or an even number of digits).
+18

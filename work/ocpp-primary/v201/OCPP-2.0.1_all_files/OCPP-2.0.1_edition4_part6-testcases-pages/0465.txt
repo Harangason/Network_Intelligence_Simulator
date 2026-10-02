@@ -1,0 +1,52 @@
+TC_N_06_CS: Set Monitoring Base - test removal custom monitors
+Test case name Set Monitoring Base - test removal custom monitors
+Test case Id TC_N_06_CS
+Use case Id(s) N03
+Requirement(s) N03.FR.01, N03.FR.05
+System under test Charging Station
+Description CSMS sends a SetMonitoringBaseRequest for HardWiredOnly.
+Purpose To test that Charging Station removes custom monitors when selecting a monitoring base,
+as specified explicitly in N03.FR.05 and less formally in the remark of the use case N03.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+The following monitor must be present as 'preconfigured' or custom monitor configured by CSMS:
+- Component "ChargingStation", variable "AvailabilityState", monitor type Delta
+If it exists as a hardwired monitor, then the test will fail, because the test checks that it is removed when reverting back to only
+hardwired monitors.
+Note: this is a required variable for which a monitor can be expected to exist or it can be configured.
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Check that monitor AvailabilityState exists.
+2. Charging Station responds with:
+GetMonitoringReportResponse
+1. Test System sends GetMonitoringReportRequest with:
+- requestId = <Generated requestId>
+- monitoringCriteria is absent
+- componentVariable[0].component.name = "ChargingStation"
+- componentVariable[0].variable.name = "AvailabilityState"
+3. Charging Station responds with:
+NotifyMonitoringReportRequest 4. Test System sends NotifyMonitoringReportResponse
+6. Charging Station responds with:
+SetMonitoringBaseResponse
+5. Test System sends SetMonitoringBaseRequest with:
+- monitoringBase = HardWiredOnly
+Check that monitor AvailabilityState has been removed.
+8. Charging Station responds with:
+GetMonitoringReportResponse
+7. Test System sends GetMonitoringReportRequest with:
+- requestId = <Generated requestId>
+- monitoringCriteria is absent
+- componentVariable[0].component.name = "ChargingStation"
+- componentVariable[0].variable.name = "AvailabilityState"
+Tool validations
+* Step 2
+Message: GetMonitoringReportResponse
+- status = Accepted
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 463/914 Part 6 - Test Cases

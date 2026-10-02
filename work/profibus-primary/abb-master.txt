@@ -1,0 +1,217 @@
+Configuration of a PROFIBUS DP master
+Configuration and programming
+Configuration in
+Automation Builder
+PLC devices and components
+...
+Configuration and programming
+Configuration in
+Automation Builder
+PLC devices and components
+Communication modules
+PROFIBUS
+CM592-DP PROFIBUS DP master communication module
+Communication modules
+PROFIBUS
+CM592-DP PROFIBUS DP master communication module
+Configuration of a
+PROFIBUS
+DP master
+Configuration of a
+PROFIBUS
+DP master
+Double-click on
+“Profibus_Master_x (Profibus_Master)”
+to open the
+“Profibus_Master”
+configuration in the editor window:
+Click on
+“General”
+tab if not already opend.
+Most of the parameters are calculated automatically. Uncheck
+[Use defaults]
+to enable values to be edited individually. Checking
+[Use defaults]
+again will revert all parameters to default values.
+All times for the
+PROFIBUS
+parameters are given in bit time 
+                           [tBit]. The bit time is the result of the reciprocal of the transmission rate:
+tBit = 1 / transmission rate 
+                           in [bit/s]
+The conversion from milliseconds 
+                           into a bit time is shown in following formula:
+tBit = Time 
+                           in [ms] * transmission rate in [bit/s]
+The following parameters are available:
+Parameter
+Default
+Value
+Description
+Parameter
+(Remark 1)
+Adresses
+Station address
+1
+0 ... 125
+The individual device address of the master device on the bus.
+DpParameter -> Station address
+Highest station address
+126
+0 ... 126
+The highest bus address up to which a master searches 
+                                    for another master at the bus in order to pass on the token. This station 
+                                    address must on no account be smaller than the master station address.
+DpParameter -> Highest station address
+Mode
+Auto-Clear mode
+Enabled
+Disabled
+The master operation mode will stay in the mode 'Operate' and the communication to
+                                    all 
+                                    available slaves is kept up.
+AutoClearSupported
+Enabled
+The masters operation mode will change from 'Operate' 
+                                    to 'Clear' and it shuts down the 
+                                    communication to all assigned slaves, if at least 1 slave is not responding 
+                                    within the data control time.
+Automatic startup
+Enable
+Disable
+Do not perform automatic startup
+AutoStart
+Enable
+Perform automatic startup
+Parameters
+Baud rate
+1500
+9.6
+19.2
+45.45
+93.75
+187.5
+500
+1500
+3000
+6000
+12000
+Data transfer speed in [kBits/s].
+The baud rate must be set to the same value for all devices 
+                                    on the bus. The result of changing the baud rate is that all other parameters 
+                                    must be recalculated.
+DpParameter -> Baudrate
+T_SL
+Slot time
+300
+37 ...  65535
+Monitoring time of the sender (requester)  of a telegram for the acknowledgement 
+                                    of the recipient (responder). After expiration, a retry occurs in accordance 
+                                    with the value of maximum telegram retries.
+DpParameter -> TSL
+min. T_SDR
+Minimum station delay responder time
+11
+1 ... 65535
+Shortest time period that must elapsed before 
+                                    a remote recipient (responder) may send an acknowledgement of a received 
+                                    query telegram. The shortest time period between reception of the last 
+                                    bit of a telegram to the sending of the first bit of a following telegram.
+DpParameter -> min. TSDR
+max. T_SDR
+Maximum station delay responder time
+150
+1 ... 65535
+Longest time period that must elapse before 
+                                    a sender (requestor) may send a further query telegram. Greatest time 
+                                    period between reception of the last bit of a telegram to the sending 
+                                    of the first bit of a following telegram.
+The sender (requestor, master) must wait at least for 
+                                    this time period after the sending of an unacknowledged telegram (e.g. 
+                                    broadcast only) before a new telegram is sent.
+DpParameter -> max. TSDR
+T_QUI
+Quiet time
+0
+0 ... 127
+Time delay that occurs for modulators (modulator-trip 
+                                    time) and repeaters (repeater-switch time) for the change over from sending 
+                                    to receiving.
+DpParameter -> TQUI
+T_SET
+Setup time
+1
+0 ... 255
+Minimum period reaction time between the 
+                                    receipt of an acknowledgement to the sending of a new query telegram (reaction) 
+                                    by the sender (requestor).
+DpParameter -> TSET
+T_TR
+Target rotation time
+11894
+1 ... 2
+-1 (=16777215)
+Pre-set nominal token cycle time within the sender 
+                                    authorization (token). The available time for the master 
+                                    to send data telegrams to the slaves depends 
+                                    on the difference between the nominal and the actual token cycle time.
+The Target rotation 
+                                    time (TTR) is shown in Bit times [tBit] like the other bus parameters. 
+                                    Below the displayed bit time, the Target 
+                                    rotation time is also displayed in [ms].
+The default value depends on the number of slaves attached 
+                                    to the master and their module configuration.
+DpParameter -> TTR
+Gap
+Gap update factor
+10
+0 ... 255
+Factor for determining after how many token cycles an 
+                                    added participant is accepted into the token ring. After expiry of the 
+                                    time period G*TTR, the station searches to see whether a further participant 
+                                    wishes to be accepted into the logical ring.
+DpParameter -> Gap update factor
+Retry limit
+Maximum retries
+1
+1 ... 15
+Maximum number of repeats in order to reach a station.
+DpParameter -> max. retry limit
+Data control time
+120
+1 ... 2
+24
+-1
+Defines the time in [ms] within the Data_Transfer_List 
+                                    is updated at least once. After the expiration of this period, the master 
+                                    (class 1) reports its operating condition automatically via the Global_Control command.
+The default value depends on the transmission rate.
+DpParameter -> Data control time
+Slave interval
+Minimum slave interval
+2000
+1 ... 65535
+Defines the minimum time period between two slave list cycles in [
+µ
+s]. 
+                                    The maximum value the active stations require is always given.
+The default value depends on the slave types.
+DpParameter -> min. slave interval
+Poll timeout
+Minimum poll timeout
+10
+Sets the maximum period of time in [ms] during which the 
+                                    response has to be received.
+DpParameter -> Poll timeout
+Remark 1:
+To display the parameters  of this column,  enable the option
+“Show generic device configuration 
+                        views”
+under
+“
+Tools
+Options
+Device 
+                           editor
+”
+.

@@ -1,0 +1,49 @@
+Type Description
+MORootCertificate Certificate from an eMobility Service provider. To support PnC charging with contracts from service
+providers that not derived their certificates from the V2G root.
+NOTE
+The V2G Charging Station Certificate might be the same as the certificate used for securing the connection
+between the Charging Station and the CSMS. For this to work, this certificate MUST BE to be derived from a V2G
+Root.
+A Contract Certificate can be derived from a V2G root, or an eMobility root. This means the Charging Station needs to be in
+possession of the corresponding root certificate to be able to authenticate the driver by means of the Contract Certificate and the
+associated certificate chain.
+NOTE When a Charging Station is online this does not have to be the case, because it can send an AuthorizeRequest
+message with the Contract Certificate to be validated by the CSMS.
+The V2G Charging Station Certificate needs to be derived from a V2G root. If this root is not known by the EV, no connection via
+15118 is possible, so charging controlled by 15118 is NOT possible. In the event a Charging Station needs to support more than
+one V2G root, multiple V2G Charging Station Certificates are needed.
+2.3. 15118 communication set-up
+At the beginning of a 15118 communication session the EV will initiate a TLS Connection. In this request, the car presents its
+known V2G root certificates.
+During the TLS handshake, the EVCC can request the OCSP status of the Charging Station and intermediate certificates using OCSP
+stapling as defined in IETF RFC 6961. The Charging Station can retrieve this information by sending a GetCertificateStatusRequest
+to the CSMS, see use case M06 - Get Charging Station Certificate status.
+EV Charging Station CSMS
+opt [for caching]
+GetCertificateStatusRequest(ocspRequestData)
+GetCertificateStatusResponse(status, ocspResult)
+The TLS Start will include a list of all known
+V2G Root Certificates by the EV
+startTLS(ListOfRootCertificates)
+The TLS response will include OCSP revocation status information on the CSO Sub-CA certificates.
+StartTLSresponse()
+For readability reasons, some intermediate messages
+are not displayed here.
+The EV sends its Contact Certificate and MO Sub-CA
+certificates to the Charging Station.
+Figure 156. Communication set-up
+2.4. Certificate - Use Case mapping
+The following table contains the use cases that can be used to manage the certificates needed for ISO 15118 charging from OCPP:
+Table 125. Certificates relevant for 15118
+Certificate Used for Use Case Remark
+ChargingStationCertifi
+cate
+Charging Station - CSMS
+connection
+A02 and A03 Used for OCPP security in general.
+Certificate chain must also be available and
+can be retrieved by the Charging Station when
+installing the certificate.
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 434/803 Part 2 - Specification

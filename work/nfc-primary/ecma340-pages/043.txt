@@ -1,0 +1,35 @@
+ 
+© Ecma International 2024  37 
+ 
+— When the Initiator uses an NAD, the Target shall also use an NAD. 
+— If MI bit is set, the NAD shall only be transmitted in the first frame. 
+— The Initiator shall never use the NAD to address two different Targets. 
+Byte 4 to Byte n: User data bytes 
+The data field shall contain the transported data and is optional. When present, it conveys either application 
+data or status information. The length of the data field is calculated by subtracting the mandatory and optional 
+send bytes of the data exchange transport header from the length byte and additionally subtracting one.  
+12.7.1.2 Handling of pdu number information 
+12.7.1.2.1 Initiator rules 
+The PNI of the Initiator shall be initialized for each Target with all ZEROs. 
+When an Information, Protected or ACK/NACK pdu with an equal PNI is received, the Initiator shall increment 
+the current PNI for that Target before optionally sending a new frame. 
+12.7.1.2.2 Target rules 
+The PNI of the Target shall be initialized with all ZEROs. 
+When an Information, Protected or ACK/NACK pdu with an equal PNI was received the Target shall send its 
+response with this PNI and shall increment the PNI afterwards. 
+12.7.1.3 Handling of Blocks 
+12.7.1.3.1 General rules 
+The first pdu shall be sent by the Initiator. 
+When an Information or Protected pdu indicating more information is received the pdu shall be acknowledged 
+by an ACK pdu. 
+Supervisory pdus are only used in pairs. A Supervisory Request shall always be followed by a Supervisory 
+Response. 
+12.7.1.3.2 Initiator rules 
+When an invalid pdu was received a NACK pdu shall be sent (except in the case of DSL or RLS).  
+When a timeout occurs, a Supervisory pdu indicating Attention (Attention Request) shall be sent (except a NACK 
+pdu has been sent before). 
+When a timeout occurs and a NACK pdu has been sent before, the NACK pdu shall be retransmitted.  
+When an ACK pdu is received, if its pdu number is equal to the current PNI of the Initiator, the chaining shall be 
+continued. 
+If the DSL_REQ is not answered by a valid DSL_RES the DSL_REQ may be retransmitted or the Target 
+command ignored. 

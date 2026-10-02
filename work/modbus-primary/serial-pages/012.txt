@@ -1,0 +1,42 @@
+MODBUS over serial line specification and implementation guide V1.02 Modbus.org    
+Modbus.org http://www.modbus.org/ 12/44
+Dec 20, 2006 
+2.5 The two serial Transmission Modes 
+Two different serial transmission modes are defined : The RTU mode  and the ASCII mode. 
+It defines the bit contents of message fields transmitted serially on the line.  It determines how information is packed into t he message 
+fields and decoded. 
+The transmission mode (and serial port parameters) must be the same for all devices on a MODBUS Serial Line. 
+Although the ASCII mode is required  in some specific applications, interoperability between MODBUS devices can be reached only if 
+each device has the same transmission mode :  All devices must  implement the RTU Mode.  The ASCII transmission mode is an 
+option. 
+Devices should be set up by the users to the desired transmission mode, RTU or ASCII. Default setup must  be the RTU mode. 
+2.5.1 RTU Transmission Mode 
+When devices communicate on a MODBUS serial line using the RTU (Remote Terminal Unit) mode, each 8–bit byte in a message 
+contains two 4–bit hexadecimal characters.  The main advantage of this mode is that its greater character density allows better  data 
+throughput than ASCII mode for the same baud rate.  Each message must  be transmitted in a continuous stream of characters. 
+The format ( 11 bits ) for each byte in RTU mode is : 
+Coding Sy
+stem:  8–bit binary 
+Bits per Byte: 1 start bit 
+8 data bits, least significant bit sent first 
+1 bit for parity completion 
+1 stop bit 
+Even parity is required,  other modes ( odd parity, no parity ) may also be used.  In order to ensure a maximum compatibility with 
+other products, it is recommended to support also No parity mode.  The default parity mode must  be even parity. 
+Remark : the use of no parity requires 2 stop bits.  
+How Characters are Transmitted Serially : 
+Each character or byte is sent in this order (left to right): 
+Least Significant Bit (LSB) . . . Most Significant Bit (MSB) 
+Start
+With Parity Checking
+1 2 3 4 5 6 7 Par Stop8
+Figure 10: 
+Bit Sequence in RTU mode 
+Devices may accept by configuration either Even, Odd, or No Parity checking.  If No Parity is implemented, an additional stop bit is 
+transmitted to fill out the character frame to a full 11-bit asynchronous character : 
+Start
+Without Parity Checking
+1 2 3 4 5 6 7 Stop Stop8
+Figure 11: 
+Bit Sequence in RTU mode (specific case of No Parity) 
+Frame Checking Field :  Cyclical Redundancy Checking (CRC) 

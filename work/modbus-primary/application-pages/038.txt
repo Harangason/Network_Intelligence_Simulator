@@ -1,0 +1,58 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  38/50 
+ 
+ 
+6.17  23 (0x17) Read/Write Multiple registers  
+This function code performs a combination of one read operation and one write operation in a 
+single MODBUS transaction.  The write operation is performed before the read.  
+Holding registers are addressed starting at zero. Therefore holding registers 1 -16 are 
+addressed in the PDU as 0 -15. 
+The request specifies the starting address and number of holding registers to be read as well 
+as th e starting address,  number of holding registers, and the data to be written. The byte 
+count specifies the number of bytes to follow in the write data field.  
+The normal response contains the data from the group of registers that were read. The byte 
+count f ield specifies the quantity of bytes to follow in the read data field.  
+ 
+Request  
+Function code  1 Byte  0x17  
+Read Starting Address  2 Bytes  0x0000 to 0xFFFF  
+Quantity to Read  2 Bytes  0x0001 to 0x007D  
+Write Starting Address  2 Bytes  0x0000 to 0xFFFF  
+Quantity  to Write  2 Bytes  0x0001 to 0X007 9 
+Write Byte Count  1 Byte  2 x N* 
+Write Registers Value  N*x 2 Bytes   
+*N = Quantity to Write  
+ 
+Response   
+Function code  1 Byte  0x17  
+Byte Count  1 Byte  2 x N'* 
+Read Registers value  N'* x 2 Bytes   
+*N' = Quantity to Read  
+ 
+Error  
+Error code  1 Byte  0x97  
+Exception code  1 Byte  01 or 02 or 03 or 04  
+ 
+ 
+Here is an example of a request to read six registers starting at register 4, and to write three 
+registers starting at register 15:  
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  17 Function  17 
+Read Starting Address Hi  00 Byte Count  0C 
+Read Starting Address Lo  03 Read Registers value Hi  00 
+Quantity to Read Hi  00 Read Registers value Lo  FE 
+Quantity to Read Lo  06 Read Registers value Hi  0A 
+Write Starting Address Hi 00 Read Registers value Lo  CD 
+Write Starting address Lo  0E Read Registers value Hi  00 
+Quantity to Write Hi  00 Read Registers value Lo  01 
+Quantity to Write Lo  03 Read Registers value Hi  00 
+Write Byte Count  06 Read Registers value Lo  03 
+Write Registers Value Hi  00 Read Registers value Hi  00 
+Write Registers Value Lo  FF Read Registers value Lo  0D 
+Write Registers Value Hi  00 Read Registers value Hi  00 
+Write Registers Value Lo  FF Read Registers value Lo  FF 
+Write Registers Value Hi  00   
+Write Registers Value Lo  FF   
+ 
+  

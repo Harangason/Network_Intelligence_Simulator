@@ -1,0 +1,46 @@
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 8
+OS81050
+1.1  MOST25 Network
+To minimize costs, the MOST Network supports a peer-to-peer methodology, eliminating excessive hard-
+ware overhead such as a hub (although hub-based architectures can also be implemented). In addition to
+handling network interface and communication management functions, the OS81050 INIC also handles all
+of the important low-level network management functions; such as node position sensing (Plug-and-Play),
+network delay detection, start up and shut down. Other features include: error reporting, fail-safe opera-
+tion, and channel allocation. Placing these features in hardware off-loads the EHC, allowing it to focus on
+higher-level network functions.
+The MOST Network contains multiple simultaneous networks operating across a single medium. Once
+bandwidth is allocated, each network (or data transfer method ) operates independently (not affecting the
+others), providing a robust, dependable, and det erministic system architecture. The OS81050 INIC
+supports the following data transfer methods, including:
+/square6 Control Network - consists of a single control channel
+/square6 Asynchronous (Packet) Network - consists of a single packet channel
+/square6 Synchronous Streaming Network - consists of one or more synchronous streaming channels
+1.1.1   Control Network
+The MOST Control Network  consists of a single control channel, shared by all network nodes. Messages
+transported across this channel adhere to the MOST Control Message  (MCM) format and are used to man-
+age the network and exchange control data among nodes. Any network node that needs to transmit a con-
+trol message must arbitrate for the channel.
+INIC monitors the control channel on the Network Port by default and uses information in the message
+header to determine whether the node is the intended receiver of the control message. When a control
+message is to be received (e.g. node address match), it is buffered within INIC. For MCMs, the application
+is notified of the message reception and the packet is retrieved by the EHC via one of the OS81050 hard-
+ware ports that supports control message exchange (see Table 1-1).
+1.1.2   Asynchronous (Packet) Network
+The MOST Asynchronous Network  consists of a single packet channel, shared by all network nodes. Applica-
+tions use this channel to transmit large data packets (e.g. navigation maps) in bursts to other network
+nodes. Data packets on the packet channel are referred to as asynchronous packets  and adhere to the
+MOST Data Packet (MDP) format. Any network node that needs to transmit a data packet can arbitrate for
+the packet channel.
+INIC monitors the packet channel on the Network Port by default and uses information in the packet
+header to determine whether the node is the intended receiver. When an asynchronous packet is to be
+received (e.g. node address match), it is buffered within INIC and made available to the application at one
+of the OS81050 hardware ports that supports asynchronous packets (see Table 1-1).
+1.1.3   Synchronous Streaming Network
+The MOST Synchronous Streaming Network  can consist of multiple synchronous streaming channels, each
+transporting raw, real-time synchronous data (e.g. audio, video). The data on a synchronous streaming
+channel is sourced by a single transmitting node that has been granted channel bandwidth. Synchronous
+streaming channels are broadcast, making the data available for reception by one or more sink nodes.
+For high-speed synchronous data, INIC acts like a cross-point switch to connect synchronous streaming
+channels to sources/sinks attached to OS81050 hardware ports that support synchronous data (see
+Table 1-1).

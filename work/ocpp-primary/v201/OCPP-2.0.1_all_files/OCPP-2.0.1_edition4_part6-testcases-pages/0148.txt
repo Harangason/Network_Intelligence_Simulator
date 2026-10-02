@@ -1,0 +1,46 @@
+TC_C_22_CS: Offline authorization through local authorization list - Invalid
+Test case name Offline authorization through local authorization list - Invalid
+Test case Id TC_C_22_CS
+Use case Id(s) C13
+Requirement(s) C13.FR.02
+System under test Charging Station
+Description This test case describes how to authorize an IdToken via the Local Authorization List while the Charging
+Station is online. When offline the Charging Station can then locally authorize the IdToken.
+Purpose To verify if the Charging Station is able to respond correctly to an idToken which has status "Invalid" in its
+local authorization list according to the mechanism as described in the OCPP specification.
+Prerequisite(s) - LocalAuthListCtrlr.LocalAuthListAvailable is implemented with value true
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+LocalAuthListEnabled is true (If implemented)
+LocalPreAuthorize is true (If implemented)
+OfflineTxForUnknownIdEnabled is false (If implemented)
+LocalAuthorizeOffline is true
+OfflineThreshold is <Configured RetryBackOffWaitMinimum_duration> + 60.0
+RetryBackOffWaitMinimum is <Configured RetryBackOffWaitMinimum_duration>
+RetryBackOffRandomRange is 0
+Memory State:
+IdTokenLocalAuthList for <Configured invalid idtoken fields>
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does not accept a reconnect.
+2. Manual Action: Drive EV into parking bay.
+3. Manual Action: Present idToken.
+4. The Test System accepts reconnection attempt from the Charging Station.
+5. The Charging Stations sends a TransactionEventRequest
+Note(s):
+- The Charging Station will empty its Transaction message queue,
+this will only contain TransactionEventRequests if TxStartPoint
+was ParkingBayOccupancy and a Transaction was started.
+6. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 5:
+Message TransactionEventRequest
+- offline must be true
+- TriggerReason must be EVDetected
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 146/914 Part 6 - Test Cases

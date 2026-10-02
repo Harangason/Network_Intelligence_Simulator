@@ -1,0 +1,63 @@
+ID Precondition Requirement definition Note
+E04.FR.04 When a TransactionEventRequest has
+to be created
+The Charging Station SHALL set the message’s
+seqNo field as specified in Sequence Number
+Generation.
+This enables the CSMS
+to track the
+completeness of
+transaction information.
+Same E01.FR.07
+E04.FR.05 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Started), See: Meter
+Values - Configuration
+AND
+EVSE is known at start of transaction
+The Charging Station SHALL add the configured
+measurands to the optional meterValue field with
+context = Transaction.Begin in the
+TransactionEventRequest(eventType = Started)
+sent to the CSMS to provide more details during the
+transaction.
+Same as E01.FR.09
+E04.FR.06 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Updated), See: Meter
+Values - Configuration
+The Charging Station SHALL add the configured
+measurands to the optional meterValue field in the
+TransactionEventRequest(eventType = Updated)
+sent to the CSMS to provide more details during the
+transaction.
+Same as J02.FR.11
+E04.FR.09 E04.FR.06
+AND
+Amount of meter data is too much for
+1 TransactionEventRequest
+(eventType = Updated)
+The Charging Station MAY split meter data over
+multiple TransactionEventRequest(eventType =
+Updated) messages with the same timestamp.
+Same as J02.FR.14
+E04.FR.10 SampledDataSignReadings is true The Charging Station SHALL retrieve signed meter
+values and put them in the signedMeterValue field
+of sampledValues.
+Same as E02.FR.14
+E04.FR.11 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Started), See: Meter
+Values - Configuration
+AND
+EVSE is not known at start of
+transaction
+The Charging Station SHALL add the measurands
+for eventType = Started to the optional
+meterValue field with context =
+Transaction.Begin in the
+TransactionEventRequest(eventType = Updated)
+that occurs when charging starts.
+Same as E01.FR.17
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 141/491 Part 2 - Specification

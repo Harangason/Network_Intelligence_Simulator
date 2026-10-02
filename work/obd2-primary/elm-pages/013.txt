@@ -1,0 +1,96 @@
+13 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+AT Command Descriptions (continued)
+(ie printed) – when you do, the ELM327 sends a length
+byte (representing the length of the message in the
+buffer) followed by the contents of all twelve OBD
+buffer locations. For example, here’s one ‘dump’:
+>AT BD
+05 C1 33 F1 3E 23 C4 00 00 10 F8 00 00
+The 05 is the length byte - it tells us that only the
+first 5 bytes (ie C1 33 F1 3E and 23) are valid. The
+remaining bytes are likely left over from a previous
+operation.
+The length byte always represents the actual
+number of bytes received, whether they fit into the
+OBD buffer or not. This may be useful when viewing
+long data streams (with AT AL), as it represents the
+actual number of bytes received, mod 256. Note that
+only the first twelve bytes received are stored in the
+buffer.
+BI [ Bypass the Initialization sequence ]
+This command should be used with caution. It
+allows an OBD protocol to be made active without
+requiring any sort of initiation or handshaking to occur.
+The initiation process is normally used to validate the
+protocol, and without it, results may be difficult to
+predict. It should not be used for routine OBD use, and
+has only been provided to allow the construction of
+ECU simulators and training demonstrators.
+BRD  hh [ try Baud Rate Divisor hh ]
+This command is used to change the RS232 baud
+rate divisor to the hex value provided by hh, while
+under computer control. It is not intended for casual
+experimenting - if you wish to change the baud rate
+from a terminal program, you should use PP 0C.
+Since some interface circuits are not able to
+operate at high data rates, the BRD command uses a
+sequence of sends and receives to test the interface,
+with any failure resulting in a fallback to the previous
+baud rate. This allows several baud rates to be tested
+and a reliable one chosen for the communications.
+The entire process is described in detail in the ‘Using
+Higher RS232 Baud Rates’ section, on pages 51 and
+52.
+If successful, the actual baud rate (in kbps) will be
+4000 divided by the divisor (hh). The value 00 is not
+accepted by the BRD command.
+message is being sent to. With the auto receive mode
+in effect, the value used for the receive address will be
+chosen based on the current header bytes, and will
+automatically be updated whenever the header bytes
+are changed.
+The value that is used for the receive address is
+determined based on such things as the contents of
+the first header byte, and whether the message uses
+physical addressing, functional addressing, or if the
+user has set a value with the SR or RA commands.
+Auto Receive is turned on by default, and is not
+used by the J1939 protocol.
+AT0, AT1 and AT2 [ Adaptive Timing control ]
+When receiving responses from a vehicle, the
+ELM327 has traditionally waited the time set by the
+AT ST hh setting for a response. To ensure that the IC
+would work with a wide variety of vehicles, the default
+value was set to a conservative (slow) value. Although
+it was adjustable, many people did not have the
+equipment or experience to determine a better value.
+The Adaptive Timing feature automatically sets the
+timeout value for you, to a value that is based on the
+actual response times that your vehicle is responding
+in. As conditions such as bus loading, etc. change, the
+algorithm learns from them, and makes appropriate
+adjustments. Note that it always uses your AT ST hh
+setting as the maximum setting, and will never choose
+one which is longer.
+There are three adaptive timing settings that are
+available for use. By default, Adaptive Timing option 1
+(AT1) is enabled, and is the recommended setting.
+AT0 is used to disable Adaptive Timing (so the timeout
+is always as set by AT ST), while AT2 is a more
+aggressive version of AT1 (the effect is more
+noticeable for very slow connections – you may not
+see much difference with faster OBD systems). The
+J1939 protocol does not support Adaptive Timing – it
+uses fixed timeouts as set in the standard.
+BD [ perform an OBD Buffer Dump ]
+All messages sent and received by the ELM327
+are stored temporarily in a set of twelve memory
+storage locations called the OBD Buffer. Occasionally,
+it may be of use to view the contents of this buffer,
+perhaps to see why an initiation failed, to see the
+header bytes in the last message, or just to learn more
+of the structure of OBD messages. You can ask at any
+time for the contents of this buffer to be ‘dumped’

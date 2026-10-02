@@ -1,0 +1,51 @@
+OS81092
+DS60001271B-page 22  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+7.0 CONTROL PORT
+Using the default INIC Configuration String, the OS81092 Control Port operates as an I 2C slave device that must be
+managed externally. The OS81092 Control Port may be configured as an I 2C master by changing the settings in the
+INIC Configuration String. See the OS81092 INIC API User’s Manual [2] for more information. In master mode, the
+OS81092 performs read and write operations with on-board I 2C slave devices based on remote commands received
+from the MOST Network or from a local EHC.
+7.1 Slave Operation
+The Control Port supports message-based communication exclusively between the OS81092 and the EHC. These mes-
+sages are used to configure and control INIC and target the local INIC FBlocks (INIC or NBMIN). The Control Port also
+supports the routing of asynchronous packets and control messages between the EHC and the network.
+The Control Port supports the I2C protocol, where the data is received MSB-first, and is processed in bytes by the inter-
+nal firmware of the OS81092. The processing time varies based on the overall load of tasks. Clock stretching provides
+an appropriate handshake mechanism to adapt the data transfer rate dynamically, thereby maximizing the transfer rate
+at any given time.
+The Control Port is enabled by default after power-up/reset based on the INIC Configuration String. Specifically, the Con-
+trol Port is enabled under one of the following two conditions:
+• PortConfiguration.DefPort() is set to I2C, or
+• PortConfiguration.DefPort() is set to INT_Select and INT is pulled high.
+If one of these conditions is not met when the OS81092 is po wered-up (or reset), the Control Port is disabled and all
+communication between the EHC and the OS81092 must occur through the MediaLB Port.
+If OTP memory is not initialized, the OS81092 falls back to predetermined Factory defaults, where INT_Select is used
+as the default setting for PortConfiguration.DefPort(). If the Control Port is enabled at power-up/reset in this
+manner (e.g. INT pulled high) with uninitialized OTP memory, the Factory default is I2C address of 40h/41h.
+The OS81092 Control Port operates as an I2C slave device that must be managed externally. The SCL pin clocks data
+in and out; SDA is a bi-directional data pin. INT is an open-drain, active low output that can be wire-OR’ed with the inter-
+rupt outputs of other devices into the EHC’s interrupt input.
+Figure 7-1 illustrates the OS81092 in an I2C environment.
+FIGURE 7-1: CONTROL PORT PI N CONNECTIONS (SLAVE MODE)
+When the Control Port is enabled, INIC drives the INT interrupt pin low to inform the EHC when service through the port
+is required (e.g. message available for reading). Following reset, the EHC should wait for the first falling edge of INT,
+which occurs when initialization is complete. The first available message through the Control Port (shown below) indi-
+cates INIC is ready to receive messages and the EHC should synchronize all FIFOs.
+AllFIFOs:Status(SyncS, StartUp)
+Note: Control Port operation in master mode is only available when using OS81092
+Revision C1D or later. Refer to Appendix C: “Feature Matrix” for more informa-
+tion.
+OS81092
+SDA SCL
+Factory default: 40h (write)
+41h (read)
+I2C slave
+SDA SCL
+External Host 
+Controller
+SCLSDA
+4.7 k
+INT INT
+4.7 k
+I2C slave I2C master

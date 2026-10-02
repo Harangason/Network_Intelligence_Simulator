@@ -1,0 +1,58 @@
+EV Charging Station CSMS (Sub)CA
+ServiceDiscoveryReq()
+ServiceDiscoveryRes(PaymentServiceList: Contract, ExternalPayment)
+PaymentServiceSelectionReq(paymentOption: Contract)
+PaymentServiceSelectionRes()
+alt [Cached certificate checking]
+PaymentDetailsReq(ContractCertificateChain, EMAID)
+AuthorizeRequest(idToken.EMAID, iso15118CertificateHashData[0..4])
+check certificate cache()
+AuthorizeResponse(idTokenInfo, certificateStatus)
+PaymentDetailsRes(GenChallenge)
+AuthorizationReq(GenChallenge)
+AuthorizationRes(EVSEProcessing, ResponseCode)
+[Real-time certificate checking]
+PaymentDetailsReq(ContractCertificateChain, EMAID)
+AuthorizeRequest(idToken.EMAID, iso15118CertificateHashData[0..4])
+OCSP request()
+PaymentDetailsRes(GenChallenge)
+AuthorizationReq(GenChallenge)
+OCSP response()
+AuthorizeResponse(idTokenInfo, certificateStatus)
+AuthorizationRes(EVSEProcessing, ResponseCode)
+Figure 26. Authorization using Contract Certificates with ISO 15118-2
+EV Charging Station CSMS (Sub)CA
+AuthorizationSetupReq()
+AuthorizationSetupRes(AuthorizationServices,
+GenChallenge, SupportedProviders)
+alt [Cached certificate checking]
+AuthorizationReq(SelectedAuthorizationService, GenChallenge,
+ContractCertificateChain)
+AuthorizeRequest(idToken = <EMAID>,
+iso15118CertificateHashData[0..4])
+check signature of GenChallenge
+check certificate
+validity from cache()
+check validity of idToken
+AuthorizeResponse(idTokenInfo, certificateStatus)
+AuthorizationRes(EVSEProcessing, ResponseCode)
+[Real-time certificate checking]
+AuthorizationReq(SelectedAuthorizationService, GenChallenge,
+ContractCertificateChain)
+AuthorizeRequest(idToken = <EMAID>,
+iso15118CertificateHashData[0..4])
+check signature of GenChallenge
+OCSP request(
+iso15118CertificateHashData)
+AuthorizationRes(EVSEProcessing = Ongoing)
+Some delay
+involved
+AuthorizationReq(SelectedAuthorizationService, GenChallenge,
+ContractCertificateChain)
+OSCP response()
+check validity of idToken
+AuthorizeResponse(idTokenInfo, certificateStatus)
+AuthorizationRes(EVSEProcessing = Finished, ResponseCode)
+Figure 27. Authorization using contract certificates with ISO 15118-20
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 104/803 Part 2 - Specification

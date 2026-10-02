@@ -1,0 +1,54 @@
+ID Precondition Requirement definition
+O02.FR.19
+(2.1)
+If configuration variable
+DisplayMessageLanguage is present
+The O02 requirements about displaying messages only apply to
+messages that have a MessageContentType in the message or
+messageExtra field with a language corresponding to the
+language selected by the user or the default language if none
+was selected.
+O03 - Get All DisplayMessages
+No. Type Description
+1 Name Get All DisplayMessages
+2 ID O03
+3 Objective(s) Enable a CSO to retrieve all messages currently configured in a Charging Station.
+4 Description This use case describes how a CSO can request all the installed DisplayMessages configured via
+OCPP in a Charging Station.
+The Charging Station can remove messages when they are out-dated, or transactions have ended.
+It can be very useful for a CSO to be able to view to current list of messages, so the CSO knows
+which messages are (still) configured.
+Actors CSO, CSMS, Charging Station
+Scenario description 1. The CSO asks the CSMS to retrieve all messages.
+2. The CSMS sends a GetDisplayMessagesRequest message to the Charging Station.
+3. The Charging Station responds with a GetDisplayMessagesResponse Accepted, indicating it
+has configured messages and will send them.
+4. The Charging Station sends one or more NotifyDisplayMessagesRequest messages to the
+CSMS (depending on the amount of messages to be sent).
+5. The CSMS responds to every notify with a NotifyDisplayMessagesResponse message.
+5 Prerequisites There is at least one message configured in the Charging Station
+6 Postcondition(s) n/a
+7 Error Handling n/a
+8 Remarks Only messages configured via OCPP can be retrieved via a GetDisplayMessagesRequest.
+CSO
+CSMS Charging Station
+Get all messages
+GetDisplayMessagesRequest(requestId)
+GetDisplayMessagesResponse(Accepted)
+loop [for each DisplayMessages part]
+NotifyDisplayMessagesRequest(requestId, messageInfo, tbc)
+NotifyDisplayMessagesResponse()
+opt
+notification
+Figure 177. Get All DisplayMessages sequence diagram
+O03 - Get All DisplayMessages - Requirements
+Table 146. O03 - Requirements
+ID Precondition Requirement definition
+O03.FR.01 When all fields except requestId in a
+GetDisplayMessagesRequest are omitted AND
+at least one display message is configured.
+The Charging Station SHALL respond with Accepted.
+O03.FR.02 O03.FR.01 The Charging Station SHALL send all configured
+DisplayMessages via NotifyDisplayMessagesRequest.
+Edition 2, 2025-12-03 O. Display Message
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 486/803 Part 2 - Specification

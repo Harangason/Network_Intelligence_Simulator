@@ -1,0 +1,36 @@
+Tool validations
+* Step 1:
+Message SetVariablesRequest with
+setVariableData[0].component.name V2XChargingCtrlr
+setVariableData[0].component.evse.id 1
+setVariableData[0].variable.name V2XLocalLoadBalancing
+setVariableData[0].variable.instance UpperThreshold
+setVariableData[0].attributeValue 2000
+setVariableData[1].component.name V2XChargingCtrlr
+setVariableData[1].component.evse.id 1
+setVariableData[1].variable.name V2XLocalLoadBalancing
+setVariableData[1].variable.instance LowerThreshold
+setVariableData[1].attributeValue -1000
+setVariableData[2].component.name V2XChargingCtrlr
+setVariableData[2].component.evse.id 1
+setVariableData[2].variable.name V2XLocalLoadBalancing
+setVariableData[2].variable.instance UpperOffset
+setVariableData[2].attributeValue 200
+setVariableData[3].component.name V2XChargingCtrlr
+setVariableData[3].component.evse.id 1
+setVariableData[3].variable.name V2XLocalLoadBalancing
+setVariableData[3].variable.instance LowerOffset
+setVariableData[3].attributeValue 0
+Note: Alternatively these may be sent as individual requests
+* Step 3:
+Message: SetChargingProfileRequest
+- evseId must be <Configured evseId>
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].operationMode must be LocalLoadBalancing
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].limit(_L2/L3) must be _<omitted>_
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].dischargingLimit(_L2/L3) must be _<omitted>_
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].setpoint(_L2/L3) must be _<omitted>_
+- chargingProfile.chargingSchedule[*].chargingSchedulePeriod[*].setpointReactive(_L2/L3) must be _<omitted>_
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1356/1383 Part 6 - Test Cases

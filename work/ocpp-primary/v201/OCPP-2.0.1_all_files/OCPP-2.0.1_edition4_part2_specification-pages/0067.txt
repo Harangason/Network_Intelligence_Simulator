@@ -1,0 +1,77 @@
+ID Precondition Requirement definition
+B06.FR.04 B06.FR.01 Every GetVariableResult element in the GetVariablesResponse
+SHALL contain an attributeValue with the value of an attribute
+from the requested attributeType in the GetVariablesRequest.
+B06.FR.05 The CSMS SHALL NOT send more GetVariableData elements in
+a GetVariablesRequest than reported by the Charging Station via
+ItemsPerMessageGetVariables.
+B06.FR.06 When the Charging Station receives a
+GetVariablesRequest with an unknown
+Component in the GetVariableData
+The Charging Station SHALL set the attributeStatus field in the
+corresponding GetVariableResult to: UnknownComponent AND
+SHALL omit the attributeValue.
+B06.FR.07 When the Charging Station receives a
+GetVariablesRequest with a Variable that is
+unknown for the given Component in the
+GetVariableData
+The Charging Station SHALL set the attributeStatus field in the
+corresponding GetVariableResult to: UnknownVariable AND
+SHALL omit the attributeValue.
+B06.FR.08 When the Charging Station receives a
+GetVariablesRequest with an attributeType that
+is unknown for the given Variable in the
+GetVariableData
+The Charging Station SHALL set the attributeStatus field in the
+corresponding GetVariableResult to: NotSupportedAttributeType
+AND SHALL omit the attributeValue.
+B06.FR.09 When the Charging Station receives a
+GetVariablesRequest for a Variable in the
+GetVariableData that is WriteOnly
+The Charging Station SHALL set the attributeStatus field in the
+corresponding GetVariableResult to: Rejected.
+B06.FR.10 When the Charging Station was able to get the
+value requested from a GetVariablesRequest
+The Charging Station SHALL set the attributeStatus field in the
+corresponding GetVariableResult to: Accepted and set the
+attributeValue to the found value.
+B06.FR.11 When the Charging Station receives a
+GetVariablesRequest without an attributeType.
+The corresponding GetVariableResult element in the
+GetVariablesResponse SHALL contain the attributeType Actual.
+B06.FR.13 NOT B06.FR.08
+AND
+the Charging Station has no attributeValue for
+the requested attributeType of the
+componentvariable
+Charging Station SHALL return an empty string as attributeValue.
+Note: this can happen, for example, when the attributeType
+Target has not yet been set, even though it is supported.
+B06.FR.14 B06.FR.01 AND
+a value for instance is provided in the
+component and/or variable in GetVariableData
+Charging Station SHALL return the specified instance of that
+component and/or variable in GetVariableResult.
+B06.FR.15 B06.FR.01 AND
+no value or an empty string is provided for
+instance in the component and/or variable in
+GetVariableData AND
+a component and/or variable without an
+instance does not exist
+Charging Station SHALL return the attributeStatus
+UnknownComponent or UnknownVariable in the
+GetVariableResult entry for GetVariableData.
+B06.FR.16 Charging Station receives a
+GetVariablesRequest with more
+GetVariableData elements than allowed by
+ItemsPerMessageGetVariables
+The Charging Station MAY respond with a
+CALLERROR(OccurenceConstraintViolation)
+B06.FR.17 Charging Station receives a
+GetVariablesRequest with a length of more
+bytes than allowed by
+BytesPerMessageGetVariables
+The Charging Station MAY respond with a
+CALLERROR(FormatViolation)
+Edition 4, 2025-12-03 B. Provisioning
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 57/491 Part 2 - Specification

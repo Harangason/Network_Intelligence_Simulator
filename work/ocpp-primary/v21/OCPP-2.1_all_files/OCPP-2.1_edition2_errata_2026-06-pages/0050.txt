@@ -1,0 +1,50 @@
+6.2.22. Page 358 - (2026-04) - TC_G_14_CS - Clarity provided regarding sending
+status notifications of connectors not in use
+Additional note added to provide clarity regarding when status notifications of the connectors not in use can be sent.
+Test case name Change Availability Charging Station - Operative to operative
+Test case Id TC_G_12_CS
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+ChangeAvailabilityResponse
+1. The Test System sends a ChangeAvailabilityRequest
+with operationalStatus Inoperative
+3. The Charging Station notifies the CSMS about the current
+state of the connectors of the EVSEs that do not have an active
+transaction. 4. The Test System responds accordingly.
+Note(s) :  Step 3 and 4 are optional and can be sent by the charging station if it chooses to immediately report the status of                      
+connectors of the EVSEs that are       NOT  in use.  
+Note(s): Wait for <Configured Transaction Duration>
+5. Execute Reusable State StopAuthorized
+…
+Note(s): Steps 6, 7, 9, 10, 12, 13, 15, and 16 will only be executed if the previous step ended the transaction
+17.  The test system will wait the <configured max timeout period>          
+Note(s) :  If all connectors of the configured evse have not yet reported their status, the test system will wait for the configured max                     
+timeout period to receive them.    
+Tool validations
+* Step 2:
+Message ChangeAvailabilityResponse
+- status Scheduled
+* Step 3:  
+For all connectorId’s and evseId’s not in use:       
+Message:  StatusNotificationRequest
+-  connectorStatus   Unavailable
+-  evseId  Not   <configured evseId>  AND   connectorId  Not   <configured connectorId> 
+Message:  NotifyEventRequest
+-  eventData[0].trigger   Delta
+-  eventData[0].actualValue   "Unavailable"
+-  eventData[0].component.name   "Connector"
+-  eventData[0].variable.name   "AvailabilityState"
+-  eventData[0].component.evse.id  Not   <configured evseId>  AND   eventData[0].component.evse.connectorId  Not   <configured
+connectorId>
+* Step 7, 10, 13, 16:
+Message: StatusNotificationRequest
+- connectorStatus Unavailable
+- evseId not 0
+- connectorId not 0
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Unavailable"
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 46/116 Errata 2026-06

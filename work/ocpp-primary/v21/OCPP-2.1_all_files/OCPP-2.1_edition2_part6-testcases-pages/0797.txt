@@ -1,0 +1,52 @@
+TC_O_36_CS: Set Display Message -  State Charging
+Test case name Set Display Message - State Charging
+Test case Id TC_O_36_CS
+Use case Id(s) O01
+Requirement(s) N/a
+System under test Charging Station
+Description This test case describes how the CSMS can be requested to sent an SetDisplayMessageRequest to the
+charging station. Depending on the given parameters the message shall be displayed a certain way and at a
+certain moment on the Charging Station. These messages are displayed additionally on a Charging Station
+and are not part of the firmware.
+Purpose To verify if the Charging Station is able to display specific messages while the chargingState is Charging
+according to the DisplayMessage mechanism as described in the OCPP specification.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDisplayMessageResponse
+1. The Test System sends a SetDisplayMessageRequest with
+message.id <Generated displayMessageId>
+message.priority <Configured Priority>
+message.state Charging
+message.display <Configured display component variable>
+(Omitted when left empty)
+Note(s): The display message should NOT be displayed.
+3. Execute Reusable State ParkingBayOccupied
+4. Execute Reusable State Authorized
+5. Execute Reusable State EVConnectedPreSession
+6. Execute Reusable State EnergyTransferStarted
+Note(s): The display message should be displayed.
+7. Execute Reusable State StopAuthorized
+8. Execute Reusable State EVConnectedPostSession
+9. Execute Reusable State EVDisconnected
+10. Execute Reusable State ParkingBayUnoccupied
+Note(s): The display message should NOT be displayed.
+12. The Charging Station responds with a
+GetDisplayMessagesResponse
+11. The Test System sends a GetDisplayMessagesRequest with
+id <Generated displayMessageId>
+requestId <Generated requestId>
+13. The Charging Station sends a
+NotifyDisplayMessagesRequest 14. The Test System responds with a
+NotifyDisplayMessagesResponse .
+Note(s): If tbc is True at Step 13 then step 13 and 14 will be repeated
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 795/1383 Part 6 - Test Cases

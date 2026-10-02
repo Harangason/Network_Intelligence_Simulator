@@ -1,0 +1,42 @@
+TC_C_109_CS: Integrated Payment Terminal - Cancelation prior to transaction -
+Only Payment Terminal authorised - EVConnectionTimeout
+Test case name Integrated Payment Terminal - Cancelation prior to transaction - Only Payment Terminal authorised -
+EVConnectionTimeout
+Test case Id TC_C_109_CS
+Use case Id(s) C19
+Requirement(s) C18.FR.01, C18.FR.02, C18.FR.03, C19.FR.01
+System under test Charging Station
+Description In order to test that Charging Station supports cancelation of a payment terminal authorization when no EV
+is connected within the timeout period.
+Purpose To verify if the Charging Station is able to handle cancelation of a payment terminal authorization when no
+EV is connected within the timeout period.
+Prerequisite(s) - Charging Station has an integrated Payment Terminal
+- TxStartPoint does NOT contain ParkingBayOccupancy or Authorized
+Before (Preparations)
+Configuration State:
+PaymentCtrlr.Enabled is true
+PaymentCtrlr.AuthorizationAmount is 25.00
+PaymentCtrlr.AuthorizeDirectPayment is false
+TxCtrlr.EVConnectionTimeout is 5
+TxStartPoint EVConnected or PowerPathClosed or EnergyTransfer or DataSigned
+Memory State:
+N/a
+Reusable State(s):
+State is DefaultTariffConfigured
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Present a payment card to the payment terminal.
+Note(s):
+- Charging Station instructs payment terminal to request authorization for this card from PSP for amount of 25.00 EUR
+- PSP authorizes the payment card and provides <PspRef>
+- Charging Station authorizes EV to charge
+- The EVConnectionTimeout occurs after 5 seconds
+- The Charging Station instructs payment terminal to release the authorization amount of 25.00 EUR and cancel the payment
+Tool validations
+N/a
+Post scenario validations:
+- The authorization amount of 25.00 EUR is released and the payment is cancelled.
+- The Charging Station did NOT send a AuthorizeRequest, TransactionEventRequest(eventType=Started) and
+NotifySettlementRequest.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 191/1383 Part 6 - Test Cases

@@ -1,0 +1,38 @@
+MODBUS Messaging on TCP/IP Implem entation Guide V1.0b 
+October 24, 2006 http://www.Modbus.org 42/46
+General comments for a better understanding of the Server sequence diagram : 
+First step : a client has sent a query (MOD BUS query) over the network.  
+The TCP/IP stack receives data (method m_Ev entOnSocket  is implicitly called).  
+Second step : The query  may be a connection request or not (method 
+m_IsConnexionRequest). 
+If the query is a connection request,  the connection  object and buffers for receiving 
+and sending 
+the MODBUS frame are allocated (method m_GetObjectConnexion ). 
+Just after, the connection access control must be checked and accepted  (method 
+m_AcceptConnexion) 
+Third step:  If the query is a MODBUS request, the complete MODBUS Query can be 
+read (method m_ReceiveData ). At this time the MBAP must be analyzed (method 
+m_IsMdbHeaderCorrect ). The complete frame is sent to the Server task  via the 
+CinterfaceIndicationMessaging  Class (method m_MODBUSIndication). Server task 
+receives the MODBUS Query (method m_ServerReceivingMessage ) and analyses it. 
+If an error occur s (function code not supported, etc) , a MODBUSException frame is 
+built ( m_BuildMODBUSException), otherwise the response is built. 
+Fourth Step:  The response is sent over the network via the 
+CinterfaceResponseMessaging (method m_MODBUSResponse). Treatment on the  
+connection object  is done by the method m_SendData  (retrieve the connection 
+descriptor, etc) and data is  sent over the network. 
+5.4 CLASSES AND METHODS DESCRIPTION 
+5.4.1 MODBUS Server Class 
+Class CMODBUSServer 
+class CMODBUSServer   
+Stereotype implementationClass 
+Provides methods for managing MODBUS Messaging in Server Mode  
+Field Summary  
+GlobalState  
+state of the MODBUS Server 
+protected char
+Constructor Summary  
+CMODBUSServer (TConfigureObject * lnkConfigureObject)
+Constructor : Create internal object  
+Method Summary  
+Modbus Organization  

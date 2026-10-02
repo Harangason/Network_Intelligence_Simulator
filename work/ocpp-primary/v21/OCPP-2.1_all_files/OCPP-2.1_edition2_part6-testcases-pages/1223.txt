@@ -1,0 +1,43 @@
+TC_K_126_CSMS: ISO 15118-20 Dynamic Control Mode - Sets no charging profile
+Test case name ISO 15118-20 Dynamic Control Mode - Sets no charging profile
+Test case Id TC_K_126_CSMS
+Use case Id(s) K19
+Requirement(s) K19.FR.02, K19.FR.04
+System under test CSMS
+Description Authorization of an EV by the CSMS to start a V2X power transfer loop.
+Purpose To check if the CSMS supports ISO15118-20 Dymanic Control without setting a charging profile.
+Prerequisite(s) CSMS supports ISO15118-20
+The CSMS is able to turn off providing a Charging Profile during negotiation.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is ISO15118-20 transaction just started exposing:
+- <allowedEnergyTransferModes>
+- <transactionId>
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System sends a NotifyEVChargingNeedsRequest
+with:
+evseId <Configured evseId>
+chargingNeeds.requestedEnergyTransfer one of
+<allowedEnergyTransferModes> or if omitted AC_three_phase 
+chargingNeeds.availableEnergyTransfer [AC_single_phase,
+AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]
+chargingNeeds.controlMode DynamicControl
+chargingNeeds.v2xChargingParameters.maxChargePower
+8000W
+chargingNeeds.v2xChargingParameters.maxDischargePower
+0W
+2. Then CSMS SHALL respond with a
+NotifyEVChargingNeedsResponse
+Tool validations
+* Step 2:
+Message: NotifyEVChargingNeedsResponse
+- status must be NoChargingProfile
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1221/1383 Part 6 - Test Cases

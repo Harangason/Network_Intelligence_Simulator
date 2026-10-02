@@ -1,0 +1,51 @@
+OS81092
+DS60001271B-page 12  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+The MOST Network contains multiple simultaneous networks operating across UTP . Once bandwidth is allocated, each
+network (or data transfer method) operates independently (not affecting the others), providing a robust, dependable,
+and deterministic system architecture. The OS81092 INIC supports the following data transfer methods, including:
+• Control Network - consists of a single control channel
+• Asynchronous (Packet) Network - consists of a single packet channel
+• Synchronous Streaming Network - consists of one or more synchronous streaming channels
+4.1.1 CONTROL NETWORK
+The MOST Control Network consists of a single control channel, shar ed by all network nodes. Messages transported
+across this channel adhere to the MOST Control Message (MCM) format and are used to manage the network and
+exchange control data among nodes. Any network node that needs to transmit a control message must arbitrate for the
+channel.
+INIC monitors the control channel on the Network Port by default and uses information in the message header to deter-
+mine whether the node is the intended receiver of the control message. When a control message is to be received (e.g.
+node address match), it is buffered within INIC. For MCMs, the application is notified of the message reception and the
+packet is retrieved by the EHC via one of the OS81092 har dware ports that supports control message exchange (see
+Table 4-1).
+4.1.2 ASYNCHRONOUS (PACKET) NETWORK
+The MOST Asynchronous Network consists of a single packet channel, shared by all network nodes. Applications use
+this channel to transmit large data packets (e.g. navigation maps) in bursts to other network nodes. Data packets on the
+packet channel are referred to as asynchronous packets and adhere to the MOST Data Packet (MDP) format. Any net-
+work node that needs to transmit a data packet can arbitrate for the packet channel.
+INIC monitors the packet channel on the Network Port by default and uses information in the packet header to determine
+whether the node is the intended receiver. When an asynchronous packet is to be received (e.g. node address match),
+it is buffered within INIC and made available to the application at one of the OS81092 hardware ports that supports asyn-
+chronous packets (see Table 4-1).
+4.1.3 SYNCHRONOUS STREAMING NETWORK
+The MOST Synchronous Streaming Network can consist of multiple synchronous streaming channels, each transport-
+ing raw, real-time synchronous data (e.g. audio, video). The data on a synchronous streaming channel is sourced by a
+single transmitting node that has been granted channel bandwidth. Synchronous streaming channels are broadcast, the
+data available for reception by one or more sink nodes.
+For high-speed synchronous data, INIC acts like a cross-poi nt switch to connect synch ronous streaming channels to
+sources/sinks attached to OS81092 hardware ports that support synchronous data (see Table 4-1).
+4.2 INIC Processor
+The INIC Processor manages the transfer of data to and fr om the network. The Network Port connects the INIC Pro-
+cessor to the network using the OS81092 network transmission and reception pins (ETXP/ETXN and ERXP/ERXN) to
+exchange data over the ePHY interface. The ePHY interface of the OS81092 requires reception and transmission cir-
+cuitry to connect the INIC Processor to the electrical netwo rk and increase system immunity to EMI. This external cir-
+cuitry is referred to as the ePHY Front End Circuitry.
+Working in conjunction with the Clock Manager, the Network Port recovers the network clock, decodes received data,
+and passes data to the INIC Processor. The INIC Processor then routes data to the appropriate destinations on and off
+the chip.
+The network frame to be transmitted by the OS81092 is constructed by the INIC Processor by combining incoming net-
+work data from the Network Port with outgoing data from other on-chip resources. The Network Port then encodes the
+data for network transmission.
+The INIC Software Stack runs on the INIC Processor and configures t he Network Port at power-up, which allows the
+network to become fully operational without any external protocol stack. This has been accomplished by placing all the
+lower layers of the ISO protocol stack inside of the device. In addition to the INIC Software Stack, the INIC Processor
+supports two groups of functions: FBlock NBMIN and FBlock INIC. Figure 4-1 illustrates the position of the INIC Soft-
+ware Stack within the ISO software model.

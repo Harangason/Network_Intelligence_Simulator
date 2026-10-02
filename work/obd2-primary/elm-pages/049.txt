@@ -1,0 +1,97 @@
+Monitoring the Bus
+Some vehicles use the OBD bus for information
+transfer during normal vehicle operation, passing a
+great deal of information over it. A lot can be learned if
+you have the good fortune to connect to one of these
+vehicles, and are able to decipher the contents of the
+messages.
+To see how your vehicle uses the OBD bus, you
+can enter the ELM327’s ‘Monitor All’ mode, by sending
+the command AT MA from your terminal program. This
+will cause the IC to display any information that it sees
+on the OBD bus, regardless of transmitter or receiver
+addresses (it will show all). Note that by default, the
+ELM327 remains silent while monitoring, and does not
+respond with any signals. This means that no periodic
+‘wakeup’ messages are sent, no IFRs are sent, and
+the CAN module does not generate any message
+acknowledge bits.
+The monitoring mode can be stopped by putting a
+logic low level on the RTS pin, or by sending a single
+RS232 character to the ELM327. Any convenient
+character can be used to interrupt the IC – there are
+no restrictions on whether it is printable, etc. Note that
+any character that you send will be discarded, and will
+have no effect on any subsequent commands.
+The time it takes to respond to such an interrupt
+will depend on what the ELM327 is doing when the
+character is received. The IC will always finish a task
+that is in progress (printing a line, for example) before
+printing ‘STOPPED’ and returning to wait for your
+input, so it is best to wait for the prompt character (‘>’)
+to be sent, or the Busy line to go low, before beginning
+to send a new command.
+One unexpected result may occur if you have the
+automatic protocol search feature enabled, and you
+tell the ELM327 to begin monitoring. If the bus is quiet,
+the ELM327 will begin searching for an active protocol,
+which may not be what you were expecting. Be aware
+also that the ISO 9141 and ISO 14230 protocols look
+identical when monitoring, so the ELM327 may stop
+searching at ISO 9141, even if the actual protocol is
+ISO 14230. With the Automatic searching enabled, this
+should correct itself, however, when an OBD request
+is later made.
+If the ‘Monitor All’ command provides too much
+information (it certainly does for most CAN systems),
+then you can restrict the range of data that is to be
+displayed. Perhaps you only want to see messages
+that are being transmitted by the ECU with address 10.
+To do that, you only need to type:
+>AT MT 10
+and all messages that contain 10 in the third byte of
+the header will be displayed.
+Using this command with 11 bit CAN systems can
+be a little confusing at first. Recall the way in which all
+header bytes are stored within the ELM327. An 11 bit
+CAN ID is actually stored as the least significant 11
+bits in the 3 byte ‘header storage’ location. It will be
+stored with 3 bits in the receiver’s address location,
+and the remaining 8 bits in the transmitter’s address
+location. For this example, we have requested that all
+messages created by transmitter ‘10’ be printed, so all
+11 bit CAN IDs that end in 10 will be displayed (ie all
+that look like ‘x10’).
+The other monitoring command that is very useful
+is the AT MR command, which looks for specific
+addresses in the middle byte of the header. Using this
+command, you can look for all messages being sent to
+a particular address. For example, to use it to look for
+messages being sent to the ECU with address 10,
+simply send:
+>AT MR 10
+and all messages that contain 10 in the second byte of
+the header will be displayed.
+Using this command with the 11 bit CAN systems
+will again need further explanation. It may be helpful to
+first picture the hex number ‘10’ in the above example
+as the binary number ‘0001 0000’. Recall from above
+that 11 bit CAN IDs are actually stored as the least
+significant 11 bits in the 3 byte ‘header storage’
+locations, and only 3 bits are actually stored in the
+middle byte (receiver’s address) position. When
+comparing the received CAN ID to the address you
+provide with the MR command then, only the right-
+most 3 bits of your MR address are considered and
+the other 5 bits are ignored. In this example, the
+AT MR 10 effectively becomes AT MR 0 for 11 bit
+CAN systems, and so all messages that begin with ‘0’
+as the first digit will be displayed.
+It is best not to use the AT MT or MR commands
+when monitoring CAN systems. The ELM327 provides
+another command (AT CRA) that allows much better
+control over the received data - see the next section
+for complete details.
+49 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327

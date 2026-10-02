@@ -1,0 +1,24 @@
+MODBUS over serial line specification and implementation guide V1.02 Modbus.org    
+Modbus.org http://www.modbus.org/ 18/44
+Dec 20, 2006 
+Some ex
+planations about the above state diagram : 
+/square4 "Idle" state is the normal state when neither emission nor reception is active. 
+/square4 Each reception of a ":" character means a beginning of a new message.  If a message was in process of reception while receiving  
+such a character, the current message is declared incomplete and it is discarded. A new reception buffer is then allocated. 
+/square4 After detection of the end of frame, the LRC calculation and checking is completed. Afterwards the address field is analyzed to  
+determine if the frame is for the device. If not the frame is discarded.  In order to reduce the reception processing time the 
+address field can be analyzed as soon as it is reserved without waiting the end of frame.  
+2.5.2.2 LRC Checking 
+In ASCII mode, messages include an error–checking field that is based on a Longitudinal Redundancy Checking ( LRC) calculation 
+that is performed on the message contents, exclusive of the beginning ‘colon’ and terminating CRLF pair characters. It is appli ed 
+regardless of any parity checking method used for the individual characters of the message. 
+The LRC field is one byte, containing an 8–bit binary value.  The LRC value is calculated by the device that emits, which appen ds the 
+LRC to the message.  The device that receives calculates an LRC during receipt of the message, and compares the calculated valu e 
+to the actual value it received in the LRC field.  If the two values are not equal, an error results. 
+The LRC is calculated by adding together successive 8–bit bytes of the message, discarding any carries, and then two’s 
+complementing the result.  It is performed on the bytes of the message,  before the encoding of each byte in the two  ASCII 
+characters corresponding to the hexadecimal representation of each nibble.   The computation does not include the  'colon'   character
+that begins the message, and does not include the CRLF pair at the end of the message.
+The resulting LRC is ASCII encoded into two byt es and placed at the end of the ASCII mode frame before the CRLF. 
+A detailed example of LRC generation is contained in Appendix B. 

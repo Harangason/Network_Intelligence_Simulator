@@ -1,0 +1,53 @@
+u-blox 20 HPG 2.00 - Interface description
+2 lat ddmm.
+mmmmm
+- 5114.50897 Latitude (degrees and minutes), see format description
+3 NS character - N North/South indicator
+4 lon dddmm.
+mmmmm
+- 00012.28663 Longitude (degrees and minutes), see format
+description
+5 EW character - E East/West indicator
+6 posMode character - AAAA Positioning mode, see position ﬁx ﬂags description .
+The ﬁrst four characters indicate the status for GPS,
+GLONASS, Galileo and BeiDou. Note that the NMEA
+GNS message only reports a single status. It indicates
+the status for all enabled constellations that have
+not been ﬁltered out. To obtain a more detailed
+status report, refer to the status provided in the UBX
+messages.
+7 numSV numeric - 10 Number of satellites used (range: 0-99)
+8 HDOP numeric - 0.83 Horizontal Dilution of Precision
+9 alt numeric m 111.1 Altitude above mean sea level
+10 sep numeric m 45.6 Geoid separation: diﬀerence between ellipsoid and
+mean sea level
+11 diffAge numeric s - Age of diﬀerential corrections (null when DGPS is not
+used)
+12 diffStation numeric - - ID of station providing diﬀerential corrections (null when
+DGPS is not used)
+13 navStatus character - V Navigational status indicator: V (Equipment is not
+providing navigational status information, ﬁxed ﬁeld,
+only available in NMEA 4.10 and later)
+14 cs hexadecimal - *71 Checksum
+15 CRLF character - - Carriage return and line feed
+2.7.10 GPQ
+2.7.10.1 Poll a standard message (Talker ID GP)
+Message NMEA-Standard-GPQ
+Poll a standard message (Talker ID GP)
+Type Poll request
+Comment Polls a standard NMEA message if the current Talker ID is GP
+Information Class/ID: 0xf0 0x40 Number of fields: 4
+Structure $xxGPQ,msgId*cs\r\n
+Example $EIGPQ,RMC*3A\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGPQ string - $EIGPQ GPQ Message ID (xx = Talker ID of the device requesting
+the poll)
+1 msgId string - RMC Message ID of the message to be polled
+2 cs hexadecimal - *3A Checksum
+3 CRLF character - - Carriage return and line feed
+2.7.11 GQQ
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 30 of 224
+C1-Public

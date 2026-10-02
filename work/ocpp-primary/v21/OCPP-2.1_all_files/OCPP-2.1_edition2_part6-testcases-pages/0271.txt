@@ -1,0 +1,40 @@
+TC_E_27_CS: Disconnect cable on EV-side - Suspend transaction - Fixed cable
+connection timeout
+Test case name Disconnect cable on EV-side - Suspend transaction - Fixed cable connection timeout
+Test case Id TC_E_27_CS
+Use case Id(s) E10
+Requirement(s) E10.FR.02, E10.FR.03
+System under test Charging Station
+Description The Charging Station can behave in several different ways when the cable is disconnected at the EV side,
+based on its configuration. This test case tests one of the possible configuration settings.
+Purpose To verify if the Charging Station suspends the transaction when the EV and EVSE are disconnected at the
+EV side and it has been configured to do so AND deauthorizes the transaction after the configured
+connection timeout expires.
+Prerequisite(s) - The Charging Station does NOT have the following configuration; The mutability of TxStopPoint is
+ReadOnly AND (the value Authorized OR ParkingBayOccupancy is NOT set OR (EnergyTransfer OR
+PowerPathClosed OR DataSigned OR EVConnected is set)).
+- If the mutability of TxStopPoint is _ReadWrite, then the value Authorized OR ParkingBayOccupancy must be
+supported.
+- The Charging Station has a permanently attached cable at the Charging Station side.
+- StopTxOnEVSideDisconnect can be set to false.
+Before (Preparations)
+Configuration State:
+TxStopPoint contains Authorized (If supported)
+TxStopPoint contains ParkingBayOccupancy (If supported)
+UnlockOnEVSideDisconnect is false
+StopTxOnEVSideDisconnect is false
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferSuspended
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Disconnect the EV and EVSE on EV side (EVSE loses connection with EV).
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+3. The Charging Station notifies the CSMS about the current
+state of the connector. 4. The Test System responds accordingly.
+5. The Charging Station sends a TransactionEventRequest
+6. The Test System responds with a TransactionEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 269/1383 Part 6 - Test Cases

@@ -1,0 +1,40 @@
+The ones for OCPP 1.2, 1.5, 1.6, 2.0, 2.0.1 and 2.1 are official WebSocket subprotocol name values. They are registered as such
+with IANA. These are official WebSocket subprotocol name vaues, that are registered as such with IANA.
+Note that OCPP 1.2 and 1.5 are in the list. Since the JSON over WebSocket solution is independent of the actual message content
+the solution can be used for older OCPP versions as well. Please keep in mind that in these cases the implementation should
+preferably also maintain support for the SOAP based solution to be interoperable.
+If the OCPP version is part of the OCPP-J endpoint URL it SHALL NOT determine the OCPP version to use, because the OCPP
+version is selected via the websocket protocol negotiation mechanism, as explained in section 3.3 Server response.
+3.1.3. Example of an opening HTTP request
+(Updated in OCPP 2.1)
+The following is an example of an opening HTTP request of an OCPP-J connection handshake:
+GET /webServices/ocpp/CS3211 HTTP/1.1
+Host: some.server.com:33033
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==
+Sec-WebSocket-Protocol: ocpp2.1, ocpp2.0.1, ocpp1.6
+Sec-WebSocket-Version: 13
+The bold parts are found as such in every WebSocket handshake request, the other parts are specific to this example.
+In this example, the CSMS’s OCPP-J endpoint URL is "ws://some.server.com:33033/webServices/ocpp". The Charging Station’s
+unique identifier is "CS3211", so the path to request becomes "webServices/ocpp/CS3211".
+With the Sec-WebSocket-Protocol header, the Charging Station indicates here that it can use OCPP 2.1, OCPP 2.0.1 and OCPP 1.6J,
+with a preference for the first in the list, in this example OCPP 2.1.
+The other headers in this example are part of the HTTP and WebSocket protocols and are not relevant to those implementing
+OCPP-J on top of third-party WebSocket libraries. The roles of these headers are explained in [RFC2616] and [RFC6455].
+3.2. Maintaining support for OCPP 2.0.1
+A CSMS that supports OCPP 2.1 IS RECOMMENDED to also support OCPP 2.0.1, such that Charging Stations in the network that
+use OCPP 2.0.1 can still connect.
+A Charging Station that supports OCPP 2.1 IS RECOMMENDED to also support OCPP 2.0.1, such that it can still connect to CSMSs
+that use OCPP 2.0.1.
+3.3. Server response
+Upon receiving the Charging Station’s handshake request, the CSMS has to finish the handshake with a response as described in
+[RFC6455].
+The following OCPP-J-specific conditions apply:
+• If the CSMS does not recognize the Charging Station identifier in the URL path, it SHOULD send an HTTP response with
+status 404 and abort the WebSocket connection as described in [RFC6455].
+• If the CSMS does not agree to using one of the subprotocols offered by the client, it MUST complete the WebSocket
+handshake with a response without a Sec-WebSocket-Protocol header and then immediately close the WebSocket
+connection.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 7/28 Part 4 - JSON over WebSockets implementation guide

@@ -1,0 +1,50 @@
+      "prices": [{
+        "priceMinute": 1.00,    -- price per minute
+        "conditions": {
+          "startTimeOfDay": "09:00",
+          "endTimeOfDay": "18:00",
+          "minIdleTime": 300,   -- after 5 mins of idle time
+          "dayOfWeek": ["Monday", "Tuesday", "Wednesday", "Thursday",
+"Friday"]
+        }
+      },
+      {
+        "priceMinute": 0.60,    -- price per minute
+        "conditions": {
+          "startTimeOfDay": "10:00",
+          "endTimeOfDay": "17:00",
+          "dayOfWeek": ["Saturday"]
+        } -- No idle fee on other days (Sunday) or hours
+      }]
+  }
+}
+NOTE When tariff conditions are used, it is recommended to add a field without any condition at the bottom of the list
+as a fallback to use when none of the conditions are met.
+1.2.4. Idle fee based on charging location occupancy
+When an operator only wants to charge an idle fee when the charging location is occupied for more than a certain percentage, then
+this is something that cannot be captured in a static tariff, since one charging station is not aware of activity at other charging
+stations. Therefore, CSMS will update the tariff to use, depending on the occupancy of the charging location.
+When the charging location is quiet, for example less than half of the station is in use, CSMS uses the following tariff:
+kWh tariff for low occupancy (no idle fee)
+{
+  "id": "21",
+  "description": [{
+    "format": "ASCII", "language": "en",
+    "content": "0.44 ct/kWh (currently no idle fees, but will apply at busy
+times, 5 minutes after end of charging). Price incl. VAT"
+  }],
+  "currency": "EUR",
+  "energy": [{
+    "prices": [{
+      "pricekWh": 0.40,        -- per kWh
+      "taxRates": [ { "type": "vat", "tax": 10.0 } ]
+    }]
+  }]
+}
+At the moment that more than half of the stations at this location are in use, CSMS will use below tariff for new charging sessions,
+but also update the tariff for existing charging sessions with this tariff. The kWh price remains the same, but idle time will now be
+charged after 5 minutes.
+kWh tariff for high occupancy (with idle fee)
+{
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 272/803 Part 2 - Specification

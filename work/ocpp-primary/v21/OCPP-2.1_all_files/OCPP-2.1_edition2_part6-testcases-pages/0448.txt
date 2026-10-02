@@ -1,0 +1,30 @@
+Tool validations
+Post scenario validations:
+Note: The value of TransactionEventRequest.timestamp of step 3 where TransactionEventRequest.eventType is Started is called
+<TxStartDateTime>.
+The value of TransactionEventRequest.timestamp of step 10 where TransactionEventRequest.eventType is Ended is called
+<TxEndDateTime>:
+* A message TransactionEventRequest must have been received with:
+- eventType must be Ended
+- costDetails.failureToCalculate must be <omitted>
+- costDetails.failureReason must be <omitted>
+- costDetails.totalCost.currency must be EUR
+- costDetails.totalCost.typeOfCost must be NormalCost
+- costDetails.totalCost.reservationTime must be <omitted>
+- costDetails.totalCost.reservationFixed must be <omitted>
+- costDetails.totalCost.energy.exclTax must be <not omitted>
+- costDetails.totalCost.energy.inclTax must be <costDetails.totalCost.energy.exclTax * 1.1>
+- costDetails.totalCost.energy.taxRates[0].type t4_5
+- costDetails.totalCost.energy.taxRates[0].tax 4.5
+- costDetails.totalCost.energy.taxRates[1].type t5_5
+- costDetails.totalCost.energy.taxRates[1].tax 5.5
+- costDetails.totalUsage.energy must be > 0.00
+- costDetails.totalUsage.chargingTime must be <TxEndDateTime - TxStartDateTime>
+- costDetails.totalCost.chargingTime.exclTax must be chargingTime * 0.1 EUR/s
+- costDetails.totalCost.chargingTime.inclTax must be <costDetails.totalCost.chargingTime.exclTax * 1.4>
+- costDetails.totalCost.chargingTime.taxRates[0].type t34_5
+- costDetails.totalCost.chargingTime.taxRates[0].tax 34.5
+- costDetails.totalCost.chargingTime.taxRates[1].type t5_5
+- costDetails.totalCost.chargingTime.taxRates[1].tax 5.5
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 446/1383 Part 6 - Test Cases

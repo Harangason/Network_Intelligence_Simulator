@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+Example $EIGLQ,RMC*3A\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGLQ string - $EIGLQ GLQ Message ID (xx = Talker ID of the device requesting
+the poll)
+1 msgId string - RMC Message ID of the message to be polled
+2 cs hexadecimal - *3A Checksum
+3 CRLF character - - Carriage return and line feed
+2.7.8 GNQ
+2.7.8.1 Poll a standard message (Talker ID GN)
+Message NMEA-Standard-GNQ
+Poll a standard message (Talker ID GN)
+Type Poll request
+Comment Polls a standard NMEA message if the current Talker ID is GN
+Information Class/ID: 0xf0 0x42 Number of fields: 4
+Structure $xxGNQ,msgId*cs\r\n
+Example $EIGNQ,RMC*3A\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGNQ string - $EIGNQ GNQ Message ID (xx = Talker ID of the device requesting
+the poll)
+1 msgId string - RMC Message ID of the message to be polled
+2 cs hexadecimal - *3A Checksum
+3 CRLF character - - Carriage return and line feed
+2.7.9 GNS
+2.7.9.1 GNSS ﬁx data
+Message NMEA-Standard-GNS
+GNSS ﬁx data
+Type Output
+Comment Time and position, together with GNSS ﬁxing-related data (number of satellites in use, and the resulting
+HDOP, age of diﬀerential data if in use, etc.).
+☞ The output of this message is dependent on the currently selected datum (default: WGS84)
+Information Class/ID: 0xf0 0x0d Number of fields: 16
+Structure $xxGNS,time,lat,NS,lon,EW,posMode,numSV,HDOP,alt,sep,diffAge,diffStation,navStatus*c ↲
+s\r\n
+Examples $GNGNS,103600.01,5114.51176,N,00012.29380,W,ANNN,07,1.18,111.5,45.6,,,V*00\r\n
+$GNGNS,122310.2,3722.425671,N,12258.856215,W,DAAA,14,0.9,1005.543,6.5,,,V*0E\r\n
+$GPGNS,122310.2,,,,,,07,,,,5.2,23,V*02\r\n
+Payload:
+Field Name Format Unit Example Description
+0 xxGNS string - $GPGNS GNS Message ID (xx = current Talker ID, see NMEA
+Talker IDs table)
+1 time hhmmss.ss - 091547.00 UTC time. See section UTC representation in the
+integration manual for details.
+UBXDOC-304424225-19888 - R01
+ 
+2 NMEA protocol Page 29 of 224
+C1-Public

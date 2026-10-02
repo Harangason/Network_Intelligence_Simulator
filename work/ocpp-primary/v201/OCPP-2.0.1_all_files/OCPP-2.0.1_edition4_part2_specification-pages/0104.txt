@@ -1,0 +1,72 @@
+EV Charging Station CSMS (Sub)CA
+ServiceDiscoveryReq()
+ServiceDiscoveryRes(PaymentServiceList: Contract, ExternalPayment)
+PaymentServiceSelectionReq(paymentOption: Contract)
+PaymentServiceSelectionRes()
+alt [Cached certificate checking]
+PaymentDetailsReq(ContractCertificateChain, EMAID)
+AuthorizeRequest(idToken.EMAID, iso15118CertificateHashData[0..4])
+check certificate cache()
+AuthorizeResponse(idTokenInfo, certificateStatus)
+PaymentDetailsRes(GenChallenge)
+AuthorizationReq(GenChallenge)
+AuthorizationRes(EVSEProcessing, ResponseCode)
+[Real-time certificate checking]
+PaymentDetailsReq(ContractCertificateChain, EMAID)
+AuthorizeRequest(idToken.EMAID, iso15118CertificateHashData[0..4])
+OCSP request()
+PaymentDetailsRes(GenChallenge)
+AuthorizationReq(GenChallenge)
+OCSP response()
+AuthorizeResponse(idTokenInfo, certificateStatus)
+AuthorizationRes(EVSEProcessing, ResponseCode)
+Figure 26. Authorization using Contract Certificates
+C07 - Authorization using Contract Certificates - Requirements
+Table 48. C07 - Requirements
+ID Precondition Requirement definition Note
+C07.FR.01 When Charging Station is online The Charging Station SHALL send an
+AuthorizeRequest to the CSMS for validation.
+C07.FR.02 C07.FR.01 The AuthorizeRequest SHALL contain the eMAID
+and data needed for an OCSP request with regards
+to the contract certificate and certificate chain.
+C07.FR.04 If the CSMS receives an
+AuthorizeRequest.
+It SHALL respond with an AuthorizeResponse and
+SHALL include an authorization status value
+indicating acceptance or a reason for rejection.
+C07.FR.05 C07.FR.02 The CSMS SHALL verify validity of the certificate
+and certificate chain via real-time or cached OCSP
+data.
+C07.FR.06 C07.FR.01 AND
+If Charging Station is not able to
+validate a contract certificate,
+because it does not have the
+associated root certificate AND
+CentralContractValidationAll
+owed is true
+The Charging Station SHALL pass the contract
+certificate chain to the CSMS in certificate attribute
+(in PEM format) of AuthorizeRequest for validation
+by CSMS.
+C07.FR.07 When Charging Station is offline AND
+ContractValidationOffline is
+false
+The Charging Station SHALL NOT allow charging.
+C07.FR.08 When Charging Station is offline AND
+ContractValidationOffline is
+true
+The Charging Station SHALL try to validate the
+contract certificate locally.
+C07.FR.09 C07.FR.08 AND
+Contract certificate is valid AND
+LocalAuthorizeOffline is true
+The Charging Station SHALL lookup the eMAID in
+Local Authorization List or Authorization Cache.
+C07.FR.10 C07.FR.09 AND
+eMAID found in Local Authorization
+List
+The Charging Station SHALL behave according to
+use case C13 - Offline Authorization through Local
+Authorization List.
+Edition 4, 2025-12-03 C. Authorization
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 94/491 Part 2 - Specification

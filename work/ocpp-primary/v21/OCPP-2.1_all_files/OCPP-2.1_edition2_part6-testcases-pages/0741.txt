@@ -1,0 +1,44 @@
+TC_N_56_CS: Alert Event - Delta value NOT numeric exceeded
+Test case name Alert Event - Delta value NOT numeric exceeded
+Test case Id TC_N_56_CS
+Use case Id(s) N07
+Requirement(s) N07.FR.06, N07.FR.07, N07.FR.18, N07.FR.19
+System under test Charging Station
+Description NotifyEventRequest reports every Component/Variable for which a VariableMonitoring setting was
+triggered. Only the VariableMonitoring settings that are responsible for triggering an event are included.
+Purpose To verify if the Charging station is correctly communicating when a delta value has exceeded as described
+at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+Variable monitor is configured with:
+- setMonitoringData[0].value = 1
+- setMonitoringData[0].type = Delta
+- setMonitoringData[0].severity = 5
+- setMonitoringData[0].component = <Configured non-numeric delta component variable>
+- setMonitoringData[0].variable = <Configured non-numeric delta component variable>
++ Set MonitoringLevel to 8
++ Notes:
+- Take a non-numeric component variable which can easily modified to trigger the alert.
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Make sure the configured delta value has been exceeded
+1. The Charging Station sends a NotifyEventRequest
+2. The Test System responds with a NotifyEventResponse .
+Note(s):
+- If tbc is True at Step 1 then step 1 and 2 will be repeated
+Tool validations
+* Step 1:
+Message NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].component <Configured non-numeric delta component variable>
+- eventData[0].variable <Configured non-numeric delta component variable>
+- eventData[0].variableMonitoringId monitoringId of monitor set in Memory State
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 739/1383 Part 6 - Test Cases

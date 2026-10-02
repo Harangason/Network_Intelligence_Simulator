@@ -1,0 +1,55 @@
+TC_N_40_CS: Set Variable Monitoring - Replace Variable Monitor
+Test case name Set Variable Monitoring - Replace Variable Monitor
+Test case Id TC_N_40_CS
+Use case Id(s) N04
+Requirement(s) N04.FR.12
+System under test Charging Station
+Description This test case describes how the CSMS requests the Charging Station to set monitoring triggers on
+Variables. Multiple triggers can be set for upper or lower thresholds, delta changes or periodic reporting.
+Purpose To verify if the Charging station is able to correctly replace an existing variable monitor as described at the
+OCPP specification.
+Prerequisite(s) Charging Station supports Monitoring
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+Variable monitor is set for Delta with severity 5
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetVariableMonitoringResponse
+1. The Test System sends a SetVariableMonitoringRequest with
+setMonitoringData.id <Generated variableMonitoringId> AND
+setMonitoringData.type Delta setMonitoringData.severity 4
+4. The Charging Station responds with a
+GetMonitoringReportResponse
+3. The Test System sends a GetMonitoringReportRequest with
+- requestId <Generated requestId>
+- componentVariable.component.name EVSE
+- componentVariable.component.evse.id evseId
+- componentVariable.variable.name AvailabilityState
+- monitoringCriteria DeltaMonitoring_
+5. The Charging Station sends a
+NotifyMonitoringReportRequest 6. The Test System responds with a
+NotifyMonitoringReportResponse .
+Tool validations
+* Step 2:
+Message SetVariableMonitoringResponse
+- setMonitoringResult[0].status Accepted
+- setMonitoringResult[0].type Delta
+- setMonitoringResult[0].component.name EVSE
+- setMonitoringResult[0].variable.name AvailabilityState
+* Step 4:
+Message GetMonitoringReportResponse
+- status Accepted
+* Step 5:
+Message NotifyMonitoringReportRequest
+- monitor.component.name EVSE
+- monitor.variable.name AvailabilityState
+- monitor.variableMonitoring.severity 4
+Post scenario validations:
+- All report parts have been received
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 723/1383 Part 6 - Test Cases

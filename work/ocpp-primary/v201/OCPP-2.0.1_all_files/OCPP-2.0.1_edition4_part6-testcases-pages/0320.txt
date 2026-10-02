@@ -1,0 +1,44 @@
+TC_J_04_CS: Clock-aligned Meter Values - Signed
+Test case name Clock-aligned Meter Values - Signed
+Test case Id TC_J_04_CS
+Use case Id(s) J01
+Requirement(s) J01.FR.21
+System under test Charging Station
+Description The Charging Station samples the electrical meter or other sensor/transducer hardware to provide
+information about its Meter Values. Depending on configuration settings, the Charging Station will send
+Meter Values.
+Purpose To verify if the Charging Station is able to send signed clock-aligned Meter Values when a transaction ends
+at the TransactionEventRequest with eventType is Ended, when it is configured to do so.
+Prerequisite(s) The Charging Station has an energy meter.
+Before (Preparations)
+Configuration State:
+AlignedDataTxEndedInterval is <Configured clock_aligned_tx_ended_meter_values_interval>
+AlignedDataSendDuringIdle is false (If implemented)
+AlignedDataSignReadings is true
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State ParkingBayUnoccupied
+Note(s):
+- This step will be executed after the <Configured transaction duration> is reached.
+- This causes the transaction to stop.
+Tool validations
+N/a
+Post scenario validations:
+- The TransactionEventRequest containing eventType Ended contains the MeterValue field.
+- The MeterValue should contain <An element per data collection moment indicated by AlignedDataTxEndedInterval. The Test
+System will not validate this.>
+- timestamp <The intervals between the timestamps of the received Meter Value messages should equal the configured value at
+AlignedDataTxEndedInterval.>
+- sampledValue[0].context should be Sample.Clock
+- sampledValue should contain <An element per configured measurand at the AlignedDataTxEndedMeasurands. The measurand
+field may be omitted when the measurand is "Energy.Active.Import.Register">
+- sampledValue.signedMeterValue should not be omitted
+- sampledValue.signedMeterValue.publicKey should exist and depending on the value of
+OCPPCommCtrlr.PublicKeyWithSignedMeterValue, should be either "", or a valid public key
+- None of the provided sampledValues shall have location = EV, except when measurand = SoC.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 318/914 Part 6 - Test Cases

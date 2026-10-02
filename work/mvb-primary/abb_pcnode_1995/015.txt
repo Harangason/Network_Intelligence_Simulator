@@ -1,0 +1,35 @@
+Multifunction Vehicle Bus – details
+TN-AC-95/185 95-12-19 2 - 17
+Process data
+Traffic store  15) The ports of a device are located in the traffic store, a shared 
+memory which can be accessed both by the application (in particu-
+lar, the Virtual T erminal application of the MVB Virtual Terminal 
+and PCNode) and by a bus controller. In very simple devices (field 
+device) the ports are reduced to a register, there is no traffic store.
+ 16) Devices may have up to 16 traffic stores. These need not have 
+the same structure, although this is advantageous. This permits 
+application programs residing in the same device to communicate 
+in the same way as if there were located in different devices. The 
+devices handled by Virtual Terminal may have only one traffic 
+store.
+Dataset  17) The contents of a port is a dataset. A dataset is just a stream of 
+bits, which need interpretation according to the requirements of 
+the application. All or none data of a dataset are transmitted. A 
+dataset is static: its format and size may not be modified on-line.
+The different process data of a dataset may be consumed by differ-
+ent devices, but a dataset is produced by only one device. When 
+polled by the bus master, the producer device broadcasts a frame 
+containing the dataset. This frame is received by all devices sub-
+scribed to the port carrying that dataset. Each device picks from 
+the dataset the process data it is interested in.
+The format of datasets – its interpretation – is fixed by the hard-
+ware for field devices and configured by the ‘programming and 
+test station’ for complex devices (for example, the MVB Virtual 
+Terminal and PCNode). The configuration is loaded during initial-
+isation time and does not change during operation.
+Process variables A dataset is interpreted by process variables. Within a dataset, a 
+variable is identified by its bit offset. A dataset is just a stream of 
+bits, whereas process variables have a type, for example integer, or 
+15 [part 1 / p 80]
+16 [part 1 / p 88]
+17 [part 1 / p 82]

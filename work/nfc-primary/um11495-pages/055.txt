@@ -1,0 +1,44 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Important Note: In the setting “AGG_INTF_CONFIG”, the NCI standard includes a special field called “NFCC
+Aggregation Enabled” which NFCCs may follow or not. If the “NFCC Aggregation Enabled” field is set to 1b, an
+NFCC may aggregate RF frames received from the Remote RF Endpoint. This means in that case, the NFCC
+would collect all responses from a Remote RF Endpoint first before forwarding them to the DH at once. This
+feature is not supported by PN7160, instead it will always forward responses immediately, similar to pipelining.
+Therefore the value of the field “NFCC Aggregation Enabled” is ignored by PN7160.
+7.1.2  The [NCI] Frame Aggregated RF Interface Extension
+NCI 2.0 allows the data exchange with tags T1T, T2T using the Frame Aggregated RF Interface Extension.
+Here is a summary of the Tags/Card based on technology NFC-A that can be accessed through the Aggregated
+Frame RF interface.
+Tag/Card Access through the
+Aggregated Frame RF Interface
+T1T Supported
+T2T Supported
+MIFARE Ultralight, Ultralight C Supported
+MIFARE Classic Not supported
+MIFARE Plus for Security levels 1 and 2 Not supported
+Table 45. Tag/Cards accessible over the [NCI] Frame RF Interface
+Pre-requisite: the Frame Aggregated RF interface extension is only available after activation of the Frame
+RF Interface with protocol T1T and T2T. Here is the command with the parameters to activate the Frame
+Aggregated RF interface mechanism:
+GID OID Main Parameters Values
+Extension Frame Aggregated RF Interface Extension
+Start parameter length 2
+0001b 0x0A
+Start parameter
+1 byte retry count (0-7)
+Note:  The aggregation by the NFCC of several responses
+from the RF End Point is not supported. So if bit 7 of the first
+bye of the start parameter of the RF_INTF_EXT_START_CMD
+is set to 1b, it will be ignored by the NFCC.
+1 byte Command Timeout
+Table 46. RF_INTF_EXT_START_CMD
+After the DH has sent an aggregated list of commands via an NCI data packet, the NFCC will proceed the list
+and execute all command one after the other starting from the first one in the aggregated list of commands.
+After processing a T1T or T2T command to the RF End point, the NFCC forwards immediately to the DH T1T or
+T2T response received from the RF End Point and processes the next command. If the DH does not fetch T1T
+or T2T response, the processing of T1T or T2T command will be stalled until the previous T1T or T2T response
+is successfully read by the DH.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+55 / 147

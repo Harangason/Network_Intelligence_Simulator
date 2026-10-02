@@ -1,0 +1,48 @@
+ID Precondition Requirement definition
+C09.FR.03 When a transaction has been authorized/started
+with a certain IdToken.
+An EV Driver with a different, valid IdToken, but with the same
+groupIdToken SHALL be authorized to stop the transaction.
+C09.FR.04 C09.FR.03 AND
+If both IdTokens with their corresponding
+GroupIdTokens are present in either the Local
+Authorization List or Authorization Cache.
+The Charging Station MAY send an AuthorizeRequest to the
+CSMS.
+C09.FR.05 C09.FR.03 AND
+(NOT C09.FR.07) AND
+If the newly presented IdToken with its
+corresponding GroupIdToken is not present in
+either the Local Authorization List or
+Authorization Cache.
+The Charging Station SHALL send an AuthorizeRequest to the
+CSMS.
+C09.FR.07 When an idToken is presented during a
+transaction that has been authorized AND
+(a) the presented idToken is the same as the
+idToken that started the authorization
+OR
+(b) when the presented idToken is in the Local
+Authorization List or Authorization Cache AND
+is valid AND has the same GroupIdToken as the
+IdToken that started the authorization.
+The Charging Station SHALL end the authorization of the
+transaction, without first sending an AuthorizeRequest
+C09.FR.09 If the IdToken in AuthorizeRequest has an
+associated groupIdToken
+AuthorizeResponse from CSMS SHALL include groupIdToken.
+C09.FR.10 AuthorizeResponse SHALL include an authorization status value
+indicating acceptance or a reason for rejection.
+C09.FR.11 C09.FR.03 AND
+A different IdToken is presented for stopping,
+which has the same GroupIdToken, but does not
+have status = Accepted
+The Charging Station SHALL NOT stop the transaction.
+C09.FR.12 If a TransactionEventRequest contains an
+IdToken and idToken has an associated
+groupIdToken
+TransactionEventResponse from CSMS SHALL include
+groupIdToken.
+C09.FR.13 The field idToken.type of a GroupIdToken SHOULD be Central
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 111/803 Part 2 - Specification

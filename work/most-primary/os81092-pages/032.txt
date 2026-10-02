@@ -1,0 +1,48 @@
+OS81092
+DS60001271B-page 32  2009 - 2025  Microchip Technology Inc. and its subsidiaries
+8.2 MediaLB 5-pin Mode
+The MediaLB 5-pin mode is functionally equivalent to the MediaLB 3-pin mode described in Section 8.1 “MediaLB 3-pin
+Mode”; however, two unidirectional data lines and two unidirectional signal information lines exist. Additionally, when
+configured for MediaLB 5-pin mode, the OS81092 supports a data rate of 256Fs or 512Fs (1024Fs not supported).
+The MediaLB 5-pin interface is defined as:
+• MLBDO - unidirectional signal that transports data out of the MediaLB Port
+• MLBDI - unidirectional signal that transports data into the MediaLB Port
+• MLBSO - unidirectional signal that transports signal information out of the MediaLB Port
+• MLBSI - unidirectional signal that transports signal information into the MediaLB Port
+• MLBCLK - MediaLB Controller output signal that clocks data in and out of the MediaLB Port
+The MediaLB Controller (OS81092) uses MLBSO to grant bus access to a MediaLB Device (e.g. EHC) and receives
+Commands and RxStatus responses sent out by other MediaLB Devices on MLBSI. The Controller receives Data for con-
+figuration or transmission onto the network on MLBDI; Data is transmitted to other MediaLB Devices from the network
+receiver on MLBDO.
+If output signals on external MediaLB Devices can float (even during reset), then pull-down resistors are required to
+keep undriven data and signal information lines from affecting the other Devices driving the lines.
+Figure 8-5 shows the OS81092 as an interf ace between the MOST Network and the MediaLB Port, when configured
+for MediaLB 5-pin mode. Since the OS81092 is the interface to the MOST Network,  it must be the Controller on the
+Media Local Bus. Using this interface, MediaLB Devices can access all MOST Network data types.
+FIGURE 8-5: MediaLB 5-PIN MODE  TWO-NODE CONNECTION DIAGRAM
+The MediaLB Port output lines (MLBSO and MLBDO) from each Device must be OR’ed with the corresponding output
+lines of the other Devices on the bus. As a result, each MediaLB Device must drive their output lines low when not trans-
+mitting data. When connecting more than one MediaLB Device  on the 5-pin bus, the external logic needed to sum all
+data and signal outputs to each Device is shown in Figure 8-6.
+Note: The Streaming Port is not available when the MediaLB 5-pin interface is
+used.
+MOST
+Network
+MLBCLK
+MediaLB 
+Controller
+(OS81092)
+47 k
+MLBCLK
+MediaLB
+Device
+(EHC)
+MLBSO
+47 k
+MLBSI
+MLBSI MLBSO
+MLBDO
+47 k
+MLBDI
+MLBDI MLBDO
+Network Port

@@ -1,0 +1,54 @@
+Chapter 1. Introduction
+Electric Vehicles (EVs) are becoming the new standard for mobility all over the world. This development is only possible with a
+good coverage of Charging Stations. To advance the roll out of charging infrastructure, open communication standards play a key
+role: to enable switching from charging network without necessarily replacing all the Charging Stations, to encourage innovation
+and cost effectiveness and to allow many and diverse players participate in this new industry.
+Additionally, the EV charging infrastructure is part of the Smart Grid, a larger and still evolving ecosystem of actors, devices and
+protocols. In this Smart Grid ecosystem, open communication standards are key enablers for bidirectional power flows, real time
+information exchange, demand control and eMobility services.
+The Open Charge Point Protocol (OCPP) is the industry-supported de facto standard for communication between a Charging
+Station and a Charging Station Management System (CSMS) and is designed to accommodate any type of charging technique.
+OCPP is an open standard with no cost or licensing barriers for adoption.
+1.1. OCPP version 2.1
+This specification defines version 2.1 of OCPP.
+Version 2.1 is an extension of OCPP 2.0.1. OCPP 2.1 has its own JSON schemas, but the schemas are OCPP 2.0.1 schemas that
+have been extended with optional fields that are used by OCPP 2.1 functionality. With the minor exceptions mentioned below, all
+application logic developed for OCPP 2.0.1 will continue to work in OCPP 2.1 without any changes. The new features of OCPP 2.1,
+of course, require new application logic.
+Use case A02 & A03
+The application logic in a CSMS for OCPP 2.0.1 for use cases A02 & A03 requires a small change in order to work in OCPP
+2.1.
+The SignCertificateRequest message has been extended with a requestId field, such that the resulting
+CertificateSignedRequest message can be accurately mapped to the request that initiated it. Use of requestId is optional for
+Charging Station, but when present, CSMS will have to use it in the subsequent CertificateSignedRequest message.
+Note, that the updated application logic remains valid to use in OCPP 2.0.1.
+Use case N02
+The application logic in a Charging Station for OCPP 2.0.1 for use case N02 requires a small change in order to work for
+OCPP 2.1.
+The message NotifyMonitoringReportRequest has been extended with a required field in VariableMonitoringType:
+eventNotificationType. Charging Station has to provide this field. It provides essential information to CSMS about the type of
+monitor (HardWiredMonitor, PreconfiguredMonitor, CustomMonitor) that was missing in OCPP 2.0.1. Existing OCPP 2.0.1
+logic in a CSMS that is not aware of this new field, will continue to work.
+1.2. Terms and abbreviations
+This section contains the terminology and abbreviations that are used throughout this document.
+1.2.1. Terms
+Term Meaning
+Charging Station The Charging Station is the physical system where an EV can be charged. A Charging Station has one or
+more EVSEs.
+Charging Station
+Management
+System (CSMS)
+Charging Station Management System: manages Charging Stations and has the information for authorizing
+Users for using its Charging Stations.
+Electric Vehicle
+Supply Equipment
+(EVSE)
+EVSE is considered as an independently operated and managed part of the Charging Station that can deliver
+energy to one EV at a time.
+Energy Management
+System (EMS)
+In this document this is defined as a device that manages the local loads (consumption and production)
+based on local and/or contractual constraints and/or contractual incentives. It has additional inputs, such as
+sensors and controls from e.g. PV, battery storage.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 3/15 Part 0 - Introduction

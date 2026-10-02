@@ -1,0 +1,34 @@
+MODBUS over serial line specification and implementation guide V1.02 Modbus.org    
+Modbus.org http://www.modbus.org/ 42/44
+Dec 20, 2006 
+Ex
+ample 
+An example of a C language function performing CRC generation is shown on the following pages. All of the possible CRC values a re 
+preloaded into two arrays, which are simply indexed as the function increments through the message buffer. One array contains a ll of 
+the 256 possible CRC values for the high byte of the 16–bit CRC field, and the other array contains all of the values for the low byte. 
+Indexing the CRC in this way provides faster execution than would be achieved by calculating a new CRC value with each new 
+character from the message buffer. 
+Note: This function performs the swapping of the high/low CRC bytes internally. The bytes are already swapped in the CRC value that 
+is returned from the function. 
+Therefore the CRC value returned from the function can be directly placed into the message for transmission. 
+The function takes two arguments: 
+unsigned char *puchMsg; A pointer to the message buffer containing binary data to be used for generating the CRC 
+unsigned short usDataLen; The quantity of bytes in the message buffer. 
+CRC Generation Function 
+uns
+igned short CRC16 ( puchMsg, usDataLen ) /* The function returns the CRC as a unsigned short type */ 
+unsigned char *puchMsg ; /* message to calculate CRC upon */ 
+unsigned short usDataLen ; /* quantity of bytes in message  */ 
+{ 
+unsigned char uchCRCHi = 0xFF ; /* high byte of CRC initialized  */ 
+unsigned char uchCRCLo = 0xFF ; /* low byte of CRC initialized  */ 
+unsigned uIndex ; /* will index into CRC lookup table  */ 
+while (usDataLen--) /* pass through message buffer  */ 
+{ 
+uIndex = uchCRCLo ^ *puchMsg++ ;  /* c alculate the CRC  */ 
+u
+chCRCLo = uchCRCHi ^ auchCRCHi[uIndex] ; 
+uchCRCHi = auchCRCLo[uIndex] ; 
+} 
+return (uchCRCHi << 8 | uchCRCLo) ; 
+} 

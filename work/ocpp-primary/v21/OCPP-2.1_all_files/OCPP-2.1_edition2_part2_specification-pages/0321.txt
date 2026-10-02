@@ -1,0 +1,88 @@
+J01 - Sending Meter Values not related to a transaction - Requirements
+Table 92. J01 - Requirements
+ID Precondition Requirement definition Note
+J01.FR.01 The Charging Station MAY sample the energy
+meter (or other sensor/transducer hardware) to
+provide extra information about its Meter Values.
+It is up to the Charging
+Station when it will send
+Meter Values. This can
+be configured using the
+SetVariablesRequest
+message to data
+acquisition intervals and
+specify data to be
+acquired & reported.
+J01.FR.02 The MeterValuesRequest message SHALL contain
+the id of the EVSE from which samples were taken.
+J01.FR.03 J01.FR.02 AND
+The evseId is 0.
+The MeterValuesRequest message SHALL be
+associated with the entire Charging Station.
+J01.FR.04 J01.FR.03 AND
+Measurand is energy related.
+The sample SHALL be taken from the main energy
+meter.
+J01.FR.05 If all captured at the same point in
+time.
+Each MeterValue element SHALL contain a
+timestamp.
+J01.FR.06 If all captured at the same point in
+time.
+Each MeterValue(s) element SHALL contain a set
+of one or more individual SampledValue elements.
+J01.FR.07 The optional measurand field SHALL specify the
+type of value being measured/reported.
+J01.FR.08 The optional context field SHALL specify the
+reason/event triggering the reading.
+J01.FR.09 The optional location field SHALL specify where the
+measurement is taken.
+(e.g. Inlet, Outlet).
+J01.FR.10 The optional phase field SHALL specify to which
+phase or phases of the electric installation the
+value applies.
+J01.FR.11 The Charging Station SHALL report all phase
+number dependent values from the electrical meter
+(or grid connection when absent) point of view.
+J01.FR.13 When reporting phase rotation of a
+component
+The Charging Station SHALL report the phase
+rotation relative to the grid connection
+J01.FR.14 When AlignedDataCtrlr.Interval > 0
+AND
+EVSE for which measurands are sent,
+is not involved in a transaction
+The Charging Station SHALL send a
+MeterValuesRequest message to the CSMS for the
+measurands in AlignedDataCtrlr.Measurands at
+every AlignedDataCtrlr.Interval for all evseIds,
+locations and phases for which a configured
+measurand is supported.
+It is possible that certain
+measurands are not
+available for every
+location. For example,
+evseId = 0 (grid meter)
+will not have a
+"Current.Offered" or
+"SoC" measurand.
+See also J01.FR.22
+J01.FR.15 J01.FR.14
+AND
+Amount of measurands is too much
+for 1 MeterValuesRequest
+The Charging Station MAY use multiple
+MeterValuesRequest messages to send all
+measurands.
+J01.FR.17 The timestamp of a MeterValue SHALL apply to all
+its SampledValues.
+J01.FR.18 When CSMS receives a
+MeterValuesRequest
+CSMS SHALL respond with MeterValuesResponse. Failing to respond with
+MeterValuesResponse
+might cause the
+Charging Station to try
+the same message
+again.
+Edition 2, 2025-12-03 J. Meter Values
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 308/803 Part 2 - Specification

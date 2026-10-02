@@ -1,0 +1,57 @@
+No. Type Description
+4 Description To facilitate the management of the Charging Station’s installed certificates, a method of
+retrieving the installed certificates is provided. The CSMS requests the Charging Station to send a
+list of installed certificates
+Actors Charging Station, CSMS
+Scenario description 1. The CSMS requests the Charging Station to send a list of installed certificates by sending a
+GetInstalledCertificateIdsRequest
+2. The Charging Station responds with a GetInstalledCertificateIdsResponse
+5 Prerequisite(s) n/a
+6 Postcondition(s) The CSMS received a list of installed certificates
+7 Error handling n/a
+8 Remark(s) For installing the (V2G) Charging Station Certificate, see use cases A02 - Update Charging Station
+Certificate by request of CSMS and A03 - Update Charging Station Certificate initiated by the
+Charging Station. The V2G certificate chain SHOULD NOT include the V2GRootCertificate. This
+SHOULD be installed using Use case M05 - Install CA certificate in a Charging Station.
+CSMS Charging Station
+GetInstalledCertificateIdsRequest(certificateType)
+Compute hashes and list matching certificates
+GetInstalledCertificateIdsResponse(status, certificateHashData)
+Figure 160. Retrieve list of available certificates from a Charging Station
+M03 - Retrieve list of available certificates from a Charging Station - Requirements
+Table 129. M03 - Requirements
+ID Precondition Requirement definition
+M03.FR.01 After receiving a
+GetInstalledCertificateIdsRequest
+The Charging Station SHALL respond with a
+GetInstalledCertificateIdsResponse.
+M03.FR.02 M03.FR.01 AND
+No certificate matching certificateType was
+found
+The Charging Station SHALL indicate this by setting status in the
+GetInstalledCertificateIdsResponse to NotFound.
+M03.FR.03 M03.FR.01 AND
+A certificate matching certificateType was found
+The Charging Station SHALL indicate this by setting status in the
+GetInstalledCertificateIdsResponse to Accepted.
+M03.FR.04 M03.FR.03 The Charging Station SHALL include the hash data for each
+matching installed certificate in the
+GetInstalledCertificateIdsResponse.
+M03.FR.05 When the Charging Station receives a
+GetInstalledCertificateIdsRequest with
+certificateType V2GCertificateChain
+The Charging Station SHALL include the hash data for each
+installed certificate belonging to a V2G certificate chain. Sub CA
+certificates SHALL be placed as a childCertificate under the V2G
+Charging Station certificate.
+M04 - Delete a specific certificate from a Charging Station
+No. Type Description
+1 Name Delete a specific certificate from a Charging Station
+2 ID M04
+3 Objective(s) To enable the CSMS to request the Charging Station to delete an installed certificate.
+4 Description To facilitate the management of the Charging Station’s installed certificates, a method of deleting
+an installed certificate is provided. The CSMS requests the Charging Station to delete a specific
+certificate.
+Actors Charging Station, CSMS
+Edition 2, 2025-12-03 M. Certificate Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 441/803 Part 2 - Specification

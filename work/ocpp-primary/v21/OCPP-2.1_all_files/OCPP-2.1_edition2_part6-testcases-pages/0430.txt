@@ -1,0 +1,51 @@
+TC_I_111_CS: Clear Tariffs - Tariff in use
+Test case name Clear Tariffs - Tariff in use
+Test case Id TC_I_111_CS
+Use case Id(s) I10, I07
+Requirement(s) I10.FR.01, I10.FR.07, I07.FR.10
+System under test Charging Station
+Description To clear previously set tariffs on the charging station.
+Purpose To verify if the Charging Station correctly clearing tariffs.
+Prerequisite(s) - The Charging Station supports local cost calculation using the Tariff mechanism
+(TariffCostCtrlr.Enabled[Tariff] exists and ReadWrite or is true and ReadOnly).
+Before (Preparations)
+Configuration State:
+- TariffCostCtrlr.Enabled[Tariff] is true
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.energy.prices[0].priceKwh 2.00
+3. Execute Reusable State EnergyTransferStarted
+5. The Charging Station responds with ClearTariffsResponse
+4. The Test System sends a ClearTariffsRequest with
+tariffIds <omitted>
+tariffKind <omitted>
+7. The Charging Station responds with GetTariffsResponse
+6. The Test System sends a GetTariffsRequest with
+evseId 0
+Tool validations
+* Step 2:
+Message SetDefaultTariffResponse
+- status must be Accepted
+* Step 5:
+Message ClearTariffsResponse
+- clearTariffsResult[0].tariffId must be Test System1
+- clearTariffsResult[0].status must be Accepted
+* Step 7:
+Message GetTariffsResponse
+- status must be Accepted
+- tariffAssignments[0].tariffId must be Test System1
+- tariffAssignments[0].tariffKind must be DefaultTariff
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 428/1383 Part 6 - Test Cases

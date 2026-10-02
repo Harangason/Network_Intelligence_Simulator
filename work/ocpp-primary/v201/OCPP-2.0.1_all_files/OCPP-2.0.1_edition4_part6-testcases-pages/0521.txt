@@ -1,0 +1,45 @@
+TC_N_47_CS: Get Monitoring report - Report all
+Test case name Get Monitoring report - Report all
+Test case Id TC_N_47_CS
+Use case Id(s) N02
+Requirement(s) N02.FR.01, N02.FR.11
+System under test Charging Station
+Description This test case describes how the CSMS requests the Charging Station to send a report about configured
+monitoring settings per component and variable. Optionally, this list can be filtered on monitoringCriteria
+and componentVariables.
+Purpose To verify if the Charging station is able to correctly report all monitoring data as described at the OCPP
+specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+The following monitors must be present as 'hard-wired' or 'preconfigured' or must have been configured by CSMS:
+- Component "ChargingStation", variable "AvailabilityState", monitor type Delta"
+- Component "EVSE", Configured evse, variable "AvailabilityState", monitor type Delta
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+GetMonitoringReportResponse
+1. The Test System sends a GetMonitoringReportRequest with
+monitoringCriteria omitted AND
+componentVariable omitted.
+3. The Charging Station sends a
+NotifyMonitoringReportRequest 4. The Test System responds with a
+NotifyMonitoringReportResponse .
+Note(s):
+- If tbc is True at Step 3 then step 3 and 4 will be repeated
+Tool validations
+* Step 3:
+Message: NotifyMonitoringReportRequest
+- requestId = <Generated requestId>
+While tbc = true , Message: NotifyMonitoringReportRequest
+- monitor.variable = "AvailabilityState"
+- monitor.variableMonitoring.type = Delta
+- monitor.component_.name = ChargingStation or EVSE
+Post scenario validations:
+- All reports have been received
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 519/914 Part 6 - Test Cases

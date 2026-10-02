@@ -1,0 +1,85 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Name and Rights Description Ext.
+Tag
+Len. Default
+Value
+REXT_RSSI_CFG
+RW in E²PROM
+Parameter defining Rext and associated correction gain, see ref.[13] for
+setting guidance.
+Bits[32-16]: wRextAGCCor (in Ohms)
+Bits[15-0]: wRextGainCor
+0xA0
+0xAA
+4 0x023004
+00
+RFLD_CFG
+RW in E²PROM
+bits[6:0] = Enhanced RFLD sleep time
+bits[11:7] = Enhanced RFLD wait time
+bits[15:12] = Enhanced RFLD clock recovery time
+bits[17:16] = Enhanced RFLD preamplifier gain (00b → 9db, 01b → 10db,
+10b → 11db, 11b → 12db)
+bit[18] = Enhanced RFLD disable (0 → enabled, 1 → disabled)
+bit[19] = Bypass digital frequency check
+bits[24:20] = IBias wait time
+bits[31:25] = RFU
+Bits[47:32]: 16 bits to start the RFLD
+0xA0
+0x1F
+6 0x006313
+292FAB
+NFCLD
+RW in E²PROM
+Byte 0: CLIF_ANA_NFCLD_REG value for external RF ON detection
+Byte 1: value for external RF OFF detection (step is 2.5 mV)
+Byte2: CLIF_ANA_NFCLD_REG for Target P+A
+Byte3: Bit[0] = 0: Apply RSSI Interpolation algo, 1: RSSI is either raw ADC
+or AGC (depends on bit 12 of APC entry)
+0xA0
+0x38
+4 Byte 0:
+0x14
+Byte 1:
+0x0B
+Byte 2:
+0x0B
+Byte 3:
+0x00
+DPC_CONFIG
+RW in E²PROM
+Settings to enable or disable the DPC (please refer to ref.[14] for more
+information about this register)
+0xA0
+0x0B
+87 N/A
+RF_
+TRANSITION_
+CFG
+RW in E²PROM
+Parameter to configure one RF transition
+The list of transition IDs and the appropriate values for the register offset as
+well as its value is available in the ref.[12]
+0xA0
+0x0D
+3, 4
+or 6
+N/A
+Table 101. Mechanism to configure the RF settings or RF transitions...continued
+Note:  PN7160 only supports RF_TRANSITION_CFG with the CORE_SET_CONFIG_CMD;
+CORE_GET_CONFIG_CMD is not supported.
+PN7160 comes with the possibility to read out the values of the RF transitions. This mechanism to read
+out the values is not based on the [NCI] CORE_GET_CONFIG_CMD, it rather uses a specific command:
+RF_GET_TRANSITION_CMD:
+GID OID Numbers of
+parameter(s) Description
+1111b 0x14 2 The DH asks to read out the value of an RF Transition
+Table 102. RF_GET_TRANSITION_CMD
+Parameter Length Value/Description
+1 RF Transition ID 1 Byte RF Transition Identifier
+2 CLIF Register Offset 1 Byte Offset of the register to read out from the CLIF
+Table 103. RF_GET_TRANSITION_CMD parameters
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+104 / 147

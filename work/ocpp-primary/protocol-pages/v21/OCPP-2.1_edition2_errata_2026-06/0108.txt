@@ -1,0 +1,44 @@
+6.3.9. Page 1038 - (2026-02) - TC_C_119_CSMS / TC_C_120_CSMS /
+TC_C_125_CSMS / TC_C_126_CSMS - Added missing triggerReason and
+stoppedReason
+Test case Id TC_C_119_CSMS / TC_C_120_CSMS / TC_C_125_CSMS / TC_C_126_CSMS
+…
+Main (Test scenario)
+Charging Station CSMS
+…
+X. The Test System sends a TransactionEventRequest with
+eventType Ended
+idToken.type DirectPayment
+…
+transactionInfo.stoppedReason   Local
+triggerReason   StopAuthorized
+…
+4. The CSMS responds with a TransactionEventResponse
+…
+6.3.10. Page 1046/1047 - (2026-02) - TC_C_131_CSMS - Use idToken from the
+RequestStartTransactionRequest, which contains the PspRef
+Test case name Ad hoc payment via static or dynamic QR code - success
+Test case Id TC_C_131_CSMS
+…
+Main (Test scenario)
+Charging Station CSMS
+…
+3. The Test System sends a TransactionEventRequest with
+eventType Started
+triggerReason RemoteStart
+idToken.idToken <PspRef> <idToken.idToken from step 1>   
+idToken.idToken 
+idToken.type DirectPayment
+transactionInfo.transactionId <transactionId>
+transactionInfo.remoteStartId <remoteStartId>
+meterValue[0].timestamp <not omitted>
+meterValue[0].sampledValue[0].value 10000
+meterValue[0].sampledValue[0].context Transaction.Begin
+4. The CSMS responds with a TransactionEventResponse
+…
+Tool validations
+* Step 1:
+Message RequestStartTransactionRequest
+idToken.idToken must be <PspRef> NOT be omitted  
+…
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 104/116 Errata 2026-06

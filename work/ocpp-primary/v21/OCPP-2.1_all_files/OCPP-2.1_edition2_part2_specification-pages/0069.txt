@@ -1,0 +1,35 @@
+ID Precondition Requirement definition
+B03.FR.02 If the CSMS returns the status Rejected. For
+example when a Charging Station is blacklisted.
+The Charging Station SHALL NOT send any OCPP message to
+the CSMS until the retry interval has expired.
+B03.FR.03 When the CSMS has Rejected the
+BootNotificationRequest from the Charging
+Station.
+The CSMS SHALL NOT initiate any messages.
+B03.FR.04 B03.FR.03 The Charging Station MAY close the connection until it needs to
+send the next BootNotificationRequest.
+B03.FR.05 If the interval in the BootNotificationResponse
+equals 0, and the status is other than Accepted
+The Charging Station SHALL choose a waiting interval on its
+own, in a way that avoids flooding the CSMS with requests.
+B03.FR.06 If the interval in the BootNotificationResponse is
+greater than 0, and the status is other than
+Accepted
+The Charging Station SHALL send a BootNotificationRequest
+after the set interval has passed.
+B03.FR.07 B03.FR.03
+AND
+Charging Station sends a message that is not a
+BootNotificationRequest
+CSMS SHALL respond with RPC Framework: CALLERROR:
+SecurityError.
+B03.FR.08 B03.FR.03
+AND
+CSMS sends a message that is not a response
+to a BootNotificationRequest from Charging
+Station
+Charging Station SHALL respond with RPC Framework:
+CALLERROR: SecurityError.
+Edition 2, 2025-12-03 B. Provisioning
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 56/803 Part 2 - Specification

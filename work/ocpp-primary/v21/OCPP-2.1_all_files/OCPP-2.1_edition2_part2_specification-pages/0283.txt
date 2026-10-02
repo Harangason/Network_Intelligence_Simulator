@@ -1,0 +1,52 @@
+1.2.1. Simple kWh tariff
+The following is a basic example of a JSON tariff structure that describes a kWh-based price for a transaction:
+Simple kWh tariff of $0.25 per kWh
+{
+  "id": "10",
+  "currency": "USD",
+  "energy": {
+      "taxRates": [
+        { "type": "federal", "tax": 6.0 },
+        { "type": "state", "tax": 4.0 }
+      ],
+      "prices": [{
+        "priceKwh": 0.25
+    }]
+  }
+}
+1.2.2. Time-of-day kWh tariff with idle fee
+The following example describes a tariff with a higher price during office hours (8-18h) and an idle fee for staying connected
+without charging, and a lower price without idle fee during evening and night.
+Time-of-day kWh tariff with idle fee
+{
+    "id": "11",
+    "currency": "EUR",
+    "energy": {
+        "taxRates": [
+            {
+                "type": "vat",
+                "tax": 4
+            }
+        ],
+        "prices": [
+            {
+                "priceKwh": 0.4,
+                "conditions": {
+                    "startTimeOfDay": "08:00",
+                    "endTimeOfDay": "18:00"
+                }
+            },
+            {
+                "priceKwh": 0.25
+            }
+        ]
+    },
+    "idleTime": {
+        "taxRates": [
+            {
+                "type": "vat",
+                "tax": 4
+            }
+        ],
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 270/803 Part 2 - Specification

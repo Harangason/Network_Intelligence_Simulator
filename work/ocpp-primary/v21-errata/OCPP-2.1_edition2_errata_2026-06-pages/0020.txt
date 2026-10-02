@@ -1,0 +1,49 @@
+Limits and setpoints per operation mode
+limits and setpoints
+per operation mode
+limit dischargeLimit setpoint setpoint-Reactive
+ChargingOnly required - - -
+CentralSetpoint optional optional required optional
+CentralFrequency optional optional required -
+LocalFrequency - - calculated from
+freq/signal curves
+-
+ExternalSetpoint optional optional set externally -
+ExternalLimits set externally set externally - -
+LocalLoadBalancing optional optional calculated from load
+and thresholds/offsets
+-
+2.17. Page 531 - (2026-02) - Use case Q09 has improved description of
+LocalLoadBalancing
+No. Type Description
+1 Name Local V2X control for load balancing
+2 ID Q09
+3 Objective …
+4 Description …
+Actors EV, Charging Station, CSMS
+Scenario description 1. The CSMS has sent a [setchargingprofilerequest] message, with a chargingSchedule that
+has one or more periods with operationMode set to LocalLoadBalancing.
+2. The Charging Station will continually get the latest load power reading to calculate a new              
+setpoint  that will offset the measured power generation or consumption, such that it stays             
+between the configured upper and lower limit.      
+Configuration variables are instances of V2XChargingCtrlr.LocalLoadBalancing:     
+• The upper limit is defined as:       UpperThreshold  +   UpperOffset .
+• The lower limit is defined as:       LowerThreshold  +   LowerOffset .
+5 Prerequisites • Charging Station is able to read the upstream meter.        
+• The configuration variable    UpperThreshold  (a positive value) should be equal or above the         
+minimum charging rate of the EV.     
+• The configuration variable    LowerThreshold  (a negative value) should be equal or below        
+the minimum (as in "closest to zero") discharging rate of the EV.           
+6 Post conditions ChargingSchedulePeriod ends
+7 Error Handling
+8 Remarks By setting the configuration variable      UpperOffset  to -UpperThreshold and     LowerOffset  to 
+-LowerThreshold the nett power will be regulated down to 0 W as soon as the building power                
+exceeds the thresholds.  
+See section [intro-localloadbalancing] in the introduction of this chapter for more detailed
+information on how local load-balancing works.
+This use case only works for one Charging Station, but can work for multiple EVSEs when
+Charging Station has the capability to combine setpoints from multiple EVSEs to compensate the
+measured load at the upstream meter.
+Local load-balancing by multiple Charging Stations would have to be coordinated by a CSMS or
+Local Controller using the Central Setpoint use case.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 16/116 Errata 2026-06

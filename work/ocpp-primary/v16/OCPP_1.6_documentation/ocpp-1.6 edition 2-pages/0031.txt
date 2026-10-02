@@ -1,0 +1,50 @@
+User
+EV Charge Point Local Controller Central System
+RFID or other Authorization
+set max current(limit)
+switch power on()
+start charging()
+StartTransaction.req(connectorId, idTag, meterStart,
+timestamp, [reservationId])
+StartTransaction.req(connectorId, idTag, meterStart,
+timestamp, [reservationId])
+StartTransaction.conf(idTagInfo, transactionId)
+StartTransaction.conf(idTagInfo, transactionId)
+loop Change according to charging profile
+[for each interval period in charging profile]
+get limit from charging profile():limit
+Charge Point implements charging
+profile via the Control Pilot
+signal whenever maximum current
+needs changing.
+set max current(limit)
+opt [Change of limits by controller]
+SetChargingProfile.req(connectorId, csChargingProfiles)
+Local Controller decides to
+change the charging profile.
+SetChargingProfile.conf(Accepted)
+RFID or other Authorization
+end charging()
+switch power off()
+StopTransaction.req(meterStop, timestamp,
+transactionId, reason, [idTag], [transactionData])
+StopTransaction.req(meterStop, timestamp,
+transactionId, reason, [idTag], [transactionData])
+StopTransaction.conf([idTagInfo])
+StopTransaction.conf([idTagInfo])
+Figure 11. Sequence Diagram: Local Smart Charging
+Explanation for the above figure:
+• After authorization the connector will set a maximum current to use, via the Control Pilot signal. This limit
+is based on a (default) charging profile that the connector had previously received from the Local
+Controller. The EV starts charging and sends a StartTransaction.req.
+• The StartTransaction.req is sent to the Central System via the Local Controller, so that also the Local
+Controller knows a transaction has started. The Local Controller just passes on the messages between
+Charge Point and Central System, so that the Central System can address all the Local Smart Charging
+group members individually.
+• While charging is in progress the connector will continuously adapt the maximum current according to the
+charging profile.
+Optionally, at any point in time the Local Controller may send a new charging profile to the connector that
+shall be used as a limit schedule for the EV.
+3.13.5. Discovery of Charge Point Capabilities
+This section is normative.
+26

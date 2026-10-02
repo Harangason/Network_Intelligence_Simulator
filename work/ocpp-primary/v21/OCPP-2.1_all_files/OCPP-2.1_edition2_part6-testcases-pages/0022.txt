@@ -1,0 +1,38 @@
+Main (Test scenario)
+14. The Charging Station responds with a
+CertificateSignedResponse
+13. The Test System sends a CertificateSignedRequest
+With certificateChain <Certificate generated from the received
+CSR from step 6 and signed by the provided CSMS Root
+certificate>
+certificateType ChargingStationCertificate
+16. The Charging Station responds with a
+CertificateSignedResponse
+15. The Test System sends a CertificateSignedRequest
+With certificateChain <Certificate generated from the received
+CSR from step 9 and signed by the provided CSMS Root
+certificate>
+certificateType ChargingStationCertificate
+Tool validations
+* Step 2:
+Message: TriggerMessageResponse
+- status must be Accepted
+* Step 3/6/9:
+Message: SignCertificateRequest
+- csr must contain <An CSR that meets the following requirements:
+When using RSA or DSA the key must be at least 2048 bits long.
+and when using elliptic curve cryptography the key must be at least 224 bits long.
+The received CSR must be transmitted as described in RFC 2986 and then encoded in Privacy-Enhanced Mail (PEM) format.>
+* Step 5:
+- The Charging Station shall not resend the SignCertificateRequest before the <Configured CertSigningWaitMinimum> expired
+* Step 8:
+- The Charging Station shall not resend the SignCertificateRequest before the <Configured CertSigningWaitMinimum> times 2
+expired
+* Step 12, 14, 16:
+Message: CertificateSignedResponse
+- status must be Accepted or Rejected
+Post scenario validations:
+Note: It does not matter whether Charging Station accepts first or last or all certificates.
+At least one CertificateSignedResponse must have status Accepted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 20/1383 Part 6 - Test Cases

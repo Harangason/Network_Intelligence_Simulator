@@ -1,0 +1,54 @@
+ID. Precondition Requirements Note
+Q08.FR.11 When Charging Station receives a
+AFRRSignalRequest and no
+ChargingSchedulePeriodType with
+operationMode = LocalFrequency
+and a field v2xSignalWattCurve is
+active
+Charging Station SHALL respond with
+AFRRSignalResponse with status = Rejected and
+statusInfo.reasonCode = "NoSignalWattCurve"
+It is advised to mention
+the chargingSchedule.id
+and
+chargingSchedulePeriod.
+startPeriod in
+statusInfo.additionalInfo
+to tell which part of the
+charging schedule is
+invalid.
+Q08.FR.12 When CSMS receives an aFRR signal
+from an external actor
+CSMS SHALL send a AFRRSignalRequest with
+timestamp set to current time and signal set to
+value received from external actor.
+External actor is, for
+example, a TSO.
+Configuration
+Q08.FR.20 When Charging Station supports local
+frequency support
+Charging Station SHALL report the operation mode
+LocalFrequency in
+V2XSupportedOperationModes
+Q09 - Local V2X control for load balancing
+New in OCPP 2.1
+No. Type Description
+1 Name Local V2X control for load balancing
+2 ID Q09
+3 Objective(s) To allow the EV to be utilized for locally controlled load balancing.
+4 Description This operation modes allows an EV to be utilized for load balancing controlled locally by the
+Charging Station. The Charging Station is able to read the grid meter of a building that consumes
+energy and possibly generates energy from, for example, solar panels.
+Actors EV, Charging Station, CSMS
+Scenario description 1. The CSMS has sent a SetChargingProfileRequest message, with a chargingSchedule that
+has one or more periods with operationMode set to LocalLoadBalancing.
+2. The Charging Station will continually get the latest load power reading to calculate a new
+setpoint that will offset the measured power generation or consumption, such that it stays
+between the configured UpperThreshold and LowerThreshold.
+Optionally, there may be an UpperOffset and LowerOffset to control how much the power
+can exceed these thresholds.
+5 Prerequisites Charging Station is able to read the upstream meter.
+6 Post conditions ChargingSchedulePeriod ends
+7 Error Handling
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 531/803 Part 2 - Specification

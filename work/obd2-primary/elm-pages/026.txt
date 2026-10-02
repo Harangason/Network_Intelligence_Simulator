@@ -1,0 +1,94 @@
+26 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+AT Command Descriptions (continued)
+the first header byte, the ELM327 will assume that you
+wish that value to remain as 0, and that you want to
+have a fourth header (length) byte inserted into the
+message. This is contrary to the ISO 14230-4 OBD
+standard, but it is in use by many KWP2000 systems
+for (non-OBD) data transfer, so may be useful when
+experimenting.
+SH ww xx yy zz [ Set the Header to ww xx yy zz ]
+This four byte version of the AT SH command
+allows setting a complete 29 bit CAN ID in one
+instruction. Alternatively, AT SP (for the five most
+significant bits) and AT SH (for the other three bytes)
+may be used.
+SI [ perform a Slow Initiation ]
+Protocols 3 and 4 use what is sometimes called a
+5 baud, or slow initiation sequence in order to begin
+communications. Usually, the sequence is performed
+when the first message needs to be sent, and then the
+message is sent immediately after. Some ECUs may
+need more time between the two however, and having
+a separate initiation command allows you to control
+this time. Simply send AT SI, wait a little, then send
+the message. You may need to experiment a little to
+get the right amount of delay. Protocol 3 or 4 must be
+selected to use the AT SI command, or an error will
+result.
+SP h [ Set Protocol to h ]
+This command is used to set the ELM327 for
+operation using the protocol specified by 'h', and to
+also save it as the new default. Note that the protocol
+will be saved no matter what the AT M0/M1 setting is.
+The ELM327 supports 12 different protocols (two
+can be user-defined). They are:
+0 - Automatic
+1 - SAE J1850 PWM (41.6 kbaud)
+2 - SAE J1850 VPW (10.4 kbaud)
+3 - ISO 9141-2  (5 baud init, 10.4 kbaud)
+4 - ISO 14230-4 KWP (5 baud init, 10.4 kbaud)
+5 - ISO 14230-4 KWP (fast init, 10.4 kbaud)
+6 - ISO 15765-4 CAN (11 bit ID, 500 kbaud)
+7 - ISO 15765-4 CAN (29 bit ID, 500 kbaud)
+8 - ISO 15765-4 CAN (11 bit ID, 250 kbaud)
+9 - ISO 15765-4 CAN (29 bit ID, 250 kbaud)
+A - SAE J1939 CAN (29 bit ID, 250* kbaud)
+B - USER1 CAN (11* bit ID, 125* kbaud)
+C - USER2 CAN (11* bit ID, 50* kbaud)
+* default settings (user adjustable)
+The first protocol shown (0) is a convenient way of
+telling the ELM327 that the vehicle’s protocol is not
+known, and that it should perform a search. It causes
+the ELM327 to try all protocols if necessary, looking for
+one that can be initiated correctly. When a valid
+protocol is found, and the memory function is enabled,
+that protocol will then be remembered, and will
+become the new default setting. When saved like this,
+the automatic mode searching will still be enabled, and
+the next time the ELM327 fails to connect to the saved
+protocol, it will again search all protocols for another
+valid one. Note that some vehicles respond to more
+than one protocol - if searching, you may see more
+than one type of response.
+ELM327 users often use the AT SP 0 command to
+reset the search protocol before starting (or restarting)
+a connection. This works well, but since it is used so
+often, and since writes to EEPROM result in an
+unnecessary delay (of about 30 msec), the AT SP0
+command  sets the protocol to 0, but does not perform
+a write to EEPROM. Similarly, the SP A0 and SP 0A
+commands do not perform writes to EEPROM, either.
+Saving this value to EEPROM would not provide any
+advantage (and would be very short-lived, as the
+ELM327 will soon be finding the vehicle’s protocol and
+over-writing the ‘0’ value in EEPROM). If you really
+want to store the value ‘0’ in the internal EEPROM,
+you must use the AT SP 00 command.
+If another protocol (other than 0) is selected with
+this command (eg. AT SP 3), that protocol will become
+the default, and will be the only protocol used by the
+ELM327. Failure to initiate a connection in this
+situation will result in a response such as ‘BUS INIT:
+...ERROR’, and no other protocols will be attempted.
+This is a useful setting if you know that your vehicle(s)
+only use the one protocol, but is also one that can
+cause a lot of problems if you do not understand it.
+SP 00 [ erase the Stored Protocol ]
+To speed up protocol initiation and detection, the
+SP 0 command sets the protocol to automatic, but
+does not perform a (very time-consuming) write to
+EEPROM. Some users felt it was necessary to be able

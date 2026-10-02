@@ -1,0 +1,93 @@
+ID Precondition Requirement definition Note
+B07.FR.03 B07.FR.01 The Charging Station SHALL send the
+requested information, excluding the
+value of WriteOnly variables, via one or
+more NotifyReportRequest messages
+to the CSMS.
+It is good practice to send the report data in as few
+messages as possible in order to limit data
+overhead.
+B07.FR.04 B07.FR.01
+AND
+The
+getBaseReportRequest
+contained a requestId
+Every NotifyReportRequest send for
+this getBaseReportRequest SHALL
+contain the same requestId.
+B07.FR.05 B07.FR.02 The Charging Station SHALL NOT
+send a NotifyReportRequest to the
+CSMS.
+B07.FR.07 B07.FR.01 AND
+When reportBase is
+ConfigurationInventory
+Then the Charging Station SHALL
+respond with a NotifyReportRequest
+to report on all component-variables
+that can be set by the operator
+including their VariableCharacteristics.
+B07.FR.08 B07.FR.01 AND
+When reportBase is
+FullInventory
+Then the Charging Station SHALL
+respond with a NotifyReportRequest
+to report on all component-variables
+including their VariableCharacteristics.
+As a minimum the required variables mentioned in
+Charging Infrastructure related shall be reported as
+well as the required variables in Section 1 Controller
+Components that are relevant to each functional
+block that has been implemented.
+B07.FR.09 B07.FR.01 AND
+When reportBase is
+SummaryInventory
+Then the Charging Station SHALL
+respond with a NotifyReportRequest
+to report on components and
+variables related to the availability and
+condition of the Charging Station,
+notably operationalStatus of the
+Charging Station, EVSE and
+Connectors and any error condition.
+A (summary) report that lists
+Components/Variables relating to the Charging
+Station’s current charging availability, and to any
+existing problem conditions.
+For the Charging Station Component:
+- AvailabilityState.
+For each EVSE Component:
+- AvailabilityState.
+For each Connector Component:
+- AvailabilityState (if known and different from
+EVSE).
+For all Components in an abnormal State:
+- Active (Problem, Tripped, Overload, Fallback)
+variables.
+- Any other diagnostically relevant Variables of the
+Components.
+B07.FR.10 The sequence number contained in
+the seqNo field of the
+NotifyReportRequest is incremental
+per report. So the
+NotifyReportRequest message which
+contains the first report part, SHALL
+have a seqNo with value 0.
+B07.FR.11 B07.FR.08 All attribute types of a variable, that
+are supported by the Charging Station,
+SHALL be reported, even if they have
+no value (are unset).
+This allows a CSMS to know which attribute types
+are supported by the Charging Station.
+B07.FR.12 The Charging Station SHALL support
+at least the base reports:
+ConfigurationInventory and
+FullInventory.
+B07.FR.13 When the Charging
+Station is temporarily
+unable to execute a
+report request
+The Charging Station SHALL send a
+getBaseReportResponse with
+Rejected.
+Edition 4, 2025-12-03 B. Provisioning
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 59/491 Part 2 - Specification

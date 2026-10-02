@@ -1,0 +1,62 @@
+No. Type Description
+Scenario description A transaction is in progess
+1. CSMS sends a ChangeTransactionTariffRequest for transactionId with a new tariff.
+2. Charging Station responds with ChangeTransactionTariffResponse with status =
+Accepted.
+3. Charging Station starts applying the new tariff to the transaction.
+a. Charging Stations sends a TransactionEventRequest with triggerReason =
+TariffChanged and transactionInfo.tariffId with the id of the new tariff (and
+other relevant fields).
+4. Charging Station optionally displays the new tariff that is being used. (This depends on UI
+design and regulations).
+5 Prerequisites A transaction and associated tariff are active on the Charging Station.
+6 Postcondition(s) Charging Station continues local cost calculation with the new tariff.
+7 Error Handling If Charging Station does not accept the ChangeTransactionTariffRequest then the exising tariff
+remains active.
+8 Remarks Changing a tariff during a transaction may not be allowed at all in certain legislations, or only
+unless specifically agreed upon by the customer.
+Dynamic prices based on day-ahead energy prices can already be part of a tariff with restrictions
+based on time of day, and do not require the tariff to be changed during a transaction.
+Changing of a tariff is done for a transaction and not for a driver (idToken), because the same
+driver could have a transaction on another EVSE as well for which no tariff update is needed.
+Charging Station CSMS
+CSMS changes tariff for transaction 1234
+ChangeTransactionTariffRequest( transactionId = 1234, tariff = { ... } )
+ChangeTransactionTariffResponse( status = Accepted )
+Figure 111. Sequence diagram Change TransactionTariffRequest
+I11 - Change Transaction Tariff - Requirements
+ID. Precondition Requirements Notes
+I11.FR.01 When a Charging Station receives a
+ChangeTransactionTariffRequest and does not
+support local cost calculation
+Charging Station SHALL respond with an RPC
+CALLERROR "NotSupported"
+(or "NotImplemented" if the message has not
+been implemented).
+I11.FR.02 When a Charging Station receives a
+ChangeTransactionTariffRequest and tariff
+has more elements than
+TariffMaxElements
+Charging Station SHALL respond with
+ChangeTransactionTariffResponse with status
+= TooManyElements.
+I11.FR.03 Upon receiving a
+ChangeTransactionTariffRequest with a tariff
+structure that contains elements with a
+TariffConditionsType or
+TariffConditionsFixedType AND
+TariffCostCtrlr.ConditionsSupported = false
+(i.e. Charging Station does not support
+conditions)
+Charging Station SHALL respond with
+ChangeTransactionTariffResponse with status
+= ConditionNotSupported.
+I11.FR.04 When a Charging Station receives a
+ChangeTransactionTariffRequest and
+transactionId does not exist or is no longer
+active
+Charging Station SHALL respond with
+ChangeTransactionTariffResponse with status
+= TxNotFound.
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 296/803 Part 2 - Specification

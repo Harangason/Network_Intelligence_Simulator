@@ -1,0 +1,66 @@
+ID Precondition Requirement definition Note
+C15.FR.04 C15.FR.02 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is true AND
+TxStopPoint does contain:
+(Authorized OR PowerPathClosed OR
+EnergyTransfer)
+The Charging Station SHALL stop the transaction
+and send TransactionEventRequest (eventType =
+Ended) with triggerReason set to Deauthorized and
+stoppedReason set to DeAuthorized.
+C15.FR.05 C15.FR.04 AND
+If the Charging Station has the
+possibility to lock the Charging Cable
+The Charging Station SHOULD keep the Charging
+Cable locked until the owner presents his identifier.
+C15.FR.06 C15.FR.02 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is set to false
+AND
+MaxEnergyOnInvalidId is not
+implemented or has been exceeded.
+TxStopPoint does NOT contain:
+EnergyTransfer
+The Charging Station SHALL stop the energy
+delivery to the EV immediately and send
+TransactionEventRequest (eventType = Updated)
+with triggerReason set to ChargingStateChanged
+and chargingState set to SuspendedEVSE
+C15.FR.07 C15.FR.02 AND
+The authorization status in
+TransactionEventResponse is not
+Accepted AND
+The transaction is still ongoing AND
+StopTxOnInvalidId is set to false
+AND
+MaxEnergyOnInvalidId is set and
+has NOT been exceeded.
+Energy delivery to the EV SHALL be allowed until
+the amount of energy specified in
+MaxEnergyOnInvalidId has been reached.
+C15.FR.08 When an unknown identifier is
+presented AND
+OfflineTxForUnknownIdEnabled is set
+to true
+The Charging Station SHALL accept the presented
+IdToken.
+2.7. Master Pass
+C16 - Stop Transaction with a Master Pass
+No. Type Description
+1 Name Stop Transaction with a Master Pass
+2 ID C16
+3 Objective(s) Enable stopping of transactions by use of a Master Pass (for example for: Law Enforcement
+officials).
+4 Description This use case covers how somebody with a Master Pass (User) can stop (selected) ongoing
+transactions, so the cable becomes unlocked. This Master Pass can be configured in:
+MasterPassGroupId.
+Actors Charging Station, CSMS, User
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 122/803 Part 2 - Specification

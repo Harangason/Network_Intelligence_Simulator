@@ -1,0 +1,56 @@
+u-blox 20 HPG 2.00 - Interface description
+• 1: No spooﬁng indicated
+• 2: Spooﬁng indicated
+• 3: Spooﬁng aﬃrmed
+2 U1 reserved0 - - Reserved
+3 U1 jamNumCent
+Freqs
+- - The number of center frequencies we provide jamming
+information for (subsequent messages)
+Start of repeated group (jamNumCentFreqs times)
+4 + n·4 X4 jamStateCent
+Freq
+- - Jamming state of signals sharing a given center
+frequency
+Note that jamming information is only provided for
+center frequencies related to at least one in-use
+signal, for which a suﬃcient amount of information is
+currently available to judge if it is aﬀected by jamming.
+bits 23…0   U:24 centFreq - kHz Center frequency in [kHz], ﬂoored to the nearest kHz
+multiple
+bit 24   U:1 jammed - - Flag indicates whether signals on the given center
+frequency are considered jammed
+End of repeated group (jamNumCentFreqs times)
+3.17.3 UBX-SEC-SIGLOG (0x27 0x10)
+3.17.3.1 Signal security log
+Message UBX-SEC-SIGLOG
+Signal security log
+Type Periodic/polled
+Comment This message provides a log of past signal security related events, that is, events related to jamming and
+spooﬁng. Each event is a combination of a detection type and a event type, where the event type 'indication
+started' and 'indication stopped' and also the event type 'indication triggered' and 'indication timed-out' form
+a pair. A maximum of 16 events are logged; after the log is ﬁlled, recent events take precedence over past
+events in the log. Power cycles and restarts of the receiver reset the log, deleting its content.
+Note: It is advised not to restart the receiver while it's indicating spooﬁng.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x27 0x10 8 + numEvents·8 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x01 for this version)
+1 U1 numEvents - - Number of events
+2 U1[6] reserved0 - - Reserved
+Start of repeated group (numEvents times)
+8 + n·8 U4 timeElapsed - s Seconds elapsed since this event
+Special value 0xFFFFFFFF: more than 45 days
+12 + n·8 U1 detectionType - - Type of the spooﬁng or jamming detection:
+• 0 = simulated signal
+• 1 = abnormal signal
+• 2 = INS/GNSS mismatch
+• 3 = abrupt changes in GNSS signal
+• 4 = jamming indicated
+• 5 = authentication failed
+• 6 = replayed signals
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 132 of 224
+C1-Public

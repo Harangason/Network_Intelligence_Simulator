@@ -1,0 +1,52 @@
+EV Charging Station CSMS
+Transaction has started
+alt [15118-20 Scheduled mode]
+Not applicable
+[15118-20 Dynamic mode]
+ScheduleExchangeReq( DepartureTime, EVTargetEnergyRequest,
+Dynamic, ... )
+NotifyEVChargingNeedsRequest(
+DepartureTime, EVTargetEnergyRequest, ... )
+NotifyEVChargingNeedsResponse( Accepted )
+SetChargingProfileRequest( chargingProfileId,
+"Dynamic", "CentralSetpoint", schedulePeriod )
+SetChargingProfileResponse( Accepted )
+ScheduleExchangeRes()
+PowerDeliveryReq()
+PowerDeliveryRes()
+loop [Updating setpoint dynamically every schedule period]
+alt [Using ModifyChargingProfile]
+UpdateDynamicScheduleRequest( chargingProfileId, setpoint )
+DynamicScheduleUpdateResponse( Accepted )
+[Using PullChargingProfileUpdate]
+PullDynamicScheduleUpdateRequest( chargingProfileId )
+PullDynamicScheduleUpdateResponse( setpoint )
+Adjust power output to setpoint
+AC/DC_ChargeLoopReq()
+Continuous charge loop
+AC/DC_ChargeLoopRes( setpoint )
+opt [TransactionEvent with meter values or other measurands]
+TransactionEventRequest(
+eventType=Update, triggerReason=MeterValuePeriodic,
+meterValue=[...measurands...])
+TransactionEventRespons()
+[CHAdeMO]
+evChargingParameters + SoC
+evseChargingParameters
+SetChargingProfileRequest( "Dynamic", "CentralSetpoint",
+schedulePeriod )
+SetChargingProfileResponse( Accepted )
+loop [Updating power setpoint every schedule period]
+alt [Using ModifyChargingProfile]
+UpdateDynamicScheduleRequest( chargingProfileId, setpoint )
+DynamicScheduleUpdateResponse( Accepted )
+[Using PullChargingProfileUpdate]
+PullDynamicScheduleUpdateRequest( chargingProfileId )
+PullDynamicScheduleUpdateResponse( setpoint )
+Adjust power output to setpoint
+Available output current (H'108.3)
+Charging current request (H'102.3)
+Figure 191. V2X Operation Mode with CentralSetpoint set dynamically
+NOTE This use case adheres to requirements related to CentralSetpoint from Q03 and Dynamic charging profiles from
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 519/803 Part 2 - Specification

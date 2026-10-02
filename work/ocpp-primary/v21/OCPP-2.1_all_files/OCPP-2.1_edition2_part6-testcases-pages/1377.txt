@@ -1,0 +1,27 @@
+StopAuthorized
+State StopAuthorized
+System under test CSMS
+Description This state will simulate that the Charging Station is in a state where the charging session is authorized to
+stop.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+If State is NOT EnergyTransferStarted then execute Reusable State EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Notes(s): The tool will wait for <Configured Transaction Duration> seconds
+1. The Test System sends a TransactionEventRequest
+With triggerReason is StopAuthorized
+eventType is Updated
+2. The CSMS responds with a TransactionEventResponse
+Tool validations
+* Step 2:
+Message: TransactionEventResponse
+- idTokenInfo.status must be Accepted
+Post scenario validations:
+State is StopAuthorized
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1375/1383 Part 6 - Test Cases

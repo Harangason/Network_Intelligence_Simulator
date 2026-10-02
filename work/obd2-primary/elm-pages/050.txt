@@ -1,0 +1,83 @@
+Restoring Order
+There may be times when it seems the ELM327 is
+out of control, and you will need to know how to
+restore order. Before we continue to discuss modifying
+too many parameters, this seems to be a good point to
+discuss how to ‘get back to the start’. Perhaps you
+have told the ELM327 to monitor all data, and there
+are screens and screens of data flying by. Perhaps the
+IC is now responding with ‘NO DATA’ when it did work
+previously. This is when a few tips may help.
+The ELM327 can always be interrupted from a
+task by a single keystroke from the keyboard. As part
+of its normal operation, checks are made for received
+characters and if found, the IC will stop what it is doing
+at the next opportunity. Often this means that it will
+continue to send the information on the current line,
+then stop, print a prompt character, and wait for your
+input. The stopping may not always seem immediate if
+the RS232 send buffer is almost full, though – you will
+not actually see the prompt character until the buffer
+has emptied, and your terminal program has finished
+printing what it has received.
+There are times when the problems seem more
+serious and you don’t remember just what you did to
+make them so bad. Perhaps you have ‘adjusted’ some
+of the timers, then experimented with the CAN filter, or
+perhaps tried to see what happens if the header bytes
+are changed. All of these can be reset by sending the
+‘set to Defaults’ AT Command:
+>AT D
+OK
+This will often be sufficient to restore order, but it
+can occasionally bring unexpected results. One such
+surprise will occur if you are connected to a vehicle
+using one protocol, but the saved (default) protocol is
+a different one. In this case, the ELM327 will close the
+current session and then change the protocol to the
+default one, exactly as instructed.
+If the AT D does not bring the expected results, it
+may be necessary to do something more drastic - like
+resetting the entire IC. There are a few ways that this
+can be performed with the ELM327. One way is to
+simply remove the power and then reapply it. Another
+way that acts exactly the same way as a power off and
+then on is to send the full reset command:
+>AT Z
+It takes approximately one second for the IC to
+perform this reset, initialize everything and then test
+the four status LEDs in sequence. A much quicker
+option is available with the ELM327, however, if the
+led test is not required – the ‘Warm Start’ command:
+>AT WS
+The AT WS command performs a software reset,
+restoring exactly the same items as the AT Z does, but
+it omits the LED test, making it considerably faster.
+Also, it does not affect any baud rates that have been
+set with the AT BRD command (which AT Z does), so
+is essential if you are modifying the RS232 baud rates
+with software.
+Any of the above methods should be effective in
+restoring order while experimenting. There is always
+the chance that you may have changed a
+Programmable Parameter, however, and are still
+having problems with your system. In this case, you
+may want to simply turn off all of the Programmable
+Parameters (which forces them to their default values).
+To do so, send the command:
+>AT PP FF OFF
+which should disable all of the changes that you have
+made. Since some of the Programmable Parameters
+are only read during a system reset, you may have to
+follow this command with a reset command:
+>AT Z
+after which, you can start over with what is essentially
+a device with ‘factory settings’. There may be times
+when even this command is not recognized, however.
+If that is the case, you will need to use the hardware
+method of turning the PPs off. See the section on
+‘Programmable Parameters’ (pages 69 and 70) for
+more details.
+50 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327

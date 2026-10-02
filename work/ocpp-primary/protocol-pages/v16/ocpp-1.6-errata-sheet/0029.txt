@@ -1,0 +1,29 @@
+Class
+Contains status information about an identifier. It is returned in Authorize, Start Transaction and Stop
+Transaction responses.
+If expiryDate is not given, the status has no end date.
+FIELD NAME FIELD TYPE CAR
+D.
+DESCRIPTION
+expiryDate dateTime 0..1 Optional. This contains the date at which idTag should be removed from the
+Authorization Cache.
+parentIdTag IdToken 0..1 Optional. This contains the parent-identifier.
+status AuthorizationStatus 1..1 Required. This contains whether the idTag has been accepted or not by the Central
+System.
+3.74. page 98, section: 7.28. idToken: idToken field is of wrong type
+The field: idToken should have been of the type CiString20Type, it is case insensitive.
+Old text String[20]
+New text CiString20Type
+To prevent interoperability issues: Do NOT update WSDL files!
+Note: For future version: idToken was missed when added the CiStringXXTypes. Might be removed as type, and
+all field of the type idToken in other Classes will then be replaced by CiString20Type.
+3.75. Page 98, section: 7.28: IdToken should be defined as type
+The IdToken is defined as Class, that contain a Field Name, but they should have been defined as Type (without
+Field Name) The WSDL and JSON Schema are correct, was only wrong in the specification. (was also wrong in
+OCPP 1.5)
+New definition:
+7.28 IdToken
+Type
+Contains the identifier to use for authorization. It is a case insensitive string. In future releases this may become
+a complex type to support multiple forms of identifiers.
+28

@@ -1,0 +1,47 @@
+TC_Q_123_CS: Local V2X control for load balancing - not supported
+Test case name Local V2X control for load balancing - not supported
+Test case Id TC_Q_123_CS
+Use case Id(s) Q09
+Requirement(s) Q09.FR.01
+System under test Charging Station
+Description To allow the EV to be utilized for locally controlled load balancing.
+Purpose To verify if the Charging Station is able to respond correctly if it doesn’t support Local Load Balancing.
+Prerequisite(s) - EV supports V2X power transfer loop
+- EV and charging station support ISO15118-20 or CHAdeMO
+- V2XChargingCtrlr.SupportedOperationModes doesn’t contain LocalLoadBalancing
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+IF <Configured EVProtocol> is CHAdeMO THEN
+State is Authorized
+State is EVConnectedPreSession
+ELSE IF <Configured EVProtocol> is ISO15118 THEN
+State is Iso1511820V2xControlBpt
+State is EVConnectedPreSession
+State is Authorized15118 (for 15118-20)
+END IF
+Main (Test scenario)
+Charging Station CSMS
+Send LocalLoadBalancing profile
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile
+- transactionId <transactionId>
+- chargingProfilePurpose TxProfile
+- chargingSchedule.chargingRateUnit W
+- chargingSchedule.chargingSchedulePeriod.operationMode
+LocalLoadBalancing
+Tool validations
+* Step 2:
+Message: SetChargingProfileResponse
+- status must be Rejected
+- statusInfo.reasonCode must be UnsupportedParam
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 862/1383 Part 6 - Test Cases

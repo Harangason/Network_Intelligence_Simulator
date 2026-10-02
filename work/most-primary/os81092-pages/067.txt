@@ -1,0 +1,34 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 67
+OS81092
+The Microchip Automotive Power Management Device (MPM85000) provides a 3.3 V continuous output which can be
+used to power OS81092 persistent memory (e.g. VDDU). Integrating both the OS81092 and MPM85000 on a MOST
+Network node minimizes application circuitry and software complexity, allowing the application designer to focus on the
+application, rather than on MOST compliance. Contact Microchip for more information on the MPM85000.
+Depending on OEM requirements for robustness and flexibilit y, the use of OS81092 persistent memory may not be
+required in all applications. When an application does not utilize persistent memory to store MOST Network parameters
+during a low-power mode of operation, the OS81092 VDDU pin should be connected to 3.3 V switched power (e.g.
+VDDP).
+16.6 Configuration
+The OS81092 provides One-Time Programmable (OTP) memory that is used to store power-up configuration settings.
+OTP memory is divided into two sections, which allows co nfiguration settings to be written twice. When OTP memory
+is written once, the first section stores the configuration data and the second section is unused. When OTP memory is
+written again, the second sect ion stores the configuration data and all data  previously written into the first section is
+ignored. After power-up/reset, configuration settings are loaded from the appropriate OTP section into RAM.
+The power-up configuration settings stored in OTP memory are collectively referred to as the INIC Configuration String
+(or ConfigString). The INIC Configuration String includes initial hardware configuration information such as:
+• Control Port I 2C address,
+• Default port for INIC-EHC communication,
+• MediaLB Port default mode and speed,
+• Enable option for GPIO Port and Control Port I 2C master mode,
+• RMCK configuration, and
+• Network device mode (tim ing-master/timing-slave).
+If OTP memory is not initialized, OS81092 Factory default settings are used in its place. OTP memory only needs to be
+programmed when the Factory defaults are no t adequate for the application. Refer to the OS81092 INIC API User’s
+Manual [2] for the OS81092 Factory defaults, as well as a complete listing of INIC Configuration String settings.
+The INIC Configuration String can be programmed into OTP memory by the EHC via the Control Port. This approach is
+suitable for production-level applications. See Section 16.6.1 “EHC via Control Port” for more information. Alternatively,
+The Microchip INIC Explorer Interface Box [4] tool can load OTP memory via the Customer Configuration Interface. This
+technique is suitable for development-level applications. See Section 16.6.2 “INIC Explorer via JTAG Port” for more
+information.
+Note: When 3.3 V power is removed from the OS81092 VDDU pin, the content of
+the persistent memory block becomes invalid.

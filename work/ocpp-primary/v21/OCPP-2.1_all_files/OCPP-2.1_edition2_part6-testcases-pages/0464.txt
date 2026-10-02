@@ -1,0 +1,54 @@
+TC_J_02_CS: Clock-aligned Meter Values - Transaction ongoing
+Test case name Clock-aligned Meter Values - Transaction ongoing
+Test case Id TC_J_02_CS
+Use case Id(s) J01
+Requirement(s) J01.FR.01,J01.FR.02,J01.FR.03,J01.FR.06,J01.FR.07,J01.FR.08,J01.FR.14,J01.FR.15
+System under test Charging Station
+Description The Charging Station samples the electrical meter or other sensor/transducer hardware to provide
+information about its Meter Values. Depending on configuration settings, the Charging Station will send
+Meter Values.
+Purpose To verify if the Charging Station is able to send clock-aligned Meter Values, while a transaction is ongoing,
+when it is configured to do so.
+Prerequisite(s) The Charging Station has an energy meter.
+Before (Preparations)
+Configuration State:
+AlignedDataInterval is <Configured clock-aligned Meter Values interval>
+AlignedDataSendDuringIdle is false (If implemented)
+RegisterValuesWithoutPhases is false (If implemented)
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Note(s):
+- The Charging Station can follow Steps 1 and 2 or Steps 3 and 4
+1. The Charging Station notifies the CSMS about its measured
+Meter Values.
+Note(s):
+- During a transaction the MeterValueRequest can still be used to
+report meter values for the main power meter (evseId=0) and idle
+EVSEs
+- The Meter Value messages do NOT need to be send/received at
+the exact specified interval. The configured measurands must be
+measured at the configured interval.
+- Multiple Meter Value messages may be sent per configured
+interval, in case the amount of measured data is too much for one
+message.
+2. The Test System responds accordingly.
+3. The Charging Station sends a TransactionEventRequest
+Note(s):
+- During a transaction the meter values for the configured EVSE
+with the ongoing transaction should be transmitted using the
+TransactionEventRequest.
+- The TransactionEventRequest messages do NOT need to be
+send/received at the exact specified interval. The configured
+measurands must be measured at the configured interval.
+- Multiple TransactionEventRequest messages may be sent per
+configured interval, in case the amount of measured data is too
+much for one message.
+- The Test System will end the testcase after it has the
+<Configured transaction duration> is reached.
+4. The Test System responds with a TransactionEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 462/1383 Part 6 - Test Cases

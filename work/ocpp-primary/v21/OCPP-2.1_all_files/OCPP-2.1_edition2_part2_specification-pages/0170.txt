@@ -1,0 +1,101 @@
+ID Precondition Requirement definition Note
+D01.FR.03 If the status in
+SendLocalListResponse is Failed or
+VersionMismatch and the
+updateType was Differential
+It is RECOMMENDED that the CSMS sends the full
+Local Authorization List.
+When this list is too large
+for one message (see
+D01.FR.11), it shall start
+by sending an initial list
+with updateType Full
+and adding identifiers
+using updateType
+Differential until the
+list is completely sent.
+D01.FR.04 If no localAuthorizationList is given
+and the updateType is Full.
+The Charging Station SHALL remove all IdTokens
+from the list.
+Note, that the version
+number of the list is still
+updated to value of
+versionNumber in the
+request.
+D01.FR.05 Requesting a Differential update without or with
+empty localAuthorizationList SHALL have no effect
+on the list.
+Note, that the version
+number of the list is still
+updated to value of
+versionNumber in the
+request.
+D01.FR.06 All IdTokens in the Local Authorization List SHALL
+be unique.
+No duplicate values are
+allowed.
+D01.FR.09 The Charging Station SHALL NOT modify the
+contents of the Authorization List by any other
+means than upon a the receipt of a SendLocalList
+message from the CSMS.
+D01.FR.10 The Local Authorization List SHOULD be
+maintained by the Charging Station in non-volatile
+memory, and SHOULD be persisted across reboots
+and power outages.
+D01.FR.11 The size of a single SendLocalListRequest is
+limited by the Configuration Variables
+ItemsPerMessageSendLocalList and
+BytesPerMessageSendLocalList.
+D01.FR.12 A Charging Station that supports Local
+Authorization List SHALL implement the
+Configuration Variable: LocalAuthListEntries.
+This gives the CSMS a
+way to known the current
+amount and maximum
+possible number of Local
+Authorization List
+elements in a Charging
+Station.
+D01.FR.13 The Charging Station indicates whether the Local
+Authorization List is enabled. This is reported and
+controlled by the LocalAuthListEnabled
+Configuration Variable.
+D01.FR.15 If the Charging Station receives a
+SendLocalListRequest with
+updateType is Full AND
+localAuthorizationList is non-empty
+The Charging Station SHALL replace its current
+Local Authorization List with the one in the
+SendLocalListRequest and set the version number
+to the value specified in the message
+Otherwise, there is no
+way to sync the initial
+Charging Station and
+CSMS lists. When this list
+is too large for one
+message (see
+D01.FR.11), it shall start
+by sending an initial list
+with_updateType_ Full
+and adding identifiers
+using updateType
+Differential until the
+list is completely sent.
+D01.FR.16 If the Charging Station receives a
+SendLocalListRequest with
+updateType is Differential AND
+localAuthorizationList contains
+AuthorizationData elements with
+idTokenInfo
+The Charging Station SHALL update its Local
+Authorization List with these elements and set the
+version number to the value specified in the
+message.
+Add them if not yet
+present, update with new
+information when already
+present in the Local
+Authorization List.
+Edition 2, 2025-12-03 D. Local Authorization List Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 157/803 Part 2 - Specification

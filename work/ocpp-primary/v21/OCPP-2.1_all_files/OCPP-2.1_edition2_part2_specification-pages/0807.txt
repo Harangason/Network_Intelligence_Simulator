@@ -1,0 +1,57 @@
+Required no
+Component componentNa
+me
+FrequencySimulator
+evse *
+Variable variableName DateTime
+variableInstanc
+e
+End
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+dataType dateTime
+Description If Enabled the FrequencySimulator will simulate a net frequency as long as time
+>= DateTime["Start"] and time < DateTime["End"].
+2.17.7.4. FrequencySimulatorSchedule
+New in OCPP 2.1
+Required no
+Component componentNa
+me
+FrequencySimulator
+evse *
+Variable variableName FrequencySchedule
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+dataType string
+Description A JSON-formatted string with an array of { time, freq } pairs, in which time is time
+in seconds (as integer) relative to the beginning of the schedule at
+DateTime("Start") and freq is the frequency to be simulated during that period in
+Hz (as decimal). Behaviour is similar to that of a ChargingSchedulePeriodType,
+i.e. the start of a new period marks the end of the previous period and the final
+period lasts until DateTime["End"].
+Example: "[ { "time": 0, "freq": 50.0 }, { "time": 60, "freq": 49.2 }, { "time": 300, "freq":
+47.8 } ]".
+2.17.8. DataCollector Component
+The DataCollector is an optional component that collects samples of measurands at a high frequency, typically with subsecond
+intervals. It is a component that is reported as part of an EVSE and when enabled it only applies to that EVSE. The samples are
+logged internally in the Charging Station and can be retrieved in bulk with the GetLogRequest by specifying LogEnumType
+DataCollectorLog. For small intervals and lots of data it is much more efficient to use the DataCollector than installing a
+sampling monitor.
+Its purpose is to collect high frequency samples (less than 100 ms intervals) that are needed during the certification process of a
+Charging Station that is doing local frequency control. The DataCollector component is, however, not specific to V2X operations
+and can be used for any sampling.
+2.17.8.1. DataCollectorEnabled
+New in OCPP 2.1
+Required no
+Component componentNa
+me
+DataCollector
+evse *
+Edition 2, 2025-12-03 Referenced Components and Variables
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 794/803 Part 2 - Specification

@@ -1,0 +1,32 @@
+Tool validations
+Post scenario validations:
+Note: The value of TransactionEventRequest.timestamp of step 6 where TransactionEventRequest.eventType is Started is called
+<TxStartDateTime>.
+* A message TransactionEventRequest must have been received with:
+- eventType must be Ended
+- costDetails.failureToCalculate must be <omitted>
+- costDetails.failureReason must be <omitted>
+- costDetails.totalCost.currency must be EUR
+- costDetails.totalCost.typeOfCost must be NormalCost
+- costDetails.totalCost.fixed.exclTax must be 10.00
+- costDetails.totalCost.fixed.inclTax must be 10.00 * 1.05
+- costDetails.totalCost.fixed.taxRates[0].type t5_0
+- costDetails.totalCost.fixed.taxRates[0].tax 5.0
+- costDetails.totalCost.reservationFixed.exclTax must be 20.00
+- costDetails.totalCost.reservationFixed.inclTax must be 20.00 * 1.05
+- costDetails.totalCost.reservationFixed.taxRates[0].type t5_0
+- costDetails.totalCost.reservationFixed.taxRates[0].tax 5.0
+- costDetails.totalCost.reservationTime.exclTax must be (<TxStartDateTime> - <ReservationTime>) / 60 * 6.00
+- costDetails.totalCost.reservationTime.inclTax must be (<TxStartDateTime> - <ReservationTime>) / 60 * 6.00 * 1.20
+- costDetails.totalCost.reservationTime.taxRates[0].type t20_0
+- costDetails.totalCost.reservationTime.taxRates[0].tax 20.0
+- costDetails.totalUsage.energy must be <not omitted>
+- costDetails.totalUsage.chargingTime must be <not omitted>
+- costDetails.totalUsage.idleTime must be <not omitted>
+- costDetails.totalUsage.reservationTime must be (<TxStartDateTime> - <ReservationTime>) / 60
+- costDetails.chargingPeriods[0].tariffId must be Test System1
+- costDetails.chargingPeriods[0].startPeriod must be <TxStartDateTime>
+- costDetails.chargingPeriods[0].dimensions[0].type must be ChargingTime
+- costDetails.chargingPeriods[0].dimensions[0].volume must be_(<TxEndDateTime> - <TxStartDateTime>)_
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 454/1383 Part 6 - Test Cases

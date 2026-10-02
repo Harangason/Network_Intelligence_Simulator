@@ -1,0 +1,48 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  19 
+User Interface Supported Protocols Description 
+AXI4-Stream protocol for transferring pixel 
+information into the transmitter pipeline. 
+MIPI Byte Streaming Interface This MIPI CSI/DSI transmitter interface receives data in 
+byte format and follows the standard AXI4-Stream 
+protocol. 
+Device transmitter Unified Video Streaming Interface This MIPI CSI/DSI receiver interface transmits data in 
+pixel domain and follows the standard AXI4-Stream 
+protocol. 
+MIPI Byte Streaming Interface This MIPI CSI/DSI receiver interface transmits data in 
+byte domain and follows the standard AXI4-Stream 
+protocol. 
+ 
+2.4.1. Unified Video Streaming Interface (UVSI) 
+The UVSI transfers video data in the pixel domain and complies with the AXI4 -Stream protocol. For the complete list of 
+interface signals, refer to the Signal Description section. 
+In UVSI, the first transmission of every frame is always the frame boundary, indicated by the assertion of the Start of 
+Frame (SOF) signal. This transition marks the beginning of the valid video-frame data. The data flow strictly follows the 
+AXI4-Stream handshaking requirements, where the source must assert TVALID only when valid data is available, and 
+the sink must assert TREADY only when the sink is ready to accept data. A data beat is transferred only when both 
+TVALID and TREADY are high, ensuring proper flow control and preventing data loss or corruption.  
+Vertical
+Blanking
+ 
+  Horizontal
+    Blanking
+Active Frame (Progressive)
+Active Field (Interlaced)
+tlast
+tlast = 1 signifies 
+end of active line
+tuser[0] = 1 signifies start 
+of frame (progressive) or 
+start of field (interlaced)
+tvalid
+tuser[1] = 0 signifies progressive 
+                     or interlaced F0
+               = 1 signifies interlaced F1
+tvalid = 1 signifies active line  
+ 
+Figure 2.10. UVSI to Video Frame Timing Mapping 

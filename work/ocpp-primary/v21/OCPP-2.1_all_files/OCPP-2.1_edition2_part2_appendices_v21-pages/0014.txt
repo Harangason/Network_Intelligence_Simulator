@@ -1,0 +1,56 @@
+Description
+AllowSecurityProfileDowngrade boolean If this variable is implemented and set to true, then the Charging Station allows
+downgrading the security profile from 3 to 2. For security reasons it is not
+allowed to revert from profile 2 or profile 3 to security profile 1 using OCPP.
+3.1.17. SmartChargingCtrlr
+Description
+Logical Component responsible for configuration relating to smart charging.
+Variables Type Description
+Enabled boolean Whether Smart Charging is enabled.
+Available boolean Whether Smart Charging is supported.
+ACPhaseSwitchingSupported boolean If defined and true, this EVSE supports the selection of which phase to use for 1
+phase AC charging.
+ProfileStackLevel integer Maximum acceptable value for stackLevel in a ChargingProfile. Since the lowest
+stackLevel is 0, this means that if SmartChargingCtrlr.ProfileStackLevel = 1, there
+can be at most 2 valid charging profiles per Charging Profile Purpose per EVSE.
+RateUnit MemberList A list of supported quantities for use in a ChargingSchedule. Allowed values: 'A'
+and 'W'.
+PeriodsPerSchedule integer Maximum number of periods that may be defined per ChargingSchedule.
+ExternalControlSignalsEnabled boolean Indicates whether a Charging Station should respond to external control signals
+that influence charging.
+NotifyChargingLimitWithSched
+ules
+boolean Indicates if the Charging Station should include the externally set charging
+limit/schedule in the message when it sends a NotifyChargingLimitRequest
+message. This might increase the data usage significantly, especially when an
+external system sends new profiles/limits with a short interval. Default is false
+when omitted.
+Phases3to1 boolean If defined and true, this Charging Station supports switching from 3 to 1 phase
+during a transaction.
+Entries integer Amount of Charging profiles currently installed on the Charging Station. MaxLimit
+used to limit number of Charging profiles installed at any time.
+LimitChangeSignificance integer If at the Charging Station side a change in the limit in a ChargingProfile is lower
+than this percentage, the Charging Station MAY skip sending a
+NotifyChargingLimitRequest or a TransactionEventRequest message to the
+CSMS. It is RECOMMENDED to set this key to a low value. See Smart Charging
+signals to a Charging Station from multiple actors.
+Updated in v2.1
+3.1.18. TariffCostCtrlr
+Description
+Logical Component responsible for configuration relating to tariff and cost display.
+Variables Instance Type Description
+Available Tariff boolean Whether TariffType structure is supported.
+Available Cost boolean Whether local cost calculation is supported.
+Enabled Tariff boolean Whether support for TariffType structure is enabled.
+Enabled Cost boolean Whether local cost calculation is enabled.
+Enabled RunningCos
+t
+boolean Whether Charging Station will provide running cost updates.
+Interval Tariff integer Maximum interval in seconds to use when evaluating tariff
+conditions.
+Interval Cost integer Interval to use for running cost updates.
+MaxElements Tariff integer Maximum number of prices elements supported in each
+TariffEnergy/Time/FixedType.
+ConditionsSupported Tariff boolean Whether Charging Station supports conditions in TariffType.
+v2.1, 2025-12-03 Chapter 3. Standardized Components
+OCPP 2.1 - © Open Charge Alliance 2025 12/52 Part 2 - Appendices

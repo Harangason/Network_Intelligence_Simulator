@@ -1,0 +1,31 @@
+NOTE
+Because of this mandatory/optional discussion for this particular field we discovered
+that in most pre-releases of the official 1.0 WSA Core spec the MessageID is mandatory.
+We also discovered that some frameworks are actually based on those pre-releases and
+may contain other errors as well. Please verify that (if you use a framework) your
+framework is based on the final specification.
+3.6. RelatesTo
+Required: Yes, for responses only
+RelatesTo should not be filled in for request messages. It only has meaning, and must be present, in
+response messages. When used it should contain the value of the MessageID field of the related request
+message.
+3.7. From
+Required: Yes
+According to the WS-A 1.0 Core specification the from-field is marked as optional. However, for OCPP
+the field MUST be filled in. It is the only way for a Central System to know how to address server-
+initiated messages to a Charge Point. The address specified must be the address where the sender
+listens for incoming SOAP requests.
+Example:
+<wsa5:From>
+<wsa5:Address>http://62.133.94.210:12345</wsa5:Address>
+</wsa5:From>
+3.8. ReplyTo
+Required: Yes
+According to the WS-A 1.0 Core specification this field is marked as optional. If omitted, the default
+value is “http://www.w3.org/2005/08/addressing/anonymous”. In accordance with section 5.1.2 of the
+WS-A 1.0 SOAP Binding specification the use of such anonymous response endpoints forces the
+response to be in the same instance of the SOAP request-response MEP. In other words, omitting or
+explicitly specifying the anonymous url makes the soap communication synchronous.
+Strictly speaking for OCPP this means that any other explicit value than the anonymous url would be
+an incorrect value.
+8

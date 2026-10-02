@@ -1,0 +1,44 @@
+Time-based One-Time password algorithm
+The algorithm to calculate the time-based one-time password uses the HMAC-SHA256 hash function on the byte representation of
+the start of the current time interval in seconds. The bytes are mapped to digits and characters. For added security the mapping
+starts not at the first byte, but at a semi-random offset that is calculated from the last byte of the hash.
+The configuration parameters for the time-based one-time password are set in the WebPaymentsCtrlr: ValidityTime, SharedSecret
+and Length.
+TOTP algorithm, version 1
+The algorithm is defined in pseudocode as follows:
+TOTP v1 algorithm in pseudocode
+// Input parameters
+set validityTime to <parameter ValidityTime>
+set totpLength to <parameter Length>
+set sharedSecret to <parameter SharedSecret>
+set base62 to
+"0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+// Get time interval
+calculate timeInSeconds as current UTC time - Unix Epoch (01-01-1970)
+calculate timeInterval as floor of timeInSeconds / validityTime
+convert timeInterval to bytes and store in timeBytes
+if system's byte order is Little Endian then
+    reverse byte order of timeBytes
+// Calculate hash
+create new HMAC-SHA256 hash function with sharedSecret as the key (converted
+to bytes using UTF-8 encoding)
+calculate hash of timeBytes using HMAC-SHA256 and store in hash variable
+// Convert hash bytes to characters starting at random offset
+calculate offset as (last byte of hash) bitwise AND 0x0F
+create a new empty string builder
+for i from 0 to totpLength do
+    find the character at position (hash value at index (offset + i) modulo
+length of hash)
+        modulo length of base62 in the base62 string
+    append this character to the string builder
+end for
+return string builder as string
+The following is a C# version of this algorithm:
+TOTP v1 algorithm in C#
+// Input parameters
+var validityTime    = TimeSpan.FromSeconds(ValidityTime); // parameter from
+URL
+var totpLength      = Length;       // parameter from URL
+var sharedSecret    = SharedSecret; // parameter from URL
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 152/803 Part 2 - Specification

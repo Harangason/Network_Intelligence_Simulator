@@ -1,0 +1,56 @@
+TC_B_46_CS: Migrate to new ConnectionProfile - Fallback mechanism - Same
+CSMS Root
+Test case name Migrate to new ConnectionProfile - Fallback mechanism - Same CSMS Root
+Test case Id TC_B_46_CS
+Use case Id(s) B10
+Requirement(s) B10.FR.03,B10.FR.04
+System under test Charging Station
+Description The CSMS updates the connection details on the Charging Station. For instance in preparation of a
+migration to a new CSMS.
+Purpose To verify if the Charging Station is able to use the fallback mechanism when it is unable to connect with the
+first network connection profile slot.
+Prerequisite(s) At least two configuration slots for networkConnectionProfiles must be supported
+Before (Preparations)
+Configuration State:
+OCPPCommCtrlr.NetworkProfileConnectionAttempts is 2
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetNetworkProfileResponse
+1. The Test System sends a SetNetworkProfileRequest
+with configurationSlot is <Configured configurationSlot> or
+<Configured configurationSlot2> depending on which one is
+already in use
+- connectionData.messageTimeout <Configured
+messageTimeout> or <Configured messageTimeout2>
+- connectionData.ocppCsmsUrl <ocppCsmsUrl that is not
+currently active>
+- connectionData.ocppInterface <Configured ocppInterface> or
+<Configured ocppInterface2>
+- connectionData.ocppVersion OCPP20
+- connectionData.securityProfile <Configured securityProfile> or
+<Configured securityProfile2>
+Note(s):
+- The Test System checks the ActiveNetworkProfile variable to
+see which slot is currently active.
+- The Test System prevents overwriting the NetworkProfile at the
+active slot, as this is not recommended.
+4. The Charging Station responds with a SetVariablesResponse
+3. The Test System sends a SetVariablesRequest
+with variable.name is "NetworkConfigurationPriority"
+component.name is "OCPPCommCtrlr"
+attributeValue is <configurationSlot set at Step 1, the other
+configured configurationSlot>
+6. The Charging Station responds with a ResetResponse
+5. The Test System sends a ResetRequest
+with type OnIdle
+7. The Test System will NOT respond to the two connection
+request from the Charging Station from the first connectionSlot.
+8. The Test System will accept the connection request from the
+Charging Station from the second connectionSlot.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 75/914 Part 6 - Test Cases

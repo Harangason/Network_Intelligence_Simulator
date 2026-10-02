@@ -1,0 +1,30 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Figure 24. NFC Forum Device architecture
+Logical connections are used to transport data between the DH and the NFCC. Although optional in [NCI],
+PN7160 implements data flow control based on credits management. In order to minimize the required buffer/
+memory size, the number of credits is limited to 1 on each logical connection.
+In addition to the mandatory static RF logical connection and static HCI connection, PN7160 allows to create
+only 1 additional dynamic logical connection. So, the “Max Logical Connections” parameter reported in
+CORE_INIT_RSP equals 0x01 for PN7160 and the number of credits of the static HCI Connection equals to
+0x01. That means that when the DH needs to create a new logical connection, it has first to close the currently
+opened one, if any.
+Here is an overview of the logical connection and credits available in the PN7160:
+Logical connection Number of connections Number
+of credits
+Max. Data Packet
+payload Size
+Static connection - 1 for RF End Point 1 [255]
+Dynamic connection - 1 for NDEF T4T emulation
+- 1 for NCI Loopback testing
+1
+1
+[255]
+[255]
+Table 10. Logical Connections/Credits configuration
+In order to optimize the number of PN7160 internal buffers, all the logical connections shall not be used at the
+same time. Therefore, only the following scenarios are possible at the same time depending on the RF State
+Machine:
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+28 / 147

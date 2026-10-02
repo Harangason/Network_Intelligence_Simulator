@@ -1,0 +1,36 @@
+
+The amount of phases used during charging is limited by the capabilities of: The Charge Point,
+EV and Cable between CP and EV. If any of these 3 is not capable of 3 phase charging, the EV
+will be charged using 1 phase only.
+
+Switching the number of used phases during a schedule or charging session should be done
+with care. Some EVs may not support this and changing the amount of phases may result in
+physical damage. With the configuration key: ConnectorSwitch3to1PhaseSupported The
+Charge Point can tell if it supports switching the amount of phases during a transaction.
+ On days on which DST goes into or out of effect, a special profile might be needed (e.g. for
+relative profiles).
+3.14. Time zones
+This section is informative.
+OCPP does not prescribe the use of a specific time zone for time values. However, it is strongly recommended to
+use UTC for all time values to improve interoperability between Central Systems and Charge Points.
+3.15. Time notations
+This section is normative.
+Implementations MUST use ISO 8601 date time notation. Message receivers must be able to handle fractional
+seconds and time zone offsets (another implementation might use them). Message senders MAY save data
+usage by omitting insignificant fractions of seconds.
+3.16. Metering Data
+This section is normative.
+Extensive metering data relating to charging sessions can be recorded and transmitted in different ways
+depending on its intended purpose. There are two obvious use cases (but the use of meter values is not limited
+to these two):
+• Charging Session Meter Values
+• Clock-Aligned Meter Values
+Both types of meter readings MAY be reported in standalone MeterValues.req messages (during a transaction)
+and/or as part of the transactionData element of the StopTransaction.req PDU.
+3.16.1. Charging Session Meter Values
+Frequent (e.g. 1-5 minute interval) meter readings taken and transmitted (usually in "real time") to the Central
+System, to allow it to provide information updates to the EV user (who is usually not at the charge point), via
+web, app, SMS, etc., as to the progress of the charging session. In OCPP , this is called "sampled meter data", as
+the exact frequency and time of readings is not very significant, as long as it is "frequent enough". "Sampled
+meter data" can be configured with the following configuration keys:
+29

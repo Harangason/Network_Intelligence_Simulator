@@ -1,0 +1,45 @@
+No. Type Description
+8 Remarks The external system could, for example, IEC 61850 [IEC61850-7-420] or OpenADR [OPENADR] to
+release the grid limit, but this could be any protocol. Furthermore, an example of an external
+system is given, in this case a DSO that might set an external charging limit in case of grid
+problems, but this could be any other external system or reason to set a charging limit.
+External Control System
+(example DSO) Charging Station CSMS
+release grid limit
+opt [if transaction ongoing]
+opt
+recalculate charging schedule
+release charging limit
+ClearedChargingLimitRequest(evseId, chargingLimitSource)
+ClearedChargingLimitResponse()
+opt [if charging rate changed more than: LimitChangeSignificance]
+TransactionEventRequest(eventType = Updated, trigger = ChargingRateChanged, ...)
+TransactionEventResponse(...)
+Figure 110. Sequence diagram of the use case "Release / Reset External Charging Limit"
+K13 - Reset / Release External Charging Limit - Requirements
+Table 106. K13 - Requirements
+ID Precondition Requirements
+K13.FR.01 External charging limit is
+released/removed
+The Charging Station SHALL NOT limit charging anymore based on the
+previously received limit.
+K13.FR.02 K13.FR.01 The Charging Station SHALL notify the CSMS by sending a
+ClearedChargingLimitRequest message.
+K13.FR.03 K13.FR.01 AND
+A transaction is ongoing AND
+Charging rate changed by more
+than: LimitChangeSignificance
+The Charging Station SHALL send a TransactionEventRequest message to
+the CSMS with trigger = ChargingRateChanged.
+K14 - External Charging Limit with Local Controller
+No. Type Description
+1 Name Handle external charging limit with a local controller
+2 ID K14
+3 Objective(s) To adjust the charging limits according to the External Control System requirements.
+4 Description An external control system sends a charging limit to the Local Controller. The Local Controller
+notifies the CSMS, calculates the new charging schedules and sends a
+SetChargingProfileRequest messages to all Charging Stations for which the charging profile has
+changed.
+Actors External control system, Local Controller, Charging Station, CSMS
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 275/491 Part 2 - Specification

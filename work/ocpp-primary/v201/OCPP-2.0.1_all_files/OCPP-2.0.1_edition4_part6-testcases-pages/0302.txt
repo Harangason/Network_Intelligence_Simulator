@@ -1,0 +1,41 @@
+TC_H_19_CS: Reserve a specific EVSE - Use a reserved EVSE with GroupId
+Test case name Reserve a specific EVSE - Use a reserved EVSE with GroupId
+Test case Id TC_H_19_CS
+Use case Id(s) H01, H03
+Requirement(s) H01.FR.15,H03.FR.04,H03.FR.08
+System under test Charging Station
+Description The CSMS is able to reserve an EVSE for a specific GroupIdToken by sending a ReserveNowRequest
+containing a groupIdToken.
+Purpose To verify if the Charging Station is able to accept an idToken with the same GroupIdToken as the idToken
+specified for the reservation.
+Prerequisite(s) The configuration variable ReservationCtrlr.ReservationAvailable is implemented with value true
+Before (Preparations)
+Configuration State:
+ReservationCtrlr.ReservationEnabled is true (If implemented)
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ReserveNowResponse
+1. The Test System sends a ReserveNowRequest
+with evseId is <Configured evseId>
+idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+groupIdToken.idToken is <Configured groupIdToken>
+3. The Charging Station notifies the CSMS about the status
+change of the connector.
+Note(s):
+- The Test System expects that the Charging Station sets the
+availabilityState of the EVSE and corresponding connectors to
+Reserved.
+- Reporting the AvailabilityState of the EVSE component itself is
+optional.
+4. The Test System responds accordingly.
+3. Execute Reusable State Authorized
+Note(s):
+- <Configured valid_idtoken_idtoken2> with <Configured groupIdToken> is used for the authorization.
+4. Execute Reusable State EnergyTransferStarted
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 300/914 Part 6 - Test Cases

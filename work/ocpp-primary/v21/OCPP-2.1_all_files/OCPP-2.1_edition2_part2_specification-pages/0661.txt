@@ -1,0 +1,51 @@
+2.41. EVAbsolutePriceScheduleType
+Class
+(2.1) Price schedule of EV energy offer.
+EVAbsolutePriceScheduleType is used by: Common:EVEnergyOfferType
+Field Name Field Type Card. Description
+timeAnchor dateTime 1..1 Required. Starting point in time of the EVEnergyOffer.
+currency string[0..3] 1..1 Required. Currency code according to ISO 4217.
+priceAlgorithm string[0..2000] 1..1 Required. ISO 15118-20 URN of price algorithm: Power,
+PeakPower, StackedEnergy.
+evAbsolutePriceScheduleE
+ntries
+EVAbsolutePriceScheduleEntryTyp
+e
+1..102
+4
+Required. Schedule of prices for which EV is willing to
+discharge.
+2.42. EVEnergyOfferType
+Class
+(2.1) A schedule of the energy amount over time that EV is willing to discharge. A negative value indicates the willingness to
+discharge under specific conditions, a positive value indicates that the EV currently is not able to offer energy to discharge.
+EVEnergyOfferType is used by: Common:ChargingNeedsType
+Field Name Field Type Card. Description
+evPowerSchedule EVPowerScheduleType 1..1 Required. Power schedule offered for discharging.
+evAbsolutePriceSchedule EVAbsolutePriceScheduleType 0..1 Optional. Price schedule for which EV is willing to
+discharge.
+2.43. EventDataType
+Class
+Class to report an event notification for a component-variable.
+EventDataType is used by: NotifyEventRequest
+Field Name Field Type Card. Description
+eventId integer, 0 <= val 1..1 Required. Identifies the event. This field can be referred
+to as a cause by other events.
+timestamp dateTime 1..1 Required. Timestamp of the moment the report was
+generated.
+trigger EventTriggerEnumType 1..1 Required. Type of trigger for this event, e.g. exceeding a
+threshold value.
+cause integer, 0 <= val 0..1 Optional. Refers to the Id of an event that is considered to
+be the cause for this event.
+actualValue string[0..2500] 1..1 Required. Actual value (attributeType Actual) of the
+variable.
+The Configuration Variable ReportingValueSize can be
+used to limit GetVariableResult.attributeValue,
+VariableAttribute.value and EventData.actualValue. The
+max size of these values will always remain equal.
+techCode string[0..50] 0..1 Optional. Technical (error) code as reported by
+component.
+techInfo string[0..500] 0..1 Optional. Technical detail information as reported by
+component.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 648/803 Part 2 - Specification

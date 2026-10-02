@@ -1,0 +1,40 @@
+C15 - Offline Authorization of unknown Id
+No. Type Description
+1 Name Offline Authorization of unknown Id
+2 ID C15
+Parent use case C12 - Start Transaction - Cached Id
+3 Objective(s) To allow automatic authorization of any "unknown" identifiers that cannot be explicitly authorized
+by Authorization Cache entries.
+4 Description This use case describes the scenario of presented "unknown" identifiers, other than are present in
+an Authorization Cache or Local Cache entry using OfflineTxForUnknownIdEnabled.
+Actors Charging Station, EV Driver
+Scenario description 1. The EV Driver wants to start charging the EV and presents the IdToken.
+2. The Charging Station checks the Local Authorization List, the IdToken is not present in the
+Local Authorization List.
+3. The Charging Station checks the Authorization Cache, the IdToken is not present in the
+Authorization Cache.
+4. The Charging Station accepts the unknown IdToken if OfflineTxForUnknownIdEnabled is
+set True
+5. The Charging Station rejects the unknown IdToken if OfflineTxForUnknownIdEnabled is
+set False
+Alternative scenario(s) C01 - EV Driver Authorization using RFID
+C02 - Authorization using a start button
+C03 - Authorization using credit/debit card
+C04 - Authorization using PIN-code
+C05 - Authorization for CSMS initiated transactions
+C06 - Authorization using local id type
+C07 - Authorization using Contract Certificates
+C08 - Authorization at EVSE using ISO 15118 External Identification Means (EIM)
+5 Prerequisite(s) The Charging Station is Offline.
+Unknown IdToken presented (Not in the Authorization Cache and/or Local Authorization List).
+6 Postcondition(s) Successful postcondition:
+The authorization status in TransactionEventResponse, that is received once the Charging Station
+is online, is Accepted.
+Failure postcondition:
+The authorization status in TransactionEventResponse that is received once the Charging Station
+is online, is not Accepted, although OfflineTxForUnknownIdEnabled is True.
+7 Error handling n/a
+8 Remark(s) This applies to all types of identifiers, including an eMAID that is presented as part of an ISO
+15118 contract certificate.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 120/803 Part 2 - Specification

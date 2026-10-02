@@ -1,0 +1,41 @@
+HUB Deserializer
+Serializer
+GPIOx BC_GPIOx
+BC_GPIOx
+BC_GPIOx
+BC_GPIOxSerializer
+GPIOx
+Serializer
+GPIOx
+Serializer
+GPIOx
+FPD-Link III
+FPD-Link III
+FPD-Link III
+FPD-Link III
+GPIOy
+Figure 7-16. External FrameSync
+Enabling the external FrameSync mode is done by setting the FS_MODE control in the FS_CTL register to a 
+value between 0x8 (GPIO0 pin) to 0xF (GPIO7 pin). Set FS_GEN_ENABLE to 0 for this mode.
+To send the FrameSync signal on the BC_GPIOx port signal, the BC_GPIO_CTL0 or BC_GPIO_CTL1 register 
+should be programmed for that port to select the FrameSync signal.
+7.4.24.2 Internally Generated FrameSync
+In Internal FrameSync mode, an internally generated FrameSync signal is sent to one or more of the attached 
+FPD3 Serializers through a GPIO signal in the back channel.
+FrameSync operation is controlled by the FS_CTL, FS_HIGH_TIME_x, and FS_LOW_TIME_x 0x18 – 0x1C 
+registers. The resolution of the FrameSync generator clock (FS_CLK_PD) is derived from the back channel 
+frame period (BC_FREQ_SELECT register). For 50-Mbps back-channel operation, the frame period is 600 ns 
+(30 bits × 20 ns/bit). For 2.5-Mbps back channel operation, the frame period is 12 µs (30 bits × 400 ns/bit).
+Once enabled, the FrameSync signal is sent continuously based on the programmed conditions.
+Enabling the internal FrameSync mode is done by setting the FS_GEN_ENABLE control in the FS_CTL register 
+to a value of 1. The FS_MODE field controls the clock source used for the FrameSync generation. The 
+FS_GEN_MODE field configures whether the duty cycle of the FrameSync is 50/50 or whether the high and low 
+periods are controlled separately. The FrameSync high and low periods are controlled by the FS_HIGH_TIME 
+and FS_LOW_TIME registers.
+The accuracy of the internally generated FrameSync is directly dependent on the accuracy of the 25-MHz 
+oscillator used as the reference clock.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 47
+Product Folder Links: DS90UB960-Q1

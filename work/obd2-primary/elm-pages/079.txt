@@ -1,0 +1,99 @@
+Figure 8. The J1962 Vehicle Connector
+81
+9 16
+79 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Example Applications
+The SAE J1962 standard dictates that all OBD
+compliant vehicles must use a standard connector, the
+shape and pinout of which is shown in Figure 8 below.
+The dimensions and pin connections for this ‘Type A’
+connector are fully described in the SAE J1962
+standard.
+The circuit that you build with the ELM327 will be
+required to connect by way of a matching male J1962
+connector. Fortunately these are available from
+several sources, easily found with a web search.
+Note that before OBDII was adopted, several
+vehicles (most notably those made by General Motors)
+used a very similar connector (mostly) for their factory
+communications. These vehicles typically used what is
+known as the ALDL protocol, which the ELM327 does
+not support. Check that your vehicle is actually OBDII
+compliant before building your ELM327 circuit.
+The circuit on page 81 (Figure 9) shows how the
+ELM327 might typically be used. Circuit power is
+obtained from the vehicle via OBD pins 16 and 5 and,
+after a protecting diode and a capacitor for filtering, is
+presented to a five volt regulator. (Note that a few
+vehicles have been reported to not have a pin 5 – on
+these you will use pin 4 instead of pin 5.) The regulator
+powers several points in the circuit as well as an LED
+(L5) for visual confirmation that power is present. We
+have used a 7805 regulator for this circuit as it is very
+common, and usually easy to obtain.
+The top left corner of Figure 9 shows the CAN
+interface circuitry. We do not advise making your own
+interface using discrete components – CAN buses
+typically have a lot of critical information on them, and
+you can easily do more harm than good, so it is
+strongly recommended that you use a commercial
+transceiver chip as shown. We show a Microchip
+MCP2551 in this circuit, but most major manufacturers
+produce CAN transceiver ICs – look at the NXP
+PCA82C251, the Texas Instruments SN65LBC031,
+and the Linear Technology LT1796, to name only a
+few. Be sure to pay attention to the voltage limits as
+depending on the application, you may have to tolerate
+24V, and not just 12V. Also, if you are considering
+using the Activity Monitor to wake the ELM327 from a
+low power sleep mode, be sure that the transceiver
+chip that you pick keeps the receiver functional when
+in standby mode (if it does not pass the signals on, the
+ELM327 can not see them).
+The circuit shown directly below the CAN interface
+is used for the ISO 9141 and ISO 14230 signals. We
+provide two output lines, as required by the standards,
+but depending on your vehicle, you may not need to
+use the ISO-L output. (Many vehicles do not require
+this signal for initiation, but some do, so it is shown
+here.) If your vehicle does not require the L line, simply
+do not connect anything to pin 22, and do not install
+Q6, R16 or R17.
+The ELM327 controls both of the ISO outputs
+through NPN transistors Q6 and Q7 as shown. These
+transistors have 510 Ω pullup resistors connected to
+their collectors, as the standard requires. Occasionally,
+we are asked about substitutes for these resistors –
+the standard specifies 510 Ω but in a pinch you might
+be able to use 560 Ω. A better solution would be to
+make 510 Ω from 240Ω and 270 Ω 1/4W resistors in
+series. We do not recommend using a lower value for
+the resistance as it stresses every device on the bus.
+Note that 1/2W resistors are specified in Figure 10 as
+a short at 13.8V causes about 0.4W dissipation.
+Be careful if you are designing a circuit that might
+monitor other scan tools. Both the ELM327 and the
+other scan tool would present 510 Ω resistors, so the
+vehicle would see 255 Ω connected externally. This
+would very likely cause data errors, and might even
+damage some circuitry. To avoid this, you might wish
+to build your circuit in such a way that you can switch
+the ELM327’s 510Ω resistors out, and replace them
+with a larger value. For example, you might put 10K Ω
+resistors in series with the 510 Ω ones, and add
+removable jumpers or switches across the 10K Ω
+resistors. Most people do not need to do this – we only
+mention it because of the questions that we do
+receive.
+The ISO data is both sent and received on the
+ISO-K line. Pin 12 of the ELM327 reads this data
+through the R20-R21 voltage divider. Because of the
+Schmitt trigger input on pin 12, these resistors will give
+typical threshold levels of 7.0V (rising) and 3.6V
+(falling), which provides a large amount of noise
+immunity while also protecting the IC. If you should
+connect test equipment to pin 12 (ie in parallel with
+R21), the thresholds will increase, so be conscious of

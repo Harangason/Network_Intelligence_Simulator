@@ -1,0 +1,54 @@
+u-blox 20 HPG 2.00 - Interface description
+3.13.3.2 Navigation database dump entry
+Message UBX-MGA-DBD
+Navigation database dump entry
+Type Input/output
+Comment Navigation database entry. The data ﬁelds are ﬁrmware-speciﬁc. Transmission of this type of message will
+be acknowledged by UBX-MGA-ACK messages, if acknowledgment has been enabled.
+See section AssistNow online in the integration manual for details.
+The maximum payload size for ﬁrmware 2.01 onwards is 164 bytes (which makes the maximum message size
+172 bytes).
+☞ UBX-MGA-DBD messages are only intended to be sent back to the same receiver that generated them.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x80 12 + [0..n] see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1[12] reserved0 - - Reserved
+Start of repeated group (N times)
+12 + n U1 data - - ﬁrmware-speciﬁc data
+End of repeated group (N times)
+3.13.4 UBX-MGA-GAL (0x13 0x02)
+3.13.4.1 Galileo ephemeris assistance
+Message UBX-MGA-GAL-EPH
+Galileo ephemeris assistance
+Type Input
+Comment This message allows the delivery of Galileo ephemeris assistance to a receiver.
+See section AssistNow online in the integration manual for details.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x13 0x02 76 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 type - - Message type (0x01 for this type)
+1 U1 version - - Message version (0x00 for this version)
+2 U1 svId - - Galileo Satellite identiﬁer (see Satellite Numbering)
+3 U1 reserved0 - - Reserved
+4 U2 iodNav - - Ephemeris and clock correction Issue of Data
+6 I2 deltaN 2^-43 semi-
+circles/s
+Mean motion diﬀerence from computed value
+8 I4 m0 2^-31 semi-
+circles
+Mean anomaly at reference time
+12 U4 e 2^-33 - Eccentricity
+16 U4 sqrtA 2^-19 m^0.5 Square root of the semi-major axis
+20 I4 omega0 2^-31 semi-
+circles
+Longitude of ascending node of orbital plane at weekly
+epoch
+24 I4 i0 2^-31 semi-
+circles
+Inclination angle at reference time
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 66 of 224
+C1-Public

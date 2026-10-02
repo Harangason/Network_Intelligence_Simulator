@@ -1,0 +1,46 @@
+Modbus.org 
+MB-TCP-Security-v36_2021-07-30 
+                                                  6 
+ 
+ 
+ 126 
+6 Protocol Overview 127 
+6.1 General 128 
+ 129 
+In the tradition of Modbus, the mbaps r equirements  are kept simple allowing vendors to 130 
+develop additional infrastructure around the protocol  and allowing backwards compatibility with 131 
+legacy devices and fieldbuses . Mbaps extends the original mbap protocol as defined in 132 
+[MBTCP] and [MB]. M baps defines a client -server protocol that is a part of a complete securit y 133 
+system architecture . As illustrated in Figure 3 mbap ADU Encapsulated in TLS , the mbap ADU 134 
+is encapsulated by TLS. TLS provides a secur ity focused protocol alternative to mbap by 135 
+adding confidential  transport of the data, data integrity, anti -replay protection, endpoint 136 
+authentication via certificates , and authorization via information embedded in the certificate 137 
+such as user and device roles.   138 
+ 139 
+The protocols mbap and mbaps are similar to http and its secure variant https respectively. In 140 
+mbaps, the mbap protocol is transported via TLS.  TLS provides an authentication capability 141 
+via x.509v3 certificates. The mbaps clients and servers must be provisioned with the these 142 
+certificates to participate in the TLS Authentication function .  143 
+ 144 
+An important difference between mbap and mbaps is that mbaps provides the capability of the 145 
+server invoking an authorization function whose rules are driven by the vendor or customer, 146 
+utilizing role data that is provided via an extension field in the x.509v3 certificate. The 147 
+extension is registered with Modbus.org’s IANA OID.  TLS provides for the use of  pre-shared 148 
+keys to establish a secure connection, but the use is not considered for this specification as it 149 
+does not allow for the trasfer of role information to provide an authorization function.  150 
+ 151 
+6.2 Transport Layer Security Introduction 152 
+The mbaps/TLS/TCP profile uses the secure TLS transport protocol defined in IETF RFC 153 
+5246. [RFC5246] defines TLS v1.2 and provides countermeasures and mitigations for known 154 
+vulnerabilities in earlier versions.  While this specification is based on TLS v1.2, newer 155 
+versions will be considered as their implementations become widely adopted.  156 
+ 157 
+TLS is composed of a set of protocols as illustrated in Figure 2 TLS Communications Protocol 158 
+Stack. The main protocol in the set is the TLS Record Protocol. The remaining protocols are 159 
+sub-protocols which are carried by the TLS Record Protocol. These are managed by a TLS 160 
+middleware.  161 
+ 162 
+Figure 2 TLS Communications Protocol Stack 163 
+The mbap ADU  which is unchanged in the mbaps profile is encapsulated in a TLS Application 164 
+Protocol message as illustrated in Figure 3 mbap ADU Encapsulated in TLS .  165 
+ 166 

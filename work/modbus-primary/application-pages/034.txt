@@ -1,0 +1,62 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  34/50 
+ 
+MB Server Sends mb_exception_rsp EXIT 
+MB Server receives mb_req_pdu 
+ExceptionCode = 01 
+YES 
+NO 
+NO 
+ExceptionCode = 02 
+YES 
+NO 
+ExceptionCode = 03 
+YES 
+ENTRY 
+ReadGeneralReference == OK 
+MB Server Sends mb_rsp 
+NO 
+YES 
+0x07  Byte Count  0xF5 
+Function code 
+supported 
+Reference Type == OK 
+AND 
+File Number == OK 
+AND 
+Record number == OK 
+AND 
+Starting Address + Register length == OK 
+ 
+ 
+ExceptionCode = 04 
+Request Processing 
+For each Sub-Req 
+ 
+Figure 24: Read File Record state diagram  
+ 
+ 
+6.15  21 (0x15 ) Write File Record  
+This function code is used to perform a file record write. All Request Data Lengths are 
+provided in terms of number of bytes and all Record Lengths are provided in terms of the 
+number of 16 -bit words.  
+A file is an organization of records. Each file contains 10000 records, addressed 0000 to 9999 
+decimal or 0X0000 to 0X270F. For example, record 12 is addressed as 12.  
+The function can write multiple groups of references. The groups can be separate, i.e. n on–
+contiguous, but the references within each group must be sequential.  
+Each group is defined in a separate ‘sub -request’ field that contains 7 bytes plus the data:  
+The reference type: 1 byte (must be specified as 6)  
+The file number: 2 bytes  
+The starting record number within the file: 2 bytes  
+The length of the record to be written: 2 bytes  
+The data to be written: 2 bytes per register.  
+ 
+The quantity of registers to be written, combined with all other fields in the request, must not 
+exceed the allowable leng th of the MODBUS PDU  : 253bytes.  
+The normal response is an echo of the request.  
+Request  
+Function code  1 Byte  0x15  
+Request data length  1 Byte  0x09 to 0xFB  
+Sub-Req. x, Reference Type  1 Byte  06 
+Sub-Req. x, File Number  2 Bytes  0x0001  to 0xFFFF  
+Sub-Req. x,  Record Number  2 Bytes  0x0000 to 0x270F  

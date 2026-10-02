@@ -1,0 +1,69 @@
+No. Type Description
+Scenario description #1 Charging Station closes a periodic event stream
+1. Charging Station flushes the periodic event stream, i.e. all buffered data is sent to CSMS.
+2. Charging Station reverts to using regular NotifyEventRequest messages for the variable
+that was associated with the periodic event stream.
+3. Charging Station sends a ClosePeriodicEventStreamRequest with id of the event stream
+to tell CSMS that event stream has been closed.
+4. CSMS responds with a ClosePeriodicEventStreamResponse.
+Scenario description #2 CSMS clears a variable monitor
+1. CSMS sends a ClearVariableMonitoringRequest for a component/variable monitor that
+uses a periodic event stream to report the events.
+2. Charging Station processes the request as described in use case N06 Clear/Remove
+Monitoring.
+3. If monitor was succesfully cleared, Charging Station continues with steps from Scenario
+description #1.
+5 Prerequisite(s)
+6 Postcondition(s)
+7 Error handling
+8 Remark(s) This can be initiated by Charging Station at any time, but is normally the result of CSMS removing
+a monitor.
+N13 - Close Periodic Event Streams - Requirements
+ID Precondition Requirement definition Note
+N13.FR.01 When Charging Station wants to
+close/terminate a periodic event
+stream
+Charging Station SHALL notify CSMS about
+this by sending a
+ClosePeriodicEventStreamRequest message
+with the id of the event stream.
+N13.FR.02 N13.FR.01 CSMS SHALL stop using the periodic event
+stream and respond with a
+ClosePeriodicEventStreamResponse.
+N13.FR.03 N13.FR.01 Charging Station SHALL send all buffered
+values of a periodic event stream before
+sending the
+ClosePeriodicEventStreamRequest.
+N13.FR.04 N13.FR.01 Charging Station SHALL revert to using
+NotifyEventRequest message to report the
+variable that was associated with the periodic
+event stream.
+N13.FR.05 Upon receiving a
+ClearVariableMonitoringRequest
+for a monitor
+Charging Station SHALL clear the monitor as
+described in use case N06 Clear/Remove
+Monitor, and Charging Station SHALL close an
+associated periodic event stream as per
+requirement N13.FR.01.
+Removing the monitor
+automatically closes the periodic
+event stream.
+N13.FR.06 Upon receiving a
+SetVariableMonitoringRequest for
+an existing monitor with same id
+and same component/variable and
+without a periodicEventStream
+element
+Charging Station SHALL replace the monitor
+as described in N04.FR.12, and Charging
+Station SHALL close an associated periodic
+event stream as per requirement N13.FR.01.
+This re-installs the monitor without
+a periodic event stream
+N14 - Adjust Periodic Event Streams
+New in OCPP2.1
+No. Type Description
+1 Name Adjust Periodic Event Streams
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 475/803 Part 2 - Specification

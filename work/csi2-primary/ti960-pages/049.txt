@@ -1,0 +1,51 @@
+WriteI2C(0x1C,0xA0) # FS_LOW_TIME_0
+WriteI2C(0x18,0x01) # Enable FrameSync
+7.4.25 CSI-2 Forwarding
+Video stream forwarding is handled by the forwarding control in the DS90UB960-Q1 on FWD_CTL1 register 
+0x20. The forwarding control pulls data from the video buffers for each FPD3 RX port and forwards the data to 
+one of the CSI-2 output interfaces . It also handles generation of transitions between LP and HS modes as well 
+as sending of Synchronization frames. The forwarding control monitors each of the video buffers for packet and 
+data availability.
+Forwarding from input ports may be disabled using per-port controls. Each of the forwarding engines may be 
+configured to pull data from any of the four video buffers, although a buffer may only be assigned to one CSI-2 
+Transmitter at a time. The two forwarding engines operate independently. Video buffers are assigned to the 
+CSI-2 Transmitters using the mapping bits in the FWD_CTL1 register 0x20[7:4].
+7.4.25.1 Best-Effort Round Robin CSI-2 Forwarding
+By default, the round-robin (RR) forwarding of packets use standard CSI-2 method of video stream 
+determination. No special ordering of CSI-2 packets are specified, effectively relying on the Virtual Channel 
+Identifier (VC) and Data Type (DT) fields to distinguish video streams. Each image sensor is assigned a VC-ID to 
+identify the source. Different data types within a virtual channel is also supported in this mode.
+The forwarding engine forwards packets as they become available to the forwarding engine. In the case where 
+multiple packets may be available to transmit, the forwarding engine typically operates in an RR fashion based 
+on the input port from which the packets are received.
+Best-effort CSI-2 RR forwarding has the following characteristics and capabilities:
+• Uses Virtual Channel ID to differentiate each video stream
+• Separate Frame Synchronization packets for each VC
+• No synchronization requirements
+This mode of operation allows input RX ports to have different video characteristics and there is no requirement 
+that the video be synchronized between ports. The attached video processor would be required to properly 
+decode the various video streams based on the VC and DT fields.
+Best-effort forwarding is enabled by setting the CSIx_RR_FWD bits in the FWD_CTL2 register 0x21.
+7.4.25.2 Synchronized CSI-2 Forwarding
+In cases with multiple input sources, synchronized forwarding offers synchronization of all incoming data stored 
+within the buffer. If packets arrive within a certain window, the forwarding control may be programmed to attempt 
+to synchronize the video buffer data. In this mode, it attempts to send each channel synchronization packets in 
+order (VC0, VC1, VC2, VC3) as well as sending packet data in the same order. In the following sections, Sensor 
+0 (S0), Sensor 1 (S1), Sensor 2 (S2), and Sensor 3 (S3) refers to the sensors connected at FPD3 RX port 0, 
+RX port 1, RX port 2, and RX port 3, respectively. The following describe only the 4-port operation, but other 
+possible port combinations can be applied.
+The forwarding engine for each CSI-2 Transmitter can be configured independently and synchronize up to all 
+four video sources.
+Requirements:
+• Video arriving at input ports should be synchronized within approximately 1 video line period
+• All enabled ports should have valid, synchronized video
+• Each port must have identical video parameters, including number and size of video lines, presence of 
+synchronization packets, and so forth.
+The forwarding engine attempts to send the video synchronized. If synchronization fails, the CSI-2 transmitter 
+stops forwarding packets and attempt to restart sending synchronized video at the next FrameStart indication. 
+Packets are discarded as long as the forwarding engine is unable to send the synchronized video.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 49
+Product Folder Links: DS90UB960-Q1

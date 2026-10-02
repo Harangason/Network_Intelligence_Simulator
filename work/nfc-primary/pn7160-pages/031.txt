@@ -1,0 +1,48 @@
+NXP Semiconductors PN7160_PN7161
+Near Field Communication (NFC) controller
+In Standby state, whatever VTHRESHOLD is configured, VDD(TX) is regulated at 2.5 V as illustrated by Figure 16.
+11.4.3.3  TXLDO limiter
+The TXLDO includes a current limiter to avoid too high current within TX1 and TX2.
+The current limiter block compares an image of the TXLDO output current to a reference, when the reference is
+reached the output current gets limited.
+The limiting current is 300 mA ± 30 mA, above the specified maximum current allowed for RF operation (250
+mA).
+11.4.3.4  TXLDO: configuration
+PN7160 power state TXLDO config. Mode VDD(TX)
+configuration 1 Full-power 2.7 V/3 V/3.3 V/3.6 V [1]Active mode
+configuration 2 Full-power 2.7 V/3 V/3.3 V/3.6 V/3.9 V/4.2 V/4.5 V/4.7
+V/4.75 V/5 V/5.25 V [1]
+Standby configuration 1 and
+configuration 2
+Low-power 2.5 V
+Hard-Power down configuration 1 and
+configuration 2
+Power-off High impedance
+Table 20. Configurations using TXLDO
+[1] For proper operation, the VDD(TX) voltage value set shall be below the VDD(UP) - 0.3 V value. The maximum VDD(UP) value is 5.8 V in configuration 2. In
+configuration 1, the voltage is given by the battery then the higher voltages might not be usable.
+When using an external DC-to-DC with pass-through functionality, the signal TX_PWR_REQ is used for control
+purpose. The DC-to-DC will be in pass-through mode except when high transmitter power is required (by default
+when RF emission or RF field present).
+Note: The signal TX_PWR_REQ is not available on the HVQFN package variant.
+Alternatively the signal DCDC_EN can be used for the same purpose. This signal is available on both package
+variants. HVQFN and VFBGA.
+11.4.4  Very low-power RF field detector
+A very specific use case is the RF field detection when the NFCC is in Power Off mode. In this scenario, the
+NFCC should detect the presence of an external magnetic field and notify the host system about its presence.
+Figure 19 shows the internal rectifier circuit. The circuit is built up by the input switches SW1 and SW2 which
+can disconnect the rectifier from the antenna by creating a short to ground. The rectifier itself is followed by a
+limiter.
+aaa-022801
+SW1
+ANT1
+ANT2
+SW2
+Cvdhf
+VDD(HF)
+limiter
+rectifier
+Figure 19. Internal rectifier circuit
+PN7160_PN7161 All information provided in this document is subject to legal disclaimers. © 2026 NXP B.V. All rights reserved.
+Product data sheet Rev. 4.2 — 22 July 2026 Document feedback
+31 / 70

@@ -1,0 +1,42 @@
+TC_P_03_CS: CustomData - Receive custom data
+Test case name CustomData - Receive custom data
+Test case Id TC_P_03_CS
+Use case Id(s) N/a
+Requirement(s) N/a
+System under test Charging Station
+Description Checks if the CS is able to receive custom data.
+Purpose To verify whether the CS is able to handle receiving custom data.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with SetVariablesResponse
+1. Test System sends SetVariablesRequest with:
+- variable.name = "OfflineThreshold"
+- component.name = "OCPPCommCtrlr"
+- attributeValue = "200"
+- attributeType is Actual
+4. The Charging Station responds with GetVariablesResponse
+3. Test System sends GetVariablesRequest with:
+- variable.name = "OfflineThreshold"
+- component.name = "OCPPCommCtrlr"
+- attributeType is Actual
+Tool validations
+* Step 2:
+Message: SetVariablesResponse
+- setVariableResult[0].attributeStatus Accepted
+* Step 4:
+Message: GetVariablesResponse
+- getVariableResult[0].attributeStatus Accepted
+- getVariableResult[0].attributeType Actual or omitted
+- getVariableResult[0].attributeValue 200
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 807/1383 Part 6 - Test Cases

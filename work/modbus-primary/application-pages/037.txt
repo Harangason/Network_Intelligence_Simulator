@@ -1,0 +1,60 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  37/50 
+ 
+The normal response is an echo of the request. The response is returned after the register 
+has been written.  
+Request  
+Function code  1 Byte  0x16  
+Reference Address  2 Bytes  0x0000 to 0xFFFF  
+And_Mask  2 Bytes  0x0000 to 0xFFFF  
+Or_Mask  2 Bytes  0x0000 to 0xFFFF  
+ 
+Response  
+Function code  1 Byte  0x16  
+Reference Address  2 Bytes  0x0000 to 0xFFFF  
+And_Mask  2 Bytes  0x0000 to 0xFFFF  
+Or_Mask  2 Bytes  0x0000 to 0xFFFF  
+ 
+Error  
+Error code  1 Byte  0x96  
+Exception code  1 Byte  01 or 02 or 03 or 04  
+ 
+Here is an example of a Mask Write to register 5 in remote device, using the above mask 
+values.  
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  16 Function  16 
+Reference address Hi  00 Reference address Hi  00 
+Reference address Lo  04 Reference address Lo  04 
+And_Mask Hi  00 And_Mask Hi  00 
+And_Mask Lo  F2 And_Mask Lo  F2 
+Or_Mask Hi  00 Or_Mask Hi  00 
+Or_Mask Lo  25 Or_Mask Lo  25 
+ 
+ 
+ 
+MB Server Sends mb_exception_rsp EXIT
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+YES
+NO
+NOExceptionCode = 02
+YES
+NO
+ExceptionCode = 03
+YES
+ENTRY
+MaskWriteRegister == OK
+MB Server Sends mb_rsp
+NO
+YES
+Function code
+supported
+ExceptionCode = 04
+Request Processing
+Reference Address == OK
+AND_Mask == OK
+AND
+OR_Mask == OK
+ 
+Figure 26: Mask Write Holding Register state diagram  

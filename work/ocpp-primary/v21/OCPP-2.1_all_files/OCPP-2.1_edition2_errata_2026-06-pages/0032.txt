@@ -1,0 +1,49 @@
+6.2. Charging Station
+6.2.1. Page 23 - (2026-02) - TC_A_20_CS - Added note that the testcase will end
+when the SetNetworkProfile is rejected
+Test case name Upgrade Charging Station Security Profile - No valid CSMSRootCertificate installed
+Test case Id TC_A_20_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetNetworkProfileResponse
+1. The Test System sends a SetNetworkProfileRequest
+with - configurationSlot is <Configured configurationSlot2> or
+<Configured configurationSlot> (the one currently not used for
+the active connection)
+- connectionData.messageTimeout <Configured
+messageTimeout2>
+- connectionData.ocppCsmsUrl <ocppCsmsUrl that is not
+currently active>
+- connectionData.ocppInterface <Configured ocppInterface2>
+- connectionData.ocppVersion OCPP20
+- connectionData.securityProfile <Configured securityProfile2>
+Note: If the Charging Station responds with a SetNetworkProfileResponse with status Rejected, then step 3/4 will not be executed.                 
+4. The Charging Station responds with a SetVariablesResponse
+3. The Test System sends a SetVariablesRequest
+with variable.name is "NetworkConfigurationPriority"
+component.name is "OCPPCommCtrlr"
+attributeValue is <configurationSlot set at step 1>,<previous
+configurationSlot>
+6.2.2. Page 57 - (2026-04) - TC_B_21_CS - Clarification of charging station reboot
+behaviour with ongoing transactions
+The test case has been updated to provide clarity on when the changing station is allowed to reboot. The charging station is
+expected to reboot either after the transaction has ended or if the transaction ends before the cable is disconnected, once the cable
+is disconnected.
+Test case name Reset Charging Station - With Ongoing Transaction - OnIdle
+Test case Id TC_B_21_CS
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ResetResponse
+1. The Test System sends a ResetRequest
+with type OnIdle
+3. Execute Reusable State StopAuthorized
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 28/116 Errata 2026-06

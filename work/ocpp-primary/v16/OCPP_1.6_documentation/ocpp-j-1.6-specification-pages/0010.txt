@@ -1,0 +1,30 @@
+GET /webServices/ocpp/CP3211 HTTP/1.1
+Host: some.server.com:33033
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Key: x3JJHMbDL1EzLkh9GBhXDw==
+Sec-WebSocket-Protocol: ocpp1.6, ocpp1.5
+Sec-WebSocket-Version: 13
+The bold parts are found as such in every WebSocket handshake request, the other parts are specific to
+this example.
+In this example, the Central System’s OCPP-J endpoint URL is
+"ws://some.server.com:33033/webServices/ocpp". The Charge Point’s unique identifier is "CP3211", so
+the path to request becomes "webServices/ocpp/CP3211".
+With the Sec-WebSocket-Protocol header, the Charge Point indicates here that it can use OCPP1.6J and
+OCPP1.5J, with a preference for the former.
+The other headers in this example are part of the HTTP and WebSocket protocols and are not relevant
+to those implementing OCPP-J on top of third-party WebSocket libraries. The roles of these headers are
+explained in [RFC2616] and [RFC6455].
+3.2. Server response
+Upon receiving the Charge Point’s request, the Central System has to finish the handshake with a
+response as described in [RFC6455].
+The following OCPP-J-specific conditions apply:
+• If the Central System does not recognize the charge point identifier in the URL path, it SHOULD
+send an HTTP response with status 404 and abort the WebSocket connection as described in
+[RFC6455].
+• If the Central System does not agree to using one of the subprotocols offered by the client, it MUST
+complete the WebSocket handshake with a response without a Sec-WebSocket-Protocol header and
+then immediately close the WebSocket connection.
+So if the Central System accepts the above example request and agrees to using OCPP 1.6J with the
+Charge Point, the Central System’s response will look as follows:
+8

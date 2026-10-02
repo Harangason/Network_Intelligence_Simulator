@@ -1,0 +1,43 @@
+u-blox 20 HPG 2.00 - Interface description
+Message Class/ID Description (Type)
+• Backup creation acknowledge (Output)
+• System restored from backup (Output)
+3.9 UBX-ACK (0x05)
+The messages in the UBX-ACK class are used to indicate acknowledgement or rejection (i.e. negative
+acknowledgement) of input messages, such as UBX-CFG messages.
+3.9.1 UBX-ACK-ACK (0x05 0x01)
+3.9.1.1 Message acknowledged
+Message UBX-ACK-ACK
+Message acknowledged
+Type Output
+Comment Output upon processing of an input message. A UBX-ACK-ACK is sent as soon as possible but at least within
+one second.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x05 0x01 2 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 clsID - - Class ID of the Acknowledged Message
+1 U1 msgID - - Message ID of the Acknowledged Message
+3.9.2 UBX-ACK-NAK (0x05 0x00)
+3.9.2.1 Message not acknowledged
+Message UBX-ACK-NAK
+Message not acknowledged
+Type Output
+Comment Output upon processing of an input message. A UBX-ACK-NAK is sent as soon as possible but at least within
+one second.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x05 0x00 2 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 clsID - - Class ID of the Not-Acknowledged Message
+1 U1 msgID - - Message ID of the Not-Acknowledged Message
+3.10 UBX-CFG (0x06)
+The messages in the UBX-CFG class are used to conﬁgure the receiver and poll current conﬁguration
+values as well as for sending commands to the receiver. Unless stated otherwise, any message in
+this class sent to the receiver is either acknowledged (by a UBX-ACK-ACK message) if processed
+successfully or rejected (with a UBX-ACK-NAK message) if processed unsuccessfully.
+3.10.1 UBX-CFG-CFG (0x06 0x09)
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 52 of 224
+C1-Public

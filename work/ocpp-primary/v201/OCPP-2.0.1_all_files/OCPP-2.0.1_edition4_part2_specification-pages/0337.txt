@@ -1,0 +1,93 @@
+ID Precondition Requirement definition
+N02.FR.06 N02.FR.01 AND
+monitoringCriteria is NOT absent AND
+componentVariables is absent.
+The set of monitors reported in one or more
+notifyMonitoringReportRequest messages is limited to the set
+defined by monitoringCriteria.
+N02.FR.07 The maximum number of componentVariables in one
+GetMonitoringReportRequest message is given by the
+ItemsPerMessageGetReport Configuration Variable
+N02.FR.08 N02.FR.01 AND
+monitoringCriteria is absent AND
+componentVariables is NOT absent.
+The set of monitors reported in one or more
+notifyMonitoringReportRequest messages is limited to the set
+defined by componentVariables.
+N02.FR.09 The sequence number contained in the seqNo field of the
+NotifyMonitoringReportRequest is incremental per report. So the
+NotifyMonitoringReportRequest message which contains the
+first report part, SHALL have a seqNo with value 0.
+N02.FR.10 When the Charging Station receives a
+GetMonitoringReportRequest with a
+combination of criteria which results in an
+empty result set.
+The Charging Station SHALL respond with a
+GetMonitoringReportResponse(status=EmptyResultSet).
+N02.FR.11 N02.FR.01 AND
+monitoringCriteria is absent AND
+componentVariables is absent.
+The set of all existing monitors is reported in one or more
+notifyMonitoringReportRequest messages.
+N02.FR.12 If monitoringCriteria contains
+ThresholdMonitoring
+All monitors with type = UpperThreshold or type =
+LowerThreshold are reported.
+N02.FR.13 If monitoringCriteria contains
+DeltaMonitoring
+All monitors with type = Delta, TargetDelta and
+TargetDeltaRelative are reported.
+N02.FR.14 If monitoringCriteria contains
+PeriodicMonitoring
+All monitors with type = Periodic or type =
+PeriodicClockAligned are reported.
+N02.FR.16 When Charging Station receives a
+GetMonitoringReportRequest with
+componentVariable elements in which variable is
+missing
+The Charging Station SHALL report for every variable of the
+component in componentVariable.
+N02.FR.17 When Charging Station receives a
+GetMonitoringReportRequest with
+componentVariable elements in which variable is
+present, but instance is missing
+The Charging Station SHALL report for every instance of the
+variable of the component in componentVariable.
+N02.FR.18 N02.FR.11 AND
+When Charging Station receives a
+GetMonitoringReportRequest with a component
+in a componentVariable element that has a
+component.evse.id, but
+component.evse.connector is missing
+The Charging Station SHALL report the component(s) with this
+component.name, component.instance and component.evse.id
+for every component.evse.connector, whilst taking into account
+N02.FR.20.
+N02.FR.19 N02.FR.11 AND
+When Charging Station receives a
+GetMonitoringReportRequest with a component
+in a componentVariable element that has no
+component.evse.id
+The Charging Station SHALL report the component(s) with this
+component.name, component.instance for every component.evse
+field (including top level component without component.evse),
+whilst taking into account N02.FR.20.
+N02.FR.20 N02.FR.11 AND
+When Charging Station receives a
+GetMonitoringReportRequest with a component
+in a componentVariable element that has a value
+for component.instance
+The Charging Station SHALL report the component(s) with this
+component.name for every component.instance field, whilst
+taking into account N02.FR.18, N02.FR.19.
+N02.FR.21 N02.FR.11 AND
+When Charging Station receives a
+GetMonitoringReportRequest with a component
+in a componentVariable element that has no
+component.instance field
+The Charging Station SHALL report the component(s) with this
+component.name for every component.instance field or the
+component(s) without component.instance field, whichever is
+the case, whilst taking into account N02.FR.18, N02.FR.19.
+Edition 4, 2025-12-03 N. Diagnostics
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 327/491 Part 2 - Specification

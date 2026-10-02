@@ -1,0 +1,97 @@
+ID. Precondition Requirements Notes
+I08.FR.06 After a transaction has ended, that has an
+associated driver-specific tariff in
+transactionInfo.tariffId AND
+This driver-specific tariff is no longer in use at
+Charging Station
+Charging Station SHALL remove the
+associated tariff with tariffId =
+transactionInfo.tariffId.
+If the tariff is also in
+use at another EVSE it
+cannot be removed.
+I08.FR.07 A driver-specific tariff is considered to be "in
+use" at a Charging Station after an
+AuthorizeResponse with a tariff has been
+received, and until an EVConnectionTimeout
+occurs or the transaction that is started for the
+idToken has finished.
+I08.FR.08 CSMS SHALL ensure that TariffTypes with a
+different content have a different tariffId, such
+that the tariffIds in CostDetailsType records
+from historical transactions remain valid.
+See use case I12
+about reporting cost
+details at end of
+transaction.
+Choice of tariffId is up
+to CSMS. It can, for
+example, be a
+sequential number, a
+UUID or a hash value
+of tariff contents.
+I08.FR.09 I08.FR.01 CSMS SHALL NOT provide the field validFrom
+in a TariffType in AuthorizeResponse.
+Driver-specific tariffs
+have no validFrom
+date.
+I08.FR.10 I08.FR.04 AND
+TariffType in AuthorizeResponse has a value
+for validFrom
+ChargingStation SHALL ignore the value of
+validFrom.
+Tariff acceptance
+I08.FR.20 I08.FR.04 AND
+EV Driver does not accept the tariff AND
+Charging Station has already started a
+transaction
+Charging Station SHALL deauthorize the
+idToken of the transaction and send a
+TransactionEventRequest with triggerReason =
+"TariffNotAccepted".
+There will be no tariffId
+and no cost
+associated with
+transaction. Without
+authorization, no
+energy will be
+delivered. If
+TxStopPoint contains
+"Authorized" or
+"PowerPathClosed"
+this situation will end
+the transaction with
+stoppedReason =
+DeAuthorized. 
+(Same as I07.FR.30)
+I08.FR.21 08.FR.04 AND
+EV Driver does not accept the tariff AND
+Charging Station has not yet started a
+transaction
+Charging Station SHALL deauthorize the
+idToken of EV Driver.
+A transaction can still
+be started, for
+example, with
+TxStartPoint =
+"EVConnected" upon
+cable plug-in, but
+without authorization,
+no energy will be
+delivered.
+(Same as I07.FR.31)
+I08.FR.22 I08.FR.04 AND
+EV Driver has implicitly or explicitly accepted
+the tariff
+Charging Station SHALL associate the tariff
+with the transaction by including
+transactionInfo.tariffId once in the next
+TransactionEventRequest message.
+Implicit acceptance of
+tariff can, for example,
+be plugging cable into
+EV.
+(Same as I07.FR.32)
+Failure to process driver-specific tariff
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 291/803 Part 2 - Specification

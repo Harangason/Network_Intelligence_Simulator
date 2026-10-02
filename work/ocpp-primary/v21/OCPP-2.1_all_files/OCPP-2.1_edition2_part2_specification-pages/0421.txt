@@ -1,0 +1,65 @@
+K29.FR.03 When Charging Station receives a
+SetChargingProfileRequest from
+CSMS with a ChargingProfileType with
+chargingProfilePurpose = TxProfile
+or TxDefaultProfile,
+chargingProfileKind = Dynamic and
+operationMode = ExternalLimits
+or ExternalSetpoint
+Charging Station SHALL represent the limit
+or setpoint that it receives from an external
+system as the limit or setpoint of this
+charging profile.
+K29.FR.04 NOT K29.FR.03 AND
+K29.FR.05 AND
+ExternalConstraintsProfileDi
+sallowed is false or absent AND
+An external system provides a current
+or power limit (i.e. single value, not a
+schedule)
+Charging Station SHALL represent this as a
+ChargingProfileType with a single
+chargingSchedulePeriod, and having a
+chargingProfilePurpose =
+ChargingStationExternalConstraint
+s with a chargingProfileKind = Dynamic.
+The alternative, using a
+chargingProfileKind =
+Absolute, is described in
+K11.FR.06.
+K29.FR.05 When external system updates a limit
+or setpoint AND
+Charging Station represents this as a
+Dynamic charging profile
+Charging Station SHALL update the limit or
+setpoint in this charging profile.
+K29.FR.06 K29.FR.05 Charging Station SHALL set dynUpdateTime
+in ChargingProfileType to current time.
+K29.FR.07 When a ChargingProfileType has
+chargingProfileKind = Dynamic AND
+chargingSchedule.duration is set AND
+current time >
+(chargingSchedule.duration +
+dynUpdateTime)
+Charging Station SHALL consider the
+charging profile invalid and switch to using
+the next valid charging profile.
+This is a fallback when CSMS or
+External System is no longer
+responding within time set by
+duration.
+K29.FR.08 K29.FR.07 AND
+Charging Station receives an update
+for limit or setpoint from External
+System
+Charging Station SHALL consider the
+charging profile eligible again as a valid
+profile.
+This means the charging profile
+is valid again when a new
+update is received, assuming
+there is no other charging
+profile of higher stack level.
+(See also K29.FR.03)
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 408/803 Part 2 - Specification

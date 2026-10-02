@@ -1,0 +1,41 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 25
+OS81092
+7.2 Master Operation
+When operating as an I 2C bus master, the OS81092 supports standard 7-bit device addressing mode as well as the
+enhanced 10-bit I2C addressing mode. 10-bit addressing expands the number of possible device addresses while main-
+taining backwards-compatibility with devices that only support 7-bit addressing. The OS81092 supports full interopera-
+bility for systems with mixed 7-bit and 10-bit slave device addresses. Per the I2C-Bus Specification [5], multi-master
+configurations allow more than one ma ster to control the bus at the same time without corrupting data exchange.
+Figure 7-4 illustrates the OS81092 as a master in an I2C environment.
+FIGURE 7-4: CONTROL PORT PI N CONNECTIONS (MASTER MODE)
+I2C bus master mode offers two different settings for I 2C transaction speed. The SCL clock frequency can be set to
+either 100 kHz (Standard-mode) or 400 kHz (Fast-mode). Faster speed modes defined in the I2C-Bus Specification [5]
+(e.g. Fast-mode plus, High-speed mode) are not support ed by the OS81092. The speed setting is selected when the
+port is opened.
+Clock stretching is a handshaking mechanism used by slave devices to adapt the data transfer rate dynamically. A slave
+device is permitted to hold SCL low after receiving (or sending) a bit to indicate it is not yet ready to process additional
+data. To ensure compatibility with all slave devices, the OS81092 supports clock stretching at the bit and byte boundary.
+Some I2C slave devices implement an interrupt pin to indicate to the I2C master that service is needed. The OS81092
+GPIO Port can be configured to support devices that implement interrupt functionality. Refer to Chapter 12.0 “General
+Purpose Input/Output (GPIO) Port” for more information.
+Once master mode is enabled, remote I2C read and write sequences are initiated by a remote node on the MOST Net-
+work. The read/write methods specify the transfer mode, the slave target address, and the number of bytes to be read/
+written. The maximum block size for a re ad/write operation is 32 byte s of data. A successful read transaction returns
+the device address, the number of bytes read, and the list of data bytes. When a write operation successfully finishes,
+the device address and number of bytes written is returned.
+Refer to the OS81092 INIC API User’s Manual [2] for the function reference and more information on using the OS81092
+Control Port in master mode.
+Note: When used in I2C master mode, the Control Port is unavailable for use as
+an I2C slave device and cannot be used for Port Message exchange with an
+EHC.
+OS81092
+SDA SCL
+I2C slave
+SDA SCL
+External Host 
+Controller
+SCLSDA
+4.7 k
+GPn (INT) INT
+4.7 k
+I2C master I2C slave

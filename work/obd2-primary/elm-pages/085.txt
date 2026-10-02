@@ -1,0 +1,96 @@
+Modifications for Low Power Standby Operation
+If you wish to semi-permanently install your
+ELM327 circuit in a vehicle, current consumption
+quickly becomes an issue. A typical ELM327 circuit
+draws about as much current as a dome lamp, so can
+not be left on for long without the vehicle’s engine
+running.
+When it is not needed, the ELM327 may be placed
+in a low power ‘standby’ mode in which it consumes
+very little current. Reducing the integrated circuit
+current itself is generally not enough, however, as you
+must also consider the current drawn by the other
+components as well.
+The following discussion takes the circuit of Figure
+9, and modifies it slightly in order to highlight our
+suggestions for reducing current consumption. The
+resulting circuit (Figure 15) is shown following. Note
+that portions of the circuit that are the same as Figure
+9 are shown in grey, while the changes that we are
+making are shown in black.
+Consider the circuit of Figure 9 in the Example
+Applications section. With 12V to 15V applied to the
+‘Battery Positive’ input, the total current used by this
+circuit is typically:
+base current = 29.8 mA
+Without making any wiring changes, you can
+reduce this current by placing the ELM327 into the
+low power standby mode. This only requires sending
+the Low Power command (AT LP), after which the
+current would typically drop to:
+current after AT LP = 17.6 mA
+This reduction is due entirely to the change in the
+ELM327’s operating current (it only needs a very small
+current to stay in standby mode). But where is the
+other current coming from? One obvious load is the
+LED that shows that the power is on. The other is the
+CAN transceiver IC, U2. By disconnecting the common
+connections from R24 and R31, and then returning
+both to pin 16 of the ELM327, we can switch the
+current that these two use. With this change (which is
+shown as modification #1 in Figure 15), the current
+after AT LP drops further:
+current after mod #1 = 8.2 mA
+There is a considerable current still flowing in the
+circuit at this point, but it should mainly be the voltage
+regulators that are using it. In the next step, we will
+change U3 (a 7805) to an LP2950ACZ-5.0G, and see
+how effective that is. While the LP2950 is a good
+choice for its lower quiescent current, it does suffer
+from stability problems if you do not provide capacitive
+loading as shown. Note that the 4.7uF capacitor is
+tantalum, while the 2.2µF one is aluminum. At this
+point it may also be useful to review our Application
+Note ‘AN03 - ELM327 Low Voltage Resets’, as you
+may want to use an even larger capacitor on the 5V
+side. After changing U3 for an LP2950, the current is
+typically:
+current after mod #2 = 3.5 mA
+ If we continue to reduce the load currents beyond
+this point, we will quickly get to a point where any
+currents injected from external sources (ie. through the
+protection diodes at inputs such as pins 2 or 12) will
+become significant compared to the load currents. If
+these currents should exceed the load current, the Vdd
+voltage will rise and damage might result. To prevent
+the voltage from rising too high, we recommend that
+you add either a zener diode or a transient voltage
+suppressor (TVS), directly across the 5V supply, as
+shown in the top right corner of Figure 15. Suggestions
+for devices to consider are the 1N5232B zener diode
+or the SA5.0AG TVS.
+Another integrated circuit that is not changing
+current during low power mode is the 317L (U4). In
+fact, a quick calculation shows that it is likely using
+about 2.6 mA when idle, which is very significant. If we
+replace this IC with another that uses less current, we
+will be close to getting the total circuit current to less
+than 1 mA.
+Figure 15, modification #3 shows an LP2951ACM
+regulator in the circuit, as a replacement for the 317L.
+It uses much less current than the 317 during normal
+operation, and offers a shutdown control input as well
+to further reduce current when it is not required. Note
+that the LP2951 circuit needs the ELM327 to provide a
+high level at pin 3 for a 5V output, and a low for 8V, so
+an inversion is needed. To do this, set PP 12 to 00
+with:
+>AT PP 12 SV 00
+>AT PP 12 ON
+then reset the chip, and the voltages will always be
+correct for J1850 from that point on.
+Note that the LP2951 regulator also requires a
+85 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com

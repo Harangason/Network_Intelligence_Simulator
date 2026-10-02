@@ -1,0 +1,46 @@
+ParkingBayUnoccupied
+State ParkingBayUnoccupied
+System under test Charging Station
+Description This state will prepare the Charging Station, so that the EV left the parking bay, after a charging session has
+taken place.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+IF Product subtype is Battery Swapping Station
+THEN execute Battery Swapping reusable states instead.
+Note: ParkingBayOccupancy is not applicable for a Battery Swapping station, however this reusable state is used as an end state to
+run through the full transaction flow, therefore it needs refer to the end state applicable for the Battery Swapping station instead.
+Battery Swapping:
+IF BatterySwapCtrlr.SwapOrder is In-Out or not implemented AND State is NOT EVDisconnectedBatterySwapping
+THEN execute Reusable State EVDisconnectedBatterySwapping
+ELSE IF BatterySwapCtrlr.SwapOrder is Out-In AND State is NOT EnergyTransferStartedBatterySwapping
+THEN execute Reusable State EnergyTransferStartedBatterySwapping
+END
+Standard:
+If State is NOT EVDisconnected then execute Reusable State EVDisconnected
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Drive EV out of parking bay.
+1. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed when TxStopPoint contains
+ParkingBayOccupancy AND the transaction has NOT been ended
+already. So in the case TxStopPoint contains Authorized OR
+EnergyTransfer OR PowerPathClosed OR DataSigned OR
+EVConnected.
+2. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- triggerReason must be EVDeparted
+- If the Test System is configured to stop transactions using a RequestStopTransactionRequest message then
+transactionInfo.stoppedReason must be Remote
+Else transactionInfo.stoppedReason must be Local
+- eventType must be Ended
+Post scenario validations:
+State is ParkingBayUnoccupied
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 935/1383 Part 6 - Test Cases

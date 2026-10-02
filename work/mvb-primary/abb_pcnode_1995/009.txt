@@ -1,0 +1,39 @@
+Multifunction Vehicle Bus – details
+TN-AC-95/185 95-12-19 2 - 11
+one device may define a particular port as source. On all other 
+devices this port is a sink (consumer of data).
+The size of logical ports may be 16, 32, 64, 128 or 256 bits – the 
+same as the data-lengths of slave frames.
+A logical port is selected with function code 0..4 and the 12-bit 
+logical address in the master frame (codes 5..7 are reserved). Each 
+device implements a number of logical ports, typically 256. At 
+configuration time the logical ports are configured either as source 
+or as sink.
+Physical port A physical port is selected with function code 8..15 and the 12-bit 
+device address in the master frame. Each device implements 8 
+physical ports which are used for supervisory data (16 bits) and 
+message data (256 bits). Function codes 10 (supervisory data) and 
+11 (message data) are reserved.
+8 Mastership transfer: addressed slave accepts/rejects.
+9 Start event poll (12-bit field contains parameters, not 
+an address): all bidding slave devices answer.
+12 Message poll: addressed slave answers with 256 bit 
+data. All other devices will inspect the slave frame 
+and accept it if their own address appears in the 
+header of the slave frame.
+The contents of the message data port may not be 
+over-written by the bus controller on the device. A 
+frame is ignored if the previous contents of the mes-
+sage port has not been fetched by the application.
+13, 14 Group event poll and individual event poll: a group 
+of slaves or a single slave answers.
+15 Device status poll: Slave device answers with status.
+With the application Virtual Terminal the user addresses logical 
+ports. Physical ports are addressed only by special functions, such 
+as “Read Diagnostic”.
+Device a Device b Device c Device d (has only sink ports)
+port alpha
+port beta
+port gamma
+port delta
+source portssink ports port alpha not defined in device c

@@ -1,0 +1,57 @@
+Main (Test scenario)
+Manual Action: Use EV to trigger renegotiation requesting:
+departureTime <Current DateTime + 2 hours>
+evTargetEnergyRequest 10000
+7. The Charging Station sends a
+NotifyEVChargingNeedsRequest. 8. The Test System responds with a
+NotifyEVChargingNeedsResponse.
+With status Accepted
+10. The Charging Station responds with a
+SetChargingProfileResponse
+9. The Test System sends a SetChargingProfileRequest with
+chargingProfile.chargingProfilePurpose TxProfile
+chargingProfile.transactionId <Provided transactionId from
+before>
+chargingProfile.chargingSchedule[0].id 10
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 5 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Note: EV selects charging schedule 10
+11. The Charging Station sends a
+NotifyEVChargingScheduleRequest. 12. The Test System responds with a
+NotifyEVChargingScheduleResponse.
+With status Accepted
+Manual Action: Use EV to trigger renegotiation requesting:
+departureTime <Current DateTime + 5 hours>
+evTargetEnergyRequest 10000
+13. The Charging Station sends a
+NotifyEVChargingNeedsRequest. 14. The Test System responds with a
+NotifyEVChargingNeedsResponse.
+With status Accepted
+16. The Charging Station responds with a
+SetChargingProfileResponse
+15. The Test System sends a SetChargingProfileRequest with
+chargingProfile.chargingProfilePurpose TxProfile
+chargingProfile.transactionId <Provided transactionId from
+before>
+chargingProfile.chargingSchedule[0].id 10
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 2 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit
+multiplier>
+Note: EV selects charging schedule 10
+17. The Charging Station sends a
+NotifyEVChargingScheduleRequest. 18. The Test System responds with a
+NotifyEVChargingScheduleResponse.
+With status Accepted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 568/1383 Part 6 - Test Cases

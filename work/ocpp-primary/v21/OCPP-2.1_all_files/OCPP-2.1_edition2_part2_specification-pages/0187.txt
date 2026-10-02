@@ -1,0 +1,73 @@
+EV Driver
+Charging Station CSMS
+plugin cable
+NotifyEventRequest(component.name = Connector, variable.name = AvailabilityState,
+actualValue = Occupied)
+NotifyEventResponse()
+TransactionEventRequest(eventType = Started, triggerReason = CablePluggedIn, chargingState = EVConnected,
+transactionId = AB1234, timestamp, evse.id = 1, evse.connectorId = 1, meterValues, ...)
+TransactionEventResponse(...)
+User authorization successful.
+TransactionEventRequest(eventType = Updated, transactionId = AB1234, idToken.id = 1234,
+timestamp, triggerReason = Authorized, meterValues, ...)
+TransactionEventResponse(...)
+alt [if cable not permanently attached]
+lock connector
+start energy offer
+TransactionEventRequest(eventType = Updated, transactionId = AB1234,
+timestamp, chargingState = Charging, triggerReason = ChargingStateChanged, meterValues, ...)
+TransactionEventResponse(...)
+Figure 55. Sequence Diagram: Start Transaction - Cable Plugin First
+E02 - Start Transaction - Cable Plugin First - Requirements
+Table 64. E02 - Requirements
+ID Precondition Requirement definition Note
+E02.FR.01 After the EV Driver is authorized for
+this transaction.
+The next TransactionEventRequest SHALL contain
+triggerReason: Authorized AND IdTokenType
+information.
+E02.FR.02 E02.FR.01 The CSMS SHALL send a
+TransactionEventResponse that includes an
+authorization status value.
+E02.FR.03 This transaction ends a reservation. The next TransactionEventRequest SHALL contain
+the reservationId.
+See H. Reservation.
+(Same as E01.FR.13)
+E02.FR.04 The CSMS SHALL verify the validity of the identifier
+in TransactionEventRequest.
+Because the identifier
+might have been
+authorized locally by the
+Charging Station using
+outdated information.
+E02.FR.05
+(2.1)
+When a cable is plugged in The Charging Station SHALL send a
+NotifyEventRequest message for component(
+name = 'Connector', evse.id = <x>, evse.connectorId
+= <y> ),
+variable( name = 'AvailabilityState' ),
+and actualValue = 'Occupied'
+to signal that Connector <y> of EVSE <x> is now
+occupied.
+Alternatively, the old
+StatusNotificationReque
+st with status: Occupied
+can still be sent.
+E02.FR.06 When a cable is plugged in
+AND TxStartPoint contains
+EVConnected
+The Charging Station SHALL send a
+TransactionEventRequest.
+E02.FR.07 When a TransactionEventRequest has
+to be created
+The Charging Station SHALL set the message’s
+seqNo field as specified in Sequence Number
+Generation.
+This enables the CSMS
+to track the
+completeness of
+transaction information.
+(Same as E01.FR.07)
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 174/803 Part 2 - Specification

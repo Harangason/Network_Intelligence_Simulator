@@ -1,0 +1,45 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+4   Device Host Interface Link
+4.1  Overview
+The PN7160 can support either I²C or SPI as physical interface used to connect to the DH, depending on the
+part number ordered.
+Independent of the physical interface, the PN7160 has two main modes of operation to communicate with the
+DH:
+1. NCI-based communications
+2. HDLL-Based communications, only used when the PN7160 is triggered to enter the “download mode”, to
+update its firmware.
+The description of the transport layer in the next chapters is limited to NCI-based communications. For further
+information on the HDLL-based communications, please refer to Section 13.
+Note:  In the next chapters, the IRQ pin is drawn as being active High (=> a logical '1' on IRQ indicates that
+PN7160 is willing to trigger a Read sequence). Since the polarity of the IRQ pin is configurable (see parameter
+IRQ_POLARITY_CFG in Section 11.1), the IRQ pin may be active with a logical '0' level.
+4.2  I2C Interface
+4.2.1  Introduction
+The I2C interface of the PN7160 is compliant with the I2C Bus Specification, including device ID and Soft Reset.
+It is follower-only, i.e. the SCL signal is an input driven by the host.
+Note:  NCI packets can be as long as 258 Bytes in both directions. The DH shall consider this constraint when
+implementing its I2C driver.
+The PN7160 I2C interface supports standard (up to 100 kbit/s), fast-Speed mode (up to 400 kbit/s) and High-
+Speed mode (up to 3.4 Mbit/s).
+I2C defines two different modes of addressing (7-bit and 10-bit). The PN7160 only supports the 7-bit addressing
+mode.
+Following names are used in the document:
+Pin name Pin correspondence
+I2C_ADDR0 Equivalent to pin I2CADR0_SPINSS of PN7160 when using I2C
+I2C_ADDR1 Equivalent to pin I2CADR1_SPIMOSI of PN7160 when using I2C
+SDA Equivalent to pin I2CSDA_SPIMISO of PN7160 when using I2C
+SCL Equivalent to pin I2CSCL_SPISCK of PN7160 when using I2C
+Table 4. I2C pins correspondence
+The PN7160 I2C 7-bit address can be configured from 0x28 to 0x2B. The 2 least significant bits of the follower
+address are electrically forced by pins I2C_ADDR0 and I2C_ADDR1 of the PN7160.
+So PN7160 follower 7-bit address is in binary format: “0 1 0 1 0 I2C_ADDR1 I2C_ADDR0”
+I2C_ADDR1 Pin I2C_ADDR0 Pin Address Value I2C-bus address
+(R/W = 0, write)
+I2C-bus address
+(R/W = 1, read)
+0 0 0x28 0x50 0x51
+Table 5. PN7160 I2C follower address
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+19 / 147

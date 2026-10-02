@@ -1,0 +1,57 @@
+CSMS Charging Station
+Power loss occurs at t=0
+Power restored at t=10
+Charging Station reboots
+loop [for all EVSEs that had an ongoing transaction]
+alt [if TxResumptionTimeout >= 10]
+Resume transactions
+alt [if TxAllowEnergyResumption == true]
+return charging state to state it had before reset
+[if TxAllowEnergyResumption == false]
+alt [if charging state was Charging]
+return charging state to SuspendedEVSE
+[if charging state was not Charging]
+return charging state to state it had before reset
+TransactionEventRequest(Updated,
+triggerReason = "TxResumed", chargingState = <state>, ...)
+TransactionEventResponse()
+opt [if TxProfile exists for transaction]
+SetChargingProfileRequest(TxProfile)
+SetChargingProfileResponse()
+[if TxResumptionTimout < 10]
+End transactions
+TransactionEventRequest(Ended,
+triggerReason = "AbnormalCondition", stoppedReason = "PowerLoss", ...)
+TransactionEventResponse()
+Figure 77. Sequence diagram for resuming an interrupted transaction
+E17 - Resuming transaction after interruption - Requirements
+ID Precondition Requirement definition Note
+Generic
+E17.FR.01 If TxResumptionTimeout > 0 Charging Station SHALL store transaction state
+that is needed to resume transactions in persistent
+memory
+This includes at least, but
+is not limited to, the
+seqNo, idToken, evse and
+transactionInfo data of
+all active transactions.
+This ensures
+transactions can be
+restored after a power
+loss.
+E17.FR.02 E17.FR.01 The timer for TxResumptionTimeout starts from
+the moment that Charging Station detected or had
+recorded the unexpected shutdown
+It is up to the
+implementer how time of
+shutdown is determined
+after restarting.
+Within timeout
+E17.FR.10 When Charging Station reboots after
+interruption AND
+Interruption was not longer than
+TxResumptionTimeout seconds
+Charging Station SHALL resume the transactions
+that were ongoing before the interruption.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 220/803 Part 2 - Specification

@@ -1,0 +1,40 @@
+TC_A_03_CSMS: Basic Authentication - Invalid password
+Test case name Basic Authentication - Invalid password
+Test case Id TC_A_03_CSMS
+Use case Id(s) A00
+Requirement(s) A00.FR.204
+System under test CSMS
+Description The Charging Station uses Basic authentication to authenticate itself to the CSMS, when using security
+profile 1 or 2.
+Purpose To verify whether the CSMS is able to validate the (invalid) Basic authentication credentials provided by the
+Charging Station at the connection request.
+Prerequisite(s) The CSMS supports security profile 1 and/or 2
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System sends a HTTP upgrade request without an
+Authorization header. 2. The CSMS rejects the connection upgrade request.
+3. The Test System sends a HTTP upgrade request with an
+Authorization header, containing a username/password
+combination.
+Note(s):
+- The Authorization header is formatted as follows:
+AUTHORIZATION: Basic <Base64 encoded(<Configured
+ChargingStationId>:<randomly chosen identifierString with a
+sufficiently high entropy, consisting of minimum 16 and maximum
+40 characters (alpha-numeric characters and the special
+characters allowed by identifierString)>)>
+4. The CSMS validates the username/password combination
+AND rejects the connection upgrade request.
+Tool validations
+N/a
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 958/1383 Part 6 - Test Cases

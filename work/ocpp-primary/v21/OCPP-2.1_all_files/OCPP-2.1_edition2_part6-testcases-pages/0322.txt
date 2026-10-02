@@ -1,0 +1,43 @@
+TC_F_04_CS: Remote start transaction - Remote start first - Cable plugin timeout
+Test case name Remote start transaction - Remote start first - Cable plugin timeout
+Test case Id TC_F_04_CS
+Use case Id(s) F02, E03
+Requirement(s) F02.FR.01, E03.FR.01, E03.FR.05
+System under test Charging Station
+Description OCPP 2.x.x allows an EV driver to either first wait for/trigger a RequestStartTransactionRequest OR connect
+the EV and EVSE. Both sequences will result in being able to charge.
+Purpose To verify if the Charging Station is able to deauthorize the transaction after the EVConnectionTimeout has
+been reached.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+- TxCtrlr.EVConnectionTimeOut is <Configured ev_connection_timeout>
+- AuthCtrlr.AuthEnabled is true (If implemented AND ReadWrite)
+AuthCtrlr.DisableRemoteAuthorization is false (If implemented)
+- TxCtrlr.TxStartPoint is ParkingBayOccupancy OR Authorized (If supported)
+Memory State:
+N/a
+Reusable State(s):
+State is Authorized (remote)
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed after the <Configured
+ev_connection_timeout> expires, if the transaction has been
+started. So in the case TxStartPoint contains
+ParkingBayOccupancy OR Authorized
+2. The Test System responds with a TransactionEventResponse
+Note(s): Optionally the Charging Station can send a StatusNotificationRequest or NotifyEventRequest with status Available
+3. Execute Reusable State Authorized (remote)
+Note(s):
+- This step is executed to verify if the EVSE is actually ready to start another charging session.
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- triggerReason must be EVConnectTimeout
+- eventType must be Ended
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 320/1383 Part 6 - Test Cases

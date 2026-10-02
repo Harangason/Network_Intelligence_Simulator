@@ -1,0 +1,48 @@
+TC_E_103_CS: Transactions with fixed cost, energy or time - CS calculates costs
+and CSMS specifies limit
+Test case name Transactions with fixed cost, energy or time - CS calculates costs and CSMS specifies limit
+Test case Id TC_E_103_CS
+Use case Id(s) E16
+Requirement(s) E16.FR.02, E16.FR.05, E16.FR.06, E16.FR.08, E16.FR.11
+System under test Charging Station
+Description CSMS will set a limit the transaction for the specified cost. CS will use local cost calculation.
+Purpose To verify whether the Charging Station correctly uses local cost calculation.
+Prerequisite(s) CS supports local cost calculation
+TxCtrlr.SupportedLimits contains maxCost
+Before (Preparations)
+Configuration State:
+TariffCostCtrlr.Enabled[Tariff] is true
+TariffCostCtrlr.Enabled[Cost] is true
+SampledDataTxUpdatedInterval is <Configured sampled Meter Values Updated interval>
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Tariff1
+tariff.currency EUR
+tariff.chargingTime.taxRate[0].type MyTax1
+tariff.chargingTime.taxRate[0].tax 0
+tariff.chargingTime.prices[0].priceMinute 60
+tariff.idleTime.taxRate[0].type MyTax2
+tariff.idleTime.taxRate[0].tax 0
+tariff.idleTime.prices[0].priceMinute 60
+3. Execute Reusable State EnergyTransferStarted
+Manual Action: Enter cost limit 120.00 for transaction
+4. The Charging Station sends a TransactionEventRequest
+5. The Test System responds with a TransactionEventResponse
+with
+transactionLimit.maxCost 120.00
+6. The Charging Station sends a TransactionEventRequest
+7. The Test System responds with a TransactionEventResponse
+Note: Steps 6 and 7 may repeat
+8. The Charging Station sends a TransactionEventRequest
+9. The Test System responds with a TransactionEventResponse
+Note: Step 10 should trigger automatically after 120 seconds have been elapsed since start of transaction
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 297/1383 Part 6 - Test Cases

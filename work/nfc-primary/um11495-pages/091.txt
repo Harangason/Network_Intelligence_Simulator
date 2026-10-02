@@ -1,0 +1,39 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Payload Field(s) Length Value/Description
+Mode 1 byte 0x00: Standby mode disabled
+0x01: Standby mode enabled
+0x02: Autonomous mode enabled OR 0x03 (Standby mode implicitly enabled)
+0x04 - 0xFF: RFU
+Table 93. CORE_SET_POWER_MODE_CMD parameter
+GID OID Numbers of
+parameter(s) Description
+1111b 0x00 1 Response to inform the DH of the status of the CORE_SET_POWER_
+MODE_CMD
+Table 94. CORE_SET_POWER_MODE_RSP
+Payload Field(s) Length Value/Description
+Status 1 byte 0x00: STATUS_OK
+0x06: STATUS_SEMANTIC_ERROR
+0x09: STATUS_INVALID_PARAM
+Others: RFU
+Table 95. CORE_SET_POWER_MODE_RSP parameter
+10.6.2  Standby wake-up
+The PN7160 wakes-up from standby when one of the following events occurs:
+• Regular polling-loop starts. When the DH has served the PN7160 with a NCI_RF_DISCOVER_CMD
+command, the PN7160 enters into the standby mode and automatically leaves the low-power mode after the
+period defined by TOTAL_DURATION.
+• RF level detector triggered. An external field has been introduced in the NFC volume during the standby
+period of the polling loop and at least one listen phase has been requested by the NCI_DISCOVER_CMD.
+• Host interface activity detected as depicted in Section 4.2.3.
+Remark: One can prevent the PN7160 to ever enter standby by asserting the wake-up pin WUP_REQ. As long
+as it is high, the PN7160 will not be able to enter standby.
+10.7  [PN7160-NCI] extension: Error notifications
+PN7160 offers more debug possibilities than previous products, indicating as much as possible by notifications
+when some RF features cannot be used due to:
+• bad configuration
+• bad input power
+• missing or unstable clock
+• bad frames received on RF
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+91 / 147

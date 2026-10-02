@@ -1,0 +1,35 @@
+TC_M_19_CS: Retrieve certificates from Charging Station - No matching certificate
+found
+Test case name Retrieve certificates from Charging Station - No matching certificate found
+Test case Id TC_M_19_CS
+Use case Id(s) M03
+Requirement(s) M03.FR.01,M03.FR.02
+System under test Charging Station
+Description The CSMS is able to retrieve the certificates installed at the Charging Station using the
+GetInstalledCertificateIdsRequest message.
+Purpose To verify if the Charging Station is able to respond that it did not find any certificate of the requested
+certificateType.
+Prerequisite(s) The Charging Station does not have a MORootCertificate installed, or it must be possible to remove it.
+Before (Preparations)
+Configuration State:
+Test System checks to make sure that no MORootCertificate is installed via GetInstalledCertificateIds. If an MORootCertificate
+exists it removes it via DeleteCertificate.
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+GetInstalledCertificateIdsResponse
+1. The Test System sends a GetInstalledCertificateIdsRequest
+With certificateType is MORootCertificate
+Tool validations
+* Step 2:
+Message: GetInstalledCertificateIdsResponse
+- status must be NotFound
+- certificateHashDataChain must be omitted.
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 445/914 Part 6 - Test Cases

@@ -1,0 +1,75 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  39 
+Attribute Selectable Values Description 
+Active Bytes in Byte Clock 
+Domain   
+per lane. The video timing FSM uses this value to determine the total 
+horizontal period of the video frame and calculate the vertical frame 
+blanking period. 
+For example, Horizontal Pixel or Width of 1920 for RAW10 format: 
+Total Horizontal Pixel Bytes = (H_active × BPC)/8 
+= (1920 × 10)/8 
+= 2400 bytes 
+Number of Horizontal Active Bytes per lane = Total Horizontal Pixel 
+Bytes/Number of D-PHY Lanes 
+ 
+This is equivalent to the number of byte clock cycles required for 
+active packet transmission where each byte clock transfers 
+8 bits/byte per byte clock cycle for each lane at the PHY serial 
+interface. 
+ 
+This setting is available only when PHY Direction is set to TX and 
+Blanking Enable is checked. 
+Number of Horizontal 
+Blanking Bytes in Byte 
+Clock Domain  
+0–65535 Indicates the number of horizontal blanking bytes of the video frame 
+per lane. The video timing FSM uses this value to determine the total 
+horizontal period of the video frame and calculate the vertical frame 
+blanking period. 
+For example, Horizontal Blanking Pixel or Width of 280 for RAW10 
+format: 
+Number of Horizontal Blanking Bytes per lane = (H_blank × BPC)/8 
+= (280 × 10)/8 
+= 350 bytes  
+ 
+Set this to zero for no additional horizontal line blanking period 
+insertion. A minimum horizontal blanking period value is imposed on 
+the LP11 state by the video timing FSM based on a specific setting 
+configured in the TX. 
+This is equivalent to the number of byte clock cycles required for 
+blanking period where each byte clock transfers 8 bits/byte per byte 
+clock cycle at the PHY serial interface. 
+ 
+This setting is available only when PHY Direction is set to TX and 
+Blanking Enable is checked. 
+Number of Vertical 
+Blanking Lines Per Frame  
+0–65535 Indicates how many vertical blanking lines compose a video frame. 
+The video timing FSM uses this value to determine the total vertical 
+frame blanking period of the video frame between the End of Frame 
+(FE) and Start of Frame (FS) short packets. 
+Set this to zero for no additional vertical frame blanking period 
+insertion. A minimum vertical frame blanking period value is imposed 
+on the LP11 state by the video timing FSM based on a specific setting 
+configured in the TX. 
+ 
+This setting is available only when PHY Direction is set to TX and 
+Blanking Enable is checked. 
+Number of Active Lines Per 
+Frame 
+1–65535, 48 Indicates how many active lines compose a video frame. The video 
+timing FSM uses this value to track line progression and determine 
+the frame boundary positions for generating Start of Frame (FS) and 
+End of Frame (FE) short packets. 
+This setting is available only when PHY Direction is set to TX. 
+Number of Pixel per Clock 
+(PPC) 
+1, 2, 4 Defines how many pixels are processed per clock cycle in the Pixel-to-
+Byte and Byte-to-Pixel conversion blocks. Higher PPC values increase 
+throughput but require more parallel processing resources. The 

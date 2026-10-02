@@ -1,0 +1,20 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 27
+4.4.3   MOST Data Packets (MDP)
+For MOST Data Packets (MDPs), INIC acts as a liaison between the EHC and the MOST Network (no INIC
+internal FBlocks handle MDPs). All MDP messages from the EHC must target devices that reside on the
+MOST Network. Similarly, INIC passes all MDPs from the MOST Network to the EHC.
+The default structure of an MDP sent from INIC to the EHC:
+PML.05.0C.TgtDevType.SrcDevID.(FillerBytes).Length.Data
+The default structure of an MDP sent from the EHC to INIC:
+PML.05.0C.Prio.TgtDevID.(FillerBytes).Length.Data
+FIFO Status messages always indicate a successful transmission and are only returned for the MDP FIFO
+when using the Control Port to exchange asynchronous packets.
+MOST Data Packets are sent across the MOST Network with the length value in quadlets. If the MOST
+Network message is not divisible by four, INIC extends the length and converts the length from bytes to
+quadlets before sending the message to the MOST Network.
+MDP messages from the EHC to INIC require the entire message header (includes: PML,
+PMHL, FPH, and FDH) be a four-byte multiple. If the message header byte length is not
+divisible by four, filler bytes (containing zeros) must be added after the FDH, and PML
+must be updated accordingly.

@@ -1,0 +1,44 @@
+Main (Test scenario)
+7. The Charging Station sends a NotifyPriorityChargingRequest
+8. The Test System responds with a
+NotifyPriorityChargingResponse
+10. The Charging Station responds with a
+GetCompositeScheduleResponse
+9. The Test System sends a GetCompositeScheduleRequest
+with
+evseId <Configured evseId>
+duration 60
+chargingRateUnit <Configured chargingRateUnit>
+Tool validations
+* Step 2:
+Message: SetChargingProfileResponse
+status must be Accepted
+* Step 3:
+Message: NotifyPriorityChargingRequest
+transactionId must be <transactionId>
+activated must be true
+* Step 6:
+Message: GetCompositeScheduleResponse
+status must be Accepted
+schedule.evseId must be <Configured evseId>
+schedule.duration must be 60
+schedule.chargingRateUnit must be <Configured chargingRateUnit>
+schedule.chargingSchedulePeriod[0].startPeriod 0
+schedule.chargingSchedulePeriod[0].limit 10 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+* Step 7:
+Message: NotifyPriorityChargingRequest
+transactionId must be <transactionId>
+activated must be false
+* Step 10:
+Message: GetCompositeScheduleResponse
+status must be Accepted
+schedule.evseId must be <Configured evseId>
+schedule.duration must be 60
+schedule.chargingRateUnit must be <Configured chargingRateUnit>
+schedule.chargingSchedulePeriod[0].limit must not be 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 573/1383 Part 6 - Test Cases

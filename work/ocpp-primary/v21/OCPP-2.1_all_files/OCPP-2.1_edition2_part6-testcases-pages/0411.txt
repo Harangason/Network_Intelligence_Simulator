@@ -1,0 +1,58 @@
+TC_I_102_CS: Set Default Tariff - TariffMaxElements
+Test case name Set Default Tariff - TariffMaxElements
+Test case Id TC_I_102_CS
+Use case Id(s) I07
+Requirement(s) I07.FR.02, I07.FR.04
+System under test Charging Station
+Description To set the default tariff on the charging station, for example for ad hoc charging, or when there is no driver-
+specific tariff.
+Purpose To verify if the Charging Station correctly validates the tariff structure.
+Prerequisite(s) - The Charging Station supports local cost calculation using the Tariff mechanism
+(TariffCostCtrlr.Enabled[Tariff] exists and ReadWrite or is true and ReadOnly).
+Before (Preparations)
+Configuration State:
+- TariffCostCtrlr.Enabled[Tariff] is true
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with GetVariablesResponse
+1. The Test System sends a GetVariablesRequest with
+getVariableData[0].component.name = TariffCostCtrlr
+getVariableData[0].variable.name = MaxElements
+getVariableData[0].variable.instance = Tariff
+Note: In the following steps, the value of <getVariableResult[0].attributeValue of step 2> is referred to as <TariffMaxElements>.
+4. The Charging Station responds with
+SetDefaultTariffResponse
+3. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+repeat next <TariffMaxElements> +1 times with counter <i>
+starting at 0
+tariff.energy.prices[i].priceKwh 1.00
+6. The Charging Station responds with
+SetDefaultTariffResponse
+5. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+repeat next <TariffMaxElements> times with counter <i> starting
+at 0
+tariff.energy.prices[i].priceKwh 1.00
+8. The Charging Station responds with
+SetDefaultTariffResponse
+7. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System2
+tariff.currency EUR
+repeat next <TariffMaxElements> times with counter <i> starting
+at 0
+tariff.energy.prices[i].priceKwh 1.00
+repeat next <TariffMaxElements> +1 times with counter <i>
+starting at 0
+tariff.chargingTime.prices[i].priceMinute 1.00
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 409/1383 Part 6 - Test Cases

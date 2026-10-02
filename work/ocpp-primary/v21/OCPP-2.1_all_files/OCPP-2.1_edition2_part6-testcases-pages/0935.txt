@@ -1,0 +1,45 @@
+Deauthorized
+State Deauthorized
+System under test Charging Station
+Description This reusable state will set the Charging Station to a state in which the transaction will be deauthorized.
+Prerequisite Reusable State Authorized is executed.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+Continues executing transaction reusable states in order until the first TransactionEventRequest is received based on the
+configured TxStartPoint.
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+With idTokenInfo.status is Invalid
+3. The Charging Station sends a TransactionEventRequest
+Note(s):
+- Step 3 and 4 are relevant when AuthCtrlr.StopTxOnInvalidId is
+true
+4. The Test System responds with a TransactionEventResponse
+6. The Charging Station sends a UnlockConnectorResponse
+5. The Test System sends a UnlockConnectorRequest
+Note(s):
+- Step 5 and 6 are executed when the connector is locked and the
+transaction gets deauthorized.
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- idToken.idToken <Configured valid_idtoken_idtoken> AND
+- idToken.type <Configured valid_idtoken_type>
+* Step 3:
+Message: TransactionEventRequest
+- triggerReason must be Deauthorized
+- transactionInfo.chargingState must be EVConnected or SuspendedEVSE
+If TxStopPoint contains Authorized or PowerPathClosed or EnergyTransfer
+Then :
+- eventType must be Ended
+- stoppedReason must be DeAuthorized
+Else:
+- eventType must be Updated
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 933/1383 Part 6 - Test Cases

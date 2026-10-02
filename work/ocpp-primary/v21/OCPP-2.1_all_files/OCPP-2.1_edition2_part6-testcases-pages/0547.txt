@@ -1,0 +1,51 @@
+Main (Test scenario)
+6. The Charging Station responds with a
+GetCompositeScheduleResponse
+5. The Test System sends a GetCompositeScheduleRequest
+with evseId 0
+duration is 900
+chargingRateUnit <Configured chargingRateUnit>
+Tool validations
+* Step 2:
+Message: SetVariablesResponse
+- setVariableResult[0].attributeStatus must be Accepted
+- setVariableResult[0].component.name = ClockCtrlr
+- setVariableResult[0].variable.name = TimeOffset
+* Step 4:
+Message SetChargingProfileResponse
+- status must be Accepted
+* Step 6:
+Message: GetCompositeScheduleResponse
+Note: The period of time between the scheduleStart from the SetChargingProfileRequest and the scheduleStart from the
+GetCompositeScheduleResponse is called x.
+- status must be Accepted
+- schedule.evseId must be 0
+- schedule.scheduleStart must be <current dateTime +/- max deviation>
+- schedule.chargingSchedulePeriod[0].startPeriod 0
+- schedule.chargingSchedulePeriod[1].startPeriod 600 - x
+- schedule.chargingSchedulePeriod[1].limit 6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Post scenario validations:
+N/a
+The following validation is incorrect: schedule.scheduleStart must be <current dateTime + 00:10>
+The requested composite schedule is always the current dateTime.
+But the first period will be the max local limit and the second period starts at 10 seconds with limit 6. <<<
+TC_K_104_CS: Set Charging Profile - PriorityCharging
+Test case name Set Charging Profile - PriorityCharging
+Test case Id TC_K_104_CS
+Use case Id(s) K01
+Requirement(s) K01.FR.70, K01.FR.71
+System under test Charging Station
+Description To enable the CSMS to influence the charging power or current drawn from a specific EVSE or the entire
+Charging Station over a period of time. The CSMS sends a SetChargingProfileRequest to the Charging
+Station to influence the power or current drawn by EVs. The CSMS calculates a ChargingSchedule to stay
+within certain limits, which MAY be imposed by any external system.
+Purpose To verify if the Charging station is able to validate a chargingProfile of purpose PriorityCharging.
+Prerequisite(s) SmartChargingCtrlr.SupportedAdditionalPurposes contains PriorityCharging
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 545/1383 Part 6 - Test Cases

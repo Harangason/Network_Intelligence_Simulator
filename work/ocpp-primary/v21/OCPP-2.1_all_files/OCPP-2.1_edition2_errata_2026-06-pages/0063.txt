@@ -1,0 +1,52 @@
+Test case name Local Cost Calculation - Cost Details of Transaction - minCost/maxCost
+Prerequisite(s) - The Charging Station supports local cost calculation using the Tariff mechanism
+(TariffCostCtrlr.Enabled[Tariff] exists and ReadWrite or is true and ReadOnly).
+- The Charging Station supports tariff conditions (TariffCostCtrlr.ConditionsSupported[Tariff] is true)
+- This test cases expects that reusable state         StopAuthorized  does not introduce an additional delay.      
+Before (Preparations)
+Configuration State:
+- TariffCostCtrlr.Enabled[Tariff] is true
+- TariffCostCtrlr.Enabled[RunningCost] is true
+- TariffCostCtrlr.Enabled[Cost] is true
+- TariffCostCtrlr.Interval[Cost] is 15
+- SampledDataCtrlr.TxUpdatedInterval is 0
+- AlignedDataCtrlr.Interval is 0
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.minCost.exclTax 16.00
+tariff.minCost.inclTax   19.20
+tariff.minCost.taxRates[0].type   t10_0
+tariff.minCost.taxRates[0].tax   10.0
+tariff.maxCost.exclTax   35.00
+tariff.maxCost.inclTax 42.00
+tariff.minCost.taxRates[0].type   t10_0
+tariff.minCost.taxRates[0].tax   10.0
+tariff.chargingTime.prices[0].priceMinute 60.00
+tariff.chargingTime.taxRates[0].type t20_0
+tariff.chargingTime.taxRates[0].tax 20.0
+3.  Execute   Reusable State   Authorized
+3. 4.  Execute Reusable State EnergyTransferStarted
+Note: The Test System waits 5 seconds, calculated cost < minCost     
+4. 5.  Execute Reusable State StopAuthorized
+Execute Reusable State EVDisconnected
+Execute Reusable State ParkingBayUnoccupied
+5. 6.  The Charging Station sends a TransactionEventRequest
+6. 7.  The Test System responds with a
+TransactionEventResponse
+8.  Execute   Reusable State   Authorized
+7. 9.  Execute Reusable State EnergyTransferStarted
+Note: The Test System waits 20 seconds, calculated cost between minCost and maxCost       
+8. 10.  Execute Reusable State StopAuthorized
+Execute Reusable State EVDisconnected
+Execute Reusable State ParkingBayUnoccupied
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 59/116 Errata 2026-06

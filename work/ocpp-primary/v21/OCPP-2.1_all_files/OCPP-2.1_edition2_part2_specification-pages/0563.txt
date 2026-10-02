@@ -1,0 +1,55 @@
+Utility CSMS DC Charging Station EV
+Utility sends a VoltWatt control
+and a discharge power limit.
+(Pseudo IEEE 2030.5 messages)
+DERCurve(#1, "Volt-Watt 1", ... )
+DERCurve(#2, "Volt-Watt 2", ... )
+DefaultDERControl(opModVoltWatt, curve #2,
+primacy=0)
+DERControl(opModMaxLimW, 50%)
+SetDERControlRequest(default=true,
+controlType=VoltWatt, curve=<curve #2>)
+SetDERControlResponse(Accepted)
+SetDERControlRequest(default=true,
+controlType=LimitMaxDischargePowerPct,
+limitMaxDischargePct=50.0)
+SetDERControlResponse(Accepted)
+Charging Station has been configured
+with DER controls from utility:
+VoltWatt curve and discharge power limit.
+EV starts charging
+ISO 15118-20 authorization
+AuthorizeRequest(...)
+AuthorizeResponse(Accepted)
+ServiceDiscoveryReq()
+ServiceDiscoveryRes(DC, DC_BPT)
+ServiceDetailsReq(DC_BPT)
+ServiceDetailsRes(DC_BPT, params)
+ServiceSelectionReq(DC_BPT)
+ServiceSelectionRes()
+DC_BPT has been selected
+ChargeParameterDiscoveryReq
+(BPT_DC_CPDReqEnergyTransferMode(
+<EV capabilities>))
+ChargeParameterDiscoveryRes
+(BPT_DC_CPDResEnergyTransferMode(
+<EVSE capabilities>))
+ScheduleExchangeReq(energyRequest,
+departureTime)
+NotifyEVChargingNeedsRequest(controlMode = Dynamic,
+departureTime, v2xChargingParameters)
+NotifyEVChargingNeedsResponse(Accepted)
+calculate TxProfile
+SetChargingProfileRequest(TxProfile)
+SetChargingProfileResponse(Accepted)
+ScheduleExchangeRes()
+Charging starts
+PowerDeliveryReq()
+PowerDeliveryRes()
+loop [while charging]
+DC_ChargeLoopReq()
+DER control by EVSE
+DC_ChargeLoopRes()
+Figure 207. Sequence diagram of an ISO 15118-20 DC bidirectional session with DER control in EVSE
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 550/803 Part 2 - Specification

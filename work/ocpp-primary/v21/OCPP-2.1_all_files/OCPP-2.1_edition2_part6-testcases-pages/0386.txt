@@ -1,0 +1,46 @@
+TC_H_15_CS: Reserve a connector with a specific type - Success
+Test case name Reserve a connector with a specific type - Success
+Test case Id TC_H_15_CS
+Use case Id(s) H01(S3), H03
+Requirement(s) H01.FR.06,H01.FR.09,H01.FR.15,H03.FR.02
+System under test Charging Station
+Description The CSMS is able to reserve an EVSE with a connector with a specific type for a specific IdToken by
+sending a ReserveNowRequest with a connectorType.
+Purpose To verify if the Charging Station is able to reserve an EVSE with a connector with a specific type, until the
+EV Driver with the specified IdToken arrives.
+Prerequisite(s) - The configuration variable ReservationCtrlr.ReservationAvailable is implemented with value true
+- The Charging Station supports the reservation of a specific connector type, that is part of the
+ConnectorEnumType.
+Before (Preparations)
+Configuration State:
+ReservationCtrlr.ReservationEnabled is true (If implemented)
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a ReserveNowResponse
+1. The Test System sends a ReserveNowRequest
+with connectorType is <Configured connectorType>
+idToken.idToken <Configured valid_idtoken_idtoken>
+idToken.type <Configured valid_idtoken_type>
+3. The Charging Station notifies the CSMS about the status
+change of the connector.
+Note(s):
+- If the Charging Station has only one available connector of the
+specified connectorType, it sets the availabilityState of the
+corresponding EVSE and all connectors of the specified type to
+Reserved.
+AND If the EVSE has more connector(s) with a different
+connectorType, the Charging Station must set these other
+connector(s) to Unavailable.
+- Reporting the AvailabilityState of the EVSE component itself is
+optional.
+4. The Test System responds accordingly.
+5. Execute Reusable State Authorized
+Note(s):
+- <Configured valid idToken fields> are used for the authorization.
+6. Execute Reusable State EnergyTransferStarted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 384/1383 Part 6 - Test Cases

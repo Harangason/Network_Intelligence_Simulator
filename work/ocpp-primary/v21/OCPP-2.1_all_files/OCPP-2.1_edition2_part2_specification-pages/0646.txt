@@ -1,0 +1,63 @@
+Field Name Field Type Card. Description
+limit decimal 0..1 Optional. Optional only when not required by the
+operationMode, as in CentralSetpoint, ExternalSetpoint,
+ExternalLimits, LocalFrequency, LocalLoadBalancing.
+Charging rate limit during the schedule period, in the
+applicable chargingRateUnit. This SHOULD be a non-
+negative value; a negative value is only supported for
+backwards compatibility with older systems that use a
+negative value to specify a discharging limit. When using
+chargingRateUnit = W, this field represents the sum of the
+power of all phases, unless values are provided for L2
+and L3, in which case this field represents phase L1.
+limit_L2 decimal 0..1 Optional. (2.1) Charging rate limit on phase L2 in the
+applicable chargingRateUnit.
+limit_L3 decimal 0..1 Optional. (2.1) Charging rate limit on phase L3 in the
+applicable chargingRateUnit.
+numberPhases integer, 0 <= val <= 3 0..1 Optional. The number of phases that can be used for
+charging.
+For a DC EVSE this field should be omitted.
+For an AC EVSE a default value of numberPhases = 3 will
+be assumed if the field is absent.
+phaseToUse integer, 0 <= val <= 3 0..1 Optional. Values: 1..3, Used if numberPhases=1 and if the
+EVSE is capable of switching the phase connected to the
+EV, i.e. ACPhaseSwitchingSupported is defined and true.
+It’s not allowed unless both conditions above are true. If
+both conditions are true, and phaseToUse is omitted, the
+Charging Station / EVSE will make the selection on its
+own.
+dischargeLimit decimal, val <= 0 0..1 Optional. (2.1) Limit in chargingRateUnit that the EV is
+allowed to discharge with. Note, these are negative
+values in order to be consistent with setpoint, which can
+be positive and negative. 
+For AC this field represents the sum of all phases, unless
+values are provided for L2 and L3, in which case this field
+represents phase L1.
+dischargeLimit_L2 decimal, val <= 0 0..1 Optional. (2.1) Limit in chargingRateUnit on phase L2 that
+the EV is allowed to discharge with.
+dischargeLimit_L3 decimal, val <= 0 0..1 Optional. (2.1) Limit in chargingRateUnit on phase L3 that
+the EV is allowed to discharge with.
+setpoint decimal 0..1 Optional. (2.1) Setpoint in chargingRateUnit that the EV
+should follow as close as possible. Use negative values
+for discharging.
+When a limit and/or dischargeLimit are given the
+overshoot when following setpoint must remain within
+these values. This field represents the sum of all phases,
+unless values are provided for L2 and L3, in which case
+this field represents phase L1.
+setpoint_L2 decimal 0..1 Optional. (2.1) Setpoint in chargingRateUnit that the EV
+should follow on phase L2 as close as possible.
+setpoint_L3 decimal 0..1 Optional. (2.1) Setpoint in chargingRateUnit that the EV
+should follow on phase L3 as close as possible.
+setpointReactive decimal 0..1 Optional. (2.1) Setpoint for reactive power (or current) in
+chargingRateUnit that the EV should follow as closely as
+possible. Positive values for inductive, negative for
+capacitive reactive power or current. 
+This field represents the sum of all phases, unless values
+are provided for L2 and L3, in which case this field
+represents phase L1.
+setpointReactive_L2 decimal 0..1 Optional. (2.1) Setpoint for reactive power (or current) in
+chargingRateUnit that the EV should follow on phase L2
+as closely as possible.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 633/803 Part 2 - Specification

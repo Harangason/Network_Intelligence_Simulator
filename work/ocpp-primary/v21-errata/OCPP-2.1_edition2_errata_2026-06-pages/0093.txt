@@ -1,0 +1,41 @@
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station sends a ClearDERControlResponse
+1. The Test System sends a ClearDERControlRequest with
+isDefault true
+4. The Charging Station sends a ClearDERControlResponse
+3. The Test System sends a ClearDERControlRequest with
+isDefault false
+6. The Charging Station sends a SetDERControlResponse
+5. The Test System sends a SetDERControlRequest with
+controlId control1
+isDefault true
+controlType <CS supported controlType1>
+*.priority 6
+8. The Charging Station sends a SetDERControlResponse
+7. The Test System sends a SetDERControlRequest with
+controlId control2
+isDefault false
+controlType <CS supported controlType2>
+*.priority 6
+*.startTime <Current DateTime + 24 hours>
+*.duration 300
+10. The Charging Station responds with a ResetResponse
+9. The Test System sends a ResetRequest
+with type Immediate
+9.  Execute   Reusable State   Booted
+12. 11.  The Charging Station sends a GetDERControlResponse
+11. 10.  The Test System sends a GetDERControlRequest with
+isDefault true
+13. 12.  The Charging Station sends a ReportDERControlRequest
+14. 13.  The Test System sends a ReportDERControlResponse
+Note(s):
+- If tbc is True at Step 13 12  then step 13 12  and 14 13  will be repeated
+16. 15.  The Charging Station sends a GetDERControlResponse
+15. 14.  The Test System sends a GetDERControlRequest with
+isDefault false
+17. 16.  The Charging Station sends a ReportDERControlRequest
+18. 17.  The Test System sends a ReportDERControlResponse
+Note(s):
+- If tbc is True at Step 17 16  then step 17 16  and 18 17  will be repeated
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 89/116 Errata 2026-06

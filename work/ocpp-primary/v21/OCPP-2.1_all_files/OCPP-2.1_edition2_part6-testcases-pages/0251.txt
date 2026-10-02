@@ -1,0 +1,51 @@
+TC_E_05_CS: Local start transaction - Authorization first - Cable plugin timeout
+Test case name Local start transaction - Authorization first - Cable plugin timeout
+Test case Id TC_E_05_CS
+Use case Id(s) E03 AND (C01 OR C02 OR C04 OR C06)
+Requirement(s) E03.FR.01, E03.FR.05, E03.FR.06, E03.FR.12 AND C01.FR.02, C02.FR.01, C06.FR.02
+System under test Charging Station
+Description OCPP 2.x.x allows an EV driver to either first connect the EV and EVSE OR present a form of identification.
+Both sequences will result in being able to charge.
+Purpose To verify if the Charging Station is able to deauthorize the transaction after the EVConnectionTimeout has
+expired.
+Prerequisite(s) The Charging Station supports at least one authorization method described at the following Use cases;
+C01, C02, C04, C06.
+Before (Preparations)
+Configuration State:
+- TxCtrlr.EVConnectionTimeOut is <Configured ev_connection_timeout>
+- AuthCtrlr.AuthEnabled is true (If implemented AND ReadWrite)
+- AuthCtrlr.DisableRemoteAuthorization is false (If implemented)
+- AuthCacheCtrlr.Enabled is false (If implemented)
+- AuthCtrlr.LocalPreAuthorize is false
+Memory State:
+N/a
+Reusable State(s):
+State is Authorized (local)
+Main (Test scenario)
+Charging Station CSMS
+1. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed after the <Configured
+ev_connection_timeout> expires, if the transaction has been
+started. So in the case TxStartPoint contains
+ParkingBayOccupancy OR Authorized
+2. The Test System responds with a TransactionEventResponse
+Note(s):
+- This step is only executed if TxStartPoint is ParkingBayOccupancy or Authorized
+- Optionally the Charging Station can send a StatusNotificationRequest or NotifyEventRequest with status Available
+3. Execute Reusable State Authorized (local)
+Note(s):
+- This step is executed to verify if the EVSE is actually ready to start another charging session.
+4. Execute Reusable State EnergyTransferStarted
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- triggerReason must be EVConnectTimeout
+If <Configured TxStopPoint> contains Authorized then
+eventType must be Ended AND
+transactionInfo.stoppedReason must be Timeout
+Else eventType must be Updated
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 249/1383 Part 6 - Test Cases

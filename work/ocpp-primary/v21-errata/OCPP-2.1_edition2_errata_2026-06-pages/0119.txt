@@ -1,0 +1,55 @@
+Main (Test scenario)
+15. 9.  The Test System notifies the CSMS about the status
+change of the slot.
+connectorStatus   Available
+16. 10.  The CSMS responds accordingly.
+17. 11.  The Charging Station sends a TransactionEventRequest
+with
+eventType Ended
+triggerReason EnergyLimitReached EVCommunicationLost
+idToken.idToken ""
+idToken.type NoAuthorization
+transactionInfo.transactionId 111-222-333-444-2 <transactionId>
+transactionInfo.chargingState Idle
+transactionInfo.stoppedReason EVDisconnected
+18. 12.  The Test System responds with a
+TransactionEventResponse
+19. The Test System notifies the CSMS about the status change
+of the slot. 20. The CSMS responds accordingly.
+Note :  Steps 9 through 12 are repeated for each battery taken out          
+21. 13.  The Test System sends a BatterySwapRequest with
+eventType BatteryOut
+requestId <requestId>
+idToken.idToken <Configured valid_idtoken_idtoken>
+batteryData[0].evseId <Configured evseId3> 3
+batteryData[0].serialNumber 4321
+batteryData[0].soC 80
+batteryData[0].soH 95
+batteryData[1].evseId <Configured evseId4> 4
+batteryData[1].serialNumber 8765
+batteryData[1].soC 85
+batteryData[1].soH 78
+22. 14.  The CSMS responds with a BatterySwapResponse
+Note: Steps 13 and 14 are repeated for each battery taken out
+Tool validations
+* Step 1:
+Message: RequestBatterySwapResponse RequestBatterySwapRequest
+- requestId must be <not omitted>
+- idToken.idToken must be <Configured valid_idtoken_idtoken>
+* Step 6:
+Message: TransactionEventResponse
+- idTokenInfo.status must be Accepted
+* Step 10:
+Message: TransactionEventResponse
+- idTokenInfo.status must be Accepted
+* Step 12:
+Message: BatterySwapResponse
+* Step 14: Step 12: 
+Message: TransactionEventResponse
+- idTokenInfo.status must be Accepted
+* Step 18:
+Message: TransactionEventResponse
+- idTokenInfo.status must be Accepted
+* Step 22:
+Message: BatterySwapResponse
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 115/116 Errata 2026-06

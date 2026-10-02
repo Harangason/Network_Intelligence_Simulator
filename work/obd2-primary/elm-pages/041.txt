@@ -1,0 +1,94 @@
+Setting the Headers (continued)
+41 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+causing a ‘NO DATA’ result. In these cases, you may
+want to adjust the timeout value, perhaps first trying
+the maximum (ie use AT ST FF). Many vehicles will
+simply not support these extra addressing modes.
+The other, and more common method of obtaining
+information is by physical addressing, in which you
+direct your request to a specific device, not to a
+functional group. To do this, you again need to
+construct a set of header bytes that direct your query
+to the physical address of the processor, or ECU. If
+you do not know the address, recall that the sender of
+information is usually shown in the third byte of the
+header. By monitoring your system for a time with the
+headers turned on (AT H1), you can quickly learn the
+main addresses of the senders. The SAE document
+J2178 assigns address ranges to these devices if you
+are unsure of which might be most appropriate.
+When you know the address that you wish to
+‘speak to,’ simply use it for the second byte in the
+header (assume an address of 10 for this example).
+Combine that with your knowledge of SAE J2178 to
+choose a priority/type byte (assume a value of E4 for
+this example, as if the vehicle is J1850 PWM). Finally,
+you need to identify yourself to the target, so that
+responses can be returned to you. As is customary for
+diagnostic tools, we’ll use an address of F1. As before,
+these three bytes are then assigned to the header with
+the set header command:
+>AT SH E4 10 F1
+OK
+From this point on, all messages that the ELM327
+sends will use these three bytes for the header. All that
+needs to be done now is to request data from the
+vehicle. For physical addressing, this is often done
+using mode 22:
+>22 11 6B
+62 11 6B 00 00
+The response to this command is of the same
+format to those seen for ‘standard’ OBD requests. The
+request has been repeated (with 40 added to the
+mode value in order to show that this is a response),
+and this is followed by the actual data (00 00 in this
+case). The PIDs used with mode 22 are usually
+proprietary to each manufacturer and are generally not
+published widely, so you may have difficulty in
+determining the ones to use with your vehicle. Elm
+Electronics does not maintain lists of this information,
+and cannot provide any further details for you. Mode
+22 and others are described in more detail in the SAE
+standards document J2190, ‘Enhanced E/E Diagnostic
+Test Modes’.
+The ISO14230-4 standard defines its header bytes
+a little differently. Advanced experimenters will be
+aware that for ISO 14230-4, the first header byte must
+always include the length of the data field, which
+varies from message to message. From that, one
+might assume that the you would need to redefine the
+header for every message that is to be sent – not so!
+The ELM327 always determines the number of bytes
+that you are sending, and inserts that length for you, in
+the proper place for the header that you are using. If
+you are using the standard ISO 14230-4 header, the
+length will be put into the first header byte, and you
+need only provide the two (most significant) bits of this
+byte when defining the header. What you place in the
+rest of the byte will be ignored by the ELM327 unless
+you set it to 0. If it is 0, it is assumed that you are
+experimenting with KWP four byte headers, and the
+ELM327 then creates the fourth header byte for you.
+Again, you do not need to provide any length to be put
+into this byte – it is done for you.
+Addressing within the CAN (ISO 15765-4)
+protocols is quite similar in many ways. First, consider
+the 29 bit standard. The ELM327 splits the 29 bits into
+a CAN Priority byte and the three header bytes that we
+are now familiar with. This is how they are combined
+for use by the ELM327:
+>AT SH xx yy zz>AT CP vv
+vv xx yy zz
+5 bits only
+xx yy zzvv
+29 bit ID
+The CAN standard states that for diagnostics, the
+priority byte (‘vv’ in the diagram) will always be 18 (it is
+the default value used by the ELM327).  Since it is
+rarely changed, it can be assigned separately from the
+other header bytes, using the CP command.
+The next byte (‘xx’) describes the type of message
+that this is, and is set to hex DB for functional

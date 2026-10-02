@@ -1,0 +1,48 @@
+Main (Test scenario)
+Notes(s) :  If the TxStopPoint    contains  EnergyTransfer, PowerPathClosed, or Authorized:    
+The test system will wait the <Configured Long Operation Time Out> to determine if the charging station resets because the                   
+transaction has ended.  
+If the charging station resets proceed to step 7. Else proceed with step 4.             
+4. Execute Reusable State EVConnectedPostSession
+5. Execute Reusable State EVDisconnected
+Notes(s): Steps 4 and 5 will only be executed if TxStartPoint does not contain: EnergyTransferStarted, DataSigned, PowerPathClosed,
+or Authorized
+Notes(s): Step 6 will only be executed if TxStartPoint does not contain: EnergyTransferStarted, DataSigned, PowerPathClosed,
+Authorized, or EVConnected is  ParkingBayOccupancy  
+…
+Tool validations
+* Step 2:
+Message ResetResponse
+- status Scheduled
+* Step 7:
+Message BootNotificationRequest
+- reason ScheduledReset
+* Step 9:
+Message: StatusNotificationRequest
+- If the transaction was stopped charging station reset   at step 3, then
+ — for the connector involved in the transaction: connectorStatus Occupied
+ — for other connectors of this EVSE: connectorStatus Available or Unavailable
+Else connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].component.name "Connector"
+- eventData[0].variable.name "AvailabilityState"
+- If the transaction was stopped charging station reset   at step 3, then
+ — for the connector involved in the transaction: eventData[0].actualValue Occupied
+ — for other connectors of this EVSE: eventData[0].actualValue Available or Unavailable
+- Else eventData[0].actualValue "Available"
+* Step 11:
+Message: SecurityEventNotificationRequest
+- type StartupOfTheDevice or ResetOrReboot
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors.
+6.2.3. Page 65 - (2026-04) - TC_B_41_CS - Clarification of charging station reboot
+behaviour with ongoing transactions
+The test case has been updated to provide clarity on when the changing station is allowed to reboot. The charging station is
+expected to reboot either after the transaction has ended or if the transaction ends before the cable is disconnected, once the cable
+is disconnected.
+Test case name Reset Charging Station - With multiple ongoing transactions - OnIdle
+Test case Id TC_B_41_CS
+Main (Test scenario)
+Charging Station CSMS
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2026 18/34 Errata 2026-06

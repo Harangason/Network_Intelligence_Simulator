@@ -1,0 +1,43 @@
+TC_B_110_CS: Set new NetworkConnectionProfile - No security downgrade to
+profile #1
+Test case name Set new NetworkConnectionProfile - No security downgrade to profile #1
+Test case Id TC_B_110_CS
+Use case Id(s) B09
+Requirement(s) B09.FR.31
+System under test Charging Station
+Description The CSMS updates the connection details on the Charging Station. For instance in preparation of a
+migration to a new CSMS.
+Purpose To verify that the Charging Station refuses to downgrade to security profile #1 via
+SetNetworkProfileRequest.
+Prerequisite(s) Current security profile is higher than 1.
+Before (Preparations)
+Configuration State:
+SecurityCtrlr.AllowSecurityProfileDowngrade = true
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetNetworkProfileResponse
+1. The Test System sends a SetNetworkProfileRequest with:
+- configurationSlot is <Configured non-active configurationSlot>
+- connectionData.ocppVersion OCPP21
+- connectionData.ocppInterface Any
+- connectionData.ocppTransport JSON
+- connectionData.messageTimeout <Configured
+messageTimeout>
+- connectionData.ocppCsmsUrl <Configured ocppCsmsUrl>
+- connectionData.securityProfile 1
+- connectionData.basicAuthPassword <Configured
+basicAuthPassword>
+Tool validations
+* Step 2:
+Message SetNetworkProfileResponse with:
+- status = Rejected
+- statusInfo.reasonCode = "NoSecurityDowngrade"
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 108/1383 Part 6 - Test Cases

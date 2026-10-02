@@ -1,0 +1,28 @@
+No. Type Description
+8 Remark(s) Prepaid idTokens shall not be cached, because an AuthorizeRequest is needed to get the current
+balance. CacheExpiryDateTime is set to current time so that idToken does not remain in
+authorization cache.
+This is a version of use case C01 - EV Driver Authorization using RFID in which CSMS may return
+an authorization status NoCredit.
+The transaction with a maxCost limit is described in E16 - Transactions with fixed cost, energy,
+SoC or time.
+NOTE Following diagram only shows parameters related to the use case. More parameters are required in these
+messages.
+EV Driver
+Charging Station CSMS
+present prepaid RFID(AA12345)
+check for idToken in cache
+alt [If idToken not found in cache (recommended situation)]
+AuthorizeRequest(idToken(id = AA12345, type = ISO14443))
+AuthorizeResponse(idTokenInfo.status = Accepted,
+idTokenInfo.cacheExpiryDateTime = <now>)
+opt
+notification of status
+TransactionEventRequest(Started, idToken = AA12345, ... )
+CSMS returns limit for idToken
+TransactionEventResponse(idTokenInfo.status = Accepted,
+idTokenInfo.cacheExpiryDateTime = <now>,
+transactionLimit.maxCost = 12.34)
+Figure 38. Sequence diagram prepaid authorization
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 127/803 Part 2 - Specification

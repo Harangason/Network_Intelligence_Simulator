@@ -1,0 +1,32 @@
+Tool validations
+* Step 1:
+Message NotifyEVChargingNeedsRequest
+- evseId = <Configured evseId>
+For AC charging station:
+- chargingNeeds.requestedEnergyTransfer AC_BPT
+- chargingNeeds.availableEnergyTransfer [AC_single_phase, AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]
+For DC charging station:
+- chargingNeeds.requestedEnergyTransfer DC_BPT
+- chargingNeeds.availableEnergyTransfer [DC, DC_BPT, DC_ACDP, DC_ACDP_BPT]
+- chargingNeeds.controlMode = DynamicControl
+- chargingNeeds.v2xChargingParameters.maxChargePower = 10000 (W)
+- chargingNeeds.v2xChargingParameters.maxDischargePower = 5000 (W)
+* Step 3:
+Message: TransactionEventRequest
+- eventType must be Started
+- meterValue[*].sampledValue[*].measurand must contain <Configured V2XTxStartedMeasurands> and
+Energy.Active.Import.Register
+* Step 10:
+Message: TransactionEventRequest
+- eventType must be Updated
+- meterValue[*].sampledValue[*].measurand must contain <Configured V2XTxUpdatedMeasurands> and
+Energy.Active.Import.Register
+* Step 15:
+Message: TransactionEventRequest
+- eventType must be Ended
+- meterValue[*].sampledValue[*].measurand must contain <Configured V2XTxEndedMeasurands> and
+Energy.Active.Import.Register
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 811/1383 Part 6 - Test Cases

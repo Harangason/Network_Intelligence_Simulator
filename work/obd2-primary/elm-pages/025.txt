@@ -1,0 +1,100 @@
+25 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+RV [ Read the input Voltage ]
+This initiates the reading of the voltage present at
+pin 2, and the conversion of it to a decimal voltage. By
+default, it is assumed that the input is connected to the
+voltage to be measured through a 1:5.7 ratio voltage
+divider (for example, 47K Ω and 10KΩ resistors in
+series, with the 10KΩ connected from pin 2 to Vss)
+and that the ELM327 supply is a nominal 5V. This will
+allow for the measurement of input voltages up to
+about 28V (the voltage at pin 2 must not exceed Vdd),
+with an uncalibrated accuracy of typically about 2%.
+See the ‘Reading the Battery Voltage’ section for
+calibration information.
+S0 and S1 [ printing of Spaces off or on ]
+These commands control whether or not space
+characters are inserted in the ECU response.
+The ELM327 normally reports ECU responses as
+a series of hex characters that are separated by space
+characters (to improve readability), but messages can
+be transferred much more quickly if every third byte
+(the space) is removed. While this makes the message
+less readable for humans, it can provide significant
+improvements for computer processing of the data. By
+default, spaces are on (S1), and space characters are
+inserted in every response.
+SD hh [ Save Data byte hh ]
+The ELM327 is able to save one byte of
+information for you in a special nonvolatile memory
+location, which is able to retain its contents even if the
+power is turned off. Simply provide the byte to be
+stored, then retrieve it later with the read data (AT RD)
+command. This location is ideal for storing user
+preferences, unit ids, occurrence counts, or other
+information.
+SH xyz [ Set the Header to 00 0x yz ]
+Entering CAN 11 bit ID words (headers) normally
+requires that extra leading zeros be added (eg. AT SH
+00 07 DF), but this command simplifies doing so. The
+AT SH xyz command accepts a three digit argument,
+takes only the right-most 11 bits from that, adds
+leading zeros, and stores the result in the header
+storage locations for you. As an example, AT SH 7DF
+is a valid command, and is quite useful for working
+with 11 bit CAN systems. It actually results in the
+header bytes being stored internally as 00 07 DF.
+SH xx yy zz [ Set the Header to xx yy zz ]
+This command allows the user to manually control
+the values that are sent as the three header bytes in a
+message. These bytes are normally assigned values
+for you (and are not required to be adjusted), but there
+may be occasions when it is desirable to change them
+(particularly if experimenting with physical addressing).
+If experimenting, it is not necessary but may be better
+to set the headers after a protocol is active. That way,
+wakeup messages, etc. that get set on protocol
+activation will use the default values.
+The header bytes are defined with hexadecimal
+digits - xx will be used for the first or priority/type byte,
+yy will be used for the second or receiver/target byte,
+and zz will be used for the third or transmitter/source
+byte. These remain in effect until set again, or until
+restored to their default values with the D, WS, or Z
+commands.
+If new values for header bytes are set before the
+vehicle protocol has been determined, and if the
+search is not set for fully automatic (ie other than
+protocol 0), these new values will be used for the
+header bytes of the first request to the vehicle. If that
+first request should fail to obtain a response, and if the
+automatic search is enabled, the ELM327 will then
+continue to search for a protocol using default values
+for the header bytes. Once a valid protocol is found,
+the header bytes will revert to the values assigned with
+the AT SH command.
+This command is used to assign all header bytes,
+whether they are for a J1850, ISO 9141, ISO 14230, or
+a CAN system. The CAN systems will use these three
+bytes to fill bits 0 to 23 of the ID word (for a 29 bit ID),
+or will use only the rightmost 11 bits for an 11 bit CAN
+ID (and any extra bits assigned will be ignored). The
+additional 5 bits needed for a 29 bit system are set
+with the AT CP command.
+If assigning header values for the KWP protocols
+(4 and 5), care must be taken when setting the first
+header byte (xx) value. The ELM327 will always insert
+the number of data bytes for you, but how it is done
+depends on the values that you assign to this byte. If
+the second digit of this first header byte is anything
+other than 0 (zero), the ELM327 assumes that you
+wish to have the length value inserted in that first byte
+when sending. In other words, providing a length value
+in the first header byte tells the ELM327 that you wish
+to use a traditional 3 byte header, where the length is
+stored in the first byte of the header.
+If you provide a value of 0 for the second digit of
+AT Command Descriptions (continued)

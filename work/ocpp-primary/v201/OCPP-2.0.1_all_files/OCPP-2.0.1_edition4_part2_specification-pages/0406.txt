@@ -1,0 +1,45 @@
+ChargingLimitType is used by: NotifyChargingLimitRequest
+Field Name Field Type Card. Description
+chargingLimitSource ChargingLimitSourceEnumType 1..1 Required. Represents the source of the charging limit.
+isGridCritical boolean 0..1 Optional. Indicates whether the charging limit is critical
+for the grid.
+2.8. ChargingNeedsType
+Class
+ChargingNeedsType is used by: NotifyEVChargingNeedsRequest
+Field Name Field Type Card. Description
+requestedEnergyTransfer EnergyTransferModeEnumType 1..1 Required. Mode of energy transfer requested by the EV.
+departureTime dateTime 0..1 Optional. Estimated departure time of the EV.
+acChargingParameters ACChargingParametersType 0..1 Optional. EV AC charging parameters.
+dcChargingParameters DCChargingParametersType 0..1 Optional. EV DC charging parameters
+2.9. ChargingProfileCriterionType
+Class
+A ChargingProfile consists of ChargingSchedule, describing the amount of power or current that can be delivered per time interval.
+ChargingProfileCriterionType is used by: GetChargingProfilesRequest
+Field Name Field Type Card. Description
+chargingProfilePurpose ChargingProfilePurposeEnumType 0..1 Optional. Defines the purpose of the schedule transferred
+by this profile
+stackLevel integer 0..1 Optional. Value determining level in hierarchy stack of
+profiles. Higher values have precedence over lower
+values. Lowest level is 0.
+chargingProfileId integer 0..* Optional. List of all the chargingProfileIds requested. Any
+ChargingProfile that matches one of these profiles will be
+reported. If omitted, the Charging Station SHALL not filter
+on chargingProfileId. This field SHALL NOT contain more
+ids than set in ChargingProfileEntries.maxLimit
+chargingLimitSource ChargingLimitSourceEnumType 0..4 Optional. For which charging limit sources, charging
+profiles SHALL be reported. If omitted, the Charging
+Station SHALL not filter on chargingLimitSource.
+2.10. ChargingProfileType
+Class
+A ChargingProfile consists of ChargingSchedule, describing the amount of power or current that can be delivered per time interval.
+ChargingProfileType is used by: RequestStartTransactionRequest , SetChargingProfileRequest , ReportChargingProfilesRequest
+Field Name Field Type Card. Description
+id integer 1..1 Required. Id of ChargingProfile.
+stackLevel integer 1..1 Required. Value determining level in hierarchy stack of
+profiles. Higher values have precedence over lower
+values. Lowest level is 0.
+chargingProfilePurpose ChargingProfilePurposeEnumType 1..1 Required. Defines the purpose of the schedule
+transferred by this profile
+chargingProfileKind ChargingProfileKindEnumType 1..1 Required. Indicates the kind of schedule.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 396/491 Part 2 - Specification

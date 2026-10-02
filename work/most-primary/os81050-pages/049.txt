@@ -1,0 +1,39 @@
+OS81050
+OS81050 Data Sheet Copyright © 2003-2010 SMSC. DS81050AP11
+Page 49
+10 JTAG Port
+The OS81050 implements the standard 4-pin Test Access Port (TAP) interface (TDI, TDO, TCK, and TMS),
+as defined by the IEEE 1149.1 Test Access Port standard. The optional test-reset input signal (TRST) is
+not supported by INIC. Therefore, INIC should be reset through RST when a reset at the TAP interface is
+needed. This port can also be used for configuration and debug, as defined in Section 13.5.
+The test-data input (TDI) and test-data output (TDO) pins provide the means of shifting data into and out of
+the OS81050 boundary-scan register (BSR). The TAP interface is controlled by the test clock ( TCK) and
+the test-mode select ( TMS) pins. When TMS is low, the OS81050 TAP interface is enabled and the rising
+edge of TCK clocks in data from TMS and TDI. After reset, the TDO pin is high-impedance. TDO is driven
+by the TAP controller only when in the Shift-IR or Shift-DR state. 
+For proper operation, all OS81050 TAP interface pins should be pulled high through resistors. A 4.7 k Ω
+pull-up resistor is recommended for TCK, TDI, and TDO per the IEEE 1149.1 standard. A 47 kΩ resistor is
+recommended for TMS.
+For more information on the IEEE 1149.1 Test Access Port standard, see IEEE Std. 1149.1 "IEEE Standard
+Test Access Port and Boundary-Scan Architecture" [9].
+The OS81050 TAP interface supports all the mandatory boundary-scan instructions, as specified in the
+IEEE 1149.1 standard. Supported instructions include:
+/square6 BYPASS - Selects the bypass register (BYR) to be connected for serial access between TDI and TDO.
+/square6 EXTEST - Selects the boundary-scan resister (BSR) to be connected for serial access between TDI 
+and TDO.
+/square6 SAMPLE/PRELOAD - Captures a snapshot of the data at the digital pins during normal operation, and 
+loads a data pattern into the boundary-scan register (BSR) prior to a new boundary-scan operation.
+/square6 IDCODE - (optional IEEE 1149.1 instruction) Used to read the Manufacturer ID from the identification 
+register (IDR).
+The OS81050 must be placed in Boot Mode before accessing the JTAG Port. In Boot Mode, the INIC Software
+Stack is disabled and the OS81050 waits for manual access through the JTAG Port. In this mode, standard
+communication channels (e.g. Control Port, MediaLB Port) are unavailable. The following sequence
+should be followed when using the OS81050 JTAG Port:
+/square6 Place the OS81050 in Boot Mode:
+/square6 Hold the OS81050 in reset (drive RST pin low),
+/square6 Hold the ERR/BOOT pin low,
+/square6 Release the OS81050 from reset (RST pin high),
+/square6 Perform JTAG operations,
+/square6 Release the ERR/BOOT pin, and
+/square6 Reset the OS81050 to resume a normal mode of operation.
+During Boot Mode, the INT pin is configured as an output and driven to VDDCn.

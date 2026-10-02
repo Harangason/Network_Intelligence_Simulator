@@ -1,0 +1,26 @@
+ 
+Horizontal Frontporch = HorizontalSyncOffset
+Horizontal Frontporch = 64 or 0x40
+CHA_HORIZONTAL_FRONT_PORCH = 0x40
+ 
+Vertical Frontporch = VerticalSyncOffset
+Vertical Frontporch = 3
+CHA_VERTICAL_FRONT_PORCH = 0x03
+ 
+The pattern generation feature can be enabled by setting the CHA_TEST_PATTERN bit at address 0x3C and
+configuring the TEST PATTERN GENERATION PURPOSE ONLY register as shown in Table 7-8.
+LVDS clock is derived from the DSI channel A clock. When the MIPI D-PHY channel A HS clock is used as the
+LVDS clock source, it is divided by the factor in DSI_CLK_DIVIDER (CSR 0x0B.7:3) to generate the FlatLink
+LVDS output clock. Additionally, LVDS_CLK_RANGE (CSR 0x0A.3:1) and CH_DSI_CLK_RANGE(CSR 0x12)
+must be set to the frequency range of the FlatLink LVDS output clock and DSI Channel A input clock respectively
+for the internal PLL to operate correctly. After these settings are programmed, PLL_EN (CSR 0x0D.0) must be
+set to enable the internal PLL.
+LVDS_CLK_RANGE = 2 – 62.5 MHz ≤ LVDS_CLK < 87.5 MHz
+HS_CLK_SRC = 1 – LVDS pixel clock derived from MIPI D-PHY channel A
+DSI_CLK_DIVIDER = 00101 – Divide by 6
+CHA_DSI_LANES = 00 – Four lanes are enabled
+CHA_DSI_CLK_RANGE = 0x64 – 500 MHz
+SN65DSI83
+SLLSEC1I – SEPTEMBER 2012 – REVISED OCTOBER 2020 www.ti.com
+34 Submit Document Feedback Copyright © 2020 Texas Instruments Incorporated
+Product Folder Links: SN65DSI83

@@ -1,0 +1,44 @@
+Chapter 2. Datatypes
+2.1. ACChargingParametersType
+Class
+EV AC charging parameters.
+ACChargingParametersType is used by: Common:ChargingNeedsType
+Field Name Field Type Card. Description
+energyAmount integer 1..1 Required. Amount of energy requested (in Wh). This
+includes energy required for preconditioning.
+evMinCurrent integer 1..1 Required. Minimum current (amps) supported by the
+electric vehicle (per phase).
+evMaxCurrent integer 1..1 Required. Maximum current (amps) supported by the
+electric vehicle (per phase). Includes cable capacity.
+evMaxVoltage integer 1..1 Required. Maximum voltage supported by the electric
+vehicle
+2.2. AdditionalInfoType
+Class
+Contains a case insensitive identifier to use for the authorization and the type of authorization to support multiple forms of
+identifiers.
+AdditionalInfoType is used by: Common:IdTokenType
+Field Name Field Type Card. Description
+additionalIdToken identifierString[0..36] 1..1 Required. This field specifies the additional IdToken.
+type string[0..50] 1..1 Required. This defines the type of the additionalIdToken.
+This is a custom type, so the implementation needs to be
+agreed upon by all involved parties.
+2.3. APNType
+Class
+Collection of configuration data needed to make a data-connection over a cellular network.
+NOTE
+When asking a GSM modem to dial in, it is possible to specify which mobile operator should be used. This can be
+done with the mobile country code (MCC) in combination with a mobile network code (MNC). Example: If your
+preferred network is Vodafone Netherlands, the MCC=204 and the MNC=04 which means the key
+PreferredNetwork = 20404 Some modems allows to specify a preferred network, which means, if this network is
+not available, a different network is used. If you specify UseOnlyPreferredNetwork and this network is not
+available, the modem will not dial in.
+APNType is used by: SetNetworkProfileRequest.NetworkConnectionProfileType
+Field Name Field Type Card. Description
+apn string[0..512] 1..1 Required. The Access Point Name as an URL.
+apnUserName string[0..20] 0..1 Optional. APN username.
+apnPassword string[0..20] 0..1 Optional. APN Password.
+simPin integer 0..1 Optional. SIM card pin code.
+preferredNetwork identifierString[0..6] 0..1 Optional. Preferred network, written as MCC and MNC
+concatenated. See note.
+Edition 4, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 394/491 Part 2 - Specification

@@ -1,0 +1,56 @@
+L Firmware Management
+TC_L_01_CS: Secure Firmware Update - Installation successful
+Test case name Secure Firmware Update - Installation successful
+Test case Id TC_L_01_CS
+Use case Id(s) L01
+Requirement(s) L01.FR.01,L01.FR.04,L01.FR.05,L01.FR.09,L01.FR.10,L01.FR.12,L01.FR.13,L01.FR.15,L01.FR.20,L01.FR.21,L
+01.FR.23
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to securely download and install a new firmware by
+sending an UpdateFirmwareRequest with a signingCertificate.
+Purpose To verify if the Charging Station is able to securely download and install a new firmware.
+Prerequisite(s) A file server has been setup according to the (by the Charging Station) supported file transfer protocol(s),
+indicated by the configuration variable FileTransferProtocols.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+UpdateFirmwareResponse
+1. The Test System sends a UpdateFirmwareRequest
+with firmware.installDateTime <Current DateTime - 2 hours>
+firmware.location <Configured firmware_location>
+firmware.retrieveDateTime <Current DateTime - 2 hours>
+firmware.signingCertificate <Configured signingCertificate>
+firmware.signature <Configured signature>
+3. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Downloading
+4. The Test System responds with a
+FirmwareStatusNotificationResponse
+5. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Downloaded
+6. The Test System responds with a
+FirmwareStatusNotificationResponse
+7. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status SignatureVerified
+8. The Test System responds with a
+FirmwareStatusNotificationResponse
+9. The Charging Station notifies the CSMS about the current
+state of all connectors.
+Note(s):
+- This step is optional. The Charging Station may wants to set its
+connectors to Unavailable, before proceeding installing the new
+firmware.
+10. The Test System responds accordingly.
+11. Execute Reusable State RebootBeforeFirmwareInstallation
+Note: This step only needs to be executed if the Charging Station needs to reboot before firmware installation.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 389/914 Part 6 - Test Cases

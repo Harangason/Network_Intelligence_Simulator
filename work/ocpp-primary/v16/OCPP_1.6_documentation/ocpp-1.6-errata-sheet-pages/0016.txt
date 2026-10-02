@@ -1,0 +1,34 @@
+Old text RemoteStopTransaction.req to Charge Point with the identifier of the transaction. Charge Point SHALL reply with
+RemoteStopTransaction.conf to indicate whether it is indeed able to stop the transaction.
+New text RemoteStopTransaction.req to Charge Point with the identifier of the transaction. Charge Point SHALL reply with
+RemoteStopTransaction.conf and a status indicating whether it has accepted the request and a transaction with the given
+transactionId is ongoing and will be stopped.
+3.34. page 54, section: 5.16. Not defined how a Charge Point should process a
+Charging Profile with more phases then being used.
+Added in errata sheet v4.0
+Additional Text When the Charge Point receives a Charging Profile with 'numberPhases' higher then the currently used amount of phases or
+maximum amount of phases this Charge Point can use, The Charge Point SHALL use the 'limit' as is given, for the amount of
+phases that are/can be used for charging. The Charge Point SHALL NOT calculate a new 'limit' based on the amount of phases
+possible and given in the 'numberPhases' field.
+3.35. page 55, section: 5.17. TriggerMessage(BootNotification) after being accepted
+may be rejected
+Added in errata sheet v4.0
+The following scenario is not defined in OCPP 1.6: "When the Charge Point is accepted by the Central System and
+the Central System sends a TriggerMessage for requesting a BootNotification. The Charge Point will accept this
+TriggerMessage and sends a BootNotification.req to the Central System. What should be the behavior of the
+Charge Point when the Central System is responding with the status Pending or Rejected?"
+As this can cause a lot of confusing situations, what to do with ongoing transaction etc. It is allowed to reject
+such a TriggerMessage.req.
+Additional text After the Charge Point has received a BootNotification.conf(Accepted), until the next reset/reboot/reconnect, the Charge Point
+is RECOMMENDED to Reject a TriggerMessage request for BootNotification.
+3.36. Page 56, section: 5.14: Improved description of Soft/Hard Reset
+Added in errata sheet v3.0
+The descriptions of Soft/Hard reset can be improved, not very clear what is the difference between the two.
+Additional text,
+between par 1 & 2
+After receipt of a Reset.req, The Charge Point SHALL send a StopTransaction.req for any ongoing transaction before performing
+the reset. If the Charge Point fails to receive a StopTransaction.conf from the Central System, it SHALL queue the
+StopTransaction.req.
+Old text At receipt of a soft reset, the Charge Point SHALL return to a state that behaves as just having been booted. If any transaction is in
+progress it SHALL be terminated normally, before the reset, as in Stop Transaction.
+15

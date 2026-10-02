@@ -1,0 +1,36 @@
+K17 - Renegotiation initiated by EV
+Updated in OCPP 2.1
+No. Type Description
+1 Name Renegotiation initiated by EV.
+2 ID K16
+3 Objective(s) To let an EV request a new charging schedule.
+4 Description The EV signals the Charging Station that it wants to renegotiate and it provides new charging
+needs, which the Charging Station sends to the CSMS. Based on this and other parameters, the
+CSMS calculates a new charging schedule and sends it via SetChargingProfileRequest to
+Charging Station, which communicates it to the EV.
+Note: Description of actions between EV and Charging Station is informative only and not
+mandated by OCPP.
+Actors EV, Charging Station, CSMS
+Scenario description 1 When EV sends a ChargeParameterDiscoveryReq with with charging needs parameters, then
+Charging Station sends this information in a NotifyEVChargingNeedsRequest to CSMS.
+2 CSMS responds with NotifyEVChargingNeedsResponse to Charging Station.
+3 CSMS calculates new charging schedule, that tries to accomodate the EV charging needs and
+still fits within the schedule boundaries imposed by other parameters.
+4 CSMS sends a SetChargingProfileRequest with the new schedule to the Charging Station.
+5 Charging Station responds with SetChargingProfileResponse with status Accepted.
+6 Charging Station sends new charging schedule to EV in a ChargeParameterDiscoveryRes
+message.
+7 EV sends a PowerDeliveryReq with chargeProgress = Start (with an optional charging profile)
+to confirm this.
+8 Charging Station responds with PowerDeliveryRes and, if charging was suspended at start of
+the renegotiation, will resume power delivery.
+9 If EV provided a charging profile in the previous step, then Charging Station will send a
+NotifyEVChargingScheduleRequest to the CSMS.
+5 Prerequisites Charging session started according to use case K15.
+6 Postcondition(s) Charging session uses the new charging profile.
+7 Remark(s) Signed SalesTariffs are supported in OCPP 2.1 via the signatureValue field in
+ChargingProfileType.
+Charging with ISO 15118-20 is described in use cases K18 - ISO 15118-20 Scheduled Control
+Mode and K19 - ISO 15118-20 Dynamic Control Mode.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 384/803 Part 2 - Specification

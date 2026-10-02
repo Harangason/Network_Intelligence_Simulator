@@ -1,0 +1,29 @@
+TC_E_114_CS: Resuming transaction after interruption - Powerloss -
+TxResumptionTimeout absent
+Test case name Resuming transaction after interruption - Powerloss - TxResumptionTimeout absent
+Test case Id TC_E_114_CS
+Use case Id(s) E17
+Requirement(s) E17.FR.01
+System under test Charging Station
+Description Charging station does not support resuming the transactions that were running before powerloss.
+Purpose To verify whether the Charging Station does not resume the transactions.
+Prerequisite(s) TxCtrlr.ResumptionTimeout is <absent>
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Cut the power to the Charging Station, wait 30 seconds and restore power to the Charging Station
+Tool validations
+N/a
+Post scenario validations:
+Charging Station boots normally, but no Transaction related messages are sent to the CSMS with triggerReason = TxResumed,
+since resuming is not supported.
+Note: It is allowed that some TransactionEventRequests are sent to report that the running transactions have been ended, e.g. via
+triggerReason = AbnormalCondition.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 313/1383 Part 6 - Test Cases

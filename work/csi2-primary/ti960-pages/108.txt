@@ -1,0 +1,53 @@
+Table 7-83. BCC_STATUS Register Field Descriptions (continued)
+Bit Field Type Reset Description
+3 BCC_CONTROLLER_TO RC 0x0 BCC Controller Timeout Error
+This bit will be set if the BCC Watchdog Timer expires will waiting 
+for a response from the Serializer while the BCC I2C Controller is 
+active. This flag is cleared on read of this register. This indication is 
+available only if BCC_EN_ENH_ERR is set to 1.
+2 BCC_TARGET_ERR RC 0x0 BCC Target Error
+This flag indicates a Forward Channel BCC Sequence, BCC CRC, or 
+Lock error occurred while waiting for a response from the Serializer 
+while the BCC I2C Target is active. This flag is cleared on read of 
+this register. This indication is available only if BCC_EN_ENH_ERR 
+is set to 1.
+1 BCC_TARGET_TO RC 0x0 BCC Target Timeout Error
+This bit will be set if the BCC Watchdog Timer expires will waiting for 
+a response from the Serializer while the BCC I2C Target is active. 
+This flag is cleared on read of this register.
+0 BCC_RESP_ERR RC 0x0 BCC Response Error
+This flag indicates an error has been detected in response to a 
+command on the Bidirectional Control Channel. When the I2C Target 
+is active, the Serializer should return data written (I2C address, 
+offset, or data). When the I2C Target is active, the Serializer will 
+return data read. The BCC function checks the returned data for 
+errors, and will set this flag if an error is detected. This flag is 
+cleared on read of this register. This indication is available only if 
+BCC_EN_ENH_ERR is set to 1.
+7.6.1.62 FPD3_CAP Register (Address = 0x4A) [Reset = 0x00] 
+FPD3_CAP is shown in Table 7-84.
+Return to the Summary Table.
+RX port-specific register. The FPD-Link III Port Select register 0x4C configures which unique Rx port registers 
+can be accessed by I2C read and write commands. Recommend to set bit four in the FPD-Link III capabilities 
+register to one in order to flag errors detected from enhanced CRC on encoded link control information. The 
+FPD-Link III Encoder CRC must also be enabled by setting the FPD3_ENC_CRC_DIS (register 0xBA[7]) to 0.
+Table 7-84. FPD3_CAP Register Field Descriptions
+Bit Field Type Reset Description
+7:5 RESERVED R 0x0 Reserved
+4 FPD3_ENC_CRC_CAP R/W 0x0 0: Disable CRC error flag from FPD-Link III encoder
+1: Enable CRC error flag from FPD-Link III encoder (recommended)
+3 RESERVED R 0x0 Reserved
+2 RESERVED R 0x0 Reserved
+1:0 RESERVED R 0x0 Reserved
+7.6.1.63 RAW_EMBED_DTYPE Register (Address = 0x4B) [Reset = 0x12] 
+RAW_EMBED_DTYPE is shown in Table 7-85.
+Return to the Summary Table.
+RX port-specific register. The FPD-Link III Port Select register 0x4C configures which unique Rx port registers 
+can be accessed by I2C read and write commands. When the receiver is programmed for Raw mode data, 
+this register field allows setting the Data Type field for the first N lines to indicated embedded non-image data. 
+RAW_EMBED_DTYPE has no effect on CSI-2 receiver modes.
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+108 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

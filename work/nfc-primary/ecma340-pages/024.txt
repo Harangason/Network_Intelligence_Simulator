@@ -1,0 +1,34 @@
+ 
+18  © Ecma International 2024 
+ 
+In case where two Targets or more are in the field, the one with the lowest n will answer first and the other will 
+not answer. 
+In case of two or more Targets answering in exactly the same time period, the Initiator will detect a collision and 
+it will re-send the ATR_REQ, which is described in 12.6.1.1. 
+After the first valid Target response is detected by the Initiator, the Initiator shall use n = 0 for further 
+communication. 
+After the Target has received a request other than ATR_REQ, the Target shall use n = 0 for further 
+communication. 
+12 Transport protocol 
+12.1 General 
+The transport protocol is handled in three parts: 
+− activation of the protocol, which includes the Request for Attributes and the Parameter Selection;  
+− the data exchange protocol; 
+− the deactivation of the protocol including the Deselect and the Release.  
+12.2 Transport Data 
+User data shall be transported in the Transport Data field in the Frame format. Figure 12 specifies the position 
+of the Transport Data field in each Frame format. 
+The structure for the Frame format for fc/128 shall conform to ISO/IEC 14443-3:2018, 6.2.3.2. The start byte SB 
+shall be set to ‘F0’. The LEN byte shall be set to the length of the Transport Data field plus 1. The range of the 
+LEN shall be in the range of 3 to 255. The E1 is the CRC for the Frame format of fc/128 as described in A.1. 
+Other settings of LEN shall not be used. 
+Subclause 11.3.2.2 specifies the frame format for fc/64 and fc/32 including the Preamble PA and the 
+Synchronous pattern bytes SYNC. 
+The LEN byte shall be set to the length of the Transport Data field plus 1. The value of LEN shall be in the range 
+of 3 to 255. The E2 is the CRC for the Frame format of fc/64 and fc/32 as described in A.3. Other settings of LEN 
+shall not be used. 
+The Transport data field contains the mandatory command bytes CMD1 and CMD2 as described in 12.4 and 
+the data bytes Byte 1 to Byte n. The content of Byte 1 to Byte n depends on the command byte CMD2 and may 
+contain information. In that case they are mandatory. Data bytes are optional.  
+ 
+Figure 12 — Transport Data Frame format 

@@ -1,0 +1,68 @@
+Variable variableName TxBeforeAcceptedEnabled
+variableAttribu
+tes
+mutability ReadWrite
+variableCharac
+teristics
+dataType boolean
+Description With this configuration variable the Charging Station can be configured to allow
+charging before having received a BootNotificationResponse with
+RegistrationStatus: Accepted. See: Transactions before being accepted by a
+CSMS.
+2.7.4. TxStartPoint
+Required yes
+Component componentNa
+me
+TxCtrlr
+Variable variableName TxStartPoint
+variableAttribu
+tes
+mutability ReadOnly or ReadWrite. Choice is up to Charging
+Station implementation.
+variableCharac
+teristics
+dataType MemberList
+valuesLis
+t
+See TxStartStopPoint values for allowed values. It is
+not required to implement all possible values.
+Description Defines when the Charging Station starts a new transaction: first
+transactioneventRequest: eventType = Started.
+When any event in the given list occurs, the Charging Station SHALL start a
+transaction.
+The Charging Station SHALL only send the Started event once for every
+transaction.
+It is advised to put all events that should be part of a transaction in the list, in
+case the start event never occurs.
+Because the possible events don’t always have to come in the same order it is
+possible to provide a list of events. Which ever comes first will then cause a
+transaction to be started. For example: EVConnected, Authorized would mean
+that a transaction is started when an EV is detected (Cable is connected), or
+when an EV Driver swipes his RFID card en the CSMS successfully authorizes the
+ID for charging.
+2.7.5. TxStopPoint
+Required yes
+Component componentNa
+me
+TxCtrlr
+Variable variableName TxStopPoint
+variableAttribu
+tes
+mutability ReadOnly or ReadWrite. Choice is up to Charging
+Station implementation.
+variableCharac
+teristics
+dataType MemberList
+valuesLis
+t
+See TxStartStopPoint values for allowed values. It is
+not required to implement all possible values.
+Description Defines when the Charging Station ends a transaction: last
+transactioneventRequest: eventType = Ended.
+When any event in the given list is no longer valid, the Charging Station SHALL
+end the transaction.
+The Charging Station SHALL only send the Ended event once for every
+transaction.
+2.7.6. TxStartStopPoint values
+Edition 2, 2025-12-03 Referenced Components and Variables
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 743/803 Part 2 - Specification

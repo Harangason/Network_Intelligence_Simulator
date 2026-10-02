@@ -1,0 +1,60 @@
+63 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+CAN Input Frequency Matching
+Most modern vehicles have a CAN network
+connected to pins 6 and 14 of the OBD connector. At
+one time, however, the use of these pins was left to
+the vehicle manufacturer, and a number of different
+systems were connected to them.
+In order to prevent the disruption of any connected
+systems while the ELM327 is searching for a protocol
+(it sends out requests during a search), the ELM327
+now performs several tests on these wires. Prior to
+firmware version 2.1, the tests simply looked for
+activity on the wires but were not frequency selective.
+This meant that, for example, vehicles that had a
+speedometer signal connected to either pin might be
+seen as a valid CAN network, and the ELM327 may
+have sent a request on those wires. The new firmware
+actually measures the input frequency and requires
+that it matches that of the selected CAN protocol
+before any test message can be sent.
+The diagram below shows how the logic works. It
+Signal
+Processing
+allow a
+CAN send
+CAN Rx
+(pin 24)
+signal is 500 kbps
+setting is
+500 kbps
+PP 28, b7 is 0
+signal is 250 kbps
+setting is
+250 kbps
+PP 28, b6 is 0
+signal is not 250 or 500 kbps
+setting is not
+250 or 500 kbps
+PP 28, b0 is 1
+input is quiet
+Send Logic While Searching for a Protocol
+may seem a little complicated, but what it really says is
+that for the default settings, a send is allowed if the
+input signal frequency matches the CAN setting (250
+or 500 kbps), or if there appears to be no signal. In
+addition, if the user is trying a non-standard OBD
+frequency, but a standard frequency is received, a
+send will not be allowed.
+All bits of PP 28 are set to 1 by default (requiring
+frequency matching, unless no signal is detected), but
+may be changed at any time – see the Programmable
+Parameters section for details.
+This logic is only used while searching for a valid
+protocol. Once a particular protocol is considered to be
+active, no further frequency checks are made (as it is
+time consuming). Note that if you should use the AT BI
+command to bypass the initiation process, this
+frequency matching test will also bypassed.

@@ -1,0 +1,38 @@
+In most cases the DER configuration will be static, since grid codes are not changed often, but it is possible for the CSO to
+dynamically update the DER settings of charging stations.
+2.3. DER Control for AC bidirectional power transfer
+In case of an AC charging station, the AC-DC inverter is part of the EV. As such it cannot be controlled directly via OCPP, because
+there is no OCPP connection with the EV. The charging station has its own communication protocol with the EV. This document
+assumes ISO 15118-20 as the communication protocol with the EV, but other protocols that support bidirectional charging, such as
+CHAdeMO, can also be used, although the number of parameters that can be exchanged may differ.
+The current version of ISO 15118-20 for AC (ProtocolNamespace = "urn:iso:std:iso:15118:-20:AC", VersionNumberMajor = 1)
+available in 2023 does not provide support to configure the EV inverter with specific grid code settings, such as fault ride-through
+and frequency droop curves, or reactive power capabilities. However, the ChargeLoop message of ISO 15118-20, that is exchanged
+between charging station and EV several times a second, provides a lot of control over the charging. A charging station can use this
+to dynamically control the charging and discharging such that it satisfies the grid code requirements.
+For example, a frequency droop curve can be implemented by the charging station. Based on the grid frequency this curve will tell
+how much discharging needs to be reduced or increased to help stabilize the grid frequency. The charging station adjusts the
+charging or discharging rate of the EV via the ChargeLoop messages. There is some latency involved, of course, and reaction speed
+highly depends on how frequent the EV sends its ChargeLoop messages. It will not suffice for settings that require a reaction time
+in the order of milliseconds.
+Amendment 1 of ISO 15118-20 provides a new service "AC_BPT_DER" with capabilities to enforce grid code compliance. Two types
+of architectures are supported. An architecture in which the AC inverter in the EV is fully responsible for grid code compliance, and
+an architecture in which the responsibility is split between EV and Charging Station.
+2.4. ISO 15118 V2G-AC inverter architecture
+In the V2G-AC inverter architecture, the advanced smart inverter in the EV is fully responsible for grid code compliance. When the
+EV connects to the Charging Station, the latter will require a list of settings and supported DER controls that the EV must support
+when accepting the AC_BPT_DER service. Charging Station will then send all grid code settings to the EV. The grid code settings
+will have been sent to the Charging Station by the CSMS at some earlier point in time.
+Figure 198. V2G-AC inverter archicture (ISO 15118-20)
+2.5. ISO 15118 V2G-Split inverter architecture
+In the V2G-Split architecture the responsibility for grid code compliance is split between EV and Charging Station.
+When the EV connects to the Charging Station, the latter will require a list of minimally required settings and DER controls that the
+EV must support. (This could even be an empty list.) Any DER controls that are required to comply to the grid code, but are not
+supported by the EV will be executed by the EVSE of the Charging Station. One of the possible configurations is the one represented
+in the diagram, where the EVSE ensures grid code compliance by measuring frequency and voltage deviations and calculating the
+appropriate active and/or reactive power target values. The EV will receive the targets requested by the EVSE and consume or inject
+active/reactive power. Both the EV and EVSE or just one shall also have interface protection means, which will be triggered
+according to the trip functions. The EV may perform reactive and active power functions independently, or receive target requests
+by the EVSE to consume or inject active/reactive power.
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 542/803 Part 2 - Specification

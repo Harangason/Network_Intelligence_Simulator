@@ -1,0 +1,69 @@
+MODBUS over serial line specification and implementation guide V1.02  Modbus.org    
+Modbus.org http://www.modbus.org/ 14/44
+Dec 20, 2006 
+The following drawing provides a description of the RTU transmission mode state diagram. Both "master" and "slave" points of vi ew 
+are expressed in the same drawing : 
+Character received
+/ flag = frame NOK
+Emission
+Reception
+First character received
+/ init. and start t1.5, t3.5
+Emitted character
+[if last emitted character]
+/ init. and start t3.5
+Demand of emission
+Character received
+ / init. and start t1.5, t3.5
+t1.5 expired
+Legend
+t1.5, t3.5 : timers
+t3.5 : 3.5 character times
+t1.5 : 1.5 character times
+Control and
+Waiting
+Initial State
+t3.5 expired
+Idle
+/start t3.5 Comment
+If frame OK
+/bright processing frame
+If frame NOK
+/bright delete entire frame
+Comment
+control frame (CRC, Parity, Slave addr)
+/head2rightflag = frame OK or NOK
+t3.5 expired
+t3.5 expired
+Character received
+ / init. and start t3.5
+(ready to receive or to emit)
+Figure 14: 
+RTU  transmission mode state diagram 
+Some explanations about the above state diagram: 
+/square4 T
+ransition from "Initial State" to "Idle" state needs t 3.5 time-out expiration :  that insures inter-frame delay  
+/square4 "Idle" state is the normal state when neither emission nor reception is active. 
+/square4 In RTU mode, the communication link is declared in "idle" state when there is no transmission activity after a time interval eq ual to 
+at least 3,5 characters. 
+/square4 When the link is in idle state, each transmitted character detected on the link is identified as the start of a frame. The link goes to 
+the "active" state. Then, the end of frame  is identified when no more character is transmitted on the link after the time interval 
+t3,5. 
+/square4 After detection of the end of frame, the CRC calculation and checking is completed. Afterwards the address field is analysed to  
+determine if the frame is for the device.  If not the frame is discarded.  In order to reduce the reception processing time the  
+address field can be analysed as soon as it is received without waiting the end of frame.  In this case the CRC will be calcula ted 
+and checked only if the frame is addressed to the slave (broadcast frame included). 
+2.5.1.2 CRC Checking 
+The RTU mode includes an error–checking field that is based on a Cyclical Redundancy Checking ( CRC) method performed on the 
+message contents. 
+The CRC field checks the contents of the entire message.  It is applied regardless of any parity checking method used for the 
+individual characters of the message. 
+The CRC field contains a 16–bit value implemented as two 8–bit bytes.   
+The CRC field is appended to the message as the last field in the message.  When this is done, the low–order byte of the field is 
+appended first, followed by the high–order byte.  The CRC high–order byte is the last byte to be sent in the message. 
+The CRC value is calculated by the sending device, which appends the CRC to the message.  The receiving device recalculates a 
+CRC during receipt of the message, and compares the calculated value to the actual value it received in the CRC field. If the t wo 
+values are not equal, an error results. 
+The CRC calculation is started by first pre-loading a 16–bit register to all 1’s. Then a process begins of applying successive 8–bit 
+bytes of the message to the current contents of the register. Only the eight bits of data in each character are used for genera ting the 
+CRC. Start and stop bits and the parity bit, do not apply to the CRC. 

@@ -1,0 +1,49 @@
+TC_N_51_CS: Set Variable Monitoring - Modifying a VariableMonitor and trigger
+Test case name Set Variable Monitoring - Modifying a VariableMonitor and trigger
+Test case Id TC_N_51_CS
+Use case Id(s) N07
+Requirement(s) N07.FR.11
+System under test Charging Station
+Description NotifyEventRequest reports every Component/Variable for which a VariableMonitoring setting was
+triggered. Only the VariableMonitoring settings that are responsible for triggering an event are included.
+Purpose To verify if the Charging station is able to correctly check if the current value exceeds the new threshold as
+described at the OCPP specification.
+Prerequisite(s) Charging Station supports Monitoring
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+Variable monitor is already set with:
+setMonitoringData.component <Configured threshold monitor component variable>
+setMonitoringData.variable <Configured threshold monitor component variable>
+setMonitoringData.value <Configured threshold monitor component variable UpperThreshold non-trigger value>
+setMonitoringData.type UpperThreshold
+setMonitoringData.severity 5
+Set MonitoringLevel to 8
+Notes: If componentVariable is set to "Power" or "Current", the value is set to the configured maxLimit -1
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Notes: If componentVariable is set to "Power" or "Current" EnergyTransferStarted will trigger the monitor. If another
+componentvariable is chosen a manual action is needed to trigger the monitor.
+1. Execute Reusable State EnergyTransferStarted or manually trigger the monitor.
+3. The Charging Station responds with a
+SetVariableMonitoringResponse
+2. The Test System sends a SetVariableMonitoringRequest with
+setMonitoringData.component <Configured threshold monitor
+component variable>
+setMonitoringData.variable <Configured threshold monitor
+component variable>
+setMonitoringData.id
+<SetVariableMonitoringResponse.setMonitoringResult.id in
+preparation phase>
+setMonitoringData.value <Configured threshold monitor
+component variable UpperThreshold trigger value>
+setMonitoringData.type UpperThreshold
+Notes: If componentVariable is set to "Power" or "Current", the
+value is set to 0.0
+4. The Charging station sends a NotifyEventRequest
+5. The Test System responds with a NotifyEventResponse .
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 522/914 Part 6 - Test Cases

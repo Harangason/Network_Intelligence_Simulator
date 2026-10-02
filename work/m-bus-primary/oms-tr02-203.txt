@@ -1,0 +1,3560 @@
+PDF PAGE 1
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Open Metering System 
+Technical Report 02 
+Wired M-Bus 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Version 2.0.3 ‑ 2023-03-29 
+RELEASE 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+© Open Metering System Group e.V., 2023
+
+PDF PAGE 2
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  2/73 
+Contents 
+Contents .................................................................................................................................................................. 2 
+Tables ...................................................................................................................................................................... 5 
+Figures .................................................................................................................................................................... 5 
+1 Preface ................................................................................................................................................... 6 5 
+2 Introduction ............................................................................................................................................ 7 
+3 Glossary of terms ................................................................................................................................... 8 
+4 References ........................................................................................................................................... 11 
+5 Decisions and New Definitions by OMS AG4 ....................................................................................... 12 
+5.1 Physical Layer ...................................................................................................................................... 12 10 
+5.1.1 Cabling ................................................................................................................................................. 12 
+5.1.1.1 Cable Types ......................................................................................................................................... 12 
+5.1.1.2 Topology .............................................................................................................................................. 12 
+5.1.1.3 Wiring rules .......................................................................................................................................... 13 
+5.1.1.4 Maximum length ................................................................................................................................... 13 15 
+5.1.2 SC Charge / Discharge ........................................................................................................................ 14 
+5.1.3 Inrush Current ...................................................................................................................................... 14 
+5.1.3.1 Definition and Measurement of Inrush Current .................................................................................... 14 
+5.1.3.2 Referenced Sources from EN13757-2 for Defining the Inrush Current ................................................ 14 
+5.1.3.3 Hints and remarks ................................................................................................................................ 15 20 
+5.1.4 Rise and Fall Times ............................................................................................................................. 15 
+5.1.5 Identification of the Unit Loads ............................................................................................................. 15 
+5.1.6 Switch-on Process ............................................................................................................................... 15 
+5.1.7 Upper Limit for Voltage Variation ......................................................................................................... 16 
+5.1.8 Minimum Slave M-Bus Voltage ............................................................................................................ 17 25 
+5.1.8.1 Electrical requirements, master ............................................................................................................ 18 
+5.1.9 Hysteresis Voltage Deviation ............................................................................................................... 20 
+5.1.9.1 Test master .......................................................................................................................................... 20 
+5.1.9.2 Test slave ............................................................................................................................................. 22 
+5.1.9.3 Test equipment .................................................................................................................................... 24 30 
+5.1.10 Transmission of the Remaining Communication Energy of the Battery (Optional) ............................... 27 
+5.1.11 Break Detection (Mandatory) ............................................................................................................... 27 
+5.1.12 EMC Requirements .............................................................................................................................. 27 
+5.1.13 Logical Slave Disconnect (Mandatory) ................................................................................................. 27 
+5.1.14 Overview Master Characteristics.......................................................................................................... 28 35 
+5.2 Link Layer ............................................................................................................................................ 29 
+5.2.1 Baud Rates (Mandatory) ...................................................................................................................... 29 
+5.2.2 Idle Time between Datagrams ............................................................................................................. 29 
+5.2.3 Change of Primary and Secondary Addresses, Unique Secondary Address ....................................... 29 
+5.2.4 Two or more Logical M-Buses in one Hardware Environment ............................................................. 30 40 
+5.2.5 Datagram Detection ............................................................................................................................. 30 
+5.2.6 Special Primary Addresses 254, 255 (Mandatory) ............................................................................... 31 
+5.3 Networking Layer / Secondary Addressing .......................................................................................... 32 
+5.3.1 Enhanced Selection (Mandatory) ......................................................................................................... 32 
+5.3.2 Determination of Addresses in Adapters: Rule for Incorrectly Labelled Meter (Mandatory) ................. 32 45 
+5.4 Application Layer.................................................................................................................................. 34 
+5.4.1 OMSS Vol. 2 Chapter 2.2: Table with CI-fields (Mandatory) ................................................................ 34 
+5.4.2 New Device Type for Wired Adapters (Mandatory) .............................................................................. 34 
+5.4.3 Rules for Multi Datagram RSP-UD (Mandatory, Derived from EN 13757 Definitions).......................... 34 
+5.4.4 Minimum Communication Capabilities for Slaves (Mandatory) ............................................................ 34 50 
+5.4.5 Commands for Communication if Applicable (Mandatory) ................................................................... 34 
+5.5 Reserved .............................................................................................................................................. 35 
+5.6 Installation ............................................................................................................................................ 35 
+5.7 Certification .......................................................................................................................................... 35 
+5.7.1 Bit Timing ............................................................................................................................................. 35 55 
+5.7.2 Startup ................................................................................................................................................. 35 
+PDF PAGE 3
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  3/73 
+5.7.3 Scope ................................................................................................................................................... 35 
+5.7.4 Test Setup ............................................................................................................................................ 35 
+5.8 Security ................................................................................................................................................ 35 
+5.8.1 Introduction .......................................................................................................................................... 35 
+5.8.2 Unencrypted Messages for Wired M-Bus ............................................................................................. 36 5 
+5.8.3 Layer Structure .................................................................................................................................... 37 
+5.8.4 Security Profile A.................................................................................................................................. 38 
+5.8.5 Security Profile B.................................................................................................................................. 40 
+5.8.6 Security Profile C ................................................................................................................................. 41 
+5.9 New Topics in Version 2 of the Technical Report ................................................................................ 44 10 
+5.9.1 Slave Readout ..................................................................................................................................... 44 
+5.9.2 Secondary Address Search ................................................................................................................. 44 
+5.9.3 Deselection .......................................................................................................................................... 44 
+6 Cross-Reference Table for Chapters 7 and 5 ...................................................................................... 45 
+7 Known Wired M-Bus Issues ................................................................................................................. 48 15 
+7.1 Physical Layer ...................................................................................................................................... 48 
+7.1.1 Cabling ................................................................................................................................................. 48 
+7.1.2 Connectors ........................................................................................................................................... 48 
+7.1.3 SC Charge / Discharge ........................................................................................................................ 48 
+7.1.4 Inrush Current ...................................................................................................................................... 48 20 
+7.1.5 Rise and Fall Times ............................................................................................................................. 48 
+7.1.6 Bit Timing ............................................................................................................................................. 48 
+7.1.7 Number of Unit Loads > 1 .................................................................................................................... 49 
+7.1.8 Statement of Unit Loads for Master and Slave ..................................................................................... 49 
+7.1.9 M-Bus Voltage Switch-on Process ....................................................................................................... 49 25 
+7.1.10 Specify upper Limit for Voltage Deviation (due to M-Bus Slaves Current Regulation) ......................... 49 
+7.1.11 Minimum M-Bus Voltage (Mark and Space) ......................................................................................... 49 
+7.1.12 Hysteresis Voltage Deviation ............................................................................................................... 49 
+7.1.13 Inconsistent Description of the M-Bus Break Length (Slave Collision Detect) ..................................... 49 
+7.1.14 M-Bus break: Scope for Interpretation concerning the Definition of the M-Bus Break ......................... 50 30 
+7.1.15 M-Bus Break (I) .................................................................................................................................... 50 
+7.1.16 M-Bus Break (II) ................................................................................................................................... 50 
+7.1.17 Break Detection ................................................................................................................................... 50 
+7.1.18 Intrinsically Safe M-Bus ........................................................................................................................ 50 
+7.1.19 Battery-Powered Devices ..................................................................................................................... 50 35 
+7.1.20 Problems with Special Meters: M-Bus Converters to 20 mA ................................................................ 50 
+7.1.21 Limitations in the Readout Frequency (Energy Meters and Water Meters generally) .......................... 50 
+7.1.22 Readout Frequency.............................................................................................................................. 51 
+7.1.23 Behaviour of Battery-Powered Meters ................................................................................................. 51 
+7.1.24 Problems with Special Meters: Meter xxx in Battery Operation ............................................................ 51 40 
+7.1.25 Contravention of Specification: Discrete Designs ................................................................................ 51 
+7.1.26 Contravention of Specification: Capacitance too high .......................................................................... 51 
+7.1.27 EMC Basic Requirements for Sockets / Casing ................................................................................... 52 
+7.1.28 Define EMC Compliant Input Wiring for the M-Bus Slave .................................................................... 52 
+7.1.29 Certification of built-in M-Bus ICs ......................................................................................................... 52 45 
+7.1.30 Topology Key Questions ...................................................................................................................... 52 
+7.2 Link Layer ............................................................................................................................................ 53 
+7.2.1 M-Bus Timing Requirements ................................................................................................................ 53 
+7.2.2 Idle Time between Datagrams ............................................................................................................. 53 
+7.2.3 Faster Scanning of M-Bus Devices ...................................................................................................... 53 50 
+7.2.4 Contravention of Specification: Incorrect Timing .................................................................................. 53 
+7.2.5 Contravention of Specification: Delivery State Primary Address .......................................................... 53 
+7.2.6 Contravention of Specification: Change to the Meter Address ............................................................. 53 
+7.2.7 Contravention of Specification: Change to the Primary Address .......................................................... 53 
+7.2.8 Primary Addressing Difficulties ............................................................................................................ 53 55 
+7.2.9 Two or more Logical M-Buses in one Hardware Environment ............................................................. 54 
+7.2.10 Detection of Datagram End through Timeout or Interpreter (Valid Datagram) ..................................... 54 
+7.2.11 A-field: Are Special Addresses FEh, FFh always to be Supported? .................................................... 54 
+PDF PAGE 4
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  4/73 
+7.2.12 Automatic Baud Detection: Mandatory / Mandatory only for Recommended Baud Rates? ................. 54 
+7.2.13 Auto Baud Rate Fallback: Mandatory; Clarify Time Window ................................................................ 54 
+7.2.14 Special Single Control Character A2h: Meaning, Specify Use? ........................................................... 54 
+7.2.15 Status Request (REQ_SKE) is Required; Use Needs to be more Exactly Specified ........................... 54 
+7.2.16 SND-NKE ............................................................................................................................................. 54 5 
+7.2.17 Multiple Messages: Identification in Link Layer .................................................................................... 55 
+7.2.18 Definition of FCB .................................................................................................................................. 55 
+7.2.19 Limitation of the Permitted Baud Rates to 300, 2400 and 9600 ........................................................... 55 
+7.2.20 Addressing ........................................................................................................................................... 55 
+7.2.21 Primary Address................................................................................................................................... 55 10 
+7.2.22 Baud Rate ............................................................................................................................................ 55 
+7.2.23 Specification Issue ............................................................................................................................... 55 
+7.2.24 Definition Deficiency: Set Primary Address .......................................................................................... 55 
+7.3 Networking Layer / Secondary Addressing .......................................................................................... 56 
+7.3.1 REQ-UD2 ............................................................................................................................................. 56 15 
+7.3.2 Secondary Address (I) ......................................................................................................................... 56 
+7.3.3 Secondary Address (II) ........................................................................................................................ 56 
+7.3.4 Select is Lost (Electricity Meters generally) .......................................................................................... 56 
+7.3.5 Contravention of Specification: Secondary Addressing........................................................................ 56 
+7.3.6 Secondary Addressing Mandatory ....................................................................................................... 56 20 
+7.3.7 Secondary Addressing as Minimum Requirement for M-Bus Slaves ................................................... 56 
+7.3.8 Serial Number ...................................................................................................................................... 56 
+7.4 Application Layer.................................................................................................................................. 57 
+7.4.1 DIF / VIF Use (Electricity Meters generally) ......................................................................................... 57 
+7.4.2 Problems with Special Meters: Meter zzz ............................................................................................ 57 25 
+7.4.3 Contravention of Specification: Multi Datagran Readout ...................................................................... 57 
+7.4.4 Consistent Implementation ................................................................................................................... 57 
+7.4.5 Datagram Content ................................................................................................................................ 57 
+7.4.6 Function of VIFE .................................................................................................................................. 57 
+7.4.7 Missing VIFs ........................................................................................................................................ 57 30 
+7.4.8 Readout of Extended Data ................................................................................................................... 57 
+7.4.9 Manufacturer-Specific VIFs, as an Example: Electricity Meters with 3 Phases .................................... 58 
+7.4.10 Month End Value / Set Day Values ...................................................................................................... 59 
+7.4.11 Datagrams with Dynamic Length ......................................................................................................... 59 
+7.4.12 Meters with Ambiguous Data in the Datagram ..................................................................................... 59 35 
+7.4.13 Time Information in Datagram .............................................................................................................. 59 
+7.4.14 Consumption Meters with Pulse Inputs ................................................................................................ 60 
+7.4.15 Date Format 03.05.----: Only for Parameter Readout; Identification of Set Days not Permitted. .......... 60 
+7.4.16 Problems with Special Meters: Meter aaa ............................................................................................ 60 
+7.4.17 Battery Driven Meters .......................................................................................................................... 60 40 
+7.4.18 Multi-RSP-UD ...................................................................................................................................... 60 
+7.4.19 DIB ....................................................................................................................................................... 60 
+7.4.20 Unique Manufacturer Device Type of Every Meter should be Mandatory in OMS ............................... 60 
+7.5 Application Profile ................................................................................................................................ 61 
+7.5.1 Specifications on Meter Design ............................................................................................................ 61 45 
+7.5.2 Configuration of Meter Devices ............................................................................................................ 61 
+7.5.3 Meter Configuration: Define Standard Commands .............................................................................. 61 
+7.5.4 Define Communication Procedures...................................................................................................... 61 
+7.5.5 Standard Response ............................................................................................................................. 61 
+7.6 Installation ............................................................................................................................................ 62 50 
+7.6.1 S0 Meters ............................................................................................................................................. 62 
+7.6.2 Pt100 .................................................................................................................................................... 62 
+7.6.3 Topology .............................................................................................................................................. 62 
+7.6.4 230 V Mains ......................................................................................................................................... 62 
+7.6.5 Documentation ..................................................................................................................................... 62 55 
+7.6.6 Installation and Cabling ........................................................................................................................ 62 
+7.7 Certification .......................................................................................................................................... 63 
+7.8 Security ................................................................................................................................................ 64 
+PDF PAGE 5
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  5/73 
+7.9 Postponed Topics ................................................................................................................................ 65 
+7.9.1 Machine Readable Data Sheet (EDS).................................................................................................. 65 
+7.9.1.1 Data Sheet Availability ......................................................................................................................... 65 
+7.9.1.2 Electronic Data Sheet (EDS) ................................................................................................................ 65 
+7.9.2 Internet Website with Tested Devices, Data Sheets ............................................................................ 65 5 
+7.9.2.1 HDS – Human Readable Data Sheet ................................................................................................... 65 
+7.9.2.2 TDS – Technical Data Sheets .............................................................................................................. 65 
+7.9.2.3 EDS – Electronic Data Sheets ............................................................................................................. 65 
+7.9.3 Marketing ............................................................................................................................................. 65 
+7.9.4 Low Power Modes................................................................................................................................ 65 10 
+7.9.5 Communication over Ethernet .............................................................................................................. 65 
+7.9.6 Intrinsically Safe M-Bus Protocol.......................................................................................................... 66 
+7.10 New topics in Version 2 of the Technical Report .................................................................................. 67 
+7.10.1 Slave Readout ..................................................................................................................................... 67 
+7.10.2 Secondary Address Search ................................................................................................................. 67 15 
+7.10.3 Deselection .......................................................................................................................................... 67 
+8 Version History ..................................................................................................................................... 68 
+ 
+Tables 
+Table 1: M-Bus applications .................................................................................................................................. 14 
+Table 2: UL ranges ................................................................................................................................................ 15 20 
+Table 3: Master tests ............................................................................................................................................. 24 
+Table 4: Slave tests ............................................................................................................................................... 25 
+Table 5: Master characteristics .............................................................................................................................. 28 
+Table 6: Cross-reference table for chapters 7 and 5 ............................................................................................. 45 
+Table 7: Example 1: Implementation via manufacturer-specific VIF / VIFE – manufacturer A ............................... 58 25 
+Table 8: Example 2: Implementation via manufacturer-specific VIF / VIFE – manufacturer B ............................... 58 
+ 
+Figures 
+Figure 1: Topology variants ................................................................................................................................... 12 
+Figure 2: Voltage variation ..................................................................................................................................... 16 
+Figure 3: M-Bus voltage ........................................................................................................................................ 18 30 
+Figure 4: M-Bus states .......................................................................................................................................... 19 
+Figure 5: End of datagram detection for a valid M-Bus frame ............................................................................... 31 
+Figure 6: End of datagram detection for an invalid / incomplete M-Bus frame ...................................................... 31 
+Figure 7: Generation of 8-digit identification number ............................................................................................. 33 
+ 
+  
+PDF PAGE 6
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  6/73 
+1 Preface 
+ 
+This document describes the Open Metering System requirements for the Wired M-Bus. The Wired M-Bus is 
+normatively represented in the EN 13757 -2, -3 and -7 standard. During application of the said standard, a certain 
+amount of scope for interpretation or de sign freedom is offered. Among other things, this factor applies to the 
+coding of the data within the application layer. 5 
+ 
+A number of different M-Bus datagrams from different manufacturers therefore exist, with partially identical 
+content. Because of this, problems often arise during the interpretation of datagram data in processing by readout 
+systems or readout programs. 
+ 
+The specifications and standardi zations in this document should contribute to increase the interoperability of 
+Wired M-Bus products and minimise or solve existing problems. 10 
+ 
+  
+PDF PAGE 7
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  7/73 
+2 Introduction 
+The Wired M-Bus is a field bus for the capture of consumption data from different media. It was developed in the 
+1990s by Prof. Dr. Horst Ziegler (University of Paderborn) in cooperation with the Techem  and Texas Instruments 
+companies. 
+ 
+The Wired M-Bus was initially defined in the standard for heat meters, EN 1434. Later followed an independent 5 
+standard for the Wired M-Bus and the Wireless M-Bus, EN 13757. The physical layer and the data link layer are 
+defined in part 2 of EN 13757.  The transport and security services are defined in part 7.  The application layer is 
+represented in part 3. 
+ 
+The Wired M-Bus is designed as a two -wire bus which is inexpensive to implement. The wiring topology 
+requirements are very tolerant. In addition to communication, the power supply to the connected devices can be 10 
+provided via the Wired M-Bus. 
+ 
+In normative terms, many configuration options are allowed at the datagram level to the manufacturer of Wired 
+M­Bus products. As a consequence, a variety of different datagrams exist, with partially identical content s. This 
+variety leads to incompatibilities , together with increased implementation and maintenance costs for downstream 
+readout systems. 15 
+ 
+With the aid of the OMS system de finition, the existing shortcomings, incompatibilities and normative grey areas 
+are reduced. The objective is to ensure the highest degree of interoperability between all Wired M-Bus products. 
+The intention is not to replace the M-Bus standard but to supplement or limit those places where too much 
+freedom of interpretation is present. 
+ 
+First of all therefore, the terms used are explained (chapter 3) and the references are listed (chapter 4).  The 20 
+known problems in using the Wired M-Bus are then stated and briefly explained (chapter 7). Finally, the scope for 
+interpretation is restricted by specifications and definitions (chapter 5). In addition, further standards and 
+documents are referred to in some chapters. 
+ 
+  
+PDF PAGE 8
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  8/73 
+3 Glossary of terms 
+Additional terms and clarifications for glossary annex of OMS Vol. 1 (see chapter 4 for reference). 
+ 
+Term Description, English Description German 
+A A A 
+   
+B B B 
+   
+C C C 
+C-Field Control Field containing the FCB and FCV 
+bits and other control information 
+Das Kontrollfeld enthält die FCB und FCV Bits, 
+sowie weitere Kontrollinformationen 
+CI-Field Control Information Field, contains the type 
+of command sent (set baud rate, application 
+reset, select slave, etc.) 
+Kontrollinformationsfeld. Enthält die Art des 
+Befehls (set baud rate, application reset, select 
+slave…) 
+Collision More than one slave sending at the same 
+time, leading to corrupted data 
+Mehr als ein Slave senden zur gleichen Zeit 
+Daten, wodurch eine Kollision entsteht 
+   
+D D D 
+Deselection Clearing the “selected” status by sending a 
+SND-NKE command or a selection 
+command with a non -matching secondary 
+address 
+Entfernen des „Selected“ Status durch senden 
+eines SND -NKE Befehls oder eines Selection 
+Befehls mit einer nicht übereinstimmenden 
+Sekundäradresse. 
+DIB The Data Information Block contains one 
+DIF and zero to ten DIFE s for the length, 
+type and coding of the data – also see VIB 
+Der Data Information Block enthält ein DIF und 
+null bis zehn DIFE für die Datenlänge, -type und 
+–codierung – siehe auch VIB 
+DIF Data Information Field – control field  – 
+element of the M-Bus datapoint, for the  
+resolution and additional control elements 
+Data information field – Kontrollfeld – Element 
+des M-Bus-Datenpunktes für die Auflösung und 
+zusätzliche Steuerelemente 
+DIFE Data Information Field Extension , contains 
+additional information such as tariff or 
+subunit of the device; see: DIF 
+Erweiterung des Data Information Field. Enthält 
+zum Beispiel den Tarif oder eine Untereinheit ; 
+siehe: DIF 
+DIN German Institute for Standardization Deutsches Institut für Normung 
+DR Data Record Data Record 
+DRH Data Record Header, contains the DIB and 
+VIB information bytes and is followed by the 
+data to be transmitted 
+Der Data Record  Header enthält die DIB und 
+VIB Informations -Bytes gefolgt von den zu 
+übertragenden Daten. 
+   
+E E E 
+   
+F F F 
+FCB Frame Count Bit is a toggling bit , signalling 
+if data blocks are repeated due to an error 
+condition (bit not changed) or in correct 
+order. 
+Das Frame Count -Bit ist ein Umschalt -Bit 
+welches signalisiert ob Datenblöcke  
+Aufgrund eines Fehlers (Bit wechselt nicht) 
+wiederholt werden  
+FCV Frame Count Valid  bit signals whether the 
+frame count mechanism is active 
+Das Frame Count Valid-Bit legt fest ob das FCB 
+aktiv ist. 
+   
+G G G 
+   
+H H H 
+   
+I I I 
+   
+J J J 
+   
+K K K 
+   
+L L L 
+   
+  
+PDF PAGE 9
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  9/73 
+M M M 
+Master Provides the power on the M-Bus. Collects 
+data from the slave devices on the M-Bus. 
+Stellt die Spannungsversorgung auf dem M -Bus 
+bereit. Datensammler für die Informationen der 
+Slave-Geräte am M-Bus 
+MDH Manufacturer-specific Data Header , 
+followed by manufacturer-specific data 
+ 
+   
+N N N 
+   
+O O O 
+   
+P P P 
+   
+Q Q Q 
+   
+R R R 
+REQ-UD1 The master Requests User Data (class 1) Request the User Data. Anfrage des Masters für 
+Benutzerdaten (class1) 
+REQ-UD2 The master Requests User Data (class 2) Request the User Data. Anfrage des Masters für 
+Benutzerdaten (class2) 
+RSP-UD Response with user data Respond User Data. Antwort mit Benutzerdaten 
+   
+S S S 
+SC Source Capacitor Source Capacitor 
+Slave The slaves (usually meters) are seen from 
+the master as constant current sinks 
+connected to the bus, which signal the 
+master by using two different currents if a 
+mark or space has to be transmitted. Data  
+packets from the master are detected by 
+the slaves because of changed voltage 
+levels 
+Die Slaves  (üblicherweise Messgerät) werden vom 
+Master als Konstant -Stromsenken am Bus 
+angesehen. Die Signale werden vom Master über 
+zwei verschiedene Stromschwelle (Mark / Space) 
+erkannt. Datenpakete des Masters werden vom 
+Slave über unterschiedliche Spannungen erkannt. 
+ 
+Selection The master sends a SND -UD command to 
+the address 253, using the specific meter 
+secondary address to select a slave. From 
+that time, the device can be addressed by 
+address 253 until it is deselected. 
+Der Master sendet ein SND -UD Befehl zur  Adresse 
+253 unter der Verwendung der spezifischen 
+sekundären Adresse des Zählers. Ab jetzt kann der 
+Zähler über die Adresse 253 erreicht werden, bis 
+eine Deselektion erfolgt. 
+SND-UD Send User Data to slave Send User Data. Senden von Benutzerdaten zum 
+Slave 
+SND-NKE The value of the FCB is adjusted in master 
+and slave and the slave is deselected when 
+secondary addressing is used 
+Die Wertigkeit des FCB wird im Master und Slave 
+angeglichen. Unter Benutzung der 
+Sekundäradressierung wird der Slave deselektiert. 
+   
+T T T 
+Topology Structure of the M-Bus network with cable 
+lengths, cable types and  number and 
+distribution of slaves 
+Netzwerktopologie: Struktur des M -Bus-Netzwerks 
+mit Kabellängen, -typen und Anzahl und Verteilung 
+der Slaves 
+   
+U U U 
+Unit load Constant load (UL) of 1 ,5 mA which is 
+drawn from the bus if the slave is in idle 
+mode or transmits a “mark” to the master. 
+One to four ULs are allowed. 
+Last (UL) von 1,5  mA, welche der Slave im Idle -
+Mode dem Bus entnimmt wenn der Bus im 
+Ruhezustand ist oder der Slave ein „Mark“ an den 
+Master sendet. Es sind ein bis vier ULs erlaubt. 
+User 
+ 
+A person who designs, installs or starts up 
+M-Bus installations in the field. 
+ 
+Der Benutzer projektiert, installiert oder betreibt 
+M-Bus-Installationen im Feld. 
+   
+  
+PDF PAGE 10
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  10/73 
+V V V 
+VIB The Value Information Block contains one 
+VIF and zero to ten VIFEs 
+Der Value Information Block enthält eine VIF und 
+null bis zehn VIFE um den Messwerten eine Einheit 
+und Multiplikator zuzuweisen. 
+VIF Value Information Field. Element of the MBus 
+protocol used to define units and scaling factor 
+of a datapoint and additional information. 
+Das Value Information Field definiert Einheiten und 
+Skalierungsfaktoren sowie Zusatzinformationen. 
+VIFE Value Information Field Extensions. Adds 
+information to the VIF (e.g. m3), such as  
+“per hour” or an error status or actions to be 
+performed (e.g. clear data). 
+Die Value Information Field Extension fügt zur VIF 
+(z. B. m3) Zusatzin formationen wie „pro Stunde“ 
+oder einen Fehlerstatus oder Operationen (wie z. B. 
+Daten löschen) hinzu. 
+   
+W W W 
+Wired M-Bus Wired version of M-Bus Drahtgebundene Variante des M-Bus 
+Wiring 
+parameters 
+ 
+Specific parameters of the cable  and 
+connectors (R/m  = Ohm/meter , 
+L/m = Henry/meter, C/m = Farad/meter) 
+Parameter für Eigenschaften von Kabeln und 
+Verbindungselementen ( R/m = Ohm/meter, 
+L/m = Henry/meter, C/m = Farad/meter 
+   
+X X X 
+   
+Y Y Y 
+   
+Z Z Z 
+   
+ 
+ 
+  
+PDF PAGE 11
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  11/73 
+4 References 
+OMS: 
+ 
+ OMS Specification Volume 1, General Part, Issue 2.3.1 
+ OMS Specification Volume 1, General Part, Annex A , Release E 
+ OMS Specification Volume 2, Primary Communication, Issue 3.0.1 / 2011-01-29 5 
+ OMS Specification Volume 2, Primary Communication, Issue 4.5.1 
+ OMS-Conformance-Test-Specification Generation 4  Release 6, Volume 1 General Part, Issue 4 .0.9, 
+Volume 2 PHY (Radio Parameters), Issue 4.0.11, V olume 3 Data Link Layer, Issue 4 .0.8, Volume 4 
+Application layer, Issue 4.0.12 
+ 
+EN: 10 
+ 
+ EN 13757-2: Communication systems for meters – Part 2: Wired M-Bus communication: February 2018 
+is currently valid. All references are linked t o the standard edition of February  2018 unless a date is 
+specified. 
+ EN 13757 -3: Communication systems for meters – Part 3:  Application protocols ; August 2018  is 
+currently valid .  All references are linked to the standard edition of August 2018 unless a date is 15 
+specified.; 
+ EN 13757-7: Communication systems for meters – Part 7: Transport and security services ; first edition 
+August 2018; 
+ CEN/TR 17167 Communication system for meters – Accompanying TR to EN 13757 -2, -3 and 7, 
+Examples and supplementary information 20 
+ EN 60870 -5-2: Telecontrol equipment and systems – Part 5: Transmission Protocols – Part 2: Link 
+transmission procedures, EN 60870-5-2:1992 
+ 
+Further set of rules: 
+ 
+ M-Bus documentation: “The M-Bus: A Documentation” Rev. 4.8 from www.M-Bus.com 
+ Technical Directive BSI TR -03109-1, Requirements for the interoperability of the communication unit of 25 
+an intelligent measuring system, version 1.1 
+ 
+  
+PDF PAGE 12
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  12/73 
+5 Decisions and New Definitions by OMS AG4 
+5.1 Physical Layer 
+The definition / description shall support the user with an application guideline to design and setup M-Bus 
+networks for the required number of M-Bus slaves with respect to topology / wiring parameters and 
+communication speed (alternative: the required readout interval) without applying measurement equipment during 5 
+setup. 
+5.1.1 Cabling 
+The informative annex E in the standard EN13757 -2 gives the user some exa mples of typical M-Bus installations 
+using two different cable types. This chapter shall support the user with a refined application guideline to design 
+and setup M-Bus networks for the required number of M-Bus slaves with respect to topology / wiring para meters 10 
+and communication speed. 
+5.1.1.1 Cable Types 
+The standard refers to a telephone cable and a standard mains cable (cross section 1,5 mm2). The mains cable is 
+rarely used in real installations because this cable has no shielding and the wires are not twisted. The OMS does 
+not suggest using this cable type in heavy -interference environments due to the missing protection against EMC 15 
+interferences. 
+The OMS reference cable for the M-Bus is defined as: 
+ 
+- J-Y(St)Y 2 x 2 x 0,8 mm (EN 50441:2012 Cables for indoor residential telecommunication installations, .  
+DIN VDE 0815 Installationskabel und -leitungen für Fernmelde-und Informationsverarbeitungsanlagen) 
+- N x 2 x 0,8 mm diameter copper (0,5 mm2 cross-section), resistance max. 75 Ohm/km per wire loop, with 20 
+N = number of pairs of wires, N=1 is enough) 
+- twisted copper pairs 
+- shielding 
+- operating capacity at 800 Hz max. 100 nF/km 
+- attenuation at 800 Hz max. 1,1 dB/km 25 
+Other cables with comparable characteristics can be also used. The following explanations and calculations refer 
+to the OMS reference cable type. 
+5.1.1.2 Topology 
+There are some basic physical configurations used for the cable connections between the M-Bus master and the 
+slaves. These topologies are star, line and tree wiring as shown below. In real installations , a combination of 30 
+these topologies will be used. 
+A ring structure is not recommended for M-Bus systems. A termination resistor is not allowed. 
+ 
+Figure 1: Topology variants 
+Master 
+Slave 1 
+Slave 2 Slave 4 
+Slave 3 
+Master 
+Slave 1 Slave 3 Slave 2 
+Master 
+Slave 1 
+Slave 2 
+Slave 4 
+Slave 3 
+Master 
+Slave 1 Slave 2 Slave 3 
+Ring 
+Line 
+Tree 
+Star 
+PDF PAGE 13
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  13/73 
+5.1.1.3 Wiring rules 
+- Keep total cable length as short as possible 
+- Be mindful of  interference (EMC) from other cables and installations : The Wired M -Bus cable shall be 
+used for Wired M-Bus exclusively. 
+- Normally connect just one pair of wires; connecting a second pair would decrease the resistance, but 5 
+increase the capacity of the cable 
+- Shielding shall be only connected to the protective earth on the master side and not at any slave. 
+- The M-Bus lines shall not be coupled with ground / earth or any other voltage potential 
+5.1.1.4 Maximum length 
+The maximum possible cable length in an M-Bus system depends on the specific configuration, in particular on 10 
+the type of  master (maximum voltage drop), the cable, the topology, and the number of connected meters (unit 
+loads). There are two limits to be considered: 
+The capacitive length is the maximum total cable length which can be wired to an M-Bus master. The capacity of 
+the cable and the meters deform s the square wave signals. The capacity restricts the highest possible baud rate 
+(communication speed) as shown here: 15 
+9600 Bd: 100 nF -> max. 1 km cable 
+2400 Bd: 400 nF -> max. 4 km cable 
+300 Bd: 1000 nF -> max. 10 km cable 
+The total cable length shall never be exceeded. 
+ 
+The resistive length is the maximum length of one cable connected to the master. The resistors in the master, the 20 
+cable, and the protection resistors in the slaves cause a voltage drop. Each slave must have a minimum of 
+24 V DC mark voltage at its M-Bus terminals to work properly. The following examples show some typical 
+situations in worst case topologies (all slaves at the end of the cable) and typical topologies (slaves connected to 
+the cable at equal distances): 
+Example 1: Master for max. 20 meters with 30 V mark voltage and 50 Ohm internal resistance 25 
+- 20 slaves, worst case at the end: max. 3,0 km cable length 
+- 20 slaves, equally distributed: max. 4,0 km cable length 
+Example 2: Master for max. 60 meters with 40 V mark voltage and 15 Ohm internal resistance 
+- 60 slaves, worst case at the end: max. 1,0 km cable length 
+- 60 slaves, equally distributed: max. 2,5 km cable length 30 
+Example 3: Master for max. 250 meters with 42 V mark voltage and 10 Ohm internal resistance 
+- 60 slaves, worst case at the end: max. 2,0 km cable length 
+- 60 slaves, equally distributed: max. 4,0 km cable length 
+- 120 slaves, worst case at the end: max. 0,9 km cable length 
+- 120 slaves, equally distributed: max. 2,0 km cable length 35 
+- 250 slaves, worst case at the end: max. 0,4 km cable length 
+- 250 slaves, equally distributed: max. 0,9 km cable length 
+ 
+M-Bus repeaters can be used if the resistive or capacitive limits are exceeded. 
+ 
+  
+PDF PAGE 14
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  14/73 
+The following table summarizes the suggestions of the EN13757-2: 
+ 
+Table 1: M-Bus applications 
+Application Max. 
+distance * 
+Total length 
+** 
+Cross 
+section 
+Max. no. of 
+meters Max. baud rate 
+Small in-house installation 350 m 1 km 0,5 mm² 250 9600 Bd 
+Large in-house installation 350 m 4 km 0,5 mm² 250 2400 Bd 
+Small field installation 1 km 4 km 0,5 mm² 64 2400 Bd 
+Large field installation 3 km 5 km 1,5 mm2 64 2400 Bd 
+District 5 km 7 km 1,5 mm2 16 300 Bd 
+* Calculated for the worst case situation with all meters at the end of the cable 
+** Accumulated length of all cable segments in the network topology. 
+Chapter 5.1.14 shows measured / calculated characteristics of existing products (level converters, master). 
+An OMS i nstallation guide  is available as technical report OMS-TR09. It provides all relevant aspects for an 
+appropriate installation. 5 
+ 
+5.1.2 SC Charge / Discharge 
+As the master in the M-Bus system modulates the voltage, the slaves have to detect one threshold voltage for 
+determining between logic high an d low state of the bus voltage. Because of possible long term changes of the 
+bus voltages and a wide span of allowed bus voltages, the threshold has to be de termined dynamically. This can 
+be done by storing the threshold voltage in a capacitor as reference. 10 
+It is recommended to use a fixed charge  / discharge current solution for charging  / discharging  this capacitor. 
+Following specifications are based on best practice solutions and follow available slave transceiver devices  (e.g. 
+ON Semiconductor, Texas Instruments) with a 100 nF – 330 nF storage capacitor: 
+ 
+ Charge: Voltage shall increase at 25 to 500 V/s 
+ Discharge: Voltage shall decrease at 0,5 to 15 V/s 15 
+ Ratio between charge and discharge speeds shall be > 30 
+ 
+5.1.3 Inrush Current 
+5.1.3.1 Definition and Measurement of Inrush Current 
+The inrush current is the current flowing into a slave device within 1 µs after powering the bus to any allowed 
+voltage level and must be <100 mA. 20 
+The inrush current is measured during the first 1  µs after powering the bus to voltage level U space. It is measured 
+with a shunt resistor (i.e. 1  Ohm) in one M-Bus line or with a fast acting current probe. The power source ( M-Bus 
+master or power supply) should have a very low impedance (i.e. <1  Ohm) for appropriate measuring. Voltage rise 
+of the supply should be >100 V/µs. For measuring the inrush current the upper limit of the bus voltage is limited to 
+42 V. 25 
+ 
+5.1.3.2 Referenced Sources from EN13757-2 for Defining the Inrush Current 
+According to 4.2.2.6 bus load should be less than 100 mA within 1 min in any case 
+According to 4.2.2.8 bus load should be at its unit load within 1 ms after any bus voltage change 
+According to 4.2.2.10 input capacity at the slave terminals must be <= 0,5 nF 
+Annex A schematic implementation with series resistors 2x Rs/2 30 
+PDF PAGE 15
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  15/73 
+Annex B reference schematic with over-voltage protection V3 and series resistors R1-R4 
+ 
+5.1.3.3 Hints and remarks 
+As there is a long-term limit of 100 mA, it is logical to limit the inrush current to 100 mA. 
+Inrush current is mainly drawn by the input capacity. 
+Some measurements show that this 100  mA will be sufficient for current designs. But there are also some slaves 5 
+drawing up to 300  mA inrush current. One possible reaso n is that the over -voltage protection has a significant 
+capacity and series termination (as shown in reference designs) follows that over-voltage protection. If termination 
+is in front of over-voltage protection, it will limit the current load to less than 100 mA. 
+The measurements also show that the time concerned is about 1  µs. After about 200  ns, most of the current 
+traces return to unit load. 10 
+ 
+5.1.4 Rise and Fall Times 
+The following limits on rise and fall times of the voltage modulation apply: 
+ 
+ < 75 V/µs (test condition: no load) 
+ < ½ x bit time (test condition: see 53.3.4) 
+ 
+5.1.5 Identification of the Unit Loads 15 
+The number of unit loads  (UL) must be listed in the data sheet . Additionally it shall be printed on the device. For 
+devices that are to be installed in switching cabinets, care must be taken that the identification is applied close to 
+the device, so that as far as possible it cannot be hidden by a screen.  
+The identification is done in a total of 4 groups, where t he maximum of 4 UL, i.e. a current draw of up to 6  mA, is 
+not exceeded. 20 
+ 
+Table 2: UL ranges 
+Current draw of device (I) Identification 
+I <= 1.5 mA 1 UL 
+1.5 mA < I <= 3.0 mA 2 UL 
+3.0 mA < I <= 4.5 mA 3 UL 
+4.5 mA < I <= 6.0 mA 4 UL 
+ 
+The current draw of 4 UL must not be exceeded. This is also the limit according to EN 13757-2:2018. 
+ 
+5.1.6 Switch-on Process 
+M-Bus master: 
+Initial startup of the M-Bus master 25 
+tReaching Allowed M-Bus mark voltage level = tPowerup M-Bus master + tM-Bus voltage rise time 
+ 
+Resetting the M-Bus voltage after detection of an overload / short circuit of the M-Bus master 
+tReaching Allowed M-Bus mark voltage level = tM-Bus voltage rise time 
+ 
+Conditions for the activation of the M-Bus voltage from 0  V ≤ UBus < 12 V until reaching the allowed mark state 
+voltage: 30 
+ Strictly increasing 
+ Minimum slew rate : 168 V/s 
+ 
+  
+PDF PAGE 16
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  16/73 
+Test conditions: 
+𝑅𝑙𝑜𝑎𝑑 =
+𝑈𝑀𝐵𝑢𝑠𝑀𝑎𝑠𝑡𝑒𝑟, 𝑛𝑜𝑚𝑖𝑛𝑎𝑙
+𝑁 ⋅ 𝑈𝐿  
+𝐶𝑙𝑜𝑎𝑑 = 1,5 µ𝐹 
+ 
+with Rload || Cload, N=Number of Unit Loads, UL = Unit Load = 1,5 mA 
+ 
+M-Bus slave: 
+Initial startup of the M-Bus network 
+tSlave communication ready = tPowerup M-Bus master + tlinedelay + tSum slave capacities + tM-Bus voltage rise time + tSlave startup delay 5 
+ 
+Resetting the M-Bus voltage after detection of an overload / short circuit of the M-Bus master 
+tSlave communication ready = tM-Bus voltage rise time + tlinedelay+ tSum slave capacities + tSlave startup delay 
+ 
+NOTE: 
+The startup delay of 3 seconds is measured from the time when the M-Bus voltage at slave terminals reaches the 
+minimum mark voltage level of 21 V. 10 
+ 
+5.1.7 Upper Limit for Voltage Variation 
+The voltage variation between mark and space state shall not exceed the following range: 
+ 
+15 V ≥ Udelta, mark-space ≥ 12 V, where upon UM-Bus, slave shall always be ≥ 12 V 
+Udelta, mark-space: Voltage variation between mark and space state of the M-Bus voltage 
+UM-Bus, slave: M-Bus voltage at the slave terminals for mark and space state. 15 
+The maximum allowable voltage variation between mark and space state is derived from the requirement of 
+EN13757-2:2018 / Chapter 4.2.2.3. The limitation of the change of the M-Bus current consumption of an M-Bus 
+slave is defined for a voltage variation between 1 V and 15 V. 
+The maximum usable voltage variation between mark and space state for a specific M-Bus mark voltage level is 
+depicted as follows: 20 
+ 
+Figure 2: Voltage variation 
+ 
+NOTE: With UBus mark for the voltage level at M-Bus slave terminals; for U Bus mark voltages for the M-Bus master, 
+Ur (for explanation see EN 13757-2:2018, 4.3.1.2) must be taken into account. 
+Referenced sources to define the voltage requirements from EN13757-2: 25 
+- EN13757-2:2018 / Chapter 4.3.3.2  
+USpace < UMark – 12 V, but ≥ 12 V + Ur. 
+ 
+Udelta, upper limit mark space 
+12 V 
+24 V 0 V 42 V 27 V 
+15 V 
+UBus mark 
+PDF PAGE 17
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  17/73 
+- EN13757-2:2018 / Chapter – 4.3.3.4 Minimum voltage slope 
+The transition time between space state and mark state voltages from 10% to 90% of the steady state 
+voltages shall be ≤ 1/2 of a nominal bit time. The asymmetry of these transition times shall be ≤ 1/8 of a 
+nominal bit time. 
+ 
+Test conditions (CLoad selected from the E12 value series): 5 
+- baud rate 300 Bd: CLoad = 1,5 μF; 
+- baud rate 2400 Bd: CLoad = 1,2 μF; 
+- baud rate 9600 Bd: CLoad = 0,82 μF; 
+- baud rate 38400 Bd: CLoad = 0,39 μF. 
+ 
+- EN13757-2:2018 / Chapter 4.2.2.3 - Variation of the mark state current with bus voltage 10 
+For bus voltages in the range (12 V ... 42 V), a voltage variation of 1 V … 15 V shall not change the bus 
+current by more than N × 3 µA/V. 
+ 
+5.1.8 Minimum Slave M-Bus Voltage 
+The M-Bus voltage at M-Bus slave terminals shall be at least 24 V (21 V) for mark and 12 V for the space state of 
+the M-Bus voltage. 15 
+The slave requirement for a minimum allowable mark state voltage at M-Bus slave terminals is 21  V (for details, 
+refer to EN13757 -2:2018 / Chapter 4.2.1). The M-Bus voltage may fall below the typical mark state voltage of 
+24 V (at M-Bus slave terminals) in case another M-Bus slave responds, there is a data collision of two or more 
+M-Bus slaves or at least one M-Bus slave has a fault (for current limitation requiremen ts in case of M-Bus slave 
+faults, refer to EN13757-2:2018 / Chapter 4.2.2.6). 20 
+ 
+  
+PDF PAGE 18
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  18/73 
+The following diagram summari ses the requirements from the EN13757 -2 concerning the M-Bus voltage for 
+master and slave. 
+ 
+Figure 3: M-Bus voltage 
+ 
+Ur, max = (max. usable bus current)*(max. bus resistance) +  5 
+ (max. usable bus current)*(max. master source impedance)  
+> 0; with USpace-Bus@MBusSlave ≥ 12 V 
+ 
+The following chapters define the voltage requirements according to EN13757-2:2018. 
+ 
+5.1.8.1 Electrical requirements, master 
+- EN13757-2:2018 / Chapter 4.3.3.1 10 
+For currents between 0 … IMax: UMark = (24 V + Ur) … 42 V. 
+- EN13757-2:2018 / Chapter 4.3.3.2  
+USpace < UMark - 12 V, but ≥ 12 V + Ur. 
+- EN13757-2:2018 / Chapter 4.3.1.2 Max. allowable voltage drop (Ur) 
+The max. voltage drop Ur (> 0 V) is defined as the minimum space state voltage minus 12 V. Ur divided 15 
+by the maximum segment resistance between the master and any terminal device (meter) gives the 
+maximum useable bus current for a given combination of segment resistance and master. 
+  
+UBus 
+42 V 
+24 V+Ur 
+Δ≥-12 V 
+12 V+Ur 
+12 V 
+0 V 
+Space 
+state 
+Master send Slave receive 
+UMark 
+UMark-Bus – 5,7 V Δ≥-8,2 V 
+21 V 
+UMark-Bus 
+Δ=Ur 
+Mark 
+state 
+Bus 
+Sapce 
+state 
+Mark range 
+Mark range 
+UMark-Bus – 8,2 V 
+PDF PAGE 19
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  19/73 
+Electrical requirements, slave: 
+- EN13757-2:2018 / Chapter 4.2.1 master to slave bus voltages 
+“… 
+Voltage range for meeting all specifications: (12 V … 42 V). 
+The bus voltage at the slave terminals in mark (quiescent) state of master - slave communication 5 
+(= UMark) shall be (21 V … 42 V). 
+The mark voltage shall be stored by a voltage maximum detector with an asymmetric time constant. The 
+discharge time constant shall be greater than 30 × (charge constant) but less than 1 s. 
+The stored voltage maximum UMark may drop in 50 ms by not more than 0.2 V for all voltages between 
+12 V and UMark.” 10 
+- EN13757-2:2018 / Chapter 4.2.2.11 - Startup delay 
+In case of a bus voltage drop below 12 V for longer than 0,1 s the recovery time after applying an 
+allowed mark state voltage until reaching full communication capabilities shall be less than 3 s. 
+ 
+The following diagram represents the requirements from EN13757-2:2018 for state recognition and collision 
+detection for the M-Bus slave to M-Bus master communication. 15 
+ 
+Figure 4: M-Bus states 
+ 
+ΔIMark state, max: maximum allowable variation of the mark state current at the M-Bus master terminals to remain 
+detecting mark state current. 
+ΔISpace state, min: Threshold where the master detects space state of an M-Bus slave reply. 20 
+IBus: Master receive: Total of all slave currents; Slave send: Current of one slave 
+ 
+  
+IBus 
+IMax 
+1..4 x 1,5 mA 
+0 mA 
+Space 
+state 
+Master receive Slave send 
+ΔImin = 11 mA 
+IBus 
+Bus 
+Space 
+state 
+Mark 
+ΔImin – ΔImax = 
+9 mA 
+Δ = 41 mA 
+ΔISpace state, 
+min = 9 mA 
+Bus-
+collision 
+ΔIMark state, 
+max = 6 mA 
+Mark 
+state 
+ΔImax =  
+20 mA 
+PDF PAGE 20
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  20/73 
+The following chapters define the voltage requirements according to EN13757-2:2018. 
+ 
+- EN13757-2:2018 / Chapter 4.2.2.9 – space send current 
+“The bus current for a slave space state send shall be higher by (11 ... 20) mA than in the mark state for 
+all allowed bus voltages: 
+ISpace = IMark + (11 ... 20) mA.” 5 
+- EN13757-2:2018 / Chapter 4.3.3.7 - Data detection current (reception of slave current pulses) 
+“Bus current ≤ Bus idle current + 6 mA: mark state receive. 
+Bus current ≥ Bus idle current + 9 mA: space state receive. 
+Measurement with current pulses of < 50 ms, duty cycle < 0,92.” 
+- EN13757-2:2018 / Chapter 4.3.3.8 - Reaction at large data currents (collision) 10 
+“Current increases of > 25 mA may be considered, current increases of > 50 mA shall be considered as 
+a collision state. If for …” 
+ 
+5.1.9 Hysteresis Voltage Deviation 
+5.1.9.1 Test master 
+ 
+Ur: defined by manufacturer 15 
+Imax: maximum load current before short detection defined by manufacturer 
+UL: unit load 
+ULmax: maximum UL for a master defined by manufacturer 
+N: number of unit loads, defined by manufacturer (must be ≤4) 
+All values measured to ±1%. 20 
+All tests are performed with baud rates of 300, 2400, and 9600. 
+All tests are performed at room temperature (20°…25°C) if no other temperature is specified. 
+To simplify the test  equipment, UL can be implemented using the NCN5150 fr om O N Semiconductor or the 
+TSS721A from Texas Instruments. 
+ 
+Test 1, Mark range (EN 13757-2:2018, 4.3.3.1): 25 
+ device idle 
+ apply load 0, Imax/2, Imax  
+PASS: 24 V+Ur ≤ UMark ≤ 42 V 
+ 
+Test 2, Space state (EN 13757-2:2018, 4.3.3.2): 
+ apply load 0, ULmax/2, ULmax 30 
+ send REQ-UD2 
+PASS: UMark-15 V ≤ USPACE ≤ UMark-12 V 
+AND USpace > 12 V+Ur 
+ 
+  
+PDF PAGE 21
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  21/73 
+Test 3, rise / fall time (EN 13757-2:2018, 4.3.3.4): 
+ no load 
+ send REQ-UD2 
+PASS: > 0,2 µs for a voltage change of 15 V 
+ 
+ apply load 0, ULmax/2, ULmax 5 
+ send REQ-UD2 
+PASS: < ½  bit time (test condition: see 4.3.3.4) 
+ 
+4.3.3.4: 
+The transition time between space state and mark state voltages from 10% to 90% of the steady state 
+voltages shall be ≤1/2 of a nominal bit time. The asymmetry of these transition times shall be ≤1/8 of a 
+nominal bit time. 
+Test conditions (CLoad selected from the E12 value series): 
+ baud rate 300 Bd: CLoad = 1,5 µF; 
+ baud rate 2400 Bd: CLoad = 1,5 µF; 
+ baud rate 9600 Bd: CLoad = 1,0 µF; 
+ 
+ 
+Test 4, effective source impedance (EN 13757-2:2018, 4.3.3.5): 
+ stable UMARK 
+ apply load 0, ULmax/2, ULmax 10 
+ apply +20 mA 
+ after 50 ms 
+PASS: UMark’ ≥ UMark – 1,2 V 
+ 
+Test 5, bus collision (EN 13757-2:2018, 4.3.3.8): 15 
+ stable UMark 
+ apply load 0, ULmax/2, ULmax 
+ apply load +50 mA 
+o for 2 bit times 
+PASS:  if no reaction 20 
+ 
+o for > 2 bit times and <50 ms 
+PASS:  
+ if master emits break signal (USpace) for 40 ms to 50 ms 
+ and then applies UMark 
+ 
+Test 6, MARK / SPACE state (EN 13757-2:2018, 4.3.3.7): 25 
+ apply stable 0, ULmax/2, ULmax 
+ Master send: REQ-UD2 
+ Slave respond: SND-UD 
+ ISpace < IMark + 6 mA 
+PASS: no signal 30 
+ 
+ ISpace ≥ IMARK + 9 mA 
+PASS: signal 
+ 
+Test 7, Hum, ripple and short term stability (EN 13757-2:2018, 4.3.3.6) 
+ stable UMark 
+ apply load 0, ULmax/2, and ULmax 35 
+PASS:  UMark,peak-peak < 200 mV over 10 s (measure with 1 µs resolution) 
+ 
+Test 8, Bus recovery (EN 13757-2:2018, 4.3.3.8): 
+ apply load ULmax 
+ short bus 
+ release after 10 s 40 
+PASS: recovery time of UMark ≤ 3 s 
+ 
+  
+PDF PAGE 22
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  22/73 
+Test 9, Galvanic isolation (EN 13757-2:2018, 4.3.3.9): 
+ measure resistance from any bus terminal to at least three metal parts (not the terminals) of the master 
+(Measurement shall be done with a conventional Ohm meter and not with 500 V test voltage.) 
+ repeat with inverted polarity 
+ if the master is mains-powered or has a connection to ground based systems repeat measurement from 5 
+these terminals  
+PASS: if resistance > 1 MOhm 
+ 
+5.1.9.2 Test slave 
+ 
+Voltages measured at the terminals of the device under test. 
+All values measured with ±1%. 10 
+All tests done with specified baud rates. 
+ 
+Test 1, Unit loads N (EN 13757-2:2018, 4.2.2.1): 
+ device specification for N by manufacturer  
+PASS: N ≤ 4 
+ 
+Test 2, Maximum permanent voltage (EN 13757-2:2018, 4.2.1): 15 
+ device idle 
+ apply +50 V and -50 V (static) 
+ for 5 minutes 
+PASS: no damage:  
+o REQ-UD2 successful 20 
+o AND test 3 pass 
+ 
+Test 3, IMark (EN 13757-2:2018, 4.2.2.2) and fast change (EN 13757-2:2018, 4.2.2.8: 
+ apply U = 42 V 
+ change U to 27 V with 15 V/ms 
+ wait 1 ms 25 
+ measure I 
+ change U to 12 V with 15 V/ms 
+ wait 1 ms 
+ measure I 
+ change U to 27 V with 15 V/ms 30 
+ wait 1 ms 
+ measure I 
+ change U to 42 V with 15 V/ms 
+ wait 1 ms 
+ measure I 35 
+PASS: (N-1) x UL < IMark ≤ N x UL (Nmax=4) 
+ 
+Repeat for inverted polarity 
+ 
+Test 4, IMARK variation over bus voltage variation (EN 13757-2:2018, 4.2.2.3): 
+Proposal: 40 
+ measure IMark,U for UMARK in the range from 12 V to 27 V in steps of 1 V 
+ calculate ΔI = abs(IMark,U1 - IMark,U2) for all abs(U1-U2) ≤15 V 
+PASS: ΔI ≤ N x 75 µA for all abs(U1-U2) ≤15 V 
+ 
+Repeat for inverted polarity 
+ 
+Test 5, Short term variation of the mark state current (EN 13757-2:2018, 4.2.2.4): 45 
+ apply U = 12 V, 24 V, and 42 V 
+PASS: variation of IMark < 1% over 10 s 
+ 
+PDF PAGE 23
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  23/73 
+Test 6, Total variation over allowed temperature and voltage range of slave device (EN 13757 -2:2018, 
+4.2.2.5): 
+ test for Tmin, 20°C, and Tmax 
+ test for static UMark = 12 V, 24 V, and 42 V 
+PASS:  variation of IMark < 10% 5 
+ 
+Tmin, to Tmax is the operation temperature range defined by manufacturer 
+ 
+Test 7, Slow start (EN 13757-2:2018, 4.2.2.7): 
+ apply U from 0 V to +/-42 V with rise time of 0,25 V/s 
+ measure I every second 
+PASS: I ≤ N x UL 10 
+ 
+Test 8, capacity (EN 13757-2:2018, 4.2.2.10): 
+ measure capacity without bias at 10 kHz 
+PASS:  capacity ≤ 0,5 nF 
+ 
+Test 9, Mark / Space state (EN 13757-2:2018, 4.2.1): 
+ apply stable UMark = 21 V AND 42 V 15 
+ USpace = UMARK-5,7 V 
+PASS: no signal 
+ 
+ USpace = UMark-8,2 V 
+PASS: signal 
+ 
+The signal can either be determined by measurement of the reaction within the electronics of the device 20 
+under test or by sending a REQ-UD2 and detection of the response. 
+ 
+Repeat for inverted polarity 
+ 
+Test 10, ISPACE (EN 13757-2:2018, 4.2.2.9): 
+ apply stable UMark = 21 V AND 42 V 
+ Master send: REQ-UD2 25 
+ Slave send: SND-UD 
+PASS: IMark + 11 mA ≤ ISpace ≤ IMark + 20 mA 
+ 
+Repeat for inverted polarity 
+ 
+Test 11, Start-up delay (EN 13757-2:2018, 4.2.2.11): 
+ apply UMark (42 V) from 0 V 30 
+ after UMark > 24 V 
+o wait 3 s 
+o then send REQ-UD2 
+PASS: Slave sends SND-UD 
+ 
+  
+PDF PAGE 24
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  24/73 
+5.1.9.3 Test equipment 
+5.1.9.3.1 Test master 
+ 
+As mentioned above, there are some integrated circuits available for slave designs. Such slave transceivers can 
+be used for testing the masters.  
+ 
+Table 3: Master tests 5 
+Test No. Comment Equipment 
+1 Mark range  
+(EN 13757-2:2018, 4.3.3.1) 
+ Current sink 
+ Multimeter 
+2 Space state  
+(EN 13757-2:2018, 4.3.3.2) 
+ Current sink from one slave transceiver 
+ Command interface to master 
+ Oscilloscope 
+ Evaluation software for oscilloscope data 
+3 rise / fall time  
+(EN 13757-2:2018, 4.3.3.4) 
+ Command interface to master  
+ Oscilloscope with time resolution <=0,1 µs 
+ Evaluation software for oscilloscope data 
+ Current sink from one slave transceiver 
+ Capacity switchable by software with specified 
+capacitors 
+4 effective source impedance 
+(EN 13757-2:2018, 4.3.3.5) 
+ Command interface to master  
+ Current sink from one slave transceiver 
+ Load of 20 mA switchable by software 
+ Multimeter 
+5 bus-collision  
+(EN 13757-2:2018, 4.3.3.8) 
+ Current sink from one slave transceiver 
+ Load of 50 mA switchable by software 
+ Oscilloscope 
+ Evaluation software for oscilloscope data 
+6 Mark / Space state  
+(EN 13757-2:2018, 4.3.3.7) 
+ Current sink from one slave transceiver 
+ Command interface to master  
+ Slave with variable current (from NCN5150) 
+7 Hum, ripple and short term stability  
+(EN 13757-2:2018, 4.3.3.6) 
+ Current sink from one slave transceiver 
+ Oscilloscope 
+ Evaluation software for oscilloscope data 
+8 Bus recovery  
+(EN 13757-2:2018, 4.3.3.8) 
+ Current sink from one slave transceiver 
+ Short circuit switchable by software (current sink 
+with 0 Ohms)  
+ Oscilloscope 
+ Evaluation software for oscilloscope data 
+9 Galvanic isolation  
+(EN 13757-2:2018, 4.3.3.9) 
+ Ohm meter 
+PDF PAGE 25
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  25/73 
+5.1.9.3.2 Test slave 
+ 
+Table 4: Slave tests 
+Test No. Comment Equipment 
+1 N  
+(EN 13757-2:2018, 4.2.2.1) 
+ Visual check 
+2 Maximum permanent voltage 
+(EN 13757-2:2018, 4.2.1) 
+ Voltage source with +/-50 V (switchable by 
+software) 
+ Master for REQ-UD2 (incl. command interface) 
+3 IMARK  
+(EN 13757 -2:2018, 4.2.2.2) and 
+Fast change  
+(EN 13757-2:2018, 4.2.2.8 
+ Voltage source (switchable by software) 
+ Ammeter (readable by software, resolution 0,1 ms) 
+4 IMARK variation over bus voltage  
+variation  
+(EN 13757-2:2018, 4.2.2.3) 
+ Voltage source (switchable by software) 
+ Ammeter (readable by software) 
+5 Short term variation of the mark 
+state current  
+(EN 13757-2:2018, 4.2.2.4) 
+ Voltage source (switchable by software) 
+ Ammeter (readable by software, resolution 1 ms) 
+6 Total variation over allowed 
+temperature and voltage range of 
+slave device  
+(EN 13757-2:2018, 4.2.2.5) 
+ Climate chamber (controllable by software) 
+ Voltage source (switchable by software) 
+ Ammeter (readable by software, resolution 1 ms) 
+7 Slow start  
+(EN 13757-2:2018, 4.2.2.7) 
+ Voltage source (switchable by software) 
+ Ammeter (readable by software, resolution 1 ms) 
+8 Capacity  
+(EN 13757-2:2018, 4.2.2.10) 
+ Capacitance meter (readable by software) 
+9 MARK / SPACE state  
+(EN 13757-2:2018, 4.2.1) 
+ Master with adjustable voltages USPACE and UMARK 
+10 ISPACE  
+(EN 13757-2:2018, 4.2.2.9) 
+ Master with adjustable voltages USPACE and UMARK 
+ Current measurement clamps with 10 µs resolution 
+(evaluable by software, possibly on oscilloscope) 
+11 Start-up delay  
+(EN 13757-2:2018, 4.2.2.11) 
+ Master with adjustable voltages UMARK 
+ 
+  
+PDF PAGE 26
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  26/73 
+5.1.9.3.3 Test equipment: 
+ Voltage source: 
+o Controllable by software 
+o +/- voltages 
+o Umax = +/-50 V 5 
+o rise: 0.25 V/s, 15 V/ms 
+o Current: 1000 mA 
+ Current sink 1 for UL: 
+o Controllable by software 
+o Built up from one slave transceiver 10 
+ Current sink 2: 
+o Controllable by software 
+o Static current to 500 mA 
+ Current sink 3 (possibly together with current sink 2): 
+o Controllable by software 15 
+o Short circuit 
+o Switching time 1 ms 
+ Slave with variable current (possibly together with current sink 1): 
+o Command interface for evaluation of M-Bus datagrams 
+o Current adjustable by software (one slave transceiver)  20 
+ Climate chamber: 
+o Controllable by software 
+o -20°C to +150°C 
+o Feed-throughs for measurement cables  
+ Master with adjustable voltage: 25 
+o Command interface 
+o UMARK and USPACE adjustable separately 
+ Current clamps or ammeter: 
+o Current to 100 mA 
+o Resolution 1 µA 30 
+o Time resolution 10 µs 
+o Can be read out by software (possibly via oscilloscope) 
+ Oscilloscope: 
+o Controllable and can be read out by software 
+o Resolution 1 µs @ 10 MSamples 35 
+o Resolution <0,1 µs @ 1 MSamples 
+ Capacitance meter: 
+o Measuring frequency 1 kHz, 10 kHz 
+o Voltage deviation: tbd (1 VPP) 
+o Can be read out by software 40 
+ Voltage meter (multimeter): 
+o Can be read out by software 
+o Resolution: 0,1% of measurement range 
+ PC 
+o Measurement software 45 
+o GPIB interface (depending on measurement equipment used) 
+ 
+  
+PDF PAGE 27
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  27/73 
+5.1.10 Transmission of the Remaining Communication Energy of the Battery (Optional) 
+The VIF/VIFE for battery lifetime is defined in Table 12 and Table 13 of EN 13757 -3.2018. The following VIFs are 
+applicable: FDh 74h, FDh FDh 02h/03h 
+ 
+The number of remaining days / months / years is dynamically calculated depending on the read frequency / 
+number of total readouts / bus traffic / measurement cycle frequency etc. 5 
+Relevant meters are: 
+- mains powered devices (e.g. partially M-Bus powered) 
+For mains powered devices which do not have limitations in lifetime and / or readouts due to restrictions in 
+energy budget, the transmission of the remaining lifetime or remaining requests can be omitted. The ‘power 
+low’ in the status byte is never set. Purely mains powered devices may be not allowed in metrological 10 
+regulations. 
+For mains powered devices with backup battery to retain functionality in case of mains power loss the ‘power 
+low’ in the status byte is set in case mains power loss is detected. In case mains power is recovered the 
+‘power low’ in the status byte is reset (independent from the remaining lifetime of the backup battery). 
+- devices with non-replaceable battery; 15 
+For battery-driven devices the remaining lifetime shall be retrievable. The remaining lifetime can be either 
+transmitted with every datagram.  
+In case the number of days / remaining readouts decreased until the value zero is reached, the value shall 
+remain zero. Negative values are not allowed. 
+The ‘power low’ in the status byte shall be set in case the condition of less than 15 month (referenced in Vol. 20 
+2, 7.2.3) is met. In case the cyclic re-calculation of the energy budget results in a remaining lifetime of now 
+more than 15 month (according to Vol. 2, 7.2.3), the power low bit shall be reset.  
+- Devices with replaceable battery 
+Same as for devices with non-replaceable battery. 
+ 
+5.1.11 Break Detection (Mandatory) 25 
+Adherence to the specification of the break identification is compulsory for all meters. 
+ 
+5.1.12 EMC Requirements 
+The EMC requirements are sufficiently specified in EN 61000. 
+ 
+5.1.13 Logical Slave Disconnect (Mandatory) 
+A (logical) disconnect of slaves from the M-Bus for saving battery power is not permitted. 30 
+ 
+The meter manufacturer shall declare the communication abilities for every M-Bus device (also those without 
+restrictions). 
+ 
+  
+PDF PAGE 28
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  28/73 
+5.1.14 Overview Master Characteristics 
+Table 5: Master characteristics 
+ 
+  
+Manufacturer Master / Level Converter Max. no. of unit loads
+Master no load voltage 
+MARK in V
+Master no load voltage 
+SPACE in V
+Master internal 
+resistance in Ohm
+Max. baudrate 
+in Bd 20 UL 60 UL 120 UL 250 UL 20 UL 60 UL 120 UL 250 UL 20 UL 60 UL 120 UL 250 UL
+Relay DR001, DR003, DR005, WebLog250 250 41,5 28,5 10 38400 1000 1000 1000 453 3676 1918 1079 453 3676 1918 1079 453
+DR002, DR004, DR006 120 41,5 28,5 10 38400 1000 1000 1000 x 3676 1918 1079 x 3676 1918 1079 x
+MR004x family 60 38 25,5 12 9600 1000 1000 x x 2983 1532 x x 2983 1532 x x
+MR006x family 20 30,5 18,5 68 9600 808 x x x 808 x x x 808 x x x
+MR005x family 3 30,5 18,5 68 9600 x x x x x x x x x x x x
+Elvaco CMeX10S 32 42 26 2 2400 x x x x 3878 x x x 3878 x x x
+CMeX11S 64 42 26 2 2400 x x x x 3878 2047 x x 3878 2047 x x
+CMeX12S 128 42 26 2 9600 1000 1000 1000 x 3878 2047 1010 x 3878 2047 1010 x
+CMeX13S 256 42 26 2 9600 1000 1000 1000 471 3878 2047 1010 471 3878 2047 1010 471
+CMeX10, CMex50 32 30 17 24 9600 1000 x x x 1299 x x x 1299 x x x
+CMeX11 64 30 17 24 9600 1000 421 x x 1299 421 x x 1299 421 x x
+CMe2100, CMe3000 8 28 17 51 9600 x x x x x x x x x x x x
+NZR PWx 75 75 37 25 5,5 2400 x x x x 2879 1516 x x 2879 1516 x x
+PWx 150 150 37 25 5,5 2400 x x x x 2879 1516 866 x 2879 1516 866 x
+PWx 250 250 37 25 5,5 2400 x x x x 2879 1516 866 389 2879 1516 866 389
+PWxC 25 25 34 22 15 2400 x x x x 2181 x x x 2181 x x x
+PWxC 50 50 34 22 15 2400 x x x x 2181 x x x 2181 x x x
+PWxC 75 75 34 22 15 2400 x x x x 2181 1082 x x 2181 1082 x x
+UnimodC 25 32 20 15 2400 x x x x 1800 x x x 1800 x x x
+Baer M-Bus Master / Repeater ? 250 36 24,1 1 9600 1000 1000 865 417 2749 1474 865 417 2749 1474 865 417
+DIEHL Metering IZAR CENTER 25 37,4 23,4 11 9600 1000 x x x 2882 x x x 2882 x x x
+IZAR CENTER 60 37,4 23,4 11 9600 1000 1000 x x 2882 1484 x x 2882 1484 x x
+IZAR CENTER 120 37,4 23,4 11 9600 1000 1000 698 x 2882 1484 698 x 2882 1484 698 x
+IZAR CENTER 250 37,4 23,4 11 9600 1000 1000 698 259 2882 1484 698 259 2882 1484 698 259
+solvimus MBUS-PS20/GE20x 20 36,6 24 5 38400 1000 x x x 2810 x x x 2810 x x x
+MBUS-PS80/GE80x 80 36,6 24 5 38400 1000 1000 x x 2810 1482 x x 2810 1482 x x
+MBUS-PM10 10 32 20 8 9600 x x x x x x x x x x x x
+MBUS-M13 80 36,6 24 5 38400 1000 1000 x x 2810 1482 x x 2810 1482 x x
+MBUS-M12 80 36,6 24 5 38400 1000 1000 x x 2810 1482 x x 2810 1482 x x
+Lertes RmCU-V3.3 25 35,8 23,8 10 9600 1000 x x x 2590 x x x 2590 x x x
+Kamstrup M-Bus Master MultiPort 250 250 41 28 2 9600 1000 1000 1000 542 3688 1973 1155 542 3688 1973 1155 542
+Metz Connect EWIO-9180-M 80 37,5 24,5 18 9600 1000 1000 x x 2808 1401 x x 2808 1401 x x
+Tixi.Com Hxy23-M25 / Hxy43-M25 25 36 18 20 19200 1000 x x x 2400 x x x 2400 x x x
+Hxy23-M60 / Hxy43-M60 60 36 18 20 19200 1000 622 x x 1000 622 x x 1000 622 x x
+Hxy23-M100 / Hxy43-M100 100 36 18 20 19200 1000 622 x x 1000 622 x x 1000 622 x x
+Wx640-M50 50 36 24 20 19200 1000 x x x 2495 x x x 2495 x x x
+Wx640-M90 90 36 24 20 19200 1000 1000 x x 2495 1221 x x 2495 1221 x x
+Aquametro AMBUS Net / AMBUS ZS 250 34,7 35,7 2 9600 1000 1000 773 397 2488 1327 773 397 2488 1327 773 397
+Max. cable length at 9600 bd              
+(all slaves at end of cable)
+Max. cable length at 2400 bd              
+(all slaves at end of cable)
+Max. cable length at 300 bd               
+(all slaves at end of cable)
+PDF PAGE 29
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  29/73 
+5.2 Link Layer 
+5.2.1 Baud Rates (Mandatory) 
+Masters and slaves shall support 300 and 2400 Bd and may support 9600 Bd, 19200 Bd and 38400 Bd. 
+ 
+The respective lower baud rates shall also be supported: 
+ The master / slave supports 2400 Bd: support for 300 Bd is mandatory. 5 
+ The master / slave supports 9600 Bd: support for 300 Bd and 2400 Bd is mandatory. 
+ The master / slave supports 19200 Bd: support for 300 Bd, 2400 Bd and 9600 Bd is mandatory. 
+ The master / slave supports 38400 Bd: support for 300 Bd, 2400 Bd, 9600 Bd and 19200 Bd is mandatory. 
+ 
+Slave devices shall support automatic baud rate detection for all supported baud rates. 
+In principle, there is only one reason for using baud rates different to those given above: this is the matching to 10 
+different M-Bus network topologies (bus expansion). Otherwise, a restriction could be made to one baud rate, for 
+instance to 2400 baud. 
+It is a disadvantage that the “Search on the M-Bus” lasts that much longer  as more baud rates are used.  This is 
+because the search must be restarted for each baud rate. The baud rates quoted are a good compromise: 
+ a lower baud rate 300 Bd for “poor” line conditions and “long” distances.  15 
+ an intermediate baud rate of 2400 Bd for standard applications and medium distances. 
+ an upper baud rate of 9600 Bd for “very good” line conditions and “short” distances. 
+The M-Bus is applicable for taking readings au tomatically from many meters within a specified readout period. 
+This also still allows the quarter -hour readout period for electricity meters with the quoted baud rates and a large 
+number of meters to be very well achieved. 20 
+ 
+5.2.2 Idle Time between Datagrams 
+The master may reject responds from a slave which arrive earlier than the wait time of 11 bit times according to 
+EN 13757-2:2018. 
+ 
+5.2.3 Change of Primary and Secondary Addresses, Unique Secondary Address 
+Changing the primary address of meters via the Wired M-Bus may only be done using VIF=7Ah.  25 
+A change of the secondary address is not permitted. Exceptions to this are adapters . Changing it via the Wired 
+M-Bus may only be done using Wired M VIF=79h (see OMSS Vol. 2). 
+The secondary address shall be unique worldwide (according to OMSS Vol. 2, 3.1.2.2). Customer and vendor 
+may agree an exception to this rule, if necessary. This exception need to defined in the [MANDEC]. 
+The change of primary address must be possible using primary and secondary addressing. 30 
+ 
+  
+PDF PAGE 30
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  30/73 
+5.2.4 Two or more Logical M-Buses in one Hardware Environment  
+ 
+Reference: EN13757-2:2018, chapter. 5.7.7 
+Defined behaviour for the implementation of two or more logical M-Bus devices in one hardware environment (two 
+primary, secondary addresses): 5 
+ 
+ Behaviour during secondary search: in event of collision, respond with A5h or E5h E5h … 
+ Changing baud rate:   OK (always for entire physical device; supported by mandatory 
+     automatic baud rate detection) 
+ Application reset:   OK (for the responding logical device) 
+ Primary address change:  OK (for the responding logical device) 10 
+ Secondary address change: OK (for the responding logical device; change of 
+     secondary address according to the rules of chapter 7.2.3) 
+ SND-NKE:    OK (for the responding logical device) 
+ REQ-UD1:   OK (for the responding logical device) 
+ REQ-UD2:    OK (for the responding logical device) 15 
+The manufacturer is free to decide which of the logical M-Bus devices responds. It is important that the user 
+must have the option to determine the logical device that responds to M-Bus commands with the A-field FEh. 
+For this he can send a REQ-UD2 (A = FEh) to the M-Bus slave before every M-Bus command. In the RSP-
+UD, it can then be recognised, according to the A-field and the ALA, which of the logical devices is active for 
+the reaction to A = FEh. 20 
+This mechanism only works for point-to-point connections between M-Bus master and M-Bus slave. For more 
+than one slave 
+ Behaviour for special addresses FEh: one of the logical M-Bus devices responds. 
+ Behaviour for special addresses FFh: all logical M-Bus devices process command datagrams. 
+ 
+5.2.5 Datagram Detection 25 
+ 
+Reference: EN13757-2:2018 Figure 7, Key 5 
+ 
+The following rules apply for datagram detection: 
+ 
+Receiver: 
+ 
+Minimum response time: 
+On detection of a correct frame:  11 bit times wait time (see Figure 5) 30 
+Incomplete, defective frame:  min. +P%; max. 22 bit times wait time (see Figure 6) 
+ 
+Maximum response time:   330 bit times + 50 ms (see Figure 5) 
+ 
+Basis for determining the tolerances: nominal stop bit time 
+ 
+PDF PAGE 31
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  31/73 
+ 
+ 
+Figure 5: End of datagram detection for a valid M-Bus frame 
+ 
+ 
+Figure 6: End of datagram detection for an invalid / incomplete M-Bus frame 
+ 
+5.2.6 Special Primary Addresses 254, 255 (Mandatory) 
+ 
+A message to address 254 and 255 must be handled as if it is addressed to its own primary address. SND-NKE 5 
+(mandatory) 
+ 
+
+PDF PAGE 32
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  32/73 
+NOTE: Slaves with more than one logical address (see 5.2.4) do not apply to this rule. 
+NOTE: A message sent with an A-field 255 is not answered by the OMS end-device (acc. to [EN 13757 2:2018], 
+5.7.5). 
+ 
+Further data changes / state changes in the slave are not permitted. 
+ 
+5.3 Networking Layer / Secondary Addressing 5 
+5.3.1 Enhanced Selection (Mandatory) 
+Clarification of the definitions for the enhanced selection: 
+ The valid specifications for secondary addressing are according to OMSS Vol. 2,  chapter 3.1.2.2 “Secondary 
+Address”. 
+ The enhanced selection continues to be considered as optional for slaves. 10 
+ For the enhanced selection, the same mechanism applies as for secondary address selection (for resolution 
+of the above-mentioned conflict with the OSI model). 
+ A master must process slave s with secondary address selection as well as with enhanced selection. A 
+master is not able to distinguish slaves having equal secondary address fields and not supporting enhanced 
+selection. 15 
+ Mechanical and electronic meters without Wired / Wireless M -Buses should state the universal meter ID 
+according to [OMS-S2], 3.2 on the meter as unique identification. 
+ 
+5.3.2 Determination of Addresses in Adapters: Rule for Incorrectly Labelled Meter (Mandatory) 
+Fundamentally there are two serial number types possible in the field 
+ Numeric 20 
+ Alphanumeric 
+These can each have differing lengths and – for the alphanumeric serial numbers - contain any combination of 
+letters, numbers and if necessary special characters. 
+ 
+1. For meters with a 14-position identification number according to [OMS-S2], 3.2: 
+No need for action 25 
+ 
+2. For numeric serial numbers, the following procedure is intended: 
+ If the number of characters in the serial number = 8 
+o Serial number  Identification number 
+Example: Serial number = “87468134”  Identification number = “87468134” 
+ 
+ If the number of characters in the serial number > 8 30 
+o Reduce the length to 8 places by removing the characters starting from the left 
+Example: Serial number = “3887468134”  Identification number = “87468134” 
+ 
+ If the number of characters in the serial number < 8 
+o Fill the length to 8 places from the left with “0” (leading zero) 
+Example: Serial number = “68134”  Identification number = “00068134” 35 
+ 
+  
+PDF PAGE 33
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  33/73 
+3. For alphanumeric serial numbers, the following procedure is provided: 
+a) Remove the letters and special characters from the serial number 
+b) Proceed as described in “Numeric serial numbers” depending on the resulting length 
+ 
+ 
+Figure 7: Generation of 8-digit identification number 5 
+ 
+  
+
+PDF PAGE 34
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  34/73 
+Examples: 
+ 
+Serial number 15DEP114 FF699299.000 5578/AAA ##0815muLi5AA5 
+Resulting 
+identification 
+number 
+00015114 99299000 00005578 00081555 
+ 
+ 
+4. Manufacturer and version cannot be changed in the adapter. 
+ 
+5. The device type can be adjusted in the adapter. 
+ 
+5.4 Application Layer 
+5.4.1 OMSS Vol. 2 Chapter 2.2: Table with CI-fields (Mandatory) 5 
+The CI-field 7Ah is restricted to the Wireless M-Bus. 
+ 
+5.4.2 New Device Type for Wired Adapters (Mandatory) 
+Device type 38h is introduced for wired adapters (will be added to OMSS Vol. 2 table 3). 
+ 
+5.4.3 Rules for Multi Datagram RSP-UD (Mandatory, Derived from EN 13757 Definitions) 
+The following rules must be observed: 10 
+ Selection of the RSP-UD datagram may only be done via application select. 
+ The application of the AFL excludes the usages of the DIF 1Fh (see EN 13757-3:2018, 6.5). 
+ 
+5.4.4 Minimum Communication Capabilities for Slaves (Mandatory) 
+A slave shall support the following minimum communication capabilities in addition to [EN 13757-2:2018]: 
+ 
+ Set the primary address using XID3! (according to [OMS-S2], Annex B). 15 
+ Support application reset and application select with CI = 50h or 53h. 
+ Change of secondary address with DIF = 07h or DIF = 0Ch, VIF = 79h (for adapters with changeable 
+address only, see 5.2.3). 
+ 
+NOTE: The [EN 13757-3:2018], 7.3 describes additional CI fields (54h, 55h, 66h and 68h) for special cases. 
+ 
+5.4.5 Commands for Communication if Applicable (Mandatory) 20 
+ 
+ Set the due date (data type G [DIF=42h VIF=6Ch]), if a calendar is present in the device 
+ Set the date and time (at least one of the data types F [DIF=04h VIF=6Dh], G [DIF=02h VIF=6Ch], 
+I[DIF=03h VIF=6Dh], J[DIF=06h VIF=6Dh]), if a clock is present in the device 
+ This chapter will be replaced by the future issue of [OMS-S2], Annex M. 
+ 
+  
+PDF PAGE 35
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  35/73 
+5.5 Reserved 
+ 
+5.6 Installation 
+An OMS installation guide is currently in preparation. 
+5.7 Certification 
+5.7.1 Bit Timing 5 
+OMS certified masters must comply with the rules for “Bit Timing”. The rules are checked during certification. 
+ 
+5.7.2 Startup 
+OMS certified slaves must comply with the rules for “Startup”. The rules are checked during certification. 
+ 
+5.7.3 Scope 
+All test conditions of TR-02 apply for discrete setups just as for integrated M-Bus ICs. 10 
+ 
+5.7.4 Test Setup 
+Here we would suggest a “protocol tester” which monitors the (indeed rather slow) processes on a time basis.  
+This could be used in three scenarios: 
+(2a) setup 1: The case of a good and standard -conformant communication can be monitored with the protocol 
+tester, which here assumes the role of a normal protocol monitor. 15 
+(2b) setup 2: To test the fault tolerance of the slave, the protocol tester can assume the role of the master and  
+input fault cases while the behaviour of the slave is observed.  
+(2c) setup 3: To test the fault tolerance of the mast er and other devices, the protocol tester assumes the role of 
+the slave and inputs fault cases while the behaviour of the master is observed. 
+ 
+5.8 Security 20 
+5.8.1 Introduction 
+ 
+Up to now the Wired M-Bus was used exclusively with unencrypted data. Due to the requireme nts for privacy and 
+security the introduction of encrypted modes for Wired M-Bus communications is essential. Several countries (e. 
+g. Germany) make these requirements a prerequisite for smart metering. 
+ 
+The foundation for the necessary definitions has already been set in OMSS (Vol. 2, Annex E, Annex F). Annex N 25 
+of OMSS Vol. 2 provides examples for Wired and Wireless M-Bus. 
+ 
+The purpose of this document is to clarify the basics, to explain the structure and to provide examples for possible 
+variants. 
+ 
+  
+PDF PAGE 36
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  36/73 
+5.8.2 Unencrypted Messages for Wired M-Bus 
+ 
+N.1.2 in Annex N of OMSS Vol. 2 provides an unencrypted example for a RSP-UD for the Wired M-Bus. 
+ 
+The following layer structure is used for this example: 
+ 
+ 
+Data Link Layer (DLL): Header 
+Transport Layer (TPL): 
+ CI=72h 
+ Transport Layer address field 
+(contains the address of the M-Bus Slave from which the RSP-UD is sent) 
+ Config Field: 
+o Mode 0 
+o 2 Bytes length 
+o Value: 00h 00h 
+Application Layer (APL): Set of Data Records (DRs), unencrypted 
+Data Link Layer (DLL): Termination 
+ 
+One DR consists of VIB, DIB and data. 
+ 
+  
+PDF PAGE 37
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  37/73 
+5.8.3 Layer Structure 
+ 
+OMSS Vol. 2 V 4.0.2 introduced the AFL in order to enable fragmentation and authentication:  
+ 
+ 
+ 
+ELL shall not be used for Wired M-Bus. 
+ 
+  
+
+PDF PAGE 38
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  38/73 
+5.8.4 Security Profile A 
+ 
+Security profile A uses Mode 5 for encryption but does not use authentication (CMAC). AFL is required for 
+fragmentation, 
+ 
+This message consists of several blocks (Multi -RSP-UD). The application of the AFL excludes the usages of the 
+DIF 1Fh (see EN 13757-3:2018, 6.5). 5 
+ 
+First fragment of Multi-RSP-UD: 
+ 
+Data Link Layer (DLL): Header 
+ Authentication and Fragmentation Layer (AFL): 
+ CI=90h 
+ AFL.AFLL 
+ AFL.FCL 
+ Message Length Field (ML) required 
+ No Message Authentication Code (MAC) 
+ No Message Counter (MCR) 
+Transport Layer (TPL): 
+ CI=72h 
+ Transport Layer address field 
+(contains the address of the M-Bus Slave from which the RSP-UD 
+is sent) 
+ Config Field: 
+o Mode 5 
+o 2 Bytes length 
+o Number of encrypted blocks 
+ Decryption Verification (2Fh, 2Fh, encrypted) 
+Application Layer (APL): Set of DRs (Encrypted) 
+Data Link Layer (DLL): Termination 
+ 
+ 
+Following fragments: 
+ 
+Data Link Layer (DLL): Header 
+Authentication and Fragmentation Layer (AFL): 
+ CI=90h 
+ AFL.AFLL 
+ AFL.FCL 
+ No Message Length Field (ML) 
+ No Message Authentication Code (MAC) 
+ No Message Counter (MCR) 
+Application Layer (APL): Set of DRs (Encrypted) 
+Data Link Layer (DLL): Termination 
+ 
+  
+PDF PAGE 39
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  39/73 
+Last fragment: 
+ 
+Data Link Layer (DLL): Header 
+Authentication and Fragmentation Layer (AFL): 
+ CI=90h 
+ AFL.AFLL 
+ AFL.FCL 
+ No Message Length Field (ML) 
+ No Message Authentication Code (MAC) 
+ No Message Counter (MCR) 
+Application Layer (APL): Set of DRs (Encrypted) and Set of DRs 
+(Unencrypted) 
+Data Link Layer (DLL): Termination 
+ 
+The number of encrypted blocks (in the TPL) provides the possibility to add unencrypted DRs after the encrypted 
+DRs. One example for unencrypted DRs is address information. 
+ 
+The message length ML in the AFL is calculated from the size of the whole message (see also Vol. 2 chapter 
+6.2.5). 5 
+ 
+ 
+Alternative solution 1: Single-RSP-UD with AFL: 
+ 
+Data Link Layer (DLL): Header 
+Authentication and Fragmentation Layer (AFL): 
+ CI=90h 
+ AFL.AFLL 
+ AFL.FCL 
+ Message Length Field (ML) required 
+ No Message Authentication Code (MAC) 
+ No Message Counter (MCR) 
+Transport Layer (TPL): 
+ CI=72h 
+ Transport Layer address field 
+(contains the address of the M-Bus Slave from which the RSP-UD 
+is sent) 
+ Config Field: 
+o Mode 5 
+o 2 Bytes length 
+o Number of encrypted blocks 
+o  
+ Decryption Verification (2Fh, 2Fh, encrypted) 
+Application Layer (APL): Set of DRs (Encrypted) and Set of DRs 
+(Unencrypted) 
+Data Link Layer (DLL): Termination 
+ 
+  
+PDF PAGE 40
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  40/73 
+Alternative solution 2 according to EN 13757-3:2018: Single-RSP-UD without AFL: 
+ 
+Data Link Layer (DLL): Header 
+Transport Layer (TPL): 
+ CI=72h 
+ Transport Layer address field  
+(contains the address of the M-Bus Slave from which the RSP-UD 
+is sent. 
+ Config Field: 
+o Mode 5 
+o 2 Bytes length 
+o Number of encrypted blocks 
+o  
+ Decryption Verification (2Fh, 2Fh, encrypted) 
+Application Layer (APL): Set of DRs (Encrypted) and Set of DRs 
+(Unencrypted) 
+Data Link Layer (DLL): Termination 
+ 
+5.8.5 Security Profile B 
+ 
+The following example shows an enhanced mode 7 structure. 
+ 
+All listed bullet points for the configuration of the AFL are exclusively valid for the current fragment. 
+ 
+Mode 7 uses MAC for Authentication which is located in the last fragment. 5 
+ 
+This message consists of several blocks (Multi-RSP-UD). 
+ 
+ 
+First fragment of Multi-RSP-UD: 
+ 
+Data Link Layer (DLL): Header 
+Authentication and Fragmentation Layer (AFL): 
+ CI=90h 
+ AFL.AFLL 
+ AFL.FCL 
+ Message Length Field (ML) required 
+ No Message Authentication Code (MAC) 
+ Message Counter Field (MCR) required 
+Transport Layer (TPL): 
+ CI=72h 
+ Transport Layer address field 
+(contains the address of the M-Bus Slave from which the RSP-UD 
+is sent) 
+ Config Field: 
+o Mode 7 
+o 3 Bytes length 
+o Key ID K=0: Master Key 
+o Key Derivation Function D=01h 
+o Number of encrypted blocks 
+o  
+ Decryption Verification (2Fh, 2Fh, encrypted) 
+Application Layer (APL): Set DRs (Encrypted) 
+Data Link Layer (DLL): Termination 
+PDF PAGE 41
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  41/73 
+Following fragments: 
+ 
+Data Link Layer (DLL): Header 
+Authentication and Fragmentation Layer (AFL): 
+ CI=90h 
+ AFL.AFLL 
+ AFL.FCL 
+ No Message Length Field (ML) 
+ No Message Authentication Code (MAC) 
+ No Message Counter Field (MCR) 
+Application Layer (APL): Set DRs (Encrypted) 
+Data Link Layer (DLL): Termination 
+ 
+ 
+Last fragment: 
+ 
+Data Link Layer (DLL): Header 
+Authentication and Fragmentation Layer (AFL): 
+ CI=90h 
+ AFL.AFLL 
+ AFL.FCL 
+ No Message Length Field (ML) 
+ Message Authentication Code (MAC) required 
+ No Message Counter Field (MCR) 
+Application Layer (APL): Set DRs (Encrypted) and Set of DRs (Unencrypted) 
+Data Link Layer (DLL): Termination 
+ 
+ 
+ELL shall not be used. for Wired M-Bus. 
+ 
+5.8.6 Security Profile C 
+ 
+Annex F of OMSS Vol. 2 provides the definitions for the integration of TLS including the conditions when to use 5 
+the Authentication service provided by the AFL. Due to the length of TLS communications, messages (AFL, Multi -
+RSP-UD) shall be fragmented. 
+ 
+  
+PDF PAGE 42
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  42/73 
+SND-UD to Slave: 
+ 
+Data Link Layer (DLL): Header 
+Authentication and Fragmentation Layer (AFL): 
+ CI=90h 
+ AFL.AFLL 
+ AFL.FCL 
+ No Message Length Field (ML) 
+ Message Authentication Code (MAC) required 
+ Message Counter Field (MCR) required 
+Transport Layer (TPL): 
+ CI=5Bh 
+ Transport Layer address field 
+(contains the address of the M-Bus Slave from which the RSP-UD 
+is sent) 
+ Config Field: 
+o Mode 13 
+o 3 Bytes length 
+o Protocol type 
+o Number of bytes 
+ TLS Header 
+ Application Layer (APL): Set DRs (Encrypted) 
+Data Link Layer (DLL): Termination 
+ 
+ 
+First fragment of Multi-RSP-UD: 
+ 
+Data Link Layer (DLL): Header 
+Authentication and Fragmentation Layer (AFL): 
+ CI=90h 
+ AFL.AFLL 
+ AFL.FCL 
+ Message Length Field (ML) required 
+ No Message Authentication Code (MAC) 
+ Message Counter Field (MCR) required 
+Transport Layer (TPL): 
+ CI=72h 
+ Transport Layer address field 
+(contains the address of the M-Bus Slave from which the RSP-UD 
+is sent) 
+ Config Field: 
+o Mode 13 
+o 3 Bytes length 
+o Protocol type 
+o  Number of bytes 
+ TLS Header 
+Application Layer (APL): Set DRs (Encrypted) 
+Data Link Layer (DLL): Termination 
+ 
+  
+PDF PAGE 43
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  43/73 
+Following fragments: 
+ 
+Data Link Layer (DLL): Header 
+Authentication and Fragmentation Layer (AFL): 
+ CI=90h 
+ AFL.AFLL 
+ AFL.FCL 
+ No Message Length Field (ML) required 
+ No Message Authentication Code (MAC) 
+ No Message Counter Field (MCR) required 
+Application Layer (APL): Set DRs (Encrypted) 
+Data Link Layer (DLL): Termination 
+ 
+ 
+Last fragment: 
+ 
+Data Link Layer (DLL): Header 
+Authentication and Fragmentation Layer (AFL): 
+ CI=90h 
+ AFL.AFLL 
+ AFL.FCL 
+ No Message Length Field (ML) required 
+ Message Authentication Code (MAC) required 
+ No Message Counter Field (MCR) required 
+Application Layer (APL): Set DRs (Encrypted) 
+Data Link Layer (DLL): Termination 
+ 
+ 
+The requirements for the TLS configuration are defined in OMSS Vol. 2. Annex F. For Wired M-Bus ELL is not 5 
+applied. 
+ 
+  
+PDF PAGE 44
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  44/73 
+5.9 New Topics in Version 2 of the Technical Report 
+5.9.1 Slave Readout 
+Questions: Does REQ-UD2 require a repetition? Is there a maximum numbers of repetitions? 
+The number of repetitions (2) is for the whole mbus communication can currently only be found in “M -Bus: A 
+documentation V 4.8, 5.4” at “m -bus.com”. This definition can currently not be found in OMSS Vol. 2 V 4.1.2 and 5 
+EN 13757-2:2018. The informative annex EN 1434.3;2015, D.2.1 defines 2 repetitions. 
+Therefore it is necessary to add this definition in future versions of OMSS Vol. 2 and EN 13757 -2. A least  2 
+repetitions are necessary for the correction of communication errors (no or erroneous answer in link layer, answer 
+in conflict with timing requirements). 
+The exception to this rule is a secondary search: The repetition of a secondary selection is not mandatory. 10 
+The slave shall not force repetitions systematically in order to gain time for internal purposes. 
+ 
+5.9.2 Secondary Address Search 
+Questions: Does a slave select by the master require a repetition? Does a slave have to answer on the first slave 
+select command with ACK? 
+If no slave answers at a search with secondary address with the defined timing conditions or if there are still 15 
+collisions at a maximum restricted search area the slave select shall be repeated – in all other cases not. 
+ 
+5.9.3 Deselection 
+SND-NKE to primary address 253 or 254: 
+ 
+ A SND-NKE to address 254 does not change the status of the slave selection. 
+ Having received an ACK (E5h) as response to a SND-NKE to address 253 no repetition is required. 20 
+ Having received no valid response to a SND-NKE to address 253 or 254 (no or erroneous response in link 
+layer, response in conflict with timing requirements) at least 2 repetitions should be sent. 
+ 
+SND-NKE to primary address 255: 
+ 
+ A SND-NKE to address 255 does not change the status of the slave selection. 25 
+ The slave should apply the first received SND-NKE and resets the FCB. 
+ The master may apply SND-NKE several times. 
+ 
+By selection of a new slave: 
+ 
+ Having received an ACK (E5h) as response there should be no repetition. 
+ Having received no valid response to a slave select (no or erroneous response in link layer, response in 30 
+conflict with timing requirements) at least 2 repetitions should be sent. 
+ A selected slave should deselect at the first selection command for another secondary address. 
+ 
+NOTE: If an explicit deselection confirmation is required the following procedure can be applied: 
+o Deselection of the selected slave with SND-NKE. 
+o The slave confirms the deselection with ACK. 35 
+o Selection of the required slave with the selection command. 
+ 
+This procedure requires a communication overhead compared to the immediate selection command, but 
+ensures that the previously selected slaves are really deselected. Under “poor” M -Bus line conditions it is 
+possible that a selected slave does not receive the slave selection command of a new slave which leads to 
+at least two selected slaves on the bus. 40 
+ 
+  
+PDF PAGE 45
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  45/73 
+6 Cross-Reference Table for Chapters 7 and 5 
+Table 6: Cross-reference table for chapters 7 and 5 
+Chapter 7 : Known Wired 
+M­Bus issues 
+Chapter 5 : Decisions and new definitions by OMS AG4; Decision in 
+meeting minutes of OMS AG4 
+7.1 5.1 
+7.1.1 5.1.1 
+7.1.2 Action no. 2 -3: No demand for connector. Action Item closed. No further 
+actions. 
+7.1.3 5.1.2 
+7.1.4 5.1.3 
+7.1.5 5.1.4 
+7.1.6 Decision no. 2-3: Matter of certification. No further actions. 
+7.1.7 5.1.5 
+7.1.8 5.1.5 
+7.1.9 5.1.6 
+7.1.10 5.1.7 
+7.1.11 5.1.8 
+7.1.12 5.1.9 
+7.1.13 Decision no. 7-5: New work item proposal to change EN 13757-2:2004. 
+7.1.14 Decision no. 7-5: New work item proposal to change EN 13757-2:2004. 
+7.1.15 Decision no. 3-9: Register freeze as alternative solution is recommended. 
+7.1.16 Decision no. 3 -10: The duty cycle rule does not apply to break states. No 
+further actions. 
+7.1.17 5.1.11 
+7.1.18 Decision no. 3 -12: Currently  no further actio ns. Topic is copied to chapter 
+5.9.10 and therefore postponed. 
+7.1.19 Decision no. 3 -13: Disconnecting slaves from M-Bus logically to save battery 
+power is not permitted (see 5.1.13). For transmission o f remaining energy see 
+chapter 5.1.10. 
+7.1.20 Decision no. 3 -14: Outside the scope of OMS. Individual device marking 
+recommended. No further actions. 
+7.1.21 5.1.10 
+7.1.22 5.1.10 
+7.1.23 5.1.10 
+7.1.24 5.1.10 
+7.1.25 Decision no. 4 -4: Same rules apply for discrete as well as for integr ated 
+circuits. 
+7.1.26 Decision no. 4-5: Implementation according to EN 13757-2 required. 
+7.1.27 5.1.12 
+7.1.28 5.1.12 
+7.1.29 Decision no. 4-6: Request for certification of M-Bus IC. 
+7.1.30 5.1.1 
+7.1 5.1.14 
+7.2 5.2 
+7.2.1 Decision no. 5-1: Matter of certification. No further actions. 
+7.2.2 5.2.2 
+7.2.3 Decision no. 5-2: No need for improvement. No further actions. 
+7.2.4 Decision no. 5-1: Matter of certification. No further actions. 
+7.2.5 Decision no. 5 -3: No contradiction with specification: Valid primary address 
+space 0…250 according to EN 13757-2:2018. 
+ 
+OMS Vol. 2 V4.0.2 was aligned to this decision: Primary address 0 shall not be 
+used for meter addressing. 
+ 
+No further actions. 
+7.2.6 5.2.3 
+7.2.7 Decision no. 5 -4: Primary address change is only a llowed using CI=7Ah. 
+Secondary address change is only permitted for adapters (see chapter  5.2.3). 
+No further actions. 
+7.2.8 Decision no. 5 -3: No contradiction with specification: Valid primary address 
+space 0…250 according to EN 13757-2:2018. 
+OMS Vol. 2 V4.0.2 was aligned to this decision: Primary address 0 shall not be 
+used for meter addressing. 
+No further actions. 
+PDF PAGE 46
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  46/73 
+7.2.9 5.2.4 
+7.2.10 5.2.5; Matter of certification. 
+7.2.11 5.2.6 
+7.2.12 5.2.1. 
+7.2.13 5.2.1. 
+7.2.14 Decision no. 6 -2: A2h is not used for multiple M-Bus devices. No further 
+actions. 
+7.2.15 Action Item no. 7 -6: Revision of EN 13757 -2:2004 for a more detailed 
+specification. 
+7.2.16 5.2.7 
+7.2.17 5.4.2 
+7.2.18 Action no. 6-2: FCB has been clarified by OMS AG1. No further actions. 
+7.2.19 Decision no. 6-2: See 5.2.1. 
+7.2.20 Decision no. 8-7: Secondary addressing is obligatory. 
+7.2.21 Decision no. 7 -1: First sentence is obligatory (see 5 .2.3). Second sentence is 
+not necessary. 
+7.2.22 Decision no. 8 -1: No exceptions to automatic baud detection permitted. Baud 
+rate fixing is not permitted. 
+7.2.23 Decision no. 7-2: Matter of certification. No further actions. 
+7.2.24 Decision no. 7 -3: EN 13757 -3:2013 table 26 defines necessary exception for 
+this case. 
+7.3 5.3 
+No immediate reference to 
+chapter 6.3 
+5.3.1 
+7.3.1 Decision no. 8-2: Timing of EN 13757-2:2018 is obligatory. 
+7.3.2 Decision no. 8-3: Rules for secondary addressing are obligatory. 
+7.3.3 Decision no. 8-4: Secondary addressing is obligatory. 
+7.3.4 Decision no. 8-5: Effects of application reset are restricted to application layer. 
+No influence on other layers, e. g. no influence on secondary address 
+selection. No further actions. 
+7.3.5 Decision no. 8-6: Matter of certification. No further actions. 
+7.3.6 Decision no. 8-7: Secondary addressing is obligatory. 
+7.3.7 Decision no. 8-7: Secondary addressing is obligatory. 
+7.3.8 Decision no. 8-7: DIN address is part of the type plate of a meter (see 5.3.2). 
+7.4 5.4 
+No immediate reference to 
+chapter 7.4 
+5.4.1 
+No immediate reference to 
+chapter 7.4; yet reference to 
+7.2.17 
+5.4.2 
+No immediate reference to 
+chapter 7.4 
+5.4.3 
+7.4.1 Decision no. 8-8: For all meters, data tagging according to OMS Vol. 2  V 4.0.2 
+Annex B is obligatory. Manufacturer-specific coding is not allowed for this data. 
+7.4.2 Decision no. 8 -9: FCB, FCV and application reset set rules for multi -message 
+RSP-UD. Slaves have to be implemented according to FCV rules and support 
+the application reset command. Other commands have no effect o n frame 
+selection (see 5.4.4) 
+7.4.3 Decision no. 8 -9: FCB, FCV and application reset set rules for multi -message 
+RSP-UD. Slaves have to be implemented according to FCV rules and support 
+the application reset command. Other commands have no effect on frame  
+selection (see 5.4.4) 
+7.4.4 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Item no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+7.4.5 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Item no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+7.4.6 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Item no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+7.4.7 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Item no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+7.4.8 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Item no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+7.4.9 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Ite m no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+ 
+PDF PAGE 47
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  47/73 
+7.4.10 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Item no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+7.4.11 Decision no. 9-1: M-Bus master ensures full de coding of DIB / VIB. No further 
+actions. 
+7.4.12 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Item no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+7.4.13 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Item no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+7.4.14 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Item no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+7.4.15 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Item no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+7.4.16 Decision no. 9 -2: No further actions required: the correct application of the 
+M­Bus definitions (error bits of link layer and application layer) guarantees that 
+main registers retain data unmodified. 
+7.4.17 Decision no. 9 -3: No further actions required: M-Bus architecture includes 
+listening by slaves. Needs to be included in battery life time calculations. 
+7.4.18 Decision no. 9-4: No further actions required: Application select is considers for 
+this use case. 
+7.4.19 Decision no. 9-5: No further actions required: M-Bus data types define the sign 
+bit. For BCD encoded data types the BCD extension F provides the facility to 
+encode negative values. 
+7.4.20 5.4.6 
+No immediate reference to 
+chapter 7.4 
+5.4.4 
+No immediate reference to 
+chapter 7.4 
+5.4.5 
+7.5 5.5 
+7.5.1 5.4.9, 5.4.10, Action Item no. 8 -1: Meter profile; Action Item no. 10 -1: 
+Verification of Annexes A and B of OMS Vol. 2 V 4.0.2 
+7.5.2 5.4.7 
+7.5.3 5.4.7 
+7.5.4 5.4.7 
+7.5.5 5.4.7 
+7.6 5.6 
+7.6.1 Action Item no. 11-2: Installation guide 
+7.6.2 Action Item no. 11-2: Installation guide 
+7.6.3 Action Item no. 11-2: Installation guide 
+7.6.4 Action Item no. 11-2: Installation guide 
+7.6.5 Action Item no. 11-2: Installation guide 
+7.6.6 Action Item no. 11-2: Installation guide 
+7.7 Tasks of OMS AG3 
+ No further actions in AG4 
+7.8 Security 
+7.8.1 Decision no. 14-1: TF Security shall prepare example for Wired M-Bus 
+7.8.1 Decision no. 14-2: Revision of Vol. 2 Annex N necessary. 
+7.8.1 Decision no. 14 -3: Extension of existing reference implementation for Wired 
+M­Bus 
+7.8.1 5.8 
+7.9 Postponed for future work of OMS AG4 
+ Not covered by TR-02 
+7.10 New topics in version 2 of technical report 
+7.10.1 5.9.1 
+7.10.2 5.9.2 
+7.10.3 5.9.3 
+ 
+  
+PDF PAGE 48
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  48/73 
+7 Known Wired M-Bus Issues 
+This chapter shows the original comments and questions which have been provided as input to OMS. 
+7.1 Physical Layer 
+7.1.1 Cabling 
+There is no clearly defined “reference cable” in the standard. Only “telephone cable” is mentioned, and this can 5 
+vary depending on the country. It would be better if the test specification defined the cable parameters (R/m, L/m, 
+C/m) for a reference cable type, so that testing can be performed with a known cable type and the test results can 
+be easily compared. 
+Furthermore, two “worst-case” test topologies should be defined and described (based on “usage types” in the 
+standard) with a fixed topology, so that easy comparisons can be made between different masters and slaves. 10 
+ 
+Reference EN 13757-2:2004 Annex E.1 to E.6 
+ 
+7.1.2 Connectors 
+There is no standard connector defined for M-Bus installations. So far we have seen circular DIN connectors and 
+several types of screw connectors used. 
+ 
+Could RJ45 be a possible solution? 15 
+ 
+7.1.3 SC Charge / Discharge 
+The M-Bus standard defines the bus level storage by means of RC-constant. However, most implementations use 
+a Texas Instruments  or ON Semiconductor  transceiver, both of which implement bus level storage by linear 
+charge and discharge of the SC capacitor. A clear  test specification should be defined interpreting the RC 
+constant requirement for linear charge / discharge systems. 20 
+ 
+Reference EN 13757-2:2004 chapter 4.2.1 
+ 
+7.1.4 Inrush Current 
+There is currently no limitation on the inrush current of the slave device. This parameter is related to the maximum 
+capacitance on the device terminals (since the inrush current is mostly used to charge the capacitance of the 
+terminals), but is easier to measure. 25 
+ 
+7.1.5 Rise and Fall Times 
+The standard defines a maximum slope on the master voltage modulation, but there is no lower limit for this 
+parameter. In the masters currently on the market , there is a wide variation of modulation slope ranging from as 
+steep as possible to carefully controlled. For the slave device, there is no specifica tion on current rise and fall 
+times. This may vary, for example in discrete applications. 30 
+ 
+Reference EN 13757-2:2004 chapter 4.3.3.4 
+ 
+7.1.6 Bit Timing 
+Some masters enforce the strict bit time requirements set in the standard, which may cause interoperability issues 
+with certain slaves. 
+ 
+Reference EN 13757-2:2004 table 1 35 
+ 
+PDF PAGE 49
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  49/73 
+7.1.7 Number of Unit Loads > 1 
+If the number of unit loads is >1, on many meters it is not stated on the device itself and on some it is also not 
+given in the data sheet  / manual. This makes it more  difficult to select a suitable level converter, on -site this may 
+lead to the equipment not functioning. 
+ 
+7.1.8 Statement of Unit Loads for Master and Slave 5 
+For M-Bus slaves: A clear indication of the number of standard loads (= 1.5 mA current draw) on the devices is 
+required. 
+For M-Bus masters: Indication of the max imum number of standard loads which can be connected  is required, 
+instead of the number of M-Bus devices. 
+ 
+7.1.9 M-Bus Voltage Switch-on Process 10 
+Definitions for the M-Bus master for the ramp-up voltage under load (n x Unit load) need to be defined? 
+If necessary, increase voltage via several stages; rise and fall times, etc. 
+ 
+Reference EN 13757-2:2004 chapter 4.2.2.7 
+ 
+7.1.10 Specify upper Limit for Voltage Deviation (due to M-Bus Slaves Current Regulation) 
+U delta max for the M-Bus voltage deviation (minimum: 1 2 V): is an upper limit defined anywhere? How does it 15 
+look with current regulation for large deviations? 
+ 
+Reference EN 13757-2:2004 chapter 4.3.3.2 
+ 
+7.1.11 Minimum M-Bus Voltage (Mark and Space)  
+Clearly state the minimum M-Bus voltage at which the slaves must still work (mark and space). 
+Where applicable, state more clearly for which point the voltage level data is valid (terminal voltage at the M-Bus 20 
+master and / or M-Bus slave terminals).  
+ 
+Reference EN13757-2:2004 chapter 4.2.1, chapter 4.3.3.1, chapter 4.3.3.2 
+ 
+7.1.12 Hysteresis Voltage Deviation 
+Absolute voltage thresholds (hysteresis) must be defined, from which an M-Bus slave detects either the space or 
+mark state, to make it possible to test t hem (for marginal voltage deviation of the master and the same for 25 
+marginal low M-Bus base voltage of the master). 
+ 
+Reference EN 13757-2:2004 chapter 4.2.1 
+ 
+7.1.13 Inconsistent Description of the M-Bus Break Length (Slave Collision Detect) 
+Reference EN13757-2:2004 Annex D: Send break signal for 50 ms 
+Reference EN13757-2:2004 chapter 5.6 / 4.3.3.8: Greater than 22 BT but less than 50 ms  30 
+Reference EN13757-2:2004 chapter 4.2.3 
+ 
+  
+PDF PAGE 50
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  50/73 
+7.1.14 M-Bus break: Scope for Interpretation concerning the Definition of the M-Bus Break  
+When an M-Bus master detects the condition for sending out an M-Bus break and sends it out: How long should 
+the break be? With safety, less than 5 0 ms, so say 49 ms. But should the break terminate as soon as the trigger 
+condition for it ceases, or should it be sent for a period of 4 9 s? EN13757-2:2004(E) 4.3.3.8: “... with a duration of 
+>= 22 bit times ....” and Annex D (informative) “... new master hardware with double current detect can detect light 5 
+collisions of (20...200)  mA and then transmit a break ( 50 ms space) on the bus,  ...” 22 bit times at 2400  Bd is 
+9.16 ms. 
+Reference EN13757-2:2004 chapter 4.3.3.8 
+See 6.1.12 
+ 
+7.1.15 M-Bus Break (I) 10 
+Is it permitted to use the M-Bus break to drop higher priority communication of the M-Bus master on the M-Bus? 
+ 
+7.1.16 M-Bus Break (II) 
+Does the duty cycle of 0.92 for the space state also apply for this? 
+ 
+Reference EN13757-2:2004 chapter 4.2.1: 
+ 
+7.1.17 Break Detection 15 
+In many meters, break detection is not implemented and this can cause problems during secondary searching. 
+ 
+7.1.18 Intrinsically Safe M-Bus 
+Creation of Appendix for intrinsically safe M-Bus protocol (explosion-proof environment) 
+ 
+7.1.19 Battery-Powered Devices 
+Battery-powered devices are not allowed to stop communication when polled often 20 
+ 
+7.1.20 Problems with Special Meters: M-Bus Converters to 20 mA 
+These converters only cause a physical conversion of the M-Bus signals on the (digital) 0 / 20 mA interface. I.e. a 
+level change of 20  mA on the M-Bus. They are not capable of converting protocols and are also not suitable for 
+binding sensors such as for example temperature sensors etc. with 0...20 mA in an M-Bus.  
+ 
+7.1.21 Limitations in the Readout Frequency (Energy Meters and Water Meters generally) 25 
+The interface electronics of energy meters and water meters are mostly supplied by a lithium battery. If an M-Bus 
+is connected, some meters are able to be supplied with voltage over the M-Bus while o thers are not. Some 
+meters permit the installation of a power sup ply module ; others continue to run from battery. In particular , for 
+those which run from battery, the number of request cycles per day is limited so that the meter achieves the 
+guaranteed service life.  30 
+In their data sheets, the manufacturer s specify how m any requests per day the meter allows. There are also 
+meters for which this number is not fixed but is calculated instead by the meter using various parameters. 
+A problem such as this, with meters in which the number of request cycles per day is limited, i s shown by the 
+meters starting to supply data regularly after midnight. At a certain time, they thereby cease to be readable for the 
+rest of the day. After midnight they then deliver values again. 35 
+ 
+  
+PDF PAGE 51
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  51/73 
+7.1.22 Readout Frequency 
+The maximum number of readouts is a major problem with battery-powered meters. There are for instance meters 
+which can only be read once per day. Some meters automatically block further readouts, but others continue to 
+communicate and thus permit anticipation of the battery capacity before the  end of the calibration period. 
+Communication with the other meters in the network as a rule also places a load on the battery of the meter which 5 
+in this case is  only listening. For many meters, only very vague or even no information is obtained about this 
+behaviour. 
+ 
+7.1.23 Behaviour of Battery-Powered Meters 
+Battery-powered M-Bus devices often limit the number of datagrams which can be read per  day. The number of 
+datagrams is calculated in different ways. 10 
+Sometimes only datagrams on its own M-Bus device are taken into account, sometimes the total bus traffic. 
+For M-Bus masters that regularly request data from a large number of M-Bus devices as a data logger, such 
+devices cannot be used. 
+This type of behaviour is not provided for in the M-Bus protocol.  
+It would be useful here to provide a solution which takes into account both the limited battery resources and also 15 
+the specified behaviour on the bus.  
+ 
+7.1.24 Problems with Special Meters: Meter xxx in Battery Operation 
+During battery operation, the meters are limited with regard to the maximum request cycles per day. According to 
+the manufacturer, not only the requests of the affected meters  enter into this calculation, but possibly all the 
+activities on the bus. For this reason, the meter is practically unusable in M-Bus systems. 20 
+ 
+Problems with special meters: Meter yyy: 
+The M-Bus connection requires a polarity, i.e. it is important which cable is connected to which M-Bus connection. 
+ 
+7.1.25 Contravention of Specification: Discrete Designs 
+Some meter manufacturers do not use the M-Bus chip from Texas Instruments  (or recently from ON 
+Semiconductor), instead they construct the interface discretely and then do not comply with the required 25 
+specifications, especially concerning the constancy of the current draw. 
+ 
+7.1.26 Contravention of Specification: Capacitance too high 
+With some meters, protective elements a re inserted at the M-Bus terminals, and these have a capacitance which 
+is too high. For example, in one case approx. 12 nF instead of the maximum permitted 0.5 nF. On large networks, 
+this can also lead to communication problems. 30 
+Reference EN13757-2:2004 chapter 4.2.2.10: 
+ 
+  
+PDF PAGE 52
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  52/73 
+7.1.27 EMC Basic Requirements for Sockets / Casing 
+Definition of EMC basic requirement, burst / surge / on sockets? Casing? 
+Parts defined in EN1434 
+Definition of two device classes (class 1: In-house; class 2: M-Bus leaves building) 
+In general: Who tests what and according to which standards / criteria? 5 
+ 
+7.1.28 Define EMC Compliant Input Wiring for the M-Bus Slave 
+Definition of input circuitry which is EMC compliant  
+ 
+7.1.29 Certification of built-in M-Bus ICs 
+Should this become an inherent part of the specification and / or the OMS conformance testing? 
+ 
+7.1.30 Topology Key Questions 10 
+ 
+- Is it possible to define a set of typical network topologies which cover most of the applications in the field? 
+- Which parameters are necessary to design an M-Bus network: 
+o f(topology, wiring parameter) resulting in the number of usable M-Bus slaves at baud rate x 
+o f(number of M-Bus slaves, topology) resulting in the requirements for the wiring parameters and 
+applicable communication speed 15 
+- Necessity to define a standard OM cable and / or connectors with specific characteristics? 
+- Necessity to specify a function or functions to calculate M-Bus networks in design phase? 
+ 
+  
+PDF PAGE 53
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  53/73 
+7.2 Link Layer 
+7.2.1 M-Bus Timing Requirements 
+General treatment of the timing requirements for the M-Bus datagram 
+ 
+Reference EN13757-2:2004 chapter 5.7.6 and chapter 6 
+ 
+7.2.2 Idle Time between Datagrams 5 
+Suppression of slave responses <= 11 bit times 
+Should a master suppress “active” responses from slaves which arrive earlier than 11 bit times?  
+ 
+Reference EN 13757-2:2004 chapter 5.5.3 
+ 
+7.2.3 Faster Scanning of M-Bus Devices 
+“Faster scanning of M-Bus devices” was requested. 10 
+ 
+7.2.4 Contravention of Specification: Incorrect Timing 
+Some meters use a 2 -processor system, with an extra processor for the M-Bus, that exchanges data with the 
+main processor. There are implementations here in which a communication between the processors occurs after 
+each communication and during this time (up to 30 secs.) the M-Bus interface cannot be operated. For instance 
+the sequence SND-NKE plus REQ-UD2 therefore leads to a timeout. 15 
+ 
+7.2.5 Contravention of Specification: Delivery State Primary Address 
+In the delivery state, the primary address should be 0. There are meters which are delivered with the address = 1. 
+ 
+7.2.6 Contravention of Specification: Change to the Meter Address 
+On some meters, the address cannot be reprogrammed with the standard datagram. 
+ 
+7.2.7 Contravention of Specification: Change to the Primary Address 20 
+The M-Bus master finds a meter with its M-Bus ID (secondary address) and now wa nts to assign it a primary 
+address. This could not always be done. However, once informed, the meter manufacturers then adapted to this 
+over time.  
+ 
+7.2.8 Primary Addressing Difficulties 
+According to the standard, the primary address at delivery should be 0. 25 
+In the configuration phase this should be assigned to the M-Bus slave by the M-Bus master; the slave should then 
+retain it until a new assignment or a reboot. 
+ 
+Reality: 
+Delivery of the M-Bus devices (slaves) very often takes place with a preset  primary address (e.g. 1). This is also 
+naturally retained after a reboot, until it is actively reset by the M-Bus master. 30 
+This can lead to conflicts if new M-Bus devices are inserted into an existing system, in which there is already an 
+M-Bus device with the same primary address (e.g. 1). 
+There are also M-Bus devices which do not allow their primary address to be reset to 0. 
+ 
+  
+PDF PAGE 54
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  54/73 
+7.2.9 Two or more Logical M-Buses in one Hardware Environment 
+Implementation of two or more logical M-Bus devices in one hardware environment (two primary, secondary 
+addresses); behaviour for instance during search (send E5 h twice or simulate collision, behaviour with special 
+addresses FEh, FFh) 
+NOTE: Device with several primary addresses defined in EN13757-2:2004, chapter 5.7.7 5 
+ 
+7.2.10 Detection of Datagram End through Timeout or Interpreter (Valid Datagram) 
+Wait for datagram end detection maximum 22 bit times. However, response may also already occur after 11 bit 
+times (if the correct frame was detected previously) . This could be expanded in Figure 7 key 5. The wording with 
+“may” must be more clearly qualified here. 
+ 
+Reference EN 13757-2:2004 Figure 7 Key 5 10 
+ 
+7.2.11 A-field: Are Special Addresses FEh, FFh always to be Supported? 
+Exact specification of the application case 
+ 
+Address 255 - always supported? 
+ 
+EN 13757-2:2004 chapter 5.7.5 
+ 
+7.2.12 Automatic Baud Detection: Mandatory / Mandatory only for Recommended Baud Rates? 15 
+Should M-Bus slave auto matic baud detect ion always be supported ? (Perhaps only for the mandatory and 
+recommended baud rates?) 
+ 
+Reference EN 13757-2:2004 chapter 5.2.6 
+ 
+7.2.13 Auto Baud Rate Fallback: Mandatory; Clarify Time Window 
+Auto fallback of the baud rate time window (time): Between 2 and 10 minutes 20 
+ 
+Reference EN 13757-2:2004 chapter 5.2.5 
+ 
+7.2.14 Special Single Control Character A2h: Meaning, Specify Use? 
+If necessary stipulate that this should function as the collision character for multiple virtual M-Bus devices 
+ 
+Reference EN 60870-5-2:1993 chapter 3.2 frame format FT1.2 
+ 
+7.2.15 Status Request (REQ_SKE) is Required; Use Needs to be more Exactly Specified 25 
+ 
+Reference EN 13757-2:2004 chapter 5.7.3.4 
+ 
+7.2.16 SND-NKE 
+Should last received FCB reset --> it follows from this that with multi block responds they must also be reset to the 
+first? 
+Background: A deliberate setting of responses should be done by application reset.  30 
+ 
+Reference EN 13757-2:2004 chapter 5.7.7 
+ 
+PDF PAGE 55
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  55/73 
+7.2.17 Multiple Messages: Identification in Link Layer 
+Notification outside the application layer (1Fh)  
+Suggested solution: By identification in C-field or AFL? 
+ 
+Reference EN 13757-3:2013 chapter 6.1, chapter 6.4, table 22 
+ 
+7.2.18 Definition of FCB 5 
+ 
+Reference EN 13757-3:2013 Annex E.7 
+ 
+7.2.19 Limitation of the Permitted Baud Rates to 300, 2400 and 9600 
+Elimination of the optional baud rates according to EN 13757-2 increases the operational security. 
+ 
+Reference EN 13757-2:2004 chapter 5.2 
+ 
+7.2.20 Addressing 10 
+All meters should work with both the primary address and the secondary address. 
+ 
+7.2.21 Primary Address 
+All meters should be able to change the primary address as default. If t he customer needs to lock the primary 
+address it could be fixed with a write command. 
+ 
+7.2.22 Baud Rate 15 
+All meters should be able to change the baud rate. If a customer needs to lock the baud rate this could be done 
+with a write command. 
+ 
+7.2.23 Specification Issue 
+Contravention of specification: The timing of the serial interface displays too much deviation from the set points. 
+ 
+7.2.24 Definition Deficiency: Set Primary Address 20 
+According to EN 13757-3:2018, chapter E.5, setting the primary address is as follows: 
+ 
+DIF=01h, VIF=7Ah, data=address 
+ 
+Here however, DIF=01h means an 8 -bit integer, i.e. -128...127. Theoretically therefore, addresses >127 cannot 
+be assigned.  
+For purely 8-bit implementations, this is not critical. With more complex architectures in the slave (32 -bit) this can 25 
+however lead to errors, if a 80h is then handled internally as FF80h or similar and addresses >250 are rejected (“If 
+then else” comparison). 
+Should address allocation therefore also be possible with 02 h? What do existing meters do? Or should DIF= 01h 
+together with VIF=7Ah have a different meaning (unsigned integer)? 
+ 30 
+  
+PDF PAGE 56
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  56/73 
+7.3 Networking Layer / Secondary Addressing 
+7.3.1 REQ-UD2 
+There are meters for which an unspecified pause is required between the selection of t he secondary address and 
+the REQ-UD2. 
+7.3.2 Secondary Address (I) 5 
+There are meters with a secondary address that is hexadecimal (normally it is decimal). 
+ 
+7.3.3 Secondary Address (II)  
+There are meters which have a secondary address but do not support scan. 
+ 
+7.3.4 Select is Lost (Electricity Meters generally) 
+There are some meters where, after selection using select via the secondary address and sending an application 10 
+reset, the selection becomes lost, i.e. a second select command is necessary. 
+ 
+7.3.5 Contravention of Specification: Secondary Addressing 
+There are also some meters on which the secondary addressing is incorrectly implemented. 
+ 
+7.3.6 Secondary Addressing Mandatory  
+Secondary addressing is mandatory for OMS. 15 
+ 
+Reference EN13757-3:2013 chapter 11.3 
+7.3.7 Secondary Addressing as Minimum Requirement for M-Bus Slaves 
+There are sometimes simple devices which only support primary addressing. 
+ 
+7.3.8 Serial Number 
+It should always be possible to read the serial number on the front of the meter – a recommendation. 20 
+ 
+  
+PDF PAGE 57
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  57/73 
+7.4 Application Layer 
+7.4.1 DIF / VIF Use (Electricity Meters generally) 
+There are some meters in which the measured variables that are actually defined in the M-Bus by means of DIF 
+and VIF are represented by manufacturer-specific DIFs and VIFs. 
+ 
+7.4.2 Problems with Special Meters: Meter zzz 5 
+With multiple responses for which all data was reque sted, at the next request the meter does  not supply the 1st 
+part response as expected but repeats the last part of the multiple response. The 1st part is only delivered after 
+sending 2 application resets. 
+ 
+7.4.3 Contravention of Specification: Multi Datagran Readout 
+The behaviour for multi  datagram message is different depending on the meter . Many meters switch over to the 10 
+first datagram after an SND -NKE (actually wrong according to the standard), others with an application reset. 
+There is one meter which only switches back with SND -NKE but does not do this for a selection (secondary 
+addressing) (should it likewise switch back?). An application reset on this meter is not implemented. 
+ 
+7.4.4 Consistent Implementation 
+The application layer is naturally the most serious problem because practically every meter has a different 15 
+structure for the datagram. In this respect we hear time and again from customers, that “M-Bus is not always the 
+same as M-Bus”. The problem here however is actually in the only partial implementation  of the application layer 
+in the M-Bus programs for PCs, DDC, GLTs etc. Many programs need a datagram definition for each meter type 
+and assume that the structure of the datagram is always the same. As soon as a new version of the meter with a 
+changed datagram appears on the market, the definition may not match. Some meters also add to individual 20 
+blocks as soon as data such as set day values are generated for the first time. 
+ 
+7.4.5 Datagram Content 
+The standardisation of the M-Bus in the area of electrical energy is unsatisfactory. 
+The result is an uncontrolled growth in manufacturer-specific data records. 
+Standardisation is urgently needed here.  25 
+ 
+7.4.6 Function of VIFE 
+VIFEs can also present a serious problem because these elements can turn the meaning and content of a block 
+completely upside down and theoretically a maximum of 10 VIFEs including VIF is possible. 
+ 
+7.4.7 Missing VIFs 
+Some values and units are missing from the standard (have been greatly expanded in the latest standard) . 30 
+Therefore some manufacturers transmit a  considerable amount of manufacturer -specific data but nevertheless 
+expect that this data can be interpreted and assigned by the software. This is only possible however with a meter -
+specific software component. 
+ 
+7.4.8 Readout of Extended Data 
+Readout of the standard page by RSP-UD2 is not a problem. Many meters allow further protocol pages to be read 35 
+out. The way to read this data out has been solved in different ways  in part. For some meters, the datagram is 
+changed by application reset + subcode, with other manufacturers the same is realised via manufacturer -specific 
+data. 
+ 
+PDF PAGE 58
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  58/73 
+7.4.9 Manufacturer-Specific VIFs, as an Example: Electricity Meters with 3 Phases 
+In addition to energy, some alternating current meters allow the values for voltage, current or instantaneous 
+power for each phase to be read out over the M-Bus. There are different possible solutions when assigning this 
+data in the datagram. 
+In the following two examples: 5 
+ 
+Table 7: Example 1: Implementation via manufacturer-specific VIF / VIFE – manufacturer A 
+ 
+Data field Meaning 
+02 2 byte integer 
+FD C9 FF 81 00 Table FD, storage 0, tariff 0, channel 0, voltage [V], next VIFE 
+manufacturer-specific, 81H  phase 1 
+00 00  value  0 
+02 2 byte integer 
+FD C9 FF 82 00 Table FD, storage 0, tariff 0, channel 0, voltage [V], next VIFE 
+manufacturer-specific, 82H  phase 2 
+00 00  value  0 
+02 2 byte integer 
+FD C9 FF 83 00 Table FD, storage 0, tariff 0, channel 0, voltage [V], next VIFE 
+manufacturer-specific, 83H  phase 3 
+00 00  value  0 
+ 
+Table 8: Example 2: Implementation via manufacturer-specific VIF / VIFE – manufacturer B 
+ 
+Data field Meaning 
+02 2 byte integer 
+FD C8 FF 01  Table FD, storage 0, tariff 0, channel 0, voltage [100  mV], next VIFE 
+manufacturer-specific, 01H  phase 1 
+00 00  value  0 
+02 2 byte integer 
+FD C8 FF 02 Table FD, storage 0, tariff 0, channel 0, voltage [100  mV], next VIFE 
+manufacturer-specific, 02H  phase 2 
+00 00  value  0 
+02 2 byte integer 
+FD C8 FF 03  Table FD, s torage 0, tariff 0, channel 0, voltage [100  mV], next VIFE 
+manufacturer-specific, 03H  phase 3 
+00 00  value  0 
+ 
+Without a specification of the protocol, it is not apparent what meaning the VIFE bytes 81 h / 82h / 83h and 01h / 
+02h / 03h have. Examples of “uncertainties” such as these in the datagram too often lead to implementation cost.  
+ 
+  
+PDF PAGE 59
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  59/73 
+7.4.10 Month End Value / Set Day Values 
+During the setup of the M-Bus datagram, there is a variety of different implementations with regard to the 
+transmission of set days or month end values. 
+Correctly, each stored value (e.g. set days or month end values) should be provided with a storage number. The 
+associated date carries the same storage number. The date and stored value can be assigned using th e storage 5 
+number. 
+Unfortunately there are many different implementations which are not always unambiguous, e.g. 
+ Storage numbers are used as “month”. 
+ Sometimes, manufacturer -coded (binary) storage values are transmitted in the manufacturer -specific 
+part. 10 
+ Month values are transmitted without any time information. 
+ Example from an electronic heat cost allocator (EHKV): The values for month end and mid -month (value 
+on the 15th of the month) are therefore transmitted without time information. According to this, only every 
+second value is to be interpreted as the month end value. 
+ Month reset values are transmitted without storage number. Ultimately, these can then be confused with 15 
+instantaneous values. 
+Two suggestions are made for this purpose in the document s OMS Vol. 2 Pri. Communication Issue 2.0.0 
+Annex G and OMS Vol. 2 Pri. Communication Issue 3.0.0 Annex G1/G2. 
+ 
+7.4.11 Datagrams with Dynamic Length 
+There are meters which have a dynamic datagram length. These datagrams often have “data records ” with 20 
+customer-specific character strings. Here the option is offered for the customers to deposit important information 
+(e.g. street, apartment, etc.) in the datagram. 
+Because of limited storage space or resources, some readout programs have rigid M-Bus interpreters where 
+building control systems (GLT) are concerned. To some extent, fixed datagram lengths are expected.  If the 
+datagram length changes, then the meter is often no longer recognised or the data is incorrectly interpreted – 25 
+a software or firmware update from the manufacturer is then sometimes necessary. 
+ 
+7.4.12 Meters with Ambiguous Data in the Datagram 
+ 
+ There are combined cold and heat meters which transmit identical DIF  / VIF for the cold or heat register. 
+Without specification of the protocol, a clear assignment of the register is not available. 
+ There are meters which transmit the tariffs under the channel number. 30 
+ There are meters which differentiate instantaneous values using storage numbers. 
+ 
+7.4.13 Time Information in Datagram 
+A timestamp in the datagram is transmitted without the time of day. It is not clear when the associated value was 
+generated. Was the value generated at the start of the day, at the end or at some time during the day? 
+ 
+  
+PDF PAGE 60
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  60/73 
+7.4.14 Consumption Meters with Pulse Inputs 
+There are meters available with pulse inputs for further meters (often heat meters with pulse inputs for water 
+meters). 
+The meter reading is transmitted in a standard datagram (RSP-UD2). It is often not clear which medium the pulse 
+meter is metering (cold water, hot water, etc.). The medium is important for the assignment of an OBIS code (8: or 5 
+9:) for storage of the value in a database. 
+ 
+7.4.15 Date Format 03.05.----: Only for Parameter Readout; Identification of Set Days not Permitted. 
+An application rule is necessary, so that a date format without the year number is not used for identification of set 
+days. This should only be used together with set days to output the parameter of the next yearly set day. 
+ 
+7.4.16 Problems with Special Meters: Meter aaa 10 
+An energy meter displays meter rea ding 999999999 in the event of an error. In a particular case, with the heating 
+switched off, the temperature of the return flow was slightly higher than the flow temperature and the meter 
+reading was thereby no longer readable over the M-Bus. 
+ 
+7.4.17 Battery Driven Meters 
+If a customer has a mixture of battery meters and external power supply meters, the battery meters should not be 15 
+affected if there are other requests on the M-Bus loop. 
+ 
+7.4.18 Multi-RSP-UD 
+Ability to read out a specific M-Bus datagram number with a write command. 
+ 
+7.4.19 DIB 
+Add information into DIB part if the values are signed or unsigned. 20 
+ 
+7.4.20 Unique Manufacturer Device Type of Every Meter should be Mandatory in OMS 
+M-Bus networks are steadily becoming more varied: 
+ 
+ Different manufacturer's meters in a network as a rule 
+ All media 
+ Different meter types from one manufacturer 25 
+ Different configurations / settings for one meter type where appropriate. 
+ 
+Changes to an existing M-Bus network are not exceptional . It should be possible to install new meters EASILY 
+into an M-Bus network and to read out from them - without specialist personnel. 
+ 
+The M-Bus standard information: 
+ Manufacturer 30 
+ Medium 
+ Version 
+Is not adequate. 
+ 
+  
+PDF PAGE 61
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  61/73 
+7.5 Application Profile 
+7.5.1 Specifications on Meter Design 
+Which values are required, e.g. consumption last month as a datapoint)? 
+ 
+Definition of meter profiles: 
+ 
+ Profile: Description of the representation, organisation and coding of the data which is made available by 5 
+a meter. 
+ for unambiguous determination of the datapoints of a meter (meter reading according to OMS Vol. 2 and 
+EN 13757-3:2013) 
+ e. g. for prestored values (= month values or similar), maximums, tariffs 
+ in extension of the OMS OBIS tables from OMS Vol. 2 and EN 13757-3:2013 10 
+ 
+7.5.2 Configuration of Meter Devices 
+Setting addresses, setting tariff, etc. 
+ 
+7.5.3 Meter Configuration: Define Standard Commands 
+Specify M-Bus commands for OMS for standard functionality; these should then also be mandatory for every 
+meter. 15 
+ 
+Example: 
+ 
+ Set secondary address 
+ Set time of day 
+ … 
+ 
+7.5.4 Define Communication Procedures 20 
+Startup: SND-NKE, meter configuration, etc. 
+Definition of procedures / communication sequences for different application cases (defined to some extent in 
+Annex F) . Example for start up  (power up): SND -NKE, which also resets the last FCB for multi  datagram 
+messages. 
+ 
+Reference EN13757-2:2004 Annex F 25 
+7.5.5 Standard Response 
+The first datagram should be specified for different meters, electricity, heat meter, gas meter, water meter etc. 
+ 
+  
+PDF PAGE 62
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  62/73 
+7.6 Installation 
+7.6.1 S0 Meters 
+S0 meters are looped directly into the M-Bus. 
+ 
+7.6.2 Pt100  
+Pt100 or other sensor technology is directly looped into the M-Bus. 5 
+ 
+7.6.3 Topology 
+Topology: Ring formation 
+ 
+7.6.4 230 V Mains 
+Short-circuit to 230 V mains 
+ 
+7.6.5 Documentation 10 
+Cabling without documentation 
+ 
+7.6.6 Installation and Cabling 
+There is no clear specification for cabling. Experiences from practice show that any cable (from NYY to Cat7 
+network cables) that is present will be used for the M-Bus cabling. For existing systems this may be practi cal for 
+financial reasons, clear specifications would be helpful for new installations. 15 
+Furthermore, a specification or recommendation for distributor terminals would be useful (also with respect to any 
+troubleshooting which it may be necessary to perform). 
+The KNX bus seems to have been well defined here. Keyword: Green cable and plug-in terminals. 
+ 
+  
+PDF PAGE 63
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  63/73 
+7.7 Certification 
+ 
+ Specifications for interoperability testing and certification 
+ Certification of tested products 
+ Set up testing procedures and ask laboratories to perform the testing 
+ 
+  
+PDF PAGE 64
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  64/73 
+7.8 Security 
+Security issues, cases of use, when, what type and how to apply security 
+ 
+  
+PDF PAGE 65
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  65/73 
+7.9 Postponed Topics 
+7.9.1 Machine Readable Data Sheet (EDS) 
+Machine readable data sheet (EDS) for every meter (for reading into SCADA systems) 
+ 
+7.9.1.1 Data Sheet Availability  
+The depiction of the data as given above for each meter type must be defined and explained in the 5 
+manufacturer's data sheet for the meter type. The data sheet should be available on the manufacturer's website 
+and uniquely and easily traceable using the type identifier. 
+ 
+7.9.1.2 Electronic Data Sheet (EDS) 
+The EDS is explicitly linked to the meter type via the meter identifier.  Gateways and readout software can very 
+easily be configured explicitly to the desired data. 10 
+ 
+7.9.2 Internet Website with Tested Devices, Data Sheets 
+Internet Website with tested devices, data sheets (electronically?) 
+ 
+7.9.2.1 HDS – Human Readable Data Sheet 
+Normal data sheets – free formatting: Each manufacturer does as it wishes with the formatting and company logo 
+etc. 15 
+7.9.2.2 TDS – Technical Data Sheets 
+Exact description of the data which the meter delivers and its mapping in the M-Bus.  
+User: Technician who selects and configures the meter 
+7.9.2.3 EDS – Electronic Data Sheets 
+For gateways and metering software 20 
+ 
+Suggestion: XML file with all the relevant data 
+ 
+Tested meters should / can only follow later, i.e. certification or similar testing should not delay the web site. 
+ 
+7.9.3 Marketing 
+ M-Bus brand and update (e.g. the logo) 
+ Publications, magazine, newsletter, technical online forum, etc. concerning the M-Bus 25 
+ Continuing the M-Bus conference 
+ International interest concerning the M-Bus 
+ 
+7.9.4 Low Power Modes 
+The NCN5151 also implements a low power mode similar to M-Bus, but with a lower current consumption. The 
+application can then decide which communication mode to use. These low power modes could be integrated into 30 
+the M-Bus standard as well. Several implementations of the stand-by mode of the master exist, where sometimes 
+a low er voltage is left on the bus. The requirements of such a m ode could be better defined, for example  
+concerning the minimum slave startup voltage. 
+ 
+7.9.5 Communication over Ethernet  
+If communication over Ethernet is used, add a transaction ID header like Modbus TCP. 35 
+PDF PAGE 66
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  66/73 
+7.9.6 Intrinsically Safe M-Bus Protocol 
+Appendix for intrinsically safe M-Bus protocol (explosion-proof environment) 
+ 
+  
+PDF PAGE 67
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  67/73 
+7.10 New topics in Version 2 of the Technical Report 
+7.10.1 Slave Readout 
+Does REQ-UD2 require a repetition? 
+Is there a maximum numbers of repetitions? 
+ 
+7.10.2 Secondary Address Search 5 
+Does a slave select by the master require a repetitions? 
+Does a slave have to answer on the first slave select command with ACK? 
+ 
+7.10.3 Deselection 
+SND-NKE to primary addresses 253 or 254: 
+ Shall this be repeated (number of repetitions)? 10 
+ Does a slave have to answer the first SND-NKE of the master with an ACK? 
+SND-NKE to primary address 255: 
+ Shall this be repeated (number of repetitions)? 
+ Shall a slave have to deselect to the first SND-NKE of the master? 
+By selection of a new slave: 15 
+ Shall this be repeated (number of repetitions)? 
+ Shall the selected slave deselect at the first selection command to another slave? 
+ 
+  
+PDF PAGE 68
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  68/73 
+8 Version History 
+ 
+V 0.0.1 
+ 
+ First issue 
+ 
+V 0.0.2 
+ 5 
+ Introduction of change history 
+ Meter types and meter manufacturers made anonymous 
+ Addition of input from BTR NETCOM: 
+o Contravention of specification: Change to the primary address 
+o Behaviour of battery-powered meters 10 
+o Statement of unit loads for master and slave 
+o Secondary addressing as minimum requirement for M-Bus slaves 
+o Primary addressing difficulties 
+o Datagram content 
+ 
+V 0.0.3 15 
+ 
+ Addition of input from ON Semiconductor: 
+o Cabling 
+o Connector 
+o SC Charge / Discharge 
+o Low Defect Current 20 
+o Inrush Current 
+o Rise and Fall times 
+o Master Voltage Modulation Stability 
+o Bit Timing 
+o Larger Number of Unit Loads 25 
+o Startup 
+o EMC / ESD Tests 
+o Low Power Modes 
+ New chapter “Decisions and new definitions by OMS AG4” 
+ 
+V 0.0.4 30 
+ 
+ Additions in chapters 6.1 and 6.2 
+ Individual topics rearranged in chapters 6.1 and 6.2 
+ 
+V 0.0.5 
+ 
+Changes according to the decisions from meeting no. 2 of OMS AG4 (see minutes of meeting) 
+ 
+  
+PDF PAGE 69
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  69/73 
+V 0.0.6 
+ 
+ Addition of input from Fredrik Winroth: 
+o All meters should work with both primary address and secondary address. 
+o All meters should be able to change primary address as default. If the customer need s to lock 
+the primary address it could be fixed with a write command. 5 
+o All meters should be able to change baud rate, if customer need to lock the baud rate it could 
+be fixed with a write command. 
+o Recommendation that it should always be possible to read the s erial number located at the 
+front of the meter. 
+o If the customer has a mixture of battery-powered meters and meters with an external power 10 
+supply, the battery-powered meters should not be affected if there are other requests on the 
+M­Bus loop. 
+o The first datagram should be specified for different meters, electricity, heat meter, gas meter, 
+water meter etc. 
+o If communication over the Ethernet is used, add a transaction ID header like Modbus TCP. 15 
+o Ability to read out a specific M-Bus datagram number with a write command. 
+o Add information into the DIB part indicating whether the values are signed or unsigned. 
+ Addition of input from Hermann Lertes: 
+o An energy meter […] displays meter reading 999999999 in the event of an error. In a particular 
+case, with the heating switched off, the temperature of the return flow was slightly higher than 20 
+the flow temperature and the meter reading was thereby no longer readable over the M-Bus. 
+ Addition of input from Werner Frenzel: 
+o The timing of the serial interface displays too much deviation from the set points. 
+ Addition of input from Remo Reichel: 
+o Ambiguity when setting the primary address. 25 
+ 
+V 0.0.6 (continued) 
+ 
+Inclusion of the action items from the 2nd meeting of AG4 
+ 
+ Action no. 2-1: Development of future obligatory definitions (in variants) for M-Bus cabling (cable type, 
+master specification, topology, distances, slave specification) 
+ Action no. 2-2: Definition of the aim for the chapter “Cabling” 30 
+ Action no. 2-3: Consideration of the need for a choice of connectors 
+ Action no. 2-4: SC Charge  / Discharge: ON Semiconductor  is preparing a suggestion for an 
+alternative, modern definition 
+ Action no. 2-5: Development of a definition for the inrush current 
+ Action no. 2-6: Definition of the minimum and maximum values for the rise and fall times 35 
+ Action no. 2-7: Definition of the limitation of the permitted baud rates to 300, 2400 and 9600 
+ Action no. 2-8: Definition of the identification of the number of unit loads on the device and in the data 
+sheet 
+ Action no. 2-9: Suggestions for the detailed definition of the conditions for the switch-on process 
+ Action no. 2-10: Development of a suggestion for “Defining the upper limit for voltage deviation” 40 
+ Action no. 2-11: Investigation into the existing status of the master and slave definitions for “Minimum 
+M-Bus voltage” 
+ Action no. 2-12: Development of a suggestion for the “Minimum M-Bus voltage” for the slave 
+ Action no. 2-13: Introduction 
+ Action no. 2-15: References 45 
+ Action no. 2-16: Introduction 
+ 
+  
+PDF PAGE 70
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  70/73 
+V 0.0.7 
+ 
+Inclusion of action items from the 2nd meeting of AG4: 
+ 
+ Action no. 2-14: Glossary of terms 
+ Action no. 2-16: Introduction (expansion) 
+ 
+V 0.0.8 5 
+ 
+ Changes / expansions to action items from the 3rd meeting of AG4: 
+ 
+o Action no. 2-2: Cabling 
+o Action no. 2-4: SC Charge / Discharge 
+o Action no. 2-5: Inrush current 
+o Action no. 2-6: Flank slope 10 
+o Action no. 2-7: Definition of the limitation of the permitted baud rates to 300, 2400 and 9600 
+o Action no. 2-10: Upper limit for voltage deviation 
+o Action no. 2-12: Minimum M-Bus voltage 
+o Action no. 2-13: Preface 
+o Action no. 2-14: Glossary of terms 15 
+o Action no. 2-15: References 
+o Action no. 2-16: Introduction 
+o Enhanced Selection 
+o Action no. 3-3: Break signal 
+ 
+ Addition of input from Martin Braband: 20 
+ 
+o Unique manufacturer device type of every meter should be mandatory in OMS 
+o Machine-readable data sheet (EDS) for every meter (reading it into SCADA systems) 
+o Internet Website with data sheets 
+ 
+V 0.0.9 
+ 
+ Changes / expansions to action items from the 4th meeting of AG4: 25 
+ 
+o Action no. 2-2: Cabling 
+ 
+V 0.0.10 
+ 
+ Changes / expansions to action items from the 4th meeting of AG4: 
+ 
+o Action no. 2-11 / 12: Change to “Minimum slave M-Bus voltage” 
+o Action no. 4-4: Hysteresis voltage deviation 30 
+o Action no. 4-1: Introduction of the first master identification data 
+ 
+ Inclusion of the results of the 5th meeting of AG4: 
+ 
+o Removal of the chapter “Test case for slave input capacity <= 0,5 nF” 
+o Decision no. 5-4: Introduction of chapter: “Change of primary and secondary addresses” 
+PDF PAGE 71
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  71/73 
+V 0.0.11 
+ 
+ Inclusion of the results of the 6th meeting of AG4: 
+o New chapter: Test set up, detection of end of datagram, two or more logical M -Buses in one 
+hardware environment, SND -NKE. A-field: Are  special addresses FE h, FF h always to be 
+supported? 5 
+o Changes to chapter: Hysteresis voltage deviation, transmission of remaining communication 
+energy of the battery 
+ 
+V 0.0.12 
+ 
+ Inclusion of the results of the 7th meeting of AG4: 
+o Decision no. 7-1: Term “Worldwide unique” removed from chapter on secondary addressing 10 
+o Determination of addresses in adapters: Rule for incorrectly labelled meter 
+o OMS Vol. 2 chapter 2.2: Table with CI-fields: The CI-field 7Ah is restricted to Wireless M-Bus. 
+o New VIF / VIFE for the frame identification for multi datagram RSP-UD 
+o New device type for wired adapters 
+V 0.0.13 15 
+ 
+ Inclusion of the results of the 8th meeting of AG4: 
+o Correction of a definition field in the chapter “Transmission of remaining communication energy 
+of the battery” 
+o Start preparation for release of TR-02 in the English language 
+o Fixing of chapter numbers 20 
+o Introduction of chapter 8 as cross-reference between chapters 6 and 7 
+V 0.0.14 
+ 
+ Inclusion of the results of the 9th meeting of AG4: 
+o Addition of chapters 5.4.1 to 5.4.5 
+ 
+V 0.0.15 25 
+ 
+ Revision of chapter 5.1.9 (M-BUS test V8.0) 
+ 
+V 0.0.16 
+ 
+ Addition of chapter 5.4.6 
+ Revision of chapters 3 and 6 
+ 
+V 0.0.17 30 
+ 
+ Results of the 10th, 11th and 12th meetings of AG4: 
+o Revision of chapter 5.4.2 
+o Addition of chapter 5.4.7 
+ 
+V 0.0.18 
+ 
+ Results of the 13th meeting of AG4 35 
+ 
+  
+PDF PAGE 72
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  72/73 
+V 0.0.19 
+ 
+ Results of the 15th meeting of AG4 
+ Addition of the results of the “meter profiles” subgroup concerning application select 
+V 0.0.20 
+ 
+ Update of chapter 6 (cross-reference table) 5 
+ Addition of chapter 5.1.13 
+ 
+V 0.0.21 
+ 
+ Change of “primary address” to “secondary address” in one bullet point of chapter 5.2.4 
+ 
+V 0.0.22 
+ 
+ Change of description for “secondary address” in chapter 5.2.4 10 
+ Change of command for time and date setting to “optional” in chapter 5.4.7 
+ 
+V 0.0.23 
+ 
+ Complete translation to English language 
+ Reordering of chapters 
+ Decision about optional / mandatory 15 
+ Inclusion of standardisation proposals for application select, descriptor system and extension of FDh 
+table 
+ 
+V 0.0.24 
+ 
+ Proof reading of whole document 
+ Standardization proposal are moved to the annex. 20 
+ 
+V 1.0.0 
+ Final draft for request for comments 
+ 
+V 1.0.1, 1.0.2, 1.0.3 
+ Final editing versions 
+ 
+V 1.0.4 25 
+ Release version 
+ 
+V 1.0.5 
+ Annex C deleted 
+ 
+V 1.0.6 
+ Chapters 5.1.6, 5.1.10, 5.2.5, 5.4 changed 30 
+ Chapter 5.9 and 7.10 added 
+ Annexes A and B deleted 
+PDF PAGE 73
+Open Metering System Technical Report 02 – Wired M-Bus 
+  
+Version 2.0.3 ‑ 2023-03-29   
+ 
+ 
+OMS GROUP  73/73 
+V 1.0.7 
+ Corrections in chapters 1, 2, 4 and 5 
+ 
+V 1.0.8 
+ Editorial changes 
+ 
+V 2.0.0 5 
+ Final draft version 2 for request for comments 
+ 
+V 2.0.2 
+ Release version 
+ 
+V 2.0.3 
+ Alignment with OMS-S2, Annex P 10 
+ Release version 
+ 

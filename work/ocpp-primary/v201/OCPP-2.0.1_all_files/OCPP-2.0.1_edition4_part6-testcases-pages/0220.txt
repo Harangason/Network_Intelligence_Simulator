@@ -1,0 +1,46 @@
+TC_E_33_CS: Check Transaction status - Without transactionId - with message in
+queue
+Test case name Check Transaction status - Without transactionId - with message in queue
+Test case Id TC_E_33_CS
+Use case Id(s) E14
+Requirement(s) E14.FR.06,E14.FR.07
+System under test Charging Station
+Description The CSMS is able to request the status of a transaction and to find out whether there are queued
+transaction-related messages, using the GetTransactionStatusRequest message.
+Purpose To verify if the Charging Station is able to correctly respond to a GetTransactionStatusRequest without a
+transactionId, while there is a message queued.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+SampledDataTxUpdatedMeasurands is <Configured transaction_updated_metervalues_measurands>
+SampledDataTxUpdatedInterval is <Configured transaction_updated_metervalues_interval>
+OfflineThreshold is <Configured RetryBackOffWaitMinimum_duration> + 60.0
+RetryBackOffWaitMinimum is <Configured RetryBackOffWaitMinimum_duration>
+RetryBackOffRandomRange is 0
+Note:
+<Configured RetryBackOffWaitMinimum_duration> must be greater than <Configured Transaction MeterValues interval>
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does
+not accept a reconnect.
+2. The Test System waits a number of seconds equal to
+<Configured RetryBackOffWaitMinimum_duration>, before
+accepting a reconnection attempt from the Charging Station.
+4. The Charging Station responds with a
+GetTransactionStatusResponse
+3. The Test System sends a GetTransactionStatusRequest
+with transactionId omitted
+Note:
+This step will be executed the moment the WebSocket connection
+is restored.
+5. The Charging Stations sends a TransactionEventRequest
+Note(s):
+- The Charging Station will empty its Transaction message queue.
+This will contain one or more TransactionEventRequest messages
+6. The Test System responds with a TransactionEventResponse
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 218/914 Part 6 - Test Cases

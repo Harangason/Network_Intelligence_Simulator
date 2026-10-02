@@ -1,0 +1,49 @@
+TC_N_22_CS: Offline Notification - OfflineMonitoringEventQueuingSeverity set
+equal or lower
+Test case name Offline Notification - OfflineMonitoringEventQueuingSeverity set equal or lower than severityLevel of the
+monitor
+Test case Id TC_N_22_CS
+Use case Id(s) N07
+Requirement(s) N07.FR.04
+System under test Charging Station
+Description Charging Station queues event notifications when offline.
+Purpose To test that Charging Station will queue event notifications with a severity equal or lower than
+OfflineMonitoringEventQueuingSeverity.
+Prerequisite(s) Charging Station is online at start of test for configuration.
+CS has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+SetConfiguration with:
+- component.name = "MonitoringCtrlr"
+- variable.name = "OfflineQueuingSeverity"
+- attributeValue = <Configured Severity>
+Memory State:
+Charging Station has a custom or predefined monitor on AvailabilityState for Configured EVSE with severity = <Configured severity>
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Take Charging Station offline.
+2. Charging Station queues event notification for EVSE
+#1::_AvailabilityState._
+1. Plug a cable into EVSE #1 to generate an event notification for
+_AvailabilityState._
+Note(s): The tool will now wait for <Configured Transaction Duration> seconds
+Manual Action: Bring Charging Station back online.
+3. Charging Station sends NotifyEventRequest
+4. Test System responds with NotifyEventResponse
+Steps 3 and 4 repeat for all queued events during the offline period
+Tool validations
+* Step 1: no communication
+* Step 3:
+Validate that the following NotifyEventRequest message was received:
+with an eventData element with:
+- eventData[0].trigger = Delta
+- eventData[0].actualValue = "Occupied"
+- eventData[0].component.name = "EVSE"
+- eventData[0].component.evse.id = <Configured evseId>
+- eventData[0].variable.name = "AvailabilityState"
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 485/914 Part 6 - Test Cases

@@ -1,0 +1,38 @@
+6.2.14. Page 274 - (2026-06) - TC_G_17_CS - Updated tool and post scenario
+validations
+The post scenario validation is not applicable for change availability at a connector level and has therefore been removed.
+Step 7 validations for other status notifications on the same EVSE have been removed. The charging station will not report
+Unavailable for the other connectors of the same EVSE, when a specific connector receives a change availability request.
+Test case name Change Availability Connector - With ongoing transaction
+Test case Id TC_G_17_CS
+…
+Tool validations
+* Step 2:
+Message ChangeAvailabilityResponse
+- status Scheduled
+* Step 7:
+Message: StatusNotificationRequest
+- connectorStatus Unavailable
+- evseId <Configured evseId>
+- connectorId <Configured connectorId>
+- when applicable this is also sent for other connectors of the same EVSE
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].actualValue "Unavailable"
+- eventData[0].component.name "Connector"
+- eventData[0].component.evse not omit
+- eventData[0].component.evse.id <Configured evseId>
+- eventData[0].component.evse.connectorId <Configured connectorId>
+- eventData[0].variable.name "AvailabilityState"
+- when applicable this is also sent for other connectors of the same EVSE
+Post scenario validations:
+- A message to report the state of a connector has been received for all connectors.
+N/a
+6.2.15. Page 401 - (2026-02) - TC_L_07_CS - Path to non-existent firmware
+updated
+Test case name Secure Firmware Update - DownloadFailed
+Test case Id TC_L_07_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2026 28/34 Errata 2026-06

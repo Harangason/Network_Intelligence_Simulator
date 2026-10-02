@@ -1,0 +1,56 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  23 
+tHS-ZERO, which introduce a finite delay. If additional lines continue to arrive during this transition and the buffer 
+reaches the maximum capacity, the IP asserts backpressure on UVSI to prevent overflow and ensure reliable data 
+transfer as shown in Figure 2.17. 
+You can increase the available buffering margin by adjusting the Line Buffer Depth parameter in the IP configuration. A 
+larger Line Buffer Depth allows the IP to absorb consecutive line packets without prematurely asserting backpressure.  
+When backpressure is asserted (axis_vid_tready_o = low), the upstream video source is expected to pause pixel 
+transmission immediately until tready returns high. The upstream logic must be able to throttle or halt data flow on 
+tready deassertion, otherwise, incoming data may be lost or misaligned. 
+H.Blanking V.BlankingH.Blanking
+axis_vid_clk_i
+axis_vid_tready_o
+axis_vid_tvalid_i
+axis_vid_tlast_i
+axis_vid_tuser_i[0]
+axis_vid_tuser_i[1]
+axis_vid_tdata_i F0 F0 F0 F0 F0 F0 F0 F0 F0 F0 F0 F0 H.Blanking
+Interlaced F1
+Active Line End of Line
+Start of Frame
+ 
+Figure 2.16. UVSI TX Timing Diagram with Blanking Interval 
+axis_vid_clk_i
+axis_vid_tready_o
+axis_vid_tvalid_i
+axis_vid_tlast_i
+axis_vid_tuser_i[0]
+axis_vid_tuser_i[1]
+axis_vid_tdata_i F0 F0 F0 F0 F2 F2 F3 F3 F3 F3
+Without Horizontal Blanking
+Active Line End of Line
+F1 F1 F1 F1 F2 F2 F2
+Start of Frame
+Back Pressure
+ 
+Figure 2.17. UVSI TX Timing Diagram without Blanking Interval 
+2.4.1.3. MIPI CSI/DSI Receiver UVSI 
+Figure 2.18 shows the timing diagram for video frame reception over UVSI where axis_vid_tready_i stays asserted 
+during an RX transaction.  
+H.Blanking V.BlankingH.Blanking
+axis_vid_clk_i
+axis_vid_tready_i
+axis_vid_tvalid_o
+axis_vid_tlast_o
+axis_vid_tuser_o[0]
+axis_vid_tuser_o[1]
+axis_vid_tdata_o F0 F0 F0 F0 F0 F0 F0 F0 F1 F1 F1 F1 H.Blanking
+Start of Frame
+Active Line End of Line
+ 

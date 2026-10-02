@@ -1,0 +1,32 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Figure 18. I2C Read sequence with split mode
+4.3  SPI Interface
+4.3.1  Introduction
+The PN7160 follower-only SPI interface is compliant with the Freescale standard (see ref.[11]).
+• SPI speed up to 7 Mbit/s
+• 8-bit data format only
+• Supports all 4 modes of SPI (CPOL and CPHA)
+• If no data is available, the MISO line will be kept idle high (sends 0xFF bytes)
+• Toggling the NSS line indicates a new frame
+It is restricted to half-duplex communications.
+Pin name Pin correspondence
+NSS (HIF1) Equivalent to pin I2CADR0_SPINSS of the PN7160 when using SPI
+MOSI (HIF2) Equivalent to pin I2CADR1_SPIMOSI of the PN7160 when using SPI
+MISO (HIF3) Equivalent to pin I2CSDA_SPIMISO of the PN7160 when using SPI
+SCK (HIF4) Equivalent to pin I2CSCL_SPISCK of the PN7160 when using SPI
+Table 6. SPI pins correspondence
+4.3.2  NCI Transport Mapping
+A header Byte is added to the NCI packets (either data or control message, as defined in Section 3.3).
+So each data transfer over SPI starts with a header Byte which is called a “transfer direction detector”.
+Here is the meaning of this Byte, depending on its value:
+Byte value Meaning
+0XXXXXXXb DH Write access
+11111111b (0xFF) DH Read access
+Table 7. PN7160 Transfer Direction Detector
+So this header Byte restricts the full-duplex capabilities of SPI to half-duplex.
+4.3.3  Write Sequence from the DH
+As the SPI clock is mastered by the DH, only the DH can initiate an SPI exchange.
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+22 / 147

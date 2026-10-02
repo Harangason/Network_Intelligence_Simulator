@@ -1,0 +1,55 @@
+u-blox 20 HPG 2.00 - Interface description
+Start of repeated group (nBlocks times)
+4 + n·24 U1 blockId - - RF block ID, this is a unique value assigned to every RF
+block.
+The band which the RF block represents is subject to
+product conﬁguration.
+5 + n·24 X1 flags - - Flags
+bits 1…0   U:2 jammingState - - Output from jamming/interference monitor (0 =
+unknown or feature disabled or ﬂag unavailable, 1 =
+ok - no signiﬁcant jamming, 2 = warning - interference
+visible but ﬁx OK, 3 = critical - interference visible and
+no ﬁx). This ﬂag is deprecated in protocol versions
+that support UBX-SEC-SIG (version 0x02) and always
+reported as 0; instead jammingState in UBX-SEC-SIG
+should be monitored.
+6 + n·24 U1 antStatus - - Status of the antenna supervisor state
+machine (0x00=INIT, 0x01=DONTKNOW, 0x02=OK,
+0x03=SHORT, 0x04=OPEN)
+7 + n·24 U1 antPower - - Current power status of antenna (0x00=OFF,
+0x01=ON, 0x02=DONTKNOW)
+8 + n·24 U4 postStatus - - POST status word
+This ﬁeld is deprecated and always reports 0, please
+monitor postStatus ﬁeld in UBX-MON-POST instead.
+12 + n·24 U1[4] reserved1 - - Reserved
+16 + n·24 U2 noisePerMS - - Noise level as measured by the GPS core
+18 + n·24 U2 agcCnt - - AGC Monitor, as percentage of maximum gain, range
+0 to 8191 (100%)
+20 + n·24 U1 cwSuppression - - CW interference suppression level, scaled (0=no CW
+jamming, 255 = strong CW jamming)
+21 + n·24 I1 ofsI - - Imbalance of I-part of complex signal, scaled (-128
+= max. negative imbalance, 127 = max. positive
+imbalance)
+22 + n·24 U1 magI - - Magnitude of I-part of complex signal, scaled (0 = no
+signal, 255 = max.magnitude)
+23 + n·24 I1 ofsQ - - Imbalance of Q-part of complex signal, scaled (-128
+= max. negative imbalance, 127 = max. positive
+imbalance)
+24 + n·24 U1 magQ - - Magnitude of Q-part of complex signal, scaled (0 = no
+signal, 255 = max.magnitude)
+25 + n·24 U1 rfBlockGnss
+Band
+- - GNSS band associated with the reported RF block.
+0 - unknown band or unsupported ﬁeld 1 - L1 band 2 -
+L2 band 3 - L3 band 4 - L5 band
+26 + n·24 U1[2] reserved2 - - Reserved
+End of repeated group (nBlocks times)
+3.14.7 UBX-MON-RXR (0x0a 0x21)
+3.14.7.1 Receiver status information
+Message UBX-MON-RXR
+Receiver status information
+Type Output
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 87 of 224
+C1-Public

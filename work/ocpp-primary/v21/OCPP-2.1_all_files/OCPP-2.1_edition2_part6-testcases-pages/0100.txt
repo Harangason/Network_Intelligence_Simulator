@@ -1,0 +1,50 @@
+TC_B_105_CS: Set new NetworkConnectionProfile - Add new
+NetworkConfiguration using SetVariables
+Test case name Set new NetworkConnectionProfile - Add new NetworkConfiguration using SetVariables
+Test case Id TC_B_105_CS
+Use case Id(s) B09
+Requirement(s) B09.FR.10, B09.FR.23
+System under test Charging Station
+Description The CSMS updates the connection details on the Charging Station. For instance in preparation of a
+migration to a new CSMS.
+Purpose To verify if the Charging Station is able to set the network connection profile via component
+NetworkConfiguration.
+Prerequisite(s) NetworkConfiguration component variables are writable.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Note: In the following steps <configurationSlot> equals <Configured non-active configurationSlot>
+2. The Charging Station responds with GetVariablesResponse
+1. Test System sends a GetVariablesRequest for
+- DeviceDataCtrlr.ItemsPerMessage[SetVariables]
+Note: In the following steps the notation for setting a variable, like:
+NetworkConfiguration[<instance>].OcppCsmsUrl = <value>
+expands to:
+- setVariableData[0].component.name NetworkConfiguration
+- setVariableData[0].component.instance <instance>
+- setVariableData[0].variable.name OcppCsmsUrl
+- setVariableData[0].attributeValue <value>
+Note: If the value of DeviceDataCtrlr.ItemsPerMessage[SetVariables] from step #1 is 9 or more, than the following can all be set in
+one SetVariablesRequest, otherwise the variables are set one-by-one.
+4. The Charging Station responds with SetVariablesResponse(s)
+3. Test System sends a SetVariablesRequest on component
+NetworkConfiguration[<Configured non-active
+configurationSlot>] for:
+- OcppCsmsUrl = <Configured ocppCsmsUrl>
+- OcppInterface = Any
+- OcppTransport = JSON
+- OcppVersion = OCPP21
+- MessageTimeout = <Configured messageTimeout>
+- SecurityProfile = <Active securityProfile>
+- Identity = <Configured charging station identity>
+- BasicAuthPassword = PasswordOfSufficientLength
+- VpnEnabled = false
+- ApnEnabled = false
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 98/1383 Part 6 - Test Cases

@@ -1,0 +1,85 @@
+A very common question that we receive is ‘Can I
+connect the ELM327 directly to my own circuit, or must
+I use the interface shown?’ Certainly you may connect
+directly to our ICs, and you do not need to use an
+RS232 or USB interface. There are a few items to
+consider, however.
+The ELM327 is actually a microprocessor that
+contains a standard UART type interface, connected to
+the RS232 Tx and Rx pins. The logic type is CMOS,
+and this is compatible with virtually all 5V TTL and
+CMOS circuits, so you should be able to connect
+directly to these pins provided that the two devices
+share the same power supply (5V), and that they are
+not physically more than about 10 to 20 inches apart
+(CMOS circuits are subject to latch-up from induced
+currents, which may be a problem if you have long
+leads).
+The normal (idle) levels of the ELM327 transmit
+and receive pins are at the V DD (5V) level. Most
+microprocessors and RS232 interface ICs expect that
+to be the idle level, but you should verify it for your
+microprocessor before connecting to the ELM327. The
+connections are straightforward - transmit connects to
+receive, and receive connects to transmit, as shown
+below. Don’t forget to set both devices to the same
+baud rate.
+The ELM327 also provides a hand-shaking feature
+that may simplify the flow of data for you. The interface
+consists of two pins - an input an an output. The input
+is called ‘request to send’ (RTS), and it is used to
+interrupt the ELM327, just the same as tapping a key
+on the keyboard when using a terminal program. The
+output pin (‘Busy’) is used by the ELM327 to tell your
+system that it is processing data.
+To use the handshaking feature, set one of your
+port pins to normally provide a high output, and
+connect it to the RTS input (pin 15). Use another port
+pin as an input to monitor the ELM327 Busy output
+(pin 16). When you want to send a command, simply
+check the Busy output first. If it is at a high logic level,
+then either wait for it to go low, or if you need to
+interrupt the IC, then bring the RTS line low and wait
+for the Busy line to go low. (You might want to
+consider using an edge triggered interrupt on the Busy
+output, if one is available). When Busy does go low,
+restore your RTS line to a high level, and then send
+your command to the ELM327. No need to worry
+about the ELM327 becoming busy again after you
+raise the RTS line at this point – once Busy goes low,
+the ELM327 will wait (indefinitely) for your command. If
+you do not use the RTS input on the ELM327, it must
+be connected to a high logic level, as shown. Note that
+Microprocessor Interfaces
+1 2 3 4 5 6 7 8 9 10 11 12 13 14
+1516171819202122232425262728
++5V
+X1
+4.00MHz
+C4
+27pF
+R27-30
+470Ω
++5V
+C3
+27pF
++5V
++5V
+to
+R15to
+R21
+n.c.
++5V
+327
+L1-L4
+your microprocessor
+Tx Rx
+TxRx
+The ELM327 and your
+microprocessor should
+use the same 5V supply
+Busy RTS
+77 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com

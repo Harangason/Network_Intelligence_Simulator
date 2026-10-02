@@ -1,0 +1,65 @@
+ID Precondition Requirement definition Note
+S03.FR.06 When the set of batteries offered after
+insertion of the old batteries is not
+removed after the timeout specified in
+BatterySwapOutTimeout
+Charging Station SHALL send a
+BatterySwapRequest with eventType =
+BatteryOutTimeout, the same requestId as used
+during BatteryIn and idToken set to the
+authorized idToken, and batteryData with
+parameters from the battery with evse set to the
+number of the slot from which the battery was
+offered to EV Driver.
+Situation needs to be
+reported, because CSMS
+ends up with an orphan
+BatteryIn for which a
+BatteryOut is missing.
+S03.FR.07 If Charging Station uses the reverse
+swap order, i.e. first take new batteries
+out and then insert old batteries in
+Charging Station SHALL report
+BatterySwapCtrlr.SwapOrder with value "Out-In"
+The default swap order
+(In-Out) need not be
+reported, but may be
+reported by
+BatterySwapCtrlr.SwapOr
+der with value "In-Out".
+S04 - Battery Swap Charging
+No. Type Description
+1 Name Battery Swap Charging
+2 ID S04
+3 Objective(s) To show how the charging of swapped batteries is recorded.
+4 Description This use case refers to a "set of batteries", but the set can consist of only a single battery.
+An EV driver has swapped empty batteries for new ones, which the Charging Station will charge
+again up to a predefined state of charge.
+Actors Charging Station, CSMS
+Scenario description 1. Charging Station charges the empty batteries in the swap station.
+a. Charging Station sends a TransactionEventRequest with eventType = Started
+and evse set to number of the slot where the battery is in, idToken set to a
+predefined value in BatterySwapIdtoken or left empty with type =
+NoAuthorization, and triggerReason = CablePluggedIn.
+(CablePluggedIn for a swap station means that the battery has been inserted.)
+b. This follows the regular charging process as described in use cases E02 or E03.
+2. While charging the battery
+a. Charging Station periodically sends a TransactionEventRequest with the current
+state of charge of the battery as a metervalue with measurand = "SoC"
+3. When a battery has been charged to the maximum allowed state of charge:
+a. Charging Station suspends the charging transaction and sends a
+TransactionEventRequest with eventType = Updated and chargingState =
+SuspendedEVSE and triggerReason = EnergyLimitReached.
+5 Prerequisite(s) A battery is present to be charged.
+6 Postcondition(s) Battery is charged until BatterySwapMaxSoc.
+7 Error handling
+8 Remark(s) A battery swap station is treated as a Charging Station in OCPP in which every battery slot
+represents a logical EVSE.
+The BatterySwap message is related to the idToken of the EV Driver. The TransactionEvent
+messages are not associated with the EV Driver, hence the idToken in the TransactionEvent can
+be the predefined value in BatterySwapIdtoken or be absent.
+The battery swap station may suspend and resume the charging of batteries or change charging
+rate as needed, or CSMS can influence the charging rate. This is analogous to local load-
+balancing and smart charging in regular charging stations.
+Edition 2, 2025-12-03 S. Battery Swapping
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 575/803 Part 2 - Specification

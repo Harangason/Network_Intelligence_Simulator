@@ -1,0 +1,56 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  24 
+Figure 2.18. UVSI RX Timing Diagram without TREADY De-assertion 
+When axis_vid_tready_i is de-asserted (low) during an active packet transfer, as shown in Figure 2.19, pixels are stored 
+in a pixel buffer. If axis_vid_tready_i stays low for a duration greater than or equal to the configured buffer depth (Pixel 
+Buffer Depth), the buffer may overflow, which can cause functional errors.  
+F0 V.BlankingH.Blanking
+axis_vid_clk_i
+axis_vid_tready_i
+axis_vid_tvalid_o
+axis_vid_tlast_o
+axis_vid_tuser_o[0]
+axis_vid_tuser_o[1]
+axis_vid_tdata_o F0 F0 F0 F0 F0 F0 F0 F1 F1 F1 F1
+PixelBufferDepth-1
+ 
+Figure 2.19. UVSI RX Timing Diagram with TREADY De-assertion 
+2.4.2. MIPI Byte Streaming Interface (MBSI) 
+2.4.2.1. MIPI CSI/DSI Transmitter MBSI  
+When MIPI Byte Streaming Interface is enabled, the transmitter is designed to forward the formatted MIPI packets 
+supplied by upstream logic, rather than operating on pixel-level video data. Pixel-level processing functions such as 
+pixel-to-byte conversion, video timing generation, and synchronization packet construction are not part of the default 
+data path in this mode. With MBSI in passthrough mode, the converter module such as Pixel-to-Byte is bypassed. The 
+transmitter accepts a byte-oriented AXI4-Stream input, where packet headers, payloads, and checksums are generated 
+externally and driven on TVALID, TREADY, TDATA, TUSER, and TLAST. Data movement strictly follows AXI4-Stream 
+handshaking rules, where TVALID must be asserted by the source only when valid data is present, and TREADY must be 
+asserted by the sink when the sink is ready to accept data. Transfer occurs only when both signals are high.  
+The transmitter primarily performs lane distribution and PHY interfacing, mapping the incoming packets onto the 
+configured data lanes and driving the packets onto the D-PHY through the standard PHY-Protocol Interface (PPI). This 
+mode is suitable for applications that require transparent CSI-2 packet handling, including CSI-2 bridging, tunneling, 
+stream aggregation, and systems where packet formation is managed externally.  
+To support advanced use cases, passthrough mode provides optional packet integrity and header handling features 
+that can be individually enabled through configuration parameters. When enabled, the transmitter can recalculate and 
+insert ECC and/or CRC values, allowing controlled modification of packet headers or payloads while still operating in a 
+byte-stream passthrough flow. 
+In addition, passthrough mode is intended to support Virtual Channel (VC) and Virtual Channel Extension (VCX) usage. 
+This mode enables upstream logic to transmit multi-stream or virtualized MIPI traffic while maintaining correct packet 
+identification across the link. 
+2.4.2.2. ECC Insertion and Virtual Channel Handling of the MIPI CSI/DSI Transmitter 
+When ECC insertion is enabled, the transmitter overrides the ECC field of incoming CSI -2 packet headers. In this mode, 
+the Virtual Channel (VC) and Virtual Channel Extension (VCX) information can be provided dynamically through the 
+AXI4-Stream TUSER sideband signals. The transmitter uses this VC/VCX information to update the packet header fields 
+and recalculates the corresponding ECC value before transmitting the packet to the PHY.  When ECC insertion is 
+enabled, the incoming packet header must still include the ECC field as part of the AXI4 -Stream data format. However, 
+the ECC value is not required to be valid, as the value is ignored and overwritten by the transmitter with a recalculated 
+ECC.  
+This mechanism is useful when the upstream logic needs to modify VC or VCX values without manually regenerating 
+the MIPI packet header. 
+Alternatively, if ECC insertion is disabled, the transmitter treats the packet header as fully formed. The incoming packet 
+including the header, VC/VCX fields, and ECC is forwarded unchanged. Any VC or VCX modification must then be 
+performed entirely by the upstream logic before placing the packet on the AXI4 -Stream TDATA bus. 

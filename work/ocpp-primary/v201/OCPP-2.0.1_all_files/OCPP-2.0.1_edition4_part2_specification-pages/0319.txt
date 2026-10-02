@@ -1,0 +1,56 @@
+root, MO root or OEM root). Table 13 on page 45 of ISO15118-2 provides an overview of applied XML-based signatures in ISO
+15118. As you can see in there, the Charging Station (EVSE is part of a Charging Station) needs to verify the signature of the
+following messages.
+• AuthorizationReq
+Certificate chain needed to verify signature is provided with PaymentDetailsReq.
+• MeteringReceiptReq
+Certificate chain needed to verify signature is provided with PaymentDetailsReq.
+• CertificateUpdateReq
+Certificate chain needed to verify signature is provided with this message.
+• CertificateInstallationReq
+Certificate chain needed to verify signature is provided with with this message.
+The signature verification as well as the check of the validity of each certificate provided by the EV can be done offline. These three
+messages are signed with the private key belonging to the public key of the contract certificate that is installed in the EV. The CSO
+needs to make sure that the corresponding MO root CA certificate (MO trust anchor) is installed on the Charging Station to enable
+signature verification offline (the chain of contract certificates and sub-CA certificates is already fulfilled by the EV in the
+PaymentDetailsReq message so only the MO root CA is required).
+The PaymentDetailsReq message is sent before the AuthorizationReq and MeteringReceiptReq message. Therefore, the Charging
+Station must temporarily save the certificate chain provided with the PaymentDetailsReq message as long as the current
+transaction is active in order to be able to verify the signature created by the EV. After the transaction has been terminated, the
+temporarily saved certificate chain must be deleted on the Charging Station side.
+Please note that the Charging Station only needs to check the contract certificate upon the receipt of the PaymentDetailsReq
+message from the EV which delivers the ContractSignatureCertChain, containing the contract certificate and possible sub-CA
+certificates, excluding the root CA certificate. However, it does not need to check the contract certificate upon installation or update
+of the contract certificate, upon delivery to the EV.
+On the contrary, the signature provided with the CertificateInstallationReq needs to be verified by a so-called secondary actor, a
+market stakeholder communicating with the CSO backend. This means that OCPP needs to provide means for transmitting the
+complete CertificateInstallationReq message.
+The CertificateUpdateRes and CertificateInstallationRes need to be sent from the CSO backend to the charging station as Base64
+encoded binary data. The Charging Station removes the Base64 encoding and sends it to the EV as a binary EXI message.
+Finally, the Charging Station certificate (labelled as EVSE Leaf Certificate in figure 1) together with its private key is used to
+establish a secure connection between EV and EVSE via TLS. According to ISO 15118, this certificate should be valid for only 2 to 3
+months. To install or update the Charging Station certificate, please refer to Certificate installation Charging Station.
+While the Charging Station can verify the signature and validity period of each certificate in the MO contract certificate chain offline,
+there are two things which the Charging Station cannot verify offline:
+1. The authorization status of the EMAID
+The EMAID is a unique identifier issued by the MO together with the contract certificate. Therefore, only the MO can provide
+information on whether the user is authorized for charging based on this EMAID or not. The Charging Station needs to forward the
+EMAID to the CSO after having checked that the signature of each certificate in the contract certificate chain is valid. This order of
+steps is necessary because the contract certificate protects the EMAID against manipulation by means of the digital signature of
+its issuer. The Charging Station could also work with a white list of EMAIDs cached locally. However, white lists need to be
+frequently updated to ensure that the authorization information used is not outdated.
+2. The revocation status of each certificate
+Reasons for revoking a certificate are e.g. that the private key belonging to the public key of a certificate has been corrupted or that
+the algorithm used to create a signature is not considered to be secure anymore. Revocation status is checked using an OCSP
+responder whose address is given as an attribute value of an X.509 certificate.
+2.2. Using ISO 15118 Certificates in OCPP
+From an OCPP perspective, based on the above paragraph, the Charging Station needs to have one or more of each of the following
+certificate types:
+Type Description
+V2GChargingStation
+Certificate
+Certificate of the Charging Station. In 15118 this is called the SECC Certificate (or EVSE Leaf Certificate). This
+certificate is used during the set-up of the TLS connection between the Charging Station and the EV.
+V2GRootCertificate Certificate of the ISO15118 V2G Root. The V2G Charging Station Certificate MUST BE derived from this root.
+Edition 4, 2025-12-03 M. Certificate Management
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 309/491 Part 2 - Specification

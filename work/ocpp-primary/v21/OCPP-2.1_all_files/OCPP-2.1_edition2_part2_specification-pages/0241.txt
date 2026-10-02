@@ -1,0 +1,42 @@
+No. Type Description
+3 Objective(s) To enable the CSMS to remotely start a transaction while the RequestStartTransactionRequest is
+sent first, before the connection between Charging Station and EV is established.
+4 Description This use case covers how the CSMS is able to remotely start a transaction for the User.
+Actors Charging Station, CSMS, External Trigger
+Scenario description 1. An External Trigger triggers the remote start.
+2. The CSMS sends RequestStartTransactionRequest to the Charging Station.
+3. The Charging Station responds with RequestStartTransactionResponse to the CSMS.
+4. The EV Driver is authorized by the CSMS, dependent on the Configuration Variable settings.
+5. The Charging Station sends a TransactionEventRequest (eventType = Started) notifying the
+CSMS about a transaction that has started
+6. The cable is plugged in.
+6a. Charging Station sends a NotifyEventRequest with component.name Connector,
+variable.name AvailabilityState and actualValue Occupied
+6b. CSMS sends a NotifyEventResponse to the Charging Station
+7. The energy offer is started.
+8. The Charging Station sends a TransactionEventRequest (eventType = Updated, chargingState =
+Charging) message to inform the CSMS that the charging has started.
+9. The CSMS sends TransactionEventResponse to the Charging Station
+5 Prerequisite(s) Charging Cable not plugged in.
+Remote start first.
+Enable mobile apps to control charging transactions via the CSMS.
+6 Postcondition(s) Successful postcondition:
+The transaction for which a start was request has started and the EV is charging.
+Failure postcondition:
+The transaction for which a start was request did not start or the EV is not charging.
+7 Error handling n/a
+8 Remark(s) An external trigger can be e.g. a Charging Station Operator or an EV Driver app.
+It is advised not to start transactions remotely without evseId due to the uncertainty which EVSE
+is started. In case of a Logic Controller with many EVSEs, the EV Driver might not be in front of the
+activated EVSE.
+The CSMS is allowed to send a RequestStartTransactionRequest with IdTokenType of type:
+NoAuthorization. The operator should be aware that if the Charging Station supports local stop
+transaction, this transaction can be stopped by anyone.
+The scenario description and sequence diagram above are based on the Configuration Variable
+for start transaction being configured as follows:
+TxStartPoint: either EVConnected or Authorized
+This use-case is also valid for other configurations, but then the transaction might start/stop at
+another moment, which might change the sequence in which message are send. For more details
+see the use cases: E01 - Start Transaction options.
+Edition 2, 2025-12-03 F. Remote Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 228/803 Part 2 - Specification

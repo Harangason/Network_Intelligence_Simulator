@@ -1,0 +1,30 @@
+Memory states
+TransactionEventsInQueueEnded
+State TransactionEventsInQueueEnded
+System under test Charging Station
+Description This state will prepare the Charging Station, so that there will be TransactionEventRequests stored in its
+queue from an ended Transaction.
+Before (Preparations)
+Configuration State:
+OfflineTxForUnknownIdEnabled is true (If implemented)
+Memory State:
+IdTokenCached for <Configured valid IdToken fields> (If implemented)
+IdTokenLocalAuthList for <Configured valid IdToken fields> (If implemented)
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does not accept a reconnect.
+Manual Action: Drive EV into parking bay.
+Manual Action: Connect the EV and EVSE.
+Manual Action: Present idToken.
+Manual Action: Present the same idToken as used to start the transaction.
+Manual Action: Disconnect the EV and EVSE.
+Manual Action: Drive EV out of parking bay.
+2. The Test System accepts reconnection attempt from the Charging Station.
+Tool validations
+N/a
+Post scenario validations:
+TransactionEventRequest messages are stored in the queue of the Charging Station.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 906/1383 Part 6 - Test Cases

@@ -1,0 +1,54 @@
+TC_I_107_CS: Receive Driver Tariff - CS cannot process tariff -
+UseDefault/CentralCost
+Test case name Receive Driver Tariff - CS cannot process tariff - UseDefault/CentralCost
+Test case Id TC_I_107_CS
+Use case Id(s) I08
+Requirement(s) I08.FR.30, I08.FR.32, I08.FR.33
+System under test Charging Station
+Description To support receiving the driver-specific tariff to enable local cost calculation based on a tariff for this driver.
+Purpose To verify if the Charging Station which doesn’t support local cost calculation properly handles receiving a
+tariff in AuthorizeResponse.
+Prerequisite(s) - The Charging Station doesn’t support tariffs or has it disabled
+- The Charging Station is able to send AuthorizeRequest for local authorization (RFID) or remote start
+Before (Preparations)
+Configuration State:
+- AuthCtrlr.Enabled = true
+- AuthCtrlr.AuthorizeRemoteStart = true
+- TariffCostCtrlr.Available[Tariff] is false
+- or TariffCostCtrlr.Enabled[Tariff] is false
+- TariffCostCtrlr.HandleFailedTariff is UseDefault or CentralCost
+Memory State:
+N/a
+Reusable State:
+State EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with
+SetDefaultTariffResponse
+1. The Test System sends a SetDefaultTariffRequest with
+evseId 0
+tariff.tariffId Test System1A
+tariff.currency EUR
+tariff.energy.prices[0].priceKwh 1.00
+Option A: If only local authorization is supported:
+Manual Action: Present idToken.
+Option B: If remote starting is supported:
+4. The Charging Station sends an
+RequestStartTransactionResponse
+3. The Test System sends an
+RequestStartTransactionRequest with idToken = <configured
+valid_idtoken_idtoken>
+5. The Charging Station sends an AuthorizeRequest
+6. The Test System responds with an AuthorizeResponse with
+idTokenInfo.status Accepted
+tariff.tariffId Test System1
+tariff.currency EUR
+tariff.energy.prices[0].priceKwh 2.00
+Note: A transaction may have been started already when TxStartPoint contains ParkingBayOccupancy or EVConnected.
+Energy shall be delivered, because idToken is Accepted and Charging Station continues with default tariff or CSMS does central cost
+calculation
+7. The Charging Station sends a
+NotifyEventRequest 8. The Test System sends a
+NotifyEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 421/1383 Part 6 - Test Cases

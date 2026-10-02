@@ -1,0 +1,32 @@
+ 
+30  © Ecma International 2024 
+ 
+12.6.2.3.2 Definition of the WUP_RES bytes 
+CMD 1: Shall be set to ‘D5’. 
+CMD 2: WUP_RES 
+The WUP_RES byte shall specify the response to the WUP_REQ. The value of WUP_RES shall be (03).  
+Byte 1: DID 
+The DID byte shall be used for multiple data exchange protocol activation with more than one Targets. The DIDt 
+shall have the same value as the DIDi. All other values shall not be used.  
+12.6.2.4 Handling of WUP_REQ and WUP_RES 
+12.6.2.4.1 Initiator rules 
+When the Initiator has sent a WUP_REQ and receives a valid WUP_RES the Initiator shall continue with 
+operation. 
+In any other case the Initiator shall retransmit the WUP_REQ before using the deactivation sequence as defined 
+in 12.7. 
+In case of failure of the deactivation sequence in Passive communication mode at fc/128, it may use the HLTA 
+command (see ISO/IEC 14443-3:2018, 6.4.3). 
+12.6.2.4.2 Target rules 
+When the Target has been de-selected by the last command (for the active communication mode only) and  
+a) receives a WUP_REQ with its NFCID3, the Target 
+⎯ shall send its WUP_RES, and 
+⎯ shall disable in order to not receive a subsequent WUP_REQ. 
+b) receives any other valid or invalid frame, except a HLTA command only for passive communication mode 
+at fc/128, the Target 
+⎯ ignores the block, and 
+⎯ remains in receive mode. 
+12.6.3 Parameter Selection Request and Response Commands 
+12.6.3.1 Parameter Selection Request (PSL_REQ) 
+12.6.3.1.1 General 
+The Initiator may switch parameters for the subsequent transport protocol using the PSL_REQ command, see 
+Figure 26. 

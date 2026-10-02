@@ -1,0 +1,37 @@
+TC_G_20_CS: Connector status Notification - Lock Failure
+Test case name Connector status Notification - Lock Failure
+Test case Id TC_G_20_CS
+Use case Id(s) G05
+Requirement(s) G05.FR.01, G05.FR.02
+System under test Charging Station
+Description This test case describes how the EV Driver is prevented from starting a charge session at the Charging
+Station while the Connector is not locked properly.
+Purpose To verify if the Charging Station does not start charging and notifies the CSMS when a connector is not
+locked properly as described at the OCPP specification.
+Prerequisite(s) - Charging Station has the ConnectorPlugRetentionLock component defined in its Device Model.
+- MonitoringLevel is set to a level that a connector lock event failure will be reported.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+State is EVConnectedPreSession
+Note(s):
+- Cable should not be fully plugged in so it cannot lock properly
+Main (Test scenario)
+Charging Station CSMS
+1. Execute Reusable State Authorized
+2. The Charging Station sends a NotifyEventRequest
+3 . The Test System responds with a NotifyEventResponse
+Tool validations
+* Step 2:
+Message: NotifyEventRequest
+- eventData[0].trigger Delta
+- eventData[0].component.name "ConnectorPlugRetentionLock"
+- eventData[0].variable.name "Problem"
+- eventData[0].actualValue "true"
+Post scenario validations:
+- The charging station did not start charging
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 367/1383 Part 6 - Test Cases

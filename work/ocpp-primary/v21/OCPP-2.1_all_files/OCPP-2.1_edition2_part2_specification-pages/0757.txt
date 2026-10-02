@@ -1,0 +1,56 @@
+2.7.6.1. TxStartPoint values
+The following table lists the values allowed for the TxStartPoint variable. These values represent logical steps or events that
+(may) occur during a charging session. When such an event occurs, and it is listed in in the TxStartPoint variable, then this
+marks the start of a transaction.
+Value Description
+ParkingBayOccupancy An object (probably an EV) is detected in the parking/charging bay.
+EVConnected Both ends of the Charging Cable have been connected (if this can be detected, else
+detection of a cable being plugged into the socket), or for wireless charging: initial
+communication between EVSE and EV is established.
+Authorized Driver or EV has been authorized, this can also be some form of anonymous authorization
+like a start button.
+PowerPathClosed All preconditions for charging have been met, power can flow. This event is the logical
+AND of EVConnected and Authorized and should be used if a transaction is supposed
+to start when EV is connected and authorized. Despite its name, this event is not related to
+the state of the power relay.
+Note: There may be situations where PowerPathClosed does not imply that charging
+starts at that moment, e.g. because of delayed charging or a battery that is too hot.
+EnergyTransfer Energy is being transferred between EV and EVSE.
+Note: Since energy needs to start flowing first to cause the transaction to be started, there
+is a small time gap (order of milliseconds) between the start of energy transfer and start
+of transaction. Depending on the implementation this may potentially skew the value of
+the energy meter reading associated with start of the transaction. Use PowerPathClosed
+as TxStartPoint to avoid this situation.
+DataSigned The moment when the signed meter value is received from the fiscal meter, that is used in
+the TransactionEventRequest with context = Transaction.Begin and triggerReason =
+SignedDataReceived. This TxStartPoint might be applicable when legislation exists
+that only allows a billable transaction to start when the first signed meter value has been
+received.
+2.7.6.2. TxStopPoint values
+The following table lists the values allowed for the TxStopPoint variable. These values represent logical steps or events that
+(may) occur during a charging session. When such an event occurs, and it is listed in in the TxStopPoint variable, then this marks
+the end of a transaction.
+The values are the same as for TxStartPoint, but in this case the meaning is different, since it refers to the ending of the event,
+rather than the start. For use with TxStopPoint each value should be interpreted as if it had "Not" prefixed to it. See the following
+table:
+Value Description
+ParkingBayOccupancy An object (probably an EV) is no longer detected in the parking/charging bay.
+EVConnected One or both ends of the Charging Cable have been disconnected (if this can be detected,
+else detection of a cable being unplugged from the socket), or for wireless charging:
+communication between EVSE and EV is lost.
+Authorized Driver or EV is no longer authorized, this can also be some form of anonymous
+authorization like a start button. The end of authorization will cause the Charging Station
+to stop the energy transfer, after which the TransactionEventRequest with eventType =
+Ended will be transmitted.
+PowerPathClosed All preconditions for charging are no longer met. This event is the logical OR of
+EVConnected and Authorized and should be used if a transaction is supposed to end
+when EV is disconnected and/or deauthorized. This will cause the Charging Station to
+stop the energy transfer, after which the TransactionEventRequest with eventType =
+Ended will be transmitted. It is exactly the same as having the values EVConnected,
+Authorized in TxStopPoint.
+Despite its name, this event is not related to the state of the power relay.
+EnergyTransfer Energy is not being transferred between EV and EVSE.
+This is not recommended to use as a TxStopPoint, because it will stop the transaction
+as soon as EV or EVSE (temporarily) suspend the charging.
+Edition 2, 2025-12-03 Referenced Components and Variables
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 744/803 Part 2 - Specification

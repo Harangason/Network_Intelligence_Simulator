@@ -1,0 +1,72 @@
+<CR> [ repeat the last command ]
+Sending a single carriage return character causes
+the ELM327 to repeat the last command that it
+performed. This is typically used when you wish to
+obtain updates to a value at the fastest possible rate -
+for example, you may send 01 0C to obtain the engine
+rpm, then send only a carriage return character each
+time you wish to receive an update.
+AL [ Allow Long messages ]
+The standard OBDII protocols restrict the number
+of data bytes in a message to seven, which the
+ELM327 normally does as well (for both send and
+receive). If AL is selected, the ELM327 will allow long
+sends (eight data bytes) and long receives (unlimited
+in number). The default is AL off (and NL selected).
+AMC [ display Activity Monitor Count ]
+The Activity Monitor uses a counter to determine
+just how active the ELM327's OBD inputs are. Every
+time that activity is detected, this counter is reset,
+while if there is no activity, the count goes up (every
+12 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+AT Command Summary (continued)
+CAN Specific Commands (continued)
+CS show CAN Status counts & freq
+CSM0, CSM1 Silent Monitoring off, or on*
+CTM1 set Timer Multiplier to 1*
+CTM5 set Timer Multiplier to 5
+D0, D1 display of the DLC off*, or on
+FC SM h Flow Control, Set the Mode to h
+FC SH hhh FC, Set the Header to hhh
+FC SH hhhhhhhh  Set the Header to hhhhhhhh
+FC SD [1 - 5 bytes]  FC, Set Data to [...]
+PB xx yy Protocol B options and baud rate
+RTR send an RTR message
+V0, V1 use of Variable DLC off*, or on
+J1939 CAN Specific Commands (protocols A to C)
+DM1 monitor for DM1 messages
+JE use J1939 Elm data format*
+JHF0, JHF1 Header Formatting off, or on*
+JS use J1939 SAE data format
+JTM1 set Timer Multiplier to 1*
+JTM5 set Timer Multiplier to 5
+MP hhhh Monitor for PGN 0hhhh
+MP hhhh n “    “ and get n messages
+MP hhhhhh Monitor for PGN hhhhhh
+MP hhhhhh n “    “ and get n messages
+AT Command Descriptions
+The following describes each AT Command that the 
+current version of the ELM327 supports:
+0.655 seconds). This count then represents the time
+since activity was last detected, and may be useful
+when writing your own logic based on OBD activity.
+The counter will not increment past FF (internal logic
+stops it there), and stays at 00 while monitoring.
+AMT  hh [ set the Act Mon Timeout to hh ]
+When the Activity Monitor Count (ie time) exceeds
+a certain threshold, the ELM327 decides that there is
+no OBD activity. It might then give an ACT ALERT
+message or switch to Low Power operation, depending
+on how the bits of PP 0F are set. The threshold setting
+is determined by either PP 0F bit 4, or by the AT AMT
+value, should you provide it. The actual time to alarm
+will be (hh+1) x 0.65536 seconds. Note that a value of
+00 is accepted for AMT, but is used to block all Activity
+Monitor outputs.
+AR [ Automatically set the Receive address ]
+Responses from the vehicle will be acknowledged
+and displayed by the ELM327, if the internally stored
+receive address matches the address that the

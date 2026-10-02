@@ -1,0 +1,54 @@
+MODBUS over serial line specification and implementation guide V1.02  Modbus.org    
+Modbus.org http://www.modbus.org/ 10/44
+Dec 20, 2006 
+/square4 When a broadcast request is sent on the serial bus, no response is returned from the slaves. Nevertheless a delay is respected 
+by the Master in order to allow any slave to process the current request before sending a new one. This delay is called 
+"Turnaround delay".  Therefore the master goes into "Waiting Turnaround delay" state before going back in "idle" state and befo re 
+being able to send another request.  
+/square4 In unicast the Response time out must  be set long enough for any slave to process the request and return the response, in 
+broadcast the Turnaround delay must  be long enough for any slave to process only the request and be able to receive a new one. 
+Therefore the Turnaround delay should be shorter than the Response time-out.  Typically the Response time-out is from 1s to 
+several second at 9600 bps; and the Turnaround delay is from 100 ms to 200ms. 
+/square4 Frame error consists of : 1) Parity checking applied to each character; 2) Redundancy checking applied to the entire frame.  Se e 
+§2.6 "Error Checking Methods" for more explanations.
+The state diagram is intentionally very simple.  It does not take into account access to the line, message framing, or retry fo llowing 
+transmission error, etc …  For more details about frame transmission, please refer to 2.5 paragraph, " The two serial Transmission 
+Modes". 
+2.4.2 Slave State Diagram  
+The following drawing explains the Slave behavior : 
+Checking
+request
+Idle
+Processing
+required action
+normal reply sent
+Formatting
+error reply
+error while processing
+error in request data
+error reply sent
+Formatting
+normal reply
+check OK
+end of processing  [unicast mode]
+end of processing
+ [broadcast mode]
+error in frame
+checking, or
+frame not
+addressed to
+this slave
+reception of a
+request
+(from the master)
+Figure 8: 
+Slave state diagram 
+Some explanations about the above state diagram : 
+/square4 State "Idle" = no pending request.  This is the initial state after power-up. 
+/square4 When a request is received, the slave checks the packet before performing the action requested in the packet.  Different errors  
+may occur :  format error in the request, invalid action, …  In case of error, a reply must  be sent to the master. 
+/square4 Once the required action has been completed, a unicast message requires that a reply must  be formatted and sent to the master. 
+/square4 If the slave detects an error in the received frame, no respond is returned to the master. 
+/square4 MODBUS diagnostics counters are defined and should be managed by any slave in order to provide diagnostic information. 
+These counters can be get using the Diagnostic MODBUS function (see Appendix A, and the MODBUS application protocol 
+specification [1]). 

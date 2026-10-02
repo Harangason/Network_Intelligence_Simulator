@@ -1,0 +1,51 @@
+u-blox 20 HPG 2.00 - Interface description
+Note that currently the only data authentication
+function is provided by Galileo Open Service
+Navigation Message Authentication (OSNMA)
+protocol for E1 I/NAV message.
+20 + n·16 U1[4] reserved1 - - Reserved
+End of repeated group (numSigs times)
+3.15.18 UBX-NAV-STATUS (0x01 0x03)
+3.15.18.1 Receiver navigation status
+Message UBX-NAV-STATUS
+Receiver navigation status
+Type Periodic/polled
+Comment See important comments concerning the validity of the position given in section Navigation output ﬁlters in
+the Integration manual.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x03 16 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+For details, see section iTOW timestamps in the
+integration manual.
+4 U1 gpsFix - - GPSﬁx Type, this value does not qualify a ﬁx as valid
+and within the limits. See note on ﬂag gpsFixOk below.
+• 0x00 = no ﬁx
+• 0x01 = dead reckoning only
+• 0x02 = 2D-ﬁx
+• 0x03 = 3D-ﬁx
+• 0x04 = GPS + dead reckoning combined
+• 0x05 = Time only ﬁx
+• 0x06..0xﬀ = reserved
+5 X1 flags - - Navigation Status Flags
+bit 0   U:1 gpsFixOk - - 1 = position and velocity valid and within DOP and ACC
+Masks.
+bit 1   U:1 diffSoln - - 1 = diﬀerential corrections were applied
+bit 2   U:1 wknSet - - 1 = Week Number valid (for details, see section Time
+validity in the Integration manual)
+bit 3   U:1 towSet - - 1 = Time of Week valid (for details, see section Time
+validity in the integration manual)
+6 X1 fixStat - - Fix Status Information
+bit 0   U:1 diffCorr - - 1 = diﬀerential corrections available
+bit 1   U:1 carrSolnValid - - 1 = valid carrSoln
+bits 7…6   U:2 mapMatching - - map matching status:
+• 00: none
+• 01: valid but not used, i.e. map matching data was
+received, but was too old
+• 10: valid and used, map matching data was
+applied
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 108 of 224
+C1-Public

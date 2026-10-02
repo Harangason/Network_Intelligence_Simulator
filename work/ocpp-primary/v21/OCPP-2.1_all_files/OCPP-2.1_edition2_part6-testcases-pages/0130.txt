@@ -1,0 +1,43 @@
+TC_C_16_CS: Authorization through authorization cache - StopTxOnInvalidId = true
+Test case name Authorization through authorization cache - StopTxOnInvalidId = true
+Test case Id TC_C_16_CS
+Use case Id(s) C12
+Requirement(s) C12.FR.02, C12.FR.04, C15.FR.04
+System under test Charging Station
+Description This test case describes how the EV Driver is authorized to start a transaction while the Charging Station
+uses Cached IdToken. This enables the EV Driver to Online start a transaction by using the Authorization
+Cache in which the Charging Station can respond faster, as no AuthorizeRequest is being sent.
+Purpose To verify if the Charging Station is able to respond correctly to an idToken which has status "Accepted" in
+its cache but is "Invalid" in the CSMS when StopTxOnInvalidId is true according to the mechanism as
+described in the OCPP specification.
+Prerequisite(s) - AuthCacheCtrlr.Available is implemented with value true
+- At least one of the following must be supported; Local auth list, auth cache, StartTxUnknownIds.
+- The Charging Station supports authorization methods other than NoAuthorization
+Before (Preparations)
+Configuration State:
+AuthCacheEnabled is true (If implemented)
+LocalPreAuthorize is true (If implemented)
+LocalAuthorizeOffline is true
+StopTxOnInvalidId is true
+MaxEnergyOnInvalidId is 0
+Memory State:
+IdTokenCached for <Configured valid IdToken fields> (If implemented)
+A known valid idToken is configured in the Local auth list (if implemented) and auth cache (if implemented)
+Reusable State(s):
+State is EVConnectedPreSession
+Main (Test scenario)
+Charging Station CSMS
+1. The Test System closes the WebSocket connection AND does not accept a reconnect.
+Manual Action: Present valid idToken which is already configured in the Authorization Cache
+Note(s): The Test System will wait for 5 seconds
+2. The Test System accepts reconnection attempt from the Charging Station.
+Note(s):
+- The Charging Station will empty its Transaction message queue. This will contain one or more TransactionEventRequest messages
+3. The Charging Station sends a TransactionEventRequest
+4. The Test System responds with a TransactionEventResponse
+with
+idTokenInfo.status Invalid (if idToken is not omitted)
+5. The Charging Station sends a TransactionEventRequest with
+triggerReason Deauthorized 6. The Test System responds with a TransactionEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 128/1383 Part 6 - Test Cases

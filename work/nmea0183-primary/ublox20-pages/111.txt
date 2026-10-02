@@ -1,0 +1,47 @@
+u-blox 20 HPG 2.00 - Interface description
+12 I2 week - - BDS week number of the navigation epoch
+14 I1 leapS - s BDS leap seconds (BDS-UTC)
+15 X1 valid - - Validity Flags
+bit 0   U:1 sowValid - - 1 = Valid SOW and fSOW (see section Time validity in
+the integration manual for details)
+bit 1   U:1 weekValid - - 1 = Valid week (see section Time validity in the
+integration manual for details)
+bit 2   U:1 leapSValid - - 1 = Valid leap second
+16 U4 tAcc - ns Time Accuracy Estimate
+3.15.21 UBX-NAV-TIMEGAL (0x01 0x25)
+3.15.21.1 Galileo time solution
+Message UBX-NAV-TIMEGAL
+Galileo time solution
+Type Periodic/polled
+Comment This message reports the precise Galileo time of the most recent navigation solution including validity ﬂags
+and an accuracy estimate.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x25 20 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+4 U4 galTow - s Galileo time of week (rounded to seconds)
+8 I4 fGalTow - ns Fractional part of the Galileo time of week (range:
++/-500000000).
+The precise Galileo time of week in seconds is:
+galTow + fGalTow * 1e-9
+12 I2 galWno - - Galileo week number
+14 I1 leapS - s Galileo leap seconds (Galileo-UTC)
+15 X1 valid - - Validity Flags
+bit 0   U:1 galTowValid - - 1 = Valid galTow and fGalTow (see section Time validity
+in the integration manual for details)
+bit 1   U:1 galWnoValid - - 1 = Valid galWno (see section Time validity in the
+integration manual for details)
+bit 2   U:1 leapSValid - - 1 = Valid leapS
+16 U4 tAcc - ns Time Accuracy Estimate
+3.15.22 UBX-NAV-TIMEGLO (0x01 0x23)
+3.15.22.1 GLONASS time solution
+Message UBX-NAV-TIMEGLO
+GLONASS time solution
+Type Periodic/polled
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 111 of 224
+C1-Public

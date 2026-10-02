@@ -1,0 +1,224 @@
+--- before/backend/communication/technologies/io_link.py
++++ after/backend/communication/technologies/io_link.py
+@@ -0,0 +1,221 @@
++"""IO-Link wired SDCI V1.1.5; actual device/IODD facts are not literature defaults."""
++SPEC='https://io-link.com/fileadmin/user_upload/Downloads/Package_2025/IOL-Interface-Spec_10002_V1.1.5_Oct2025.zip'
++SOURCES={SPEC:'IO-Link Interface and System V1.1.5 October2025, full publisher PDF SHA manifest work/io-link-primary-documents; chapters4/5/7/10/A/B reviewed',
++ 'https://io-link.com/downloads':'Publisher released2025 versus phase-out2024 and draft2026 package status accessed2026-10-01'}
++DECLARATIONS=[]
++
++
++def d(key,kind,meaning,unit=None,options=None,minimum=None,maximum=None,**extra):
++    DECLARATIONS.append(dict(key='iol_'+key,type=kind,description=meaning,source=SPEC,source_revision=SOURCES[SPEC],
++        unit=unit,options=options,min=minimum,max=maximum,**extra))
++
++
++d('specification','select','Explicit wired edition reviewed; do not equate specification1.1.5 to wire RevisionID or wireless extension.',options=['V1_1_5'],default='V1_1_5')
++d('role','select','Actual master port or connected device; a device supports one selected COM mode.',options=['MASTER_PORT','DEVICE'])
++d('port_mode','select','Actual communication or SIO/inactive mode; SIO has no UART telegram capacity.',options=['IO_LINK','DI','DO','INACTIVE'])
++d('state','select','Actual data-link state; STARTUP/PREOPERATE differ from OPERATE and inactive.',options=['INACTIVE','STARTUP','PREOPERATE','OPERATE'])
++d('protocol_revision','select','Actual negotiated wire RevisionID1.0 versus1.1; old protocol needs its own legacy sequence proof.',options=['1_0','1_1'])
++d('com_mode','select','Actual discovered device baud capability; baseline COM1 proposal does not change a COM3-only device.',options=['COM1','COM2','COM3'])
++d('bitrate_bps','number','Actual COM-selected C/Q bitrate; upper network transport has its own clock.',minimum=1,unit='bit/s')
++d('port_class','select','Actual class A versus electrically isolated extra power class B.',options=['A','B'])
++d('connector','select','Actual connector/pin assignment; nonstandard legacy wiring needs own evidence.',options=['M5','M8','M12','ACTUAL_LEGACY_WIRING'])
++for key,meaning in [('device_source','Actual device/manual/firmware/capabilities/declared conformity.'),
++ ('iodd_source','Actual approved IODD identifier/hash/version and process/parameter description.'),
++ ('master_source','Actual master port firmware, discovery/configuration/schedule capabilities.'),
++ ('physical_source','Actual cable/connector/power/CQ electrical and timing evidence.'),
++ ('binding_source','Actual canonical master port and unique connected device; not whole fieldbus.'),
++ ('encoding_source','Actual PD/OD/ISDU types, bit offsets/order/full M-sequence layout.'),
++ ('schedule_source','Actual master cycle, device processing, recovery/retries and upper-network schedule.'),
++ ('acceptance_source','Actual functional freshness/quality/actuation/E2E acceptance.'),
++ ('parameter_source','Actual device-supported index/subindex/type/access/record limits.'),
++ ('legacy_source','Actual legacy1.0 compatibility and interleaved sequence/encoding evidence.'),
++ ('extra_power_source','Actual isolated Power2 connector, load/derating/current and device behavior.'),
++ ('device_identity','Actual discovered vendor/device/serial identity, not default ID0.'),
++ ('port_binding','Actual registered point-to-point C/Q port binding.'),
++ ('capability_source','Actual advertised M-sequence/ISDU/data-storage capability evidence.')]:d(key,'text',meaning)
++for key,meaning,minimum,maximum in [('device_count','Actual connected devices on this point-to-point port, not master port count.',1,1),
++ ('port_number','Actual port number in its master, no universal8-port default.',1,None),
++ ('vendor_id','Actual two-octet registered VendorID.',0,65535),('device_id','Actual three-octet DeviceID.',0,16777215),
++ ('function_id','Actual two-octet legacy FunctionID.',0,65535),
++ ('data_bits','SDCI fixed8 UART data bits; bit transmission order distinct from multi-octet order.',8,8),
++ ('stop_bits','SDCI fixed one UART stop bit.',1,1),('character_bits','SDCI full UART start/data/parity/stop cost11 bits.',11,11),
++ ('pd_in_bits','Actual cyclic device-to-master bit length, not encoded length field.',0,256),
++ ('pd_out_bits','Actual cyclic master-to-device bit length.',0,256),
++ ('pd_in_length_code','Actual5-bit length code; octet coding means length+1, not direct byte count.',0,31),
++ ('pd_out_length_code','Actual5-bit output length code.',0,31),
++ ('od_octets','Actual on-request portion of selected M-sequence, distinct from full ISDU record.',1,32),
++ ('master_octets','Actual full Master request UART octets including MC/CKT and active PD/OD.',2,None),
++ ('device_octets','Actual full Device response UART octets including CKS and active PD/OD.',1,None),
++ ('retry_count','Specified two communication-error retries, not wake-up sequences or gateway retry policy.',2,2),
++ ('wake_retry_count','Specified two wake-up retries; total attempts include initial one.',2,2),
++ ('index','Actual parameter Index; ISDU rejects0/1, other reserved/profile-specific ranges need own evidence.',0,65535),
++ ('subindex','Actual parameter subindex;0 addresses complete record.',0,255),
++ ('record_bytes','Actual device accepted record data, distinct from ISDU headers and total length.',0,232),
++ ('record_items','Actual count of elements in a parameter record.',0,255),
++ ('direct_page_octets','Actual direct parameter page width, distinct from ISDU data.',1,16),
++ ('direct_address','Actual direct page octet address.',0,15),
++ ('isdu_bytes','Actual full ISDU including service/length/address/data/CHKPDU.',1,238),
++ ('isdu_header_bytes','Actual full encoded ISDU protocol octets for selected operation/address/length format.',1,6),
++ ('isdu_length_nibble','Actual encoded LEN:1 means extended length,2..15 short services.',0,15),
++ ('isdu_ext_length','Actual extended full ISDU length, not232-byte application record ceiling.',0,255),
++ ('event_memory_count','Actual buffered event count, independent from AL_Event indication count.',1,6),
++ ('al_event_count','Specified one event per AL_Event.req service call.',1,1),
++ ('cycle_time_base','Actual cycle code time-base bits;3 reserved.',0,2),
++ ('cycle_multiplier','Actual6-bit cycle code multiplier.',0,63),
++ ('min_cycle_code','Actual device MinCycleTime encoded octet;0 means unavailable, not zero execution time.',0,191)]:d(key,'number',meaning,minimum=minimum,maximum=maximum,unit='Byte'if key.endswith('bytes')or key.endswith('octets')else None)
++d('parity','select','SDCI fixed even UART parity, independent from checksum.',options=['EVEN'],default='EVEN')
++d('octet_order','select','Protocol multioctet values most-significant octet first; own IODD bit offset rules still apply.',options=['BIG_ENDIAN'],default='BIG_ENDIAN')
++d('serial_number','text','Actual identity, protocol field up to16 octets not arbitrary Unicode character count.')
++d('serial_number_bytes','number','Actual StringT-encoded serial identity octets; no fabricated serial number.',minimum=0,maximum=16,unit='Byte')
++d('string_encoding','select','Actual StringT US-ASCII versus UTF-8; byte limits apply to encoded octets, not character counts.',options=['US_ASCII','UTF8'])
++for direction in ('in','out'):d('pd_'+direction+'_unit','select','Actual ProcessData'+direction+' coding; bits0..16 or octets3..32.',options=['BITS','OCTETS'])
++d('msequence','select','Actual supported sequence; formerTYPE_2_6 replaced, not accepted as current.',options=['TYPE_0','TYPE_1_1','TYPE_1_2','TYPE_1_V','TYPE_2_1','TYPE_2_2','TYPE_2_3','TYPE_2_4','TYPE_2_5','TYPE_2_V'])
++d('channel','select','Actual cyclic process, direct page, ISDU or event channel.',options=['PROCESS_DATA','DIRECT_PAGE','ISDU','EVENT'])
++d('isdu_operation','select','Actual parameter request, response or protocol busy/idle.',options=['READ_REQUEST','WRITE_REQUEST','READ_RESPONSE_POSITIVE','WRITE_RESPONSE_POSITIVE','ERROR_RESPONSE','IDLE','BUSY'])
++d('isdu_address_format','select','Actual index/subindex encoding selected from index and subindex values.',options=['INDEX8','INDEX8_SUB8','INDEX16_SUB8'])
++d('isdu_length_format','select','Actual short or extended full ISDU length;16 reserved.',options=['SHORT','EXTENDED'])
++d('index_scope','select','Actual standard, device, profile, safety or wireless namespace; extension ranges require their own source.',options=['STANDARD','DEVICE','PROFILE','SAFETY_EXTENSION','WIRELESS_EXTENSION'])
++d('extension_source','text','Actual Common/Safety/Wireless profile version, capabilities and parameter definition; no implicit family upgrade.')
++for key in ('isdu_supported','data_storage_supported','pd_valid','sio_supported','extra_power_isolated'):
++    d(key,'boolean','Actual '+key+' capability/status; no automatically confirmed support or data quality.')
++for key,minimum,maximum,unit in [('cable_length_m',0,20,'m'),('supply_v',0,30,'V'),('extra_supply_v',20,30,'V'),
++ ('device_current_ma',0,None,'mA'),('master_supply_capacity_ma',200,None,'mA'),('extra_current_a',0,None,'A'),
++ ('bit_time_us',0,None,'us'),('master_gap_bits',0,1,'bit-time'),('device_gap_bits',0,3,'bit-time'),
++ ('response_delay_bits',1,10,'bit-time'),('msequence_us',0,None,'us'),('idle_us',0,None,'us'),
++ ('master_cycle_ms',.4,132.8,'ms'),('actual_cycle_ms',0,None,'ms'),('device_min_cycle_ms',0,132.8,'ms'),
++ ('max_cycle_ms',0,None,'ms'),('wake_message_delay_bits',27,37,'bit-time'),('wake_retry_delay_ms',30,50,'ms'),
++ ('sio_fallback_delay_ms',60,300,'ms'),('device_detection_interval_ms',500,1000,'ms'),
++ ('fallback_bound_ms',0,500,'ms'),('event_appearance_ms',50,None,'ms'),('isdu_bound_ms',0,None,'ms'),
++ ('device_processing_ms',0,None,'ms'),('upper_path_ms',0,None,'ms'),('application_bound_ms',0,None,'ms')]:
++    d(key,'number','Actual '+key+' in its own scope; normative limits are not factory settings or proof of real timing.',minimum=minimum,maximum=maximum,unit=unit)
++d('timing_basis','select','Measured/bounded transaction evidence versus variable-interoctet formula estimate; estimate alone is not capacity proof.',options=['ACTUAL_VERIFIED','MSEQUENCE_ESTIMATE'])
++
++REMOVED={key:'Removed inherited '+key+': wired point-to-point SDCI requires selected COM/M-sequence/IODD/power/schedule evidence, no CAN queue or gateway/upper-network default.'for key in
++ ('bitrate','queue_size','queue_policy','qos_priority','reserved_bandwidth_percent','sync_method','rate_limit_bit_s',
++ 'retransmission_enabled','retransmission_rate','retry_limit','retransmission_delay_ms','gateway_maximum_throughput',
++ 'gateway_input_buffer','gateway_output_buffer','gateway_maximum_routes','gateway_maximum_messages_s')}
++REQUIRED=['specification','role','port_mode','port_class','connector','device_source','iodd_source','master_source',
++ 'physical_source','binding_source','encoding_source','schedule_source','acceptance_source','port_binding']
++
++
++def semantics():
++    rules=[]
++    def r(key,when=None,**kw):rules.append(dict(parameter='iol_'+key,when={'iol_'+k:v for k,v in (when or {}).items()},source=SPEC,source_revision=SOURCES[SPEC],**kw))
++    active={'port_mode':'IO_LINK'}
++    for key in ('state','protocol_revision','com_mode','bitrate_bps','msequence','channel','capability_source'):r(key,active,required=True)
++    r('state',active,allowed=['STARTUP','PREOPERATE','OPERATE'])
++    r('bitrate_bps',allowed=[4800,38400,230400])
++    for mode,clock in [('COM1',4800),('COM2',38400),('COM3',230400)]:r('bitrate_bps',{'com_mode':mode},allowed=[clock])
++    r('legacy_source',{'protocol_revision':'1_0'},required=True)
++    r('bit_time_us',equal_expression={'product':[1000000,{'power':['iol_bitrate_bps',-1]}]})
++    r('supply_v',{'role':'MASTER_PORT'},minimum=20)
++    r('supply_v',{'role':'DEVICE'},minimum=18)
++    r('device_current_ma',maximum_parameter='iol_master_supply_capacity_ma')
++    r('connector',{'port_class':'B'},allowed=['M12','ACTUAL_LEGACY_WIRING'])
++    r('extra_power_source',{'port_class':'B'},required=True)
++    r('extra_power_isolated',{'port_class':'B'},required=True,allowed=[True])
++    for key in ('extra_supply_v','extra_current_a','extra_power_isolated'):r(key,{'port_class':'A'},allowed=[])
++    for key in ('serial_number_bytes','string_encoding'):r(key,when_present=['iol_serial_number'],required=True)
++    for encoding,codec in [('US_ASCII','ascii'),('UTF8','utf-8')]:
++        r('serial_number',{'string_encoding':encoding},text_encoding=codec,encoded_bytes_parameter='iol_serial_number_bytes',pattern=r'[^\x00-\x1f\x7f]*')
++    for direction in ('in','out'):
++        r('pd_'+direction+'_length_code',{'pd_'+direction+'_unit':'BITS'},maximum=16)
++        r('pd_'+direction+'_length_code',{'pd_'+direction+'_unit':'OCTETS'},minimum=2)
++        for code in range(32):
++            cond={'pd_'+direction+'_unit':'BITS','pd_'+direction+'_length_code':code}
++            r('pd_'+direction+'_bits',cond,allowed=[code])
++            r('pd_'+direction+'_bits',{'pd_'+direction+'_unit':'OCTETS','pd_'+direction+'_length_code':code},allowed=[8*(code+1)])
++    r('master_cycle_ms',minimum_parameter='iol_device_min_cycle_ms')
++    r('actual_cycle_ms',minimum_expression={'product':[.99,'iol_master_cycle_ms']},maximum_expression={'product':[1.10,'iol_master_cycle_ms']})
++    r('max_cycle_ms',minimum_parameter='iol_master_cycle_ms')
++    for base,offset,quantum in [(0,0,.1),(1,6.4,.4),(2,32,1.6)]:
++        r('master_cycle_ms',{'cycle_time_base':base},equal_expression={'sum':[offset,{'product':[quantum,'iol_cycle_multiplier']}]})
++    r('cycle_multiplier',{'cycle_time_base':0},minimum=4)
++    r('device_min_cycle_ms',{'min_cycle_code':0},allowed=[])
++    for code in range(4,192):
++        base,mp=divmod(code,64);value=(0,6.4,32)[base]+(.1,.4,1.6)[base]*mp
++        r('device_min_cycle_ms',{'min_cycle_code':code},allowed=[round(value,4)])
++    r('min_cycle_code',forbidden=[1,2,3])
++    r('msequence_us',{'timing_basis':'MSEQUENCE_ESTIMATE'},equal_expression={'product':['iol_bit_time_us',{'sum':[
++        {'product':[11,{'sum':['iol_master_octets','iol_device_octets']}]},'iol_response_delay_bits',
++        {'product':[{'subtract':['iol_master_octets',1]},'iol_master_gap_bits']},
++        {'product':[{'subtract':['iol_device_octets',1]},'iol_device_gap_bits']}]}]})
++    r('actual_cycle_ms',{'timing_basis':'MSEQUENCE_ESTIMATE'},equal_expression={'product':[.001,{'sum':['iol_msequence_us','iol_idle_us']}]})
++    for key in ('bit_time_us','master_octets','device_octets','response_delay_bits','master_gap_bits','device_gap_bits','msequence_us','idle_us'):
++        r(key,{'timing_basis':'MSEQUENCE_ESTIMATE'},required=True)
++    for key in ('isdu_supported','parameter_source','isdu_operation'):r(key,{'channel':'ISDU'},required=True)
++    for operation in ('READ_REQUEST','WRITE_REQUEST'):
++        for key in ('index','subindex','isdu_address_format','isdu_length_format'):r(key,{'channel':'ISDU','isdu_operation':operation},required=True)
++    r('isdu_supported',{'channel':'ISDU'},allowed=[True])
++    r('index',{'channel':'ISDU'},minimum=2,forbidden=[255])
++    r('index',{'index_scope':'STANDARD'},allowed=[2,3,12,13,14,15,*range(16,28),32,36,37,40,41,48])
++    r('index',{'index_scope':'DEVICE'},minimum=64,maximum=16383,forbidden=[255])
++    r('index',{'index_scope':'PROFILE'},minimum=49,maximum=20479)
++    for scope,start,end in [('SAFETY_EXTENSION',16896,17151),('WIRELESS_EXTENSION',20480,20735)]:
++        r('index',{'index_scope':scope},minimum=start,maximum=end)
++        r('extension_source',{'index_scope':scope},required=True)
++    r('extension_source',{'index_scope':'PROFILE'},required=True)
++    r('index',{'index_scope':'PROFILE'},forbidden=[*range(64,16384),*range(16896,17152)])
++    r('index',{'channel':'ISDU'},maximum=20735,forbidden=[*range(4,12),*range(28,32),33,34,35,38,39,*range(42,48),255])
++    r('record_bytes',{'channel':'DIRECT_PAGE'},maximum=16)
++    r('index',{'channel':'DIRECT_PAGE'},allowed=[0,1])
++    for index in range(2,256):
++        r('isdu_address_format',{'index':index,'subindex':0},allowed=['INDEX8'])
++        r('isdu_address_format',{'index':index},when_positive=['iol_subindex'],allowed=['INDEX8_SUB8'])
++    r('index',{'isdu_address_format':'INDEX16_SUB8'},minimum=256)
++    r('index',{'isdu_address_format':'INDEX8'},maximum=254)
++    r('subindex',{'isdu_address_format':'INDEX8'},allowed=[0])
++    r('index',{'isdu_address_format':'INDEX8_SUB8'},maximum=254)
++    r('subindex',{'isdu_address_format':'INDEX8_SUB8'},minimum=1)
++    r('isdu_bytes',{'isdu_length_format':'SHORT'},minimum=2,maximum=15,equal_parameter='iol_isdu_length_nibble')
++    r('isdu_length_nibble',{'isdu_length_format':'EXTENDED'},allowed=[1])
++    r('isdu_ext_length',{'isdu_length_format':'EXTENDED'},minimum=17,maximum=238,equal_parameter='iol_isdu_bytes')
++    r('isdu_ext_length',{'isdu_length_format':'SHORT'},allowed=[])
++    for op in ('IDLE','BUSY'):
++        r('isdu_bytes',{'isdu_operation':op},allowed=[1])
++        r('isdu_length_format',{'isdu_operation':op},allowed=[])
++    for op in ('WRITE_REQUEST','READ_RESPONSE_POSITIVE'):
++        r('isdu_bytes',{'isdu_operation':op},equal_expression={'sum':['iol_isdu_header_bytes','iol_record_bytes']})
++    for fmt,base in [('INDEX8',3),('INDEX8_SUB8',4),('INDEX16_SUB8',5)]:
++        r('isdu_bytes',{'isdu_operation':'READ_REQUEST','isdu_address_format':fmt},allowed=[base])
++        for length,extra in [('SHORT',0),('EXTENDED',1)]:
++            r('isdu_header_bytes',{'isdu_operation':'WRITE_REQUEST','isdu_address_format':fmt,'isdu_length_format':length},allowed=[base+extra])
++    for length,extra in [('SHORT',0),('EXTENDED',1)]:
++        r('isdu_header_bytes',{'isdu_operation':'READ_RESPONSE_POSITIVE','isdu_length_format':length},allowed=[2+extra])
++    r('record_bytes',{'isdu_operation':'READ_REQUEST'},allowed=[0])
++    r('isdu_bytes',{'isdu_operation':'WRITE_RESPONSE_POSITIVE'},allowed=[2])
++    r('isdu_bytes',{'isdu_operation':'ERROR_RESPONSE'},allowed=[4])
++    for key in ('pd_in_bits','pd_out_bits'):
++        r(key,{'msequence':'TYPE_0'},allowed=[0]);r(key,{'msequence':'TYPE_1_2'},allowed=[0]);r(key,{'msequence':'TYPE_1_V'},allowed=[0])
++    for sequence,ib,ob in [('TYPE_2_1',(1,8),(0,0)),('TYPE_2_2',(9,16),(0,0)),('TYPE_2_3',(0,0),(1,8)),('TYPE_2_4',(0,0),(9,16)),('TYPE_2_5',(1,8),(1,8))]:
++        r('pd_in_bits',{'msequence':sequence},minimum=ib[0],maximum=ib[1]);r('pd_out_bits',{'msequence':sequence},minimum=ob[0],maximum=ob[1])
++        r('od_octets',{'msequence':sequence},allowed=[1])
++    r('od_octets',allowed=[1,2,8,32])
++    r('msequence',{'protocol_revision':'1_1','role':'DEVICE'},forbidden=['TYPE_1_1'])
++    for key in ('com_mode','bitrate_bps','data_bits','parity','stop_bits','character_bits','msequence','channel','isdu_operation','master_cycle_ms'):
++        r(key,when_not={'iol_port_mode':'IO_LINK'},allowed=[])
++    return {'rate_model':{'type':'IO_LINK_SELECTED_POINT_TO_POINT_COM','fields':[]},'required_parameters':['iol_'+key for key in REQUIRED],
++        'native_parameter_prefixes':['iol_'],'parameter_constraints':rules,'mechanisms':{'framing':['SDCI_UART_8E1_MSEQUENCE_PD_OD_ISDU'],
++        'addressing':['POINT_TO_POINT_PORT_AND_DEVICE_INDEX_SUBINDEX'],'arbitration':['MASTER_REQUEST_DEVICE_RESPONSE'],
++        'physical':['CQ24V_PORT_CLASS_A_OR_ISOLATED_B'],'integrity':['EVEN_PARITY_AND_MSEQUENCE_CHECKSUM_AND_ISDU_XOR'],
++        'acceptance':['PD_VALID_STATUS_AND_DEVICE_MIN_CYCLE_SEPARATE_FROM_UPPER_NETWORK_E2E']}}
++
++
++def fields():
++    result=[];required=set(semantics()['required_parameters'])
++    fixed={'data_bits':8,'stop_bits':1,'character_bits':11,'device_count':1,'retry_count':2,'wake_retry_count':2,'al_event_count':1}
++    for spec in DECLARATIONS:
++        item={k:v for k,v in spec.items()if v is not None};key=item['key'].removeprefix('iol_')
++        item.update(label=key.replace('_',' '),category='communication',scope='network',required=item['key']in required,
++            editable=True,integer=spec['type']=='number'and spec['unit']not in ('ms','us','m','V','mA','A','bit-time'),
++            parameter_origin='DEVICE_CONFIGURATION',default_status='PROPOSED_STANDARD'if'default'in item else'UNKNOWN',validation_relevant=True,simulation_relevant=False)
++        proposals=[]
++        if key in fixed:proposals.append({'when':{'iol_port_mode':'IO_LINK'},'value':fixed[key]})
++        if key=='com_mode':proposals.append({'when':{'iol_port_mode':'IO_LINK'},'value':'COM1'})
++        if key=='bitrate_bps':proposals.extend({'when':{'iol_port_mode':'IO_LINK','iol_com_mode':mode},'value':clock}for mode,clock in [('COM1',4800),('COM2',38400),('COM3',230400)])
++        if key=='supply_v':proposals.append({'when':{},'value':24})
++        if key=='master_cycle_ms':proposals.extend({'when':{'iol_port_mode':'IO_LINK','iol_msequence':'TYPE_2_1','iol_com_mode':mode},'value':cycle}for mode,cycle in [('COM1',18),('COM2',2.3),('COM3',.4)])
++        if proposals:item.update(conditional_defaults=[{**v,'source':SPEC,'source_revision':SOURCES[SPEC]}for v in proposals],default_status='PROPOSED_CONDITIONAL')
++        if key in ('parity','octet_order'):item.pop('default',None);item.update(conditional_defaults=[{'when':{'iol_port_mode':'IO_LINK'},'value':'EVEN'if key=='parity'else'BIG_ENDIAN','source':SPEC,'source_revision':SOURCES[SPEC]}],default_status='PROPOSED_CONDITIONAL')
++        result.append(item)
++    return result

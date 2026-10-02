@@ -1,0 +1,53 @@
+u-blox 20 HPG 2.00 - Interface description
+Conﬁguration item Key ID Type Scale Unit Description
+CFG-RTCM-DF003_IN_FILTER 0x20090009 E1 - - RTCM input ﬁlter conﬁguration based on RTCM
+DF003 (Reference station ID) value
+Conﬁgures if and how the ﬁltering out of RTCM input messages based on their DF003 data ﬁeld (Reference station ID)
+operates.
+See Table 39 below for a list of possible constants for this item.
+Table 38: CFG-RTCM conﬁguration items
+Constant Value Description
+DISABLED 0 Disabled RTCM input ﬁlter; all input messages allowed
+RELAXED 1 Relaxed RTCM input ﬁlter; input messages allowed must contain a
+DF003 data ﬁeld matching the CFG-RTCM-DF003_IN value or not
+contain by speciﬁcation the DF003 data ﬁeld
+STRICT 2 Strict RTCM input ﬁlter; input messages allowed must contain a
+DF003 data ﬁeld matching the CFG-RTCM-DF003 value
+Table 39: Constants for CFG-RTCM-DF003_IN_FILTER
+6.9.20 CFG-SBAS: SBAS conﬁguration
+This group conﬁgures the SBAS receiver subsystem (i.e. WAAS, EGNOS, MSAS). See SBAS
+conﬁguration settings description in the integration manual for a detailed description of how these
+settings aﬀect receiver operation.
+Conﬁguration item Key ID Type Scale Unit Description
+CFG-SBAS-USE_TESTMODE 0x10360002 L - - Use SBAS data when it is in test mode (SBAS
+msg 0)
+CFG-SBAS-USE_RANGING 0x10360003 L - - Use SBAS GEOs as a ranging source (for
+navigation)
+CFG-SBAS-USE_DIFFCORR 0x10360004 L - - Use SBAS diﬀerential corrections
+CFG-SBAS-USE_INTEGRITY 0x10360005 L - - Use SBAS integrity information
+If enabled, the receiver uses only GPS satellites for which integrity information is available
+CFG-SBAS-ACCEPT_NOT_IN_
+PRNMASK
+0x30360008 X2 - - Accept corrections from SBAS SV, even if not
+self included in PRN MASK (Message Type 1)
+If enabled, the receiver will still use the SBAS data, even when the SBAS SV itself is not included in its PRN MASK. This
+is only useful for BDSBAS and not compatible whith current EGNOS implementation.
+See Table 41 below for a list of possible constants for this item.
+CFG-SBAS-USE_IONOONLY 0x10360007 L - - Use SBAS ionosphere correction only
+CFG-SBAS-PRNSCANMASK 0x50360006 X8 - - SBAS PRN search conﬁguration
+This conﬁguration item determines which SBAS PRNs should be searched. Setting it to 0 indicates auto-scanning all
+SBAS PRNs. For non-zero values the bits correspond to the allocated SBAS PRNs ranging from PRN120 (bit 0) to PRN158
+(bit 38), where a bit set enables searching for the corresponding PRN.
+See Table 42 below for a list of possible constants for this item.
+Table 40: CFG-SBAS conﬁguration items
+Constant Value Description
+WAAS 0x01 WAAS bit
+1 = Use WAAS provider Id.
+EGNOS 0x02 EGNOS bit
+1 = Use EGNOS provider Id.
+MSAS 0x04 MSAS bit
+1 = Use MSAS provider Id.
+UBXDOC-304424225-19888 - R01
+ 
+6 Conﬁguration interface Page 195 of 224
+C1-Public

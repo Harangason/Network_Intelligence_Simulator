@@ -1,0 +1,57 @@
+Description
+TxStartedMeasurands MemberList Sampled measurand(s) to be taken at the start of any transaction to be included
+in the meterValues field of the first TransactionEventRequest message send at
+the start of a transaction (eventType = Started).
+TxUpdatedMeasurands MemberList Sampled measurands to be included in the meterValues element of every
+TransactionEventRequest (eventType = Updated), every
+SampledDataTxUpdatedInterval seconds from the start of the transaction.
+TxUpdatedInterval integer Interval in seconds between sampling of metering (or other) data, intended to be
+transmitted via TransactionEventRequest (eventType = Updated) messages.
+RegisterValuesWithoutPhases boolean If this variable reports a value of true, then meter values of measurand
+Energy.Active.Import.Register will only report the total energy over all phases
+without reporting the individual phase values.
+If this variable is absent or false, then the value for each phase is reported,
+possibly also with a total value (depending on the meter).
+3.1.15. SecurityCtrlr (Updated in v1.5)
+Description
+Logical Component responsible for configuration relating to security of communications between Charging Station and CSMS.
+Variables Type Description
+BasicAuthPassword string The basic authentication password that is used for HTTP Basic Authentication.
+The string is a passwordString (see Part 2: 2.1.4) consisting of minimum 16 and
+a maximum as defined by the maxLimit of BasicAuthPassword, which must be
+at least 40 characters. The password SHALL be sent as a UTF-8 encoded string
+(NOT encoded into octet string or base64). This configuration variable is write-
+only, so that it cannot be accidentally stored in plaintext by the CSMS when it
+reads out all configuration variables.
+This configuration variable is required unless only "security profile 3 - TLS with
+client side certificates" is implemented.
+Identity string The Charging Station identity. The string is an identifierString string (see Part 2:
+2.1.4), so it SHALL only contain characters that are allowed for identifierString.
+Maximum length was chosen to ensure compatibility with EVSE ID from [EMI3]
+"Part 2: business objects".
+OrganizationName string This configuration variable is used to set the organization name of the CSO or an
+organization trusted by the CSO. It is used to set the O (organizationName) RDN
+in the subject field of the client certificate.
+CertSigningWaitMinimum integer Seconds to wait before generating another CSR in case CSMS does not return a
+signed certificate.
+CertSigningRepeatTimes integer Number of times to resend a SignCertificateRequest when CSMS does nor return
+a signed certificate.
+AllowSecurityProfileDowngrade boolean If this variable is implemented and set to true, then the Charging Station allows
+downgrading the security profile from 3 to 2. For security reasons it is not
+allowed to revert from profile 2 or profile 3 to security profile 1 using OCPP.
+3.1.16. SmartChargingCtrlr
+Description
+Logical Component responsible for configuration relating to smart charging.
+Variables Type Description
+Enabled boolean Whether Smart Charging is enabled.
+Available boolean Whether Smart Charging is supported.
+ACPhaseSwitchingSupported boolean If defined and true, this EVSE supports the selection of which phase to use for 1
+phase AC charging.
+ProfileStackLevel integer Maximum acceptable value for stackLevel in a ChargingProfile. Since the lowest
+stackLevel is 0, this means that if SmartChargingCtrlr.ProfileStackLevel = 1, there
+can be at most 2 valid charging profiles per Charging Profile Purpose per EVSE.
+RateUnit MemberList A list of supported quantities for use in a ChargingSchedule. Allowed values: 'A'
+and 'W'.
+PeriodsPerSchedule integer Maximum number of periods that may be defined per ChargingSchedule.
+v1.5, 2025-12-03 Chapter 3. Standardized Components
+OCPP 2.0.1 - © Open Charge Alliance 2025 11/46 Part 2 - Appendices

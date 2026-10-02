@@ -1,0 +1,46 @@
+MODBUS Messaging on TCP/IP Implementation Guide V1.0b 
+October 24, 2006 http://www.Modbus.org 14/46
+• No packet is sent on the half-open connection:
+The TCP half-open connection is seen opened from  the Server side as long as the
+Keep Alive timer is not over. After that an error is returned to the TCP Management
+layer that can reset the connection.
+• If the Client opens a new connection bef ore the Keep Alive timer is over :
+Two cases have to be studied:
+ The connection opening has the same characteristics as the half-open
+connection  on the server side (same source and destination Ports, same source
+and destination IP Addresses), therefore the connection opening will fail at the
+TCP stack level after the Time-Out on Conn ection Establishment (75s on most of
+Berkeley implementations). To avoid this long Time-Out during which it is not
+possible to communicate, it is advised to ensure that different source port
+numbers than the previous one are used for a connection opening after a reboot
+on the client side.
+ The connection opening has not the same characteristics as the half-open
+connection  on the server side (different sour ce Ports, same destination Port,
+same source and destination IP Address ),  therefore the connection is opened at
+the stack TCP level and signaled to the Server TCP Management layer.
+If the Server TCP Management layer only su pports one connection from a remote
+Client IP Address, it can close the 
+old half-opened connection and use the new
+one.
+If the Server TCP Management layer suppor ts  several connections from a remote
+Client IP Address, the new connection stays opened and the old one also stays
+half-opened until the expiration of the Keep A live Timer that will return an error to
+the TCP Management layer. After that the TCP Management layer will be able to
+Reset the old connection.
+4.2.3 Access Control Module 
+The goal of this module is to check every ne w connection and using a list of authorized 
+remote IP addresses the module can authorize or forbid a remote Client TCP 
+connection. 
+In 
+critical context the application progra mmer needs to choose the Access Control 
+mode in 
+order to secure its network access. In such a case he needs to Authorize/forbid 
+access for each remote @IP. The user needs to provide a list of IP addresses and to 
+specify for each IP address if it’s authorized or  not. By default, on security mode, the IP 
+addresses not configured by the user are forb idden. Therefore with the access control 
+mode a connection coming from an unknown IP address is closed. 
+4.3 USE of TCP/IP STACK  
+A TCP/IP stack provides an interface to manage  connections, to send and receive data, 
+and also to do some parameterizations in order to adapt the stack behavior to the 
+device or system constraints.  
+Modbus Organization  

@@ -1,0 +1,44 @@
+TC_K_06_CS: Clear Charging Profile - With stackLevel/purpose combination for
+one profile
+Test case name Clear Charging Profile - With stackLevel/purpose combination for one profile
+Test case Id TC_K_06_CS
+Use case Id(s) K10
+Requirement(s) K10.FR.04
+System under test Charging Station
+Description If the CSMS wishes to clear some or all of the charging profiles that were previously sent to the Charging
+Station, then the CSMS sends a ClearChargingProfileRequest to the Charging Station.
+Purpose To verify if the Charging station is able to accept the request and clear a charging profile sent with a
+stackLevel/purpose combination by the CSMS as described at the OCPP specification.
+Prerequisite(s) n/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+A chargingprofile with <Configured chargingProfilePurpose> AND <Configured stackLevel> is configured
+Reusable State:
+EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+ClearChargingProfileResponse
+1. The Test System sends a ClearChargingProfileRequest with
+chargingProfileCriteria.chargingProfilePurpose <Configured
+chargingProfilePurpose> AND
+chargingProfileCriteria.stackLevel <Configured stackLevel>
+4. The Charging Station responds with a
+GetChargingProfilesResponse
+3. The Test System sends a GetChargingProfilesRequest with
+chargingProfile.chargingProfilePurpose <Configured
+chargingProfilePurpose> AND
+chargingProfile.stackLevel <Configured stackLevel>
+Tool validations
+* Step 2:
+Message ClearChargingProfileResponse
+- status Accepted
+* Step 4:
+Message GetChargingProfilesResponse
+- status NoProfiles
+Post scenario validations:
+- N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 334/914 Part 6 - Test Cases

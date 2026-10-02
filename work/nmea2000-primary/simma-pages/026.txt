@@ -1,0 +1,27 @@
+Chapter 6  Examples 
+ssNMEA2000 User’s Manual   - 26 - 
+Chapter 6 
+ 
+Examples 
+ 
+ 
+This chapter gives examples of how to receive/decode NMEA 2000 messages and how to 
+transmit a NMEA 2000 message.  Per the NMEA 2000 specification all NMEA 2000 
+messages have an associated PGN followed by data.  The below examples show how to 
+filter based on the PGN of interest and decode the data. 
+ 
+ 
+6.1 Receive and Decode NMEA 2000 Messages Example: 
+ 
+void 
+n2000app_process ( n2000_t *msg ) 
+{ 
+     switch( msg->pgn ) { 
+      /*    -PGN-   -CUSTOMER VARIABLE-                      -BUFFER CONVERSION-      */ 
+            case 129284: n2000_dist_to_waypoint      = btou32( &msg->buf[1] ); break; 
+            case 126992: n2000_time                          = btou32( &msg->buf[4] ); break; 
+            case 128267: n2000_water_depth             = btou32( &msg->buf[1] ); break; 
+            case 129025: n2000_latitude                     = btou32( &msg->buf[0] ); 
+                                  n2000_longitude                  = btou32( &msg->buf[4] ); break; 
+     } 
+} 

@@ -1,0 +1,62 @@
+ID. Precondition Requirements Note
+Q09.F
+R.06
+If AutoThresholds = true Charging Station SHALL set
+* UpperThreshold =
+minChargePower,
+* LowerThreshold =
+-minDischargePower,
+* UpperOffset = -UpperThreshold,
+* LowerOffset = -LowerThreshold
+where minChargePower and minDischargePower are
+values from [notifyevchargingneedsrequest]
+This will automatically
+regulate grid power down
+to 0 W while taking into
+account the minimum
+charging/discharging
+rates of the EV.
+2.20. Page 554 - (2026-06) - Typo in derChargingParameters field in R02
+and R03. [1231]
+The requirements R02.FR.01 and R03.FR.01 refer to the parameter derChargeParameters. This must be changed to
+derChargingParameters.
+Changed requirement
+ID. Precondition Requirements Note
+R02.FR.01 Charging Station starts AC
+bidirectional power transfer session
+with EV via ISO 15118-20
+AC_BPT_DER service
+Charging Station SHALL expose the
+DER capabilities of the DC inverter in
+EV, also referred to as nameplate
+information, in the field
+derChargingParameters  of a
+[notifyevchargingneedsrequest].
+ID. Precondition Requirements Note
+R03.FR.01 Charging Station start AC bidirectional
+power transfer session with EV via ISO
+15118-20 AC_BPT_DER service
+Charging Station SHALL expose the
+DER capabilities of the DC inverter in
+EV, also referred to as nameplate
+information, in the field
+derChargingParameters  of a
+[notifyevchargingneedsrequest].
+(Same as R02.FR.01)
+2.21. Page 655 - (2026-06) - LimitMaxDischargeType
+pctMaxDischargePower should be required [1270]
+The field pctMaxDischargePower is marked as optional in LimitMaxDischargeType, but that is not correct. It should be treated as a
+required field and it is not only for use in combination with a powerMonitoringMustTrip field.
+Update field description
+LimitMaxDischargeType
+Field Name Field Type Card. Description
+priority integer, 0 <= val 1..1 Required. Priority of setting (0=highest)
+pctMaxDischargePower decimal 0..1 Optional. Only for PowerMonitoring.
+Should be treated as required.     The value specifies a
+percentage (0 to 100) of the rated maximum discharge
+power of EV.
+If present,  the PowerMonitoringMonitoringMustTrip  curve
+becomes active when power exceeds this percentage.
+startTime dateTime 0..1 Optional. Time when this setting becomes active
+duration decimal 0..1 Optional. Duration in seconds that this setting is active
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 20/116 Errata 2026-06

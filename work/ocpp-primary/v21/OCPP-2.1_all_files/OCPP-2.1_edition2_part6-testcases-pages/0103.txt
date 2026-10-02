@@ -1,0 +1,62 @@
+Main (Test scenario)
+8. The Charging Station responds with SetVariablesResponse(s)
+7. Test System sends a SetVariablesRequest on component
+NetworkConfiguration[<Configured non-active
+configurationSlot>] for:
+- OcppCsmsUrl = ws://invalidurl.example.com/
+- OcppInterface = Any
+- OcppTransport = JSON
+- OcppVersion = OCPP21
+- MessageTimeout = <Configured messageTimeout>
+- SecurityProfile = 2
+- BasicAuthPassword = PasswordOfSufficientLength
+- VpnEnabled = false
+- ApnEnabled = false
+10. Charging Station responds with SetVariablesResponse
+9. Test System sends SetVariablesRequest for
+OCPPCommCtrlr.NetworkConfigurationPriority with:
+- setVariableData.attributeValue with <Configured non-active
+configurationSlot> added at the end.
+12. The Charging Station responds with SetVariablesResponses
+11. Test System sends a SetVariablesRequest on component
+NetworkConfiguration[<Configured non-active
+configurationSlot>] for:
+- OcppCsmsUrl = wss://validurl.example.com:443/
+14. Charging Station responds with SetVariablesResponse
+13. Test System sends SetVariablesRequest for
+OCPPCommCtrlr.NetworkConfigurationPriority with:
+- setVariableData.attributeValue with <Configured non-active
+configurationSlot> added at the end.
+16. Charging Station responds with GetVariablesResponse
+15. Test System sends GetVariablesRequest for
+OCPPCommCtrlr.NetworkConfigurationPriority.
+Note:
+- Remove <Configured non-active configurationSlot from NetworkConfigurationPriority.
+18. Charging Station responds with SetVariablesResponse
+17. Test System sends SetVariablesRequest for
+OCPPCommCtrlr.NetworkConfigurationPriority with:
+- setVariableData.attributeValue has one slot less than reported
+in step #16. (Last slot removed).
+Note: If value in step #16 was "1,2" then the new value in step #17 will be "1"
+Tool validations
+* Step 4:
+Message SetVariablesResponse
+- setVariableResult.attributeStatus must be Accepted
+* Step 8:
+Message SetVariablesResponse
+for all SetVariablesResponses except VpnEnabled, ApnEnabled
+- setVariableResult.attributeStatus must be Accepted
+for SetVariablesResponses for VpnEnabled, ApnEnabled:
+- setVariableResult.attributeStatus must be Accepted or Rejected
+* Step 10:
+Message SetVariablesResponse
+- setVariableResult.attributeStatus must be Rejected
+- setVariableResult.attributeStatus.reasonCode must be "InvalidNetworkConf"
+* Step 12:
+Message SetVariablesResponse
+- setVariableResult.attributeStatus must be Accepted
+* Step 14:
+Message SetVariablesResponse
+- setVariableResult.attributeStatus must be Accepted
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 101/1383 Part 6 - Test Cases

@@ -1,0 +1,56 @@
+TC_O_20_CS: Set Display Message -  Persistent over reboot
+Test case name Set Display Message - Persistent over reboot
+Test case Id TC_O_20_CS
+Use case Id(s) O01
+Requirement(s) O01_FR_10
+System under test Charging Station
+Description This test case describes how the CSMS can be requested to sent an SetDisplayMessageRequest to the
+charging station. Depending on the given parameters the message shall be displayed a certain way and at a
+certain moment on the Charging Station. These messages are displayed additionally on a Charging Station
+and are not part of the firmware.
+Purpose To verify if the Charging Station is able to store display messages persistent over reboot according to the
+DisplayMessage mechanism as described in the OCPP specification.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDisplayMessageResponse
+1. The Test System sends a SetDisplayMessageRequest with
+message.id <Generated displayMessageId>
+message.priority <Configured Priority>
+message.display <Configured display component variable>
+(Omitted when left empty)
+3. Execute Reusable State Booted
+5. The Charging Station responds with a
+GetDisplayMessagesResponse
+4. The Test System sends a GetDisplayMessagesRequest with
+id <Generated displayMessageId>
+requestId <Generated requestId>
+6. The Charging Station sends a NotifyDisplayMessagesRequest
+7. The Test System responds with a
+NotifyDisplayMessagesResponse .
+Note(s):
+- If tbc is True at Step 5 then step 5 and 6 will be repeated
+Tool validations
+* Step 2:
+Message SetDisplayMessageResponse
+- status Accepted
+* Step 5:
+Message GetDisplayMessagesResponse
+- status Accepted
+* Step 6:
+Message NotifyDisplayMessagesRequest
+- requestId <RequestId sent in step 4>
+- id <Generated id>
+- priority <Configured Priority>
+- message.format <Configured format>
+- message.content <Configured content>
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 548/914 Part 6 - Test Cases

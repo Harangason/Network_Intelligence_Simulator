@@ -1,0 +1,56 @@
+Main (Test scenario)
+1.  The Charging Station sends a     
+NotifyEVChargingNeedsRequest
+Note(s) :
+ - This step is captured by the preparation steps, but validated on           
+testcase level. 
+2.  Test System responds with a     
+NotifyEVChargingNeedsResponse  with 
+ status   Accepted
+Without EVSE sleeping
+2. 4.  The Charging Station responds with a
+SetChargingProfileResponse with
+status must be Accepted
+1. 3.  The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile
+- transactionId <transactionId>
+- chargingProfilePurpose TxProfile
+- chargingSchedule.chargingRateUnit W
+- chargingSchedule.chargingSchedulePeriod.operationMode
+Idle
+- chargingSchedule.chargingSchedulePeriod.evseSleep false
+5.  The Charging station sends a     
+NotifyEVChargingScheduleRequest
+Note(s) :
+ - This step is required if <Configured EVProtocol> is ISO15118 ,          
+otherwise this step is optional.    
+6.  The Test System responds with a      
+NotifyEVChargingScheduleResponse  with 
+ status   Accepted
+7.  Execute   Reusable State   EnergyTransferStarted
+3. 8.  The Charging Station sends following
+TransactionEventRequest 4. 9.  The Test System responds with a
+TransactionEventResponse
+5. 10.  The Charging Station sends following
+TransactionEventRequest 6. 11.  The Test System responds with a
+TransactionEventResponse
+With EVSE sleeping
+8. 13.  The Charging Station responds with a
+SetChargingProfileResponse
+7. 12.  The Test System sends a SetChargingProfileRequest with
+evseId <Configured evseId>
+chargingProfile
+- transactionId <transactionId>
+- chargingProfilePurpose TxProfile
+- chargingSchedule.chargingRateUnit W
+- chargingSchedule.chargingSchedulePeriod.operationMode
+Idle
+- chargingSchedule.chargingSchedulePeriod.evseSleep true
+9. 14.  The Charging Station sends following
+TransactionEventRequest 10. 15.  The Test System responds with a
+TransactionEventResponse
+11. 16.  The Charging Station sends following
+TransactionEventRequest 12. 17.  The Test System responds with a
+TransactionEventResponse
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 85/116 Errata 2026-06

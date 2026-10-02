@@ -1,0 +1,108 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  25 
+2.4.2.3. CRC Insertion of the MIPI CSI/DSI Transmitter 
+CRC handling is controlled independently of ECC insertion. When CRC insertion is enabled, the transmitter recalculates 
+the long-packet CRC based on the received payload and appends the updated CRC value before packet transmission. 
+This allows payload data to be modified upstream while ensuring packet integrity at the CSI-2 protocol level. When CRC 
+insertion is enabled, the CRC field must still be present in the incoming packet, but the value is treated as don’t-care 
+and is overwritten by the transmitter. When CRC insertion is disabled, the transmitter forwards the packet payload and 
+CRC field unmodified, preserving the original packet contents end-to-end. The upstream logic must provide a valid CRC, 
+as the field is forwarded unchanged. 
+The following figures show the timing diagrams for MIPI packets reception over MBSI where axis_byte_tready_o stays 
+asserted during a TX transaction for 32-bit passthrough mode in Figure 2.20 and 64-bit passthrough mode in Figure 
+2.21. 
+The full MIPI packet is driven on TDATA. TLAST asserts on the payload MSB footer (CRC[15:8]). 
+axis_vid_clk_i
+axis_byte_tready_o
+axis_byte_tvalid_i
+HS Packet
+(Long Packet)
+HS Packet
+(Short Packet)
+axis_byte_tdata_i[31:0] B B B B B BBB B
+axis_byte_tlast_i
+Hdr[7:0] : DID
+axis_byte_tuser_i[5:2] Packet Virtual Channel   (VCX+VC) VCX
++VC
+Hdr[15:8] : WC[7:0] Packet: Byte1
+Hdr[23:16]: WC[15:8]
+Hdr[31:24]: VCX+ECC
+Packet: Byte2
+Packet: Byte3
+Packet: Byte5
+Packet: Byte6
+Packet: Byte7
+Packet: Byte0 Packet: Byte4
+Footer: CRC[15:8]
+Footer: CRC[7:0] Hdr[7:0] : DID
+Hdr[15:8] : DF[7:0]
+Hdr[23:16]: DF[15:8]
+Hdr[31:24]: VCX+ECC
+...
+TDATA[7:0]
+TDATA[15:8]
+TDATA[23:16]
+TDATA[31:24]
+axis_byte_tuser_i[0:0]
+ 
+Figure 2.20. MBSI TX Timing Diagram for 32-bit Passthrough Mode 
+axis_vid_clk_i
+axis_byte_tready_o
+axis_byte_tvalid_i
+HS Packet
+(Long Packet)
+HS Packet
+(Short Packet)
+axis_byte_tdata_i[63:0] B B B B B BBB B
+axis_byte_tlast_i
+axis_byte_tuser_i[5:2] Packet Virtual Channel    (VCX+VC)
+Hdr[7:0] : DID
+Hdr[15:8] : DF[7:0]
+Hdr[23:16]: DF[15:8]
+Hdr[31:24]: VCX+ECC
+axis_byte_tuser_i[0:0]
+Hdr[7:0] : DID
+Hdr[15:8] : WC[7:0] Packet: Byte5
+Hdr[23:16]: WC[15:8]
+Hdr[31:24]: VCX+ECC
+Packet: Byte6
+Packet: Byte7
+Packet: Byte13
+Packet: Byte14
+Packet: Byte15
+Packet: Byte4 Packet: Byte12
+Packet: ByteN-3
+Packet: ByteN-2
+Packet: ByteN-1
+Packet: ByteN-4
+...
+Packet: Byte0
+Packet: Byte1 Packet: Byte9
+Packet: Byte2
+Packet: Byte3
+Packet: Byte10
+Packet: Byte11
+Packet: Byte17
+Packet: Byte18
+Packet: Byte19
+Packet: Byte8 Packet: Byte16
+Footer: CRC[15:8]
+Footer: CRC[7:0]
+...
+TDATA[7:0]
+TDATA[15:8]
+TDATA[23:16]
+TDATA[31:24]
+TDATA[39:32]
+TDATA[47:40]
+TDATA[55:48]
+TDATA[63:56]
+VCX
++VC
+ 
+Figure 2.21. MBSI TX Timing Diagram for 64-bit Passthrough Mode 

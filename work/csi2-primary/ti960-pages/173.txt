@@ -1,0 +1,62 @@
+HUB
+Deserializer
+DS90UB953
+Serializer
+DS90UB953
+Serializer
+DS90UB933
+Serializer
+DS90UB933
+Serializer
+CSI-2 TX 
+Port 0
+CSI-2 TX 
+Port 1
+MIPI CSI-2
+MIPI CSI-2
+1.6 Gbps/lane X 4
+MIPI CSI-2
+RAW10/12
+RAW10/12
+Host / ISP
+MIPI CSI-2
+1.6 Gbps/lane X 4 Host / ISP
+Copyright © 2018, Texas Instruments Incorporated
+Figure 8-17. Two DS90UB933-Q1 and Two DS90UB953-Q1 Sensor Data Onto CSI-2 Over 2 Ports
+8.4 Power Supply Recommendations
+This device has separate power and ground pins for different portions of the circuit. This is done to isolate 
+switching noise effects between different sections of the circuit. Separate planes on the PCB are typically not 
+required. The Section 5 section provides guidance on which circuit blocks are connected to which power pin 
+pairs. In some cases, an external filter many be used to provide clean power to sensitive circuits such as PLLs.
+8.4.1 VDD Power Supply
+Each VDD power supply pin must have a 10-nF (or 100-nF) capacitor to ground connected as close as possible 
+to DS90UB960-Q1 device. TI recommends having additional decoupling capacitors (1 µF and 10 µF) and the 
+pins connected to a solid power plane.
+8.4.2 Power-Up Sequencing
+The power-up sequence for the DS90UB960-Q1 is as follows:
+Table 8-5. Timing Diagram for the Power-Up Sequence
+PARAMETER MIN TYP MAX UNIT NOTES
+tr0 VDD18 / VDDIO rise time 0.2 ms @10/90%
+tr1 VDD11 rise time 0.05 ms @10/90%
+t0 VDD18 / VDDIO to VDD11 delay 0 ms
+t1 VDDx to REFCLK delay 0 ms
+Keep REFCLK low 
+until all supplies are 
+up and stable.
+t2 VDDx to PDB delay 0 ms
+Release PDB after 
+all supplies are up 
+and stable.
+t3
+PDB to I2C ready (IDX and MODE valid) 
+delay 2 ms
+t4 PDB pulse width 2 ms Hard reset
+t5 PDB to GPIO delay 0 ms
+Keep GPIOs low or 
+high until PDB is 
+high.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 173
+Product Folder Links: DS90UB960-Q1

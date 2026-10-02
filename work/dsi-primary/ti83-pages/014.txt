@@ -1,0 +1,51 @@
+7.3 Feature Description
+7.3.1 Clock Configurations and Multipliers
+The FlatLink LVDS clock may be derived from the DSI channel A clock, or from an external reference clock
+source. When the MIPI D-PHY channel A HS clock is used as the LVDS clock source, the D-PHY clock lane
+must operate in HS free-running (continuous) mode. This feature eliminates the need for an external reference
+clock reducing system costs
+The reference clock source is selected by HS_CLK_SRC (CSR 0x0A.0) programmed through the local I 2C
+interface. If an external reference clock is selected, it is multiplied by the factor in REFCLK_MULTIPLIER (CSR
+0x0B.1:0) to generate the FlatLink LVDS output clock. When an external reference clock is selected, it must be
+between 25 MHz and 154 MHz. If the DSI channel A clock is selected, it is divided by the factor in
+DSI_CLK_DIVIDER (CSR 0x0B.7:3) to generate the FlatLink LVDS output clock. Additionally,
+LVDS_CLK_RANGE (CSR 0x0A.3:1) and CH_DSI_CLK_RANGE(CSR 0x12) must be set to the frequency
+range of the FlatLink LVDS output clock and DSI Channel A input clock respectively for the internal PLL to
+operate correctly. After these settings are programmed, PLL_EN (CSR 0x0D.0) must be set to enable the
+internal PLL.
+7.3.2 ULPS
+The SN65DSI83 device supports the MIPI defined ULPS. While the device is in the ULPS, the CSR registers are
+accessible via I2C interface. ULPS sequence must be issued to all active DSI CLK and, or DSI data lanes of the
+enabled DSI channels for the SN65DSI83 device to enter the ULPS. The following sequence must be followed to
+enter and exit the ULPS.
+1. The host issues a ULPS entry sequence to all DSI CLK and data lanes enabled.
+2. When the host is ready to exit the ULPS mode, the host issues a ULPS exit sequence to all DSI CLK and
+data lanes that need to be active in normal operation.
+3. Wait for the PLL_LOCK bit (CSR 0x0A.7) to be set.
+4. Set the SOFT_RESET bit (CSR 0x09.0).
+5. Device resumes normal operation (that is, video streaming resumes on the panel).
+7.3.3 LVDS Pattern Generation
+The SN65DSI83 device supports a pattern generation feature on LVDS channels. This feature can be used to
+test the LVDS output path and LVDS panels in a system platform. The pattern generation feature can be enabled
+by setting the CHA_TEST_PATTERN bit at address 0x3C. No DSI data is received while the pattern generation
+feature is enabled.
+There are three modes available for LVDS test pattern generation. The mode of test pattern generation is
+determined by register configuration, as shown in Table 7-1.
+Table 7-1. Video Registers
+ADDRESS BIT REGISTER NAME
+0x20.7:0 CHA_ACTIVE_LINE_LENGTH_LOW
+0x21.3:0 CHA_ACTIVE_LINE_LENGTH_HIGH
+0x24.7:0 CHA_VERTICAL_DISPLAY_SIZE_LOW
+0x25.3:0 CHA_VERTICAL_DISPLAY_SIZE_HIGH
+0x2C.7:0 CHA_HSYNC_PULSE_WIDTH_LOW
+0x2D.1:0 CHA_HSYNC_PULSE_WIDTH_HIGH
+0x30.7:0 CHA_VSYNC_PULSE_WIDTH_LOW
+0x31.1:0 CHA_VSYNC_PULSE_WIDTH_HIGH
+0x34.7:0 CHA_HORIZONTAL_BACK_PORCH
+0x36.7:0 CHA_VERTICAL_BACK_PORCH
+0x38.7:0 CHA_HORIZONTAL_FRONT_PORCH
+0x3A.7:0 CHA_VERTICAL_FRONT_PORCH
+SN65DSI83
+SLLSEC1I – SEPTEMBER 2012 – REVISED OCTOBER 2020 www.ti.com
+14 Submit Document Feedback Copyright © 2020 Texas Instruments Incorporated
+Product Folder Links: SN65DSI83

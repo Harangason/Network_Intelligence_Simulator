@@ -1,0 +1,45 @@
+Table 7-3. REFCLK Oscillator Specifications
+PARAMETER TEST CONDITIONS MIN TYP MAX UNIT
+REFERENCE CLOCK
+Frequency tolerance with aging –40°C ≤ TA ≤ 105°C, aging, no 
+spread-spectrum
+±100 ppm
+Amplitude 800 1200 V(VDDIO) mVp-p
+Symmetry Duty Cycle 40% 50% 60%
+Rise and fall time 10% – 90% 6 ns
+Jitter 200 kHz – 10 MHz 50 200 ps p-p
+Frequency 23 25 26 MHz
+Spread-spectrum clock modulation percentage 
+(Optional)
+Center spread -0.5% +0.5%
+Down spread -1% 0%
+Spread-spectrum clock modulation frequency 
+(Optional)
+33 kHz
+7.4.5 Receiver Port Control
+The DS90UB960-Q1 can support up to four simultaneous inputs to Rx ports 0 - 4. The Receiver port control 
+register RX_PORT_CTL 0x0C allows for disabling any Rx inputs when not in use. These bits can only be written 
+by a local I2C controller at the deserializer side of the FPD-Link.
+Each FPD-Link III Receive port has a unique set of registers that provides control and status corresponding 
+to Rx ports 0 - 4. Control of the FPD-Link III port registers is assigned by the FPD3_PORT_SEL register, 
+which sets the page controls for reading or writing individual ports unique registers. For each of the FPD-Link 
+III Receive Ports, the FPD3_PORT_SEL 0x4C register defaults to selecting that port’s registers as detailed in 
+register description.
+As an alternative to paging to access FPD-Link III Receive unique port registers, separate I2C addresses may 
+be enabled to allow direct access to the port-specific registers. The Port I2C address registers 0xF8 - 0xFB allow 
+programming a separate 7-bit I2C address to allow access to unique, port-specific registers without paging. I2C 
+commands to these assigned I2C addresses are also allowed access to all shared registers.
+7.4.5.1 Video Stream Forwarding
+Video stream forwarding is handled by the Rx Port forwarding control in register 0x20. Forwarding from input 
+ports are disabled by default and must be enabled using per-port controls. Different options for forwarding CSI-2 
+packets can also be selected as described starting in Section 7.4.25.
+7.4.6 Input Jitter Tolerance
+Input jitter tolerance is the ability of the clock and data recovery (CDR) and phase-locked loop (PLL) of the 
+receiver to track and recover the incoming serial data stream. Jitter tolerance at a specific frequency is the 
+maximum jitter permissible before data errors occur. Figure 7-3 shows the allowable total jitter of the receiver 
+inputs and must be less than the values in Table 7-4.
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+30 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

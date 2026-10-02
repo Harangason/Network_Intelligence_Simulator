@@ -1,0 +1,53 @@
+EV Driver
+Charging Station CSMS
+Ongoing transaction
+Present IdToken
+opt
+notification
+TransactionEvent / NotifyEvent
+messages left out for readability
+TransactionEventRequest(eventType = Ended, ...)
+TransactionEventResponse([idTokenInfo], totalCost = X.XX,...)
+show cost: X.XX
+Figure 86. Sequence Diagram: Show EV Driver Final Total Cost After Charging
+I03 - Show EV Driver Final Total Cost After Charging - Requirements
+ID. Precondition Requirements
+I03.FR.01 When transaction is stopped The Charging Station SHALL send a TransactionEventRequest
+(eventType = Ended) to the CSMS.
+I03.FR.02 I03.FR.01 AND
+When Total Cost is known to the CSMS.
+The CSMS SHALL send the total cost of the transaction in the
+totalCost field of the TransactionEventResponse message.
+I03.FR.03 I03.FR.02 AND
+Charging Station was online when transaction
+stopped
+The Charging Station SHALL display the total cost to the EV
+Driver.
+I03.FR.04 To indicate a free transaction, the CSMS SHALL set totalCost to
+0.00. Thus omitting totalCost does not imply that the transaction
+was free.
+I03.FR.05 I02.FR.02 AND
+TxStopPoint is defined as
+ParkingBayOccupancy
+The Charging Station SHOULD NOT display the total cost to the
+EV Driver. (Driver has left already).
+I04 - Show Fallback Tariff Information
+No. Type Description
+1 Name Show Fallback Tariff Information
+2 ID I04
+3 Objective(s) To show an EV Driver some information, generic tariff, a message etc., when the Charging Station
+cannot retrieve tariff information for this EV Driver.
+4 Description When an EV Driver wants to charge an EV, he wants an indication of how much charging will cost
+him at the Charging Station he is at, but the Charging Station cannot get a specific tariff for this
+EV Driver (for example: the Charging Station is Offline, or no EV Driver-specific tariff is available).
+For such scenarios, a fallback tariff information message can be configured in the Charging
+Station.
+Actors Charging Station, EV Driver
+Scenario description 1. The EV Driver wants to charge an EV, he presents his IdTokenType.
+2. The Charging Station authorizes the EV Driver against the Authorization Cache
+3. The Charging Station shows the TariffFallbackMessage to the EV Driver.
+Alternative scenario(s) I01 - Show EV Driver-specific Tariff Information
+5 Prerequisites The Charging Station supports Tariff Information
+the Configuration Variable: TariffFallbackMessage is configured.
+Edition 4, 2025-12-03 I. Tariff And Cost
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 221/491 Part 2 - Specification

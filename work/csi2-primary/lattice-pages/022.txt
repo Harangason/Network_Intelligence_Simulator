@@ -1,0 +1,78 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  22 
+RAW0
+0
+9
+RAW8
+15
+x x
+RAW7
+112
+121
+RAW15
+127
+x x
+RAW0 RAW2
+pixel 0 pixel 1
+0
+9
+RAW1 RAW3
+ 
+15
+x x x x
+....
+pixel 0
+pixel 7
+PPC = 1; 
+TDATA_WIDTH = 16 bits
+PPC = 8; 
+TDATA_WIDTH = 128 bits
+ 
+Figure 2.14. TDATA Pixel Mapping for Sample RAW10 Configuration 
+RAW12 
+• CPP: 1 
+• BPC: 12 
+• BPP: 1 × 12 = 12 bits 
+• TDATA width per pixel: ceil(12/8) × 8 = 16 bits 
+RAW0
+0
+11
+RAW2
+15
+x x
+RAW1
+16
+27
+RAW3
+31
+x x
+RAW0 RAW2
+pixel 0 pixel 1
+0
+11
+RAW1 RAW3
+15
+x x x x
+pixel 0
+pixel 1
+PPC = 1; 
+TDATA_WIDTH = 16 bits
+PPC = 2; 
+TDATA_WIDTH = 32 bits
+ 
+Figure 2.15. TDATA Pixel Mapping for Sample RAW12 Configuration 
+2.4.1.2. MIPI CSI/DSI Transmitter UVSI 
+Figure 2.16 illustrates the timing diagram for video frame transmission with blanking interval over UVSI during a TX 
+transaction. In this integrated solution, the design includes a configurable line-buffer architecture, where the buffer 
+depth can be configured according to the video line-packet size to support various resolutions and packet formats. 
+When sufficient horizontal blanking interval is provided between consecutive line packets on UVSI, the IP has sufficient 
+time to complete the D-PHY LP-to-HS mode switching and to flush the stored data from the line buffer, enabling 
+smooth and continuous operation without triggering backpressure . 
+When horizontal blanking is minimal or absent and line packets arrive back -to-back at UVSI, the IP must simultaneously 
+store incoming data into the line buffer while requesting the D-PHY to transition from low power to high-speed mode. 
+This LP to HS transition is not instantaneous and must meet the D-PHY timing parameters, such as tHS-PREPARE and 

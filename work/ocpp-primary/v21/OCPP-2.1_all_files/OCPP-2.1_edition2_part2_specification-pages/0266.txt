@@ -1,0 +1,54 @@
+ID Precondition Requirement definition Note
+G04.FR.01 In the case the evse field is omitted in
+ChangeAvailabilityRequest.
+The Charging Station status change SHALL apply to
+the whole Charging Station.
+G04.FR.02 Upon receipt of
+ChangeAvailabilityRequest.
+The Charging Station SHALL respond with
+ChangeAvailabilityResponse.
+G04.FR.03 G04.FR.02 This response message SHALL indicate whether
+the Charging Station is able to change to the
+requested availability.
+G04.FR.04 In the event that CSMS requests the
+Charging Station to change to the
+state it is already in.
+The Charging Station SHALL respond with
+availability status Accepted.
+G04.FR.05 When an availability change request
+with ChangeAvailabilityRequest has
+happened.
+The Charging Station SHALL inform the CSMS by
+sending the status of each of the changed
+connectors via a NotifyEventRequest or a
+StatusNotificationRequest.
+As described in
+ConnectorStatusEnumTy
+pe
+G04.FR.06 When a transaction is in progress. The Charging Station SHALL respond with
+availability status Scheduled to indicate that it is
+scheduled to occur after the transaction has
+finished.
+G04.FR.07 When the availability of the Charging
+Station becomes Inoperative
+(Unavailable, Faulted)
+All operative EVSEs and connectors (i.e. not
+Faulted) SHALL become Unavailable.
+G04.FR.08 When the availability of the Charging
+Station becomes Operative
+The Charging Station SHALL revert the status of all
+EVSEs and connectors to their original status.
+See Note 1.
+G04.FR.09 When the availability of a Charging
+Station has been set explicitly via
+ChangeAvailabilityRequest
+The set availability state SHALL be persistent
+across reboot/power loss.
+NOTE
+1. The Charging Station, EVSEs and Connectors have separate / individual states. This means (for example) that
+when setting a connector to Inoperative, then setting the connected EVSE to Inoperative and thereafter change
+the EVSE back to operative, the connector will remain Inoperative.
+NOTE 2. It is only required to report a status change of a connector. StatusNotificationRequest only supports the
+reporting of connector statuses.
+Edition 2, 2025-12-03 G. Availability
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 253/803 Part 2 - Specification

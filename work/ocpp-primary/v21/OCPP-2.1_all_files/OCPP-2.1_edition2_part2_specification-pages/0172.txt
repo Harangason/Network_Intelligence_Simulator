@@ -1,0 +1,45 @@
+D02 - Get Local List Version
+No. Type Description
+1 Name Get Local List Version
+2 ID D02
+Parent use case D01 - Send Local Authorization List
+3 Objective(s) To support synchronization of Local Authorization List.
+4 Description The CSMS can request a Charging Station for the version number of the Local Authorization List
+by sending a GetLocalListVersionRequest.
+Actors Charging Station, CSMS
+Scenario description 1. The CSMS sends a GetLocalListVersionRequest to request this value.
+2. Upon receipt of the GetLocalListVersionRequest Charging Station responds with a
+GetLocalListVersionResponse containing the version number of its Local Authorization List.
+5 Prerequisite(s)
+6 Postcondition(s) The CSMS received the GetLocalListVersionResponse with the Local Authorization List version.
+7 Error handling n/a
+8 Remark(s) A versionNumber of 0 (zero) is reserved to indicate that no local authorization list exists, either
+because it is not enabled or because it has not yet received any update from CSMS and thus does
+not have a version number to return.
+In contrast, a local authorization list that was emptied, because CSMS sent a
+SendLocalListRequest with an empty localAuthorizationList, does have a versionNumber > 0.
+Charging Station CSMS
+GetLocalListVersionRequest()
+GetLocalListVersionResponse(versionNumber)
+Figure 48. Sequence Diagram: Get Local List Version
+D02 - Get Local List Version - Requirements
+Table 61. D02 - Requirements
+ID Precondition Requirement definition
+D02.FR.01 LocalAuthListEnabled is true When Charging Station receives GetLocalListVersionRequest
+then Charging Station SHALL respond with a
+GetLocalListVersionResponse containing the version number of
+its Local Authorization List.
+D02.FR.02 LocalAuthListEnabled is true AND
+the CSMS has not yet sent any update to the
+Charging Station for Local Authorization List
+(via SendLocalListRequest)
+When Charging Station receives GetLocalListVersionRequest
+then Charging Station SHALL respond with a
+GetLocalListVersionResponse with versionNumber is 0 (zero) to
+indicate that there is no Local Authorization List.
+D02.FR.03 LocalAuthListEnabled is not true When Charging Station receives GetLocalListVersionRequest
+then Charging Station SHALL respond with a
+GetLocalListVersionResponse with versionNumber is 0 (zero) to
+indicate that there is no Local Authorization List.
+Edition 2, 2025-12-03 D. Local Authorization List Management
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 159/803 Part 2 - Specification

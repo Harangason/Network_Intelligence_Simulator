@@ -1,0 +1,49 @@
+Tool validations
+* Step 2:
+Message SetDisplayMessageResponse
+- status Accepted
+* Step 3:
+At least one of te following messages must be sent:
+Message: StatusNotificationRequest
+- connectorStatus Faulted or Unavailable
+Message: NotifyEventRequest
+- eventData[0].trigger must be Delta
+- eventData[0].actualValue must be Faulted or Unavailable
+- eventData[0].component.name must be Connector
+- eventData[0].variable.name must be AvailabilityState
+- evse.id <not omitted>
+- connector.id <not omitted>
+Message: NotifyEventRequest
+- eventData[0].trigger must be Delta
+- eventData[0].actualValue must be Faulted
+- eventData[0].component.name must be ChargingStation
+- eventData[0].variable.name must be AvailabilityState
+- evse.id <omitted>
+- connector.id <omitted>
+* Step 5:
+At least one of te following messages must be sent:
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- eventData[0].trigger must be Delta
+- eventData[0].actualValue must be Available
+- eventData[0].component.name must be Connector
+- eventData[0].variable.name must be AvailabilityState
+- evse.id <not omitted>
+- connector.id <not omitted>
+Message: NotifyEventRequest
+- eventData[0].trigger must be Delta
+- eventData[0].actualValue must be Available
+- eventData[0].component.name must be ChargingStation
+- eventData[0].variable.name must be AvailabilityState
+* Step 8:
+Message GetDisplayMessagesResponse
+- status Accepted
+* Step 9:
+Message NotifyDisplayMessagesRequest
+- requestId <Generated requestId>
+- state Faulted
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 802/1383 Part 6 - Test Cases

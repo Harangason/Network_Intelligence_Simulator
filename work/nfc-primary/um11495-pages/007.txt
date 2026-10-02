@@ -1,0 +1,19 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Figure 5. P2P scenario
+This mode of operation is further detailed in Section 9
+2.4  Combined modes of operation
+More details can be found in Section 11 about the startup sequence and the API used in each of these modes.
+In any NCI mode, PN7160 is capable of combining basic modes of operation described above, using the RF
+Discovery as defined in NCI. The principle used to combine the various modes of operation is to build a cyclic
+activity, which will sequentially activate various modes of operation:
+1. Start a Polling sequence, to look for a remote Tag/Card or a remote Peer (Target). If several technologies
+are enabled by the DH, PN7160 will poll sequentially for all the enabled technologies.
+2. If nothing was detected, enter a Listening sequence, to potentially be activated as a Card emulator or a P2P
+target by an external Reader/Writer or Peer.
+3. If nothing happens after a programmable timeout, switch back to Poll Mode in step 1.
+This cyclic activity is usually drawn as below example (where technologies NFC-A, NFC-B and NFC-F have
+been activated in Poll Mode):
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+7 / 147

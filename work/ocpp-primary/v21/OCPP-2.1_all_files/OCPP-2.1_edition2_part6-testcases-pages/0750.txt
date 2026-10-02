@@ -1,0 +1,30 @@
+Tool validations
+* Step 2:
+Message: GetMonitoringReportResponse
+- status = EmptyResultSet or Accepted
+* Step 3: (If status = Accepted)
+Message: NotifyMonitoringReportRequest
+- requestId = <Generated requestId>
+- generatedAt = <timestamp at charging station>
+- seqNo = 0
+- monitor.variableMonitoring.type = UpperThreshold or LowerThreshold
+- monitor.variableMonitoring.eventNotificationType = <not omitted>
+While tbc = true
+Message: NotifyMonitoringReportRequest
+- seqNo is incremented by 1
+- monitor.variableMonitoring.type = UpperThreshold or LowerThreshold
+- monitor.variableMonitoring.eventNotificationType = <not omitted>
+* Step 6:
+Message: GetMonitoringReportResponse
+- status = Accepted
+- statusInfo is absent or statusInfo.reasonCode = "NoError"
+* Step 7:
+Message: NotifyMonitoringReportRequest
+- requestId = <Generated requestId>
+- generatedAt = <timestamp at charging station>
+- monitor.variableMonitoring.type = TargetDeltaRelative
+- monitor.variableMonitoring.eventNotificationType = <not omitted>
+Post scenario validations:
+N/A
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 748/1383 Part 6 - Test Cases

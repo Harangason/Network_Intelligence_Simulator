@@ -1,0 +1,38 @@
+If Load - Setpoint > UpperThreshold + UpperOffset - LowerThreshold
+    Setpoint_new = Setpoint + UpperThreshold + UpperOffset - Load
+Else If Load - Setpoint < LowerThreshold + LowerOffset - UpperThreshold
+    Setpoint_new = Setpoint + LowerThreshold + LowerOffset - Load
+Else
+    Setpoint_new = 0
+The EV setpoint is updated by adding the required correction to the previous setpoint, not by calculating an absolute value.
+If the controller were to compute an absolute EV power directly from the grid measurement, it would continuously over-correct and
+oscillate. By adjusting the EV setpoint relative to its previous value, the controller converges in one step and remains stable.
+Zero-import / zero-export operation
+Although the thresholds define the minimum charging and discharging rates, the controller is not limited to those values:
+• If grid power exceeds the limits by a large amount, the EV can compensate with more power than the threshold values.
+• The further the grid power is outside the band, the stronger the correction.
+This is what makes the EV an effective buffer for larger household loads.
+Full compensation to 0 W grid power is possible by choosing the offsets as:
+• LowerOffset = –LowerThreshold
+• UpperOffset = –UpperThreshold
+This moves both limits to 0 W.
+Resulting behavior:
+• Any grid import causes the EV to discharge.
+• Any grid export causes the EV to charge.
+• The controller continuously drives the net grid power toward zero, limited only by the EV’s charging and discharging
+capabilities.
+Relation with IEC 61850 DWFL
+The LocalLoadBalancing control logic relates directly to the IEC 61850-7-420 logical node DWFL (Active Power Following).
+From a functional perspective, the EV is following the grid power in order to counteract deviations beyond configured limits. This is
+exactly the problem DWFL was designed to solve. In IEC 61850-7-420, the logical node DWFL describes an active power following
+function.
+Conceptually, DWFL:
+• Observes a reference active power (what is actually happening)
+• Has a target active power (what is desired)
+• When the reference deviates beyond a threshold, it produces a compensation request to drive the system back toward the
+target
+DWFL does not directly command a device; instead, it expresses how much power should change to follow the target.
+2.16. Page 505 - (2026-06) - Update table in Q2.2 Limits and setpoints
+per operation mode [1180]
+The following table as been updated to allow (discharge)limits for LocalLoadBalancing.
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 15/116 Errata 2026-06

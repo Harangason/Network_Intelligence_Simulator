@@ -1,0 +1,35 @@
+Main (Test scenario)
+14. The Charging Station responds with GetVariablesResponse
+13. Test System sends GetVariablesRequest with:
+- variable.name = "NetworkConfigurationPriority"
+- component.name = "OCPPCommCtrlr"
+The following steps are only executed when this testcase is upgrading from Security Profile 1 to Security Profile 2.
+16. The Charging Station does NOT reconnect to the Test
+System using Security Profile 1.
+15. The Test System closes the connection and restarts the
+WebSocket server using Security profile 1 and waits the
+<Configured long operation timeout>.
+18. The Charging Station reconnects to the Test System using
+Security Profile 2.
+17. The Test System restarts the WebSocket server using
+Security Profile 2.
+Tool validations
+* Step 2:
+Message SetNetworkProfileResponse
+- status Accepted
+* Step 4:
+Message SetVariablesResponse
+- setVariableResult[0].attributeStatus Accepted OR RebootRequired
+* Step 6:
+Message ResetResponse
+- status Accepted
+* Step 12:
+Message GetVariablesResponse
+- getVariableResult[0].attributeValue <Configured securityProfile + 1>
+* Step 14:
+Message GetVariablesResponse
+- getVariableResult[0].attributeValue Does not contain the configurationSlot with the previous (lower) security profile
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 22/1383 Part 6 - Test Cases

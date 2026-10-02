@@ -1,0 +1,65 @@
+Description
+HandleFailedTariff Tariff OptionList Deauthorize, UseDefaultTariff or CentralCost when tariff cannot
+be processed.
+OfflineTariffFallbackMes
+sage
+<rfc5646
+language>
+string Message to be shown when Charging Station is offline.
+TariffFallbackMessage string Message (and/or tariff information) to be shown to an EV Driver
+when there is no driver specific tariff information available.
+TotalCostFallbackMessa
+ge
+string Message to be shown to an EV Driver when the Charging Station
+cannot retrieve the cost for a transaction at the end of the
+transaction.
+Currency string Currency used by this Charging Station in a ISO 4217 formatted
+currency code.
+3.1.19. TxCtrlr
+Description
+Logical Component responsible for configuration relating to transaction characteristics and behaviour.
+Variables Type Description
+EVConnectionTimeOut integer Interval in seconds from between "starting" of a transaction until incipient
+transaction is automatically canceled, due to failure of EV driver to (correctly)
+insert the charging cable connector(s) into the appropriate socket(s). The
+Charging Station SHALL go back to the original state, probably: 'Available'.
+"Starting" might be the swiping of the RFID, pressing a start button, a
+RequestStartTransactionRequest being received etc.
+TxBeforeAcceptedEnabled boolean With this configuration variable the Charging Station can be configured to allow
+charging before having received a BootNotificationResponse with
+RegistrationStatus: Accepted. See: Transactions before being accepted by a
+CSMS.
+TxStartPoint MemberList Defines when the Charging Station starts a new transaction: first
+transactioneventRequest: eventType = Started.
+When any event in the given list occurs, the Charging Station SHALL start a
+transaction The Charging Station SHALL only send the Started event once for
+every transaction.
+It is advised to put all events that should be part of a transaction in the list, in
+case the start event never occurs. Because the possible events don’t always have
+to come in the same order it is possible to provide a list of events. Which ever
+comes first will then cause a transaction to be started.
+For example: EVConnected, Authorized would mean that a transaction is started
+when an EV is detected (Cable is connected), or when an EV Driver swipes his
+RFID card en the CSMS successfully authorizes the ID for charging.
+TxStopPoint MemberList Defines when the Charging Station ends a transaction: last
+transactioneventRequest: eventType = Ended.
+When any event in the given list is no longer valid, the Charging Station SHALL
+end the transaction. The Charging Station SHALL only send the Ended event once
+for every transaction.
+MaxEnergyOnInvalidId integer Maximum amount of energy in Wh delivered when an identifier is deauthorized by
+the CSMS after start of a transaction.
+StopTxOnInvalidId boolean whether the Charging Station will stop an ongoing transaction when it receives a
+non- Accepted authorization status in TransactionEventResponse for this
+transaction.
+StopTxOnEVSideDisconnect boolean When set to true, the Charging Station SHALL administratively stop the
+transaction when the cable is unplugged from the EV.
+3.2. Physical Components
+This is a non-exhaustive list of Standardized Physical Components that SHALL be used when mapping a real Charging Station to
+the Device Model (for monitoring purposes).
+When the physical component that is to be mapped, matches the description of one of the Standardized Components in this
+section, for interoperability reasons, the Standardized Component from this section SHALL be used, instead of adding a new
+(proprietary) component.
+The list of typically used variables that is given for each Component is also non-exhaustive and all variables are optional. See also
+Part 1, paragraph 4.5. If a description of a variable is empty, please refer to the description in Standardized Variables.
+v2.1, 2025-12-03 Chapter 3. Standardized Components
+OCPP 2.1 - © Open Charge Alliance 2025 13/52 Part 2 - Appendices

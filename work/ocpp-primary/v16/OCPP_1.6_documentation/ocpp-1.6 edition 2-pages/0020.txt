@@ -1,0 +1,26 @@
+When connection to the Central Server is restored, the Charge Point SHALL send a Start Transaction request for
+any transaction that was authorized offline, as required by transaction-related message handling. When the
+authorization status in the StartTransaction.conf is not Accepted, and the transaction is still ongoing, the Charge
+Point SHOULD:
+• when StopTransactionOnInvalidId is set to true: stop the transaction normally as stated in Stop
+Transaction. The Reason field in the Stop Transaction request should be set to DeAuthorized. If the Charge
+Point has the possibility to lock the Charging Cable, it SHOULD keep the Charging Cable locked until the
+owner presents his identifier.
+• when StopTransactionOnInvalidId is set to false: only stop energy delivery to the vehicle.
+
+In the case of an invalid identifier, an operator MAY choose to charge the EV with a minimum
+amount of energy so the EV is able to drive away. This amount is controlled by the optional
+configuration key: MaxEnergyOnInvalidId.
+3.6. Transaction in relation to Energy Transfer Period
+This section is informative.
+The Energy Transfer Period is a period of time during wich energy is transferred between the EV and the EVSE.
+There MAY be multiple Energy Transfer Periods during a Transaction.
+Multiple Energy Transfer Periods can be separated by either:
+• an EVSE-initiated supense of transfer during which de EVSE does not offer energy transfer
+• an EV-initiated suspense of transfer during which the EV remains electrically connected to the EVSE
+• an EV-initiated suspense of transfer during which the EV is not electrically connected to the EVSE.
+A Central System MAY deduce the start and end of an Energy Transfer Period from: the MeterValues that are
+sent during the Transaction, the status notifications: Charging, SuspendedEV and/or SuspendedEVSE. etc.
+Central System implementations need to take into account factors such as: Some EVs don’t go to state
+SuspendedEV: they might continue to trickle charge. Some Charge Point don’t even have a electrical meter.
+15

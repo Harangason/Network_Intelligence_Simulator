@@ -1,0 +1,81 @@
+67 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+ELM327
+described for the other methods.
+When connecting to pin 15, care should be taken
+to not allow excessive current (ie >0.5 mA) to pass
+through the internal protection diodes. Typically all that
+is required is a series resistor, but adding a capacitor
+helps to filter out ignition noise (note that the Schmitt
+input on pin 15 allows the use of large value
+capacitors). A second resistor ensures a discharge
+path for the capacitor, while raising the threshold
+voltage. A circuit like this works well:
+14
+1516
++12V switched
+by the ignition
+47KΩ
+47KΩ0.1uF
+Note that the AT IGN command can always be
+used to read the level at pin 15, regardless of the
+setting of the PP 0E enable bits. This may be used to
+advantage if you wish to manually shut down the IC,
+using your own timing and criteria. Recall that the
+alternate function for pin 15 is the RTS input which will
+interrupt any OBD processing that is in progress. If the
+ELM327 reports an interrupt with the ‘STOPPED’
+message, you can then check the level at pin 15 with
+the AT IGN command, and make your own decisions
+as to what should be done. For that matter, you don’t
+even need to reduce the power based on the input -
+you might possibly do something entirely different.
+Having put the ELM327 into Low Power mode,
+you will need a method to wake it up. This is done by
+‘interrupting’ the IC in ways that are very similar to that
+used to put it into Low Power mode.
+Figure 7 shows the three ways to ‘wake’ the
+ELM327 from low power mode (other than toggling the
+power, or pulsing pin 1). Any of these can wake the IC
+- they do not have to be the cause of its going to low
+power.
+The first way is with a low level pulse at the RS232
+Rx input (pin 18). The RS232 circuitry is not as
+sensitive as normal when in the low power mode, so to
+be sure that your input is seen, the ELM327 requires
+that the pulse width be at least 128 usec wide. This is
+Power Control (continued)
+Figure 7. Returning to Normal Operation
+OBD
+inputs
+1 or 5 sec
+timer
+IgnMon
+(pin 15)
+the voltage
+is now high
+RS232 Rx
+(pin 18)
+the input
+is active
+1 sec
+delay
+RS232
+detector
+voltage
+monitor
+b1
+activity
+monitor
+the voltage was low
+an input is
+now active
+no input was active
+128 µsec min
+pulse width
+perform a
+warm start
+(see text)
+Go to Full Power
+• µP to normal
+• pin 16 = b6

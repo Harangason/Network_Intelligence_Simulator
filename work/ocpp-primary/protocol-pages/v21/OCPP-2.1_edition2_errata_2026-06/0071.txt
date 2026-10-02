@@ -1,0 +1,64 @@
+Main (Test scenario)
+4. The Charging Station responds with a
+SetChargingProfileResponse
+3. The Test System sends a SetChargingProfileRequest with
+chargingProfile.chargingProfilePurpose TxProfile
+chargingProfile.transactionId <Provided transactionId from
+before>
+chargingProfile.chargingSchedule[0].id 10
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 2.5 6  * <limit multiplier>
+Note: Check [csKSmartChargingChargingProfileLimits] for <limit
+multiplier>
+…
+10. The Charging Station responds with a
+SetChargingProfileResponse
+9. The Test System sends a SetChargingProfileRequest with
+chargingProfile.id   <Same id as step 3>    
+chargingProfile.chargingProfilePurpose TxProfile
+chargingProfile.transactionId <Provided transactionId from
+before>
+chargingProfile.chargingSchedule[0].id 10
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 5 10  * <limit multiplier>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit * <limit multiplier>
+Note: Check [csKSmartChargingChargingProfileLimits] for <limit
+multiplier>
+…
+16. The Charging Station responds with a
+SetChargingProfileResponse
+15. The Test System sends a SetChargingProfileRequest with
+chargingProfile.id   <Same id as step 3>    
+chargingProfile.chargingProfilePurpose TxProfile
+chargingProfile.transactionId <Provided transactionId from
+before>
+chargingProfile.chargingSchedule[0].id 10
+chargingProfile.chargingSchedule[0].chargingRateUnit
+<Configured chargingRateUnit>
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].limit 2 10  * <limit multiplier>
+Note: Check [csKSmartChargingChargingProfileLimits] for <limit
+multiplier>
+Tool validations
+* Step 1:
+Message: NotifyEVChargingNeedsRequest
+- evseId must be <Configured evseId>
+- chargingNeeds.acChargingParameters must be <omitted>
+- chargingNeeds.dcChargingParameters must be <omitted>
+- chargingNeeds.v2xChargingParameters.evTargetEnergyRequest must be 5000 6000
+- chargingNeeds.v2xChargingParameters.evTargetEnergyRequest must be 
+- chargingNeeds.controlMode must be ScheduledControl
+- chargingNeeds.departureTime must be <Current DateTime + 2 hours>
+…
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 67/116 Errata 2026-06

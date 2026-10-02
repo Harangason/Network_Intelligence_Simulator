@@ -1,0 +1,54 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  25/50 
+MB Server Sends mb_exception_rsp EXIT
+ExceptionCode = 04
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+NO
+YES
+ENTRY
+Diagnostic == OK
+MB Server Sends mb_rsp
+NO
+YES
+Function code supported
+AND
+Subfunction code  supported
+ExceptionCode = 03
+Data Value == OK
+NO
+YES
+Request Processing
+ 
+Figure 18: Diagnostic state diagram  
+ 
+ 
+6.9 11 (0x0B) Get Comm Event Counter  (Serial Line only)  
+This function code is used to get a status word and an event count from the remote device's 
+communication event counter.  
+By fetching the current count before and after a series of messages, a client can determine 
+whether the messages were handled normally by the remote device.  
+The device’s event counter is incremented once for each successful message completion. It is 
+not incremented for exception responses, poll commands, or fetch event counter commands.  
+The event counter can be reset  by means of the Diagnostics function (code 08), with a sub -
+function of Restart Communications Option (code 00 01) or Clear Counters and Diagnostic 
+Register (code 00 0A).  
+The normal response contains a two –byte status word, and a two –byte event count. The 
+status word will be all ones (FF  FF hex) if a previously –issued program command is still being 
+processed by the remote device (a busy condition exists). Otherwise, the status word will be 
+all zeros.  
+Request  
+Function code  1 Byte  0x0B  
+ 
+Response  
+Function cod e 1 Byte  0x0B  
+Status  2 Bytes  0x0000 to 0xFFFF  
+Event Count  2 Bytes  0x0000 to 0xFFFF  
+ 
+Error  
+Error code  1 Byte  0x8B  
+Exception code  1 Byte  01 or 04  
+ 
+Here is an example of a request to get the communications event counter in remote device:  
+ 
+Request  Response  

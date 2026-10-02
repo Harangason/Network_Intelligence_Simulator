@@ -1,0 +1,59 @@
+Table 7-56. FWD_CTL2 Register Field Descriptions (continued)
+Bit Field Type Reset Description
+3:2 CSI0_SYNC_FWD R/W 0x0 Enable synchronized forwarding for CSI-2 output port 0
+00: Synchronized forwarding disabled
+01: Basic Synchronized forwarding enabled
+10: Synchronous forwarding with line interleaving
+11: Synchronous forwarding with line concatenation
+Only one of CSI0_RR_FWD and CSI0_SYNC_FWD must be 
+enabled at a time.
+1 CSI1_RR_FWD R/W 0x1 Enable best-effort forwarding for CSI-2 output port 1.
+When this mode is enabled, no attempt is made to synchronize the 
+video traffic. When multiple sources have data available to forward, 
+the data will tend to be forwarded in a round-robin fashion.
+0: Round robin forwarding disabled
+1: Round robin forwarding enabled
+Only one of CSI1_RR_FWD and CSI1_SYNC_FWD must be 
+enabled at a time.
+0 CSI0_RR_FWD R/W 0x1 Enable best-effort forwarding for CSI-2 output port 0.
+When this mode is enabled, no attempt is made to synchronize the 
+video traffic. When multiple sources have data available to forward, 
+the data will tend to be forwarded in a round-robin fashion.
+0: Round robin forwarding disabled
+1: Round robin forwarding enabled
+Only one of CSI0_RR_FWD and CSI0_SYNC_FWD must be 
+enabled at a time.
+7.6.1.35 FWD_STS Register (Address = 0x22) [Reset = 0x00] 
+FWD_STS is shown in Table 7-57.
+Return to the Summary Table.
+Table 7-57. FWD_STS Register Field Descriptions
+Bit Field Type Reset Description
+7:4 RESERVED R 0x0 Reserved
+3 FWD_SYNC_FAIL1 RC 0x0 Forwarding synchronization failed for CSI-2 output port 1
+During Synchronized forwarding, this flag indicates a failure of 
+synchronized video has been detected. For this bit to be set, the 
+forwarding process must have previously been successful at sending 
+at least one synchronized video frame.
+0: No failure
+1: Synchronization failure
+This bit is cleared on read.
+2 FWD_SYNC_FAIL0 RC 0x0 Forwarding synchronization failed for CSI-2 output port 0
+During Synchronized forwarding, this flag indicates a failure of 
+synchronized video has been detected. For this bit to be set, the 
+forwarding process must have previously been successful at sending 
+at least one synchronized video frame.
+0: No failure
+1: Synchronization failure
+This bit is cleared on read.
+1 FWD_SYNC1 R 0x0 Forwarding synchronized for CSI-2 output port 1
+During Synchronized forwarding, this bit indicates that the forwarding 
+engine is currently able to provide synchronized video from enabled 
+Receive ports. This bit will always be 0 if Synchronized forwarding is 
+disabled.
+0: Video is not synchronized
+1: Video is synchronized
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+96 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

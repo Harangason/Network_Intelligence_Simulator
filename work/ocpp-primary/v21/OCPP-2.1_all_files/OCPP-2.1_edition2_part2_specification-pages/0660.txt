@@ -1,0 +1,44 @@
+Field Name Field Type Card. Description
+priority integer, 0 <= val 1..1 Required. Priority of curve (0=highest)
+yUnit DERUnitEnumType 1..1 Required. Unit of the Y-axis of DER curve
+responseTime decimal 0..1 Optional. Open loop response time, the time to ramp up
+to 90% of the new target in response to the change in
+voltage, in seconds. A value of 0 is used to mean no limit.
+When not present, the device should follow its default
+behavior.
+startTime dateTime 0..1 Optional. Point in time when this curve will become
+activated. Only absent when default is true.
+duration decimal 0..1 Optional. Duration in seconds that this curve will be
+active. Only absent when default is true.
+hysteresis HysteresisType 0..1 Optional. Hysteresis parameters for curve.
+voltageParams VoltageParamsType 0..1 Optional. Additional parameters for voltage curves.
+reactivePowerParams ReactivePowerParamsType 0..1 Optional. Additional parameters for VoltVar curve.
+curveData DERCurvePointsType 1..10 Required. Coordinates of the DER curve. X-axis is
+determined by curveType. Y-axis is determined by yUnit.
+2.38. EnterServiceGetType
+Class
+EnterServiceGetType is used by: ReportDERControlRequest
+Field Name Field Type Card. Description
+id identifierString[0..36] 1..1 Required. Id of setting
+enterService EnterServiceType 1..1 Required. Enter Service settings
+2.39. EnterServiceType
+Class
+EnterServiceType is used by: Common:EnterServiceGetType , SetDERControlRequest
+Field Name Field Type Card. Description
+priority integer, 0 <= val 1..1 Required. Priority of setting (0=highest)
+highVoltage decimal 1..1 Required. Enter service voltage high
+lowVoltage decimal 1..1 Required. Enter service voltage low
+highFreq decimal 1..1 Required. Enter service frequency high
+lowFreq decimal 1..1 Required. Enter service frequency low
+delay decimal 0..1 Optional. Enter service delay
+randomDelay decimal 0..1 Optional. Enter service randomized delay
+rampRate decimal 0..1 Optional. Enter service ramp rate in seconds
+2.40. EVAbsolutePriceScheduleEntryType
+Class
+(2.1) An entry in price schedule over time for which EV is willing to discharge.
+EVAbsolutePriceScheduleEntryType is used by: Common:EVAbsolutePriceScheduleType
+Field Name Field Type Card. Description
+duration integer 1..1 Required. The amount of seconds of this entry.
+evPriceRule EVPriceRuleType 1..8 Required. A set of pricing rules for energy costs.
+Edition 2, 2025-12-03 Messages, Datatypes & Enumerations
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 647/803 Part 2 - Specification

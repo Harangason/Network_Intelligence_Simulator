@@ -1,0 +1,49 @@
+u-blox 20 HPG 2.00 - Interface description
+8 I4 ecefX - cm ECEF X coordinate
+12 I4 ecefY - cm ECEF Y coordinate
+16 I4 ecefZ - cm ECEF Z coordinate
+20 I1 ecefXHp 0.1 mm High precision component of ECEF X coordinate. Must
+be in the range of -99..+99. Precise coordinate in cm =
+ecefX + (ecefXHp * 1e-2).
+21 I1 ecefYHp 0.1 mm High precision component of ECEF Y coordinate. Must
+be in the range of -99..+99. Precise coordinate in cm =
+ecefY + (ecefYHp * 1e-2).
+22 I1 ecefZHp 0.1 mm High precision component of ECEF Z coordinate. Must
+be in the range of -99..+99. Precise coordinate in cm =
+ecefZ + (ecefZHp * 1e-2).
+23 X1 flags - - Additional ﬂags
+bit 0   U:1 invalidEcef - - 1 = Invalid ecefX, ecefY, ecefZ, ecefXHp, ecefYHp and
+ecefZHp
+24 U4 pAcc 0.1 mm Position Accuracy Estimate
+3.15.7 UBX-NAV-HPPOSLLH (0x01 0x14)
+3.15.7.1 High precision geodetic position solution
+Message UBX-NAV-HPPOSLLH
+High precision geodetic position solution
+Type Periodic/polled
+Comment See important comments concerning validity of position given in section Navigation output ﬁlters in the
+integration manual.
+This message outputs the Geodetic position in the currently selected ellipsoid. The default is the WGS84
+Ellipsoid, but can be changed with the message CFG-NAVSPG-USE_USRDAT.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x01 0x14 36 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 version - - Message version (0x00 for this version)
+1 U1[2] reserved0 - - Reserved
+3 X1 flags - - Additional ﬂags
+bit 0   U:1 invalidLlh - - 1 = Invalid lon, lat, height, hMSL, lonHp, latHp,
+heightHp and hMSLHp
+4 U4 iTOW - ms GPS time of week of the navigation epoch.
+See section iTOW timestamps in the integration
+manual for details.
+8 I4 lon 1e-7 deg Longitude
+12 I4 lat 1e-7 deg Latitude
+16 I4 height - mm Height above ellipsoid.
+20 I4 hMSL - mm Height above mean sea level
+24 I1 lonHp 1e-9 deg High precision component of longitude. Must be in the
+range -99..+99. Precise longitude in deg * 1e-7 = lon +
+(lonHp * 1e-2).
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 94 of 224
+C1-Public

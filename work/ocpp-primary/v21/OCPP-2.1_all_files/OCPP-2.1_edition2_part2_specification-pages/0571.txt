@@ -1,0 +1,57 @@
+No. Type Description
+Scenario description #2 Frequency droop as a scheduled DER control
+1. CSMS receives new frequency droop parameters from utility.
+2. For each charging station in region of utility
+a. CSMS issues SetDERControlRequest messages with isDefault = false, controlType
+= FreqDroop and freqDroop field set to the frequency droop parameters:
+overFreq, underFreq, overDroop, underDroop, responseTime and with a startTime
+and duration.
+b. CS responds with SetDERControlResponse with controlType = FreqDroop and
+status = Accepted.
+c. At startTime CS will report with a NotifyDERStartStopRequest that the frequency
+droop has become active (thus overruling any default setting for frequency droop,
+if present).
+Scenario description #3 Ride-through curve as a default DER control
+1. CSMS receives new default HFRT curve from utility
+2. For each charging station in region of utility
+a. CSMS installs new DER curve, using SetDERControlRequest with controlType =
+HFMayTrip, isDefault = true, and an object DERCurveType with yUnit =
+Not_Applicable and curveData containing the curve points.
+b. CS responds with SetDERControlResponse with status = Accepted.
+3. If the net frequency deviates from nominal, only when it exceeds curveData.x Herz for
+more than curveData.y seconds, shall Charging Station stop exporting power to or
+importing power from the grid.
+a. When that happens Charging Station notifies CSMS via a NotifyDERAlarmRequest
+with controlType = HFMayTrip and gridEventFault = OverFrequency.
+Scenario description #4 VoltVar Q(U) curve as a default DER control
+1. CSMS receives new scheduled VoltVar curve from utility
+2. For each charging station in region of utility
+a. CSMS installs new DER curve, using SetDERControlRequest with controlType =
+VoltVar and a DERCurveType object with yUnit set to one of PctMaxW,
+PctMaxVar or PctVarAvail and curveData containing the curve points, and a
+startTime and duration.
+b. CS responds with SetDERControlResponse with status = Accepted.
+3. At startTime CS will send a NotifyDERStartStopRequest with controlId for this curve and
+started = true.
+4. From startTime onwards, for a period of duration seconds, Charging Station will
+continuously adjust the amount of reactive power according to the VoltVar curve by
+sending an EVSETargetReactivePower element without a corresponding
+EVSETargetActivePower element in the AC/DC_ChargeLoop messages.
+a. Since this does not affect the active power profile of the charging/discharging
+sessions, CS will not notify CSMS about it, unless the charging profile has a
+setting for setpointReactive, in which case CS sends a NotifyDERAlarmRequest
+with controlType = VoltVar.
+5. At startTime + duration (i.e. when control ends) CS will send a NotifyDERStartStopRequest
+with controlId for the curve and started = false.
+NOTE
+According to ISO 15118-20, when in scheduled control mode, and the grid code
+only demands a specific reactive power behavior (e.g. resulting from a Q(U)
+rule), the SECC (EVSE) shall only send an EVSETargetReactivePower element
+without a corresponding EVSETargetActivePower element.
+This allows to satisfy grid code requirements without interfering in the normal
+EVPowerProfile.
+5 Prerequisites
+6 Post conditions
+7 Error Handling
+Edition 2, 2025-12-03 R. DER Control
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 558/803 Part 2 - Specification

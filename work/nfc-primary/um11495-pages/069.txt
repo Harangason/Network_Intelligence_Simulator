@@ -1,0 +1,45 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Parameter Length Value/Description
+Presence 1 byte 0x00: Card no more in the field
+0x01: Card still in the field
+0x02-0xFF: RFU
+Table 73. RF_ ISO_DEP_NACK_PRESENCE _NTF parameter
+7.3.4  [PN7160-NCI] extension: WTX notification
+After data was sent to the card/tag, it can request an additional processing time before sending data response.
+This is done with WTX (Waiting Time Extension) request. If WTX REQ/RESP exchange phase continues an NCI
+system notification WTX is sent with a period configurable via READER_FWITOX_NTF_CFG.
+GID OID Numbers of
+parameter(s) Description
+1111b 0x17 0 Notification indicating that RF communication is in phase of WTX(RTOX)
+REQ/RESP exchange for longer period of time.
+Table 74. PH_NCI_OID_SYSTEM_WTX
+7.3.5  [PN7160-NCI] extension: Higher bit rates in Poll NFC-A and NFC-B
+[NCI] does not “officially” support the use of higher bit rates in technology NFC-A and NFC-B.
+PN7160 offers 4 different bit rates for these technologies, which can be used either in Poll Mode (to read/write
+an external Card/Tag) or in Listen Mode (to emulate a card):
+1. 106 kb/s (default bit rate, always used during activation)
+2. 212 kb/s
+3. 424 kb/s
+4. 848 kb/s
+Everything is prepared (see the RF configuration parameter PI_BIT_RATE), except for the ISO-DEP RF
+Interface activation.
+As currently defined in [NCI], the ISO-DEP RF interface activation for technology NFC-A is incompatible with bit
+rates higher than 106 kb/s, since this requires to handle the PPS commands exchange, which is not addressed
+in [NCI].
+So the PN7160 implements an ISO-DEP RF Interface activation which is different from the one described in
+[NCI_Chapt1] (see chapter 3). Here is a copy of this chapter, where the modification as implemented in the
+PN7160 is highlighted in bold italic:
+______________________ Copy from [NCI] ___________________________
+8.3.2.2 Discovery and Interface Activation
+To enable Poll Mode for ISO-DEP, the DH sends the RF_DISCOVER_CMD to the NFCC containing
+configurations with RF Technology and Mode values of NFC_A_PASSIVE_POLL_MODE and/or
+NFC_B_PASSIVE_POLL_MODE.
+When the NFCC is ready to exchange data (that is, after receiving a response to the protocol activation
+command from the Remote NFC Endpoint), it sends the RF_INTF_ACTIVATED_NTF to the DH to indicate that
+this Interface has been activated to be used with the specified Remote NFC Endpoint.
+Detailed ISO-DEP RF Interface activation handling in the NFCC:
+For NFC-A:
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+69 / 147

@@ -1,0 +1,43 @@
+Main (Test scenario)
+Note(s):
+- If ReportChargingProfilesRequest.tbc is True in Step 9 then step 9 and 10 will be repeated
+Tool validations
+* Step 2:
+Message: SetChargingProfileResponse
+- status must be Accepted
+* Step 5:
+Message ReportChargingProfilesRequest
+- requestId must be Same Id as in the GetChargingProfilesRequest in step 4
+- EvseId must be <Configured evseId>
+There must be one ChargingProfile be reported with
+- chargingProfile[0].id must be <Equal to chargingProfileId step 1>
+- chargingProfile[0].stackLevel must be 0
+- chargingProfile[0].chargingProfilePurpose must be TxDefaultProfile
+- chargingProfile[0].chargingProfileKind must be Dynamic
+- chargingProfile[0].dynUpdateTime must be <Datetime of moment of step 7>
+- chargingProfile[0].chargingSchedule size must be 1
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod size must be 1
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].startPeriod must be 0
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].operationMode ExternalSetpoint
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].setpoint must be -6 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+* Step 9:
+Message ReportChargingProfilesRequest
+- requestId must be Same Id as in the GetChargingProfilesRequest in step 4
+- EvseId must be <Configured evseId>
+There must be one ChargingProfile be reported with
+- chargingProfile[0].id must be <Equal to chargingProfileId step 1>
+- chargingProfile[0].stackLevel must be 0
+- chargingProfile[0].chargingProfilePurpose must be TxDefaultProfile
+- chargingProfile[0].chargingProfileKind must be Dynamic
+- chargingProfile[0].dynUpdateTime must be <Datetime of moment of step 7>
+- chargingProfile[0].chargingSchedule size must be 1
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod size must be 1
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].startPeriod must be 0
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].operationMode ExternalSetpoint
+- chargingProfile[0].chargingSchedule[0].chargingSchedulePeriod[0].setpointReactive must be -8 * <limit multiplier>
+Note: Check Determine Charging Profile Limit Multiplier for <limit multiplier>
+Post scenario validations:
+N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 827/1383 Part 6 - Test Cases

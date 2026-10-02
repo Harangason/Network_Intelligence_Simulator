@@ -1,0 +1,81 @@
+42 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+Setting the Headers (continued)
+addressing, and to DA if using physical addressing.
+The next two bytes are as defined previously for the
+other standards – ‘yy’ is the receiver (or Target
+Address), and ‘zz’ is the transmitter (or Source
+Address). For the functional diagnostic requests, the
+receiver is always 33, and the transmitter is F1, which
+is very similar to ISO 14230-4.
+Those that are familiar with the SAE J1939
+standard will likely find this header structure to be very
+similar (J1939 is a CAN standard for use by ‘heavy-
+duty vehicles’ such as trucks and buses). It uses
+slightly different terminology, but there is a direct
+parallel between the bytes used by J1939 for the
+headers and the grouping of the bytes in the ELM327.
+Pages 54 and 55 provide more details of the J1939
+message structure.
+Another method to define all 29 CAN ID bits at
+once is with the four byte version of the SH command.
+Simply provide all 8 nibbles in one command:
+ 
+>AT SH vv xx yy zz
+xx yy zzvv
+29 bit ID
+As with the AT CP command, only 5 bits are used
+from the first byte (the 3 most significant bits are
+ignored).
+The final header format to discuss is that used by
+11 bit CAN systems. They also use a priority and
+address structure, but shorten it into roughly three
+nibbles rather than three bytes. The ELM327 uses the
+same storage locations for these values, so you may
+use the methods just discussed to assign 11 bit values
+(but only the least significant bits are used for any
+messages - the others are ignored).
+11 bit CAN ‘headers’ are normally assigned using
+a special ‘short’ version of the AT SH command that
+uses only three hex digits. Since three digits are
+actually 12 bits, the most significant bit is ignored, and
+can have any value. As an example of this instruction,
+to assign an ID of 7DF, simply send:
+>AT SH 7DF
+OK
+The OK shows that the ELM327 has accepted
+your value.
+The 11 bit ISO15765-4 CAN standard defines both
+functional addressing (ID/header = 7DF) and physical
+addressing (7En) for making requests. Generally, you
+do not know physical addresses at first, but you do
+know (from the standard) that the OBD functional
+address is 7DF.
+In order to learn the physical addresses, turn the
+headers on, and watch what address the replies are
+from, then use that information to make physical
+requests if desired. For example, if the headers are on,
+and you send 01 00, you might see:
+>01 00
+7E8 06 41 00 BE 3F B8 13 00
+The 7E8 shows that ECU#1 was the one
+responding. In order to talk directly to that ECU, all you
+need do is to set the header to the appropriate value (it
+is 7E0 to talk to the 7E8 device – see ISO 15765-4 for
+more information). From that point on, you can ‘talk’
+directly to the ECU using its physical address, as
+shown here:
+>AT SH 7E0
+OK
+>01 00
+7E8 06 41 00 BE 3F B8 13 00
+>01 05
+7E8 03 41 05 46 00 00 00 00
+This has just been a quick overview on how to
+change headers (and ID bits). Hopefully it has been
+enough to at least help to get you started. We do not
+recommend experimenting too much without a copy of
+the standards though, as some aspects are extremely
+difficult to figure out without them.

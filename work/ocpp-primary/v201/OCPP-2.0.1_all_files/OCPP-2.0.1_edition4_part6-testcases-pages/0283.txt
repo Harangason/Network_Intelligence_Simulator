@@ -1,0 +1,48 @@
+TC_H_02_CS: Reserve a specific EVSE - Accepted - Different idToken
+Test case name Reserve a specific EVSE - Accepted - Different idToken
+Test case Id TC_H_02_CS
+Use case Id(s) H01(S2), H03
+Requirement(s) H03.FR.01, F01.FR.22
+System under test Charging Station
+Description The CSMS is able to reserve a specific EVSE for a specific IdToken by sending a ReserveNowRequest
+containing an evseId.
+Starting a transaction can be done in two ways (this is configurable by the Test System;
+A. Using local authorization
+B. Using a RequestStartTransactionRequest
+Purpose To verify if the Charging Station rejects all idToken, except the one specified for the reserved EVSE.
+EV is plugged in before authorization to check that station is able to handle this correctly. When
+TxStartPoint contains EVConnected this triggers starting of a transaction, but charging must not be allowed
+when idToken does not match reservation.
+Prerequisite(s) The configuration variable ReservationCtrlr.ReservationAvailable is implemented with value true
+Before (Preparations)
+Configuration State:
+ReservationCtrlr.ReservationEnabled is true (If implemented)
+Memory State:
+N/a
+Reusable State(s):
+State is <Configured evseId> is Reserved for <Configured valid_idtoken1_idtoken>
+State is EVConnectedPreSession
+Main A (Test scenario)
+Charging Station CSMS
+Manual action: Authorize with <Configured valid_idtoken2_idtoken>.
+Execute reusable state Authorized
+Note(s): The test is a PASS, if the Test System does not receive an a TransactionEventRequest with chargingState = Charging within
+the configured messageTimeout.
+Tool validations
+N/a
+Main B (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+RequestStartTransactionResponse
+1. The Test System sends a RequestStartTransactionRequest
+with idToken.idToken <Configured valid_idtoken2_idtoken> 
+idToken.type <Configured valid_idtoken2_type>
+evseId <Configured evseId>
+Tool validations
+* Step 2:
+Message: RequestStartTransactionResponse
+- status must be Rejected
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 281/914 Part 6 - Test Cases

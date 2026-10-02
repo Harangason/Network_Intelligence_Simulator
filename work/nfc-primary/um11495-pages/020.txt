@@ -1,0 +1,39 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+I2C_ADDR1 Pin I2C_ADDR0 Pin Address Value I2C-bus address
+(R/W = 0, write)
+I2C-bus address
+(R/W = 1, read)
+0 1 0x29 0x52 0x53
+1 0 0x2A 0x54 0x55
+1 1 0x2B 0x56 0x57
+Table 5. PN7160 I2C follower address...continued
+This can be easily configured through direct connection of pins I2C_ADDR0 and I2C_ADDR1 to either GND or
+PVDD at PCB level.
+4.2.2  NCI Transport Mapping
+In the PN7160, there is no additional framing added for I2C: an NCI packet (either data or control message, as
+defined in Section 3.3) is transmitted over I2C “as is”, i.e. without any additional Byte (no header, no CRC etc…).
+4.2.3  Write Sequence from the DH
+As the I2C clock is mastered by the DH, only the DH can initiate an I2C exchange.
+A DH write sequence always starts with the sending of the PN7160 I2C Slave Address followed by the write bit
+(logical ‘0’: 0b). Then the PN7160 I2C interface sends an I²C ACK back to the DH for each data byte written by
+the DH.
+It may send an I2C NACK (negative acknowledge) when none of the reception buffers used by the NCI core in
+the PN7160 is free, which may happen in case PN7160 is in standby mode. If one single byte of a complete NCI
+frame is NACKed by the PN7160, the DH has to resend the complete NCI frame and not only this single byte.
+In case DH does not have the possibility to retransmit the complete frame, it can also activate a wake-up pin
+named WUP_REQ to wake up PN7160 and send the frame after Tboot=5 ms.
+To activate this option and to use the WUP_REQ pin for host interface wake-up, one has to first set the
+proprietary parameter “IRQ_POLARITY_CFG” with an NCI CORE_SET_CONFIG_CMD command. This is
+described in details in Section 11. By default the option will be turned off and the wake-up via WUP_REQ will be
+disabled.
+WUP_REQ also influences the standby mode: As long as the WUP_REQ pin is asserted high, the PN7160 will
+never go into standby.
+Figure 16. I2C Write sequence
+Note:  It may happen that PN7160 has an NCI Message ready to be sent to the DH while it is receiving
+another NCI Message from the DH. In such a condition, the IRQ pin will be raised somewhere during the Write
+Sequence: this is not an error and has to be accepted by the DH: once the Write Sequence is completed, the
+DH has to start a Read Sequence (see Section 4.2.4).
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+20 / 147

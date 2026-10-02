@@ -1,0 +1,83 @@
+CAN Receive Filtering - the CRA Command
+When receiving CAN data, the ELM327 actually
+retrieves every message from the CAN bus, and then
+decides whether or not to display it, based on criteria
+that you or the firmware set. The ‘CAN Receive
+Address’ or CRA  command may be used to define
+this criteria for you, in one simple step.
+As an example, assume that the only messages
+that you wish to see are those that have the CAN ID
+7E9. To see only them, tell the ELM327 that the
+receive address should be 7E9:
+>AT CRA 7E9
+and the ELM327 will set the necessary values so that
+the only messages that are accepted are the ones with
+ID 7E9.
+If you do not want an exact address, but would
+prefer to see a range of values, for example all the
+OBD addresses (those that begin with 7E), then simply
+use an ‘X’ for the digit that you do not want the
+ELM327 to be specific about. That is, to see all
+messages with CAN IDs that start with 7E (7E0, 7E1,
+7E2,... 7EE, and 7EF), send:
+>AT CRA 7EX
+and the ELM327 will set the necessary values for you.
+This command works exactly the same way for the
+29 bit IDs. For example, if you wish to see all
+messages that are being sent from the engine ECU
+(address 10) to the scan tool (address F1), then you
+can send:
+>AT CRA XX XX F1 10
+and all the settings will be taken care of for you.
+If you wish to be more specific and see only the
+OBD replies sent by the engine to the scan tool, you
+would say:
+>AT CRA 18 DA F1 10
+and again, the ELM327 makes the necessary changes
+for you.
+Perhaps you do not care which device is sending
+the information, but you want to see all messages that
+start with 18 DA and are being sent to the scan tool.
+For this, use the character ‘X’ to tell the ELM327 that
+you do not care what value a digit has:
+>AT CRA 18 DA F1 XX
+and the ELM327 takes care of the details for you.
+When working with J1939 data, the ELM327
+normally formats the data for you, in order to separate
+the priority from the PGN information. This is usually
+not a concern when using the CRA command, except
+when you are trying to filter for a specific priority. For
+example, you might typically see:
+>AT MA
+3 0FE6C 00 FF FF FF FF FF FF 40 B5
+6 0FEEE 00 15 50 FF FF FF FF FF FF
+6 0FEF5 00 FE FF FF FF 19 00 23...
+The single priority digit out front (the 3 or 6 above)
+as well as the leading 0 with the PGN information are
+actually part of the first two digits (5 bits) of the ID, and
+need to be interpreted as such, in order to use the
+CRA command. It may be easier if you turn off the
+J1939 header formatting in order to see this:
+ >AT JHF0
+OK
+ >AT MA
+0C FE 6C 00 FF FF FF FF FF FF 40 B5
+18 FE EE 00 15 50 FF FF FF FF FF FF
+18 FE F5 00 FE FF FF FF 19 00 23...
+This more clearly shows the four bytes that need
+to be defined for the CRA command to be set. To
+search for all messages that begin with 6 0FEF5, you
+would actually need to send the command:
+>AT CRA 18 FE F5 XX
+In summary then, the CRA command allows you
+to tell the ELM327 what ID codes to look for, and the
+letter ‘X’ may be used in it to represent any single digit
+that you do not want the ELM327 to be specific about.
+This is usually selective enough for most applications,
+but occasionally, there is a need to be specific down to
+the bit level, rather than to the nibble. For those
+applications, you will need to program a separate
+mask and filter, as we show in the next section.
+ELM327
+47 of 95ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com

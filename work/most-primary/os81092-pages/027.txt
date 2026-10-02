@@ -1,0 +1,49 @@
+ 2009 - 2025  Microchip Technology Inc. and its subsidiaries DS60001271B-page 27
+OS81092
+8.0 MediaLB PORT 
+The Media Local Bus (MediaLB) Port gives external devices (e.g. the Ex ternal Host Controller) real-time access to all
+supported types of data on the MOST Network. The MediaLB Port and the Streaming Port share some pins; therefore,
+some Streaming and MediaLB modes are mutually exclusive.
+The MediaLB Port can be configured for one of the following operational modes:
+• MediaLB 3-pin Mode - When configured in this mode, the MediaLB Port provides a 3-pin interface that supports a 
+maximum data rate of 1024Fs (49.152 MHz at Fs=48 kHz). In this mode, the Streaming Port may be configured 
+with up to two serial interfaces for accessing synchronous network data.
+• MediaLB 5-pin Mode - When configured in this mode, the MediaLB Port provides a 5-pin interface that supports a 
+maximum data rate of 512Fs (24.576 MHz at Fs=48 kHz). In this mode, the Streaming Port is not available.
+MediaLB bandwidth is managed in quadlets (4 bytes) and consists of a combination of streaming, packet, and control
+data. The MediaLB Port rate of 256Fs supports up to seven quadlets of data, divided among streaming, packet, and
+control data types. The MediaLB Port rate of 512 Fs supports up to 15 quadlets of data. The MediaLB Port rate of
+1024Fs supports up to 31 quadlets of data. A maximum of 64 bytes can be transferred per frame, in either direction,
+for the Streaming Port and MediaLB Port combined.
+When transmitting data onto the network, the MSB is transmitted first. To comply with the MOST Specification [1], when
+transmitting multi-byte words, the most significant byte should be transmitted first. In addition, when transmitting stereo
+data, left should be sent before right.
+The MediaLB Port can be enabled by default after power-up/reset based on the INIC Configuration String. If the Medi-
+aLB Port is not enabled by default at power-up/reset, it can be manually enabled and configured via ICMs through the
+Control Port, if desired. The MediaLB Port is enabled auto matically at power-up/reset under one of the following two
+conditions:
+• PortConfiguration.DefPort() is set to MediaLB, or
+• PortConfiguration.DefPort() is set to INT_Select and INT is pulled low.
+If OTP memory is uninitialized, the OS81092 falls back to predetermined Factory defaults, where INT_Select is used
+as the default setting for PortConfiguration.DefPort(). If the MediaLB Port is enabled at power-up/reset in this
+manner (e.g. INT pulled low) with uninitialized OTP memory, the Factory default mode and speed is 3-pin mode at
+1024Fs.
+Although INT is not used for MediaLB communications, if pulled high, it can be used to wake up the EHC after a device
+shut-down. See the ShutDown() function in the OS81092 INIC API User’s Manual [2] for more information.
+After reset, and following MediaLB Port initialization, the first INIC message sent to the EHC indicates the OS81092 is
+initialized and ready to communicate with the EHC.
+AllFIFOs:Status(SyncS, StartUp)
+In common applications, this message is used to instruct the EHC to synchronize its FIFOs. Additionally, the EHC may
+start synchronization of the OS81092 by sending the following message:
+AllFIFOs:Command(SyncC)
+The OS81092 responds to the above message once the synch ronization is complete. This procedure ensures that
+OS81092 and the EHC can synchronize communication under various circumstances. The status message sent by the
+OS81092 is:
+AllFIFOs:Status(SyncS, SyncRcvd)
+8.1 MediaLB 3-pin Mode
+The MediaLB Port provides a conduit for accessing the content of the MOST Network via a single hardware interface.
+All data types exchanged across network channels are supported across MediaLB.
+The MediaLB Port also allows access to the internal func tions of the OS81092, eliminating the need for Control Port
+access. With MediaLB, only one interface is needed for data and control. When combined with the MediaLB software
+API library, the system designer is insulated from much of the complexity of managing the interface between the appli-
+cation software and the network.

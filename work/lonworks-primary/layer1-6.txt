@@ -1,0 +1,1983 @@
+
+--- PAGE 1 ---
+ 
+Version 3.4 
+September 2005 
+  
+ 
+LONMARK International 078-0120-01G 
+LONMARK
+®
+  
+Layer 1 – 6 
+Interoperability 
+Guidelines 
+ 
+
+--- PAGE 2 ---
+Echelon, LON, 3120, 3150, LonBuilder, LonMaker, LonTalk, LONMARK, 
+LONWORKS, Neuron, NodeBuilder, the Echelon logo, and the LONMARK 
+logo are registered trademarks of Echelon Corporation.  LonSupport is a 
+trademark of Echelon Corporation.  Other brand and product names are 
+trademarks or registered trademarks of their respective holders. 
+ECHELON MAKES NO REPRESENTATION, WARRANTY, OR 
+CONDITION OF ANY KIND, EXPRESS, IMPLIED, STATUTORY, OR 
+OTHERWISE OR IN ANY COMMUNICATION WITH YOU, INCLUDING, 
+BUT NOT LIMITED TO, ANY IMPLIED WARRANTIES OF 
+MERCHANTABILITY, SATISFACTORY QUALITY, FITNESS FOR ANY 
+PARTICULAR PURPOSE, NONINFRINGEMENT, AND THEIR 
+EQUIVALENTS.  
+No part of this publication may be reproduced, stored in a retrieval 
+system, or transmitted, in any form or by any means, electronic, 
+mechanical, photocopying, recording, or otherwise, without the prior 
+written permission of Echelon Corporation. 
+ 
+Printed in the United States of America.  
+Copyright © 1992 – 2005 by Echelon Corporation. 
+Echelon Corporation 
+www.echelon.com
+2   LONMARK Interoperability Guidelines 
+
+--- PAGE 3 ---
+ 
+Contents 
+1 Introduction ................................................................................................................... ............ 5
+1.1. Introduction to the LONWORKS Platform.................................................................... 6 
+1.2. Audience .......................................................................................................................... 6 
+1.3. LONMARK Certification ................................................................................................. 6 
+1.4. Related Documentation ................................................................................................. 8 
+2 Layer 1 – The Physical Layer................................................................................................... 9
+2.1. Standard Transceiver and Channel Types ................................................................ 10 
+2.1.1. Proposing New Channel Types........................................................................... 12 
+2.1.2. Performance Testing ............................................................................................. 13 
+2.2. TP/XF‐78 and TP/XF‐1250 Channel Types ................................................................ 13 
+2.2.1. Performance Specifications .................................................................................. 13 
+2.2.2. Transceiver Schematic .......................................................................................... 14 
+2.2.3. Network Cabling and Connection ...................................................................... 15 
+2.3. TP‐RS485‐39 Channel Type ......................................................................................... 16 
+2.3.1. Performance Specifications .................................................................................. 17 
+2.3.2. Transceiver Schematic .......................................................................................... 17 
+2.3.3. Bus Termination .................................................................................................... 18 
+2.3.4. Grounding .............................................................................................................. 18 
+2.4. PL‐20(L‐N) and PL‐20(L‐E) Channel Types.............................................................. 19 
+2.4.1. Performance Specifications .................................................................................. 19 
+2.4.2. Transceiver Interface Specification ..................................................................... 20 
+2.4.3. Coupling Circuits .................................................................................................. 20 
+2.4.4. Power Supply Requirements ............................................................................... 21 
+2.5. PL‐20A(L‐N) Channel Type ........................................................................................ 22 
+2.5.1. Performance Specifications .................................................................................. 22 
+2.5.2. Transceiver Interface Specification ..................................................................... 22 
+2.5.3. Coupling Circuits .................................................................................................. 23 
+2.5.4. Power Supply Requirements ............................................................................... 23 
+2.6. TP/FT‐10 Channel Type ............................................................................................... 24 
+2.6.1. Performance Specifications .................................................................................. 25 
+2.6.2. Link Power Supply Requirements ...................................................................... 26 
+2.6.3. Passive Coupler Circuit Schematic ..................................................................... 29 
+2.7. FO‐20S Channel Type .................................................................................................. 30 
+2.7.1. Performance Specifications .................................................................................. 30 
+2.8. FO‐20L Channel Type .................................................................................................. 32 
+2.8.1. Performance Specifications .................................................................................. 32 
+2.9. IP‐852 Channel Type .................................................................................................... 33 
+2.9.1. Implementation Requirements............................................................................ 34 
+Contents   3 
+
+--- PAGE 4 ---
+3 Layers 2 – 6.............................................................................................................................. .. 37
+3.1. Layer 2: Link Layer....................................................................................................... 38 
+3.1.1. Channel Parameters .............................................................................................. 38 
+3.1.2. Network Buffers .................................................................................................... 40 
+3.2. Layer 3: Network Layer............................................................................................... 41 
+3.3. Layers 4 & 5: Transport and Session Layers ............................................................. 42 
+3.4. Layer 6: Presentation Layer......................................................................................... 44 
+Index ............................................................................................................................... .............. 44 
+ 
+ 
+4   LONMARK Interoperability Guidelines 
+
+--- PAGE 5 ---
+ 
+1  
+Introduction 
+With thousands of application developers and millions of devices installed 
+worldwide, the LONWORKS platform is the leading open solution for building 
+and home automation, industrial, transportation, and public utility control 
+networks.  A control network is any group of devices working in a peer-to-peer 
+fashion to monitor sensors, control actuators, communicate reliably, manage 
+network operation, and provide local and remote access to network data.  A 
+LONWORKS network uses the ANSI/EIA/CEA-709.1 (EN14908-1) Control 
+Network Protocol to accomplish these tasks.  The ANSI/EIA/CEA-709.1 
+(EN14908-1) protocol is implemented by the firmware provided with Neuron® 
+Chips and Echelon Smart Transceivers; this implementation is known as the 
+LonTalk® protocol. 
+The standard protocol provided by the LONWORKS platform makes it possible 
+to design open control systems using products from multiple vendors.  The 
+LONMARK Interoperability Guidelines provide guidelines, detailed 
+explanations, and technical insight on how to design interoperable products 
+based on the LONWORKS platform.  All products that carry the LONMARK logo 
+(“
+ ”) are certified to comply with these guidelines.    The LONMARK guidelines 
+are presented in separate volumes for ISO OSI Reference Model layers 1 – 6 
+and for layer 7 of the ANSI/EIA/CEA-709.1 (EN14908-1) protocol.  This 
+document provides layer 1 – 6 design guidelines.  The LONMARK Application-
+Layer Interoperability Guidelines provides layer 7 guidelines, and also 
+includes a glossary defining terms for both volumes. 
+Introduction   5 
+
+--- PAGE 6 ---
+1.1. Introduction to the LONWORKS Platform 
+A LONWORKS network consists of intelligent devices—such  as sensors, actuators, and 
+controllers—that  communicate with each other using the ANSI/EIA/CEA‐709.1 
+protocol over one or more communications channels.  Network devices are sometimes 
+also called nodes. 
+A device publishes information as instructed by the application that it is running.  
+The applications on different devices are not synchronized, and it is possible that 
+multiple devices may all try to communicate at the same time.  Meaningful transfer 
+of information between devices on a network, therefore, requires organization in the 
+form of a set of rules and procedures.  These rules and procedures are defined by the 
+ANSI/EIA/CEA‐709.1 (EN14908‐1) protocol.  The protocol defines the format of the 
+messages being transmitted between devices and defines the actions expected when 
+one device sends a message to another.  The protocol implementation normally takes 
+the form of embedded software or firmware code in each device on the network. 
+The LONMARK guidelines provide detailed information on how products based on 
+the LONWORKS platform should be designed so that the device interface will support 
+easy interoperation across a LONWORKS network.  The actual application software 
+and hardware behind the interface is outside the scope of these guidelines.  The 
+purpose of the guidelines is to ensure interoperability, but not interchangeability of 
+devices.  A major benefit to end‐users of interoperable devices is the freedom to 
+choose among suppliers for the devices as well as for the maintenance of those 
+devices.  The ability to choose a specific device is provided by public device 
+interfaces that describe the function of the device and how it exchanges information 
+with other devices on a LONWORKS network.  The ability to choose among suppliers 
+for system maintenance is realized by ensuring that interoperable devices do not 
+require any private information to be successfully commissioned.  
+1.2. Audience 
+The information contained in the LONMARK Layer 1–6 Interoperability Guidelines is 
+particularly pertinent to original‐equipment manufacturers (OEMs) who plan to 
+design interoperable LONWORKS products, but is also of interest to end‐users and 
+specifiers of LONMARK products. 
+1.3. LONMARK Certification 
+Products may be submitted to the LONMARK International for certification.  A 
+product that is certified by the LONMARK International as complying with the 
+application‐layer and layer 1–6 guidelines may carry the LONMARK logo to indicate 
+that it is capable of being part of an interoperable LONWORKS network.  The 
+LONMARK logo is an indication to manufacturers, end users, and network 
+integrators that a product can be easily linked with other products in a multi‐vendor 
+6   LONMARK Interoperability Guidelines 
+
+--- PAGE 7 ---
+ 
+network.  One of the logos in Figure 1 or Figure 2 must be used on the product 
+documentation and/or product casing.  If no casing is provided, the logo can be 
+placed on a circuit board or equivalent.  The logo cannot be used without at least the 
+“3.3” designating this latest version of the LONMARK Interoperability Guidelines. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+  
+Figure 1.  LONMARK Logos 
+One of the logos in Figure 1 must be used on the product documentation and/or 
+product casing if the product does not conform with the ISI protocol as described in 
+the LONMARK Application‐layer Guidelines.  If the product does conform with the ISI 
+protocol, one of the logos in Figure 2  must be used. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Introduction   7 
+
+--- PAGE 8 ---
+ 
+  
+Figure 2.  LONMARK Logos with ISI 
+Contact the LONMARK International Principal Engineer at the following address for 
+more information about LONMARK certification, or visit the LONMARK Web site for 
+LONMARK certification details. 
+Principal Engineer ‐ cert@lonmark.org 
+LONMARK International 
+550 Meridian Avenue 
+San Jose, CA 95126 USA 
+Tel: +1‐408‐938‐5266, Fax: +1‐408‐790‐3493  
+www.lonmark.org
+1.4. Related Documentation 
+The following documents provide supplemental information to these guidelines.  All 
+documents listed here are available at www.lonmark.org unless noted otherwise. 
+ ANSI/EIA/CEA‐709.1‐B‐2000 Control Network Protocol .  Specifies the services 
+available at each of the seven layers of the ANSI/EIA/CEA‐709.1‐B‐2000 protocol.  
+Copies of this document are available for purchase at www.global.ihs.com. 
+ LONMARK Application‐Layer Interoperability Guidelines.  Provides guidelines, 
+detailed explanations, and technical insight on how to design applications for 
+interoperable products based on the LONWORKS platform.  These guidelines 
+form the basis for obtaining the use of the LONMARK logo, which indicates that a 
+product has been certified by the LONMARK International. 
+ LONMARK Program Overview.  Describes the organizational structure and 
+membership options of the LONMARK International, and rules for use of the 
+LONMARK Logo. 
+ Standard Transceiver Reference (StdXcvr.xml).  Describes the transceiver and 
+channel parameters and properties of all LONMARK channel types as well as 
+some channel types that are not LONMARK compliant.  Development and 
+network tools use this file for automatic validation and channel‐type dependent 
+calculations. 
+ 
+8   LONMARK Interoperability Guidelines 
+
+--- PAGE 9 ---
+ 
+2  
+Layer 1 – The Physical Layer 
+The physical layer defines the transmission of raw bits over a communication 
+channel.  A channel is a physical transport medium for packets.  Every device 
+on a LONWORKS network is physically connected to a channel with a 
+transceiver that implements the physical layer of the ANSI/EIA/CEA-709.1 
+(EN14908-1) protocol.  The physical layer ensures that a 1 bit transmitted by 
+a source device is received as a 1 bit by all destination devices.  The 
+ANSI/EIA/CEA 709.1 (EN14908-1) protocol is media independent; multiple 
+physical layer protocols are supported depending on the communication 
+medium.  For example, twisted pair, power line, radio frequency (RF), infrared 
+(IR), coaxial cable, fiber optic, and Internet-tunneling media may be used.   
+The physical form of a channel depends on the medium.  For example, a 
+twisted pair channel is a twisted pair of wires, an RF channel is a specific 
+radio frequency, and a power line channel is a frequency band on power 
+mains.  The bit rate of a channel is dependent upon transceiver design and 
+limits of the chosen medium.  The bit rate is specified for each channel type.  
+This chapter specifies guidelines for transceivers that can be used in certified 
+devices. 
+ 
+Layer 1 – The Physical Layer   9 
+
+--- PAGE 10 ---
+2.1. Standard Transceiver and Channel Types 
+A standard network interconnection between products is necessary in order for 
+certified devices made by different manufacturers to interoperate.  The transceiver 
+design plays an important role in allowing devices on a channel to interoperate 
+reliably and predictably. 
+To facilitate and promote interoperability, the following sections include transceiver 
+design references for a variety of media.  These transceiver designs must be used as 
+the physical layer for certified devices and is a requirement for passing the 
+LONMARK Conformance Review.  Products that use these transceiver designs 
+automatically satisfy the stated layer‐1 performance specifications, and no additional 
+performance testing of the physical layer is required for the LONMARK Conformance 
+Review. 
+The LONMARK standard channel types are listed in Table 1.  Ultimately, the 
+transceiver used must be designed to fully support the channel specification. 
+Table 1.  Standard Channel Types 
+Channel Type Medium Bit Rate Characteristics Notes 
+TP/XF-1250 Twisted pair 
+cabling 
+1250kbps Transformer-coupled Bus topology 
+TP/XF-78 Twisted pair 
+cabling 
+78kbps Transformer-coupled Bus topology 
+TP-RS485-39 Twisted pair 
+cabling 
+39kbps EIA RS-485 
+specifications 
+Bus topology 
+PL-10(L-N)1 
+ 
+Power line 
+cabling 
+10kbps 100kHz – 450kHz, 
+spread spectrum, line-to-
+neutral coupling. 
+FCC, Industry 
+Canada 
+compliant 
+PL-10(L-E)1   
+ 
+Power line 
+cabling 
+ 
+10kbps 100kHz – 450kHz, 
+spread 
+spectrum, line-to-earth 
+coupling 
+FCC, Industry 
+Canada 
+compliant 
+PL-20(L-N)  
+ 
+Power line 
+cabling 
+ 
+5kbps 125kHz – 140kHz, 
+BPSK, line-to-neutral 
+coupling, 50/60Hz mains 
+frequency 
+Based on 
+ANSI/EIA/ 
+CEA  
+709.2-A; 
+FCC, Industry 
+Canada, 
+CENELEC 
+EN 50065-12   
+compliant 
+                                                      
+1 This channel type has been replaced by the PL-20 channel type and should not be used for new 
+designs. 
+10   LONMARK Interoperability Guidelines 
+
+--- PAGE 11 ---
+ 
+Channel Type Medium Bit Rate Characteristics Notes 
+PL-20(L-E)  Power line 
+cabling 
+ 
+5kbps 125kHz – 140kHz, 
+BPSK, line-to-earth 
+coupling, 50/60Hz mains 
+frequency 
+Based on 
+ANSI/EIA/ 
+CEA 709.2-A; 
+FCC, Industry 
+Canada, 
+CENELEC 
+EN 50065-1 2  
+compliant 
+PL-20A(L-N) 
+  
+ 
+Power line 
+cabling 
+3600bps 70kHz – 95kHz, BPSK, 
+line-to-neutral coupling, 
+50Hz mains frequency 
+CENELEC 
+EN 50065-1 2 
+compliant 
+PL-30(L-N)1  
+ 
+Power line 
+cabling 
+2 kbps 9kHz – 95kHz, spread-
+spectrum, Line-to-
+Neutral coupling. 
+FCC, Industry 
+Canada, 
+CENELEC, 
+compliant 
+TP/FT-10 
+ 
+Twisted pair 
+cabling 
+78 kbps Free topology with 
+optional link power 
+Based on 
+ANSI/EIA/ 
+CEA 709.3 
+FO-20S 
+ 
+Fiber optic 
+cabling 
+1250 kbps Bi-directional single-
+strand; up to 64 devices 
+per segment 
+Based on 
+ANSI/EIA/ 
+CEA 709.4; 
+active daisy-
+chain 
+topology 
+FO-20L 
+ 
+Fiber optic 
+cabling 
+1250 kbps Bi-directional single-
+strand; up to 512 
+devices per segment 
+Based on 
+ANSI/EIA/ 
+CEA 709.4; 
+active daisy-
+chain 
+topology 
+IP-852 
+ 
+Internet  
+protocol 
+Varying UDP port 1628 
+recommended 
+Based on 
+CEA-852 
+Annex A ; 
+tunneling 
+protocol 
+ 
+For each channel type, the performance specifications and the LONMARK 
+International‐approved transceiver schematics are provided or referenced.  The 
+ANSI/EIA/CEA‐709.1 communication channel parameters for each transceiver are 
+specified in this chapter.  These parameters must be set correctly to ensure that all 
+                                                      
+2 CENELEC EN 50065-1 “Signaling on low-voltage electrical installations in the frequency range 3kHz to 
+148.5kHz” Part 1 “General requirements, frequency bands and electromagnetic disturbances,” 
+Amendment AC.  Reference: EN 50065-1:1991/prAC:1994. 
+Layer 1 – The Physical Layer   11 
+
+--- PAGE 12 ---
+devices on a channel will interoperate without requiring parameter adjustment prior 
+to installation. 
+Guideline 2.1A: A certified device shall implement a transceiver 
+supporting one of the channel types listed in 
+Table 1, with channel parameters as specified in 
+Chapter 2. 
+ 
+Guideline 2.1B: A certified device design shall follow referenced 
+transceiver schematics exactly. 
+ 
+2.1.1. Proposing New Channel Types 
+Additional LONMARK International‐approved channel types will be added as market 
+requirements demand.  The criteria used in adopting a channel as a standard include 
+the following: 
+ Has a transceiver for the channel been thoroughly tested? 
+ Is channel design open and publicly available? 
+ Does this channel type have long‐term, widespread applicability? 
+LONMARK International approval of additional channel types is handled separately 
+from the LONMARK product certification.  The LONMARK International will approve 
+“standards‐body” channel types only.  Existing LONMARK channel types are exempt 
+from this requirement.  By “standards‐body,” this means one that has become an 
+official standard, or part of an official standard, by a formal standards‐making body; 
+or meets the requirements of formal industry regulations.  Examples include, but are 
+not limited to ISO/IEC, ANSI, DIN, IEEE, and EIA.  Known‐compliant transceivers 
+for specified/referenced channels are listed in this document as examples only.  Any 
+transceiver meeting the specifications can be used.  For more information on 
+additional channels under consideration, or for information on how to submit a 
+channel‐design standard for LONMARK International approval, contact the 
+LONMARK International Secretary at +1‐408‐938‐5266 x1 or secretary@lonmark.org. 
+Products designed using a non‐interoperable transceiver can be connected to an 
+interoperable network via a router that uses an interoperable transceiver on one side; 
+all other guidelines still apply.  Certification can be granted to this product only if 
+the router is considered part of the product, where the product cannot be sold 
+without the router.  This option is described in the LONMARK Application‐Layer 
+Interoperability Guidelines. 
+12   LONMARK Interoperability Guidelines 
+
+--- PAGE 13 ---
+ 
+2.1.2. Performance Testing 
+Products submitted for certification are expected to comply with all applicable EMI 
+and agency regulations of the markets they intend to serve.  Examples include CE, 
+UL, cUL, FCC, CSA, VDE, TÜV, and CENELEC, as appropriate. 
+2.2. TP/XF-78 and TP/XF-1250 Channel Types 
+The TP/XF‐78 and TP/XF‐1250 channel types use transformer‐coupled transceivers 
+on bus‐topology twisted pair media.  The TP/XF‐78 channel type supports a 78kbps 
+bit rate; the TP/XF‐1250 channel type supports a 1.25Mbps bit rate. 
+2.2.1. Performance Specifications 
+Table 2 provides a summary of the performance specifications for the TP/XF‐78 and 
+TP/XF‐1250 channel types.  Echelon’s TPT/XF‐78 and TPT/XF‐1250 transceivers meet 
+the requirements of the TP/XF‐78 and TP/XF‐1250 channel types. 
+Table 2.  TP/XF‐78 and TP/XF‐1250 Performance Specifications 
+Specification TP/XF-78 TP/XF-1250 
+Transmission Speed 78kbps 1.25Mbps 
+Devices per Channel 64  (   0 to +70°C) 
+44  (-40 to +85°C) 
+64  (   0 to +70°C) 
+32  (-20 to +85°C) 
+20  (-40 to +85°C) 
+Device Distribution Any ≤ 8 devices per 16m -section 
+Network Bus Wiring UL Level IV, 22 AWG (0.65 mm) twisted pair 
+Network Stub Wiring UL Level IV, 22 or 24 AWG (0.5 mm) twisted pair 
+Network Bus Length 
+ -  Typical 3 
+ -  Worst-case 4
+  
+2000m 
+1330m 
+ 
+500m 
+130m 
+Maximum Stub Length 5 3m 0.3m 
+Network Terminators Required at both ends of the network 
+                                                      
+3 Typical conditions are 20°C, 5.0 V supply voltage, normal wire temperature and 64 evenly distributed 
+nodes 
+4 Worst-case conditions are the combined effect of worst-case conditions of all the above parameters 
+5 The stub length in Table 2 assumes a mutual capacitance of 17 pF/ft (56 pF/m) for the twisted pair stub 
+cable. 
+Layer 1 – The Physical Layer   13 
+
+--- PAGE 14 ---
+Specification TP/XF-78 TP/XF-1250 
+Temperature 
+ Operating 
+ 
+  
+ 
+       0 to +70°C 
+            (64-device load) 
+    -40 to +85°C 
+            (44-device load) 
+ 
+     0 to +70°C  
+  (64-device load) 
+  -20 to +85°C  
+  (32-device load) 
+  -40 to +70°C  
+  (20-device load)  
+Electrostatic Discharge to 
+Network Connectors 
+ N o Errors 
+ No Hard Failures 
+ 
+ 
+to 15kV 
+to 20kV 
+ 
+ 
+to 15kV 
+to 20kV 
+Isolation between Network 
+and I/O Connectors 
+ 0–60 Hz (60 seconds) 
+ 0–60 Hz (continuous) 
+ 
+ 
+  1000 VRMS 
+    277 VRMS 
+ 
+ 
+  1000 VRMS 
+    277 VRMS 
+ 
+Manufacturers of certified products are free to use any media connection or 
+connector scheme customary in their industry. 
+2.2.2. Transceiver Schematic 
+Figure 3 shows the circuit that is required with Echelon’s TPT/XF‐78 and TPT/XF‐
+1250 twisted pair modules.  Each module contains the complete twisted pair 
+transceiver, and can be mounted on a printed‐circuit board (PCB) assembly either as 
+a plug‐in or soldered component. 
+Neuron Chip,
+or equivalent
+TPT/XF
+Module
+0.1 µF
++5V
+CP4
+CP2
+CP1
+CP0
+CP3
+GND
+Data
+CT
++5V
+CP2
+CP1
+CP0
+CP3
+GND
+Data
+(Diodes = 1N4148 or BAV99)
++5V
+ 
+Figure 3.  TPT/XF‐78 or TPT/XF‐1250 Transceiver Circuit 
+14   LONMARK Interoperability Guidelines 
+
+--- PAGE 15 ---
+ 
+Using Echelon’s TPT/XF‐78 and TPT/XF‐1250 Twisted pair Transceiver Modules (see 
+Figure 3) minimizes circuit layout considerations, since most layout sensitive 
+components are encased in the module.  However, the following guidelines must be 
+observed. 
+Guideline 2.2.2A: If an Echelon Corporation TPT/XF module is used, 
+then PCB trace lengths between the TPT/XF 
+module P2 header and the twisted pair stub 
+connector should be kept less than 5 cm for the 
+TPT/XF-78 module and less than 2 cm for the 
+TPT/XF-1250 module. 
+ 
+Guideline 2.2.2B: If an Echelon Corporation TPT/XF module is used, 
+then the total differential trace capacitance 
+between CP0 and CP1 lines connecting the 
+TPT/XF module and the Neuron Chip shall be 
+≤3pF. 
+This is achieved by keeping the total trace distance between the Neuron Chip CP 
+lines and the TPT/XF module less than 2 cm.  To achieve shielding and minimize 
+capacitance, symmetrical layout guidelines must be followed for the 
+communications port traces connecting the TPT/XF module with the Neuron Chip.  
+CP0 and CP1 may be exchanged with one another.  CP2 and CP3 also may be 
+exchanged with one another independently of CP0 and CP1.  Pins should be 
+exchanged to optimize the PCB layout to eliminate crossovers.  When routing CP 
+traces from the Neuron Chip it is recommended that CP3 be routed directly 
+underneath the Neuron Chip via the NC pin to achieve symmetry and shielding of 
+the trace from the Neuron Chip to the module.  On multi‐layer boards, the use of a 
+25% crosshatch ground‐plane underneath the CP lines will enhance the shielding 
+while minimizing capacitance. 
+2.2.3. Network Cabling and Connection 
+2.2.3.1. Network Cable 
+The characteristics of the wire used to implement a channel will affect the overall 
+system performance with respect to total distance, stub length, and total number of 
+nodes supported on the channel.  The channel performance is characterized for UL 
+level IV, 22 AWG twisted pair cable for the network bus wiring as defined in  ULʹs 
+LAN Cable Certification Program, document number 200‐120 20M/11/91.  Level IV 22 
+or 24 AWG (0.5 mm) twisted pair cable may be used for the stub wiring. 
+Guideline 2.2.3.1: A TP/XF-78 or TP/XF-1250 channel shall use UL 
+Level IV, 22 AWG (0.65 mm) twisted pair cable. 
+ 
+Layer 1 – The Physical Layer   15 
+
+--- PAGE 16 ---
+2.2.3.2. Bus Termination 
+Guideline 2.2.3.2: If the termination is provided with a certified 
+TP/XF-78 or TP/XF-1250 device (attached or 
+embedded), the termination circuit specified in 
+2.2.3.2 shall be used to terminate the channel. 
+It is necessary to terminate the ends of a twisted pair bus to minimize reflections.  
+Failure to terminate the bus will degrade channel performance.  Figure 4 details the 
+circuit required to terminate TP/XF‐1250 and TP/XF‐78 channels. 
+Products do not need to include any network cable or bus termination.  However, if 
+they are provided, they must conform to these guidelines. 
+The following rated devices should be used: 
+Component Type Rating 
+Resistors Metal Film 1% 
+Capacitors Polyester 10% 
+ 
+ 
+Figure 4.  TP/XF‐1250 and TP/XF‐78 Bus Termination Circuit 
+2.3. TP-RS485-39 Channel Type 
+The TP‐RS485‐39 channel type uses transceivers that conform to the ANSI/TIA/EIA‐
+485‐A Electrical Characteristics of Generators and Receivers for Use in Balanced Digital 
+Multipoint Systems specification on bus‐topology twisted pair media and supports a 
+39kbps bit rate.  A TP‐RS485‐39 transceiver (also known as an RS‐485 transceiver) 
+should operate at VDD = +5V, provide –7V to +12V common‐mode range, and offer 
+both short‐circuit protection and a high‐impedance output in the event of a local 
+power failure.  The ANSI/TIA/EIA‐485‐A standard allows for a continuum of bit 
+rates.  However, the TP‐RS485‐39 channel type specifies a single bit rate of 39kbps 
+for interoperability.   
+16   LONMARK Interoperability Guidelines 
+
+--- PAGE 17 ---
+ 
+2.3.1. Performance Specifications 
+Table 3 provides a summary of the performance specifications for the TP‐RS485‐39 
+channel type. 
+Table 3.  TP‐RS485‐39 Performance Specifications 
+Performance Specification TP-RS485-39 
+Transmission Speed 39kbps at listed bus length 
+Devices per Channel 6 32 
+Network Stub Wiring UL Level IV, 22 or 24 AWG  
+twisted pair 
+Network Bus Wiring UL Level IV, 22 AWG twisted pair 
+Maximum Stub Length 0m 
+Network Terminators Required at both ends of network 
+Temperature 
+ Operating 
+ Non -operating 
+ 
+    0 to +70°C 
+ -40 to +85°C 
+Electrostatic Discharge to 
+Network Connectors 
+ N o Errors 
+ No Hard Failures 
+ 
+ 
+to 15000V 
+to 20000V 
+Maximum Channel Lengths 1200m per ANSI/TIA/EIA-485-A 
+standard 
+ 
+2.3.2. Transceiver Schematic 
+The schematic for the TP‐RS485‐39 transceiver design is shown in Figure 4.  
+Components for EMI, ESD, and transient protection should be added as needed.  
+Unless otherwise noted, the following ratings apply to all devices on the schematic: 
+Component Type Rating   
+Resistors Metal film 5% 100 PPM per oC 1/8 watt 
+                                                      
+6 These are standard specifications detailed in the ANSI/TIA/EIA-485-A Specification, Section 3, and 
+entitled Electrical Characteristics. 
+Layer 1 – The Physical Layer   17 
+
+--- PAGE 18 ---
+0.1 µF
+Neuron Chip,
+or equivalent
+EIA/TIA
+“RS-485”
+Chip
++5V
+CP4
+CP2
+CP1
+CP0
+CP3
+Data
++5V
+TX enable
+TX
+RX
+RX enable GND
+Data
++5V
+10.0K
+10.0K
+ 
+Figure 5.  TP‐RS485‐39 Transceiver Circuit 
+2.3.3. Bus Termination 
+Guideline 2.3.3: If the termination is provided with a certified TP-
+RS485-39 device (attached or embedded), the 
+termination circuit specified in 2.3.3 shall be used 
+to terminate the physical channels. 
+It is necessary to terminate the ends of a twisted pair bus to minimize reflections.  
+Failure to terminate the bus will degrade network performance.  Figure 6 details the 
+circuit required to terminate the TP‐RS485‐39 physical channel.  The TP/XF‐78 and 
+TP/XF‐1250 termination circuit (see Figure 4) may be substituted for the one in 
+Figure 6 if the one in Figure 6 in not available. 
+ 
+ 
+Figure 6.  TP‐RS485‐39 Bus Termination Circuit 
+2.3.4. Grounding 
+A signal return path between the circuit grounds of devices on a TP‐RS485‐39 
+network must be provided.  The ground reference may be established by a third 
+conductor or by providing a connection to an earth reference at each device. 
+18   LONMARK Interoperability Guidelines 
+
+--- PAGE 19 ---
+ 
+Guideline 2.3.4: A certified TP-RS485-39 device shall comply with 
+the grounding requirements of the ANSI/TIA/EIA-
+485-A standard Section A.3 entitled Optional 
+Grounding Arrangements. 
+ 
+2.4. PL-20(L-N) and PL-20(L-E) Channel Types 
+The PL‐20(L‐N) and PL‐20(L‐E) channel types use transceivers that conform to the 
+ANSI/EIA/CEA‐709.2‐A Control Network Power Line (PL) Channel Specification.  These 
+transceivers use narrow‐band signaling over a 125kHz–140kHz frequency band on 
+power mains media and support a 5kbps bit rate.  The PL‐20(L‐N) channel type uses 
+line‐to‐neutral signaling; the PL‐20(L‐E) channel type uses line‐to‐earth signaling. 
+2.4.1. Performance Specifications 
+Table 4 provides a summary of the specifications for the PL‐20 channel types.  
+Echelon’s PL Smart Transceiver and PLT‐22 transceiver meets the requirements of 
+the PL‐20 channel types. 
+Table 4.  PL‐20(L‐N) and PL‐20(L‐E) Performance Specifications  
+Parameter PL-20(L-N) PL-20(L-E) 
+Coupling Technique Line-to-neutral Line-to-earth 
+Bit Rate 5kbps 
+Transceiver Crystal 10MHz, 200ppm, 13pF, parallel resonant 
+Modulation BPSK 
+Frequency Band 125kHz–140kHz 
+Output Level ≤ 116dBµV per EN50065-1 for Class 116 
+EN50065-1 compliance 
+≥115dBµV per EN50065-1 otherwise  
+Output Impedance  |Z|≤6Ω   
+129kHz–134kHz  
+|Z|≤8Ω, 120VAC 
+|Z|≤15Ω, 240VAC 
+129kHz–134kHz  
+Input Impedance 7 ≥100Ω   125kHz–140kHz 
+                                                      
+7 Input impedance of transceiver and associated coupling circuit only.  It does not include effect, if any, of 
+system power supply.  See the ANSI/EIA-709.2-A Control Network Power Line (PL) Channel Specification 
+for guidelines.  An additional resource of information, if you are using a PLT-22 transceiver, is Echelon’s 
+LONWORKS PLT-22 Transceiver User’s Guide. 
+Layer 1 – The Physical Layer   19 
+
+--- PAGE 20 ---
+2.4.2. Transceiver Interface Specification 
+Figure 7 shows a typical PL‐20 transceiver application block‐diagram.  The coupling 
+circuit and power supply must be selected based upon the intended application. 
+Neuron Chip,
+or equivalent
+PL-20 Channel
+Transceiver
++5V
+CP4
+CP2
+CP1
+CP0
+CLK1
+GND
+RXin
+TXout
++5V
+CP4
+CP1
+CP0
+CKOUT
+GND
+GND
++5V
+Coupling
+Circuit
+L
+N
+E
+Power
+Supply
+Line
+Neutral
+Earth
++9VA (+12V)
+CP2
+~RESET ~RESET
++5V +9VA (+12V)
+Line
+Earth
+Neutral
+ 
+Figure 7.  PL‐20 Transceiver Sample Circuit 
+2.4.3. Coupling Circuits 
+The two methods of coupling to the power line, line‐to‐neutral coupling and line‐to‐
+earth coupling, define two different power line channels referred to as PL‐20(L‐N) 
+and PL‐20(L‐E), respectively.  Most installations will consist of devices that use only 
+one channel type in order to achieve maximum communication reliability.  
+However, L‐N and L‐E devices may be mixed within an installation with the 
+possibility of significant loss (2 – 20dB) of communication margin between L‐N and 
+L‐E devices depending on physical location and power line environment.  
+2.4.3.1. Line-to-Neutral  Coupling 
+The PL‐20(L‐N) channel type specifies coupling circuits that transmit and receive the 
+power‐line communications signals between the line and neutral mains conductors.   
+Line‐to‐neutral coupling is used in power‐mains circuits where a ground is not 
+available, or where low ground‐leakage is required.  
+20   LONMARK Interoperability Guidelines 
+
+--- PAGE 21 ---
+ 
+2.4.3.2. Line-to-Earth Coupling 
+The PL‐20(L‐E) channel type specifies coupling circuits that transmit and receive the 
+power‐line communications signals between the line and earth mains conductors.  
+Line‐to‐earth coupling is used in power‐mains circuits where an earth conductor is 
+available.  
+Specific coupling circuits for use with Echelon’s PLT‐22 transceivers are described in 
+the ANSI/EIA/CEA‐709.2‐A Control Network Power Line (PL) Channel Specification.  An 
+additional resource of information is Echelon’s LONWORKS PLT‐22 Transceiver 
+User’s Guide. 
+2.4.4. Power Supply Requirements 
+Most linear power supplies do not load the transmitted signal, nor do they generate 
+significant electrical noise.  Switching power supplies may load the transmitted 
+signal, or generate significant electrical noise; either of which will limit system 
+performance.  The following guidelines must be met to avoid attenuation of the 
+transmit signal and coupling of noise directly into the input of a receiver.   
+2.4.4.1. Attenuati on 
+Guideline 2.4.4.1: When connecting the input (line side) of a 
+switching power supply directly to the coupling 
+circuit of a certified PL-20 device, the guidelines 
+for preventing the switching supply from 
+attenuating the communications signal, as 
+outlined in the ANSI/EIA/CEA-709.2 Control 
+Network Power Line (PL) Channel Specification, 
+shall be followed. 
+2.4.4.2. Noise 
+Guideline 2.4.4.2: When connecting the input (line side) of a 
+switching power supply directly to the coupling 
+circuit of a certified PL-20 device, the guidelines 
+for preventing the switching supply from 
+conducting excessive noise onto the 
+communications channel, as outlined in the 
+ANSI/EIA/CEA-709.2-A Control Network Power 
+Line (PL) Channel Specification, shall be followed. 
+ 
+Layer 1 – The Physical Layer   21 
+
+--- PAGE 22 ---
+2.5. PL-20A(L-N) Channel Type 
+The PL‐20A(L‐N) channel type uses transceivers that conform to the CENELEC EN 
+50065‐1 power line channel specification.  These transceivers use line‐to‐neutral 
+narrow‐band signaling over a 70kHz – 95kHz frequency band on power mains 
+media and support a 3600bps bit rate. 
+2.5.1. Performance Specifications 
+Table 5 provides a summary of the specifications for the PL‐20A channel type.  
+Echelon’s PL Smart Transceiver and PLT‐22 transceiver meets the requirements of 
+the PL‐20A channel type when connected to a 6.5536 MHz crystal clock. 
+Table 5.  PL‐20A(L‐N) Performance Specifications 
+Parameter PL-20A 
+Coupling Technique Line-to-neutral 
+Transmission Speed 3600bps 
+Transceiver Crystal 6.5536MHz, 200ppm, 16pF, parallel 
+resonant 
+Modulation BPSK 
+Frequency Band 70kHz–95kHz 
+Output Level ≤ 116dBµV per EN50065-1 for Class 116 
+EN50065-1 compliance 
+≥115dBµV per EN50065-1 otherwise  
+Output Impedance  |Z|≤1.1Ω   
+70kHz–95kHz  
+Input Impedance 8 ≥500Ω   70kHz–95kHz 
+ 
+2.5.2. Transceiver Interface Specification 
+Figure 8 shows a typical PL‐20A transceiver application block‐diagram.  The 
+coupling circuit and power supply must be selected based on the intended 
+application. 
+                                                      
+8 Input impedance of transceiver and associated coupling circuit only.  It does not include effect, if any, of 
+system power supply.  See the CENELEC EN 50065-1:1991/prAC:1994 document for restrictions, and 
+Echelon’s Using the LONWORKS PLT-22 Power Line Transceiver in European Utility Applications guide for 
+additional details of this power line channel specification. 
+22   LONMARK Interoperability Guidelines 
+
+--- PAGE 23 ---
+ 
+Neuron Chip,
+or equivalent
+PL-20A Channel
+Transceiver
++5V
+CP4
+CP2
+CP1
+CP0
+CLK1
+GND
+RXin
+TXout
++5V
+CP4
+CP1
+CP0
+CKOUT
+GND
+GND
++5V
+Coupling
+Circuit
+L
+N
+E
+Power
+Supply
+Line
+Neutral
+Earth
++9VA (+12V)
+CP2
+~RESET ~RESET
++5V +9VA (+12V)
+Line
+Earth
+Neutral
+ 
+Figure 8.  PL‐20A Transceiver Sample Circuit 
+2.5.3. Coupling Circuits 
+The PL‐20A(L‐N) channel type specifies coupling circuits that transmit and receive 
+the power line communications signals between the line and neutral mains 
+conductors.   Line‐to‐neutral coupling is always used for the PL‐20A channel.  
+Specific coupling circuits for use with PL‐20A transceivers should be obtained from 
+the transceiver manufacturer. 
+2.5.4. Power Supply Requirements 
+Most linear power supplies do not load the transmitted signal, nor do they generate 
+significant electrical noise.  Switching power supplies may load the transmitted 
+signal, or generate significant electrical noise; either of which will limit system 
+performance.  The following guidelines must be met to avoid attenuation of the 
+transmit signal and coupling of noise directly into the input of a receiver. 
+Layer 1 – The Physical Layer   23 
+
+--- PAGE 24 ---
+2.5.4.1. Attenuati on 
+Guideline 2.5.4.1: When connecting the input (line side) of a 
+switching power supply directly to the coupling 
+circuit of a certified PL-20A device, the guidelines 
+for preventing the switching supply from 
+attenuating the communications signal, as 
+outlined in Echelon’s Using the LONWORKS PLT-
+22 Power Line Transceiver in European Utility 
+Applications guide, shall be followed. 
+2.5.4.2. Noise 
+Guideline 2.5.4.2: When connecting the input (line side) of a 
+switching power supply directly to the coupling 
+circuit of a certified PL-20A device, the guidelines 
+for preventing the switching supply from 
+conducting excessive noise onto the 
+communications channel, as outlined in Echelon’s 
+Using the LONWORKS PLT-22 Power Line 
+Transceiver in European Utility Applications 
+guide, shall be followed. 
+ 
+2.6. TP/FT-10 Channel Type 
+The TP/FT‐10 channel type uses transceivers that conform to the ANSI/EIA/CEA 
+709.3‐A Free‐Topology Twisted Pair Channel Specification on free‐topology twisted pair 
+media and supports a 78 125bps bit rate.  These transceivers encode data using 
+differential Manchester encoding, which is polarity insensitive.  A TP/FT‐10 channel 
+consists of up to 64 devices on a single network segment; or 128 devices along with a 
+link power source, which supplies DC power to the devices on the channel.  The free 
+topology wiring supported by the TP/FT‐10 channel type accommodates bus, star, 
+loop, or several combinations of these topologies.  The total network length and 
+number of devices may be extended by use of ANSI/EIA/CEA‐709.1 routers, and/or 
+one TP/FT‐10 physical‐layer repeater.  Devices can be either locally powered or link 
+powered.  A link powered device derives its polarity‐insensitive power from the 
+network.   
+Echelon’s FTT‐10A, LPT‐10, LPT‐11, and FT Smart Transceivers meet the 
+requirements of the TP/FT‐10 channel type. 
+24   LONMARK Interoperability Guidelines 
+
+--- PAGE 25 ---
+ 
+2.6.1. Performance Specifications 
+The TP/FT‐10 channel type supports a maximum bit error rate of 1 in 100 000.  Both 
+link power and locally powered devices can be supported on a given segment, 
+provided that the following constraint is met: 
+(1 x LinkPoweredDeviceCount) + (2 x LocallyPoweredDeviceCount) ≤ 128 
+Transmission performance varies with the type of network cable used.  Network 
+performance has been characterized for several cable types as detailed below.  Table 
+6 shows the maximum bus length for a doubly terminated topology network using 
+TIA 568A Category 5 cabling.   
+Table 7 shows the maximum device‐to‐device distance and maximum wire length 
+for a singly terminated free‐topology network using Category 5 cabling.  The 
+distance from each device to each of the other devices, and to the link power source, 
+shall not exceed the maximum device‐to‐device distance.  If multiple paths exist, e.g., 
+a loop topology, then the longest path shall be used for the calculations.  The 
+maximum wire length is the total amount of wire connected to a network segment. 
+Table 6.  Doubly‐Terminated Bus‐Topology Specifications 
+Cable 9 Maximum Bus Length Maximum Stub Length 
+TIA 568A Category 5 
+cable/24AWG (0.5mm) 
+900 meters 3 meters 
+ 
+Table 7.  Free‐Topology Specifications 
+Cable 10 Maximum  
+Device-to-Device Distance 
+Maximum Total Wire 
+Length  
+TIA 568A Category 5 
+cable/24AWG (0.5mm) 
+250 meters 450 meters 
+ 
+Guideline 2.6.1: A certified TP/FT-10 device shall meet all 
+requirements set-forth in the ANSI/EIA/CEA 
+709.3-A Free-Topology Twisted Pair Channel 
+Specification. 
+                                                      
+9 Detailed cable specifications are provided in the ANSI/TIA/EIA-568-A-1995, Commercial Building 
+Telecommunications Cabling Standard. 
+10 Detailed cable specifications are provided in the ANSI/TIA/EIA-568-A-1995, Commercial Building 
+Telecommunications Cabling Standard. 
+Layer 1 – The Physical Layer   25 
+
+--- PAGE 26 ---
+2.6.2. Link Power Supply Requirements 
+A link power supply is required if any link powered devices are installed on a 
+TP/FT‐10 channel.  The power supply specifications listed in Table 8 and Table 9 
+shall be met over all combinations of the following conditions: 
+ Tambient 0 to 50˚C 
+ Specified coupling circuit connected 
+ Line input voltage over full range per specification 
+ Network output load  =  0 to 1.5 DC amperes 
+Table 8.  Power Supply Requirements 
+Description Conditions Specification 
+Line input voltage & indicator • Measured at "A" Line voltage as required by 
+application.  Input power 
+applied indicator required (LED 
+or equivalent) 
+Output voltage  • Measured at "B" 42.4VDC   maximum 
+42.08VDC minimum 
+Output voltage regulation 
+response 
+• Measured at "B" 
+• 50% step change in load 
+Output voltage must recover to 
+within 1% of its final value in 
+less than 1ms of step change 
+in load 
+Output reference  • Measured at "B" 
+• Cou pling circuit 
+disconnected 
+Floating with respect to earth 
+ 
+Output ripple voltage 
+(differential) 
+• Measured at "B" 
+ 
+Reference Figure 9 
+Spike noise  
+(differential) 
+• Measured at "B" 
+• 50MHz bandwidth 
+400mVpeak-to-peak maximum 
+Output common-mode noise  • Measured at "B" with 
+respect to earth 
+100mVpeak-to-peak maximum 
+Continuous output current 
+capability 
+• Measured at "B" 0–1.5ADC 
+ 
+Output startup interval 
+behavior 
+ 
+• Startup or recovery from 
+output short circuit or 
+overcurrent fault 
+• Measured at "B" 
+Reference Figure 10 
+26   LONMARK Interoperability Guidelines 
+
+--- PAGE 27 ---
+ 
+Description Conditions Specification 
+Short-circuit output protection • Continuous short circuit at 
+output for any duration 
+Must recover after fault is 
+cleared according to "Output 
+startup interval behavior" 
+specification 
+Single fault tolerance • Any single component 
+failure as open or short 
+• Measured at "B" 
+"Vin+"  – "Vin-" ≤ 42.4V 
+|"Vin+" to earth| ≤ 42.4V 
+|"Vin-" to earth| ≤ 42.4V 
+Notes and definitions for Table 8 and Table 9: 
+ “A” is the line input to the link power supply. 
+ “B” is the floating output of the link power supply.  This is also the input to the power 
+supply coupler. 
+ “C” is the network connection of the power supply coupler. 
+Table 9.  Power Supply Environmental Requirements 
+Description Conditions Specification 
+Ambient temperature • Operating 
+• Storage 
+0–50˚C 
+-40–85˚C 
+IEC 801-2 ESD immunity  • Air discharge at "C" to either 
+"Net+" or "Net-" terminal 
++/- 15kV  (Level 4) 
+Output voltage must recover 
+within 10ms following an ESD 
+discharge 
+IEC 801-3 Radiated 
+susceptibility 
+(Continuous RF excitation with 
+80% AM) 
+• Twisted pair cable 
+connected at "C" 
+10 V/m (Level 3) 
+All specifications contained 
+herein must be met 
+IEC 801-4 Burst immunity  
+ 
+• Capacitive clamp discharge 
+to twisted pair cable 
+connected at  "C" according 
+to IEC 801-4 
+2kV (Level 4) 
+Output voltage must recover 
+within 10ms following each 
+burst 
+IEC 801-5 Surge immunity  • 1.2/50 µs - 8/20 µs 
+combination wave surge 
+waveform  
+• Coupling circuit – see figure 
+11, IEC 801-5, line-to-
+ground coupling 
+• Discharged at "C" to either 
+"Net+" or "Net-" 
++/- 2kV (Level 3)   
+Output voltage must recover 
+within 10ms following a surge 
+discharge 
+ 
+Earth reference terminal  Required if coupling network is 
+not grounded via power supply 
+Layer 1 – The Physical Layer   27 
+
+--- PAGE 28 ---
+ 
+ 
+Figure 9.  Power Supply Output Ripple Voltage Requirement 
+ 
+ 
+Figure 10.  Power Supply Startup Interval Behavior 
+Notes and definitions for Figure 10: 
+ On‐time is defined as the time for the source power supply to charge the network from 0V 
+to 42VDC for a given average output current. 
+ Iaverage is the average output current available from the source power supply when 
+charging the network from 0 to 42 VDC.  Once the output voltage has reached 42V, the 
+output current capability must be at least 1.5 amperes. 
+28   LONMARK Interoperability Guidelines 
+
+--- PAGE 29 ---
+ 
+2.6.3. Passive Coupler Circuit Schematic 
+The schematic for a TP/FT‐10 link power supply passive coupler is shown in Figure 
+11, with referenced components listed in Table 10. 
+ 
+VIN+ 
+VIN- 
+EARTH 
+C3  
+0.1µF  
+100V  
+Z5U 
+C4  
+0.1µF  
+100V  
+Z5U C2  
+47µF 
+20% 
+63V 
+C1  
+47µF 
+20% 
+63V 
+R1 
+10.0k 
+1%
+R2 
+10.0k 
+1%
+   D2 
+1N4148
+     D3 
+1N4148 C6 
+47µF 
+20% 
+63V
+C5 
+47µF 
+20% 
+63V
+R4 
+54.9Ω
+1%
+R3 
+54.9Ω
+1%
+R5 
+110Ω
+1%
+R6 
+3.9k 
+5% 
+1W
+    L1 
+ 3.0mH
+    L2 
+ 3.0mH
+S1 
+SPST
+D12 
+LED 
+Green
+D1  
+1N5401 
+D13  
+1N5401 
+P2 
+Terminal 
+Block 
+Net+ 
+Net- 
+D4 D5 D6 D7
+1N4002 (4x)
+D11D10D9D8
+1N4002 (4x)
+1) S1 Closed for Free Topology 
+   S1 Open for Bus Topology
++ +
++
++ 
+ 
+Figure 11.  Passive Coupler Circuit 
+Table 10.  Coupler Circuit Bill of Materials 
+Item Quantity Reference Description 
+1 4 C1, C2, C5, C6 Capacitor, Aluminum Electrolytic, 47µF, 20%, 
+63V 
+2 2 C3, C4 Capacitor, Ceramic, 0.1µF, 100V, Z5U 
+3 2 D1, D13 Diode, 1N5401, 3 ampere, 100V 
+4 2 D2, D3 Diode, 1N4148 or equivalent 
+5 8 D4, D5, D6, D7, 
+D8, D9, D10, 
+D11 
+Diode, 1N4002, 1 ampere, 100V 
+6 1 D12 LED, Green, Hewlett Packard HLMP-3502 or 
+equivalent  
+7 2 L1, L2 Inductor, 3.0mH, Ferrite Core, 1.5 ampere, 
+RDC≤0,36Ω, 
+8 1 P2 Terminal block, 2 conductor, accepts 
+conductor  size AWG 24 – 14   
+(0.5mm – 2.05mm) 
+9 2 R1, R2 10.0kΩ, 1%, 1/4W 
+10 2 R3, R4 54.9Ω, 1%, 1/4W 
+Layer 1 – The Physical Layer   29 
+
+--- PAGE 30 ---
+Item Quantity Reference Description 
+11 1 R5 110Ω, 1%, 1/4W 
+12 1 R6 3.9kΩ, 5%, 1W  
+13 1 S1 Switch, SPST or equivalent jumper 
+ 
+2.7. FO-20S Channel Type 
+The FO‐20S channel type uses transceivers that conform to the ANSI/EIA/CEA‐709.4 
+Fiber Optic Channel Specification, Type 1A, on a single, active daisy‐chained (point‐to‐
+point) single‐strand fiber optic cable and supports a 1.25Mbps bit rate.  These 
+transceivers encode data by amplitude modulating the carrier frequency using 
+differential Manchester encoding.  An FO‐20S channel supports up to 64 devices on a 
+single network segment.  Each transceiver contains two channel connectors.  
+Multiple devices may be interconnected in a point‐to‐multipoint fashion provided 
+that the transceiver in one of the devices supports three or more channel 
+connections.  Connecting the last device on a string (point‐to‐point series of strands) 
+to the first device results in a ring topology.  This is an active ring in that the 
+transceivers at each device in the ring must be powered in order to maintain data 
+propagation from one link to the next link.  With an active ring topology, each device 
+in the ring receives and regenerates all incoming message packets.  Regeneration 
+reshapes the received signal and restores the power level of the outgoing signal. 
+2.7.1. Performance Specifications 
+The FO‐20S channel type is specified to support a ring topology but will 
+accommodate a bus topology with loss of redundancy.  The total network length and 
+number of devices may be extended by use of ANSI/EIA/CEA‐709.1 routers 
+equipped with FO‐20S transceivers.  
+Table 11.  FO‐20S Standard Cable Type Specifications 
+Cable 11 Maximum Device-to-
+Device Distance 
+Maximum Stub Length 
+ 
+ANSI\TIA\EIA 492AAAA-A 
+Class 1a graded-index, multi-
+mode, glass optical fibers; 
+Core Diameter 62.5 µm, 
+Cladding Diameter 125 µm 
+   25 meters    3 meters 
+                                                      
+11 Detailed cable specifications for the FO-20S are provided in ANSI\TIA\EIA 492AAAA-A.   
+Glass fiber optic cable connectors should be installed in a manner that meets Annex A of 
+ANSI/TIA/EIA 570-A Optical Fiber Connector Performance Specifications. 
+30   LONMARK Interoperability Guidelines 
+
+--- PAGE 31 ---
+ 
+ 
+Table 12.  FO‐20S Transmission Performance Specification 
+Parameter Value 
+Optical parameters 62.5/125 fiber cable 
+Attenuation at 850 nm < 3.5 dB/km 
+ 
+Table 13.  FO‐20S Communications Parameters 
+Parameter Value 
+Communication mode Single-ended 
+Bit rate 1250kbps 
+Device priorities 0 
+Channel priorities 16 
+Clock rate 10MHz minimum 
+Preamble length, at 10MHz 221.4–229.8 µsec 
+Packet cycle, at 10MHz 4020 µsec 
+Beta 2 time, at 10MHz 132 µsec 
+Interpacket delays (Tx/Rx) None/None 
+Collision detection No 
+Bit-synchronization threshold 4 bits 
+ 
+Guideline 2.6.2: A certified FO-20S device shall meet all 
+requirements set-forth in the ANSI/EIA/CEA-
+709.4 Fiber Optic Channel Specification, Type 1A. 
+ 
+Layer 1 – The Physical Layer   31 
+
+--- PAGE 32 ---
+2.8. FO-20L Channel Type 
+The FO‐20L channel type uses transceivers that conform to the ANSI/EIA/CEA‐709.4 
+Fiber Optic Channel Specification, Type 1B, on a single, active daisy‐chained (point‐to‐
+point) single‐strand fiber optic cable and supports a 1.25Mbps bit rate.  These 
+transceivers encode data by amplitude modulating the carrier frequency using 
+differential Manchester encoding.  An FO‐20L channel supports up to 512 devices on 
+a single network segment.  Each transceiver contains two channel connectors.  
+Multiple devices may be interconnected in a point‐to‐multipoint fashion provided 
+that the transceiver in one of the devices supports three or more channel 
+connections.  Connecting the last device on a string (point‐to‐point series of strands) 
+to the first device results in a ring topology.  This is an active ring in that the 
+transceivers at each device in the ring must be powered in order to maintain data 
+propagation from one link to the next link.  With an active ring topology, each device 
+in the ring receives and regenerates all incoming message packets.  Regeneration 
+reshapes the received signal and restores the power level of the outgoing signal. 
+2.8.1.  Performance Specifications 
+The FO‐20L channel type is specified to support a ring topology but will 
+accommodate a bus topology with loss of redundancy.  The total network length and 
+number of devices may be extended by use of ANSI/EIA/CEA‐709.1 routers 
+equipped with FO‐20L transceivers.  
+Table 14.  FO‐20L Standard Cable Types Specifications 
+Cable 12 Maximum Device-to-
+Device Distance 
+Maximum Stub Length 
+ 
+ANSI\TIA\EIA 492AAAA-A 
+Class 1a graded-index, multi-
+mode, glass optical fibers; 
+Core Diameter 62.5 µm, 
+Cladding Diameter 125 µm 
+   25 meters    3 meters 
+ 
+Table 15.  FO‐20L Transmission Performance Specification 
+Parameter Value 
+Optical parameters 62.5/125 Fiber Cable 
+Attenuation at 850 nm < 3.5 dB/km 
+                                                      
+12 Detailed cable specifications for the FO-20S are provided in ANSI\TIA\EIA 492AAAA-A.   
+Glass fiber optic cable connectors should be installed in a manner that meets Annex A of 
+ANSI/TIA/EIA 570-A Optical Fiber Connector Performance Specifications. 
+32   LONMARK Interoperability Guidelines 
+
+--- PAGE 33 ---
+ 
+ 
+Table 16.  FO‐20L Communications Parameters 
+Parameter Value 
+Communication mode Single-ended 
+Communication rate 1250kbps 
+Node priorities 0 
+Channel priorities 16 
+Clock rate 10MHz minimum 
+Preamble length, at 10MHz 221.4–229.8 µsec 
+Packet cycle, at 10MHz 4020 µsec 
+Beta 2 time, at 10MHz 1056 µsec 
+Interpacket delays (Tx/Rx) None/None 
+Collision detection No 
+Bit-synchronization threshold 4 bits 
+ 
+Guideline 2.8.1: A certified FO-20L device shall meet all 
+requirements set-forth in the ANSI/EIA/CEA-
+709.4 Fiber Optic Channel Specification, Type 1B. 
+ 
+2.9. IP-852 Channel Type 
+The IP‐852 channel type uses Internet‐tunneling transceivers that conform to the 
+CEA‐852 or CEA‐852‐A Tunneling of Component Network Data Over IP Channels 
+specification, Annex A.  This channel type allows for communications between 
+LONWORKS devices over a private or public Internet Protocol (IP) network by 
+tunneling the ANSI/EIA/CEA‐709.1  (EN14908‐1) protocol inside the structure of the 
+Internet Protocol.  Tunneling is a way of carrying the messages of one protocol—in  
+their original packet shape—in  the data section of another protocol’s packet.  Figure 
+12 demonstrates the concept of packaging the content of the message.  Figure 13 
+demonstrates the concept of tunneling packets. 
+Layer 1 – The Physical Layer   33 
+
+--- PAGE 34 ---
+ANSI/EIA-709.1
+SNVT_temp_p
+Internet Protocol
+ANSI/EIA-709.1
+SNVT_temp_p
+Internet Protocol
+25
+°C
+25
+°C
+ 
+Figure 12.  Value, Container, and 709.1 Protocol Packaging in IP 
+ 
+Internet
+ 
+Figure 13.  Packing, Tunneling, and Unpacking 709.1 Protocol 
+2.9.1. Implementation Requirements 
+The format of the IP‐852 packets encapsulated by the IP tunnel include the Level 2 
+Header (L2Hdr) field through the cyclical‐redundancy‐check (CRC) field, 
+inclusively.  It does not include the Preamble, BitSync, or ByteSync fields, nor does it 
+include the Line‐Code Violation bits from the ANSI/EIA/CEA‐709.1 (EN14908‐1) 
+protocol specification. 
+34   LONMARK Interoperability Guidelines 
+
+--- PAGE 35 ---
+ 
+All devices must support User Datagram Protocol (UDP).  Support for Transmission 
+Control Protocol (TCP) is optional for certain types of messages, but in addition to 
+UDP. 
+IP‐852 devices may optionally use the following port numbers, which have been 
+assigned by the IANA13.  Use of these port numbers is not required.  Port 1628 is 
+recommended as the default for normal traffic. 
+ lontalk‐norm  1628/udp  LonTalk normal 
+ lontalk‐norm  1628/tcp  LonTalk normal 
+ lontalk‐urgnt  1629/udp  LonTalk urgent 
+ lontalk‐urgnt  1629/tcp  LonTalk urgent 
+Guideline 2.9.1: A certified IP-852 device shall meet all 
+requirements set-forth in the CEA-852 (or CEA-
+852-A) Tunneling of Component Network Data 
+over IP Channels specification. 
+ 
+                                                      
+13 The Internet Assigned Numbers Authority (IANA) maintains a list of registered TCP and UDP ports at 
+the following link: www.iana.org/assignments/port-numbers  
+Layer 1 – The Physical Layer   35 
+
+--- PAGE 36 ---
+
+
+--- PAGE 37 ---
+ 
+ 
+3  
+Layers 2 – 6 
+In addition to having the appropriate transceiver connected to the 
+communication port of a Neuron Chip or equivalent processor, there must be 
+appropriate channel settings present in the memory of the processor to 
+enable the ANSI/EIA/CEA-709.1 (EN14908-1) protocol to send out and 
+receive messages in the correct format to allow interoperability.  Compliance 
+with these LONMARK Guidelines for Layers 2 – 6 of the ANSI/EIA/CEA-709.1 
+(EN14908-1) protocol is easily accomplished by making selections within 
+development tool software.  For example, these settings may be selected 
+using Neuron C compiler directives (#pragma) when developing applications 
+using the Neuron C programming language, and many of these settings are 
+automatic if the compiler directives are not specified. 
+Layers 2–6   37 
+
+--- PAGE 38 ---
+ 
+3.1. Layer 2: Link Layer 
+The link layer defines media access methods and data encoding to ensure efficient use 
+of a single communications channel.  The raw bits of the physical layer are broken 
+up into data frames.  The link layer defines when a source device can transmit a data 
+frame, and defines how destination devices receive the data frames and detect 
+transmission errors.  A priority mechanism is also defined to ensure delivery of 
+important messages. 
+3.1.1. Channel Parameters 
+The Neuron Chip communications port supports a number of parameters that allow 
+the Neuron Chip to communicate over different media, depending on how they are 
+configured.  These parameters govern the low‐level communication characteristics.  
+On each communications channel, a unique combination of settings provides 
+optimum communications.  The collections of settings used for a particular physical 
+communication medium is called the medium’s channel parameters. 
+The Neuron Chip communications port, used in direct mode, encodes and decodes 
+data using differential Manchester or bi‐phase space coding.  A preamble is 
+transmitted at the beginning of a packet to allow the other devices on the channel to 
+synchronize their receiver clocks.  An idle period called the beta 1 time is provided 
+after each packet to allow devices on a channel to synchronize to the end of a packet.  
+Another important characteristic of a message is the beta 2 time, which defines the 
+width of the randomizing slots.  The lengths of the preamble, beta 1, and beta 2 times 
+are configurable by the LONWORKS network designer independently of the 
+transceiver design.  In order for a set of devices to interoperate, the channel 
+parameters that control the preamble, beta 1, and beta 2 times must match.  If a 
+processor other than a Neuron Chip is used for communications, that processor must 
+provide support for emulating the same communications provided by the Neuron 
+Chip.  For more information about channel parameters see the ANSI/EIA/CEA‐709.1 
+protocol specification. 
+Guideline 3.1.1A: To be interoperable, all of the devices on a 
+channel must be configured with the same 
+channel parameters, and the parameters must be 
+for one of the approved LONMARK channels types. 
+The channel parameters corresponding to each of the approved LONMARK channel 
+types are shown in Table 17.  If you are using one of Echelon Corporation’s 
+development systems, for example, then the correct channel parameters are 
+automatically loaded.   
+38   LONMARK Interoperability Guidelines 
+
+--- PAGE 39 ---
+ 
+Table 17.  Channel Parameters 
+Channel Comm Port 
+Mode 
+Bit  Rate Maximum 
+Number of 
+Priority 
+Slots 
+Minimum 
+Clock 
+Rate 
+(MHz) 
+Oscillator 
+Accuracy 
+Average 
+Packet 
+Size 
+TP-RS485-39 Single-ended 39kbps 4 5 200ppm 15 bytes 
+TP/XF-78 Differential 78kbps 4 5 200ppm 15 bytes 
+TP/XF-1250 Differential 1.25Mbps 16 10 200ppm 15 bytes 
+TP/FT-10 Single-ended 78kbps 4 5 200ppm 15 bytes 
+PL-10 (L-E) Special 
+purpose 
+10kbps 8 5 200ppm 15 bytes 
+PL-20 (L-N) Special 
+purpose 
+5kbps 8 1.25 200ppm 15 bytes 
+PL-20A (L-N) Special 
+purpose 
+3.6kbps 8 1.25 200ppm 15 bytes 
+PL-20 (L-E) Special 
+purpose 
+5kbps 8 1.25 200ppm 15 bytes 
+PL-30 (L-N) Special 
+purpose 
+2kbps 8 5 200ppm 15 bytes 
+FO-20S Single-ended 1.25Mbps 16 10 200ppm 15 bytes 
+FO-20L Single-ended 1.25Mbps 16 10 200ppm 15 bytes 
+Note: The FO‐20S channel has replaced the FO‐10 channelʹs XID (24), and the parameters are 
+not the same. 
+ 
+The ANSI/EIA/CEA‐709.1 (EN14908‐1) protocol supports communication between 
+devices running at different clock speeds by lengthening the preamble for all devices 
+on a channel to accommodate the device with the slowest clock speed on the 
+channel.  However, there is a penalty on channel throughput as the preamble is 
+lengthened.  All devices on the channel share this channel performance penalty—
+including the devices whose clocks run at the maximum clock speed possible.  In 
+order to provide some flexibility, but also sustain good channel performance, all 
+interoperable devices must adhere to the minimum clock speed values indicated in 
+Table 17. 
+Guideline 3.1.1B: A certified device shall implement the minimum 
+acceptable clock rate as indicated in  
+Table 17. 
+The oscillator accuracy of all the devices on a channel directly affects the throughput 
+of the channel by affecting the width of the priority and randomizing slots that may 
+Layers 2–6   39 
+
+--- PAGE 40 ---
+be supported.  The accuracy of the oscillator has the largest effect on channel 
+throughput of all of the parameters discussed.  In order to not degrade channel 
+throughput and also to support a reasonable number of priority slots per channel, all 
+interoperable devices must include an oscillator with an accuracy of at least 0.02% 
+over the complete temperature range within which the device is operated.  This 
+means that crystals must be used rather than ceramic resonators. 
+Guideline 3.1.1C: A certified device shall use an oscillator with an 
+accuracy of 0.02% (200ppm), or better. 
+The ANSI/EIA/CEA‐709.1 protocol permits a network tool to optionally allocate 
+priority time slots on a channel to particular devices.  These priority time slots come 
+before the non‐priority time slots.  The network tool can ensure that one‐and‐only‐
+one device is assigned to a particular priority slot on the channel.  Because there is no 
+contention for the medium during the priority portion of a packet cycle, devices 
+configured with priority have better response time than non‐priority devices when 
+the channel is heavily utilized (when traffic is high). 
+All devices sharing the same channel must be configured with the same maximum 
+number of priority slots so that they can reliably exchange messages and so that 
+priority messages gain priority access to the channel.  Each priority time slot on a 
+channel adds a minimum of two bit times to the transmission of every message.  The 
+amount of overhead associated with priority messaging varies based upon the bit 
+rate, oscillator accuracy, and transceiver characteristics of devices on the channel. 
+The default maximum number of priority slots is kept small to minimize effects on 
+throughput, but may be increased at installation time by a network tool.  By 
+requiring a higher‐accuracy oscillator, the effect of each priority slot on throughput 
+is also minimized. 
+Guideline 3.1.1D: A certified device shall be configured with a 
+default maximum number of priority slots as 
+shown in Table 17. 
+ 
+Guideline 3.1.1E: A certified application device shall not use priority 
+slot 1— it is reserved for use by network tools. 
+ 
+3.1.2. Network Buffers 
+The network I/O buffer sizes are configurable within the application program on a 
+device.  There are three buffer sizes and counts to configure: network output buffers, 
+network output priority buffers, and network input buffers. 
+The network input buffers in a device must be at least 66 bytes to allow the device to 
+receive all network management messages.  The Neuron C compiler uses this default 
+40   LONMARK Interoperability Guidelines 
+
+--- PAGE 41 ---
+ 
+for a Neuron C application if the application does not explicitly set the network 
+input buffer size. 
+Guideline 3.1.2A: The network input buffers in a certified device 
+shall be at least 66 bytes. 
+The network output buffers in a device must be large enough to send the longest 
+packet that the device application can generate.  However, a minimum size of 42 
+bytes is required to support all network management responses.  This length 
+includes not only the application information, but also the worst‐case addressing 
+overhead for the packet, which is 22 bytes.  Addressing overhead is partly 
+dependent on the domain length chosen for a network at installation time.  The 
+Neuron C compiler uses these defaults for a Neuron C application if the application 
+does not explicitly set the network output buffer size. 
+Guideline  3.1.2B: The network output buffers in a certified device 
+shall be at least 42 bytes; or 22 bytes larger than 
+the largest network variable, application 
+message, or response message sent by the 
+device application, whichever is larger. 
+A device must have network output priority buffers if the device can be installed to 
+use priority messaging.  The same sizing and count rules apply for priority buffers as 
+for ordinary network output buffers.  A Neuron C application can use the 
+nonpriority nonconfig declaration for network variables (or not set the priority field 
+for explicit messages) to ensure that no priority can be assigned on the device.  In 
+that case, priority network output buffers are not required. 
+Guideline 3.1.2C: A certified device shall implement priority 
+network output buffers if the device can send 
+priority messages or priority network variables. 
+ 
+3.2. Layer 3: Network Layer 
+The network layer defines how message packets are routed from a source device to 
+one or more destination devices.  This layer defines naming and addressing of 
+devices to ensure the correct delivery of packets.  This layer also defines how 
+messages are routed between the source and destination device when these devices 
+are on different channels. 
+A name is an identifier that uniquely identifies a single object within an object class.  
+A name is assigned when an object is created and does not change over its lifetime.  
+To ensure that every ANSI/EIA/CEA‐709.1 device can be uniquely distinguished 
+from every other ANSI/EIA/CEA‐709.1 device, every ANSI/EIA/CEA‐709.1 
+(EN14908‐1) device includes a unique 48‐bit name called the Neuron ID.  This ID will 
+always be unique for every ANSI/EIA/CEA‐709.1 device and does not change over 
+Layers 2–6   41 
+
+--- PAGE 42 ---
+the lifetime of the ANSI/EIA/CEA‐709.1 device.  The Neuron ID is also called the 
+unique node ID. 
+An address is an identifier that uniquely identifies an object or group of objects 
+within an object class.  Unlike a name, an address may be assigned and changed any 
+time after an object is created. 
+ANSI/EIA/CEA‐709.1 addresses uniquely identify the source device and destination 
+device or devices of an ANSI/EIA/CEA‐709.1 (EN14908‐1) packet.  Routers may use 
+these addresses to selectively pass packets between two channels. 
+A Neuron ID may be used as an address.  However, the Neuron ID is not used as the 
+sole form of addressing in the ANSI/EIA/CEA‐709.1 (EN14908‐1) protocol because 
+such addressing only supports one‐to‐one transactions (i.e., no groups), and would 
+require excessively large routing tables to optimize network traffic.  As a result, this 
+addressing mode is used only for installation, configuration, and diagnostics since it 
+allows communications with a device before the device has been assigned an 
+address, and is useful for detecting duplicate network addresses. 
+To simplify routing, the ANSI/EIA/CEA‐709.1 (EN14908‐1) protocol defines a 
+dynamically‐assigned hierarchical form of addressing using three address 
+components:  the domain, subnet, and node addresses.  This form of addressing can be 
+used to address an individual device or collections of devices sharing common 
+subnet or domain address components.  To further facilitate the addressing of 
+multiple dispersed devices, the ANSI/EIA/CEA‐709.1 (EN14908‐1) protocol defines 
+another class of dynamic addresses using domain and group addresses.  The 
+dynamic addresses for a device are called the network address. 
+The use of a dynamically assigned address instead of a fixed name simplifies 
+replacement of devices in a functioning network.  A network tools assigns a 
+replacement device the same network address as the device it replaces.  Thus all 
+references to this device from elsewhere on the network do not need to be modified, 
+as would be the case if Neuron ID addressing was used. 
+A device may assign its own network address.  This form of addressing is called self‐
+installation.  Self‐installation requires knowledge of other devices in a network.  Self‐
+installation is typically only used for simple networks where a hardware input 
+controlled by an integrator or other hardware means can be used to manually assign 
+a network address to a device.  It must be possible to disable self‐installation to allow 
+a self‐installed device to be used in a network where the network addresses are 
+assigned by a network tool.  See Self‐Installed Devices in the LONMARK Application‐
+Layer Interoperability Guidelines for guidelines on implementing self‐installed devices. 
+3.3. Layers 4 & 5: Transport and Session Layers 
+The transport layer ensures reliable delivery of message packets.  Messages can be 
+exchanged using an acknowledged service, where the sending device waits for an 
+acknowledgement from the receiver and resends the message if the 
+42   LONMARK Interoperability Guidelines 
+
+--- PAGE 43 ---
+ 
+acknowledgement is not received.  This is called the acknowledged message service.  
+The transport layer also defines how duplicate messages are detected and rejected if 
+a message is re‐sent due to a lost acknowledgement. 
+The session layer adds control to the data exchanged by the lower layers.  It supports 
+remote actions so that a client may make a request to a remote server and receive a 
+response to this request.  Remote actions are implemented using the request message 
+service.  It also defines an authentication protocol that enables receivers of a message 
+to determine if the sender is authorized to send the message. 
+The acknowledged or request message services are not permitted when the packet to 
+be sent requires a network output buffer greater than 66 bytes.  The reason for this is 
+that all devices on a channel must receive every message in order to maintain the 
+correct estimate of the channel backlog.  If an incoming message is longer than the 
+network input buffer allocated to hold it, the message will fail the CRC and will be 
+discarded prior to extracting the backlog information from it.  Since 
+unacknowledged packets always have a backlog increment of zero, there is no 
+problem sending longer packets using one of the unacknowledged message services 
+provided by the ANSI/EIA/CEA‐709.1 (EN14908‐1) protocol.  All devices must 
+therefore use unacknowledged message services when transmitting packets that 
+require output buffers longer than 66 bytes. 
+Guideline 3.3A: A certified device shall not use the acknowledged 
+or request message services for packets requiring 
+a network output buffer greater than 66 bytes. 
+A receive transaction entry is required on a device to manage outstanding time‐outs 
+for any incoming message that uses either a repeated, acknowledged, or request 
+message service.  No receive transaction entries are required for an incoming 
+message using an unacknowledged message service.  A receive transaction entry is 
+required for each unique source address/destination address/priority attribute.  Each 
+receive transaction entry contains a current transaction number.  A message is 
+considered to be a duplicate if its source address, destination address, and priority 
+attribute vector into an existing receive transaction and the messageʹs transaction 
+number matches the entryʹs transaction number. 
+The receive transaction count is the maximum number of simultaneous receive 
+transaction entries that are be supported by a device.  The receive transaction count 
+must be large enough to support the maximum number of outstanding receive 
+transaction entries likely to be required for the device in a network installation.  At a 
+minimum, the receive transaction count for a certified device that receives 
+application or foreign‐frame messages must be equal to the following value: 
+ReceiveTransactionCount = max(8, min (16, NonConfigInputNvCount + 2)) 
+At a minimum, the receive transaction count for a certified device that does not 
+receive application or foreign‐frame messages must be equal to the following value: 
+ReceiveTransactionCount = min(16, NonConfigInputNvCount + 2) 
+Layers 2–6   43 
+
+--- PAGE 44 ---
+The Neuron C compiler uses these defaults for a Neuron C application if the 
+application does not explicitly set the receive transaction count. 
+Guideline 3.3B: A certified device shall implement a receive 
+transaction count equal to or greater than the 
+value calculated by the formulas in 3.3. 
+ 
+3.4. Layer 6: Presentation Layer 
+The presentation layer adds structure to the data exchanged by the lower layers by 
+defining the encoding of message data.  Messages may be encoded as network 
+variables, configuration properties, application messages, or foreign frames.  
+Interoperable encoding of network variables and configuration properties is 
+provided with standard network‐variable types (SNVTs) and standard 
+configuration‐property types (SCPTs).  The LONMARK Application‐Layer 
+Interoperability Guidelines specify guidelines for use of network variables, 
+configuration properties, and messaging. 
+Index 
+A 
+acknowledged message service, 45 
+ANSI/EIA/CEA 709.1 Control Network 
+Protocol 
+defined, 5, 6 
+reference, 8 
+ANSI/EIA‐709.2‐A. See PL‐20(L‐N) and PL‐
+20(L‐E) 
+ANSI/EIA‐709.3‐A. See TP/FT‐10 
+ANSI/EIA‐709.4. See FO‐20S and FO‐20L 
+ANSI/TIA/EIA‐485‐A. See TP‐RS485‐39 
+authentication, 45 
+average packets sizes, 40 
+B 
+beta 1, 40 
+beta 2, 40 
+bit rates, 40 
+buffers 
+network, 42 
+C 
+CENELEC EN 50065‐1. See PL‐20A(L‐N) 
+channel parameters, 13, 40 
+channel types 
+FO‐20L. See FO‐20L 
+FO‐20S. See FO‐20S 
+IP‐852. See IP‐852 
+PL‐20(L‐E). See PL‐20(L‐E) 
+PL‐20(L‐N). See PL‐20(L‐N) 
+PL‐20A(L‐N). See PL‐20A(L‐N) 
+proposing new, 14 
+standard, 12 
+TP/FT‐10. See TP/FT‐10 
+TP/XF‐1250. See TP/XF‐1250 
+TP/XF‐78. See TP/XF‐78 
+TP‐RS485‐39. See TP‐RS485‐39 
+channels 
+defined, 6, 11 
+44   LONMARK Interoperability Guidelines 
+
+--- PAGE 45 ---
+ 
+clock rates, 40 
+communications channels. See channels 
+control network 
+defined, 5 
+D 
+devices 
+defined, 6 
+E 
+EIA/CEA‐852. See IP‐852 
+F 
+FO‐20L 
+defined, 34 
+network cabling, 34 
+performance specifications, 34 
+FO‐20S 
+defined, 32 
+network cabling, 32 
+performance specifications, 32 
+I 
+IP‐852 
+defined, 35 
+implementation requirements, 36 
+L 
+layer 2. See link layer 
+layer 3. See network layer 
+layer 4. See transport layer 
+layer 5. See session layer 
+layer 6. See presentation layer 
+line‐to‐earth coupling 
+PL‐20(L‐E), 22 
+line‐to‐neutral coupling 
+PL‐20(L‐N), 22 
+PL‐20A(L‐N), 25 
+link layer 
+chanel parameters, 40 
+defined, 40 
+LONMARK Application‐Layer Interoperability 
+Guidelines 
+reference, 8 
+LONMARK Association Principal Engineer, 8 
+LONMARK certification, 6, 7 
+LONMARK Interoperability Guidelines 
+defined, 5 
+LONMARK logo, 5, 6 
+LONMARK Program Overview, 9 
+LonTalk protocol, 5 
+LONWORKS platform, 5 
+N 
+network buffers, 42 
+network layer 
+acknowledged message service, 45 
+addressing, 44 
+defined, 43 
+naming, 43 
+nodes. See devices 
+O 
+oscillator accuracy, 40 
+P 
+packet sizes, 40 
+performance testing, 15 
+physical layer 
+defined, 11 
+PL‐20(L‐E) 
+coupling circuits, 22 
+defined, 21 
+performance specifications, 21 
+power supplies, 23 
+transceiver interface specifications, 22 
+PL‐20(L‐N) 
+coupling circuits, 22 
+defined, 21 
+performance specifications, 21 
+power supplies, 23 
+transceiver interface specifications, 22 
+PL‐20A(L‐N) 
+Requirements for Retesting, Upgrading, and Recertifying Devices  45 
+
+--- PAGE 46 ---
+coupling circuits, 25 
+defined, 24 
+performance specifications, 24 
+power supplies, 25 
+transceiver interface specifications, 24 
+preamble, 40 
+presentation layer 
+defined, 46 
+priority slots, 40 
+R 
+receive transaction counts, 45 
+receive transaction entries, 45 
+request message service, 45 
+S 
+session layer 
+authentication, 45 
+defined, 45 
+request message service, 45 
+standard channel types. See channel types 
+Standard Transceiver Reference, 9 
+StdXcvr.xml, 9 
+T 
+TP/FT‐10 
+bit error rate, 27 
+defined, 26 
+link power supply requirements, 28 
+network cabling, 27 
+passive coupler, 31 
+performance specifications, 27 
+repeaters, 26 
+TP/XF‐1250 
+bus termination, 18 
+defined, 15 
+network cabling, 17 
+performance specifications, 15 
+transceiver schematic, 16 
+TP/XF‐78 
+bus termination, 18 
+defined, 15 
+network cabling, 17 
+performance specifications, 15 
+transceiver schematic, 16 
+TP‐RS485‐39 
+bus termination, 20 
+defined, 18 
+grounding, 20 
+performance specifications, 19 
+transceiver schematic, 19 
+transceivers 
+defined, 11 
+transport layer 
+defined, 44 
+tunneling, 35 
+ 
+46   LONMARK Interoperability Guidelines 

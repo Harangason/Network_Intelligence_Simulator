@@ -1,0 +1,70 @@
+No. Type Description
+Scenario description 1. The CSMS sends a ClearChargingProfileRequest to the Charging Station.
+2. The Charging Station responds with a ClearChargingProfileResponse specifying whether it was
+able to process the request in the status.
+5 Prerequisite(s) One or more ChargingProfiles are installed.
+6 Postcondition(s) Successful postcondition:
+The requested charging profiles are Successfully cleared.
+Failure postcondition:
+The requested charging profiles are not cleared, as no ChargingProfile is found.
+7 Error handling n/a
+8 Remark(s) n/a
+Charging Station CSMS
+ClearChargingProfileRequest([id], [evseId], [chargingProfilePurpose], [stackLevel])
+ClearChargingProfileResponse(status)
+Figure 107. Sequence Diagram of the use case "Clear Charging Profile"
+K10 - Clear Charging Profile - Requirements
+Table 103. K10 - Requirements
+ID Precondition Requirement definition Note
+K10.FR.01 If the Charging Station does
+not have any matching
+ChargingProfile.
+Upon receipt of a ClearChargingProfileRequest, the
+Charging Station SHALL respond with the status
+Unknown.
+K10.FR.02 The CSMS SHALL either specify a chargingProfile.id OR
+include one or more of the fields stackLevel, evseId and
+chargingProfilePurpose in the
+ClearChargingProfileRequest to specify which Charging
+Profiles need to be cleared.
+K10.FR.03 Upon receipt of a
+ClearChargingProfileReques
+t with a specified
+chargingProfileId AND
+the chargingProfilePurpose
+of the referenced
+ChargingProfile is NOT
+ChargingStationExter
+nalConstraints
+The Charging Station SHALL clear the Charging Profile
+with the matching id and respond with a
+ClearChargingProfileResponse message with status =
+Accepted.
+K10.FR.04 NOT K10.FR.03 AND
+NOT K10.FR.08 AND
+Upon receipt of a
+ClearChargingProfileReques
+t, with optional values for
+evseId,
+chargingProfilePurpose,
+stackLevel
+The Charging Station SHALL clear the ChargingProfile(s)
+that match (as logical AND) the values in the request,
+except those for that have ChargingProfile =
+ChargingStationExternalConstraints and
+respond with a ClearChargingProfileResponse message
+with status = Accepted.
+K10.FR.05 After clearing one or more
+Charging Profiles.
+The Charging Station SHALL recalculate its composite
+schedule and set the resulting maximum power/current
+values to all ongoing transactions.
+K10.FR.07 K10.FR.05
+AND the cleared profile has
+chargingProfilePurpose =
+TxDefaultProfile
+The Charging Station SHALL continue any active
+transaction, that started with a TxDefaultProfile, as if it
+was started without a TxDefaultProfile.
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 269/491 Part 2 - Specification

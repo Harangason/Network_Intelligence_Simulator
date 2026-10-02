@@ -1,0 +1,465 @@
+DS2482-100 - Single-Channel 1-Wire Master (https://www.analog.com/media/en/technical-documentation/data-sheets/DS2482-100.pdf)
+citeturn553view0 [wordlim: 200] Crawled: today; Content type: application/pdf; Number of pages: 24; Source: open({"ref_id":"turn549view1","lineno":329}); Total lines: 1252
+L273@P4: write-byte, single-bit R/W, and triplet for ROM Search,
+L274@P4: without requiring interaction with the host processor. The
+L275@P4: host obtains feedback (completion of a 1-Wire function,
+L276@P4: presence pulse, 1-Wire short, search direction taken)
+L277@P4: through the Status Register and data through the Read
+L278@P4: Data Register. The DS2482-100 communicates with a
+L279@P4: host processor through its I2C bus interface in standard
+L280@P4: mode or in fast mode. The logic state of two address pins
+L281@P4: determines the I2C slave address of the DS2482-100,
+L282@P4: allowing up to four devices operating on the same bus
+L283@P4: segment without requiring a hub. See Figure 1 for a block
+L284@P4: diagram.
+L285@P4: Figure 1. Block Diagram
+L286@P4: PIN
+L287@P4: NAME FUNCTION
+L288@P4: SO WLP
+L289@P4: 1 B3 VCC Power-Supply Input
+L290@P4: 2 C3 IO Input/Output Driver for 1-Wire Line
+L291@P4: 3 C2 GND Ground Reference
+L292@P4: 4 B1 SCL I2C Serial Clock Input. Must be connected to VCC through a pullup resistor.
+L293@P4: 5 B2 SDA I2C Serial Data Input/Output. Must be connected to VCC through a pullup resistor.
+L294@P4: 6 A1 PCTLZ Active-Low Control Output for an External p-Channel MOSFET. Provides extra power to the 1-Wire
+L295@P4: line, e.g., for use with 1-Wire devices that require a higher current temporarily to operate.
+L296@P4: 7 A2 AD1 I2C Address Inputs. Must be connected to VCC or GND. These inputs determine the I2C slave
+L297@P4: 8 A3 AD0 address of the device (see Figure 8).
+L298@P4: www.analog.com Analog Devices │ 5
+L299@P4: DS2482-100 Single-Channel 1-Wire Master
+L300@P4: Pin Description
+L301@P4: CONFIGURATION
+L302@P4: REGISTER
+L303@P4: I
+L304@P4: 2C
+L305@P4: INTERFACE
+L306@P4: CONTROLLER
+L307@P4: INPUT/OUTPUT
+L308@P4: CONTROLLER
+L309@P4: LINE
+L310@P4: XCVR
+L311@P4: T-TIME OSC
+L312@P4: DS2482-100
+L313@P4: STATUS
+L314@P4: REGISTER
+L315@P4: READ DATA
+L316@P4: REGISTER
+L317@P4: SDA IO
+L318@P4: PCTLZ
+L319@P4: AD0
+L320@P4: AD1
+L321@P4-5: SCLDevice Registers
+L322@P5: The DS2482-100 has three registers that the I2C host
+L323@P5: can read: Configuration, Status, and Read Data. These
+L324@P5: registers are addressed by a read pointer. The position
+L325@P5: of the read pointer, i.e., the register that the host reads
+L326@P5: in a subsequent read access, is defined by the instruction the DS2482-100 executed last. To enable certain
+L327@P5: 1-Wire features, the host has read and write access to the
+L328@P5: Configuration Register.
+L329@P5: Configuration Register
+L330@P5: The DS2482-100 supports three 1-Wire features that are
+L331@P5: enabled or selected through the Configuration Register.
+L332@P5: These features are:
+L333@P5: ● Active Pullup (APU)
+L334@P5: ● Strong Pullup (SPU)
+L335@P5: ● 1-Wire Speed (1WS)
+L336@P5: These features can be selected in any combination. While
+L337@P5: APU and 1WS maintain their state, SPU returns to its
+L338@P5: inactive state as soon as the strong pullup has ended.
+L339@P5: After a device reset (power-up cycle or initiated by the
+L340@P5: Device Reset command), the Configuration Register
+L341@P5: reads 00h. When writing to the Configuration Register, the
+L342@P5: new data is accepted only if the upper nibble (bits 7 to 4)
+L343@P5: is the one’s complement of the lower nibble (bits 3 to 0).
+L344@P5: When read, the upper nibble is always 0h.
+L345@P5: Active Pullup (APU)
+L346@P5: The APU bit controls whether an active pullup (controlled
+L347@P5: slew-rate transistor) or a passive pullup (RWPU resistor)
+L348@P5: is used to drive a 1-Wire line from low to high. When
+L349@P5: APU = 0, active pullup is disabled (resistor mode). Active
+L350@P5: pullup should always be selected unless there is only a
+L351@P5: single slave on the 1-Wire line. The active pullup does
+L352@P5: not apply to the rising edge of a presence pulse or a
+L353@P5: recovery after a short on the 1-Wire line.
+L354@P5: The circuit that controls rising edges (Figure 2) operates as follows: At t1, the pulldown (from DS2482-100 or
+L355@P5: 1-Wire slave) ends. From this point on, the 1-Wire bus is
+L356@P5: pulled high through RWPU internal to the DS2482-100.
+L357@P5: VCC and the capacitive load of the 1-Wire line determine
+L358@P5: the slope. In case that active pullup is disabled (APU = 0),
+L359@P5: the resistive pullup continues, as represented by the solid
+L360@P5: line. With active pullup enabled (APU = 1), and when at t2
+L361@P5: the voltage has reached a level between VIL1(MAX) and
+L362@P5: VIH1(MIN), the DS2482-100 actively pulls the 1-Wire line
+L363@P5: high, applying a controlled slew rate as represented by
+L364@P5: the dashed line. The active pullup continues until tAPUOT
+L365@P5: is expired at t3. From that time on the resistive pullup continues. See the Strong Pullup (SPU) section for a way to
+L366@P5: keep the pullup transistor conducting beyond t3.
+L367@P5: Configuration Register Bit Assignment
+L368@P5: Figure 2. Rising Edge Pullup
+L369@P5: BIT 7 BIT 6 BIT 5 BIT 4 BIT 3 BIT 2 BIT 1 BIT 0
+L370@P5: 1WS SPU 1 APU 1WS SPU 0 APU
+L371@P5: www.analog.com Analog Devices │ 6
+L372@P5: DS2482-100 Single-Channel 1-Wire Master
+L373@P5: VCC
+L374@P5: 0V
+L375@P5: 1-Wire BUS IS DISCHARGED
+L376@P5: VIL1(MAX)
+L377@P5: VIH1(MIN)
+L378@P5: t1 t2
+L379@P5: tAPUOT
+L380@P5: t3
+L381@P5: APU = 1
+L382@P5-6: APU = 0Strong Pullup (SPU)
+L383@P6: The SPU bit is used to activate the strong pullup function prior to a 1-Wire Write Byte or 1-Wire Single Bit
+L384@P6: command. Strong pullup is commonly used with 1-Wire
+L385@P6: EEPROM devices when copying scratchpad data to the
+L386@P6: main memory or when performing an SHA-1 computation
+L387@P6: and with parasitically powered temperature sensors or
+L388@P6: A/D converters. The respective device data sheets specify the location in the communications protocol after which
+L389@P6: the strong pullup should be applied. The SPU bit must be
+L390@P6: set immediately prior to issuing the command that puts
+L391@P6: the 1-Wire device into the state where it needs the extra
+L392@P6: power. The strong pullup uses the same internal pullup
+L393@P6: transistor as the active pullup feature. For cases where
+L394@P6: the internal strong pullup has insufficient strength, the
+L395@P6: PCTLZ pin can be used to control an external p-channel
+L396@P6: MOSFET to supply additional power beyond the drive
+L397@P6: capability of the DS2482-100 to the 1-Wire line. See the
+L398@P6: ΔVSTRPU parameter in the Electrical Characteristics to
+L399@P6: determine if the internal strong pullup is sufficient given
+L400@P6: the current load on the device.
+L401@P6: If SPU is 1, the DS2482-100 treats the rising edge of the
+L402@P6: time slot in which the strong pullup starts as if the active
+L403@P6: pullup was activated. However, in contrast to the active
+L404@P6: pullup, the strong pullup, i.e., the internal pullup transistor, remains conducting, as shown in Figure 3, until one
+L405@P6: of three events occurs: the DS2482-100 receives a command that generates 1-Wire communication (the typical
+L406@P6: case); the SPU bit in the Configuration Register is written
+L407@P6: to 0; or the DS2482-100 receives the Device Reset command. As long as the strong pullup is active, the PCTLZ
+L408@P6: output is low. When the strong pullup ends, the SPU
+L409@P6: bit is automatically reset to 0. Using the strong pullup
+L410@P6: feature does not change the state of the APU bit in the
+L411@P6: Configuration Register. Note: Strong pullup also affects
+L412@P6: the 1-Wire Reset command. If enabled, it can cause
+L413@P6: incorrect reading of the presence pulse and may cause a
+L414@P6: violation of the device’s absolute maximum rating.
+L415@P6: 1-Wire Speed (1WS)
+L416@P6: The 1WS bit determines the timing of any 1-Wire communication generated by the DS2482-100. All 1-Wire slave
+--------------------------------------------------------------------------------
+DS2482-100 - Single-Channel 1-Wire Master (https://www.analog.com/media/en/technical-documentation/data-sheets/DS2482-100.pdf)
+citeturn553view1 [wordlim: 200] Crawled: today; Content type: application/pdf; Number of pages: 24; Source: open({"ref_id":"turn549view1","lineno":780}); Total lines: 1252
+L740@P13: Command Duration 3 x tSLOT + maximum 262.5ns, counted from the falling SCL edge of the first bit (MSB) of the
+L741@P13: direction byte.
+L742@P13: 1-Wire Activity Begins maximum 262.5ns after the falling SCL edge of the MSB of the direction byte.
+L743@P13: Read Pointer Position Status Register (for busy polling).
+L744@P13: Status Bits Affected 1WB (set to 1 for 3 x tSLOT), SBR is updated at the first tMSR, TSB and DIR are updated at the
+L745@P13: second tMSR (i.e., at tSLOT + tMSR).
+L746@P13: Configuration Bits Affected 1WS, APU apply.
+L747@P13: BIT 7 BIT 6 BIT 5 BIT 4 BIT 3 BIT 2 BIT 1 BIT 0
+L748@P13: V x x x x x x x
+L749@P13: www.analog.com Analog Devices │ 14
+L750@P13-14: DS2482-100 Single-Channel 1-Wire MasterI2C Interface
+L751@P14: General Characteristics
+L752@P14: The I2C bus uses a data line (SDA) plus a clock signal
+L753@P14: (SCL) for communication. Both SDA and SCL are bidirectional lines, connected to a positive supply voltage
+L754@P14: through a pullup resistor. When there is no communication, both lines are high. The output stages of devices
+L755@P14: connected to the bus must have an open drain or open
+L756@P14: collector to perform the wired-AND function. Data on the
+L757@P14: I2C bus can be transferred at rates of up to 100kbps in
+L758@P14: standard mode and up to 400kbps in fast mode. The
+L759@P14: DS2482-100 works in both modes.
+L760@P14: A device that sends data on the bus is defined as a
+L761@P14: transmitter, and a device receiving data is defined as a
+L762@P14: receiver. The device that controls the communication is
+L763@P14: called a master. The devices that are controlled by the
+L764@P14: master are slaves. To be individually accessed, each
+L765@P14: device must have a slave address that does not conflict
+L766@P14: with other devices on the bus.
+L767@P14: Data transfers can be initiated only when the bus is not
+L768@P14: busy. The master generates the serial clock (SCL), controls the bus access, generates the START and STOP
+L769@P14: conditions, and determines the number of data bytes
+L770@P14: transferred between START and STOP (Figure 7). Data
+L771@P14: is transferred in bytes with the most significant bit being
+L772@P14: transmitted first. After each byte follows an acknowledge
+L773@P14: bit to allow synchronization between master and slave.
+L774@P14: Slave Address
+L775@P14: The slave address to which the DS2482-100 responds
+L776@P14: is shown in Figure 8. The logic state at the address pins
+L777@P14: AD0 and AD1 determines the value of the address bits A0
+L778@P14: and A1. The address pins allow the device to respond to
+L779@P14: one of four possible slave addresses. The slave address
+L780@P14: is part of the slave address/control byte. The last bit of the
+L781@P14: slave address/control byte (R/W) defines the data direction. When set to 0, subsequent data flows from master to
+L782@P14: slave (write access); when set to 1, data flows from slave
+L783@P14: to master (read access).
+L784@P14: Figure 7. I2C Protocol Overview
+L785@P14: Figure 8. DS2482-100 Slave Address
+L786@P14: www.analog.com Analog Devices │ 15
+L787@P14: DS2482-100 Single-Channel 1-Wire Master
+L788@P14: SDA
+L789@P14: SCL
+L790@P14: IDLE
+L791@P14: 1–7 8 9 1–7 8 9 1–7 8 9
+L792@P14: START
+L793@P14: CONDITION STOP CONDITION
+L794@P14: REPEATED START
+L795@P14: SLAVE
+L796@P14: ADDRESS
+L797@P14: R/W ACK DATA ACK ACK/
+L798@P14: NACK
+L799@P14: DATA
+L800@P14: MSB FIRST MSB LSB MSB LSB
+L801@P14: REPEATED IF MORE BYTES
+L802@P14: ARE TRANSFERRED
+L803@P14: 0
+L804@P14: A6
+L805@P14: MSB
+L806@P14: 0
+L807@P14: A5
+L808@P14: 1
+L809@P14: A4
+L810@P14: 1
+L811@P14: A3
+L812@P14: 7-BIT SLAVE ADDRESS
+L813@P14: 0
+L814@P14: A2
+L815@P14: AD1
+L816@P14: A1
+L817@P14: AD0
+L818@P14: A0
+L819@P14: R/W
+L820@P14: DETERMINES
+L821@P14: READ OR WRITE
+L822@P14: AD1, AD0
+L823@P14-15: PIN STATESI2C Definitions
+L824@P15: The following terminology is commonly used to describe
+L825@P15: I2C data transfers. The timing references are defined in
+L826@P15: Figure 9.
+L827@P15: Bus Idle or Not Busy: Both SDA and SCL are inactive
+L828@P15: and in their logic-high states.
+L829@P15: START Condition: To initiate communication with a
+L830@P15: slave, the master must generate a START condition.
+L831@P15: A START condition is defined as a change in state of
+L832@P15: SDA from high to low while SCL remains high.
+L833@P15: STOP Condition: To end communication with a slave,
+L834@P15: the master must generate a STOP condition. A STOP
+L835@P15: condition is defined as a change in state of SDA from
+L836@P15: low to high while SCL remains high.
+L837@P15: Repeated START Condition: Repeated STARTs are
+L838@P15: commonly used for read accesses to select a specific
+L839@P15: data source or address to read from. The master can
+L840@P15: use a repeated START condition at the end of a data
+L841@P15: transfer to immediately initiate a new data transfer following the current one. A repeated START condition
+L842@P15: is generated the same way as a normal START condition, but without leaving the bus idle after a STOP
+L843@P15: condition.
+L844@P15: Data Valid: With the exception of the START and
+L845@P15: STOP condition, transitions of SDA can occur only
+L846@P15: during the low state of SCL. The data on SDA must
+L847@P15: remain valid and unchanged during the entire high
+L848@P15: pulse of SCL plus the required setup and hold time
+L849@P15: (tHD:DAT after the falling edge of SCL and tSU:DAT
+L850@P15: before the rising edge of SCL; see Figure 9). There is
+L851@P15: one clock pulse per bit of data. Data is shifted into the
+L852@P15: receiving device during the rising edge of SCL.
+L853@P15: When finished with writing, the master must release
+L854@P15: the SDA line for a sufficient amount of setup time
+L855@P15: (minimum tSU:DAT + tR in Figure 9) before the next
+L856@P15: rising edge of SCL to start reading. The slave shifts out
+L857@P15: each data bit on SDA at the falling edge of the previous SCL pulse and the data bit is valid at the rising
+L858@P15: edge of the current SCL pulse. The master generates
+L859@P15: all SCL clock pulses, including those needed to read
+L860@P15: from a slave.
+L861@P15: Acknowledge: Typically a receiving device, when
+L862@P15: addressed, is obliged to generate an acknowledge
+L863@P15: after the receipt of each byte. The master must generate a clock pulse that is associated with this acknowledge bit. A device that acknowledges must pull SDA
+L864@P15: low during the acknowledge clock pulse in such a
+L865@P15: way that SDA is stable low during the high period of
+L866@P15: the acknowledge-related clock pulse plus the required
+L867@P15: setup and hold time (tHD:DAT after the falling edge of
+L868@P15: SCL and tSU:DAT before the rising edge of SCL).
+L869@P15: Not Acknowledged by Slave: A slave device may
+L870@P15: be unable to receive or transmit data, for example,
+L871@P15: because it is busy performing some real-time function.
+L872@P15: In this case, the slave device does not acknowledge
+L873@P15: its slave address and leaves the SDA line high. A slave
+L874@P15: device that is ready to communicate acknowledges at
+L875@P15: least its slave address. However, some time later the
+L876@P15: slave may refuse to accept data, possibly because of
+L877@P15: Figure 9. I2C Timing Diagram
+L878@P15: www.analog.com Analog Devices │ 16
+L879@P15: DS2482-100 Single-Channel 1-Wire Master
+L880@P15: SCL
+L881@P15: NOTE: TIMING IS REFERENCED TO VIL(MAX) AND VIH(MIN).
+L882@P15: SDA
+L883@P15: STOP START REPEATED
+L884@P15: START
+L885@P15: SPIKE
+L886@P15: SUPPRESSION
+L887@P15: tBUF
+L888@P15: tHD:STA
+L889@P15: tHD:DAT tSU:DAT
+L890@P15: tSU:STO
+L891@P15: tHD:STA
+L892@P15: tSP
+L893@P15: tSU:STA
+--------------------------------------------------------------------------------
+DS1990A - Serial Number iButton (https://www.analog.com/media/en/technical-documentation/data-sheets/DS1990A.pdf)
+citeturn553view2 [wordlim: 200] Crawled: yesterday; Content type: application/pdf; Number of pages: 10; Source: open({"ref_id":"turn549view2","lineno":186}); Total lines: 559
+L152@P2: Note 3:	 Capacitance on the IO pin could be 800pF when power is first applied. If a 5kΩ resistor is used to pull up the IO line to
+L153@P2: VPUP 5µs after power has been applied, the parasite capacitance will not affect normal communications.
+L154@P2: Note 4: Guaranteed by design, simulation only. Not production tested.
+L155@P2: Note 5: Maximum value represents the internal parasite capacitance when VPUP is first applied. Once the parasite capacitance is
+L156@P2: charged, it does not affect normal communication.
+L157@P2: Note 6: Input load is to ground.
+L158@P2: Note 7: The voltage on IO must be less than or equal to VILMAX whenever the master drives the line low.
+L159@P2: Note 8: VIH is a function of the internal supply voltage.
+L160@P2: Note 9: The reset low time (tRSTL) should be restricted to a maximum of 960µs to allow interrupt signaling. A longer duration could
+L161@P2: mask or conceal interrupt pulses if this device is used in parallel with a DS1994.
+L162@P2: Note 10: An additional reset or communication sequence cannot begin until the reset high time has expired.
+L163@P2: Note 11: Presence pulse is guaranteed only after a preceding reset pulse (tRSTL).
+L164@P2: Note 12:	ε in Figure 7 represents the time required for the pullup circuitry to pull the voltage on IO up from VIL to VIH. The actual
+L165@P2: maximum duration for the master to pull the line low is tW1LMAX + tF - ε and tW0LMAX + tF - ε, respectively.
+L166@P2: Note 13:	δ in Figure 7 represents the time required for the pullup circuitry to pull the voltage on IO up from VIL to the input-high
+L167@P2: threshold of the bus master. The actual maximum duration for the master to pull the line low is tRLMAX + tF.
+L168@P2: Detailed Description
+L169@P2: The block diagram in Figure 1 shows the major function
+L170@P2: blocks of the device. The DS1990A takes the energy it
+L171@P2: needs to operate from the IO line, as indicated by the
+L172@P2: parasite power block. The ROM function control unit
+L173@P2: includes the 1-Wire interface and the logic to implement
+L174@P2: the ROM function commands, which access 64 bits of
+L175@P2: unique ROM.
+L176@P2: Figure 1. Block Diagram
+L177@P2: SIZE See the Package Information section.
+L178@P2: WEIGHT (DS1990A) Ca. 2.5 grams
+L179@P2: www.analog.com Analog Devices │ 3
+L180@P2: DS1990A Serial Number iButton
+L181@P2: Electrical Characteristics (continued)
+L182@P2: iButton CAN PHYSICAL SPECIFICATION
+L183@P2: DS1990A PARASITE POWER
+L184@P2: ROM
+L185@P2: FUNCTION CONTROL IO 64-BIT
+L186@P2-3: UNIQUE ROM64-Bit Unique ROM
+L187@P3: Each DS1990A contains a unique ROM code that is 64
+L188@P3: bits long. The first 8 bits are a 1-Wire family code. The
+L189@P3: next 48 bits are a unique serial number. The last 8 bits are
+L190@P3: a CRC of the first 56 bits. See Figure 2 for details. The
+L191@P3: 1-Wire CRC is generated using a polynomial generator
+L192@P3: consisting of a shift register and XOR gates as shown in
+L193@P3: Figure 3. The polynomial is X8 + X5 + X4 + 1. Additional
+L194@P3: information about the 1-Wire Cyclic Redundancy Check
+L195@P3: (CRC) is available in Application Note 27: Understanding
+L196@P3: and Using Cyclic Redundancy Checks with Maxim iButton
+L197@P3: Products.
+L198@P3: The shift register bits are initialized to 0. Then starting with
+L199@P3: the least significant bit of the family code, one bit at a time
+L200@P3: is shifted in. After the 8th bit of the family code has been
+L201@P3: entered, the serial number is entered. After the 48th bit of
+L202@P3: the serial number has been entered, the shift register contains the CRC value. Shifting in the 8 bits of CRC returns
+L203@P3: the shift register to all 0s.
+L204@P3: 1-Wire Bus System
+L205@P3: The 1-Wire bus is a system that has a single bus master
+L206@P3: and one or more slaves. In all instances, the DS1990A
+L207@P3: is a slave device. The bus master is typically a microcontroller or PC. For small configurations, the 1-Wire
+L208@P3: communication signals can be generated under software
+L209@P3: control using a single port pin. Alternatively, the DS2480B
+L210@P3: 1-Wire line driver chip or serial-port adapters based on
+L211@P3: this chip (DS9097U series) can be used. This simplifies
+L212@P3: the hardware design and frees the microprocessor from
+L213@P3: responding in real time. The discussion of this bus system
+L214@P3: is broken down into three topics: hardware configuration,
+L215@P3: transaction sequence, and 1-Wire signaling (signal types
+L216@P3: and timing). The 1-Wire protocol defines bus transactions
+L217@P3: in terms of the bus state during specific time slots that are
+L218@P3: initiated on the falling edge of sync pulses from the bus
+L219@P3: master. For a more detailed protocol description, refer to
+L220@P3: Chapter 4 of the Book of iButton Standards.
+L221@P3: Figure 2. 64-Bit Unique ROM
+L222@P3: Figure 3. 1-Wire CRC Generator
+L223@P3: www.analog.com Analog Devices │ 4
+L224@P3: DS1990A Serial Number iButton
+L225@P3: MSB
+L226@P3: 8-BIT
+L227@P3: CRC CODE 48-BIT SERIAL NUMBER
+L228@P3: MSB LSB MSB
+L229@P3: LSB
+L230@P3: LSB
+L231@P3: 8-BIT FAMILY CODE
+L232@P3: (01h)
+L233@P3: LSB MSB
+L234@P3: 1ST
+L235@P3: STAGE
+L236@P3: 2ND
+L237@P3: STAGE
+L238@P3: 3RD
+L239@P3: STAGE
+L240@P3: 4TH
+L241@P3: STAGE
+L242@P3: 7TH
+L243@P3: STAGE
+L244@P3: 8TH
+L245@P3: STAGE
+L246@P3: 6TH
+L247@P3: STAGE
+L248@P3: 5TH
+L249@P3: STAGE
+L250@P3: X0 X1 X2 X3 X4
+L251@P3: POLYNOMIAL = X8 + X5 + X4 + 1
+L252@P3: INPUT DATA
+L253@P3-4: X5 X6 X7 X8Hardware Configuration
+L254@P4: The 1-Wire bus has only a single line by definition; it is
+L255@P4: important that each device on the bus be able to drive
+L256@P4: it at the appropriate time. To facilitate this, each device
+L257@P4: attached to the 1-Wire bus must have open-drain or threestate outputs. The 1-Wire port of the DS1990A is open
+L258@P4: drain with an internal circuit equivalent to that shown in
+L259@P4: Figure 4. A multidrop bus consists of a 1-Wire bus with
+L260@P4: multiple slaves attached. At standard speed, the 1-Wire
+L261@P4: bus has a maximum data rate of 16.3kbps. The value
+L262@P4: of the pullup resistor primarily depends on the network
+L263@P4: size and load conditions. The idle state for the 1-Wire
+L264@P4: bus is high. If for any reason a transaction needs to be
+L265@P4: suspended, the bus must be left in the idle state if the
+L266@P4: transaction is to resume. If this does not occur and the
+L267@P4: bus is left low for more than 120μs, one or more devices
+L268@P4: on the bus may be reset.
+L269@P4: Transaction Sequence
+L270@P4: The protocol for accessing the DS1990A through the
+L271@P4: 1-Wire port is as follows:
+L272@P4: ● Initialization
+L273@P4: ● ROM Function Command
+L274@P4: Initialization
+L275@P4: All transactions on the 1-Wire bus begin with an initialization sequence. The initialization sequence consists of a
+L276@P4: reset pulse transmitted by the bus master followed by
+L277@P4: presence pulse(s) transmitted by the slave(s). The presence pulse lets the bus master know that the DS1990A is
+L278@P4: on the bus and is ready to operate. For more details, see
+L279@P4: the 1-Wire Signaling section.
+L280@P4: Figure 4. Hardware Configuration
+L281@P4: www.analog.com Analog Devices │ 5
+L282@P4: DS1990A Serial Number iButton
+L283@P4: Rx
+L284@P4: RPUP
+L285@P4: VPUP
+L286@P4: SIMPLE BUS MASTER
+L287@P4: DS2480B BUS MASTER
+L288@P4: OPEN-DRAIN
+L289@P4: PORT PIN
+L290@P4: 100 MOSFET
+L291@P4: Tx
+L292@P4: Rx
+L293@P4: Tx
+L294@P4: DATA
+L295@P4: DS1990A 1-Wire PORT
+L296@P4: Rx = RECEIVE
+L297@P4: Tx = TRANSMIT
+L298@P4: VDD
+L299@P4: POL
+L300@P4: RXD SERIAL IN
+L301@P4: SERIAL OUT TXD
+L302@P4: VPP
+L303@P4: GND
+L304@P4: N.C.
+L305@P4: 1-W TO 1-Wire DATA
+L306@P4: +5V
+L307@P4: HOST CPU
+L308@P4: SERIAL
+L309@P4: PORT
+

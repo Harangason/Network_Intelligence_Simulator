@@ -1,0 +1,44 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+Payload Field(s) Length Value/Description
+Status 1 byte One of the following Status codes, as defined in table 128 of NCI 1.0.
+0x00: STATUS_OK
+0x03: STATUS_FAILED
+Others: RFU
+FW_Build_Number 4 bytes NXP internal firmware build number
+Table 38. NCI_PROPRIETARY_ACT_RSP parameters
+6.3.2  Configuration template
+In order to help issuing the right configuration sequence for a given mode of operation, the present document
+details typical configuration sequence, based on the following template:
+Command Main Parameters Values
+RF Protocol …
+Mode …RF_DISCOVER_MAP_CMD
+RF Interface …
+CORE_SET_CONFIG_CMD Depends on Technology & Mode …
+Technology-based routing …
+Protocol-based routing …RF_SET_LISTEN_MODE_ ROUTING_CMD
+(for Listen Mode only)
+AID-Based routing …
+RF_DISCOVER_CMD RF Technology & Mode …
+Table 39. Template for a typical configuration sequence
+6.4  PLL input Clock Management
+The PN7160 support 2 clock sources scheme:
+• a 27.12 MHz quartz ("XTAL MODE")
+• or a clean clock signal available on the platform on which PN7160 is connected ("PLL MODE"). A PLL inside
+PN7160 converts this input clock signal into an internal 27.12 MHz used to generate the RF carrier. The input
+clock frequency has to be one of the predefined set of input frequencies: 13 MHz, 19.2 MHz, 24 MHz, 26
+MHz, 32 MHz, 38.4 MHz or 48 MHz.
+The DH has to configure the parameter CLOCK_SEL_CFG (see chapter Section 11.1) to configure what is the
+clock source as used in the current application. When "PLL MODE" is set as clock source, this parameter also
+indicates which clock frequency is used as an input to the PLL.
+If the clock source is the ‘PLL’, then the DH shall also configure the appropriate PLL_SETTING and
+DPLL_SETTING (see chapter Section 11.1) depending on the input clock frequency.
+In order to optimize system power consumption, it may be required to switch OFF the PLL input clock when
+the PN7160 does not need it (when PN7160 has to generate the 13.56 MHz RF carrier or when downloading a
+new firmware). A dedicated pin (CLKREQ) is used to inform the DH or a clock generating chip that the PN7160
+requires to get the PLL input clock, such that it can generate the 13.56 MHz RF carrier.
+PN7160 assumes that the PLL input clock is ON and stable after a programmable time-out, which is configured
+thanks to the parameter CLOCK_TO_CFG (see chapter Section 11.1).
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+50 / 147

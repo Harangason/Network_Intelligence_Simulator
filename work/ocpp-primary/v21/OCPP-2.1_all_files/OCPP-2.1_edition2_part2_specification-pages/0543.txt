@@ -1,0 +1,115 @@
+Q08 - Local V2X control for frequency support - Requirements
+Table 158. Q08 - Requirements
+ID. Precondition Requirements Note
+FCR
+Q08.FR.01 When a ChargingSchedulePeriodType
+has operationMode =
+LocalFrequency
+The ChargingSchedulePeriodType SHALL NOT
+contain the fields limit, dischargeLimit, setpoint,
+setpointReactive.
+This also applies to the
+L2 and L3 variants of
+these fields.
+The power setpoint is
+calculated from
+v2xFreqWattCurve and
+v2xBaseline.
+Q08.FR.02 Q08.FR.01 The ChargingSchedulePeriodType SHALL have a
+v2xFreqWattCurve with at least two
+V2XFreqWattPointType elements, and a value for
+v2xBaseline, and optionally a v2xSignalWattCurve
+with at least two V2XSignalWattPointType
+elements.
+Q08.FR.03 When Charging Station receives a
+SetChargingProfile with a
+ChargingSchedulePeriodType that has
+operationMode = LocalFrequency
+AND
+The field v2xBaseline or
+v2xFreqWattCurve is missing or has
+less than two V2XFreqWattPointType
+elements
+Charging Station SHALL respond with
+SetChargingProfileResponse with status =
+Rejected and statusInfo.reasonCode =
+"NoFreqWattCurve".
+It is advised to mention
+the chargingSchedule.id
+and
+chargingSchedulePeriod.
+startPeriod in
+statusInfo.additionalInfo
+to tell which part of the
+charging schedule is
+invalid.
+Q08.FR.04 When Charging Station receives a
+SetChargingProfile with a
+ChargingSchedulePeriodType that has
+operationMode = LocalFrequency
+AND
+The ChargingSchedulePeriodType
+contains any of the fields limit,
+dischargeLimit, setpoint,
+setpointReactive.
+Charging Station SHALL respond with
+SetChargingProfileResponse with status =
+Rejected and statusInfo.reasonCode =
+"InvalidSchedule"
+This also applies to the
+L2 and L3 variants of
+these fields.
+The power setpoint is
+calculated from
+v2xFreqWattCurve and
+v2xBaseline. 
+It is advised to mention
+the chargingSchedule.id
+and
+chargingSchedulePeriod.
+startPeriod in
+statusInfo.additionalInfo
+to tell which part of the
+charging schedule is
+invalid.
+Q08.FR.05 Q08.FR.01 The ChargingScheduleType that contains the
+ChargingSchedulePeriodType SHALL have
+chargingRateUnit = W.
+A frequency-watt curve
+specifies power in Watts.
+Q08.FR.06 When a ChargingSchedulePeriodType
+with operationMode =
+LocalFrequency starts
+The Charging Station SHALL calculate the new
+setpoint as v2xBaseline plus the interpolated power
+value from v2xFreqWattCurve for the measured
+frequency.
+Q08.FR.07 During a ChargingSchedulePeriodType
+with operationMode =
+LocalFrequency, When the net
+frequency change in mHz is equal or
+more than V2XChargingCtrlr
+LocalFrequencyUpdateThreshold
+The Charging Station SHALL calculate the new
+setpoint as v2xBaseline plus the interpolated power
+value from v2xFreqWattCurve for the measured
+frequency.
+aFRR
+Q08.FR.10 When a ChargingSchedulePeriodType
+has operationMode =
+LocalFrequency and contains field
+v2xSignalWattCurve AND
+Charging Station receives a
+AFRRSignalRequest with a timestamp
+and signal
+Charging Station SHALL calculate a delta to the
+power setpoint based on the value of signal that it
+receives from AFRRSignalRequest and add that to
+the existing value of the power setpoint at time
+timestamp.
+aFRR is added on top of
+the setpoint value
+calculated in
+Q08.FR.06/07
+Edition 2, 2025-12-03 Q. Bidirectional Power Transfer
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 530/803 Part 2 - Specification

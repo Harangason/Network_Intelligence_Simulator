@@ -1,0 +1,64 @@
+Table 7-82. BCC_ERR_CTL Register Field Descriptions (continued)
+Bit Field Type Reset Description
+6 BCC_EN_DATA_CHK R/W 0x0 Enable checking of returned data
+Enhanced Error checking can check for errors on returned data 
+during an acknowledge cycle for data sent to remote devices over 
+the Bidirectional Control Channel. In addition, If an error is detected, 
+this register control will allow changing a remote Ack to a Nack to 
+indicate the data error on the local I2C interface. This bit should not 
+be set when operating with Serializers that do not support Enhanced 
+Error checking as they will not always return the correct data during 
+an Ack.
+0: Disable returned data error detection
+1: Enable returned data error detection
+5 BCC_EN_ENH_ERROR R/W 0x1 Enable Enhanced Error checking in Bidirection Control Channel
+The Bidirectional Control Channel can detect certain error conditions 
+and terminate transactions if an error is detected. This capability can 
+be disabled by setting this bit to 0.
+0: Disable Enhanced Error checking
+1: Enable Enhanced Error checking
+4:3 FORCE_BCC_ERROR R/W 0x0 BCC Force Error
+The BCC Force Error control causes an error to be forced on the 
+BCC over the back channel.
+00: No error
+01: Force CRC Error on BCC frame= BCC_FRAME_SEL
+10: Force CRC Error on normal frame following BCC frame= 
+BCC_FRAME_SEL
+11: FORCE Data Error on BCC frame= BCC_FRAME_SEL
+Setting this control generates a single error on the back channel 
+signaling.
+2:0 BCC_FRAME_SEL R/W 0x0 BCC Frame Select
+The BCC Frame Select allows selection of the forward channel BCC 
+frame which will include the error condition selected in the force 
+control bits of this register. BCC transfers are sent in bytes for each 
+block transferred. This value may be set in range of 0 to 7 to force an 
+error on any of the first 8 bytes sent on the BCC forward channel.
+7.6.1.61 BCC_STATUS Register (Address = 0x47) [Reset = 0x00] 
+BCC_STATUS is shown in Table 7-83.
+Return to the Summary Table.
+RX port-specific register. The FPD-Link III Port Select register 0x4C configures which unique Rx port registers 
+can be accessed by I2C read and write commands.
+Table 7-83. BCC_STATUS Register Field Descriptions
+Bit Field Type Reset Description
+7:6 RESERVED R 0x0 Reserved
+5 BCC_SEQ_ERROR RC 0x0 Bidirectional Control Channel Sequence Error Detected
+This bit indicates a sequence error has been detected in the forward 
+control channel. If this bit is set, an error may have occurred in the 
+control channel operation.
+If BCC_EN_ENH_ERR is 0 (disabled), this register is read-only copy 
+of the BCC_SEQ_ERROR bit in the RX_PORT_STS1 register.
+If BCC_EN_ENH_ERR is 1 (enabled), this register is cleared on read 
+of this register.
+4 BCC_CONTROLLER_ER
+R
+RC 0x0 BCC Controller Error
+This flag indicates a Forward Channel BCC Sequence, BCC CRC, or 
+Lock error occurred while waiting for a response from the Serializer 
+while the BCC I2C Controller is active. This flag is cleared on read of 
+this register. This indication is available only if BCC_EN_ENH_ERR 
+is set to 1.
+www.ti.com
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+Copyright © 2023 Texas Instruments Incorporated Submit Document Feedback 107
+Product Folder Links: DS90UB960-Q1

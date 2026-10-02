@@ -1,0 +1,47 @@
+G05 - Lock Failure
+No. Type Description
+1 Name Lock Failure
+2 ID G05
+3 Objective(s) To prevent the EV Driver from charging because the Connector is not properly locked.
+4 Description This use case describes how the EV Driver is prevented from starting a charge session at the
+Charging Station because the Connector is not locked properly.
+Actors Charging Station, CSMS, EV Driver
+Scenario description 1. The EV Driver is authorized by the Charging Station and/or CSMS.
+2. The lock Connector attempt fails.
+3. A NotifyEventRequest for the ConnectorPlugRetentionLock component, variable = Problem,
+value = true.
+5 Prerequisite(s) Charging Cable plugged in (status = Occupied)
+Charging Station has the ConnectorPlugRetentionLock component defined in its Device Model.
+MonitoringLevel is set to a level that a connector lock event failure will be reported.
+6 Postcondition(s) Transaction is not started and connector lock event failure is reported.
+7 Error handling n/a
+8 Remark(s) It is advisable to provide some sort of notification to the EV Driver ("cable cannot be locked"). A
+lock failure can also be reported when unlocking of the connector fails.
+User
+Charging Station CSMS
+Cable plugged in
+User authorization successful
+lock connector attempt failed()
+NotifyEventRequest(component = ConnectorPlugRetentionLock,
+variable = Problem, value = true)
+NotifyEventResponse()
+optional notification
+Figure 91. Sequence Diagram: Lock Failure
+G05 - Lock Failure - Requirements
+Table 87. G05 - Requirements
+ID Precondition Requirement definition Note
+G05.FR.01 If the locking of the connector
+retention lock fails.
+The Charging Station SHALL NOT start charging.
+G05.FR.02 G05.FR.01 The Charging Station SHALL send a
+NotifyEventRequest to the CSMS for the
+ConnectorPlugRetentionLock component with
+variable = Problem, Value = True.
+G05.FR.03 G05.FR.02 The CSMS SHALL respond with a
+NotifyEventResponse.
+G05.FR.04 G05.FR.01 The Charging Station MAY show an optional
+notification to the EV Driver.
+To notify the EV driver of
+the lock failure.
+Edition 2, 2025-12-03 G. Availability
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 254/803 Part 2 - Specification

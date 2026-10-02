@@ -1,0 +1,47 @@
+u-blox 20 HPG 2.00 - Interface description
+6 Conﬁguration interface
+This chapter describes the receiver conﬁguration interface.
+6.1 Conﬁguration database
+The conﬁguration database in the receiver's RAM stores the current receiver settings used during
+runtime. This database is constructed from multiple sources known as configuration layers when
+the receiver starts up. The active settings, known as the current conﬁguration, are stored in the RAM
+layer. Each conﬁguration layer is organized into configuration items, which are uniquely identiﬁed by
+a configuration key ID and hold a single configuration value.
+6.2 Conﬁguration items
+The following ﬁgure shows the structure of a configuration item, which consists of a (configuration)
+key ID and its (configuration) value:
+size 
+0x03 size 0x04 size 0x05
+Conﬁguration Value: 1 byte (1bit), 2 bytes, 4 bytes or 8 bytes
+1 byte
+2 bytes
+4 bytes
+8 bytes
+Conﬁguration Key ID (4 bytes = 32 bits)
+size (3 bits) group (8 bits) ID within group (12 bits)
+reserved (1 + 4 + 4 = 9 bits)
+31 081624
+size 0x02
+- size 0x01
+A conﬁguration key ID is a 32-bit integer value, which is split into the following parts:
+• Bit 31: Currently unused. Reserved for future use.
+• Bits 30…28: Three bits that indicate the storage size of a conﬁguration value (range
+0x01-0x05, see below)
+• Bits 27…24: Currently unused. Reserved for future use.
+• Bits 23…16: Eight bits that deﬁne a unique group ID (range 0x01-0xfe)
+• Bits 15…12: Currently unused. Reserved for future use.
+• Bits 11…0: Twelve bits that deﬁne a unique item ID within a group (range 0x001-0xﬀe)
+The entire 32-bit value is the unique key ID, which uniquely identiﬁes a particular item. The numeric
+representation of the key ID uses the lower-case hexadecimal format, such as 0x20c400a1. An
+easier, more readable text representation uses the form CFG-GROUP-ITEM. This is also referred to
+as the (configuration) key name.
+Supported storage size identiﬁers (bits 30…28 of the key ID) are:
+• 0x01: one bit (the actual storage used is one byte, but only the least signiﬁcant bit is used)
+• 0x02: one byte
+• 0x03: two bytes
+• 0x04: four bytes
+• 0x05: eight bytes
+UBXDOC-304424225-19888 - R01
+ 
+6 Conﬁguration interface Page 166 of 224
+C1-Public

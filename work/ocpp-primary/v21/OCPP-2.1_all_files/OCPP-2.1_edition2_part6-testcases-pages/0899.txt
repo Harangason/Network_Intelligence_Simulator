@@ -1,0 +1,52 @@
+TC_R_106_CS: Configure DER control - Active DER control supersedes new DER
+control
+Test case name Configure DER control settings at CS - Active DER control supersedes new DER control
+Test case Id TC_R_106_CS
+Use case Id(s) R04
+Requirement(s) R04.FR.06, R04.FR.20, R04.FR.22
+System under test Charging Station
+Description Test System tries to set a DER control which is supported by the CS and no other controls are set on the CS.
+Purpose To check if the CS behaves correctly when setting controlTypes with different priorities.
+Prerequisite(s) EV supports DER Control
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station sends a ClearDERControlResponse
+1. The Test System sends a ClearDERControlRequest with
+isDefault true
+4. The Charging Station sends a ClearDERControlResponse
+3. The Test System sends a ClearDERControlRequest with
+isDefault false
+6. The Charging Station sends a SetDERControlResponse
+5. The Test System sends a SetDERControlRequest with
+controlId control1
+isDefault false
+controlType <CS supported controlType1>
+*.priority 5
+*.startTime <Current DateTime>
+*.duration 60
+7 The Charging Station sends a NotifyDERStartStopRequest
+8. The Test System sends a NotifyDERStartStopResponse
+10. The Charging Station sends a SetDERControlResponse
+9. The Test System sends a SetDERControlRequest with
+controlId control2
+isDefault false
+controlType <CS supported controlType1> *.priority 6
+*.startTime <Current DateTime + 20 seconds>
+*.duration 7200
+12. The Charging Station sends a GetDERControlResponse
+11. The Test System sends a GetDERControlRequest with
+isDefault false
+controlType <CS supported controlType1>
+13. The Charging Station sends a ReportDERControlRequest 14. The Test Systems sends a ReportDERControlResponse
+Note: Wait ~60 seconds for control1 to end
+15. The Charging Station sends a NotifyDERStartStopRequest
+16. The Test System sends a NotifyDERStartStopResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 897/1383 Part 6 - Test Cases

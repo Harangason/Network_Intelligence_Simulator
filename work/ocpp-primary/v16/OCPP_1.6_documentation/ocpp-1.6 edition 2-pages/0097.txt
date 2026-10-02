@@ -1,0 +1,30 @@
+VALUE DESCRIPTION
+Unavailable Reservation has not been made, because connectors or specified connector are in an unavailable state.
+7.41. ResetStatus
+Enumeration
+Result of Reset.req.
+VALUE DESCRIPTION
+Accepted Command will be executed.
+Rejected Command will not be executed.
+7.42. ResetType
+Enumeration
+Type of reset requested by Reset.req.
+VALUE DESCRIPTION
+Hard Restart (all) the hardware, the Charge Point is not required to gracefully stop ongoing transaction. If possible the Charge Point
+sends a StopTransaction.req for previously ongoing transactions after having restarted and having been accepted by the
+Central System via a BootNotification.conf. This is a last resort solution for a not correctly functioning Charge Point, by sending
+a "hard" reset, (queued) information might get lost.
+Soft Stop ongoing transactions gracefully and sending StopTransaction.req for every ongoing transaction. It should then restart the
+application software (if possible, otherwise restart the processor/controller).
+7.43. SampledValue
+Class
+Single sampled value in MeterValues. Each value can be accompanied by optional fields.
+FIELD NAME FIELD TYPE CARD. DESCRIPTION
+value String 1..1 Required. Value as a “Raw” (decimal) number or “SignedData”. Field Type is
+“string” to allow for digitally signed data readings. Decimal numeric values are
+also acceptable to allow fractional values for measurands such as Temperature
+and Current.
+context ReadingContext 0..1 Optional. Type of detail value: start, end or sample. Default = “Sample.Periodic”
+format ValueFormat 0..1 Optional. Raw or signed data. Default = “Raw”
+measurand Measurand 0..1 Optional. Type of measurement. Default = “Energy.Active.Import.Register”
+92

@@ -1,0 +1,39 @@
+Point-initiated messages. In the request the Central System indicates which message it wishes to receive. For
+every such requested message the Central System MAY optionally indicate to which connector this request
+applies. The requested message is leading: if the specified connectorId is not relevant to the message, it should
+be ignored. In such cases the requested message should still be sent.
+Inversely, if the connectorId is relevant but absent, this should be interpreted as “for all allowed connectorId
+values”. For example, a request for a statusNotification for connectorId 0 is a request for the status of the
+Charge Point. A request for a statusNotification without connectorId is a request for multiple statusNotifications:
+the notification for the Charge Point itself and a notification for each of its connectors.
+Charge Point Central System
+TriggerMessage.req( RequestedMessage: StatusNotification , ConnectorId: 1 )
+TriggerMessage.conf(Status: Accepted)
+StatusNotification.req(ConnectorId: 1, errorCode: NoError, Status: Charging)
+StatusNotification.conf()
+Figure 39. Sequence Diagram: Trigger Message StatusNotification Example
+The Charge Point SHALL first send the TriggerMessage response, before sending the requested message. In the
+TriggerMessage.conf the Charge Point SHALL indicate whether it will send it or not, by returning ACCEPTED or
+REJECTED. It is up to the Charge Point if it accepts or rejects the request to send. If the requested message is
+unknown or not implemented the Charge Point SHALL return NOT_IMPLEMENTED.
+Messages that the Charge Point marks as accepted SHOULD be sent. The situation could occur that, between
+accepting the request and actually sending the requested message, that same message gets sent because of
+normal operations. In such cases the message just sent MAY be considered as complying with the request.
+The TriggerMessage mechanism is not intended to retrieve historic data. The messages it triggers should only
+give current information. A MeterValues.req message triggered in this way for instance SHALL return the most
+recent measurements for all measurands configured in configuration key MeterValuesSampledData.
+StartTransaction and StopTransaction have been left out of this mechanism because they are not state related,
+but by their nature describe a transition.
+5.18. Unlock Connector
+Charge Point Central System
+UnlockConnector.req(connectorId)
+UnlockConnector.conf(status)
+Figure 40. Sequence Diagram: Unlock Connector
+Central System can request a Charge Point to unlock a connector. To do so, the Central System SHALL send an
+UnlockConnector.req PDU.
+The purpose of this message: Help EV drivers that have problems unplugging their cable from the Charge Point
+in case of malfunction of the Connector cable retention. When a EV driver calls the CPO help-desk, an operator
+could manually trigger the sending of an UnlockConnector.req to the Charge Point, forcing a new attempt to
+unlock the connector. Hopefully this time the connector unlocks and the EV driver can unplug the cable and
+drive away.
+56

@@ -1,0 +1,58 @@
+TC_K_125_CS: Dynamic charging profiles by external system - Dynamic charging
+profile configured
+Test case name Dynamic charging profiles by external system - Dynamic charging profile configured
+Test case Id TC_K_125_CS
+Use case Id(s) K29
+Requirement(s) K29.FR.01, K29.FR.02, K29.FR.03, K29.FR.05, K29.FR.06
+System under test Charging Station
+Description To allow a dynamically changing limit in a charging profile from an external system.
+Purpose To verify if the Charging Station is able to inform the CSMS when it’s capacity is being throttled by a locally
+connected EMS.
+Prerequisite(s) - The Charging Station is connected locally to a system which can apply charging limit constraints.
+- External connected system hasn’t set any limit on the charger.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetChargingProfileResponse
+1. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.id <Configured chargingProfileId>
+chargingProfile.stackLevel 0
+chargingProfile.chargingProfilePurpose
+ChargingStationMaxProfile
+chargingProfile.chargingProfileKind Dynamic
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].operationMode ExternalSetpoint
+4. The Charging Station responds with a
+SetChargingProfileResponse
+3. The Test System sends a SetChargingProfileRequest with
+evseId 0
+chargingProfile.id <Configured chargingProfileId2>
+chargingProfile.stackLevel 1
+chargingProfile.chargingProfilePurpose
+ChargingStationMaxProfile
+chargingProfile.chargingProfileKind Dynamic
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].startPeriod 0
+chargingProfile.chargingSchedule[0].chargingSchedulePeriod[0
+].operationMode ExternalLimits
+Manual Action: Use external connected system to send ChargingStation-ExternalConstraints limit to the charger: 8 * <limit multiplier>
+Manual Action: Use external connected system to send ChargingStation-ExternalConstraints setPoint to the charger: 10 * <limit
+multiplier>
+6. The Charging Station responds with a
+GetChargingProfilesResponse
+5. The Test System sends a GetChargingProfilesRequest with
+evseId <Configured evseId>
+chargingProfile.chargingProfilePurpose
+ChargingStationMaxProfile
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 586/1383 Part 6 - Test Cases

@@ -1,0 +1,65 @@
+TC_L_10_CS: Secure Firmware Update - AcceptedCanceled
+Test case name Secure Firmware Update - AcceptedCanceled
+Test case Id TC_L_10_CS
+Use case Id(s) L01
+Requirement(s) L01.FR.01,L01.FR.10,L01.FR.20,L01.FR.24
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to securely download and install a new firmware by
+sending an UpdateFirmwareRequest with a signingCertificate.
+Purpose To verify if the Charging Station is able to cancel an ongoing firmware update and start a new one, when
+receiving an UpdateFirmwareRequest from the CSMS.
+Prerequisite(s) - A file server has been setup according to the (by the Charging Station) supported file transfer protocol(s),
+indicated by the configuration variable FileTransferProtocols.
+- The Charging Station is able to cancel an ongoing firmware update while it is busy downloading a new
+firmware file.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+UpdateFirmwareResponse
+With status Accepted
+1. The Test System sends a UpdateFirmwareRequest
+with requestId = <#1>
+firmware.installDateTime <Current DateTime - 2 hours>
+firmware.location <Configured firmware_location>
+firmware.retrieveDateTime <Current DateTime - 2 hours>
+firmware.signingCertificate <Configured signingCertificate>
+firmware.signature <Configured signature>
+3. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With requestId <#1> and status Downloading
+4. The Test System responds with a
+FirmwareStatusNotificationResponse
+6. The Charging Station responds with a
+UpdateFirmwareResponse
+With requestId <#1> and status AcceptedCanceled
+5. The Test System sends a UpdateFirmwareRequest
+with requestId = <#2>
+firmware.installDateTime <Current DateTime - 2 hours>
+firmware.location <Configured firmware_location>
+firmware.retrieveDateTime <Current DateTime - 2 hours>
+firmware.signingCertificate <Configured signingCertificate>
+firmware.signature <Configured signature>
+7. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With requestId <#2> and status Downloading
+8. The Test System responds with a
+FirmwareStatusNotificationResponse
+9. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status Downloaded
+10. The Test System responds with a
+FirmwareStatusNotificationResponse
+11. The Charging Station sends a
+FirmwareStatusNotificationRequest
+With status SignatureVerified
+12. The Test System responds with a
+FirmwareStatusNotificationResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 615/1383 Part 6 - Test Cases

@@ -1,0 +1,45 @@
+TC_B_54_CS: Get Custom Report - with component/variable, but no instance
+Test case name Get Custom Report - with component/variable, but no instance
+Test case Id TC_B_54_CS
+Use case Id(s) B08
+Requirement(s) B08.FR.01, B08.FR.03, B08.FR.04, B08.FR.11, B08.FR.12, B08.FR.14
+System under test Charging Station
+Description CSMS requests a custom report for ItemsPerMessage of DeviceDataCtrlr.
+Purpose To test that Charging Station will send all instances if instance is not given.
+Prerequisite(s) Charging Station has implemented custom reporting (use case B08).
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds:
+GetReportResponse
+1. Test System sends GetReportRequest with:
+- requestId = <Generated requestId>
+- componentVariable.component.name= "DeviceDataCtrlr"
+- componentVariable.variable.name = "ItemsPerMessage"
+3. Charging Station sends NotifyReportRequest
+4. Test System responds with NotifyReportResponse
+Tool validations
+* Step 2:
+Message: GetReportResponse with:
+- status = Accepted
+- statusInfo is absent or statusInfo = "NoError"
+* step 3:
+Message: NotifyReportRequest with:
+- reportData[0].component.name = "DeviceDataCtrlr"
+- reportData[0].variable.name = "ItemsPerMessage"
+- reportData[0].variable.instance = "GetReport"
+- reportData[1].component.name = "DeviceDataCtrlr"
+- reportData[1].variable.name = "ItemsPerMessage"
+- reportData[1].variable.instance = "GetVariable"
+Note: for AvailabilityState there will only be an _Actual value.
+It does not make any sense to have a MinSet, MaxSet or Target value for it._
+Post scenario validations:
+N/A
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 87/914 Part 6 - Test Cases

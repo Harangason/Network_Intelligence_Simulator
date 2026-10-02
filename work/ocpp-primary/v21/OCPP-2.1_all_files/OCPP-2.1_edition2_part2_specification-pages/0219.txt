@@ -1,0 +1,37 @@
+ID Precondition Requirement definition
+E11.FR.02 After the connection is restored. The Charging Station MUST send queued
+TransactionEventRequest messages with the flag offline set to
+TRUE. (Same as E12.FR.02)
+E11.FR.03 When configured to send meter data in the
+TransactionEventRequest(eventType =
+Updated), See: Meter Values - Configuration
+The Charging Station SHALL add the configured measurands to
+the optional meterValue field in the TransactionEventRequest
+(eventType = Updated) sent to the CSMS to provide more details
+during the transaction. (Same as J02.FR.11)
+E11.FR.04 E11.FR.03
+AND
+Offline
+AND
+The Charging Station is running low on memory
+The Charging Station MAY drop TransactionEventRequest
+(eventType = Updated) messages. (Same as J02.FR.12)
+E11.FR.05 E11.FR.04 When dropping TransactionEventRequest(eventType = Updated)
+messages, the Charging Station SHALL drop intermediate
+messages first (2nd message, 4th message, 6th message etc.),
+not start dropping messages from the start or stop adding
+messages to the queue. (Same as J02.FR.13)
+E11.FR.06 E11.FR.03
+AND
+Amount of meter data is too much for 1
+TransactionEventRequest(eventType = Updated)
+The Charging Station MAY split the meter data over multiple
+TransactionEventRequest(eventType = Updated) messages with
+the same timestamp. (Same as J02.FR.14)
+E11.FR.07 If the Charging Station goes offline, every message that is still in
+the queue SHALL be set Offline.
+E11.FR.08 SampledDataSignReadings is true The Charging Station SHALL retrieve signed meter values and
+put them in the signedMeterValue field of sampledValues. (Same
+as E02.FR.14)
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 206/803 Part 2 - Specification

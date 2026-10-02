@@ -1,0 +1,42 @@
+NXP Semiconductors UM11495
+PN7160 NFC controller
+6   Initialization and operation configuration
+6.1  Reset / Initialization
+[NCI] defines a Reset/Init sequence, which is based on two different commands:
+• CORE_RESET_CMD
+• CORE_INIT_CMD
+These two commands have to be called by the DH in an “atomic” way: there cannot be any other command in-
+between and the PN7160 operation cannot start any operation (Reader/Writer, Card Emulation, P2P, Combined
+modes etc…) if it does not first receive these 2 commands.
+[NCI] defines 2 modes for the Reset command: Keep Configuration and Reset Configuration. Here is the detail
+of the difference between the 2 reset modes:
+Features Reset
+Configuration
+Keep
+Configuration
+MCU reboot Yes Yes
+Listen Mode Routing table Lost Kept
+NCI Configuration parameters Back to default Kept
+Proprietary Configuration parameters Kept Kept
+Interface Mapping Table Lost Kept
+Discovery activity Lost Lost
+Dynamic connections Lost Kept
+NFCEE status (enabled/disabled) Kept Kept
+Table 34. Comparison of the 2 Reset Modes
+Note:  PN7160 may delay the CORE_RESET_RSP.
+If the DH sends a CORE_RESET_CMD while PN7160 has already indicated that it has some data available to
+be read by the DH (IRQ pin activated), the DH has first to read the data available from PN7160 before it can
+get the CORE_RESET_RSP. The reason is that the NCI output buffer in PN7160 needs to be flushed before
+PN7160 can apply a Reset and then send the CORE_RESET_RSP.
+6.2  Manufacturer Specific Information in [NCI] CORE_INIT_RSP / CORE_RESET_NTF
+The NCI CORE_RESET_NTF notification contain a field “Manufacturer Specific Information” with 4 bytes.
+Here is the meaning of these 4 bytes and the conditions when they are incremented / updated:
+Byte Meaning Condition to increment
+0 Hardware Version number New silicon
+1 ROM Code Version number New ROM Code
+2 FLASH Major version New Firmware, adding features
+3 FLASH Minor version New Firmware, solving bugs on existing features.
+Table 35. Manufacturer Specific Information in NCI 2.0 CORE_RESET_NTF
+UM11495 All information provided in this document is subject to legal disclaimers. © 2025 NXP B.V. All rights reserved.
+User manual Rev. 1.8 — 2 June 2025 Document feedback
+47 / 147

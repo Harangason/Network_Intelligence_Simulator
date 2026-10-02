@@ -1,0 +1,65 @@
+TC_L_16_CS: Secure Firmware Update - Able to update firmware with ongoing
+transaction
+Test case name Secure Firmware Update - Able to update firmware with ongoing transaction
+Test case Id TC_L_16_CS
+Use case Id(s) L01
+Requirement(s) L01.FR.01,L01.FR.06,L01.FR.10,L01.FR.20
+System under test Charging Station
+Description The CSMS is able to request the Charging Station to securely download and install a new firmware by
+sending an UpdateFirmwareRequest with a signingCertificate.
+Purpose To verify if the Charging Station is able to securely download and install a new firmware, while a transaction
+is ongoing.
+Prerequisite(s) - A file server has been setup according to the (by the Charging Station) supported file transfer protocol(s),
+indicated by the configuration variable FileTransferProtocols.
+- The Charging Station is able to update its firmware while a transaction is ongoing.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+UpdateFirmwareResponse
+1. The Test System sends a UpdateFirmwareRequest
+with firmware.installDateTime <Current DateTime - 2 hours>
+firmware.location <Configured firmware_location>
+firmware.retrieveDateTime <Current DateTime - 2 hours>
+firmware.signingCertificate <Configured signingCertificate>
+firmware.signature <Configured signature>
+3. The Charging Station sends a
+FirmwareStatusNotificationRequest.
+With status Downloading
+4. The Test System responds with a
+FirmwareStatusNotificationResponse.
+5. The Charging Station sends a
+FirmwareStatusNotificationRequest.
+With status Downloaded
+6. The Test System responds with a
+FirmwareStatusNotificationResponse.
+7. The Charging Station sends a
+FirmwareStatusNotificationRequest.
+With status SignatureVerified
+8. The Test System responds with a
+FirmwareStatusNotificationResponse.
+9. The Charging Station sends a
+FirmwareStatusNotificationRequest.
+With status Installing
+10. The Test System responds with a
+FirmwareStatusNotificationResponse.
+11. The Test System waits for the Charging Station to reconnect.
+Note: The Charging Station reconnects to reestablish the protocol version handshake.
+12. The Charging Station sends a
+FirmwareStatusNotificationRequest.
+With status Installed
+13. The Test System responds with a
+FirmwareStatusNotificationResponse.
+14. The Charging Station sends a
+SecurityEventNotificationRequest
+With type FirmwareUpdated
+15. The Test System responds with a
+SecurityEventNotificationResponse
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 426/914 Part 6 - Test Cases

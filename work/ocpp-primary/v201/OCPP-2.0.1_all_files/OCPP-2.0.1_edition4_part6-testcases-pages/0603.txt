@@ -1,0 +1,35 @@
+ParkingBayUnoccupied
+State ParkingBayUnoccupied
+System under test Charging Station
+Description This state will prepare the Charging Station, so that the EV left the parking bay, after a charging session has
+taken place.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+If State is NOT EVDisconnected then execute Reusable State EVDisconnected
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Drive EV out of parking bay.
+1. The Charging Station sends a TransactionEventRequest
+Note(s):
+- This step needs to be executed when TxStopPoint contains
+ParkingBayOccupancy AND the transaction has NOT been ended
+already. So in the case TxStopPoint contains Authorized OR
+EnergyTransfer OR PowerPathClosed OR DataSigned OR
+EVConnected.
+2. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- triggerReason must be EVDeparted
+- If the Test System is configured to stop transactions using a RequestStopTransactionRequest message then
+transactionInfo.stoppedReason must be Remote
+Else transactionInfo.stoppedReason must be Local
+- eventType must be Ended
+Post scenario validations:
+State is ParkingBayUnoccupied
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 601/914 Part 6 - Test Cases

@@ -1,0 +1,38 @@
+TC_E_19_CS: Stop transaction options - ParkingBayUnoccupied
+Test case name Stop transaction options - ParkingBayUnoccupied
+Test case Id TC_E_19_CS
+Use case Id(s) E06(S1)
+Requirement(s) E06.FR.01, E06.FR.15
+System under test Charging Station
+Description OCPP 2.x.x has a flexible transaction mechanism that allows the transaction start and stop points to be
+configured differently. This test covers one of the stop options.
+Purpose To verify if the Charging Station stops a transaction when the EV left the parking bay and it has been
+configured to do so.
+Prerequisite(s) - The Charging Station does NOT have the following configuration; The mutability of TxStopPoint is
+ReadOnly AND (the value ParkingBayOccupancy is NOT set OR (EnergyTransfer OR PowerPathClosed OR
+DataSigned OR Authorized OR EVConnected is set)).
+- If the mutability of TxStopPoint is ReadWrite, then the value ParkingBayOccupancy must be supported.
+Before (Preparations)
+Configuration State:
+TxStopPoint contains ParkingBayOccupancy
+Memory State:
+N/a
+Reusable State(s):
+State is EVDisconnected
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Drive EV out of parking bay.
+1. The Charging Station sends a TransactionEventRequest
+2. The Test System responds with a TransactionEventResponse
+Tool validations
+* Step 1:
+Message: TransactionEventRequest
+- triggerReason must be EVDeparted
+- If the Test System is configured to stop transactions using a RequestStopTransactionRequest message then
+transactionInfo.stoppedReason must be Remote
+Else transactionInfo.stoppedReason must be Local
+- eventType must be Ended
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 203/914 Part 6 - Test Cases

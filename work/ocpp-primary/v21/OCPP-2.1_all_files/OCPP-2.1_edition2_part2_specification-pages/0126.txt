@@ -1,0 +1,102 @@
+ID Precondition Requirement definition Note
+C10.FR.02 Cache values SHOULD be persistent across reboots
+and power outages.
+Hence cache values
+SHOULD be stored in
+non-volatile memory.
+C10.FR.03 When an IdToken is presented that is
+stored in the Authorization Cache with
+status other than Accepted, and the
+Charging Station is online.
+AuthorizeRequest SHALL be sent to the CSMS to
+check the current state of the IdToken.
+To check the current
+state of the identifier.
+C10.FR.04 Upon receipt of AuthorizeResponse. The Charging Station SHALL update the
+Authorisation Cache entry.
+The update is to be done
+with the IdTokenInfo
+value from the response
+as described under
+Authorization Cache.
+C10.FR.05 Upon receipt of
+TransactionEventResponse.
+The Charging Station SHALL update the
+Authorisation Cache entry.
+The update is to be done
+with the IdTokenInfo
+value from the response
+as described under
+Authorization Cache.
+C10.FR.07 The Charging Station SHALL have a mechanism to
+accept new cache entries even when it is full, by
+deleting older entries.
+It is suggested to remove
+any entries with status
+other than Accepted first,
+and then the oldest valid
+entries to make space for
+the new entry.
+C10.FR.08 When IdTokenInfoType does not
+contain a value for
+cacheExpiryDateTime
+The time a token is considered to be present in the
+cache is determined by the Configuration Variable
+AuthCacheLifeTime. This variable indicates how
+long it takes until a token expires in the
+Authorization Cache since it is last used.
+This expiry of the cache
+is not the same as the
+expiration date that is set
+for the IdToken (e.g. RFID
+card expiry date).
+C10.FR.10 NOT C10.FR.13 AND
+when more than
+AuthCacheLifeTime seconds have
+passed since idTokenInfo was last
+updated
+The Authorization Cache entry SHALL be removed
+from the cache or changed to Expired.
+A cacheExpiryDateTime
+in the past will prevent an
+idToken from being
+stored in the
+authorization cache, or
+remove it from
+authorization cache if it
+was already present.
+This is used e.g. for
+prepaid accounts that
+should not be kept in
+authorization cache.
+C10.FR.11 Whether the Authorization Cache is enabled or
+disabled SHALL be controlled by the
+AuthCacheEnabled Configuration Variable.
+C10.FR.12 It is RECOMMENDED to store personal information
+in the Authorization Cache securely
+E.g. by only storing
+hashed idTokens in the
+cache.
+C10.FR.13 When IdTokenInfoType contains a
+value for cacheExpiryDateTime and
+current time is greater than
+idTokenInfo.cacheExpiryDateTime
+The Authorization Cache entry SHALL be removed
+from the cache or changed to Expired.
+This expiry of the cache
+is not the same as the
+expiration date that is set
+for the IdToken (e.g. RFID
+card expiry date).
+C10.FR.14
+(2.1)
+C10.FR.04 OR C10.FR.05 Charging Station SHALL store all IdTokenType
+fields except for the additionalInfo field, together
+with all fields of IdTokenInfoType from
+AuthorizeResponse or TransactionEventResponse,
+except for the additionalInfo field in groupIdToken.
+additionalInfo of idToken
+or groupIdToken is not
+cached.
+Edition 2, 2025-12-03 C. Authorization
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 113/803 Part 2 - Specification

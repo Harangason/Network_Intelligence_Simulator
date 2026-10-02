@@ -1,0 +1,54 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  84 
+• For PHY Mode == Hard D-PHY 
+• Continuous Clock mode: 
+𝑡𝐼𝑃_𝑅𝐸𝑄 =  𝑡𝐻𝑆−𝐸𝑋𝐼𝑇 → 𝑡𝐿𝑃𝑋 ≥ (16 × 𝑡𝑏𝑦𝑡𝑒_𝑐𝑙𝑘_𝑜) + (3 × 𝑡𝐶𝐿𝐾_𝑆𝑌𝑁𝐶) 
+where tCLK_SYNC is the period of ref_clk_i. 
+• Non-Continuous Clock mode: 
+𝑡𝐼𝑃_𝑅𝐸𝑄 =  𝑡𝐶𝐿𝐾−𝑃𝑂𝑆𝑇 → 𝑡𝐿𝑃𝑋 ≥ (16 × 𝑡𝑏𝑦𝑡𝑒_𝑐𝑙𝑘_𝑜) + (3 × 𝑡𝐶𝐿𝐾_𝑆𝑌𝑁𝐶) 
+where tCLK-POST is at least 16 byte-clock cycles and tCLK_SYNC is the period of ref_clk_i. 
+• For PHY Mode == Soft D-PHY, it is recommended to use the minimum duration of tHS-PREPARE from the transmitter, 
+especially for lower line rates. 
+• Some IP configurations may have slower Fmax when used in devices with slow performance grade.  
+9.3. Horizontal and Vertical Blanking Period Insertion Tuning 
+As the overheads vary with different PHY configuration settings in TX, Lattice recommends simulating and analyzing 
+using the IP simulation to determine the accurate horizontal and vertical blanking period to be inserted at TX to achieve 
+the desired frame rate for specific resolution. 
+The general formula for Frame Period and Line Period are as follows: 
+Frame Period = 1/Frame Rate Per Second 
+Line Period = Line Start Short Packet HS burst duration (Optional) + LP-11 minimum duration + Long Packet HS burst 
+duration + LP-11 minimum duration + Line End Short Packet HS burst duration (Optional) + Horizontal line blanking 
+duration 
+Where: 
+• SOT duration is the summation of TLPX, T_HS-PREPARE, and T_HS-ZERO time which is required for LP to HS 
+transition. 
+• EOT duration is the T_HS_TRAIL time which is required for HS to LP transition.  
+• LP-11 minimum duration is the minimum LP-11 state duration imposed in TX from Line Start Short Packet HS burst 
+to Long Packet HS burst or from Long Packet HS burst to Line End Short Packet HS burst. 
+• The Line Start and Line End Short Packet HS bursts are optional packets depending on the TX configuration. 
+ 
+Example Calculation for Horizontal and Vertical Blanking Period 
+• Video Stream Resolution: 1920 × 1080 
+• Pixel format: RAW10 
+• Pixels Per Clock: 4 
+• Pixel Clock: 150 MHz 
+• Line Start and Line End: Enabled 
+• PHY Mode: Soft D-PHY 
+• PHY Clock Mode: Non-Continuous 
+• Number of lanes: 2 
+• Lane rate: 912 Mbps 
+• Byte Clock (Lane rate/PHY Data Width): 114 MHz 
+For frame rate of 60 per second, the theoretical frame period required is as follows: 
+Frame Period  = 1/Frame Rate Per Second  
+  = 16.666 ms 
+ 
+For Horizontal Line Blanking Insertion Only 
+With the vertical frame blanking period at a minimal value determined by the video FSM, adjust the LP-11 state 
+duration between consecutive Line End and the next Line Start short packet to increase or decrease the Line Period.  
+The theoretical calculations are as follows: 
+ 

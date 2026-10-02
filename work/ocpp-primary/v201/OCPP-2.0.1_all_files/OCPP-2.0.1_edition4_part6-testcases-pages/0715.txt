@@ -1,0 +1,45 @@
+TC_F_03_CSMS: Remote start transaction - Remote start first -
+AuthorizeRemoteStart is false
+Test case name Remote start transaction - Remote start first - AuthorizeRemoteStart is false
+Test case Id TC_F_03_CSMS
+Use case Id(s) F02
+Requirement(s) F02.FR.01, F01.FR.02
+System under test CSMS
+Description OCPP 2.x.x allows an EV driver to either first wait for/trigger a RequestStartTransactionRequest OR connect
+the EV and EVSE. Both sequences will result in being able to charge.
+Purpose To verify if the CSMS is able to handle a Charging Station that starts a charging session when the Charging
+Stations receives a RequestStartTransactionRequest message (while AuthorizeRemoteStart is false),
+before the EV driver connects the EV and EVSE (within the connectionTimeout). The Charging station does
+NOT have to authorize beforehand like a local action to start a transaction.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Trigger the CSMS to request the Charging Station to start a transaction.
+2. The Test System responds with a
+RequestStartTransactionResponse
+with status Accepted
+transactionId is omitted.
+1. The CSMS sends a RequestStartTransactionRequest
+3. The Test System sends a TransactionEventRequest.
+with triggerReason is RemoteStart
+transactionInfo.remoteStartId is <By Test System generated
+remoteStartID>
+eventType is Started
+4. The CSMS responds with a TransactionEventResponse.
+5. Execute Reusable State EnergyTransferStarted (State is Authorized and _EVConnected = false)
+Tool validations
+* Step 1:
+Message: RequestStartTransactionRequest
+- idToken.idToken <Configured valid_idtoken_idtoken>
+- idToken.type <Configured valid_idtoken_type>
+Post scenario validations:
+N/a
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 713/914 Part 6 - Test Cases

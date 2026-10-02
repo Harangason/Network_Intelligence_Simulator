@@ -1,0 +1,70 @@
+2.19. Page 534 - (2026-02) - Use case Q09 has improved requirements
+Changed requirements
+ID. Precondition Requirements Note
+Old Q09.
+FR.02
+When Charging Station receives a
+[setchargingprofilerequest] with a
+[cmn_chargingscheduleperiodtype]
+with operationMode =
+LocalLoadBalancing AND
+( ( UpperThreshold or LowerThreshold
+are not set ) OR
+( UpperOffset or LowerOffset are not
+set ) OR
+( UpperThreshold is not greater than
+LowerThreshold ) )
+Charging Station SHALL respond with
+[setchargingprofileresponse] with status =
+Rejected and statusInfo = "MissingDevModelInfo"
+New Q09.
+FR.02
+When Charging Station receives a
+[setchargingprofilerequest] with a
+[cmn_chargingscheduleperiodtype]
+with operationMode =
+LocalLoadBalancing AND
+AutoThresholds  =   false  or not set AND    
+( ( UpperThreshold or LowerThreshold
+are not set ) OR
+( UpperOffset or LowerOffset are not
+set ) OR
+( UpperThreshold is not greater than
+LowerThreshold ) )
+Charging Station SHALL respond with
+[setchargingprofileresponse] with status =
+Rejected and statusInfo = "MissingDevModelInfo"
+Old 09.FR
+.04
+Q09.FR.03 Charging Station SHALL calculate the power
+setpoint as follows:
+If Load > UpperThreshold
+    DeltaSetpoint =
+        UpperThreshold
+        + UpperOffset - Load
+Else If Load <
+LowerThreshold
+    DeltaSetpoint =
+        LowerThreshold
+        + LowerOffset - Load
+Else
+    DeltaSetpoint = 0
+setpoint = setpoint
+        + DeltaSetpoint
+"Load" is power from
+upstream meter. Positive
+values for consumption
+of energy.
+New Q09.
+FR.04
+Q09.FR.03 Charging Station SHALL calculate the power     
+setpoint for EV such that the power reported by the         
+upstream grid meter in steady state is reduced to a         
+value between   UpperThreshold  +   UpperOffset  and 
+LowerThreshold  +   LowerOffset .
+See section   [intro-
+localloadbalancing]  for 
+an example algorithm  
+that can be used for this.     
+New requirement
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2026 19/116 Errata 2026-06

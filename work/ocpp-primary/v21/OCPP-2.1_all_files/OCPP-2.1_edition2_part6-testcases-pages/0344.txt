@@ -1,0 +1,49 @@
+TC_F_100_CS: Trigger message - CustomTrigger
+Test case name Trigger message - CustomTrigger
+Test case Id TC_F_100_CS
+Use case Id(s) F06
+Requirement(s) F06.FR.04, F06.FR.10, F06.FR.18, F06.FR.19
+System under test Charging Station
+Description The CSMS can request a Charging Station to send Charging Station-initiated messages. In the request the
+CSMS indicates which message it wishes to receive.
+Purpose To verify if the Charging Station is able to send a message corresponding to a custom trigger it reports to
+support.
+Prerequisite(s) The Charging Station supports custom triggers (CustomizationCtrlr.CustomTriggers exists and contains at
+least one value).
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with GetVariablesResponse
+1. Test System sends GetVariablesRequest with
+- getVariableData[0].component.name = "CustomizationCtrlr"
+- getVariableData[0].variable.name = "CustomTriggers"
+4. The Charging Station responds with a
+TriggerMessageResponse
+3. The Test System sends a TriggerMessageRequest with
+requestedMessage CustomTrigger
+customTrigger <first mentioned in
+GetVariablesResponse.getVariableResult[0].attributeValue of step
+2>
+Note: The Charging Station send something based on the TriggerMessageRequest.
+6. The Charging Station responds with a
+TriggerMessageResponse
+5. The Test System sends a TriggerMessageRequest with
+requestedMessage Heartbeat
+customTrigger <first mentioned in
+GetVariablesResponse.getVariableResult[0].attributeValue of step
+2>
+7. The Charging Station sends a HeartbeatRequest
+8. The Test System responds with a HeartbeatResponse
+10. The Charging Station responds with a
+TriggerMessageResponse
+9. The Test System sends a TriggerMessageRequest with
+requestedMessage CustomTrigger
+customTrigger <generated random string value>
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 342/1383 Part 6 - Test Cases

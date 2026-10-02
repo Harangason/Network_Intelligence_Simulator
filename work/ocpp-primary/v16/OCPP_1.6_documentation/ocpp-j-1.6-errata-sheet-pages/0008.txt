@@ -1,0 +1,40 @@
+            "type": "string",
+            "format": "date-time"
+        },
+        "retryInterval": {
+            "type": "integer"
+        }
+    },
+    "additionalProperties": false,
+    "required": [
+        "location",
+        "retrieveDate"
+    ]
+}
+2.6. StopTransaction.json "reason" incorrectly required
+The OCPP 1.6 JSON schema message definitions set, as originally published, contain an error that renders it
+inconsistent with both the written OCPP 1.6 specification and the SOAP/XML Schema/WSDLs schema definitions.
+In the StopTransactionRequest message structure (StopTransaction.json), the “reason” element is incorrectly
+marked as being “required”, whereas the human-readable protocol specification document and the SOAP WSDL
+service definition file both explicitly define it to be “optional”, with an explicitly defined implied default value
+(“Local”), as stated in Sections 4.10 (p46) and 6.49 (p82) of the OCPP 1.6 Specification.
+We advise implementers of an OCPP 1.6 JSON to remove the "reason" field from the list of required fields at the
+bottom of the file, or download the correct set of JSON schema from the OCA website.
+To the best understanding of the TWG, the only case where any existing OCPP 1.6 implementation would be
+impacted by this correction is when a Central System implementation currently enforces the “required” status of
+“reason” in received JSON StopTransaction requests, and is controlling a network containing Charge Points that
+are using OCPP 1.6 JSON, but omitting the StopTransaction “reason”, as is allowed by the specification.
+3. Minor errata
+Improvements to the descriptions on how the protocol (should) work.
+3.1. Page 11 - (2025-04) - Section 4.1.4. Message ID - Improved text for unique message
+ID
+Old text The message ID serves to identify a request. A message ID for a CALL message MUST be different from all message IDs
+previously used by the same sender for CALL messages on the same  WebSocket connection. A message ID for a CALLRESULT
+or CALLERROR message MUST be equal to that of the CALL message that the CALLRESULT or CALLERROR message is a
+response to.
+New text The message ID serves to identify a request. A message ID for a CALL message MUST be different from all message IDs
+previously used by the same sender for CALL messages on any  WebSocket connection using the same unique Charging Station     
+identifier. The message ID for a retried message (e.g. when no response was received within timeout) MAY be identical to the                    
+message ID of the original message.      A message ID for a CALLRESULT or CALLERROR message MUST be equal to that of the
+CALL message that the CALLRESULT or CALLERROR message is a response to.
+7

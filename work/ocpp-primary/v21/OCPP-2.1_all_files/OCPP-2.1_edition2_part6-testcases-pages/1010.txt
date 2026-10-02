@@ -1,0 +1,47 @@
+Main
+(Test scenario)
+9. The Test System notifies the CSMS about the current state of
+all connectors.
+For <Configured connectorId>:
+Message: StatusNotificationRequest
+- connectorStatus Occupied
+Message: NotifyEventRequest
+- trigger Delta
+- actualValue "Occupied"
+- component.name "Connector"
+- variable.name "AvailabilityState"
+For <Other connector(s)>:
+Message: StatusNotificationRequest
+- connectorStatus Available
+Message: NotifyEventRequest
+- trigger Delta
+- actualValue "Available"
+- component.name "Connector"
+- variable.name "AvailabilityState"
+10. The CSMS responds accordingly.
+11. The Test System sends a TransactionEventRequest.
+- eventType Updated
+- triggerReason TxResumed
+- idToken is omitted
+12. The CSMS responds with a TransactionEventResponse.
+14. The Test System responds with a
+SetChargingProfileResponse
+with status Accepted
+13. The CSMS sends a SetChargingProfileRequest
+Tool validations
+* Step 1:
+Message SetChargingProfileRequest
+- chargingProfile.chargingProfilePurpose TxProfile
+* Step 3:
+Message ResetRequest
+- type ImmediateAndResume
+* Step 8:
+Message BootNotificationResponse
+- status Accepted
+* Step 13:
+Message: SetChargingProfileRequest must either contain an identical chargingProfile as in Step 1 or identical from the time of
+step 11 onwards.
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 1008/1383 Part 6 - Test Cases

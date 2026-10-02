@@ -1,0 +1,50 @@
+7.4.2 Initialization Sequence
+Use the following initialization sequence to setup the SN65DSI83. This sequence is required for proper operation
+of the device. Steps 9 through 11 in the sequence are optional.
+Table 7-2. Initialization Sequence
+INITIALIZATION
+SEQUENCE
+NUMBER
+INITIALIZATION SEQUENCE DESCRIPTION
+Init seq 1 Power on
+Init seq 2 After power is applied and stable, the DSI CLK lanes MUST be in HS state and the DSI data lanes MUST be driven
+to LP11 state
+Init seq 3 Set EN pin to Low
+Wait 10 ms (1)
+Init seq 4 Tie EN pin to High
+Wait 10 ms (1)
+Init seq 5 Initialize all CSR registers to their appropriate values based on the implementation (The SN65DSI8x is not
+functional until the CSR registers are initialized)
+Init seq 6 Set the PLL_EN bit (CSR 0x0D.0)
+Wait 10 ms (1)
+Init seq 7 Set the SOFT_RESET bit (CSR 0x09.0)
+Wait 10 ms (1)
+Init seq 8 Change DSI data lanes to HS state and start DSI video stream
+Wait 5 ms (1)
+Init seq 9 Read back all resisters and confirm they were correctly written
+Init seq 10 Write 0xFF to CSR 0xE5 to clear the error registers
+Wait 1 ms (1)
+Init seq 11 Read CSR 0xE5. If CSR 0xE5!= 0x00, then go back to step #2 and re-initialize
+(1) Minimum recommended delay. It is fine to exceed these.
+7.4.3 LVDS Output Formats
+The SN65DSI83 device processes DSI packets and produces video data driven to the FlatLink LVDS interface in
+an industry standard format. Single-Link LVDS is supported by the SN65DSI83 device. During conditions such
+as the default condition, and some video synchronization periods, where no video stream data is passing from
+the DSI input to the LVDS output, the SN65DSI83 device transmits zero value pixel data on the LVDS outputs
+while maintaining transmission of the vertical sync and horizontal sync status.
+Figure 7-4 illustrates a Single-Link LVDS 18 bpp application.
+Figure 7-5  illustrates a Single-Link 24 bpp application using Format 2, controlled by CHA_24BPP_FORMAT1
+(CSR 0x18.1). In data Format 2, the two MSB per color are transferred on the Y3P/N LVDS lane.
+Figure 7-6 illustrates a 24 bpp Single-Link application using Format 1. In data Format 1, the two LSB per color
+are transferred on the Y3P/N LVDS lane.
+Figure 7-7 illustrates a Single-Link LVDS application where 24 bpp data is received from DSI and converted to
+18 bpp data for transmission to an 18 bpp panel. This application is configured by setting
+CHA_24BPP_FORMAT1 (CSR 0x18.1) to 1 and CHA_24BPP_MODE (CSR 0x18.3) to 0. In this configuration,
+the SN65DSI83 device does not transmit the 2 LSB per color since the Y3P and Y3N LVDS lane is disabled.
+Note
+Figure 7-4, Figure 7-5, Figure 7-6, and Figure 7-7 only illustrate a few example applications for the
+SN65DSI83 device. Other applications are also supported.
+SN65DSI83
+SLLSEC1I – SEPTEMBER 2012 – REVISED OCTOBER 2020 www.ti.com
+16 Submit Document Feedback Copyright © 2020 Texas Instruments Incorporated
+Product Folder Links: SN65DSI83

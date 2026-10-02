@@ -1,0 +1,43 @@
+E11 - Connection Loss During Transaction
+No. Type Description
+1 Name Connection Loss During Transaction
+2 ID E11
+3 Objective(s) To enable a Charging Station to continue a transaction while the Charging Station loses its
+connection
+4 Description This use cases describes how a Charging Station can continue an ongoing transaction while
+losing and regaining the connection with the CSMS.
+Actors Charging Station, CSMS
+Scenario description 1. The connection of the Charging Station is lost, while a transaction is ongoing.
+2. The transaction events of the Charging Station are stored.
+3. The connection with the CSMS is restored.
+4. The Charging Station sends the stored transaction events to the CSMS using
+TransactionEventRequest (offline = TRUE).
+5. The Charging Station resumes regular communication.
+Alternative scenario(s) E04 - Offline Start Transaction
+5 Prerequisite(s) Transaction ongoing and connection lost.
+6 Postcondition(s) Successful postcondition:
+The Charging Station resumes regular communication.
+Failure postcondition:
+n/a
+7 Error handling n/a
+8 Remark(s) n/a
+Charging Station CSMS
+A transaction is ongoing.
+Connection loss.
+opt
+loop [while transaction running]
+store TransactionEventRequest() messages
+Connection restored.
+loop [for all stored TransactionEventRequest() messages]
+TransactionEventRequest(offline = true)
+TransactionEventResponse()
+Resume regular communication
+Figure 59. Sequence Diagram: Connection Loss During Transaction
+E11 - Connection Loss During Transaction - Requirements
+Table 71. E11 - Requirements
+ID Precondition Requirement definition
+E11.FR.01 When Offline The Charging Station MUST queue all TransactionEventRequest
+messages, that it would have sent to the CSMS if the Charging
+Station had been online. (Same as E12.FR.01)
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 164/491 Part 2 - Specification

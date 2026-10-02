@@ -1,0 +1,117 @@
+ID Precondition Requirement definition Note
+E03.FR.06 When a TransactionEventRequest has
+to be created
+The Charging Station SHALL set the message’s
+seqNo field as specified in Sequence Number
+Generation.
+This enables the CSMS
+to track the
+completeness of
+transaction information.
+(Same as E01.FR.07)
+E03.FR.07 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Started), See: Meter
+Values - Configuration
+AND
+EVSE is known at start of transaction
+The Charging Station SHALL add the configured
+measurands to the optional meterValue field with
+context = Transaction.Begin in the
+TransactionEventRequest(eventType = Started)
+sent to the CSMS to provide more details during the
+transaction.
+(Same as E01.FR.09)
+E03.FR.08 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Updated), See: Meter
+Values - Configuration
+The Charging Station SHALL add the configured
+measurands to the optional meterValue field in the
+TransactionEventRequest(eventType = Updated)
+sent to the CSMS to provide more details during the
+transaction.
+(Same as J02.FR.11)
+E03.FR.09 E03.FR.08
+AND
+Amount of meter data is too much for
+1 TransactionEventRequest
+(eventType = Updated)
+The Charging Station MAY split meter data over
+multiple TransactionEventRequest(eventType =
+Updated) messages with the same timestamp.
+(Same as J02.FR.14)
+E03.FR.10 SampledDataSignReadings is true The Charging Station SHALL retrieve signed meter
+values and put them in the signedMeterValue field
+of sampledValues.
+(Same as E02.FR.14)
+E03.FR.11 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Started), See: Meter
+Values - Configuration
+AND
+EVSE is not known at start of
+transaction
+The Charging Station SHALL add the measurands
+for eventType = Started to the optional
+meterValue field with context =
+Transaction.Begin in the
+TransactionEventRequest(eventType = Updated)
+that occurs when charging starts.
+(Same as E01.FR.17)
+E03.FR.12 When a transaction-related trigger
+event occurs, listed in
+TriggerReasonEnumType AND
+the transaction is ongoing.
+The Charging Station SHALL send a
+TransactionEventRequest with a triggerReason
+corresponding to the occurred event.
+When two trigger
+reasons overlap, the
+more specific one should
+be used. For example,
+when a cable is plugged
+in, triggerReason
+CablePluggedIn should
+be used, not
+ChargingStateChanged.
+When two events occur
+at the same time, they
+need transmitted using
+two separate
+TransactionEventReques
+t messages. This is to
+prevent information loss,
+when something goes
+wrong. (Same as
+E02.FR.17)
+E03.FR.13 When the energy transfer starts AND
+If the Charging Station is able to report
+the number of phases used
+The Charging Station SHALL provide the number of
+phases used, using the numberOfPhasesUsed field.
+(Same as E02.FR.18)
+E03.FR.14 E03.FR.13 AND
+during the transaction the number of
+phases used changes
+The Charging Station SHALL provide the adjusted
+number of phases used, using the
+numberOfPhasesUsed field in the next
+TransactionEventRequest.
+(Same as E02.FR.19)
+E03.FR.15 When the EV Driver does not plug-in
+the charging cable before the timeout
+set by the Configuration Variable:
+EVConnectionTimeOut AND
+TxStopPoint contains
+ParkingBayOccupancy
+The Charging Station SHALL deauthorize the
+transaction and send a TransactionEventRequest
+(triggerReason = EVConnectionTimeout) to the
+CSMS.
+Transaction will be
+ended normally when
+driver leaves the parking
+bay.
+Edition 2, 2025-12-03 E. Transactions
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 179/803 Part 2 - Specification

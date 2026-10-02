@@ -1,0 +1,33 @@
+Error Code Description
+NotSupported Requested Action is recognized but not supported
+by the receiver
+InternalError An internal error occurred and the receiver was
+not able to process the requested Action
+successfully
+ProtocolError Payload for Action is incomplete
+SecurityError During the processing of Action a security issue
+occurred preventing receiver from completing the
+Action successfully
+FormationViolation Payload for Action is syntactically incorrect or not
+conform the PDU structure for Action
+PropertyConstraintViolation Payload is syntactically correct but at least one
+field contains an invalid value
+OccurenceConstraintViolation Payload for Action is syntactically correct but at
+least one of the fields violates occurence
+constraints
+TypeConstraintViolation Payload for Action is syntactically correct but at
+least one of the fields violates data type
+constraints (e.g. “somestring”: 12)
+GenericError Any other error not covered by the previous ones
+5. Connection
+5.1. Compression
+Since JSON is very compact we recommend not to use compression in any other form than allowed as
+part of the WebSocket [RFC6455] specification. Otherwise it may compromise interoperability.
+5.2. Data integrity
+For data integrity we rely on the underlying TCP/IP transport layer mechanisms.
+5.3. WebSocket Ping in relation to OCPP Heartbeat
+The WebsSocket specification defines Ping and Pong frames that are used to check if the remote
+endpoint is still responsive. In practice this mechanism is also used to prevent the network operator
+from quietly closing the underlying network connection after a certain period of inactivity. This
+websocket feature can be used as a substitute for most of the OCPP Heartbeat messages, but cannot
+14

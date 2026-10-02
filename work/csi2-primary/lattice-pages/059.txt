@@ -1,0 +1,32 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  59 
+Attribute Description 
+rtl/<Component name>_bb.sv Provides the synthesis closed-box. 
+misc/<Component name>_tmpl.sv 
+misc /<Component name>_tmpl.vhd 
+Provides instance templates for the module. 
+ 
+6.2. Design Implementation 
+Completing your design includes additional steps to specify analog properties, pin assignments, and timing and p hysical 
+constraints. You can add and edit the constraints using the Device Constraint Editor or by manually creating a .pdc file. 
+Post-Synthesis constraint files (.pdc) contain both timing and non-timing constraint.pdc source files for storing logical 
+timing/physical constraints. Constraints that are added using the Device Constraint Editor are saved to the active .pdc 
+file. The active post-synthesis design constraint file is then used as input for post -synthesis processes. 
+The IP contains an evaluation wrapper (<ip_instance_path>/eval/eval_top.sv) that you may use as a top-level wrapper 
+for synthesis. Include this file only for synthesis and do not use this file for simulation. 
+ 
+Figure 6.5. Example Evaluation Top Setup 
+Refer to the relevant sections in the Lattice Radiant software user guide for more information on how to create or edit 
+constraints and how to use the Device Constraint Editor. 
+6.3. Timing Constraints 
+The MIPI CSI/DSI IP generates the following constraint files: 
+• A constraint file in SDC format (<ip_instance_path>/constraints/constraint.sdc) that contains both pre-synthesis 
+and post-synthesis IP constraints. These constraints are automatically used and propagated by the software tool 
+starting from the Lattice Radiant software version 2024.1. These constraints can be modified if you have a 
+thorough understanding of the effect of each constraint. 
+• An evaluation post-synthesis constraint file in PDC format (<ip_instance_path>/eval/constraint.pdc).  

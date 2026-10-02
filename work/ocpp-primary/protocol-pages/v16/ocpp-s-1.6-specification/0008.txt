@@ -1,0 +1,29 @@
+optional or not necessary, in compliance with the WS-A specification.
+3.1. XML Declaration
+An XML declaration is not part of the soap message but is necessary for some systems to correctly
+interpret the message. It specifies the XML version and encoding of what is to come. Therefore each
+OCPP-S message SHOULD be preceded by the following:
+<?xml version="1.0" encoding="UTF-8"?>
+Just to be clear, this should be outside of the SOAP envelope containing the header and body.
+3.2. SOAP synchronicity
+When an OCPP-S implementation receives an OCPP request in an HTTP request, the response to that
+request MUST be given in the HTTP response. It is not possible to use asynchronous SOAP calls with
+OCPP.
+3.3. Charge Point Identity
+Required: Yes
+To be able for the Central System to uniquely identify a Charge Point, a Charge Point MUST send its
+identifier in the SOAP header of each request PDU. The header name “chargeBoxIdentity” SHALL be
+treated as case insensitive. For example:
+<!-- Header with the identifier of the sending Charge Point -->
+<!--- xmlns:se="http://www.w3.org/2003/05/soap-envelope" -->
+<!--- xmlns:cs="urn://Ocpp/Cs/2015/10/" -->
+<cs:chargeBoxIdentity se:mustUnderstand="true">CP1234</cs:chargeBoxIdentity>
+When a Central System needs to send requests to a Charge Point, the Central System MUST specify in
+each request the “chargeBoxIdentity” of the Charge Point for which the request is intended. If the
+receiving Charge Point is not the intended one, and it cannot relay the message to a node that knows
+this Charge Point, then the Charge Point MUST send a SOAP Fault Response message, indicating that the
+identity is wrong (e.g. sub-code is “IdentityMismatch”).
+The mustUnderstand attribute indicates enforces that the receiver MUST send an error of it cannot
+handle the specified field, in this case chargeBoxIdentity. If mustUnderstand is not specified or false,
+the receiver could choose to ignore messages for unknown identities.
+6

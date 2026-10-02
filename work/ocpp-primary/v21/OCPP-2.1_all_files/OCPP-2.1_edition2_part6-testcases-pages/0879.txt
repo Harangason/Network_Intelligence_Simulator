@@ -1,0 +1,44 @@
+TC_Q_130_CS: V2X Authorisation - ISO15118-20 - has
+ISO15118ServiceRenegotiationSupport - Charging needs rejected
+Test case name V2X Authorisation - ISO15118-20 - has ISO15118ServiceRenegotiationSupport - Charging needs rejected
+Test case Id TC_Q_130_CS
+Use case Id(s) Q01
+Requirement(s) Q01.FR.03, Q01.FR.05
+System under test Charging Station
+Description Authorization of an EV by the CSMS to start a V2X power transfer loop.
+Purpose To verify if the Charging Station is able to end the transaction when the charging needs are rejected and it
+does has ISO15118ServiceRenegotiationSupport.
+Prerequisite(s) - EV supports V2X power transfer loop
+- EV and charging station support ISO15118-20
+- Charging Station has ISO15118ServiceRenegotiationSupport (component variable
+ISO15118Ctrlr.ServiceRenegotiationSupport is true)
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State(s):
+State is EVConnectedPreSession
+State is Authorized15118 (for 15118-20)
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Agree on energy transfer mode
+Manual Action: Use EV to communicate EV charging needs:
+For AC charging station:
+requestedEnergyTransfer AC_BPT
+availableEnergyTransfer [AC_single_phase, AC_two_phase, AC_three_phase, AC_BPT, AC_BPT_DER, AC_DER]
+For DC charging station:
+requestedEnergyTransfer DC_BPT
+availableEnergyTransfer [DC, DC_BPT, DC_ACDP, DC_ACDP_BPT]
+controlMode ScheduledControl
+maxChargePower 10000 (W)
+maxDischargePower 5000 (W)
+1. The Charging Station sends a
+NotifyEVChargingNeedsRequest
+2. The Test System responds with a
+NotifyEVChargingNeedsResponse with
+- status Rejected
+Renegotiate
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 877/1383 Part 6 - Test Cases

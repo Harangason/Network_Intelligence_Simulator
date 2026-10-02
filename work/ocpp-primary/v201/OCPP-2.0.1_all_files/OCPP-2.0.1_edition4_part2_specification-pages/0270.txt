@@ -1,0 +1,53 @@
+K04 - Internal Load Balancing
+No. Type Description
+1 Name Internal Load Balancing
+2 ID K04
+3 Objective(s) To enable internal load balancing within the Charging Station and between EVSEs.
+4 Description The Load Balancing use case is about internal load balancing within the Charging Station, where
+the Charging Station controls current/power per EVSE.
+The Charging Station is configured with a fixed limit, e.g. the maximum current of the connection
+to the grid.
+See K01 - Set Charging Profile
+Actors Charging Station, CSMS
+Scenario description 1. The CSMS sets known physical grid connection limits by sending a ChargingProfile.
+2. The Charging Station controls current/power per EVSE.
+3. The EVSE sends a Control Pilot signal to the EV.
+5 Prerequisite(s) The Functional Block Smart Charging is installed.
+6 Postcondition(s) Successful postcondition:
+The Charging Station Successfully balances the current/power between the different EVSEs,
+based on what the CSMS is sending. 
+Failure postcondition:
+ChargingProfile is not Accepted. Charging is possible, although the Charging Station will not
+adhere to the ChargingProfile.
+7 Error handling n/a
+8 Remark(s) n/a
+K04 - Internal Load Balancing - Requirements
+Table 97. K04 - Requirements
+ID Precondition Requirement definition Note
+K04.FR.01 The Charging Station SHALL control the
+ChargingSchedule per EVSE.
+K04.FR.02 The Charging Station SHALL be configured with a fixed
+limit.
+e.g. the maximum current of
+the connection to the grid.
+K04.FR.03 A ChargingProfile with the purpose
+ChargingStationMaxProfile can only be set at
+Charging Station EVSE with Id 0.
+EVSE 0 refers to entire
+Charging Station.
+K04.FR.04 The optional ChargingSchedule field minChargingRate
+MAY be used by the Charging Station to optimize the
+power distribution between the EVSEs.
+The parameter informs the
+charging station that
+charging below
+minChargingRate is
+inefficient, giving the
+possibility to select another
+balancing strategy. (Same
+as K01.FR.21)
+K04.FR.05 The combined energy flow of all EVSEs (and the Charging
+Station hardware itself) SHALL NOT be greater than the
+limit set by ChargingStationMaxProfile.
+Edition 4, 2025-12-03 K. Smart Charging
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 260/491 Part 2 - Specification

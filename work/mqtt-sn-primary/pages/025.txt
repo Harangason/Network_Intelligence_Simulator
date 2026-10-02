@@ -1,0 +1,42 @@
+6.10 Gateway’s Publish Procedure
+Similar to the client’s PUBLISH procedure described in Section 6.6, the gateway sends PUBLISH messages with
+the topic id value that was returned in the SUBACK message to the client.
+Preceding the PUBLISH message the GW may send a REGISTER message to inform the client about the
+topic name and its assigned topic id value. This will happen for example when the client re-connects without
+clean session or has subscribed to topic names with wildcard characters. Upon receiving a REGISTER message
+the client replies with a REGACK message. The GW will wait for the REGACK message before it sends the
+PUBLISH message to the client.
+The client could reject the REGISTER message with a REGACK message indicating the rejection reason; this
+corresponds to an unsubscribe to the topic name indicated in the REGISTER message. Note that unsubcribe to
+a topic name with wildcard characters can only be done with the unsubscribe procedure described in Section 6.9
+and not with the rejection of a REGISTER message, since a REGISTER message never contains a topic name
+with wildcard characters.
+If the client receives a PUBLISH message with an unknown topic id value, it shall respond with a PUBACK
+message with the ReturnCode=“Rejected: invalid Topic ID” . This will trigger the gateway to delete or correct
+the wrong topic id assignment.
+Note that in case either the topic name or the data is too long to ﬁt into a REGISTER or a PUBLISH message,
+the gateway silently aborts the publish procedure, i.e. no warning is sent to the affected subscribers.
+6.11 Keep Alive and PING Procedure
+As with MQTT, the value of the Keep Alive timer is indicated in the CONNECT message. The client should
+send a PINGREQ message within each Keep Alive time period, which the GW acknowledges with a PINGRESP
+message.
+Similarly, a client shall answer with a PINGRESP message when it receives a PINGREQ message from the
+GW to which it is connected. Otherwise the received PINGREQ message is ignored.
+Clients should use this procedure to supervise the liveliness of the gateway to which they are connected. If
+a client does not receive a PINGRESP from the gateway even after multiple retransmissions of the PINGREQ
+message, it should ﬁrst try to connect to another gateway before trying to re-connect to this gateway (see also
+section 6.13). Note that because the clients’ keep alive timers are not synchronized with each other, in case of a
+gateway failure there is practically no danger for a storm of CONNECT messages sent almost at the same time by
+all affected clients towards a new gateway.
+6.12 Client’s Disconnect Procedure
+A client sends a DISCONNECT message to the GW to indicate that it is about to close its connection. After this
+point, the client is then required to establish a new connection with the GW before it can exchange information
+with that GW again. Similar to MQTT, sending the DISCONNECT message does not affect existing subscriptions
+and Will data if the CleanSession ﬂag is set. They are persistent until they are either explicitly un-subscribed, or
+deleted, or modiﬁed by the client, or if the client establishes a new connection with the CleanSession ﬂag set. The
+gateway acknowledges the receipt of the DISCONNECT message by returning a DISCONNECT to the client.
+A client may also receive an unsolicited DISCONNECT sent by the gateway. This may happen for example
+when the gateway, due to an error, cannot identify the client to which a received message belongs. Upon receiving
+such a DISCONNECT message a client should retry to setup the connection again by sending a CONNECT
+message to the gateway.
+c© Copyright IBM Corporation 1999, 2013. All rights reserved. 24

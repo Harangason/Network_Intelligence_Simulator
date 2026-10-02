@@ -1,0 +1,60 @@
+No. Type Description
+8 Remarks The priority charging profile remains in effect for the duration of the transaction. It ceases to be
+active when the charging session is terminated, or when CSMS requests priority charging to stop.
+The use of priority charging is not restricted to V2X operations only. A priority charging profile can
+also be requested for non-V2X transactions.
+A priority charging profile can be deactivated by sending a NotifyPriorityChargingRequest with
+activated = false.
+It is possible to provide a PriorityCharging profile with a maxOfflineDuration and a high stack level
+and another PriorityChargingProfile with no maxOfflineDuration and a lower stack level. The first
+one is then only used as long as the charging station is online and can therefore utilize higher
+power levels. The second profile becomes active when the charging station goes offline and
+utilizes safer lower power levels.
+EV Charging Station CSMS
+Transaction is active
+UsePriorityChargingRequest( txId, true )
+UsePriorityChargingResponse( Accepted )
+switch to PriorityCharging profile
+NotifyPriorityChargingRequest( txId, true )
+NotifyPriorityChargingResponse()
+Figure 144. Requesting PriorityCharging remotely
+K21 - Requesting priority charging remotely - Requirements
+Table 117. K21 - Requirements
+ID. Precondition Requirements Note
+K21.FR.01 Charging Station receives a
+UsePriorityChargingRequest
+with transactionId that matches
+an ongoing transaction AND
+Charging Station does not have
+a PriorityCharging
+charging profile installed on
+EVSE #0 or the EVSE of the
+transaction
+Charging Station SHALL respond with
+UsePriorityChargingResponse with status =
+NoProfile and an optional reasonCode =
+"NotFound"
+A PriorityCharging profile
+on EVSE #0 applies to all
+EVSEs.
+K21.FR.02 Charging Station receives a
+UsePriorityChargingRequest
+with transactionId that does not
+match an ongoing transaction
+Charging Station SHALL respond with
+UsePriorityChargingResponse with status =
+Rejected and an optional reasonCode =
+"TxNotFound"
+K21.FR.03 Charging Station receives a
+UsePriorityChargingRequest
+with transactionId that matches
+an ongoing transaction AND
+Charging Station has a
+PriorityCharging charging
+profile installed on EVSE #0 or
+the EVSE of the transaction
+Charging Station SHALL respond with
+UsePriorityChargingResponse with status =
+Accepted
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 400/803 Part 2 - Specification

@@ -1,0 +1,70 @@
+EV Driver
+Charging Station CSMS
+A transaction is ongoing.
+unplug cable at car side
+suspend energy offer
+TransactionEventRequest(eventType = Ended, transactionId = AB1234, seqN = N + 1, timestamp,
+triggerReason = EVCommunicationLost, stoppedReason = EVDisconnected, meterValues)
+TransactionEventResponse()
+alt [if cable not permanently attached & UnlockOnEVSideDisconnect = true]
+unlock connector
+[if cable not permanently attached & UnlockOnEVSideDisconnect = false]
+User authorization successful.
+unlock connector
+Unplug cable
+StatusNotificationRequest(Available)
+StatusNotificationResponse()
+Figure 57. Sequence Diagram: When cable disconnected on EV-side: Stop Transaction
+E09 - When cable disconnected on EV-side: Stop Transaction - Requirements
+Table 69. E09 - Requirements
+ID Precondition Requirement definition Note
+E09.FR.01 If StopTxOnEVSideDisconnect =
+true .
+The transaction SHALL be deauthorized when the
+cable is disconnected from the EV. If the EV is
+reconnected, energy transfer is not allowed until the
+transaction is authorized once again.
+Setting
+StopTxOnEVSideDisc
+onnect to true will
+prevent sabotage acts
+when unplugging not
+locked cables on EV side.
+E09.FR.02 E09.FR.01
+AND
+the cable is not permanently attached
+AND
+UnlockOnEvSideDisconnect =
+true.
+The Charging Station SHALL unlock the Charging
+Cable.
+E09.FR.03 E09.FR.01
+AND
+the cable is not permanently attached
+AND
+UnlockOnEvSideDisconnect =
+false.
+The Charging Station SHALL unlock the Charging
+Cable only after authorization by the EV Driver.
+E09.FR.04 When a TransactionEventRequest has
+to be created
+The Charging Station SHALL set the message’s
+seqNo field as specified in Sequence Number
+Generation.
+This enables the CSMS
+to track the
+completeness of
+transaction information.
+Same as E01.FR.07
+E09.FR.05 When configured to send meter data
+in the TransactionEventRequest
+(eventType = Ended), See: Meter
+Values - Configuration
+The Charging Station SHALL add the configured
+measurands to the optional meterValue field in the
+TransactionEventRequest(eventType = Ended) sent
+to the CSMS to provide more details about
+transaction usage.
+Same as E08.FR.09
+Edition 4, 2025-12-03 E. Transactions
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 158/491 Part 2 - Specification

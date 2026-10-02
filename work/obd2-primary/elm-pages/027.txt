@@ -1,0 +1,97 @@
+27 of 95
+ELM327
+ELM327DSK Elm Electronics – Circuits for the Hobbyist
+www.elmelectronics.com
+AT Command Descriptions (continued)
+to actually write to the ELM327's EEPROM, however,
+so we provided this command. It should not normally
+be used when connecting to a vehicle.
+SP Ah [ Set Protocol to Auto, h ]
+This variation of the SP command allows you to
+choose a starting (default) protocol, while still retaining
+the ability to automatically search for a valid protocol
+on a failure to connect. For example, if your vehicle is
+ISO 9141-2, but you want to occasionally use the
+ELM327 circuit on other vehicles, you might use the
+AT SP A3 command, so that the first protocol tried will
+then be yours (3), but it will also automatically search
+for other protocols. Don't forget to disable the memory
+function if doing this, or each new protocol detected
+will become your new default.
+SP Ah will save the protocol information even if
+the memory option is off (but SP A0 and SP 0A do not-
+if you must write 0 to the EEPROM, use command AT
+SP 00). Note that the ‘A’ can come before or after the
+h, so AT SP A3 can also be entered as AT SP 3A.
+SR hh [Set the Receive address to hh ]
+Depending on the application, users may wish to
+manually set the address to which the ELM327 will
+respond. Issuing this command will turn off the AR
+mode, and force the IC to only accept responses
+addressed to hh. Use caution with this setting, as
+depending on what you set it to, you may accept a
+message that was actually meant for another module,
+possibly sending an IFR when you should not. To turn
+off the SR filtering, simply send AT AR.
+This command has limited use with CAN, as it only
+monitors one byte of the ID bits, and that is not likely
+selective enough for most CAN applications (the CRA
+command may be a better choice). Also, the command
+has no effect on the addresses used by the J1939
+protocols, as the J1939 routines set their own receive
+addresses based on the ID bit (header) values.
+This SR command is exactly the same as the RA
+command, and can be used interchangeably with it.
+Note that CAN Extended Addressing does not use this
+value - it uses the one set by the AT TA command.
+SS [ use the Standard Sequence for searches ]
+SAE standard J1978 specifies a protocol search
+order that scan tools should use. It follows the number
+order that we have assigned to the ELM327 protocols.
+In order to provide a faster search, the ELM327 does
+not normally follow this order, but it will if you
+command it to with AT SS.
+ST hh [ Set Timeout to hh ]
+After sending a request, the ELM327 waits a
+preset time for a response before it can declare that
+there was ‘NO DATA’ received from the vehicle. The
+same timer setting may also be used after a response
+has been received, while waiting to see if any more is
+coming (but this depends on the AT AT setting). The
+AT ST command allows this timer to be adjusted, in
+increments of 4 msec (or 20 msec if in a CAN protocol,
+with CTM5 selected).
+When Adaptive Timing is enabled, the AT ST time
+sets the maximum time that is to be allowed, even if
+the adaptive algorithm determines that the setting
+should be longer. In most circumstances, it is best to
+simply leave the AT ST time at the default setting, and
+let the adaptive timing algorithm determine what to use
+for the timeout.
+The ST timer is set to 32 by default (giving a time
+of approximately 200 msec), but this default setting
+can be adjusted by changing PP 03. Note that a value
+of 00 does not result in a time of 0 msec – it will
+restore the timer to the default value. Also, during
+protocol searches, an internally set minimum time is
+used - you may select longer times with AT ST, but not
+shorter ones.
+SW hh [ Set Wakeup to hh ]
+Once a data connection has been established,
+some protocols require that there be data flow every
+few seconds, just so that the ECU knows to maintain
+the communications path open. If the messages do not
+appear, the ECU will assume that you are finished,
+and will close the channel. The connection will need to
+be initialized again to reestablish communications.
+The ELM327 will automatically generate periodic
+messages, as required, in order to maintain a
+connection. Any replies to these messages are
+ignored by the ELM327, and are not visible to the user.
+(Currently, only protocols 3, 4, and 5  support these
+messages - nothing is available for CAN. If you require
+CAN periodic messages, you must use the ELM329.)
+The time interval between these periodic ‘wakeup’
+messages can be adjusted in 20 msec increments
+using the AT SW hh command, where hh is any
+hexadecimal value from 00 to FF. The maximum

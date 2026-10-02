@@ -1,0 +1,35 @@
+ 
+28  © Ecma International 2024 
+ 
+12.6.1.4 Handling of timeout (TO) 
+12.6.1.4.1 General 
+Defined by the initially chosen mode, the communication is either active or passive. The handling of the timeout 
+is different for active and passive communication modes. 
+12.6.1.4.2 Handling in active communication mode 
+In active communication mode the communication flow is handled by switching the carrier frequency.  
+Initiator: The Initiator shall ignore a Target that exceeded tRW calculated using TO byte in ATR_REQ from a 
+Target device and continue operation. 
+Target: The Target shall use a TO value that allows common communication and shall use a Supervisory pdu 
+indicating Timeout extension to extend the defined tRW. See 12.7.1.1.1. 
+12.6.1.4.3 Handling of timeout in passive communication mode 
+In passive communication mode the communication is only handled by communication flow. The carrier 
+frequency is not switched. 
+Initiator: The Initiator shall first use error handling and if no response is received ignores a Target device, that 
+has exceeded the specified timeout and continue communication. 
+Target: The Target shall use a TO value that allows common communication and shall use a Supervisory pdu 
+indicating Timeout extension to extend the defined tRW. See 12.7.1.1.1. 
+12.6.1.5 Handling of DID 
+12.6.1.5.1 Handling of DID in active and in passive communication mode 
+When the Initiator has sent an ATR_REQ containing a DID equal to ZERO and  
+a) received an ATR_ RES containing DID equal to ZERO, the Initiator 
+⎯ shall send pdus containing no DID to the Target, and 
+⎯ shall not activate any other Target while this Target is not deactivated. 
+b) received an ATR_RES containing DID not equal to ZERO, the Initiator 
+⎯ shall continue with error handling. 
+When the Initiator has sent an ATR_REQ containing a DID not equal to ZERO and  
+a) received an ATR_RES containing the same DID, the Initiator 
+⎯ shall send pdus containing the DID to the Target,  
+⎯ shall not use the DID for any other Targets, and 
+⎯ shall not use DID=0 for any other Targets. 
+b) received an ATR_RES containing any other DID, the Initiator 
+⎯ shall continue with error handling. 

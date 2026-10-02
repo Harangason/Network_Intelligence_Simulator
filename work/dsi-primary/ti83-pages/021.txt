@@ -1,0 +1,85 @@
+WORD COUNT
+1 Byte 2 Bytes
+ECC
+1 Byte
+Packet Header
+8-bits
+RED
+1 Byte
+0                         7
+R0 R7
+8-bits
+GREEN
+1 Byte
+8-bits
+BLUE
+1 Byte
+First Pixel in Packet
+1 Byte 1 Byte 1 Byte 1 Byte 1 Byte 1 Byte
+Variable Size Payload (Three Pixels Per Nine Bytes of Payload)
+CRC CHECKSUM
+2 Bytes
+24 bpp Packed Pixel Stream
+(Variable Size Payload)
+Packet Footer
+WORD COUNT Bytes
+Packet Payload
+0                         7
+G0 G 7
+0                         7
+B 0 B 7
+8-bits
+RED
+0                         7
+R0 R7
+8-bits
+GREEN
+8-bits
+BLUE
+Second Pixel in Packet
+0                         7
+G0 G 7
+0                         7
+B 0 B 7
+8-bits
+RED
+0                         7
+R0 R7
+8-bits
+GREEN
+8-bits
+BLUE
+Third Pixel in Packet
+0                         7
+G0 G7
+0                         7
+B 0 B7
+VIRTUAL CHANNELDATA TYPE (0x3E)
+Figure 7-11. 24 bpp DSI Packet Structure
+7.4.6 DSI Video Transmission Specifications
+The SN65DSI83 device supports burst video mode and non-burst video mode with sync events or with sync
+pulses packet transmission as described in the DSI specification. The burst mode supports time-compressed
+pixel stream packets that leave added time per scan line for power savings LP mode. The SN65DSI83 device
+requires a transition to LP mode once per frame to enable PHY synchronization with the DSI host processor;
+however, for a robust and low-power implementation, the transition to LP mode is recommended on every video
+line.
+Figure 7-12 shows the DSI video transmission applied to SN65DSI83 device applications. In all applications, the
+LVDS output rate must be less than or equal to the DSI input rate. The first line of a video frame shall start with a
+VSS packet, and all other lines start with VSE or HSS. The position of the synchronization packets in time is of
+utmost importance since this has a direct impact on the visual performance of the display panel; that is, these
+packets generate the HS and VS (horizontal and vertical sync) signals on the LVDS interface after the delay
+programmed into CHA_SYNC_DELAY_LOW/HIGH (CSR 0x28.7:0 and 0x29.3:0).
+As required in the DSI specification, the SN65DSI83 device requires that pixel stream packets contain an integer
+number of pixels (that is, end on a pixel boundary); TI recommends to transmit an entire scan line on one pixel
+stream packet. When a scan line is broken in to multiple packets, inter-packet latency shall be considered such
+that the video pipeline (that is, pixel queue or partial line buffer) does not run empty (under-run); during scan line
+processing, if the pixel queue runs empty, the SN65DSI83 device transmits zero data (18’b0 or 24’b0) on the
+LVDS interface.
+Note
+When the HS clock is used as a source for the LVDS pixel clock, the LP mode transitions apply only to
+the data lanes, and the DSI clock lane remains in the HS mode during the entire video transmission.
+www.ti.com
+SN65DSI83
+SLLSEC1I – SEPTEMBER 2012 – REVISED OCTOBER 2020
+Copyright © 2020 Texas Instruments Incorporated Submit Document Feedback 21
+Product Folder Links: SN65DSI83

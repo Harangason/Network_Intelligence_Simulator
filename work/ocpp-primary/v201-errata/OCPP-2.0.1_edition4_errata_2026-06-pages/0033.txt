@@ -1,0 +1,54 @@
+Tool validations
+* Step 1: Step 2:  
+Message NotifyEventRequest
+- eventData[0].trigger Alerting
+- eventData[0].component <Configured threshold monitor component variable>
+- eventData[0].variable <Configured threshold monitor component variable>
+- eventData[0].variableMonitoringId <monitoringId of monitor set in Memory State>
+* Step 3: Step 5: 
+Message ClearVariableMonitoringResponse
+- clearMonitoringResult[0].status Accepted AND
+- clearMonitoringResult[0].id <monitoringId of monitor set in Memory State>
+* Step 5: Step 7: 
+Message GetMonitoringReportResponse
+- getMonitoringResult[0].status EmptyResultSet
+6.2.18. Page 449 - (2026-02) - TC_M_24_CS - GetCertificateStatusRequest is not
+intended to be sent for the V2G leaf certificate
+Updated note
+Text
+Old Note(s): Step 1/2 are repeated for the V2G Charging Station (leaf), the subCA1 and subCA2 certificates.
+New Note(s):
+- Step 1/2 are executed for both   subCA1 and subCA2.
+- Step 1/2 are not intended to be executed for the V2G Charging Station (leaf), but it is not disallowed.                  
+6.2.19. Page 552 - (2026-02) - TC_O_24_CS - Additions to tool validations
+Test case name Set Display Message - Second Alwaysfront priority
+Test case Id TC_O_24_CS
+…
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDisplayMessageResponse
+1. The Test System sends a SetDisplayMessageRequest with
+message.id <Generated displayMessageId>
+message.priority AlwaysFront
+4. The Charging Station responds with a
+SetDisplayMessageResponse
+3. The Test System sends a SetDisplayMessageRequest with
+message.id <Configured displayMessage2Id>
+message.priority AlwaysFront
+ 6.  The Charging Station responds with a      
+GetDisplayMessagesResponse
+5.  The Test System sends a       GetDisplayMessagesRequest  with 
+ id   <Configured displayMessageId> 
+6. 8.  The Charging Station responds with a
+GetDisplayMessagesResponse
+5. 7.  The Test System sends a GetDisplayMessagesRequest
+with
+id <Configured displayMessage2Id>
+7. 9.  The Charging Station sends a
+NotifyDisplayMessagesRequest 8. 10.  The Test System responds with a
+NotifyDisplayMessagesResponse .
+Note(s):
+- If tbc is True at Step 7 9  then step 7 9  and 8 10  will be repeated
+- The message from step 1 is NOT displayed anymore and is replaced by the message from step 5 7 .
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2026 30/34 Errata 2026-06

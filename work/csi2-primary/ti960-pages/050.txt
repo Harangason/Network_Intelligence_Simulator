@@ -1,0 +1,28 @@
+Status is provided to indicate when the forwarding engine is synchronized. In addition, a flag is used to indicate 
+that synchronization has been lost (status is cleared on a read).
+Three options are available for Synchronized forwarding:
+• Basic Synchronized forwarding
+• Line-Interleave forwarding
+• Line-Concatenated forwarding
+Synchronized forwarding modes are selected by setting the CSI x_SYNC_FWD controls in the FWD_CTL2 
+register. To enable synchronized forwarding the following order of operations is recommended:
+1. Disable Best-effort forwarding by clearing the CSIx_RR_FWD bits in the FWD_CTL2 register
+2. Enable forwarding per Receive port by clearing the FWD_PORTx_DIS bits in the FWD_CTL1 register
+3. Enable Synchronized forwarding in the FWD_CTL2 register
+7.4.25.3 Basic Synchronized CSI-2 Forwarding
+During Basic Synchronized Forwarding each forwarded frame is an independent CSI-2 video frame including 
+FrameStart (FS), video lines, and FrameEnd (FE) packets. Each forwarded stream may have a unique VC-ID. 
+If the forwarded streams do not have a unique VC-ID, the receiving process may use the frame order to 
+differentiate the video stream packets.
+The forwarding engine attempts to send the video synchronized. If synchronization fails, the CSI-2 transmitter 
+stops forwarding packets and attempts to restart sending synchronized video at the next FS indication. Packets 
+are discarded as long as the forwarding engine is unable to send the synchronized video.
+Example Synchronized traffic to CSI-2 Transmit port at start of frame:
+FS0 – FS1 – FS2 – FS3 – S0L1 – S1L1 – S2L1 – S3L1 – S0L2 – S1L2 – S2L2 – S3L2 – S0L3 …
+Example Synchronized traffic to CSI-2 Transmit port at end of frame:
+... S0LN – S1LN – S2LN – S3LN – FE0 – FE1 – FE2 – FE3
+DS90UB960-Q1
+SNLS589D – AUGUST 2016 – REVISED SEPTEMBER 2023
+ www.ti.com
+50 Submit Document Feedback Copyright © 2023 Texas Instruments Incorporated
+Product Folder Links: DS90UB960-Q1

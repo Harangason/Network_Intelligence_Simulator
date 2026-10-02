@@ -1,0 +1,53 @@
+No. Type Description
+8 Remark(s) As an example in this use case the requestId = 123, but this could be any value.
+When a Charging Station is requested to upload a log file, the CSMS supplies in the request an
+URL where the Charging Station SHALL upload the file. The URL also contains the protocol which
+must be used to upload the file.
+The FTP URL is of format: ftp://User:password@host:port/path in which the parts User:
+password@, :password or :port may be excluded.
+The Charging Station has a required Configuration Variable that reports which file transfer
+protocols it supports: FileTransferProtocols
+The format of the log file is not prescribed.
+FTP needs to be able to use Passive FTP, to be able to transverse over as much different
+typologies as possible.
+Charging Station CSMS
+GetLogRequest(logType)
+GetLogResponse(fileName)
+Uploading log file...
+LogStatusNotificationRequest(status = Uploading, requestId = 123)
+LogStatusNotificationResponse()
+Uploaded log file...
+LogStatusNotificationRequest(status = Uploaded, requestId = 123)
+LogStatusNotificationResponse()
+Figure 165. Sequence Diagram: Get Diagnostics
+N01 - Retrieve Log Information - Requirements
+Table 134. N01 - Requirements
+ID Precondition Requirement definition Note
+N01.FR.01 Upon receipt of a GetLogRequest AND
+if the requested log information is
+available
+The Charging Station SHALL respond with a
+GetLogResponse stating the name of the file and
+status Accepted.
+N01.FR.02 N01.FR.01 The Charging Station SHALL start uploading a
+single log file to the specified location
+N01.FR.03 N01.FR.02
+AND
+The GetLogRequest contained
+logType SecurityLog
+The Charging Station SHALL upload its security log
+N01.FR.04 N01.FR.02
+AND
+The GetLogRequest contained
+logType DiagnosticsLog
+The Charging Station SHALL upload its diagnostics.
+N01.FR.05 Upon receipt of a GetLogRequest AND
+if the requested log information is
+NOT available
+The Charging Station SHALL respond with a
+GetLogResponse WITH status Rejected.
+N01.FR.07 Every LogStatusNotificationRequest sent for a log
+upload SHALL contain the same requestId as the
+GetLogRequest that started this log upload.
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 452/803 Part 2 - Specification

@@ -1,0 +1,39 @@
+TC_N_16_CS: Set Monitoring Level - Success
+Test case name Set Monitoring Level - Success
+Test case Id TC_N_16_CS
+Use case Id(s) N05
+Requirement(s) N05.FR.01, N05.FR.03
+System under test Charging Station
+Description CSMS sets a monitoring level after which only monitors with lower or equal level are reported.
+Purpose To test that Charging Station accepts monitoring message and correctly filters events.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+This test case activates a monitor on the following variable:
+- Component "EVSE", variable "AvailabilityState", monitor type Delta, severity 8
+It assumes that no monitor is active on this variable at start of the test.
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+Set a monitoring level that suppresses the notification
+2. Charging Station responds with:
+SetMonitoringLevelResponse
+1. Test System sends:
+SetMonitoringLevelRequest with:
+severity = 7
+4 Charging Station does NOT send NotifyEventRequest for
+configured EVSE
+3. Plugin cable to configured EVSE to make it _Occupied and test
+that notification is suppressed._
+Tool validations
+* Step 2:
+Message: SetMonitoringLevelResponse with:
+status = Accepted
+statusInfo is absent or statusInfo.reasonCode = "NoError"
+Post scenario validations:
+Verify that no event notification is sent for the configured EVSE.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 690/1383 Part 6 - Test Cases

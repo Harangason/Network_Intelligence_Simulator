@@ -1,0 +1,118 @@
+ID Precondition Requirement definition Note
+F02.FR.06 This transaction ends a reservation for
+the specific IdToken.
+The next TransactionEventRequest SHALL contain
+the reservationId.
+See H. Reservation.
+F02.FR.07 When the EV Driver does not plug-in
+the charging cable before the timeout
+set by the Configuration Variable:
+EVConnectionTimeOut AND
+TxStopPoint does not contain
+ParkingBayOccupancy
+The Charging Station SHALL end the transaction
+and send a TransactionEventRequest (eventType =
+Ended, stoppedReason = Timeout, triggerReason =
+EVConnectionTimeout) to the CSMS.
+Otherwise the
+transaction would not be
+ended in case the
+TxStopPoint does not
+contain Authorized.
+Same as E03.FR.05
+F02.FR.08 When the EV Driver does not plug-in
+the charging cable before the timeout
+set by the Configuration Variable:
+EVConnectionTimeOut AND
+TxStopPoint contains
+ParkingBayOccupancy
+The Charging Station SHALL deauthorize the
+transaction and send a TransactionEventRequest
+(triggerReason = EVConnectionTimeout) to the
+CSMS.
+Transaction will be
+ended normally when
+driver leaves the parking
+bay. Same as E03.FR.15
+F02.FR.09 Charging Station receives a
+RequestStartTransactionRequest AND
+( AuthorizeRemoteStart = true
+AND
+idToken.type is NOT Central or
+NoAuthorization )
+The Charging Station SHALL behave as if in
+response to a local action at the Charging Station
+to start a transaction after successful authorization
+of the IdToken given in
+RequestStartTransactionRequest message.
+Charging Station will first
+respond to the request
+and then try to authorize
+the IdToken, using the
+Local Authorization List,
+Authorization Cache
+and/or an
+AuthorizeRequest.
+A transaction is only
+started after
+authorization was
+obtained. Same as
+F01.FR.01
+F02.FR.10 Charging Station receives a
+RequestStartTransactionRequest AND
+( AuthorizeRemoteStart = false
+OR
+idToken.type is Central or
+NoAuthorization )
+The Charging Station SHALL start a transaction for
+the IdToken given in
+RequestStartTransactionRequest message without
+checking authorization.
+Note that after the
+transaction has been
+started, the Charging
+Station will send a
+TransactionEventReques
+t with the idToken to the
+CSMS, and the CSMS will
+check the authorization
+status of the IdToken
+when processing this
+TransactionEventReques
+t. Same as F01.FR.02
+F02.FR.11 F02.FR.09 OR F02.FR.10 The Charging Station SHALL send a
+TransactionEventRequest to the CSMS, and the
+CSMS will check the authorization status of the
+IdToken when processing this
+TransactionEventRequest.
+Same as F01.FR.03
+F02.FR.12 RequestStartTransactionRequest SHALL contain an
+IdToken, which Charging Station SHALL use, if it is
+able to start a transaction, in the
+TransactionEventRequest sent to the CSMS.
+Same as F01.FR.04
+F02.FR.13 The transaction SHALL be started in the same way
+as described in E03 - Start Transaction - Id Token
+First.
+F02.FR.14 RequestStartTransactionRequest MAY contain an
+evseId if the transaction is to be started on a
+specific EVSE.
+When no evseId is
+provided, the Charging
+Station is in control of
+the EVSE selection.
+Same as F01.FR.06
+F02.FR.15 If the
+RequestStartTransactionRequest
+does not contain an evseId.
+The Charging Station MAY reject the
+RequestStartTransactionRequest.
+Same as F01.FR.07
+F02.FR.16 The CSMS MAY include a ChargingProfile in the
+RequestStartTransactionRequest.
+Same as F01.FR.08
+F02.FR.17 F02.FR.16 The purpose of this ChargingProfile SHALL be set
+to TxProfile.
+Same as F01.FR.09
+Edition 4, 2025-12-03 F. Remote Control
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 182/491 Part 2 - Specification

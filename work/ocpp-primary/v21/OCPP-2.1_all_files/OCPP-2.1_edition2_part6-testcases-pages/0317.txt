@@ -1,0 +1,53 @@
+TC_E_116_CS: Resuming transaction after interruption - Powerloss -
+TxResumptionTimeout expired
+Test case name Resuming transaction after interruption - Powerloss - TxResumptionTimeout expired
+Test case Id TC_E_116_CS
+Use case Id(s) E17
+Requirement(s) E17.FR.01, E17.FR.20, E17.FR.21
+System under test Charging Station
+Description Charging station reports running transactions as ended after a reboot and TxResumptionTimeout ocurred.
+Purpose To verify whether the Charging Station was able to end the transactions after a reboot and an expired
+TxResumptionTimeout.
+Prerequisite(s)
+Before (Preparations)
+Configuration State:
+TxCtrlr.ResumptionTimeout is <Configured Transaction duration>
+Memory State:
+N/a
+Reusable State(s):
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+Manual Action: Cut the power to the Charging Station
+Manual Action: Wait <Configured Transaction duration + 1> seconds
+Manual Action: Restore the power to the Charging Station
+1. The Charging Station sends a BootNotificationRequest
+2. The Test System responds with a BootNotificationResponse
+with status Accepted
+3. The Charging Station notifies the CSMS about the current
+state of all connectors.
+It is allowed for the Charging Station to report status
+Unavailable as an intermediate status right before or after
+rebooting.
+It is allowed for the Charging Station to report status Available
+as an intermediate status for the <Configured EVSE.Connector>
+4. The Test System responds accordingly.
+5 The Charging Station sends a
+SecurityEventNotificationRequest
+Step 3 through 13 may be transmitted in any order.
+6 The Test System responds with a
+SecurityEventNotificationResponse
+7 The Charging Station sends a NotifyEventRequest
+Example of content error message:
+eventData.trigger = Delta
+eventData.transactionId = <transactionId from this transaction>
+eventData.eventNotificationType = HardWiredNotification
+eventData.severity = 3
+eventData.actualValue = true
+eventData.component.name = ElectricalFeed
+eventData.variable.name = Problem
+This step is optional. The Charging Station may report the power
+failure to the CSMS.
+8 The Test System responds with a NotifyEventResponse
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 315/1383 Part 6 - Test Cases

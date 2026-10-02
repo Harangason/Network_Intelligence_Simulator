@@ -1,0 +1,96 @@
+ID. Precondition Requirements Notes
+I12.FR.37 When a TariffType is in use for cost
+calculation at the moment that local time
+shifts as a result of beginning or ending of
+daylight saving time
+The execution of cost calculation SHALL
+follow local time for startTimeOfDay and
+endTimeOfDay in TariffConditionsType.
+This means, for example, that a
+TariffEnergyPriceType that had
+ended at 02:30h suddenly
+becomes valid again half an
+hour later, when local time
+jumps back to 02:00h because
+daylight-saving time ends.
+I12.FR.38 When TariffType contains a minCost AND
+( at the end of the transaction the total
+cost excluding taxes (in costDetails) is
+lower than the cost defined in
+minCost.exclTax
+OR
+at the end of the transaction the total cost
+including taxes is lower than the cost
+defined in minCost.inclTax )
+Charging Station SHALL replace the
+totalCost element in CostDetailsType with
+a new TotalCostType field that has its
+PriceType field fixed set to the value of
+minCost, typeOfCost to MinCost, and
+currency set to currency of the tariff.
+This replaces the calculated
+cost with the minimum
+minCost.
+chargingPeriods and totalUsage
+fields in CostDetailsType
+remain unaffected.
+I12.FR.39 When TariffType contains a maxCost AND
+( during the transaction the total cost
+excluding taxes reaches the cost defined
+in maxCost.exclTax
+OR
+during the transaction the total cost
+including taxes reaches the cost defined in
+maxCost.inclTax )
+Charging Station SHALL stop calculating
+any more costs and freeze the values in
+TotalCostType and set the field typeOfCost
+= MaxCost.
+No more costs are added
+during the remainder of the
+transaction. Total amounts of
+prices and taxes stay at the
+value they had at the moment
+that maxCost was reached.
+I12.FR.40 I12.FR.39 Charging Station SHALL continue to
+calculate usage and fill chargingPeriods
+and totalUsage fields in CostDetailsType
+This ensures that proper usage
+data can be displayed on the
+receipt.
+I12.FR.41 NOT ( I12.FR.38 OR I12.FR.39 ) Charging Station SHALL set typeOfCost in
+TotalCostType = NormalCost.
+Calculation can start with
+typeOfCost = NormalCost and
+overrule by Min/MaxCost
+when applicable.
+I12.FR.42 When a transaction is ending AND
+before Charging Station sends the
+TransactionEventRequest with eventType =
+Ended
+Charging Station SHALL finish the tariff
+calculation and update the
+CostDetailsType element to be included in
+the TransactionEventRequest
+I12.FR.43 I12.FR.42 AND
+cost calculation was successful AND
+the device model variable
+TariffCostCtrlr.Problem = "true"
+Charging Station SHALL set device model
+variable TariffCostCtrlr.Problem to "false"
+Remove previous Problem
+indicator for TariffCostCtrlr
+when tariff successfully
+calculated.
+I12.FR.44 I12.FR.43 AND
+Charging Station does not have a Delta
+monitor installed on
+TariffCostCtrlr.Problem
+Charging Station SHALL send a
+NotifyEventRequest with trigger =
+Alerting, eventNotificationType =
+HardWiredNotification, component =
+"TariffCostCtrlr", variable = "Problem",
+actualValue = "false"
+Edition 2, 2025-12-03 I. Tariff And Cost
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 301/803 Part 2 - Specification

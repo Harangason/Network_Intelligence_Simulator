@@ -1,0 +1,36 @@
+MODBUS Application Protocol Specification V1.1b3 Modbus 
+April 26, 20 12 http://www.modbus.org  13/50 
+input specified, and the number of inputs. In the PDU Discrete Inputs a re addressed starting 
+at zero. Therefore Discrete inputs numbered 1-16 are addressed as 0-15. 
+The discrete inputs in the response message are packed as one input per bit of the data field. 
+Status is indicated as 1= ON; 0= OFF. The LSB of the first data byte contains the input 
+addressed in the query. The other inputs follow toward the high order end of this byte, and 
+from low order to high order in subsequent bytes.  
+If the returned input quantity is not a multiple of eight, the remaining bits in the final d ata byte 
+will be padded with zeros (toward the high order end of the byte). The Byte Count field 
+specifies the quantity of complete bytes of data. 
+Request 
+Function code  1 Byte  0x02  
+Starting Address  2 Bytes 0x0000 to 0xFFFF  
+Quantity of Inputs  2 Bytes  1 to 2000 (0x7D0)  
+Response 
+Function code  1 Byte  0x02  
+Byte count  1 Byte N* 
+Input Status  N* x 1 Byte  
+*N = Quantity of Inputs / 8 if the remainder is different of 0  N = N+1
+Error 
+Error code  1 Byte  0x82  
+Exception code 1 Byte 01 or 02 or 03 or 04  
+Here is an example of a request to read discrete inputs 197 – 218: 
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  02 Function  02 
+Starting Address Hi  00 Byte Count  03 
+Starting Address Lo  C4 Inputs Status 204 -197 AC 
+Quantity of Inputs Hi  00 Inputs Status 212 -205 DB 
+Quantity of Inputs Lo  16 Inputs Status 218 -213 35 
+The status of discrete inputs 204 –197 is shown as the byte value AC hex, or binary 1010 
+1100. Input 204 is the MSB of this byte, and input 197 is the LSB.  
+The status of discrete inputs 218 –213 is shown as the byte value 35 hex, or binary 0011 0101. 
+Input 218 is in the third bit position from the left, and input 213 is the LSB.  
+ Note : The two remaining bits (toward the high order end) are zero filled.  

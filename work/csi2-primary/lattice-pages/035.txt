@@ -1,0 +1,20 @@
+MIPI CSI/DSI IP  
+User Guide 
+ 
+ 
+© 2026 Lattice Semiconductor Corp. All Lattice trademarks, registered trademarks, patents, and disclaimers are as listed at www.latticesemi.com/legal.  
+All other brand or product names are trademarks or registered trademarks of their respective holders. The specifications and information herein are subject to change without notice. 
+FPGA-IPUG-02321-1.2  35 
+When you configure the PHY_CONFIG_REG (0x210) register via the AXI4-Lite interface, the IP loads the new settings 
+when the active data lanes exit the stop state and begins the sequence to enter high-speed mode. This ensures no data 
+corruption occurs.  
+2.12.3. MIPI CSI/DSI Transmitter Resolution Reconfiguration 
+In MBSI mode, you only generate the appropriate frame packets at the MBSI interface. To reconfigure the resolution in 
+the UVSI mode, follow these steps: 
+1. After sending the whole frame packet, wait for 2 ms to allow packet processing to complete. Skip Step 1 if you need 
+to change the resolution after power up and before sending any packets.  
+2. Read PHY_CONFIG_REG 0x020[0] to check if CFG_READY is 1 to proceed to the next step. 
+3. Write the new number of vertical lines per active frame into CONFIG_REG2 0x244[31:16]. When the Blanking 
+Period Enable (BP_EN) option is enabled, NUM_LINE_V_BLANKING, H_BLANKING_BYTES_TH (CONFIG_REG1), and 
+NUM_BYTES_ACTIVE_H (CONFIG_REG2) must be configured accordingly. 
+4. Send a new frame packet with the new resolution. 

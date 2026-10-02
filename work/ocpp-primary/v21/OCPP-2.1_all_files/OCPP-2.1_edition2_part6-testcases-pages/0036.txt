@@ -1,0 +1,50 @@
+TC_B_07_CS: Get Variables - multiple values
+Test case name Get Variables - multiple values
+Test case Id TC_B_07_CS
+Use case Id(s) B06
+Requirement(s) B06.FR.01, B06.FR.02, B06.FR.03, B06.FR.04, B06.FR.10
+System under test Charging Station
+Description Get the value of two required variables
+Purpose To test getting multiple values using GetVariablesRequest for one of the
+mandatory component/variable combinations that must exist in the DM implementation.
+Prerequisite(s) N/A
+Before (Preparations)
+Configuration State:
+OCPPCommCtrlr.OfflineThreshold is 300
+AuthCtrlr.LocalAuthorizeOffline is true
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with GetVariablesResponse with
+attributeStatus = Accepted.
+1. Test System sends GetVariablesRequest with:
+- getVariableData[0].variable.name = "OfflineThreshold"
+- getVariableData[0].component.name = "OCPPCommCtrlr"
+- getVariableData[0].attributeType = Actual
+- getVariableData[1].variable.name = "LocalAuthorizeOffline"
+- getVariableData[1].component.name = "AuthCtrlr"
+- getVariableData[1].attributeType = Actual
+Tool validations
+* Step 2:
+Message: GetVariablesResponse has (in arbitrary order)
+GetVariableResultType[0]:
+- attributeStatus = Accepted
+- attributeType = Actual
+- attributeValue = 300
+- component.name = "OCPPCommCtrlr"
+- variable.name = "OfflineThreshold"
+- attributeStatusInfo is absent or attributeStatusInfo.reasonCode = "NoError"
+GetVariableResultType[1]:
+- attributeStatus = Accepted
+- attributeType = Actual
+- attributeValue = "true"
+- component.name = "AuthCtrlr"
+- variable.name = "LocalAuthorizeOffline"
+- attributeStatusInfo is absent or attributeStatusInfo.reasonCode = "NoError"
+Post scenario validations:
+N/A
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 34/1383 Part 6 - Test Cases

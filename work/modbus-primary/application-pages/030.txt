@@ -1,0 +1,63 @@
+MODBUS Application Protocol Specification V1.1b3  Modbus  
+April 26 , 20 12 http://w ww.modbus.org  30/50 
+MB Server Sends mb_exception_rsp EXIT
+MB Server receives mb_req_pdu
+ExceptionCode = 01
+YES
+NO
+NO
+ExceptionCode = 02
+YES
+NO
+ExceptionCode = 03
+YES
+ENTRY
+WriteMultipleOutputs == OK
+MB Server Sends mb_rsp
+NO
+YES
+0x0001  Quantity of Outputs  0x07B0
+AND
+Byte Count = N*
+Function code
+supported
+Starting Address == OK
+AND
+Starting Address + Quantity of Outputs == OK
+ExceptionCode = 04
+*N = Quantity of Outputs / 8, if the
+remainder is different of 0  N = N+1
+Request Processing
+ 
+Figure 21: Write Multiple Outputs state diagram  
+ 
+6.12  16 (0x10) Write Multiple registers  
+This function code is used to write a block of contiguous registers (1 to 123 registers) in a 
+remote device.  
+The requested written values are specified in the request data field. Data is packed as two 
+bytes per register.  
+The normal response returns the function code, starting address, and quantity of registers 
+written.  
+ 
+Request  
+Function code  1 Byte  0x10  
+Starting Address  2 Bytes  0x0000 to 0xFFFF  
+Quantity of Registers  2 Bytes  0x0001 to 0x007B  
+Byte Count  1 Byte  2 x N* 
+Registers Value  N* x 2 Bytes  value  
+*N = Quantity of Registers  
+Response  
+Function code  1 Byte  0x10  
+Starting Address  2 Bytes  0x0000 to 0xFFFF  
+Quantity of Registers  2 Bytes  1 to 123 (0x7B)  
+ 
+Error  
+Error code  1 Byte  0x90  
+Exception code  1 Byte  01 or 02 or  03 or 04  
+ 
+Here is an example of a request to write two registers starting at 2 to 00 0A and 01 02 hex:  
+Request  Response  
+Field Name  (Hex)  Field Name  (Hex)  
+Function  10 Function  10 
+Starting Address Hi  00 Starting Address Hi  00 
+Starting Address Lo  01 Starting Address Lo  01 

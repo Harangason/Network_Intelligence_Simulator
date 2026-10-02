@@ -1,0 +1,50 @@
+Charging Station CS01 Charging Station CS02 Local Controller CSMS
+Initialization
+CSMS sets maximum
+SetVariablesRequest(SmartChargingCtrlr::Enabled = true)
+SetVariablesResponse(Accepted)
+SetChargingProfileRequest(ChargingStationMaxProfile,100 A)
+SetChargingProfileResponse(Accepted)
+Set default profiles
+SetChargingProfileRequest(TxDefaultProfile, 6 A)
+SetChargingProfileRequest(TxDefaultProfile, 6 A)
+SetChargingProfileResponse(Accepted)
+SetChargingProfileResponse(Accepted)
+Load-balancing
+TX1 starts
+TransactionEventRequest(TX1, Started)
+register TX1
+TransactionEventRequest(TX1, Started)
+TransactionEventResponse()
+TransactionEventResponse()
+calculate schedule: 1 x 94
+SetChargingProfileRequest(TxProfile, TX1, 94 A)
+SetChargingProfileResponse(Accepted)
+TX2 starts
+TransactionEventRequest(TX2, Started)
+register TX2
+TransactionEventRequest(TX2, Started)
+TransactionEventResponse()
+TransactionEventResponse()
+calculate schedule: 2 x 47
+SetChargingProfileRequest(TxProfile, TX2, 47 A)
+SetChargingProfileRequest(TxProfile, TX1, 47 A)
+SetChargingProfileResponse(Accepted)
+SetChargingProfileResponse(Accepted)
+TX1 stops
+TransactionEventRequest(TX1, Ended)
+deregister TX1
+TransactionEventRequest(TX1, Ended)
+TransactionEventResponse()
+TransactionEventResponse()
+calculate schedule: 1 x 94
+SetChargingProfileRequest(TxProfile, TX2, 94 A)
+SetChargingProfileResponse(Accepted)
+Figure 125. Local Controller performing local load-balancing
+K03 - Local Smart Charging - Requirements
+Table 99. K03 - Requirements
+ID Precondition Requirement definition Note
+K03.FR.01 The Local Controller MAY impose charging limits on a
+Charging Station.
+Edition 2, 2025-12-03 K. Smart Charging
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 345/803 Part 2 - Specification

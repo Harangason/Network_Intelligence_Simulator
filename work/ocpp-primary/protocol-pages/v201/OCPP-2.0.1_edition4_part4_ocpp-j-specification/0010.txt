@@ -1,0 +1,23 @@
+The bold parts are found as such in every WebSocket handshake response, the other parts are specific to this example.
+The role of the Sec-WebSocket-Accept header is explained in [RFC6455].
+The Sec-WebSocket-Protocol header indicates that the server will be using OCPP2.0.1J on this connection.
+For a definition on how a server SHALL report a 'failure to process the message', see: CALLERROR
+3.3. WebSocket Compression
+OCPP 2.0.1 supports RFC 7692: Compression Extensions for WebSocket see: [RFC6455]
+Table 2. WebSocket compression support requirement for devices
+Device WebSocket Compression Support
+Charging Station Optional
+CSMS Required
+Local Controller Required
+The CSMS (and Local Controller) SHALL support RFC 7692, WebSocket compression, which is a relative simple way to reduce
+mobile data usage. For a Charging Station this is not a hard requirement, as this might be more complex to implement on an
+embedded platform. It is RECOMMENDED to be implemented on a Charging Station, because it is an efficient solution to reduce
+mobile data usage.
+RFC 7692 allows the Charging Station and the CSMS to do a negotiation during the connection setup. When both parties support
+the Compression Extension they will then use DEFLATE compression ([RFC1951]) when sending data over the line. When one of the
+parties doesn’t support it, the JSON will be sent uncompressed (like in OCPP 1.6J).
+When the Charging Station detects that compression is not used, it is RECOMMENDED not to close the connection, as turning of
+compression can be very useful during development, testing and debugging.
+For more detailed information read the RFC 7692.
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 8/26 Part 4 - JSON over WebSockets implementation guide

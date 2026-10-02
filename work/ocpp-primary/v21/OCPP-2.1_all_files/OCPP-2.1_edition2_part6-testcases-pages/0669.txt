@@ -1,0 +1,56 @@
+N Diagnostics
+TC_N_01_CS: Get Monitoring Report - with monitoringCriteria
+Test case name Get Monitoring Report - with monitoringCriteria
+Test case Id TC_N_01_CS
+Use case Id(s) N02
+Requirement(s) N02.FR.01, N02.FR.03,N02.FR.04, N02.FR.05, N02.FR.06, N02.FR.09, N02.FR.12,
+N02.FR.13, N02.FR.14 , N02.FR.22
+System under test Charging Station
+Description CSMS requests a report of all monitors that match the given monitoringCriteria: Threshold, Delta or
+Periodic.
+Purpose To test that Charging Station supports reporting of monitoring via monitoringCriteria. Starting with
+ThresholdMonitoring and then extending the set to check that combinations are handled properly.
+Prerequisite(s) Charging Station has implemented device model monitoring and MonitoringCtrlr::Enabled = true.
+Before (Preparations)
+Configuration State:
+The following monitors must have been configured by CSMS for Component Variable <Configured threshold monitor component
+variable>:
+- LowerThreshold using value <Configured threshold monitor component variable LowerThreshold trigger value>
+- UpperThreshold using value <Configured threshold monitor component variable UpperThreshold trigger value>
+- Periodic using value <Configured Clock Aligned MeterValues Interval>
++ The following monitors must have been configured by CSMS for Component Variable <Configured numeric delta component
+variable>:
+- Delta using value <Configured numeric delta component variable Delta numeric trigger value>
+- PeriodicClockAligned using value <Configured Clock Aligned MeterValues Interval>
+Memory State:
+N/a
+Reusable State(s):
+N/a
+Main (Test scenario)
+Charging Station CSMS
+2. Charging Station responds with:
+GetMonitoringReportResponse
+1. Test System sends GetMonitoringReportRequest with:
+- requestId = <Generated requestId>
+- monitoringCriteria = { ThresholdMonitoring }
+3. Charging Station responds with:
+NotifyMonitoringReportRequest 4. Test System sends NotifyMonitoringReportResponse
+Step 3 and 4 are repeated as often as needed to report all configuration variables.
+6. Charging Station responds with:
+GetMonitoringReportResponse
+5. Test System sends GetMonitoringReportRequest with:
+- requestId = <Generated requestId>
+- monitoringCriteria = { ThresholdMonitoring, DeltaMonitoring }
+7. Charging Station responds with:
+NotifyMonitoringReportRequest 8. Test System sends NotifyMonitoringReportResponse
+Step 7 and 8 are repeated as often as needed to report all configuration variables.
+10. Charging Station responds with:
+GetMonitoringReportResponse
+9. Test System sends GetMonitoringReportRequest with:
+- requestId = <Generated requestId>
+- monitoringCriteria = { DeltaMonitoring, PeriodicMonitoring }
+11. Charging Station responds with:
+NotifyMonitoringReportRequest 12. Test System sends NotifyMonitoringReportResponse
+Step 11 and 12 are repeated as often as needed to report all configuration variables.
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 667/1383 Part 6 - Test Cases

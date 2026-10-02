@@ -1,0 +1,52 @@
+TC_O_28_CS: Set Display Message - Specific transaction -  Remove message after
+EndTime
+Test case name Set Display Message - Specific transaction - Remove message after EndTime
+Test case Id TC_O_28_CS
+Use case Id(s) O02
+Requirement(s) O02_FR_07
+System under test Charging Station
+Description This test case describes how the CSMS can be requested to sent an SetDisplayMessageRequest to the
+charging station. Depending on the given parameters the message shall be displayed a certain way and at a
+certain moment on the Charging Station. These messages are displayed additionally on a Charging Station
+and are not part of the firmware.
+Purpose To verify if the Charging Station is able to display additional messages with a certain end time for a specific
+transaction according to the DisplayMessage mechanism as described in the OCPP specification.
+Prerequisite(s) N/a
+Before (Preparations)
+Configuration State:
+N/a
+Memory State:
+N/a
+Reusable State:
+State is EnergyTransferStarted
+Main (Test scenario)
+Charging Station CSMS
+2. The Charging Station responds with a
+SetDisplayMessageResponse
+1. The Test System sends a SetDisplayMessageRequest with
+message.id <Generated displayMessageId>
+message.transactionId <Generated transactionId>
+message.priority <Configured Priority
+message.endDateTime <Current dateTime + Configured End Date
+Time Offset>
+message.display <Configured display component variable>
+(Omitted when left empty)
+Note(s):
+- The display message should be displayed.
+- Waiting <Configured End Date Time Offset> seconds.
+- The display message is not being displayed anymore after <Configured End Date Time Offset> seconds.
+4. The Charging Station responds with a
+GetDisplayMessagesResponse
+3. The Test System sends a GetDisplayMessagesRequest with
+id <Generated displayMessageId>
+Tool validations
+* Step 2:
+Message SetDisplayMessageResponse
+- status Accepted
+* Step 4:
+Message GetDisplayMessagesResponse
+- status Unknown
+Post scenario validations:
+- N/a
+Edition 2, 2025-12-03
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 787/1383 Part 6 - Test Cases

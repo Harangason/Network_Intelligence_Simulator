@@ -1,0 +1,48 @@
+Main (Test scenario)
+8. Charging Station responds with SetVariablesResponse with
+If value not supported:
+attributeStatus = Rejected
+attributeStatusInfo = InvalidValue
+If component/variable/value supported:
+attributeStatus = Accepted
+7. Test System sends SetVariablesRequest with:
+- variable.name = "NextTimeOffsetTransitionDateTime"
+- component.name = "ClockCtrlr"
+- attributeValue = value
+Tool validations
+* Step 2:
+Message: SetVariablesResponse has
+SetVariableResultType
+- attributeStatus = Rejected/Accepted
+- attributeType = Actual
+- component.name = "OCPPCommCtrlr"
+- variable.name = "OfflineThreshold"
+- attributeStatusInfo is absent or attributeStatusInfo.reasonCode = InvalidValue (not required)
+* Step 4:
+Message: SetVariablesResponse has
+SetVariableResultType
+- attributeStatus = Rejected/Accepted
+- attributeType = Actual
+- component.name = "AuthCtrlr"
+- variable.name = "AuthorizeRemoteStart"
+- attributeStatusInfo is absent or attributeStatusInfo.reasonCode = InvalidValue (not required)
+* Step 6:
+Message: SetVariablesResponse has
+SetVariableResultType
+- attributeStatus = Rejected/Accepted
+- attributeType = Actual
+- component.name = "SmartChargingCtrlr"
+- variable.name = "LimitChangeSignificance"
+- attributeStatusInfo is absent or attributeStatusInfo.reasonCode = InvalidValue (not required)
+* Step 8:
+Message: SetVariablesResponse has
+SetVariableResultType
+- attributeStatus = Rejected/Accepted
+- attributeType = Actual
+- component.name = "ClockCtrlr"
+- variable.name = "NextTimeOffsetTransitionDateTime"
+- attributeStatusInfo is absent or attributeStatusInfo.reasonCode = InvalidValue (not required)
+Post scenario validations:
+N/A
+Edition 4, 2025-12-03
+OCPP 2.0.1 Edition 4 - © Open Charge Alliance 2025 44/914 Part 6 - Test Cases

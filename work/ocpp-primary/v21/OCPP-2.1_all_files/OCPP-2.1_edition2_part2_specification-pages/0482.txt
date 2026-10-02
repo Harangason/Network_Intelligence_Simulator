@@ -1,0 +1,90 @@
+N09 - Get Customer Information - Requirements
+Table 142. N09 - Requirements
+ID Precondition Requirement definition Note
+N09.FR.01 When the CSMS wants to retrieve
+CustomerInformation from the
+Charging Station.
+The report flag in the CustomerInformationRequest
+SHALL be set to true.
+N09.FR.02 When the Charging Station receives a
+CustomerInformationRequest AND
+it is in a state where it can process
+this request.
+the Charging Station SHALL respond with a
+CustomerInformationResponse message with
+status Accepted .
+N09.FR.03 When the Charging Station is in a
+state where it cannot process this
+request.
+On receipt of the CustomerInformationRequest the
+Charging Station SHALL respond with a
+CustomerInformationResponse with status
+Rejected .
+N09.FR.04 The CSMS SHALL include a reference to a
+customer by including either an idToken,
+customerCertificate or customerIdentifier in the
+CustomerInformationRequest.
+N09.FR.05 N09.FR.02 AND
+the Charging Station has information
+stored about the customer referred to
+by the customer identifier
+The Charging Station SHALL send the requested
+information via one or more
+NotifyCustomerInformationRequest messages to
+the CSMS.
+N09.FR.06 N09.FR.02 AND
+the Charging Station has no
+information stored about the
+customer referred to by the customer
+identifier.
+The Charging Station SHALL send one
+NotifyCustomerInformationRequest message to
+the CSMS with the data field set to an empty string.
+N09.FR.07 When receiving a
+CustomerInformationRequest with
+both the report flag as well as the
+clear flag are set to false
+It is RECOMMENDED to respond with status a
+CustomerInformationResponse message with
+status Rejected .
+N09.FR.08 When requesting user information
+according to the customerCertificate
+The CSMS SHALL use the hashAlgorithm, which
+was used to install the certificate.
+When a new firmware is
+installed it is
+RECOMMENDED that the
+CSMS requests the
+certificate first using
+GetInstalledCertificateIds
+Request to be sure of the
+used hashAlgorithm.
+N09.FR.09 When CustomerInformationRequest
+contains none of idToken,
+customerCertificate or
+customerIdentifier OR
+CustomerInformationRequest
+contains more than one of idToken,
+customerCertificate or
+customerIdentifier
+Charging Station SHALL respond with status =
+Invalid
+Only one value for either
+idToken,
+customerCertificate or
+customerIdentifier may
+be provided.
+Charging Station
+counterpart requirement
+of N09.FR.04.
+N10 - Clear Customer Information
+No. Type Description
+1 Name Clear Customer Information
+2 ID N10
+3 Objective(s) To enable the CSMS to clear (and retrieve) raw customer information from a Charging Station.
+4 Description The CSMS sends a message to the Charging Station to clear (and retrieve) raw customer
+information, for example to be compliant with local privacy laws. The Charging Station notifies
+the CSMS by sending one or more reports.
+Actors Charging Station, CSMS
+Edition 2, 2025-12-03 N. Diagnostics
+OCPP 2.1 Edition 2 - © Open Charge Alliance 2025 469/803 Part 2 - Specification

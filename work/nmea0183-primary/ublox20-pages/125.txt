@@ -1,0 +1,50 @@
+u-blox 20 HPG 2.00 - Interface description
+3.16.6.1 Broadcast navigation data subframe
+Message UBX-RXM-SFRBX
+Broadcast navigation data subframe
+Type Output
+Comment This message reports a complete subframe of broadcast navigation data decoded from a single signal. The
+number of data words reported in each message depends on the nature of the signal.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x02 0x13 8 + numWords·4 see below CK_A CK_B
+Payload description:
+Byte offset Type Name Scale Unit Description
+0 U1 gnssId - - GNSS identiﬁer (see Satellite Numbering)
+1 U1 svId - - Satellite identiﬁer (see Satellite Numbering)
+2 U1 sigId - - Signal identiﬁer (see Signal Identiﬁers)
+3 U1 freqId - - Only used for GLONASS: This is the frequency slot + 7
+(range from 0 to 13)
+4 U1 numWords - - The number of data words contained in this message
+(up to 16, for currently supported signals)
+5 U1 chn - - The tracking channel number the message was
+received on
+6 U1 version - - Message version, (0x02 for this version)
+7 U1 reserved0 - - Reserved
+Start of repeated group (numWords times)
+8 + n·4 U4 dwrd - - The data words
+End of repeated group (numWords times)
+3.16.7 UBX-RXM-SPARTNKEY (0x02 0x36)
+3.16.7.1 Poll installed keys
+Message UBX-RXM-SPARTNKEY
+Poll installed keys
+Type Poll request
+Comment Depending on the number of active keys, the receiver shall send a UBX-RXM-SPARTNKEY message describing
+the keys. If there are no active keys then a UBX-RXM-SPARTNKEY shall be sent, with ﬁeld numKeys set to zero.
+Header Class ID Length (Bytes) Payload ChecksumMessage
+structure 0xb5 0x62 0x02 0x36 0 see below CK_A CK_B
+Payload This message has no payload.
+3.16.7.2 Transfer dynamic SPARTN keys
+Message UBX-RXM-SPARTNKEY
+Transfer dynamic SPARTN keys
+Type Input/output
+Comment This message is used to load keys to the receiver.
+The receiver has provision to store up to two (2) keys. By deﬁnition, the one currently used is named 'current'
+and the one that shall be used as soon as 'current' expires is named 'next'.
+Depending on how many active keys the receiver has at the time of receiving the message, one of the following
+shall occur:
+• If the receiver has no active keys, then the ﬁrst key transferred shall become 'current'. If the message
+contains a second key, this shall become 'next'.
+UBXDOC-304424225-19888 - R01
+ 
+3 UBX protocol Page 125 of 224
+C1-Public
