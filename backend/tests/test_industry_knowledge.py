@@ -9,12 +9,10 @@ from contextlib import closing
 from pathlib import Path
 from unittest.mock import patch
 
-from industry_knowledge import (
-    IndustryContext,
-    IndustryKnowledgeService,
-    IndustryMemoryStore,
-    KnowledgeGraphStore,
-)
+from backend.nis.simulation.industry_knowledge import IndustryContext
+from backend.nis.simulation.industry_knowledge import IndustryKnowledgeService
+from backend.nis.simulation.industry_knowledge import IndustryMemoryStore
+from backend.nis.simulation.industry_knowledge import KnowledgeGraphStore
 
 
 class IndustryContextTests(unittest.TestCase):
@@ -178,7 +176,7 @@ class NemotronKnowledgeIntegrationTests(unittest.TestCase):
             openai_patch = {"openai": openai_module}
 
         with patch.dict(sys.modules, openai_patch):
-            import nemotron
+            import backend.nis.simulation.nemotron as nemotron
 
             with tempfile.TemporaryDirectory() as temp_dir:
                 root = Path(temp_dir) / "Industries"

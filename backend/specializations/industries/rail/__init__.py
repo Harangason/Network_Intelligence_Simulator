@@ -1,8 +1,4 @@
-"""Rail vocabulary and template ownership."""
-
-from ...core import IndustrySpecialization
-
-MANIFEST = IndustrySpecialization("rail", "Rail", (
-    "backend.simulator.physic_lib.Industries.Rail",
-))
-__all__ = ["MANIFEST"]
+"""Compatibility only; owner backend.nis.industries.rail.manifest."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.rail.manifest')

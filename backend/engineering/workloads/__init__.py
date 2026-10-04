@@ -1,11 +1,4 @@
-"""Persistierte, messbare Engineering-Workloads fuer den Agenten."""
-
-from .models import WORKLOAD_STATUSES, WORKLOAD_TYPES, parse_workload_request
-from .service import EngineeringWorkloadOrchestrator
-
-__all__ = [
-    "EngineeringWorkloadOrchestrator",
-    "WORKLOAD_STATUSES",
-    "WORKLOAD_TYPES",
-    "parse_workload_request",
-]
+"""Compatibility only; owner backend.nis.engineering.workloads."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.engineering.workloads')

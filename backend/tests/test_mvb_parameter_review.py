@@ -1,8 +1,8 @@
 """MVB native frames, selected medium, administrator scan and cable qualifiers."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import mvb as MV
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.mvb import rules as MV
 
 def actual(code=0):
     x={'mv_'+k:'synthetic-actual-'+k for k in MV.REQUIRED}
@@ -156,8 +156,8 @@ def test_mvb_source_backed_proposals_are_qualified_and_do_not_create_real_addres
     assert registry.profile('mvb')['capacity_evidence']['status']=='MODEL_MISSING'
 
 def test_mvb_confirmed_port4095_dataset32bytes_custom_end_guard_and_cable_limits_survive_foreign_defaults():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x={**actual(4),'mv_address_field':4095,'mv_master_word_hex':'4fff','mv_end_guard_us':5,
         'mv_telegram_bound_us':22+198+4.36+5+1.6}
     group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}

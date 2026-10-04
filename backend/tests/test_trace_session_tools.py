@@ -1,6 +1,7 @@
 import pytest
 
-from backend.engineering.agent_tools import analysis, simulation_gateway
+from backend.nis.agent.tools import analysis as analysis
+from backend.nis.agent.tools import simulation_gateway as simulation_gateway
 
 
 def test_simulation_and_golden_metadata_scan_full_stream(monkeypatch):

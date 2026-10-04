@@ -1,3 +1,5 @@
-# Wizard Integration
+# Document moved
 
-The wizard extraction path now packs chains before registration. Since `registerEngineeringChain` already reuses canonical objects by stable names, packed chains sharing message and interface names become shared canonical messages/interfaces instead of duplicates.
+Canonical document: [10_WIZARD_INTEGRATION.md](../../../docs/domains/engineering/10_WIZARD_INTEGRATION.md).
+
+This entry preserves old links during the structure migration.

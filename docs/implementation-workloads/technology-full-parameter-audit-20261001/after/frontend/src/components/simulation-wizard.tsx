@@ -1,6 +1,8 @@
 "use client";
 
-import { booleanParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues } from "@/lib/technology-parameters";
+import { parseLosslessJson } from "../lib/lossless-json.ts";
+
+import { booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues } from "@/lib/technology-parameters";
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -45,6 +47,8 @@ const busLoadRangeKeys = new Set([
   "overload_threshold",
 ]);
 const parameterCategoryLabels: Record<TechnologyParameterField["category"], string> = {
+  technology: "Technologiespezifische Parameter",
+  communication: "Bus und Protokoll",
   physical: "Netzwerk & Physik",
   timing: "Timing",
   capacity: "Capacity",
@@ -964,7 +968,7 @@ export function SimulationWizard({
         editTokensRef.current = saved.edit_tokens ?? {};
         setSavedMessage("Netzwerktopologie gespeichert. Capacity & Timing ist jetzt gegebenenfalls veraltet.");
       } else if (advanced) {
-        const parsed = JSON.parse(advancedConfig) as Record<string, unknown>;
+        const parsed = parseLosslessJson(advancedConfig) as Record<string, unknown>;
         const saved = await saveWorkflowParameters(parsed, editTokensRef.current.parameters, initialProjectId);
         editTokensRef.current = saved.edit_tokens ?? {};
         setStoredParameters(parsed);
@@ -977,14 +981,7 @@ export function SimulationWizard({
             const raw = form.get(field.key);
             if (field.type === "number") {
               const entered = typeof raw === "string" ? raw.trim() : "";
-              if (!entered && field.required) throw new Error(`${field.label}: Bitte einen bestätigten Wert eingeben.`);
-              if (!entered) return [field.key, null];
-              const numeric = Number(entered);
-              if (!Number.isFinite(numeric) || (field.min !== undefined && numeric < field.min)
-                || (field.max !== undefined && numeric > field.max)) {
-                throw new Error(`${field.label}: Der Wert liegt außerhalb des gültigen Bereichs.`);
-              }
-              return [field.key, numeric];
+              return [field.key, numericParameterValue(field, entered)];
             }
             if (field.type === "boolean") return [field.key, booleanParameterValue(field, raw)];
             return [field.key, String(raw ?? "")];
@@ -1417,7 +1414,8 @@ function ParameterControl({ field, value, unverified = false, proposal }: {
       for (const proposal of field.conditional_defaults ?? []) {
         for (const [key, expected] of Object.entries(proposal.when)) {
           const entered = raw.get(key);
-          values[key] = typeof expected === 'boolean' ? booleanParameterValue({}, entered)
+          const control = form.elements.namedItem(key);
+          values[key] = typeof expected === 'boolean' ? control instanceof HTMLInputElement && control.type === 'checkbox' ? control.checked : booleanParameterValue({}, entered)
             : typeof expected === 'number' ? entered === null || entered === '' ? undefined : Number(entered) : entered;
         }
       }
@@ -1481,6 +1479,13 @@ function ParameterControl({ field, value, unverified = false, proposal }: {
       </div>
     );
   }
+  if (field.numeric_encoding === 'DECIMAL_STRING') {
+    return <div className="field" title={field.description}>
+      <label htmlFor={field.key}>{label}</label>{gap}
+      <input defaultValue={String(value ?? '')} id={field.key} name={field.key} type="text" inputMode="numeric" required={field.required} />
+      {conditionalProposal}
+    </div>;
+  }
   return (
     <div title={field.description}>
       {gap}
@@ -1489,7 +1494,7 @@ function ParameterControl({ field, value, unverified = false, proposal }: {
         name={field.key}
         min={field.min === undefined ? undefined : String(field.min)}
         max={field.max === undefined ? undefined : String(field.max)}
-        step="any"
+        step={field.integer ? "1" : "any"}
         required={field.required}
         value={missing ? "" : String(value)}
       />

@@ -1,1 +1,4 @@
-"""Rail communication domain."""
+"""Compatibility only; owner backend.nis.industries.rail.templates."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.rail.templates')

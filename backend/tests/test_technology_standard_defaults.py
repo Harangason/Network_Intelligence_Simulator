@@ -3,12 +3,14 @@ from copy import deepcopy
 
 import pytest
 
-from backend.app.simulation_service import SimulationService
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.engineering.agent_tools.wizard_generation import _parameter_defaults, _rate_review_candidate
-from backend.engineering.capacity.calculators import confirmed_serial_evidence, serial_evidence_missing_fields
-from backend.engineering.capacity.dimensioning import local_evidence_proposal
-from backend.engineering.capacity.service import parameters_for_protocol
+from backend.nis.simulation.service import SimulationService
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.agent.tools.wizard_generation import _parameter_defaults
+from backend.nis.agent.tools.wizard_generation import _rate_review_candidate
+from backend.nis.engineering.capacity.calculators import confirmed_serial_evidence
+from backend.nis.engineering.capacity.calculators import serial_evidence_missing_fields
+from backend.nis.engineering.capacity.dimensioning import local_evidence_proposal
+from backend.nis.engineering.capacity.service import parameters_for_protocol
 
 
 ALIASES = {'bitrate': 'bitrate_bps', 'arbitration_bitrate': 'nominal_bitrate_bps', 'data_bitrate': 'data_bitrate_bps'}
@@ -125,14 +127,26 @@ def test_matching_identity_cannot_authorize_out_of_profile_rate(technology, valu
     p = {'technology': technology, 'bitrate': value}
     assert registry.validate_parameters(technology, {'bitrate_bps': value})['status'] == 'INVALID'
     resolved = parameters_for_protocol(technology, p, confirmed_parameters=p)
-    assert not resolved['_rate_evidenced'] and 'bitrate' not in resolved
+    assert not resolved['_rate_evidenced']
+    assert resolved['bitrate'] == value  # Retain the supplied fact for review.
+    assert resolved['_rate_findings']
+    from backend.nis.engineering.capacity.calculators import estimate_frame
+    assert not estimate_frame(technology, 8, resolved).transmission_time_available
 
 
 def test_layered_can_form_has_no_ethernet_label_or_phy_parameters():
-    for technology in ['uds', 'xcp', 'obd2', 'nmea2000']:
+    for technology in ['obd2', 'nmea2000']:
         fields = SimulationService._parameter_schema(technology, registry.profile(technology))
         assert 'Ethernet' not in next(f for f in fields if f['key'] == 'bitrate')['label']
         assert not {'duplex', 'mtu_bytes', 'vlan_id'}.intersection(f['key'] for f in fields)
+    xcp_fields = SimulationService._parameter_schema('xcp', registry.profile('xcp'))
+    xcp_keys = {f['key'] for f in xcp_fields}
+    assert {'xc_transport', 'xc_transport_source', 'xc_max_cto', 'xc_max_dto'} <= xcp_keys
+    assert not {'bitrate', 'duplex', 'mtu_bytes', 'vlan_id'}.intersection(xcp_keys)
+    uds_fields = SimulationService._parameter_schema('uds', registry.profile('uds'))
+    uds_keys = {f['key'] for f in uds_fields}
+    assert {'us_transport', 'us_transport_source', 'us_p2_server_s', 'us_p2_star_server_s'} <= uds_keys
+    assert not {'bitrate', 'duplex', 'mtu_bytes', 'vlan_id'}.intersection(uds_keys)
     for technology in ['ros2']:
         fields = SimulationService._parameter_schema(technology, registry.profile(technology))
         assert {'ros_middleware', 'ros_rmw', 'ros_transport'} <= {f['key'] for f in fields}

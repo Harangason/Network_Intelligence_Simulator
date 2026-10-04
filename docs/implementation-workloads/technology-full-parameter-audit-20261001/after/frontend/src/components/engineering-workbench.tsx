@@ -3410,6 +3410,11 @@ function EditObjectForm({
   const [routingAllowed, setRoutingAllowed] = useState(() => routingEnabled(sourceItem));
   const originalTechnology = isHardwareNetworkInterface(item) ? item.technology : '';
   const [editedTechnology, setEditedTechnology] = useState(originalTechnology);
+  const [localConfirmation, setLocalConfirmation] = useState(() => ({
+    technology: originalTechnology,
+    confirmed: isHardwareNetworkInterface(item) &&
+      (item.capabilities.local_timing_evidence as Record<string, unknown> | undefined)?.confirmed === true,
+  }));
   const [technologyProfiles, setTechnologyProfiles] = useState<Technology[]>([]);
   const [profileError, setProfileError] = useState('');
   useEffect(() => {
@@ -3645,8 +3650,8 @@ function EditObjectForm({
           <div className="field"><label htmlFor="edit_physical_port_ref">Physischer Port</label><input defaultValue={item.physical_port_ref ?? ""} id="edit_physical_port_ref" name="edit_physical_port_ref" type="text" /></div>
           <div className="field"><label htmlFor="edit_channel_index">Kanal</label><input defaultValue={item.channel_index ?? ""} id="edit_channel_index" min="1" name="edit_channel_index" type="number" /></div>
           <div className="field"><label htmlFor="edit_network_ref">Netzwerk / Bussegment</label><input defaultValue={item.network_ref ?? ""} id="edit_network_ref" name="edit_network_ref" type="text" /></div>
-          {clockField && <div className="field"><label htmlFor="edit_bitrate">{clockField.label}</label><input key={editedTechnology} defaultValue={String(technologyKey(editedTechnology) === technologyKey(originalTechnology) ? item.bitrate ?? clockField.default ?? "" : clockField.default ?? "")} id="edit_bitrate" min={clockField.min ?? 1} max={clockField.max} name="edit_bitrate" step="1" type="number" /></div>}
-          {dataClockField && <div className="field"><label htmlFor="edit_data_bitrate">{dataClockField.label}</label><input key={editedTechnology} defaultValue={String(technologyKey(editedTechnology) === technologyKey(originalTechnology) ? item.data_bitrate ?? dataClockField.default ?? "" : dataClockField.default ?? "")} id="edit_data_bitrate" min={dataClockField.min ?? 1} max={dataClockField.max} name="edit_data_bitrate" step="1" type="number" /></div>}
+          {clockField && <div className="field"><label htmlFor="edit_bitrate">{clockField.label}</label><input key={editedTechnology} defaultValue={String(technologyKey(editedTechnology) === technologyKey(originalTechnology) ? item.bitrate ?? clockField.default ?? "" : clockField.default ?? "")} id="edit_bitrate" min={clockField.min ?? 1} max={clockField.max} name="edit_bitrate" step="1" type="number" onChange={() => setLocalConfirmation({technology: editedTechnology, confirmed: false})} /></div>}
+          {dataClockField && <div className="field"><label htmlFor="edit_data_bitrate">{dataClockField.label}</label><input key={editedTechnology} defaultValue={String(technologyKey(editedTechnology) === technologyKey(originalTechnology) ? item.data_bitrate ?? dataClockField.default ?? "" : dataClockField.default ?? "")} id="edit_data_bitrate" min={dataClockField.min ?? 1} max={dataClockField.max} name="edit_data_bitrate" step="1" type="number" onChange={() => setLocalConfirmation({technology: editedTechnology, confirmed: false})} /></div>}
           {profileError && <p role="alert">Technologieprofil konnte nicht geladen werden: {profileError}</p>}
           <div className="field"><label htmlFor="edit_target_load_limit">Ziel-Last (%)</label><input defaultValue={item.target_load_limit ?? ""} id="edit_target_load_limit" min="0" name="edit_target_load_limit" step="any" type="number" /></div>
           <div className="field"><label htmlFor="edit_warning_load_limit">Warn-Last (%)</label><input defaultValue={item.warning_load_limit ?? ""} id="edit_warning_load_limit" min="0" name="edit_warning_load_limit" step="any" type="number" /></div>
@@ -3655,7 +3660,11 @@ function EditObjectForm({
           <div className="field"><label htmlFor="edit_runtime_load">Runtime Last (%)</label><input defaultValue={item.runtime_load ?? ""} id="edit_runtime_load" min="0" name="edit_runtime_load" step="any" type="number" /></div>
           <div className="field"><label htmlFor="edit_status">Status</label><select defaultValue={item.status} id="edit_status" name="edit_status">{["CONFIGURED", "UNMAPPED", "ACTIVE", "OUTDATED", "OVERLOADED", "ERROR"].map((value) => <option key={value}>{value}</option>)}</select></div>
         </div>
-        {localFields.length > 0 && <fieldset key={editedTechnology}>
+        {localFields.length > 0 && <fieldset key={editedTechnology} onChange={event => {
+          if ((event.target instanceof HTMLInputElement || event.target instanceof HTMLSelectElement)
+              && event.target.name !== 'edit_local_confirmed')
+            setLocalConfirmation({technology: editedTechnology, confirmed: false});
+        }}>
           <legend>Gerätespezifische Zeitdaten · {editedTechnology}</legend>
           <p>Profilkandidaten aus der Kapazitätsanalyse erst mit Geräteunterlagen prüfen. Diese Angaben allein sind noch kein Zeitnachweis.</p>
           <div className="form-grid three">{localFields.map(field => <div className="field" key={field.key}>
@@ -3671,10 +3680,14 @@ function EditObjectForm({
               step={field.numeric ? field.integer ? 1 : "any" : undefined}
               defaultValue={String(previousLocal[field.key] ?? localCandidate(field.key) ?? "")} />}
             {field.description && <small>{field.description}</small>}
+            {field.default !== undefined && previousLocal[field.key] == null &&
+              <small>UNVERIFIED · Profilvorschlag{field.source_revision ? ` · ${field.source_revision}` : ''}</small>}
           </div>)}</div>
           <div className="field"><label htmlFor="edit_local_source">Nachweisquelle</label><input id="edit_local_source" name="edit_local_source" type="text"
             defaultValue={String(previousLocal.source ?? "")} /></div>
-          <label className="field eng-checkbox-field"><span>Gerätewerte fachlich bestätigt</span><input name="edit_local_confirmed" type="checkbox" /></label>
+          <label className="field eng-checkbox-field"><span>Gerätewerte fachlich bestätigt</span><input name="edit_local_confirmed" type="checkbox"
+            checked={localConfirmation.technology === editedTechnology && localConfirmation.confirmed}
+            onChange={event => setLocalConfirmation({technology: editedTechnology, confirmed: event.target.checked})} /></label>
         </fieldset>}
         </>
       )}

@@ -5,14 +5,15 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.api.tool_contract import Permission
-from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.agent_tools.project_draft import inspect
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.tools.project_draft import inspect
+from backend.nis.interfaces.mcp.server import create_server
 
 
 @pytest.mark.skipif(os.environ.get('NIS_LIVE_MODEL') != '1', reason='Explicit local-model quality run only')

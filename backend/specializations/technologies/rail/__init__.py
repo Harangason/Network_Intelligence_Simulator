@@ -1,8 +1,4 @@
-"""Rail transport ownership."""
-
-from ...core import TechnologySpecialization
-
-MANIFEST = TechnologySpecialization("rail", ("mvb", "wtb", "etb", "trdp"), (
-    "backend.communication.technologies.catalog", "backend.communication.technologies.core",
-))
-__all__ = ["MANIFEST"]
+"""Compatibility only; owner backend.nis.industries.rail.technology_refs."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.rail.technology_refs')

@@ -11,12 +11,18 @@ pytestmark = pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_UR
 
 
 def test_bus_transfer_persists_reloads_and_rejects_stale_preview(monkeypatch):
-    from backend.engineering.project_context import activate_project, reset_project
-    from backend.engineering.repository import create_object, update_object, get_object
-    from backend.engineering.routing.repository import create_route, get_route, approve_routes, save_validation
-    from backend.engineering.routing.validation import RoutingValidator
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.db import get_connection
+    from backend.nis.engineering.projects.project_context import activate_project
+    from backend.nis.engineering.projects.project_context import reset_project
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.infrastructure.persistence.repository import get_object
+    from backend.nis.engineering.routing.repository import create_route
+    from backend.nis.engineering.routing.repository import get_route
+    from backend.nis.engineering.routing.repository import approve_routes
+    from backend.nis.engineering.routing.repository import save_validation
+    from backend.nis.engineering.routing.validation import RoutingValidator
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.infrastructure.persistence.db import get_connection
 
     client = _client()
     project = client.environ_base['HTTP_X_PROJECT_ID']

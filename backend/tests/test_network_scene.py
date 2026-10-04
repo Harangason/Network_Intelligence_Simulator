@@ -4,10 +4,14 @@ import json
 
 import pytest
 
-from backend.engineering.bus_settings import branch_capacity, normalize_bus_limits, limits_from_prompt
-from backend.engineering.network_scene import build_network_scene, bus_junctions, model_signature
-from backend.engineering.workflow import service as workflow
-from backend.engineering.agent_tools import wizard_generation as wizard
+from backend.nis.engineering.network.bus_settings import branch_capacity
+from backend.nis.engineering.network.bus_settings import normalize_bus_limits
+from backend.nis.engineering.network.bus_settings import limits_from_prompt
+from backend.nis.engineering.network.network_scene import build_network_scene
+from backend.nis.engineering.network.network_scene import bus_junctions
+from backend.nis.engineering.network.network_scene import model_signature
+from backend.nis.workflow.services import service as workflow
+from backend.nis.agent.tools import wizard_generation as wizard
 
 
 def fixture_topology():
@@ -93,10 +97,10 @@ def test_gateway_ownership_keeps_controller_frame_and_direct_endpoint_visible():
 
 
 def test_agent_keeps_large_specification_and_project_bus_limits():
-    from backend.engineering.bus_settings import with_project_limits
-    from backend.agent_core.context.agent_context import AgentContext
-    from backend.engineering.agent_tools.services import TOOLS
-    from backend.engineering.agent_tools.run_status import restore_wizard_continuation_prompt
+    from backend.nis.engineering.network.bus_settings import with_project_limits
+    from backend.nis.agent.context.agent_context import AgentContext
+    from backend.nis.agent.tools.services import TOOLS
+    from backend.nis.agent.tools.run_status import restore_wizard_continuation_prompt
     prompt = ('Strukturierte Vorgaben fuer den Engineering-Agenten:\n- Lauf-ID: request-12345678\n'
               'per Wizard-Uebernehmen bestaetigt\n' + 'x'*31000)
     frozen = with_project_limits(prompt, {'engineering_wizard_settings': {'bus_participant_limits': {'lin': 128}}})

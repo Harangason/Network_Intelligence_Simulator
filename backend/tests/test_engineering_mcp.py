@@ -5,14 +5,17 @@ import os
 from uuid import uuid4
 import pytest
 from mcp import Client
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute, DEFAULT_PERMISSIONS
-from backend.engineering.agent_tools.services import TOOLS
-from backend.engineering.agent_tools import proposal_service as proposals
-from backend.engineering.project_context import activate_project, reset_project
-from backend.engineering.db import RequestUnit
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.tools.runtime import DEFAULT_PERMISSIONS
+from backend.nis.agent.tools.services import TOOLS
+from backend.nis.agent.tools import proposal_service as proposals
+from backend.nis.engineering.projects.project_context import activate_project
+from backend.nis.engineering.projects.project_context import reset_project
+from backend.nis.infrastructure.persistence.db import RequestUnit
+from backend.nis.interfaces.mcp.server import create_server
 
 CONFIRMED_CONTROLLER = {"new_hardware": {"name": "VisionController", "device_type": "ECU"}, "status_technology": "CAN_FD", "status_cycle_ms": 100}
 
@@ -80,7 +83,8 @@ def test_mcp_draft_partial_edits_preserve_unspecified_fields(authority):
 
 
 def test_agent_can_plan_deletion_but_only_human_review_allows_apply(authority):
-    from backend.engineering.repository import create_object, list_objects
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import list_objects
     created = execute(authority, 'fixture', Permission.GENERATE_PROPOSAL, {},
         lambda _: create_object('HardwareNode', {'name': 'TemporärerSensor', 'device_type': 'SensorController'}))
     assert created.success
@@ -139,9 +143,9 @@ def test_proposal_requires_review_and_applies_once(authority):
 
 
 def test_agent_exact_35_signals_and_completion_after_human_apply(authority):
-    from backend.engineering.repository import create_object
-    from backend.agent_core.core.engineering_agent import EngineeringAgent
-    from backend.agent_core.context.agent_context import AgentContext
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.agent.core.engineering_agent import EngineeringAgent
+    from backend.nis.agent.context.agent_context import AgentContext
     def fixture(_):
         for category in ["Thermal","Motion"]:
             hardware = create_object("HardwareNode",{"name":category+"ECU","device_type":"ECU"})
@@ -189,7 +193,7 @@ def test_changed_model_invalidates_approved_proposal(authority):
     made=call(authority,"generate_functions",{"prompt":"Erzeuge Kamera Funktionen.", **CONFIRMED_CONTROLLER}).data
     valid=call(authority,"validate_proposal",{"proposal_id":made["proposal_id"]}).data
     assert human_review(authority,valid).data["status"]=="APPROVED"
-    from backend.engineering.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import create_object
     execute(authority,"another-browser",Permission.READ_MODEL,{},lambda _:create_object("HardwareNode",{"name":"AnotherController","device_type":"ECU"}))
     applier=ToolAuthority(authority.project_id,"review-ui",DEFAULT_PERMISSIONS|{Permission.APPLY_APPROVED_PROPOSAL})
     applied=call(applier,"apply_approved_proposal",{"proposal_id":made["proposal_id"]})
@@ -198,7 +202,7 @@ def test_changed_model_invalidates_approved_proposal(authority):
 
 
 def test_browser_approval_requires_separate_intent(authority):
-    from backend.app import create_app
+    from backend.nis.app import create_app
     app=create_app(testing=True)
     client=app.test_client()
     made=call(authority,"generate_functions",{"prompt":"Erzeuge Kamera Funktionen.", **CONFIRMED_CONTROLLER}).data
@@ -246,7 +250,7 @@ def wizard_review_proposal(authority):
 
 
 def wizard_review_client(authority):
-    from backend.app import create_app
+    from backend.nis.app import create_app
 
     client = create_app(testing=True).test_client()
     csrf = client.get("/api/engineering/agent/review-session").json["csrf_token"]
@@ -258,7 +262,7 @@ def wizard_review_client(authority):
 
 
 def test_wizard_review_approves_and_applies_once_with_explicit_human_intent(authority, monkeypatch):
-    from backend.engineering.agent_tools import api as agent_api_module
+    from backend.nis.agent.tools import api as agent_api_module
 
     proposal = wizard_review_proposal(authority)
     client, headers = wizard_review_client(authority)
@@ -286,8 +290,8 @@ def test_wizard_review_approves_and_applies_once_with_explicit_human_intent(auth
 
 
 def test_wizard_review_keeps_revision_and_base_model_guards(authority, monkeypatch):
-    from backend.engineering.agent_tools import api as agent_api_module
-    from backend.engineering.repository import create_object
+    from backend.nis.agent.tools import api as agent_api_module
+    from backend.nis.infrastructure.persistence.repository import create_object
 
     proposal = wizard_review_proposal(authority)
     client, headers = wizard_review_client(authority)
@@ -316,8 +320,8 @@ def test_wizard_review_keeps_revision_and_base_model_guards(authority, monkeypat
 
 
 def test_wizard_review_rolls_back_approval_when_apply_reconciliation_fails(authority, monkeypatch):
-    from backend.engineering.agent_tools import api as agent_api_module
-    from backend.engineering.models import EngineeringValidationError
+    from backend.nis.agent.tools import api as agent_api_module
+    from backend.nis.domain.vocabulary import EngineeringValidationError
 
     proposal = wizard_review_proposal(authority)
     client, headers = wizard_review_client(authority)
@@ -360,7 +364,7 @@ def test_real_stdio_protocol(authority):
     import sys
     from mcp.client.stdio import StdioServerParameters
     async def run():
-        async with EngineeringMCPClient(StdioServerParameters(command=sys.executable,args=["-m","backend.simulator_engineering_mcp","--project",authority.project_id],env={"DATABASE_URL":os.environ["DATABASE_URL"]})) as client:
+        async with EngineeringMCPClient(StdioServerParameters(command=sys.executable,args=["-m","backend.nis.interfaces.mcp","--project",authority.project_id],env={"DATABASE_URL":os.environ["DATABASE_URL"]})) as client:
             result=await client.call("classify_device",{"device":{"name":"VisionCamera"}})
             assert result.success,result.model_dump()
             assert result.data["device_class"]==3
@@ -381,7 +385,7 @@ def test_concurrent_apply_has_one_canonical_result(authority):
 
 
 def model_fixture(authority):
-    from backend.engineering.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import create_object
     def fixture(_):
         hw = create_object("HardwareNode", {"name": "SensorController", "device_type": "ECU"})
         function = create_object("Function", {"name": "Measure", "hardware_node_id": str(hw["id"])})
@@ -422,13 +426,13 @@ def test_impact_contains_transitive_signals_and_relations(authority):
     affected = result.data["changes"][0]["impact_analysis"]["affected_objects"]
     assert fixture["signals"][0]["id"] in {item["id"] for item in affected}
     assert any(item["section"] == "relations" for item in affected)
-    from backend.engineering import proposals as legacy
+    from backend.nis.engineering import proposals as legacy
     result = execute(authority, "legacy-review", Permission.READ_MODEL, {}, lambda _: legacy.reject_proposal(result.data["proposal_id"]))
     assert not result.success
 
 
 def test_network_parameters_are_used_by_shared_calculator():
-    from backend.engineering.capacity.service import parameters_for_protocol
+    from backend.nis.engineering.capacity.service import parameters_for_protocol
     result = parameters_for_protocol("CAN_FD", {"technology": "CAN_FD", "bitrate": 2000000, "networks": [{"id": "slow", "technology": "CAN_FD", "bitrate": 125000, "data_bitrate": 500000}]}, {"bitrate": 500000}, "slow")
     assert result["bitrate"] == 125000
     assert result["data_bitrate"] == 500000
@@ -444,14 +448,14 @@ def test_signal_behavior_is_canonical_after_review(authority):
     applier = ToolAuthority(authority.project_id, "review-ui", DEFAULT_PERMISSIONS | {Permission.APPLY_APPROVED_PROPOSAL})
     applied = call(applier, "apply_approved_proposal", {"proposal_id": made.data["proposal_id"]})
     assert applied.success, applied
-    from backend.engineering.agent_tools.model import model
+    from backend.nis.agent.tools.model import model
     snapshot = execute(authority, "model", Permission.READ_MODEL, {}, lambda _: model()).data
     assert snapshot["behaviors"][0]["signal_id"] == fixture["signals"][0]["id"]
 
 
 def test_question_stops_agent_and_preserves_requirement(authority):
-    from backend.agent_core.core.engineering_agent import EngineeringAgent
-    from backend.agent_core.context.agent_context import AgentContext
+    from backend.nis.agent.core.engineering_agent import EngineeringAgent
+    from backend.nis.agent.context.agent_context import AgentContext
     class Reasoner:
         async def next(self, messages, context, tools):
             args = {"question_id": "network", "question": "Welches Netzwerk?", "multiple": False, "options": [{"value": "can", "label": "CAN FD", "recommended": True}, {"value": "ethernet", "label": "Ethernet"}]}
@@ -475,9 +479,9 @@ def test_golden_comparison_detects_changed_values(authority):
 
 
 def test_complete_pagination_and_large_trace_window(monkeypatch):
-    from backend.engineering.pagination import all_pages
-    from backend.engineering.agent_tools.analysis import window
-    from backend.engineering.agent_tools import simulation_gateway
+    from backend.nis.engineering.pagination import all_pages
+    from backend.nis.agent.tools.analysis import window
+    from backend.nis.agent.tools import simulation_gateway as simulation_gateway
     rows = list(range(1251))
     assert all_pages(lambda limit, offset: rows[offset:offset+limit]) == rows
     # Inline offset compatibility remains intact; jobs must use bounded server pages.
@@ -497,7 +501,7 @@ def test_complete_pagination_and_large_trace_window(monkeypatch):
 
 def test_route_proposal_uses_canonical_routing_review(authority):
     fixture = model_fixture(authority)
-    from backend.engineering.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import create_object
     def destination(_):
         hw = create_object("HardwareNode", {"name": "ReceiverController", "device_type": "ECU"})
         interface = create_object("Interface", {"name": "ReceiverIF", "hardware_node_id": str(hw["id"]), "interface_type": "CAN_FD"})
@@ -540,9 +544,9 @@ def test_message_generation_applies_local_references_atomically(authority):
 
 
 def test_followup_preserves_bounded_conversation_and_rejects_system_role(authority):
-    from backend.agent_core.core.engineering_agent import EngineeringAgent
-    from backend.agent_core.context.agent_context import AgentContext
-    from backend.app import create_app
+    from backend.nis.agent.core.engineering_agent import EngineeringAgent
+    from backend.nis.agent.context.agent_context import AgentContext
+    from backend.nis.app import create_app
     class Reasoner:
         async def next(self, messages, context, tools):
             assert messages[0]["content"] == "Prüfe Vorschlag proposal-123"

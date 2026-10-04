@@ -1,5 +1,4 @@
-from __future__ import annotations
-
-
-def offset(value: float, magnitude: float) -> float:
-    return value + magnitude
+"""Compatibility only; owner backend.nis.simulation.signals.faults.offset."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals.faults.offset')

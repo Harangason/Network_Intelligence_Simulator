@@ -1,5 +1,5 @@
-from backend.engineering.generation_experience import collect_generation_experience
-from backend.engineering.generation_rule_manager import resolve_generation_policy
+from backend.nis.engineering.requirements.generation_experience import collect_generation_experience
+from backend.nis.engineering.requirements.generation_rule_manager import resolve_generation_policy
 
 
 def _row(status: str, proposal_id: str, policy: dict):

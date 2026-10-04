@@ -1,7 +1,8 @@
 from uuid import uuid4
 
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.agent_tools.services import TOOLS
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.tools.services import TOOLS
 
 
 def call(authority, name, data):

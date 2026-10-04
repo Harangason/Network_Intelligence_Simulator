@@ -2,15 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from backend.engineering.message_packing import (
-    HardwareCapability,
-    HardwareInterfaceAllocationService,
-    HardwareInterfaceState,
-    PackedMessage,
-    SignalCandidate,
-    pack_signals,
-    valid_payload_bytes,
-)
+from backend.nis.engineering.signals.message_packing import HardwareCapability
+from backend.nis.engineering.signals.message_packing import HardwareInterfaceAllocationService
+from backend.nis.engineering.signals.message_packing import HardwareInterfaceState
+from backend.nis.engineering.signals.message_packing import PackedMessage
+from backend.nis.engineering.signals.message_packing import SignalCandidate
+from backend.nis.engineering.signals.message_packing import pack_signals
+from backend.nis.engineering.signals.message_packing import valid_payload_bytes
 
 
 @pytest.mark.parametrize(

@@ -1,8 +1,8 @@
 """PNIO fields must retain their source, layer and actual device constraints."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import profinet as P
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.profinet import rules as P
 def actual():
  x={'pn_'+k:'synthetic-'+k for k in P.REQUIRED}
  x.update(bitrate_bps=100000000,pn_wire_profile='PNIO_2_4',pn_clock_profile='PNIO_2_4',pn_implementation='P_NET_PUBLIC_PINNED',

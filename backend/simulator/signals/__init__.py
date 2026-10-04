@@ -1,2 +1,4 @@
-"""Signal emulation components for the existing Python simulation runtime."""
-
+"""Compatibility only; owner backend.nis.simulation.signals."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals')

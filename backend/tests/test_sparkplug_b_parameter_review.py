@@ -1,7 +1,7 @@
 """Independent Sparkplug session and metric boundary regressions."""
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import sparkplug_b as R
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.sparkplug_b import rules as R
 def actual():
  x={'spb_'+k:'synthetic-'+k for k in R.REQUIRED}
  x.update(spb_edition='SPARKPLUG_3_0',spb_proposal_mode='ACTUAL_CONFIG',spb_mqtt_version='3.1.1',spb_message='NDATA',spb_clean_session=True,spb_group_id='group',spb_edge_id='node',spb_seq=1,spb_previous_seq=0,spb_timestamp_ms=1000,spb_metric_timestamp_ms=999,spb_node_online=True)

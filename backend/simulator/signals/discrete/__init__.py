@@ -1,3 +1,4 @@
-from .state_machine import OPERATING_CODES, SignalStateMachineEngine, operating_state
-
-__all__ = ["OPERATING_CODES", "SignalStateMachineEngine", "operating_state"]
+"""Compatibility only; owner backend.nis.simulation.signals.discrete."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals.discrete')

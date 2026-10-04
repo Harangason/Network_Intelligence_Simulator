@@ -4,11 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from backend.app.simulation_service import SimulationService
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.engineering.capacity import service as capacity_service
-from backend.engineering.capacity.service import PreflightService
-from backend.engineering.workflow.models import default_statuses, default_versions
+from backend.nis.simulation.service import SimulationService
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.engineering.capacity import service as capacity_service
+from backend.nis.engineering.capacity.service import PreflightService
+from backend.nis.workflow.services.models import default_statuses
+from backend.nis.workflow.services.models import default_versions
 
 
 def codes(result):

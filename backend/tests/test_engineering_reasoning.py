@@ -5,10 +5,12 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
-from backend.engineering.reasoning.contracts import ReasoningRequest, SimulationReasoningResult
-from backend.engineering.reasoning.engine import EngineeringReasoningEngine
-from backend.engineering.reasoning.correlation import correlate_time, FirstDivergenceAnalyzer
-from backend.engineering.reasoning.service import TraceWindowResolver
+from backend.nis.intelligence.engineering.reasoning.contracts import ReasoningRequest
+from backend.nis.intelligence.engineering.reasoning.contracts import SimulationReasoningResult
+from backend.nis.intelligence.engineering.reasoning.engine import EngineeringReasoningEngine
+from backend.nis.intelligence.engineering.reasoning.correlation import correlate_time
+from backend.nis.intelligence.engineering.reasoning.correlation import FirstDivergenceAnalyzer
+from backend.nis.intelligence.engineering.reasoning.service import TraceWindowResolver
 
 
 def frame(**changes):
@@ -186,7 +188,7 @@ def test_no_raw_events_or_private_reasoning_persisted():
 ])
 def test_real_simulator_fault_reasoning_or_explicit_model_gap(tmp_path, technologies, fault):
     from backend.tests.test_acceptance_scenarios import case_config, assert_timing_model_unavailable
-    from communication_simulator import run_simulation
+    from backend.nis.simulation.communication_simulator import run_simulation
     config = case_config(tmp_path, technologies)
     config["scenario"] = {"mode": "USER_DEFINED_FAULT", "faults": [{**fault, "start_s": .02, "end_s": .05}]}
     if technologies[0] in {'profinet', 'dds_rtps'}:
@@ -205,8 +207,8 @@ def test_real_simulator_fault_reasoning_or_explicit_model_gap(tmp_path, technolo
 
 
 def test_reasoning_tools_registered_and_selected():
-    from backend.engineering.agent_tools.services import TOOLS
-    from backend.agent_core.orchestration.tool_selection import select_tools
+    from backend.nis.agent.tools.services import TOOLS
+    from backend.nis.agent.orchestration.tool_selection import select_tools
     required = {"get_trace_window", "get_trace_events", "get_signal_series", "get_route", "get_network_load", "get_interface_load", "get_timing_metrics", "get_fault_events", "get_state_transitions", "compare_golden_trace", "find_first_divergence", "correlate_events"}
     assert required <= TOOLS.keys()
     chosen = select_tools("Untersuche Ursache einer Deadline im CAN Trace", [{"name": name} for name in TOOLS])

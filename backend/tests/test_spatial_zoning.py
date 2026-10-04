@@ -1,8 +1,10 @@
 from copy import deepcopy
 import json
 import pytest
-from backend.engineering.spatial_zoning import installation_zone, plan_zoning, zone_findings
-from backend.engineering.models import EngineeringValidationError
+from backend.nis.engineering.structure.spatial_zoning import installation_zone
+from backend.nis.engineering.structure.spatial_zoning import plan_zoning
+from backend.nis.engineering.structure.spatial_zoning import zone_findings
+from backend.nis.domain.vocabulary import EngineeringValidationError
 
 
 @pytest.mark.parametrize('name,side,zone', [
@@ -100,7 +102,8 @@ def test_fixed_inventory_and_conflicting_positions_fail_without_mutation():
 
 
 def test_wizard_allocates_by_owner_protocol_and_zone_before_capacity():
-    from backend.engineering.agent_tools.wizard_generation import _confirmed_local_io_memberships, _local_io_physical_network
+    from backend.nis.agent.tools.wizard_generation import _confirmed_local_io_memberships
+    from backend.nis.agent.tools.wizard_generation import _local_io_physical_network
     endpoints = ['RearLeftSuspensionTravel', 'FrontLeftDamperPosition', 'RearRightSuspensionTravel', 'RearLeftDamperPosition']
     graph = [{'bus_name': 'Fahrwerk', 'controllers': [{'ecu': 'Daempferregelung', 'sensors': endpoints}]}]
     prompt = '- Systemcluster-Graph: ' + json.dumps(graph)

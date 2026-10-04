@@ -1,8 +1,8 @@
 """RS232 physical conditions, codec independence and retained actual settings."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import rs232 as R
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.rs232 import rules as R
 def actual():
  x={'rs232_'+k:'synthetic-'+k for k in R.REQUIRED}
  x.update(rs232_profile='TIA_232_F_TI2002',rs232_role='DTE',rs232_peer_role='DCE',rs232_wiring='STRAIGHT',rs232_connector='DE9_EIA574',rs232_direction='FULL_DUPLEX',rs232_clocking='ASYNCHRONOUS',rs232_encoding='START_STOP')

@@ -3,11 +3,12 @@ from pathlib import Path
 import pytest
 
 from backend.tests.test_model_based_simulation import simulation_config
-from backend.engineering.simulation import validate_scenario
-from backend.engineering.models import EngineeringValidationError
-from model_based_simulation import ModelBasedSimulationEngine
-from hardware_profile import normalize_hardware_config
-from universal_trace import generate_universal_events
+from backend.nis.engineering.simulation import validate_scenario
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.simulation.model_based_simulation import ModelBasedSimulationEngine
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.traces.universal_trace import generate_universal_events
+from backend.tests.native_transport_fixtures import lin_design
 
 
 def test_seed_zero_is_not_silently_replaced_by_default(tmp_path: Path):
@@ -56,10 +57,10 @@ def test_jitter_budget_does_not_inject_a_disturbance(tmp_path: Path):
 
 @pytest.mark.parametrize('fast_id,slow_id', [('z-fast', 'a-slow'), ('a-fast', 'z-slow')])
 def test_lin_poll_order_does_not_depend_on_random_route_ids(tmp_path: Path, fast_id, slow_id):
-    from backend.app.runtime_analysis import analyze_runtime_trace
+    from backend.nis.simulation.runtime_analysis import analyze_runtime_trace
     config = simulation_config(tmp_path)
     config.update(duration_s=0.3, engineering_model={})
-    config['networks'][0].update(technology='lin', bitrate=19200)
+    config['networks'][0].update(technology='lin', bitrate=19200, **lin_design())
     for device in config['hardware']['devices']:
         device['ports'][0]['physical_type'] = 'lin'
         device['ports'][0]['network_interfaces'][0]['technology'] = 'lin'

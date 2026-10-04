@@ -1,5 +1,4 @@
-from .missing_work_service import MissingWork, MissingWorkService
-from .regeneration_service import RegenerationService
-from .repair_service import RepairService
-
-__all__ = ["MissingWork", "MissingWorkService", "RegenerationService", "RepairService"]
+"""Compatibility only; owner backend.nis.agent.repair."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.repair')

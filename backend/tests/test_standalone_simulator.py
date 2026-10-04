@@ -1,22 +1,28 @@
 from __future__ import annotations
 
+from backend.tests.native_transport_fixtures import lin_design
+
 import json
 import tempfile
 import unittest
 from copy import deepcopy
 from pathlib import Path
 
-from bus_technologies import BUILTIN_TECHNOLOGIES, catalog_summary, resolve_technology, technology_registry
-from communication_simulator import CONFIG_SCHEMA, CommunicationSimulator, run_simulation
-from hardware_profile import (
-    HardwareProfileService,
-    hardware_profile_summary,
-    normalize_hardware_config,
-    validate_hardware_profile,
-)
-from physic_lib.Industries.generator_base import BaseTechnologyGenerator
-from physic_lib.Industries.registry import TechnologyRegistry
-from universal_trace import UniversalTraceGenerator, generate_universal_events
+from backend.nis.simulation.bus_technologies import BUILTIN_TECHNOLOGIES
+from backend.nis.simulation.bus_technologies import catalog_summary
+from backend.nis.simulation.bus_technologies import resolve_technology
+from backend.nis.simulation.bus_technologies import technology_registry
+from backend.nis.simulation.communication_simulator import CONFIG_SCHEMA
+from backend.nis.simulation.communication_simulator import CommunicationSimulator
+from backend.nis.simulation.communication_simulator import run_simulation
+from backend.nis.simulation.hardware_profile import HardwareProfileService
+from backend.nis.simulation.hardware_profile import hardware_profile_summary
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.simulation.hardware_profile import validate_hardware_profile
+from backend.nis.industries.legacy_projection.generator_base import BaseTechnologyGenerator
+from backend.nis.industries.legacy_projection.registry import TechnologyRegistry
+from backend.nis.traces.universal_trace import UniversalTraceGenerator
+from backend.nis.traces.universal_trace import generate_universal_events
 
 
 class TechnologyRegistryTests(unittest.TestCase):
@@ -201,6 +207,8 @@ class UniversalSimulationTests(unittest.TestCase):
             with self.subTest(technology=technology):
                 network = {"id": "bus", "technology": technology,
                            "bitrate": modeled_rates.get(technology, 1_000_000)}
+                if technology == "lin":
+                    network.update(lin_design())
                 if technology == "can_fd":
                     network.update(arbitration_bitrate=500_000, data_bitrate=2_000_000)
                 config = {"duration_s": .001, "networks": [network], "hardware": [
@@ -215,7 +223,7 @@ class UniversalSimulationTests(unittest.TestCase):
                     self.assertTrue(all(e["transmission_latency_ms"] > 0 for e in events))
                 else:
                     # Includes I2C/SPI without the required local timing proof.
-                    from backend.engineering.capacity.calculators import estimate_frame
+                    from backend.nis.engineering.capacity.calculators import estimate_frame
                     self.assertIsNone(estimate_frame(technology, 8, network).to_dict()["transmission_time_s"])
                     with self.assertRaisesRegex(ValueError, "TIMING_UNVERIFIED"):
                         generate_universal_events(config, profile, start_utc=0)
@@ -293,6 +301,7 @@ class UniversalSimulationTests(unittest.TestCase):
                 run_simulation(config)
             self.assertFalse((Path(temp_dir) / "traces" / "universal_trace.jsonl").exists())
             config["networks"][0]["technology"] = "lin"
+            config["networks"][0].update(lin_design())
             for node in config["hardware"]:
                 node["ports"][0]["interfaces"][0]["technology"] = "lin"
             result = run_simulation(config)
@@ -324,6 +333,7 @@ class UniversalSimulationTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "TIMING_UNVERIFIED"):
             generate_universal_events(config, normalize_hardware_config(config), start_utc=0)
         config["networks"][0]["technology"] = "lin"
+        config["networks"][0].update(lin_design())
         for node in config["hardware"]:
             node["ports"][0]["interfaces"][0]["technology"] = "lin"
         profile = normalize_hardware_config(config)

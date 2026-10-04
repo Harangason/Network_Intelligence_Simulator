@@ -1,8 +1,4 @@
-"""Marine vocabulary and template ownership."""
-
-from ...core import IndustrySpecialization
-
-MANIFEST = IndustrySpecialization("marine", "Marine / Off-Highway", (
-    "backend.simulator.physic_lib.Industries.Marine",
-))
-__all__ = ["MANIFEST"]
+"""Compatibility only; owner backend.nis.industries.marine.manifest."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.marine.manifest')

@@ -2,10 +2,10 @@ import asyncio
 import threading
 from uuid import uuid4
 
-from backend.app import create_app
-from backend.engineering.agent_tools import api
-from backend.engineering.agent_tools.run_status import WizardExecutionTracker
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.app import create_app
+from backend.nis.agent.tools import api as api
+from backend.nis.agent.tools.run_status import WizardExecutionTracker
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
 def test_cancellation_requires_confirmation_and_is_durable():

@@ -203,7 +203,9 @@ def semantics():
     r('ff_length_low',{**old,'pdu_type':'FF'},equal_expression={'subtract':['lin_message_octets',{'product':[high_length,256]}]})
     for kind in ('SF','CF'):r('ff_length_low',{**old,'pdu_type':kind},allowed=[])
     r('pci',{**old,'pdu_type':'CF'},equal_expression={'sum':[32,'lin_cf_sequence']})
-    return {'rate_model':{'type':'EXPLICIT_LIN_EDITION_LDF_PHY','fields':[]},'required_parameters':['lin_'+k for k in REQUIRED],
+    return {'parameter_aliases':{'bitrate':'lin_bitrate_bps','bitrate_bps':'lin_bitrate_bps'},
+        'parameter_alias_limits':{key:{'minimum':1000,'maximum':20000} for key in ('bitrate','bitrate_bps')},
+        'rate_model':{'type':'EXPLICIT_LIN_EDITION_LDF_PHY','fields':[],'minimum_bps':1000,'maximum_bps':20000},'required_parameters':['lin_'+k for k in REQUIRED],
         'native_parameter_prefixes':['lin_'],'parameter_constraints':rules,
         'mechanisms':{'integrity':['PID_PARITY','LIN_CHECKSUM','END_AROUND_CARRY_CLASSIC_OR_ENHANCED_CHECKSUM'],
         'addressing':['FRAME_IDENTIFIER_VERSUS_DIAGNOSTIC_NAD'],

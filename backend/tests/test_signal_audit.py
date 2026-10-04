@@ -1,4 +1,5 @@
-from backend.engineering.signal_audit import build_generation_signal_audit, inspect_signal
+from backend.nis.engineering.signals.signal_audit import build_generation_signal_audit
+from backend.nis.engineering.signals.signal_audit import inspect_signal
 
 
 def test_signal_audit_flags_oversized_signal_without_mutation():

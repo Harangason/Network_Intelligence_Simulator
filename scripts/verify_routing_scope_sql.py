@@ -1,10 +1,5 @@
-"""Run routing scope and transport regressions in the separate verification DB."""
-import os
-from urllib.parse import urlsplit, urlunsplit
-source = urlsplit(os.environ['DATABASE_URL'].replace('postgresql+psycopg://', 'postgresql://'))
-assert source.path != '/nis_bus_naming_tests'
-target = urlunsplit(source._replace(path='/nis_bus_naming_tests'))
-os.environ['DATABASE_URL'] = os.environ['ENGINEERING_TEST_DATABASE_URL'] = target
-import pytest
-raise SystemExit(pytest.main(['backend/tests/test_routing_payload_scope.py', 'backend/tests/test_routing.py',
-    'backend/tests/test_transport_integrity.py', 'backend/tests/test_workflow.py', 'backend/tests/test_wizard_communication.py', '-q', '-p', 'no:cacheprovider', '--tb=short']))
+"""Compatibility entrypoint; implementation is in the responsibility folder."""
+from pathlib import Path as _CompatPath
+_compat_target = _CompatPath(__file__).parent / 'verification' / 'verify_routing_scope_sql.py'
+__file__ = str(_compat_target)
+exec(compile(_compat_target.read_text(encoding="utf-8"), __file__, "exec"), globals(), globals())

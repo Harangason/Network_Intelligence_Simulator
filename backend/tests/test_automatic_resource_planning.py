@@ -3,12 +3,17 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools import proposal_service, wizard_generation
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.intelligence.network_planning import plan_network_distribution, split_topology_by_distribution
-from backend.engineering.intelligence.resource_policy import planning_policy, resource_decision, planning_inventory
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools import wizard_generation as wizard_generation
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.intelligence.engineering.intelligence.network_planning import plan_network_distribution
+from backend.nis.intelligence.engineering.intelligence.network_planning import split_topology_by_distribution
+from backend.nis.intelligence.engineering.intelligence.resource_policy import planning_policy
+from backend.nis.intelligence.engineering.intelligence.resource_policy import resource_decision
+from backend.nis.intelligence.engineering.intelligence.resource_policy import planning_inventory
+from backend.nis.workflow.services.service import WorkflowStatusService
 from backend.tests.test_network_distribution import capacity, hardware, topology
 
 
@@ -85,9 +90,9 @@ def test_auto_resource_receipt_is_revalidated_before_apply(monkeypatch):
     """Real proposal store/validate/review/apply, isolated project, no user changes."""
     authority = ToolAuthority('pytest-auto-resources-' + str(uuid4()))
     def work():
-        from backend.engineering.repository import create_object
-        from backend.engineering.agent_tools import model
-        from backend.engineering.physical_ports import topology_port_findings
+        from backend.nis.infrastructure.persistence.repository import create_object
+        from backend.nis.agent.tools import model as model
+        from backend.nis.engineering.network.physical_ports import topology_port_findings
         workflow = WorkflowStatusService(authority.project_id)
         prompt = '- Kommunikationssystem-Sollwerte: [{"id":"lin","count":1}]'
         workflow.set_context({'agent_wizard_status': {'agent_prompt': prompt}})

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from backend.engineering import proposals, repository
+from backend.nis.engineering import proposals as proposals
+from backend.nis.infrastructure.persistence import repository as repository
 
 
 SOURCE = "00000000-0000-0000-0000-000000000001"

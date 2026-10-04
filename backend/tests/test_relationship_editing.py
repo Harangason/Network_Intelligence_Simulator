@@ -4,7 +4,7 @@ import os
 
 import pytest
 
-from backend.engineering.physical_ports import materialize_physical_ports
+from backend.nis.engineering.network.physical_ports import materialize_physical_ports
 
 
 def test_generated_channel_name_is_independent_of_bus_name():
@@ -25,8 +25,8 @@ def test_generated_channel_name_is_independent_of_bus_name():
 @pytest.mark.skipif(not os.environ.get("ENGINEERING_TEST_DATABASE_URL"), reason="Separate SQL database required")
 def test_interface_and_relationship_rename_reload_aliases_and_rollback(monkeypatch):
     from backend.tests.test_engineering_api import _client
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.models import EngineeringValidationError
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.domain.vocabulary import EngineeringValidationError
 
     c = _client()
     nodes = []

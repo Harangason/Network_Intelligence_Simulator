@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.app.simulation_service import SimulationService
+from backend.nis.simulation.service import SimulationService
 
 
 def test_workflow_simulation_caps_interactive_event_volume(monkeypatch, tmp_path) -> None:

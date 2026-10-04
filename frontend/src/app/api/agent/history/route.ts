@@ -1,6 +1,6 @@
 import type { UIMessage } from 'ai';
-import { readProgramCache } from '@/lib/server/program-cache';
-import { backendEndpoints } from '@/lib/backend-endpoints';
+import { readProgramCache } from '@/shared/lib/program-cache';
+import { backendEndpoints } from '@/shared/api/backend-endpoints';
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 const { engineering: backend } = backendEndpoints(process.env);

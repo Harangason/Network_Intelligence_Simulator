@@ -1,6 +1,6 @@
 from uuid import uuid4
 import pytest
-from backend.engineering.agent_tools import project_draft
+from backend.nis.agent.tools import project_draft as project_draft
 @pytest.mark.parametrize('sensor_text', ['4 Sensoren für Temperaturen', '4 Sensoren für Temperatur', '4 Sensoren die Temperatur messen', '4 temperature sensors'])
 def test_temperature_purpose_and_valve_actuators_are_concrete_devices(sensor_text):
     draft = project_draft.parse_requirement(f'2 Aktoren für Ventile, {sensor_text}, und ein RaspberryPi')
@@ -9,10 +9,12 @@ def test_temperature_purpose_and_valve_actuators_are_concrete_devices(sensor_tex
     assert len([d for d in draft['devices'] if d['role'] == 'CONTROLLER']) == 1
     assert not any(i['code'] == 'DEVICE_KIND_REQUIRED' for i in draft['issues'])
 
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools import project_draft, proposal_service
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.repository import list_objects
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools import project_draft as project_draft
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.infrastructure.persistence.repository import list_objects
 
 
 @pytest.mark.parametrize('text, industry', [
@@ -82,7 +84,7 @@ def test_clearing_confirmed_purpose_and_industry_reopens_the_decisions():
 
 
 def test_schema_migration_keeps_revision_and_unknown_versions_are_not_overwritten():
-    from backend.engineering.agent_tools import conversation
+    from backend.nis.agent.tools import conversation as conversation
     authority = ToolAuthority('draft-schema-' + uuid4().hex)
     def run(handler, data=None):
         return execute(authority, 'schema-test', Permission.GENERATE_PROPOSAL, data or {}, handler)

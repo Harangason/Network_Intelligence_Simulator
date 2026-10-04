@@ -2,18 +2,16 @@ from __future__ import annotations
 
 import pytest
 
-from backend.engineering.core import (
-    Encoding,
-    HardwareNode,
-    Message,
-    Network,
-    NetworkInterface,
-    ProtocolBinding,
-    Route,
-    RouteHop,
-    Signal,
-    ValueDomain,
-)
+from backend.nis.domain.core import Encoding
+from backend.nis.domain.core import HardwareNode
+from backend.nis.domain.core import Message
+from backend.nis.domain.core import Network
+from backend.nis.domain.core import NetworkInterface
+from backend.nis.domain.core import ProtocolBinding
+from backend.nis.domain.core import Route
+from backend.nis.domain.core import RouteHop
+from backend.nis.domain.core import Signal
+from backend.nis.domain.core import ValueDomain
 
 
 def test_core_signal_contract_serializes_without_frontend_types() -> None:

@@ -2,9 +2,11 @@ from collections import Counter
 
 import pytest
 
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering import structure_transfer
-from backend.engineering.structure_transfer import _merge_transfer_decisions, _target_plan, analyze_system_duplicates
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.structure import structure_transfer as structure_transfer
+from backend.nis.engineering.structure.structure_transfer import _merge_transfer_decisions
+from backend.nis.engineering.structure.structure_transfer import _target_plan
+from backend.nis.engineering.structure.structure_transfer import analyze_system_duplicates
 
 
 def test_target_plan_reuses_semantic_duplicates_and_creates_only_missing_children():

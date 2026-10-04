@@ -1,12 +1,14 @@
 """Real SQL parity for UI hierarchy changes and reviewed MCP proposals."""
 from uuid import uuid4
 
-from backend.engineering.agent_tools import proposal_service
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.agent_tools.services import TOOLS
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.repository import create_object, get_object
-from backend.engineering.structure import apply_structure
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.tools.services import TOOLS
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.infrastructure.persistence.repository import get_object
+from backend.nis.engineering.structure.structure import apply_structure
 
 
 def test_agent_and_ui_assign_the_same_hierarchy_and_reject_stale_review():

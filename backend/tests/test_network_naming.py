@@ -1,7 +1,7 @@
 from copy import deepcopy
 import os
 import pytest
-from backend.engineering.network_naming import rename_network
+from backend.nis.engineering.network.network_naming import rename_network
 
 
 @pytest.mark.parametrize('name', ['', '   ', 'line\nbreak', 'a' * 121, None])
@@ -13,7 +13,7 @@ def test_rejects_invalid_bus_names(name):
 @pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_URL'), reason='Separate SQL database required')
 def test_bus_name_persists_without_changing_ids_ports_routes_or_layout(monkeypatch):
     from backend.tests.test_engineering_api import _client
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.workflow.services.service import WorkflowStatusService
     c = _client()
     nodes = []
     for key in ('owner', 'sensor'):
@@ -100,7 +100,7 @@ def test_legacy_names_aliases_and_custom_names_are_scoped_to_physical_network():
 @pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_URL'), reason='Separate SQL database required')
 def test_inherited_names_persist_everywhere_with_custom_override_and_rollback(monkeypatch):
     from backend.tests.test_engineering_api import _client
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.workflow.services.service import WorkflowStatusService
     c = _client()
     nodes = []
     for key in ('owner', 'camera', 'radar'):
@@ -168,7 +168,7 @@ def test_inherited_names_persist_everywhere_with_custom_override_and_rollback(mo
 @pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_URL'), reason='Separate SQL database required')
 def test_ethernet_creation_names_and_project_normalization_are_persistent(monkeypatch):
     from backend.tests.test_engineering_api import _client
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.workflow.services.service import WorkflowStatusService
     c = _client()
     nodes = []
     for key in ('Kameraverarbeitung', 'FrontCamera'):

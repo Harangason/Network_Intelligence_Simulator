@@ -4,16 +4,17 @@ from copy import deepcopy
 
 import pytest
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.api.tool_contract import Permission, ToolResult
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.runtime.executor import EngineeringExecutor
-from backend.agent_core.runtime.goal_resolver import GoalResolver
-from backend.engineering.agent_tools.runtime import ToolAuthority
-from backend.engineering.db import get_connection
-from backend.engineering.reasoning.service import ReasoningService
-from backend.engineering.repository import NotFoundError
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.api.tool_contract import ToolResult
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.runtime.executor import EngineeringExecutor
+from backend.nis.agent.runtime.goal_resolver import GoalResolver
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.infrastructure.persistence.db import get_connection
+from backend.nis.intelligence.engineering.reasoning.service import ReasoningService
+from backend.nis.infrastructure.persistence.repository import NotFoundError
+from backend.nis.interfaces.mcp.server import create_server
 from backend.tests.test_reasoning_integration import setup
 from backend.tests.test_engineering_reasoning import frame
 

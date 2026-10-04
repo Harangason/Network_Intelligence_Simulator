@@ -1,6 +1,6 @@
 """No fabricated t=0, mixed clocks or overwritten samples in MCP correlation."""
 import pytest
-from backend.engineering.agent_tools.analysis import correlate
+from backend.nis.agent.tools.analysis import correlate
 
 
 @pytest.mark.parametrize('time', [None, -1, True, float('nan'), 'invalid'])

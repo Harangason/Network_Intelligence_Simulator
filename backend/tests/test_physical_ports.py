@@ -4,7 +4,8 @@ from uuid import uuid4
 
 import pytest
 
-from backend.engineering.physical_ports import materialize_physical_ports, topology_port_findings
+from backend.nis.engineering.network.physical_ports import materialize_physical_ports
+from backend.nis.engineering.network.physical_ports import topology_port_findings
 
 
 def test_local_io_does_not_steal_an_existing_backbone_channel():
@@ -78,7 +79,7 @@ def test_invalid_physical_bindings_fail_closed(fault, code):
 
 
 def test_capacity_split_allocates_separate_gateway_channels_and_removes_obsolete_ports():
-    from backend.engineering.intelligence.network_planning import split_topology_by_distribution
+    from backend.nis.intelligence.engineering.intelligence.network_planning import split_topology_by_distribution
     topology, hardware, interfaces = sample()
     interfaces[1]['technology'] = 'CAN_FD'
     interfaces[1]['network_ref'] = ''
@@ -168,7 +169,7 @@ def test_malformed_topology_is_reported_instead_of_crashing_status_reads():
 
 
 def test_message_on_two_independent_channels_requires_explicit_transmit_bindings():
-    from backend.engineering.physical_ports import physical_transmit_changes
+    from backend.nis.engineering.network.physical_ports import physical_transmit_changes
     topology, hardware, interfaces = sample()
     topology, changes = materialize_physical_ports(topology, hardware, interfaces, [])
     for index, edge in enumerate(topology['edges']):
@@ -185,7 +186,7 @@ def test_message_on_two_independent_channels_requires_explicit_transmit_bindings
 
 
 def test_topology_refresh_reuses_reviewed_networks_ports_and_layout_without_wizard_prompt(monkeypatch):
-    from backend.engineering.agent_tools import wizard_generation
+    from backend.nis.agent.tools import wizard_generation as wizard_generation
     topology, hardware, interfaces = sample()
     topology, changes = materialize_physical_ports(topology, hardware, interfaces, [])
     interfaces = effective(interfaces, changes)
@@ -212,7 +213,7 @@ def test_topology_refresh_reuses_reviewed_networks_ports_and_layout_without_wiza
 
 
 def test_network_topology_connects_gateway_with_confirmed_bus_without_gateway_message(monkeypatch):
-    from backend.engineering.agent_tools import wizard_generation
+    from backend.nis.agent.tools import wizard_generation as wizard_generation
 
     hardware = [
         {'id': 'controller', 'name': 'Controller', 'device_type': 'ECU'},
@@ -247,11 +248,13 @@ def test_network_topology_connects_gateway_with_confirmed_bus_without_gateway_me
 
 
 def test_physical_channel_proposal_validates_applies_and_reloads_with_persisted_ids():
-    from backend.agent_core.api.tool_contract import Permission
-    from backend.engineering.agent_tools import model, proposal_service
-    from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-    from backend.engineering.repository import create_object
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.agent.api.tool_contract import Permission
+    from backend.nis.agent.tools import model as model
+    from backend.nis.agent.tools import proposal_service as proposal_service
+    from backend.nis.agent.tools.runtime import ToolAuthority
+    from backend.nis.agent.tools.runtime import execute
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.workflow.services.service import WorkflowStatusService
     authority = ToolAuthority('physical-ports-' + uuid4().hex, 'test-human')
 
     def scoped(operation):

@@ -3,16 +3,15 @@ import uuid
 
 import pytest
 
-from backend.app import create_app
-from backend.engineering.addressing import (
-    AddressPolicy,
-    LogicalNodeAddress,
-    default_addressability_for_class,
-    format_logical_node_address,
-    parse_logical_node_address,
-)
-from backend.engineering.db import close_pool, get_connection
-from backend.engineering.models import EngineeringValidationError
+from backend.nis.app import create_app
+from backend.nis.domain.addressing import AddressPolicy
+from backend.nis.domain.addressing import LogicalNodeAddress
+from backend.nis.domain.addressing import default_addressability_for_class
+from backend.nis.domain.addressing import format_logical_node_address
+from backend.nis.domain.addressing import parse_logical_node_address
+from backend.nis.infrastructure.persistence.db import close_pool
+from backend.nis.infrastructure.persistence.db import get_connection
+from backend.nis.domain.vocabulary import EngineeringValidationError
 
 
 @pytest.mark.parametrize(

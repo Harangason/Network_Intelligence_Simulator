@@ -1,5 +1,7 @@
 """Only evidence-backed missing transports are eligible for backfill."""
-from backend.engineering.confirmed_routes import confirmed_route_candidates, route_keys, repair_confirmed_routes
+from backend.nis.engineering.communication.confirmed_routes import confirmed_route_candidates
+from backend.nis.engineering.communication.confirmed_routes import route_keys
+from backend.nis.engineering.communication.confirmed_routes import repair_confirmed_routes
 from backend.tests.test_model_ownership import db_project, _chain
 
 
@@ -27,8 +29,9 @@ def test_candidates_use_confirmed_owners_consumers_and_existing_hmi_pairs_withou
 
 
 def test_backfill_preview_apply_and_retry_are_idempotent(db_project):
-    from backend.engineering.repository import create_object, update_object
-    from backend.engineering.agent_tools import model
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.agent.tools import model as model
 
     sensor, _port, _interface, message, _signal = _chain()
     ecu = create_object("HardwareNode", {"name": "Controller", "device_type": "ECU", "device_class": 4})

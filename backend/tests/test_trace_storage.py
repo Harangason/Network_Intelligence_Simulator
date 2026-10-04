@@ -4,9 +4,12 @@ from pathlib import Path
 
 import pytest
 
-from backend.app import create_app
-from backend.app.job_service import JobService, _run_simulation_process
-from backend.app.trace_storage import TraceStorage, StorageError, StorageUnavailable
+from backend.nis.app import create_app
+from backend.nis.simulation.job_service import JobService
+from backend.nis.simulation.job_service import _run_simulation_process
+from backend.nis.infrastructure.storage.trace_storage import TraceStorage
+from backend.nis.infrastructure.storage.trace_storage import StorageError
+from backend.nis.infrastructure.storage.trace_storage import StorageUnavailable
 
 
 @pytest.fixture
@@ -50,7 +53,7 @@ def test_file_and_unwritable_paths_do_not_silently_fallback(storage, tmp_path, m
         storage.validate(str(file))
     def denied(*args, **kwargs):
         raise PermissionError("read only")
-    monkeypatch.setattr("backend.app.trace_storage.tempfile.TemporaryFile", denied)
+    monkeypatch.setattr("backend.nis.infrastructure.storage.trace_storage.tempfile.TemporaryFile", denied)
     with pytest.raises(StorageUnavailable):
         storage.save("p", str(tmp_path / "unwritable"))
     assert storage.settings("p")["is_default"]
@@ -95,7 +98,7 @@ def test_unused_project_default_does_not_offer_a_missing_parent(tmp_path, monkey
 def test_directory_permission_failure_is_not_reported_as_empty(storage, monkeypatch):
     def denied(*_args):
         raise PermissionError('denied')
-    monkeypatch.setattr('backend.app.trace_storage.os.scandir', denied)
+    monkeypatch.setattr('backend.nis.infrastructure.storage.trace_storage.os.scandir', denied)
     with pytest.raises(StorageUnavailable):
         storage.directories('new-project')
 
@@ -144,7 +147,7 @@ def test_queued_worker_keeps_captured_path_after_setting_change(storage, tmp_pat
         def submit(self, *args):
             calls.append(args)
             return Future()
-    monkeypatch.setattr("backend.app.job_service.SimulationService", TinySimulation)
+    monkeypatch.setattr("backend.nis.simulation.job_service.SimulationService", TinySimulation)
     selected = tmp_path / "selected"
     storage.save("p", str(selected))
     jobs = JobService(storage=storage, synchronous=False, execution_mode=mode, persist=False)
@@ -163,7 +166,7 @@ def test_queued_worker_keeps_captured_path_after_setting_change(storage, tmp_pat
 
 
 def test_storage_http_contract_and_trace_download_after_path_change(storage, tmp_path, monkeypatch):
-    api = importlib.import_module("backend.app.api")
+    api = importlib.import_module("backend.nis.interfaces.http.simulation")
     jobs = JobService(TinySimulation(), storage=storage, synchronous=True, persist=False)
     monkeypatch.setattr(api, "JOBS", jobs)
     client = create_app(testing=True).test_client()
@@ -186,7 +189,7 @@ def test_storage_http_contract_and_trace_download_after_path_change(storage, tmp
 
 
 def test_storage_http_reports_io_failure(storage, monkeypatch):
-    api = importlib.import_module("backend.app.api")
+    api = importlib.import_module("backend.nis.interfaces.http.simulation")
     monkeypatch.setattr(api, "JOBS", JobService(storage=storage, persist=False))
     def unavailable(*args, **kwargs):
         raise StorageUnavailable("Speicher nicht erreichbar")

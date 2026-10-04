@@ -3,8 +3,8 @@ from copy import deepcopy
 
 import pytest
 
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.routing import transport_segments as transport
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.routing import transport_segments as transport
 from backend.tests.test_transport_integrity import gateway_config
 
 

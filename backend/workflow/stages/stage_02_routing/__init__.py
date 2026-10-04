@@ -1,6 +1,4 @@
-"""Stage 02: logical routing table."""
-
-from backend.workflow.definition import workflow_stage
-
-STAGE = workflow_stage("routing")
-__all__ = ["STAGE"]
+"""Compatibility only; owner backend.nis.workflow.stages.stage_02_routing."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.workflow.stages.stage_02_routing')

@@ -2,8 +2,10 @@ from copy import deepcopy
 
 import pytest
 
-from backend.engineering.routing.endpoint_consistency import align_receive_interfaces
-from backend.knowledge.semantic_vocabulary import engineering_tokens, engineering_phrase_match, EngineeringSemanticVocabulary
+from backend.nis.engineering.routing.endpoint_consistency import align_receive_interfaces
+from backend.nis.knowledge.semantic_vocabulary import engineering_tokens
+from backend.nis.knowledge.semantic_vocabulary import engineering_phrase_match
+from backend.nis.knowledge.semantic_vocabulary import EngineeringSemanticVocabulary
 from backend.tests.test_routing import FakeValidator, route_payload, SOURCE, TARGET, SOURCE_INTERFACE, TARGET_INTERFACE, SOURCE_PORT, TARGET_PORT
 
 
@@ -83,7 +85,7 @@ def test_agent_retrieval_uses_compounds_and_distinct_semantic_domains():
 
 
 def test_owner_inference_separates_systems_and_preserves_confirmed_assignments():
-    from backend.engineering.system_clusters import system_owners
+    from backend.nis.engineering.structure.system_clusters import system_owners
     hardware = [{'id': name, 'name': name, 'device_type': 'ECU'} for name in
                 ('Abgasnachbehandlung', 'Daempferregelung', 'Motorsteuerung', 'Fahrwerk', 'Fahrersitz')]
     hardware += [{'id': name, 'name': name, 'device_type': 'SensorController'} for name in

@@ -1,25 +1,4 @@
-"""Deterministic system-wide analytics for workflow step 9."""
-
-from .service import IntelligenceService
-from .services import (
-    AnomalyDetectionService,
-    DataQualityService,
-    GraphAnalyticsService,
-    MaturityAssessmentService,
-    RecommendationEngine,
-    RootCauseAnalysisService,
-    SystemHealthService,
-    TrendAnalysisService,
-)
-
-__all__ = [
-    "AnomalyDetectionService",
-    "DataQualityService",
-    "GraphAnalyticsService",
-    "IntelligenceService",
-    "MaturityAssessmentService",
-    "RecommendationEngine",
-    "RootCauseAnalysisService",
-    "SystemHealthService",
-    "TrendAnalysisService",
-]
+"""Compatibility only; owner backend.nis.intelligence.engineering.intelligence."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.intelligence.engineering.intelligence')

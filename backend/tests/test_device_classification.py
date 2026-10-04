@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from backend.engineering.device_classification import (
-    DeviceClassificationRegistry, TechnologyCandidateResolver, DEVICE_CLASS_PROFILES,
-)
-from backend.engineering import schema as engineering_schema
+from backend.nis.domain.device_classification import DeviceClassificationRegistry
+from backend.nis.domain.device_classification import TechnologyCandidateResolver
+from backend.nis.domain.device_classification import DEVICE_CLASS_PROFILES
+from backend.nis.infrastructure.persistence import schema as engineering_schema
 
 
 @pytest.mark.parametrize(

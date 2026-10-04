@@ -6,8 +6,8 @@ from uuid import uuid4
 
 import pytest
 
-from backend.engineering.db import get_connection
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.infrastructure.persistence.db import get_connection
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
 pytestmark = pytest.mark.skipif(
@@ -146,8 +146,8 @@ def test_uncontended_status_read_still_persists_verified_source_statuses():
 
 
 def test_large_workflow_details_remain_available_with_revision_tokens_under_the_status_budget():
-    from backend.app import create_app
-    from backend.engineering.workflow.service import edit_token
+    from backend.nis.app import create_app
+    from backend.nis.workflow.services.service import edit_token
 
     project = project_with_default_artifacts()
     parameters = {'networks': [], 'description': 'p' * 900_000}
@@ -177,7 +177,7 @@ def test_large_workflow_details_remain_available_with_revision_tokens_under_the_
 
 
 def test_editor_detail_and_metadata_reads_do_not_wait_for_an_active_project_writer():
-    from backend.app import create_app
+    from backend.nis.app import create_app
 
     project = project_with_default_artifacts()
     app = create_app(testing=True)

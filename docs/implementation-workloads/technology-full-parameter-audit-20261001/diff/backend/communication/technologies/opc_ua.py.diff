@@ -216,7 +216,7 @@
 + r('eu_high',{'deadband':'PERCENT'},exclusive_minimum_expression='ua_eu_low',src=P8)
 + r('deadband_threshold',{'deadband':'PERCENT'},equal_expression={'product':['ua_deadband_value',.01,{'subtract':['ua_eu_high','ua_eu_low']}]},src=P8)
 + r('numeric_item',{'deadband':'ABSOLUTE'},allowed=[True],required=True)
-+ r('item_severity',equal_expression={'floor':[{'product':['ua_item_status',1/(2**30)]}]})
++ r('item_severity',equal_expression={'floor':[{'product':['ua_item_status',{'power':[2,-30]}]}]})
 + r('item_status',when_present=['ua_item_severity'],required=True)
 + r('item_severity',{'data_accepted':True},allowed=[0,1],required=True)
 + r('service_status',{'data_accepted':True},maximum=1073741823,required=True)

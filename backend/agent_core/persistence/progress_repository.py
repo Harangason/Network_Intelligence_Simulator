@@ -1,9 +1,4 @@
-from __future__ import annotations
-
-from typing import Any, Protocol
-
-
-class ProgressRepository(Protocol):
-    def save_progress(self, workload_id: str, progress: dict[str, Any]) -> None: ...
-
-    def get_progress(self, workload_id: str) -> dict[str, Any]: ...
+"""Compatibility only; owner backend.nis.agent.persistence.progress_repository."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.persistence.progress_repository')

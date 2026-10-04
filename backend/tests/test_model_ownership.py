@@ -4,7 +4,8 @@ from uuid import uuid4
 
 import pytest
 
-from backend.engineering.system_ownership import confirmed_system_owner_plan, migrate_confirmed_system_owners
+from backend.nis.engineering.structure.system_ownership import confirmed_system_owner_plan
+from backend.nis.engineering.structure.system_ownership import migrate_confirmed_system_owners
 
 
 def test_confirmed_plan_preserves_explicit_ownership_and_rejects_ambiguous_names():
@@ -31,8 +32,9 @@ def db_project(monkeypatch):
     if not url:
         pytest.skip("Dedicated ENGINEERING_TEST_DATABASE_URL required")
     monkeypatch.setenv("DATABASE_URL", url)
-    from backend.engineering.project_context import activate_project, reset_project
-    from backend.engineering.db import close_pool
+    from backend.nis.engineering.projects.project_context import activate_project
+    from backend.nis.engineering.projects.project_context import reset_project
+    from backend.nis.infrastructure.persistence.db import close_pool
     close_pool()
     project = f"pytest-model-ownership-{uuid4()}"
     token = activate_project(project)
@@ -44,7 +46,7 @@ def db_project(monkeypatch):
 
 
 def _chain():
-    from backend.engineering.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import create_object
     sensor = create_object("HardwareNode", {"name": "EGRValvePosition", "device_type": "SensorController", "device_class": 1})
     port = create_object("HardwareNetworkInterface", {"name": "SensorCAN", "hardware_node_id": str(sensor["id"]), "technology": "CAN_FD"})
     interface = create_object("Interface", {"name": "Measurement", "hardware_node_id": str(sensor["id"]), "interface_type": "CAN_FD"})
@@ -54,8 +56,9 @@ def _chain():
 
 
 def test_structure_wizard_accepts_direct_sensor_without_function(db_project):
-    from backend.engineering.structure import evaluate_structure, apply_structure
-    from backend.engineering.repository import get_object
+    from backend.nis.engineering.structure.structure import evaluate_structure
+    from backend.nis.engineering.structure.structure import apply_structure
+    from backend.nis.infrastructure.persistence.repository import get_object
     sensor, _port, interface, message, signal = _chain()
     selections = {"HardwareNode": [str(sensor["id"])], "Function": [], "Interface": [str(interface["id"])], "Message": [str(message["id"])], "Signal": [str(signal["id"])]}
     evaluation = evaluate_structure({"selections": selections})
@@ -68,9 +71,11 @@ def test_structure_wizard_accepts_direct_sensor_without_function(db_project):
 
 
 def test_reparent_keeps_physical_bindings_and_rejects_cross_hardware_move(db_project):
-    from backend.engineering.repository import create_object, update_object, get_object
-    from backend.engineering.models import EngineeringValidationError
-    from backend.engineering.relations import list_relations
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.infrastructure.persistence.repository import get_object
+    from backend.nis.domain.vocabulary import EngineeringValidationError
+    from backend.nis.engineering.relations import list_relations
     sensor, _port, interface, _message, _signal = _chain()
     legacy_function = create_object("Function", {"name": "OldFunction", "hardware_node_id": str(sensor["id"])})
     parented = update_object("Interface", str(interface["id"]), {"function_id": str(legacy_function["id"])})
@@ -87,10 +92,11 @@ def test_reparent_keeps_physical_bindings_and_rejects_cross_hardware_move(db_pro
 
 
 def test_migration_is_dry_run_by_default_and_idempotent(db_project):
-    from backend.engineering.repository import create_object, get_object
-    from backend.engineering.assignment_learning import EquipmentAssignmentLearningService
-    from backend.engineering.system_clusters import system_owners
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import get_object
+    from backend.nis.engineering.assignment_learning import EquipmentAssignmentLearningService
+    from backend.nis.engineering.structure.system_clusters import system_owners
+    from backend.nis.workflow.services.service import WorkflowStatusService
     sensor, _port, _interface, _message, _signal = _chain()
     ecu = create_object("HardwareNode", {"name": "Abgasnachbehandlung", "device_type": "ECU", "device_class": 4})
     WorkflowStatusService(db_project).save_topology({"nodes": [
@@ -114,7 +120,7 @@ def test_migration_is_dry_run_by_default_and_idempotent(db_project):
 
 
 def test_topology_sync_preserves_canonical_owner_when_wiring_changes(monkeypatch):
-    from backend.engineering import api
+    from backend.nis.interfaces.http import engineering as api
     hardware = [
         {"id": "sensor", "name": "EGRValvePosition", "device_type": "SensorController", "identity": {"system_owner_id": "owner", "system_owner_source": "wizard-confirmed"}},
         {"id": "owner", "name": "Abgasnachbehandlung", "device_type": "ECU"},
@@ -129,7 +135,9 @@ def test_topology_sync_preserves_canonical_owner_when_wiring_changes(monkeypatch
 
 @pytest.mark.parametrize('explicit_command', [False, True])
 def test_generated_owner_local_references_are_resolved_on_apply(db_project, explicit_command):
-    from backend.engineering.agent_tools import wizard_generation, proposal_service, model
+    from backend.nis.agent.tools import wizard_generation as wizard_generation
+    from backend.nis.agent.tools import proposal_service as proposal_service
+    from backend.nis.agent.tools import model as model
     prompt = '''- Industrie: Automotive
 - Netzwerktechnologien: CAN-FD (can_fd)
 - Hardware-Sollwerte: {"gateways":1,"ecus":1,"sensors":1,"actuators":1}

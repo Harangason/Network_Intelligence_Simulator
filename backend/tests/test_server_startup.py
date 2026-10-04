@@ -11,11 +11,13 @@ from pathlib import Path
 import pytest
 import psycopg
 
-from backend.app import create_app
-from backend.app.__main__ import ExclusiveThreadedWSGIServer, _exclusive_listener, _server_settings
-from backend.engineering import api as engineering_api
-from backend.engineering import db as engineering_db
-from backend.engineering import schema as engineering_schema
+from backend.nis.app import create_app
+from backend.nis.app.__main__ import ExclusiveThreadedWSGIServer
+from backend.nis.app.__main__ import _exclusive_listener
+from backend.nis.app.__main__ import _server_settings
+from backend.nis.interfaces.http import engineering as engineering_api
+from backend.nis.infrastructure.persistence import db as engineering_db
+from backend.nis.infrastructure.persistence import schema as engineering_schema
 
 
 ROOT = Path(__file__).resolve().parents[2]

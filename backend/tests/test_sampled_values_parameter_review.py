@@ -1,8 +1,8 @@
 """SV parameter units/edition/LE versus other profiles and complete observed chain."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import sampled_values as R
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.sampled_values import rules as R
 def actual():
  x={'sv_'+k:'synthetic-'+k for k in R.REQUIRED}
  x.update(sv_profile='ACTUAL_DEVICE',sv_edition='ED2_1',sv_implementation='ACTUAL_DEVICE',sv_proposal_mode='ACTUAL_CONFIG',sv_mapping='RAW_L2_9_2')

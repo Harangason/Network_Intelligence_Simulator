@@ -3,9 +3,9 @@ from copy import deepcopy
 
 import pytest
 
-from backend.engineering.simulation_observation import (
-    plan_observation_window, wizard_observation_request, mark_user_duration,
-)
+from backend.nis.engineering.simulation_observation import plan_observation_window
+from backend.nis.engineering.simulation_observation import wizard_observation_request
+from backend.nis.engineering.simulation_observation import mark_user_duration
 from backend.tests.test_model_ownership import db_project
 from backend.tests.test_transport_integrity import gateway_config
 
@@ -114,7 +114,7 @@ def test_explicit_short_duration_survives_a_very_long_required_window():
 
 @pytest.mark.parametrize("budget", [None, "invalid", 0, -1, 0.5, True, float("nan"), float("inf")])
 def test_invalid_event_budget_fails_as_a_controlled_validation_error(budget):
-    from backend.engineering.models import EngineeringValidationError
+    from backend.nis.domain.vocabulary import EngineeringValidationError
     with pytest.raises(EngineeringValidationError, match="Ereignisgrenze"):
         plan_observation_window({**_config(_route()), "max_events": budget})
 
@@ -148,8 +148,8 @@ def test_conflicting_or_invalid_request_duration_is_not_silently_ignored():
 
 @pytest.mark.parametrize("existing_duration", [None, 1.0])
 def test_registry_generation_marks_only_a_new_duration_default(db_project, monkeypatch, existing_duration):
-    from backend.engineering.agent_tools import wizard_generation
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.agent.tools import wizard_generation as wizard_generation
+    from backend.nis.workflow.services.service import WorkflowStatusService
     workflow = WorkflowStatusService(db_project)
     parameters = {"spatial_zoning": {"enabled": False}, "communication_sizing": {"enabled": False},
                   "defaults_source": "technology-registry"}
@@ -168,19 +168,21 @@ def test_registry_generation_marks_only_a_new_duration_default(db_project, monke
     assert repeated.get("parameter_provenance") == generated.get("parameter_provenance")
 
 
-def test_dds_parameter_defaults_inherit_registered_ethernet_rate():
-    from backend.engineering.agent_tools.wizard_generation import _parameter_defaults
+def test_dds_parameter_defaults_keep_explicit_lower_link_unverified():
+    from backend.nis.agent.tools.wizard_generation import _parameter_defaults
 
     dds = _parameter_defaults("dds")
     ethernet = _parameter_defaults("ethernet")
 
-    assert dds["bitrate"] == ethernet["bitrate"]
-    assert dds["history_kind"] == "KEEP_LAST"
+    assert "bitrate" not in dds
+    assert 'dds_history_kind' not in dds  # Requires the actual selected DDS entity.
+    assert 'bitrate' in ethernet
+    assert "dds" not in ethernet.get("technology_stack", [])
 
 
-def test_mixed_robotics_defaults_are_complete_with_dds_as_primary(db_project, monkeypatch):
-    from backend.engineering.agent_tools import wizard_generation
-    from backend.engineering.workflow.service import WorkflowStatusService
+def test_mixed_robotics_defaults_require_native_review_with_dds_as_primary(db_project, monkeypatch):
+    from backend.nis.agent.tools import wizard_generation as wizard_generation
+    from backend.nis.workflow.services.service import WorkflowStatusService
 
     workflow = WorkflowStatusService(db_project)
     workflow.save_parameters({
@@ -197,16 +199,18 @@ def test_mixed_robotics_defaults_are_complete_with_dds_as_primary(db_project, mo
         "prompt": "- Projekt-Modelltyp: robotics_ros\nTechnologie-Defaults verwenden.",
     })
 
-    assert generated["artifact_check"]["complete"]
+    assert not generated["artifact_check"]["complete"]
+    assert generated["status"] == "REVIEW_REQUIRED"
+    assert generated["missing_parameters"]
     assert generated["parameters"]["technology"] == "dds"
-    assert generated["parameters"]["bitrate"] > 0
+    assert "bitrate" not in generated["parameters"]
     assert set(generated["technology_ids"]) == {"dds", "ethercat", "ethernet", "can_fd"}
 
 
 def test_http_manual_identical_duration_cannot_retain_or_spoof_default_origin(db_project, monkeypatch):
-    from backend.app import create_app
-    from backend.engineering import api
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.app import create_app
+    from backend.nis.interfaces.http import engineering as api
+    from backend.nis.workflow.services.service import WorkflowStatusService
     workflow = WorkflowStatusService(db_project)
     parameters = _config()["parameters"]
     workflow.save_parameters(parameters, actor="engineering-agent")
@@ -225,9 +229,9 @@ def test_http_manual_identical_duration_cannot_retain_or_spoof_default_origin(db
 
 
 def test_real_gateway_delivery_and_jitter_need_two_received_frames(gateway_config):
-    from backend.app.runtime_analysis import analyze_runtime_trace
-    from hardware_profile import normalize_hardware_config
-    from universal_trace import generate_universal_events
+    from backend.nis.simulation.runtime_analysis import analyze_runtime_trace
+    from backend.nis.simulation.hardware_profile import normalize_hardware_config
+    from backend.nis.traces.universal_trace import generate_universal_events
     config = deepcopy(gateway_config)
     config.update(duration_s=1, max_events=100000, observation_window={"mode": "AUTO_REQUIREMENTS"})
     for message in config["engineering_model"]["messages"]:
@@ -254,8 +258,9 @@ def test_real_gateway_delivery_and_jitter_need_two_received_frames(gateway_confi
 
 
 def test_final_selected_scope_and_message_schedule_determine_the_window():
-    from backend.engineering.capacity.runtime_plan import apply_runtime_plan
-    from backend.engineering.simulation import _apply_simulation_scope, _apply_observation_duration
+    from backend.nis.engineering.capacity.runtime_plan import apply_runtime_plan
+    from backend.nis.engineering.simulation import _apply_simulation_scope
+    from backend.nis.engineering.simulation import _apply_observation_duration
     config = _config(_route("selected", cycle_ms=10, message_ids=["selected-message"], network_id="net"),
                      _route("excluded", cycle_ms=9000, message_ids=["excluded-message"], network_id="net"))
     config["engineering_model"] = {

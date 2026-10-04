@@ -3,7 +3,9 @@ from copy import deepcopy
 import os
 import pytest
 
-from backend.engineering.communication_repair import RepairPlanner, KINDS, public_plan
+from backend.nis.engineering.communication.communication_repair import RepairPlanner
+from backend.nis.engineering.communication.communication_repair import KINDS
+from backend.nis.engineering.communication.communication_repair import public_plan
 
 
 def sample(*, system=False):
@@ -160,11 +162,12 @@ SQL = pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_URL'), re
 
 def sql_sample(*, question=False):
     from backend.tests.test_engineering_api import _client
-    from backend.engineering.project_context import activate_project
-    from backend.engineering.repository import create_object, update_object
-    from backend.engineering.routing.repository import create_route
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.db import get_connection
+    from backend.nis.engineering.projects.project_context import activate_project
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.engineering.routing.repository import create_route
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.infrastructure.persistence.db import get_connection
     from psycopg.types.json import Jsonb
     client = _client()
     project = client.environ_base['HTTP_X_PROJECT_ID']
@@ -248,7 +251,7 @@ def test_communication_repair_sql_system_question_never_auto_applies():
 
 @SQL
 def test_communication_repair_sql_failure_rolls_back_and_cross_project_token_rejected(monkeypatch):
-    from backend.engineering.routing.validation import RoutingValidator
+    from backend.nis.engineering.routing.validation import RoutingValidator
     from backend.tests.test_engineering_api import _client
     client, ids = sql_sample()
     base = '/api/engineering/'
@@ -294,8 +297,8 @@ def forwarding_sample():
 
 
 def test_new_way_requires_confirmed_direction_and_exact_port_pair_on_plain_ecu():
-    from backend.engineering.communication_repair import complete_plan
-    from backend.engineering.routing.forwarding import forwarding_permitted
+    from backend.nis.engineering.communication.communication_repair import complete_plan
+    from backend.nis.engineering.routing.forwarding import forwarding_permitted
     state, objects, routes, history = forwarding_sample()
     before = deepcopy(objects)
     p = RepairPlanner(state, objects, routes, history)
@@ -320,7 +323,7 @@ def test_new_way_requires_confirmed_direction_and_exact_port_pair_on_plain_ecu()
 
 
 def test_restore_uses_recorded_gateway_and_updates_all_routes_using_moved_ports():
-    from backend.engineering.communication_repair import complete_plan
+    from backend.nis.engineering.communication.communication_repair import complete_plan
     state, objects, routes, history = sample(system=True)
     routes[0]['route']['gateways'] = [{'node_id': 'receiver', 'name': 'receiver'}]
     group = complete_plan(RepairPlanner(state,objects,routes,history))['groups'][0]

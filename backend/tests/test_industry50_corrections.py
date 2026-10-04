@@ -5,14 +5,14 @@ from pathlib import Path
 from uuid import uuid4
 from unittest.mock import AsyncMock
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.context.input_adapter import adapt_input
-from backend.agent_core.core.engineering_agent import EngineeringAgent
-from backend.agent_core.orchestration.capability_intent import connection_request
-from backend.engineering.agent_tools.project_draft import parse_requirement
-from backend.engineering.agent_tools.runtime import ToolAuthority
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.context.input_adapter import adapt_input
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
+from backend.nis.agent.orchestration.capability_intent import connection_request
+from backend.nis.agent.tools.project_draft import parse_requirement
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.interfaces.mcp.server import create_server
 
 CASES = {c['id']: c for c in json.loads((Path(__file__).parents[2] / 'tests/fixtures/industry40.json').read_text(encoding='utf8'))['cases']}
 
@@ -39,7 +39,7 @@ def test_separate_communication_mapping_preserves_device_families():
 
 
 def test_selected_signal_mode_does_not_resume_other_work():
-    from backend.agent_core.api.tool_contract import ToolResult
+    from backend.nis.agent.api.tool_contract import ToolResult
     class Client:
         async def call(self, name, arguments=None):
             assert name == 'inspect_signal_definition'
@@ -52,7 +52,7 @@ def test_selected_signal_mode_does_not_resume_other_work():
 
 
 def test_finding_assessment_recognizes_original_case():
-    from backend.agent_core.orchestration.capability_intent import finding_assessment
+    from backend.nis.agent.orchestration.capability_intent import finding_assessment
     assert finding_assessment('Bewerte SINGLE_POINT_OF_FAILURE am CentralGateway.') == ('SINGLE_POINT_OF_FAILURE', 'CentralGateway')
 
 
@@ -78,7 +78,7 @@ def test_explicit_section_items_are_not_added_to_the_total():
 def test_compound_goal_keeps_target_separate_from_followups():
     prompt = 'Verbinde ParkAssist mit DriverAssistance, prüfe die Kommunikation in einer kurzen Simulation und analysiere auftretende Timingprobleme.'
     assert connection_request(prompt) == ('ParkAssist', 'DriverAssistance')
-    from backend.engineering.goal_execution.followups import requested_followups
+    from backend.nis.engineering.goal_execution.followups import requested_followups
     assert requested_followups(prompt) == ['SIMULATE_SCENARIO', 'ANALYZE_TRACE']
 
 
@@ -105,7 +105,7 @@ def test_mcp_metadata_unsupported_and_timeout_contract():
 
 
 def test_signal_inspection_does_not_create_a_generation_workload():
-    from backend.agent_core.api.tool_contract import ToolResult
+    from backend.nis.agent.api.tool_contract import ToolResult
     class Client:
         calls = []
         async def call(self, name, arguments=None):
@@ -120,7 +120,7 @@ def test_signal_inspection_does_not_create_a_generation_workload():
 
 
 def test_connectivity_read_does_not_enter_reasoning_or_resume_old_goal():
-    from backend.agent_core.api.tool_contract import ToolResult
+    from backend.nis.agent.api.tool_contract import ToolResult
     class Client:
         async def call(self, name, arguments=None):
             assert name == 'inspect_object_connectivity'

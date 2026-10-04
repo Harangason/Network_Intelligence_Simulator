@@ -10,7 +10,7 @@ import {
   agentEventLoggingEnabled,
   setAgentEventLoggingEnabled,
   type AgentDiagnosticCategory,
-} from "@/lib/agent/agent-diagnostics-log";
+} from "@/features/agent/lib/agent-diagnostics-log";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

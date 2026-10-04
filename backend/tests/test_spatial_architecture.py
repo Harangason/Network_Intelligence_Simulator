@@ -5,9 +5,13 @@ from copy import deepcopy
 from types import SimpleNamespace
 import pytest
 
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.spatial_architecture import architecture_from, location_decision
-from backend.engineering.spatial_zoning import node_zones, plan_zoning, spatial_assessment, zone_findings
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.structure.spatial_architecture import architecture_from
+from backend.nis.engineering.structure.spatial_architecture import location_decision
+from backend.nis.engineering.structure.spatial_zoning import node_zones
+from backend.nis.engineering.structure.spatial_zoning import plan_zoning
+from backend.nis.engineering.structure.spatial_zoning import spatial_assessment
+from backend.nis.engineering.structure.spatial_zoning import zone_findings
 from test_spatial_zoning import fixture, accept_pure
 
 
@@ -96,7 +100,8 @@ def test_declared_shared_backbone_is_not_forced_into_separate_local_buses():
 
 
 def test_wizard_applies_explicit_motor_mapping_before_building_bus_ids():
-    from backend.engineering.agent_tools.wizard_generation import _confirmed_local_io_memberships, _local_io_physical_network
+    from backend.nis.agent.tools.wizard_generation import _confirmed_local_io_memberships
+    from backend.nis.agent.tools.wizard_generation import _local_io_physical_network
     graph = [{'bus_name': 'Drone', 'controllers': [{'ecu': 'FlightController', 'actuators': ['Motor1', 'Motor2', 'Motor3', 'Motor4']}]}]
     architecture = {'reference_frame': 'drone-body', 'assignments': dict(zip(['Motor1', 'Motor2', 'Motor3', 'Motor4'], ['FR', 'RL', 'FL', 'RR']))}
     prompt = '- Projekt-Modelltyp: aerospace\n- Systemcluster-Graph: '+json.dumps(graph)+'\n- Raumarchitektur: '+json.dumps(architecture)
@@ -107,15 +112,15 @@ def test_wizard_applies_explicit_motor_mapping_before_building_bus_ids():
 
 
 def test_spatial_tools_stay_available_even_with_large_tool_selection():
-    from backend.agent_core.orchestration.tool_selection import select_tools
-    from backend.engineering.agent_tools.services import TOOLS
+    from backend.nis.agent.orchestration.tool_selection import select_tools
+    from backend.nis.agent.tools.services import TOOLS
     selected = select_tools('Drohne Raumcluster Hardware Signal Nachricht Routing Netz CAN Simulation Trace', [{'name': name} for name in TOOLS])
     assert selected[0]['name'] == 'inspect_spatial_architecture'
 
 
 def test_spatial_reasoning_receives_rules_and_main_model(monkeypatch):
-    from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner
-    from backend.agent_core.context.agent_context import AgentContext
+    from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+    from backend.nis.agent.context.agent_context import AgentContext
     monkeypatch.setenv('LOCAL_AI_MODEL', 'main-test-model')
     monkeypatch.setenv('LOCAL_AI_FAST_MODEL', 'fast-test-model')
     captured = {}
@@ -135,7 +140,7 @@ def test_spatial_reasoning_receives_rules_and_main_model(monkeypatch):
 
 
 def test_saved_spatial_contract_reaches_wizard_and_conflicts_are_rejected():
-    from backend.engineering.spatial_architecture import with_spatial_architecture
+    from backend.nis.engineering.structure.spatial_architecture import with_spatial_architecture
     parameters = {'spatial_architecture': rooms()}
     prompt = with_spatial_architecture('Create building network', parameters)
     assert architecture_from(prompt=prompt) == architecture_from(parameters)
@@ -148,9 +153,10 @@ def test_saved_spatial_contract_reaches_wizard_and_conflicts_are_rejected():
 
 def test_partial_parameter_edits_keep_spatial_definition():
     from uuid import uuid4
-    from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-    from backend.agent_core.api.tool_contract import Permission
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.agent.tools.runtime import ToolAuthority
+    from backend.nis.agent.tools.runtime import execute
+    from backend.nis.agent.api.tool_contract import Permission
+    from backend.nis.workflow.services.service import WorkflowStatusService
     authority = ToolAuthority('pytest-spatial-parameters-'+str(uuid4()))
     def edit(_):
         workflow = WorkflowStatusService(authority.project_id)

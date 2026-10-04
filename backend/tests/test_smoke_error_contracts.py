@@ -3,9 +3,10 @@ from uuid import uuid4
 
 import pytest
 
-from backend.app import create_app
-from backend.engineering.goal_execution.store import save_goal
-from backend.engineering.project_context import activate_project, reset_project
+from backend.nis.app import create_app
+from backend.nis.engineering.goal_execution.store import save_goal
+from backend.nis.engineering.projects.project_context import activate_project
+from backend.nis.engineering.projects.project_context import reset_project
 
 
 @pytest.fixture
@@ -60,7 +61,7 @@ def test_hardware_revision_conflict_still_returns_409(client):
 
 
 def test_programming_error_is_not_relabelled_as_input_error(client, monkeypatch):
-    from backend.engineering.goal_execution import resources
+    from backend.nis.engineering.goal_execution import resources as resources
     def broken(*_args):
         raise KeyError('unexpected internal defect')
     monkeypatch.setattr(resources, 'record_hardware_fact', broken)

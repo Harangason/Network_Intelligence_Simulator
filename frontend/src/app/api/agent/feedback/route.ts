@@ -1,4 +1,4 @@
-import { recordAgentFeedback, type AgentFeedbackRating } from "@/lib/agent/feedback-store";
+import { recordAgentFeedback, type AgentFeedbackRating } from "@/features/agent/lib/feedback-store";
 
 export async function POST(request: Request) {
   let payload: Record<string, unknown>;

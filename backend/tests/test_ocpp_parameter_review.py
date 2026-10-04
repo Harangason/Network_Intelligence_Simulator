@@ -2,8 +2,8 @@
 from copy import deepcopy
 import json
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import ocpp as O
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.ocpp import rules as O
 def actual(version='V2_1_ED2',binding='JSON_WEBSOCKET'):
  x={'oc_'+k:'synthetic-actual-'+k for k in O.REQUIRED}
  x.update(oc_version=version,oc_binding=binding,oc_role='STATION',oc_transport='WSS',oc_subprotocol=O.SUBPROTOCOLS[version])
@@ -121,8 +121,8 @@ def test_ocpp_action_names_are_versioned_and_send_is_only_registered_periodic_st
  wire='[6,"m42","NotifyPeriodicEventStream",{"basetime"="2024-08-27T12:30:40Z"}]'
  assert status({**x,'oc_wire_text':wire,'oc_wire_bytes':len(wire)})=='INVALID'
 def test_ocpp_confirmed_actual_heartbeat_timeout_large_message_and_identifier_persist_after_rejection():
- from backend.engineering.workflow.service import WorkflowStatusService
- from backend.engineering.project_context import current_project_id
+ from backend.nis.workflow.services.service import WorkflowStatusService
+ from backend.nis.engineering.projects.project_context import current_project_id
  x={**actual(),'oc_heartbeat_s':42,'oc_message_timeout_s':17,'oc_station_id':'MY|STATION','oc_station_id_chars':10,'payload_bytes':70000}
  g={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}
  p={'technology':'ocpp','technology_parameters':{'ocpp':g}};service=WorkflowStatusService(current_project_id());service.save_parameters(p);assert service.get()['parameters']==p

@@ -1,6 +1,6 @@
 --- before/backend/communication/technologies/i2c.py
 +++ after/backend/communication/technologies/i2c.py
-@@ -0,0 +1,234 @@
+@@ -0,0 +1,235 @@
 +"""I²C rules from NXP UM10204 Rev7; installation facts are never defaults."""
 +from math import isfinite
 +
@@ -157,15 +157,16 @@
 +def local_fields():
 +    def f(key,kind,description,**kw):
 +        optional=kw.pop('optional_override',False)
-+        return dict(key=key,label=key.replace('_',' '),type=kind,numeric=kind=='number',boolean=kind=='boolean',
++        return {**dict(key=key,label=key.replace('_',' '),type=kind,numeric=kind=='number',boolean=kind=='boolean',
 +            optional=optional,parameter_origin='DEVICE_CONFIGURATION',default_status='UNKNOWN',source=SOURCE,
-+            source_revision=REVISION,description=description,scope='device',**kw)
++            source_revision=REVISION,description=description,scope='device'), **kw}
 +    return [
 +      f('evidence_scope','select','Actual controller port, target port or complete transaction; legacy omitted scope remains transaction only.',optional_override=True,options=['CONTROLLER_PORT','TARGET_PORT','TRANSACTION']),
 +      f('master_node_id','text','Actual owning controller canonical identity. Not a target address.'),
 +      f('slave_address','address','Actual unshifted target integer or decimal/0x hexadecimal text, not the controller own port address.',required_scopes=['TARGET_PORT','TRANSACTION']),
 +      f('address_bits','number','Actual7/10-bit target address width.',integer=True,allowed_values=[7,10],required_scopes=['TARGET_PORT','TRANSACTION']),
-+      f('i2c_mode','select','Actual standard/fast/fastplus/HS/UFm mode, no confirmation by baseline proposal.',options=list(MODES)),
++      f('i2c_mode','select','Standard-mode is a review proposal from UM10204, not confirmed device configuration.',
++        options=list(MODES),default='STANDARD',default_status='PROPOSED',parameter_origin='STANDARD_PROFILE_PROPOSAL'),
 +      f('transfer_direction','select','Actual complete transaction READ/WRITE/combined direction.',options=['READ','WRITE','BIDIRECTIONAL'],required_scopes=['TRANSACTION']),
 +      *[f(key,'number',meaning,unit=unit,minimum=0,required_scopes=['TRANSACTION'],**extra)
 +        for key,unit,meaning,extra in [

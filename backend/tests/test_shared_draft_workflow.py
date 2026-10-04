@@ -2,11 +2,13 @@ from uuid import uuid4
 import json
 from pathlib import Path
 
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools import project_draft
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.agent_tools.wizard_commands import WizardCommand, resolve_request
-from backend.engineering.agent_tools.wizard_generation import extract_specification
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools import project_draft as project_draft
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.tools.wizard_commands import WizardCommand
+from backend.nis.agent.tools.wizard_commands import resolve_request
+from backend.nis.agent.tools.wizard_generation import extract_specification
 
 
 def test_multi_interface_controller_preserves_endpoint_connections():
@@ -89,7 +91,8 @@ def test_s01_explicit_sensor_contracts_survive_draft_adapter():
     function_names = {change['data']['name'] for change in planned.data['changes']
                       if change['object_type'] == 'Function'}
     assert {'TemperatureMonitoring', 'PressureControl', 'SpeedControl', 'SafetyShutdown'} <= function_names
-    from backend.engineering.agent_tools import proposal_service, wizard_generation
+    from backend.nis.agent.tools import proposal_service as proposal_service
+    from backend.nis.agent.tools import wizard_generation as wizard_generation
     proposal = planned.data
     def accept(_):
         proposal_service.review(proposal['proposal_id'], revision=proposal['revision'],
@@ -117,7 +120,7 @@ def test_s01_explicit_sensor_contracts_survive_draft_adapter():
     proposal = validated_topology.data
     applied_topology = execute(applier, 's01-test-topology-apply', Permission.APPLY_APPROVED_PROPOSAL, {}, accept)
     assert applied_topology.success, applied_topology.findings
-    from backend.engineering.capacity.service import CapacityTimingService
+    from backend.nis.engineering.capacity.service import CapacityTimingService
     capacity = execute(authority, 's01-capacity', Permission.VALIDATE, {},
         lambda _: CapacityTimingService(authority.project_id).calculate())
     assert capacity.success, capacity.findings

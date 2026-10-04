@@ -7,9 +7,9 @@ import threading
 
 import pytest
 
-from backend.app.job_service import JobService
-from backend.app.simulation_service import SimulationService
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.simulation.job_service import JobService
+from backend.nis.simulation.service import SimulationService
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
 def interrupted(tmp_path, **overrides):
@@ -85,7 +85,7 @@ def test_explicit_cancellation_is_not_recovered(monkeypatch, tmp_path):
 
 
 def test_durable_cancel_marker_survives_crash_before_registry_and_snapshot_write(monkeypatch, tmp_path):
-    from simulation_cancellation import request_cancellation
+    from backend.nis.simulation.simulation_cancellation import request_cancellation
     service, original = interrupted(tmp_path)
     request_cancellation(original)
     updates = []
@@ -103,7 +103,7 @@ def test_durable_cancel_marker_survives_crash_before_registry_and_snapshot_write
 
 
 def test_marker_is_detected_when_loading_an_old_running_registry(tmp_path):
-    from simulation_cancellation import request_cancellation
+    from backend.nis.simulation.simulation_cancellation import request_cancellation
     output = tmp_path / 'canceled-attempt'
     request_cancellation(output)
     registry = tmp_path / 'old-registry.json'
@@ -115,8 +115,8 @@ def test_marker_is_detected_when_loading_an_old_running_registry(tmp_path):
 
 
 def test_recovery_persists_two_trace_records_under_original_job_ids(monkeypatch, tmp_path):
-    from backend.engineering import simulation
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering import simulation as simulation
+    from backend.nis.engineering.projects.project_context import current_project_id
     project_id = current_project_id()
     rows = [{'id': f'original-job-{index}', 'project_id': project_id, 'workflow_snapshot_id': f'snapshot-{index}',
              'status': 'running', 'output_dir': str(tmp_path / f'original-job-{index}'),
@@ -212,8 +212,8 @@ def test_cancel_queued_future_does_not_deadlock_its_registry_callback(monkeypatc
 
 def stored_snapshot(*, status='RUNNING', outdated=False):
     from psycopg.types.json import Jsonb
-    from backend.engineering.db import get_connection
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.infrastructure.persistence.db import get_connection
+    from backend.nis.engineering.projects.project_context import current_project_id
     project_id = current_project_id()
     workflow = WorkflowStatusService(project_id)
     state = workflow.get(summary=True)
@@ -229,7 +229,7 @@ def stored_snapshot(*, status='RUNNING', outdated=False):
 @pytest.mark.parametrize('status', ['RUNNING', 'COMPLETED'])
 @pytest.mark.parametrize('source_revision', ['different', 'missing', 'null'])
 def test_recovery_rejects_unproven_snapshot_revision_without_outdated_flag(monkeypatch, tmp_path, status, source_revision):
-    from backend.engineering.db import get_connection
+    from backend.nis.infrastructure.persistence.db import get_connection
     from psycopg.types.json import Jsonb
 
     project_id, snapshot_id, workflow = stored_snapshot(status=status)

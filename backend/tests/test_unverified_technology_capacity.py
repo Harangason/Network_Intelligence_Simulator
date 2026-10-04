@@ -3,18 +3,22 @@
 import pytest
 from uuid import uuid4
 
-from backend.engineering.capacity.evaluation import network_evaluation
-from backend.engineering.capacity.calculators import estimate_frame
-from backend.engineering.capacity.service import parameters_for_protocol
-from backend.engineering.capacity.service import CapacityTimingService, PreflightService
-from backend.engineering.capacity.dimensioning import SUPPORTED_CAPACITY_PROTOCOLS, bus_schedule, DEFAULT_POLICY
-from backend.communication.technologies.catalog import technology_definitions
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY, TechnologyRegistry
-from backend.engineering.capacity import service as capacity_service
-from backend.engineering.workflow.models import default_statuses, default_versions
-from backend.engineering.agent_tools.wizard_generation import _technology_contract
-from backend.engineering.routing.validation import RoutingValidator
-from backend.app.simulation_service import SimulationService
+from backend.nis.engineering.capacity.evaluation import network_evaluation
+from backend.nis.engineering.capacity.calculators import estimate_frame
+from backend.nis.engineering.capacity.service import parameters_for_protocol
+from backend.nis.engineering.capacity.service import CapacityTimingService
+from backend.nis.engineering.capacity.service import PreflightService
+from backend.nis.engineering.capacity.dimensioning import SUPPORTED_CAPACITY_PROTOCOLS
+from backend.nis.engineering.capacity.dimensioning import bus_schedule
+from backend.nis.engineering.capacity.dimensioning import DEFAULT_POLICY
+from backend.nis.communication.catalog import technology_definitions
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY, TechnologyRegistry
+from backend.nis.engineering.capacity import service as capacity_service
+from backend.nis.workflow.services.models import default_statuses
+from backend.nis.workflow.services.models import default_versions
+from backend.nis.agent.tools.wizard_generation import _technology_contract
+from backend.nis.engineering.routing.validation import RoutingValidator
+from backend.nis.simulation.service import SimulationService
 
 # Explicit synthetic installation evidence; the clock alone cannot provide it.
 LIN_BUS={**{'lin_'+key:'synthetic-actual-'+key for key in
@@ -226,7 +230,7 @@ def test_invalid_rates_cannot_become_catalog_fallback_times(protocol, rate):
 
 
 def test_can_fd_needs_both_explicit_phases_and_can_bound_needs_rate():
-    from backend.engineering.capacity.calculators import can_frame_time_bound_ms
+    from backend.nis.engineering.capacity.calculators import can_frame_time_bound_ms
     for parameters in ({}, {'bitrate': 500_000}, {'data_bitrate': 2_000_000}):
         assert estimate_frame('CAN_FD', 8, parameters).to_dict()['transmission_time_s'] is None
         assert can_frame_time_bound_ms('CAN_FD', 8, parameters) is None
@@ -437,7 +441,7 @@ def test_confirmed_serial_transaction_gets_technology_specific_capacity_and_sche
 
 
 def test_direct_signal_audit_uses_timing_review_without_message_gap():
-    from backend.engineering.signal_audit import build_generation_signal_audit
+    from backend.nis.engineering.signals.signal_audit import build_generation_signal_audit
 
     signal = {"id": "direct-1", "name": "SwitchState", "message_id": None,
               "configuration": {"direct_signal_binding": {
@@ -471,7 +475,6 @@ def test_registered_timing_adapters_require_rates_and_match_frame_models():
         adapter = DEFAULT_TECHNOLOGY_REGISTRY.resolve_stack(technology)["timing_model"]
         with pytest.raises(ValueError, match="bestätigte Bitrate"):
             adapter.transmission_time_us(8)
-        expected = estimate_frame(technology, 8, {"bitrate": rate})
         native = None
         if technology=='lin':
             native={**{'lin_'+key:'synthetic-actual-'+key for key in
@@ -481,6 +484,7 @@ def test_registered_timing_adapters_require_rates_and_match_frame_models():
                 'lin_node_role':'COMMANDER','lin_frame_kind':'UNCONDITIONAL','lin_bitrate_bps':rate}
             with pytest.raises(ValueError,match='required'):
                 adapter.transmission_time_us(8,rate)
+        expected = estimate_frame(technology, 8, {"bitrate": rate, **(native or {})})
         assert adapter.transmission_time_us(8, rate,technology_parameters=native) == pytest.approx(expected.transmission_time_s * 1_000_000)
     fd = DEFAULT_TECHNOLOGY_REGISTRY.resolve_stack("can_fd")["timing_model"]
     with pytest.raises(ValueError, match="Arbitrierungs- und Datenphasenraten"):
@@ -529,7 +533,7 @@ def test_registered_bus_without_capacity_key_keeps_its_routing_identity(monkeypa
         def fetchall(self):
             return ports
 
-    monkeypatch.setattr("backend.engineering.routing.validation.get_connection", Connection)
+    monkeypatch.setattr("backend.nis.engineering.routing.validation.get_connection", Connection)
     segments = RoutingValidator("isolated")._canonical_transport_segments(
         {"node_id": source, "network_id": "rs485-net"},
         [{"node_id": target, "network_id": "rs485-net"}],
@@ -608,7 +612,7 @@ def test_i2c_capacity_stays_unverified_and_preflight_cannot_approve_it(monkeypat
 
 @pytest.mark.parametrize('rate', [None, 0, -1, True, float('nan'), float('inf')])
 def test_explicit_invalid_arbitration_phase_is_never_replaced_by_bitrate_alias(rate):
-    from backend.engineering.capacity.calculators import can_frame_time_bound_ms
+    from backend.nis.engineering.capacity.calculators import can_frame_time_bound_ms
     parameters = {'bitrate': 500_000, 'arbitration_bitrate': rate, 'data_bitrate': 2_000_000}
     frame = estimate_frame('CAN_FD', 8, parameters)
     assert frame.transmission_time_available is False

@@ -471,7 +471,6 @@ def test_registered_timing_adapters_require_rates_and_match_frame_models():
         adapter = DEFAULT_TECHNOLOGY_REGISTRY.resolve_stack(technology)["timing_model"]
         with pytest.raises(ValueError, match="bestätigte Bitrate"):
             adapter.transmission_time_us(8)
-        expected = estimate_frame(technology, 8, {"bitrate": rate})
         native = None
         if technology=='lin':
             native={**{'lin_'+key:'synthetic-actual-'+key for key in
@@ -481,6 +480,7 @@ def test_registered_timing_adapters_require_rates_and_match_frame_models():
                 'lin_node_role':'COMMANDER','lin_frame_kind':'UNCONDITIONAL','lin_bitrate_bps':rate}
             with pytest.raises(ValueError,match='required'):
                 adapter.transmission_time_us(8,rate)
+        expected = estimate_frame(technology, 8, {"bitrate": rate, **(native or {})})
         assert adapter.transmission_time_us(8, rate,technology_parameters=native) == pytest.approx(expected.transmission_time_s * 1_000_000)
     fd = DEFAULT_TECHNOLOGY_REGISTRY.resolve_stack("can_fd")["timing_model"]
     with pytest.raises(ValueError, match="Arbitrierungs- und Datenphasenraten"):

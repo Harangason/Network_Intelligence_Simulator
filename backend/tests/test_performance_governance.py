@@ -2,14 +2,12 @@ from __future__ import annotations
 
 import pytest
 
-from backend.engineering.performance_governance import (
-    CACHE_POLICIES,
-    INVENTORY,
-    LARGE_OBJECT_THRESHOLD_BYTES,
-    MEMORY_BUDGETS,
-    assert_within_budget,
-    performance_governance_summary,
-)
+from backend.nis.engineering.performance_governance import CACHE_POLICIES
+from backend.nis.engineering.performance_governance import INVENTORY
+from backend.nis.engineering.performance_governance import LARGE_OBJECT_THRESHOLD_BYTES
+from backend.nis.engineering.performance_governance import MEMORY_BUDGETS
+from backend.nis.engineering.performance_governance import assert_within_budget
+from backend.nis.engineering.performance_governance import performance_governance_summary
 
 
 def test_performance_governance_inventory_covers_required_layers() -> None:

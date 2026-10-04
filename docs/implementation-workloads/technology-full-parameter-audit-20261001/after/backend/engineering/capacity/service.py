@@ -84,6 +84,26 @@ def parameters_for_protocol(
             allowed_fields.add('bitrate')  # Existing workflow data-phase alias.
     except KeyError:
         profile, allowed_fields = {}, set()
+    # Profile-owned ingress aliases preserve historical confirmed clocks.
+    # They never select a mode, edition, address, device or schedule.
+    def native_aliases(scope):
+        from backend.communication.technologies.catalog import PARAMETER_UI_ALIASES
+        scope = dict(scope or {})
+        for alias, field in profile.get('parameter_aliases', {}).items():
+            if alias in scope and field not in scope:
+                scope[field] = scope[alias]
+                if alias in (scope.get('parameter_provenance') or {}):
+                    scope['parameter_provenance'] = {**scope['parameter_provenance'], field: scope['parameter_provenance'][alias]}
+        for field, alias in PARAMETER_UI_ALIASES.items():
+            if field in allowed_fields and field in scope and alias not in scope:
+                scope[alias] = scope[field]
+                if field in (scope.get('parameter_provenance') or {}):
+                    scope['parameter_provenance'] = {**scope['parameter_provenance'], alias: scope['parameter_provenance'][field]}
+        return scope
+    parameters = native_aliases(parameters)
+    confirmed_parameters = native_aliases(confirmed_parameters) if confirmed_parameters is not None else None
+    configuration = native_aliases(configuration)
+    resolved = native_aliases(resolved)
     # Shared NIS analysis controls may be retained. Bus and hardware fields
     # belong to the selected profile, not the project's primary bus.
     foreign_fields = known_fields - allowed_fields
@@ -143,8 +163,9 @@ def parameters_for_protocol(
     # parameter document; catalog proposals never enter this path.
     scoped = next((value for key, value in (confirmed.get("technology_parameters") or {}).items()
                    if canonical(key) == target), {})
-    scoped_values = scoped.get("values") or {}
-    scoped_provenance = scoped.get("provenance") or {}
+    scoped_values = native_aliases({**(scoped.get("values") or {}),
+                                   'parameter_provenance': scoped.get("provenance") or {}})
+    scoped_provenance = scoped_values.get('parameter_provenance') or {}
     if not matching_identity(scoped) or not matching_identity(scoped_values):
         scoped_values = {}
     for key, value in scoped_values.items():
@@ -176,6 +197,7 @@ def parameters_for_protocol(
                             if key not in transport_fields}
     # Filter each source before merging: a rejected network declaration must
     # neither override matching physical evidence nor hide its provenance.
+    declared = native_aliases(declared)
     declared = {key: value for key, value in declared.items()
                 if key not in foreign_fields and (key not in transport_fields or matching_field(declared, key))}
     configured_scope = {key: value for key, value in configured_scope.items()
@@ -232,14 +254,17 @@ def parameters_for_protocol(
             resolved.pop("bitrate", None)
         resolved["_rate_evidenced"] = rate_evidenced
     if rate_evidenced or target=='LIN' or any(key in resolved for key in ('bitrate','bitrate_bps','arbitration_bitrate','data_bitrate')):
+        native_prefixes = profile.get('native_parameter_prefixes') or ()
         validation_values = {key:value for key,value in resolved.items()
-                             if not (target=='LIN' and key=='bitrate')}
+                             if (key in known_fields or key in allowed_fields
+                                 or any(key.startswith(prefix) for prefix in native_prefixes))
+                             and not (target=='LIN' and key in {'bitrate','bitrate_bps'})}
         validation = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(protocol, validation_values)
         if validation['status'] != 'VALID':
             resolved['_rate_evidenced'] = False
             resolved['_rate_findings'] = validation['findings']
-            for key in transport_fields - {'local_timing_evidence'}:
-                resolved.pop(key, None)
+            # Preserve supplied facts for review. Consumers use _rate_evidenced
+            # to block computation; missing data must not erase an existing clock.
     return resolved
 
 

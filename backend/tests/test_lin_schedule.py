@@ -1,5 +1,5 @@
-from backend.engineering.capacity.lin_schedule import lin_schedule_check
-from backend.engineering.intelligence.network_planning import plan_network_distribution
+from backend.nis.communication.technologies.lin.timing import lin_schedule_check
+from backend.nis.intelligence.engineering.intelligence.network_planning import plan_network_distribution
 
 
 def rows(count, cycle=100, latency=20, jitter=5):

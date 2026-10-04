@@ -1,5 +1,5 @@
 import pytest
-from backend.agent_core.orchestration.tool_arguments import prepare_arguments
+from backend.nis.agent.orchestration.tool_arguments import prepare_arguments
 
 SCHEMA = {'type': 'object', 'required': ['hardware'], 'additionalProperties': False, 'properties': {
     'hardware': {'type': 'object', 'properties': {'name': {'type': 'string'}}},

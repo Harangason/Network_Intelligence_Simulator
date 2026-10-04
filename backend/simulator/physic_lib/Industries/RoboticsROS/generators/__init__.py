@@ -1,3 +1,4 @@
-from .technology_generator import RoboticsTechnologyGenerator
-
-__all__ = ["RoboticsTechnologyGenerator"]
+"""Compatibility only; owner backend.nis.industries.robotics_ros.templates.generators."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.robotics_ros.templates.generators')

@@ -1,8 +1,4 @@
-"""DDS and ROS middleware ownership."""
-
-from ...core import TechnologySpecialization
-
-MANIFEST = TechnologySpecialization("robotics_ros", ("dds", "ros2"), (
-    "backend.communication.technologies.catalog", "backend.communication.technologies.core",
-))
-__all__ = ["MANIFEST"]
+"""Compatibility only; owner backend.nis.industries.robotics_ros.technology_refs."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.robotics_ros.technology_refs')

@@ -1,4 +1,4 @@
-import { Arrow, LogoMark, MarketingFooter, MarketingNav, ProjectAwareLink } from "@/components/marketing-shell";
+import { Arrow, LogoMark, MarketingFooter, MarketingNav, ProjectAwareLink } from "@/features/marketing/ui/marketing-shell";
 
 const features = [
   {

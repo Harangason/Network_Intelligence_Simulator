@@ -1,13 +1,13 @@
 """Agent, wizard, proposal and workload orchestration."""
 
-from ..models import Capability
+from backend.nis.models import Capability
 
 CAPABILITY = Capability(
     "automation", "Automation",
     (
-        "backend.agent_core", "backend.engineering.agent_tools",
-        "backend.engineering.goal_execution", "backend.engineering.workloads",
-        "backend.engineering.requirement_expansion_modules",
+        "backend.nis.agent", "backend.nis.agent.tools",
+        "backend.nis.engineering.goal_execution", "backend.nis.engineering.workloads",
+        "backend.nis.engineering.requirement_expansion_modules",
     ),
     "Agent execution, wizard commands, proposals, workloads and requirement expansion.",
 )

@@ -1,13 +1,17 @@
 from copy import deepcopy
 import pytest
-from backend.engineering.signal_integrity import LEGACY_ENUM, integrity_checks, legacy_numeric_repair
-from backend.engineering.signal_audit import inspect_signal, required_signal_bits
-from backend.engineering.workloads.handlers import _canonical_signal_layers
-from backend.engineering.capacity.transmission import profile, release_grid
-from backend.engineering.capacity.evaluation import network_evaluation
+from backend.nis.engineering.signals.signal_integrity import LEGACY_ENUM
+from backend.nis.engineering.signals.signal_integrity import integrity_checks
+from backend.nis.engineering.signals.signal_integrity import legacy_numeric_repair
+from backend.nis.engineering.signals.signal_audit import inspect_signal
+from backend.nis.engineering.signals.signal_audit import required_signal_bits
+from backend.nis.engineering.workloads.handlers import _canonical_signal_layers
+from backend.nis.engineering.capacity.transmission import profile
+from backend.nis.engineering.capacity.transmission import release_grid
+from backend.nis.engineering.capacity.evaluation import network_evaluation
 from backend.tests.test_model_based_simulation import simulation_config
-from hardware_profile import normalize_hardware_config
-from universal_trace import generate_universal_events
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.traces.universal_trace import generate_universal_events
 
 
 def legacy():

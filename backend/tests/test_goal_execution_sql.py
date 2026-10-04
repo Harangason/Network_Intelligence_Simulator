@@ -9,8 +9,9 @@ pytestmark = pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_UR
 
 @pytest.fixture
 def project():
-    from backend.engineering.project_context import activate_project, reset_project
-    from backend.engineering.db import RequestUnit
+    from backend.nis.engineering.projects.project_context import activate_project
+    from backend.nis.engineering.projects.project_context import reset_project
+    from backend.nis.infrastructure.persistence.db import RequestUnit
     project = 'goal-verification-' + uuid4().hex
     token = activate_project(project); unit = RequestUnit(project)
     try:
@@ -20,11 +21,11 @@ def project():
         unit.close(); reset_project(token)
 
 def fixture():
-    from backend.engineering.repository import create_object
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
-    from backend.engineering.goal_execution.store import save_resource
-    from backend.engineering.agent_tools.model import json_safe
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
+    from backend.nis.engineering.goal_execution.store import save_resource
+    from backend.nis.agent.tools.model import json_safe
     def obj(kind, **data): return json_safe(create_object(kind, data))
     src = obj('HardwareNode', name='ChassisController', device_type='ECU')
     dst = obj('HardwareNode', name='ADAS_Controller', device_type='ECU')
@@ -53,22 +54,22 @@ def fixture():
         'bitrate': 500000, 'data_bitrate': 2000000, 'cycle_ms': 100, 'payload_bytes': 1, 'queue_size': 256,
         'warning_threshold': 60, 'critical_threshold': 75, 'overload_threshold': 90, 'target_bus_load_percent': 60,
         'networks': [{'id': 'chassis-can', 'name': 'Chassis_CAN', 'technology': 'CAN_FD', 'bitrate': 500000, 'data_bitrate': 2000000}]})
-    from backend.engineering.db import flush_model_changes
+    from backend.nis.infrastructure.persistence.db import flush_model_changes
     flush_model_changes(actor='fixture', reason='test fixture')
     return {'src': src, 'dst': dst, 'sf': sf, 'df': df, 'sp': sp, 'message': message, 'signal': signal}
 
 def prepare(data):
-    from backend.engineering.goal_execution import service
+    from backend.nis.engineering.goal_execution import service as service
     return service.prepare('Verbinde ParkAssist mit DriverAssistance', data['sf']['id'], data['df']['id'])
 
 def confirm(goal):
-    from backend.engineering.goal_execution import service
+    from backend.nis.engineering.goal_execution import service as service
     return service.answer(goal['workload_id'], goal['pending_decision']['decision_id'], [goal['strategies'][0]['id']], actor='test-user')
 
 def test_parkassist_real_followups_and_reuse(project):
-    from backend.engineering.goal_execution import service
-    from backend.engineering.goal_execution.graph import ModelGraphService
-    from backend.engineering.repository import get_object
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.infrastructure.persistence.repository import get_object
     data = fixture(); goal = prepare(data)
     assert goal['status'] == 'SUSPENDED_FOR_DECISION', goal
     assert goal['strategies'][0]['option']['id'] == 'CREATE_AND_CONNECT_PORT'
@@ -91,8 +92,8 @@ def test_parkassist_real_followups_and_reuse(project):
     assert again['strategies'][0]['option']['id'] == 'REUSE'
 
 def test_unapproved_plan_cannot_mutate(project):
-    from backend.engineering.goal_execution.executor import execute
-    from backend.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.engineering.goal_execution.executor import execute
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
     data = fixture(); goal = prepare(data); before = ModelGraphService.load().revision
     with pytest.raises(PermissionError): execute(goal['workload_id'])
     assert ModelGraphService.load().revision == before
@@ -108,10 +109,12 @@ def hardware_fact_payload(data, owner, graph):
 
 
 def test_missing_hardware_facts_captured_and_same_goal_completes(project):
-    from backend.engineering.goal_execution import service, hardware_facts
-    from backend.engineering.goal_execution.graph import ModelGraphService
-    from backend.engineering.db import get_connection
-    from backend.engineering.repository import update_object, get_object
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.goal_execution import hardware_facts as hardware_facts
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.infrastructure.persistence.db import get_connection
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.infrastructure.persistence.repository import get_object
     data = fixture()
     with get_connection() as conn:
         conn.execute("DELETE FROM engineering_communication_resources WHERE project_id=%s", (project,))
@@ -137,9 +140,9 @@ def test_missing_hardware_facts_captured_and_same_goal_completes(project):
 
 
 def test_existing_hni_channel_is_completed_without_second_interface(project):
-    from backend.engineering.repository import create_object
-    from backend.engineering.goal_execution import service
-    from backend.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
     data = fixture()
     hni = create_object('HardwareNetworkInterface', {'name': 'ADAS CAN Controller Channel', 'hardware_node_id': data['dst']['id'],
         'technology': 'CAN_FD', 'controller_ref': 'controller-' + data['dst']['id'], 'channel_index': 1})
@@ -154,9 +157,9 @@ def test_existing_hni_channel_is_completed_without_second_interface(project):
 
 
 def test_hardware_fact_batch_revision_limits_and_no_silent_replug(project):
-    from backend.engineering.goal_execution import hardware_facts
-    from backend.engineering.goal_execution.graph import ModelGraphService
-    from backend.engineering.db import ConcurrentUpdateError
+    from backend.nis.engineering.goal_execution import hardware_facts as hardware_facts
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.infrastructure.persistence.db import ConcurrentUpdateError
     data = fixture(); goal = prepare(data); graph = ModelGraphService.load()
     facts = hardware_fact_payload(data, data['src']['id'], graph)
     facts['expected_revision'] = 'stale'
@@ -171,9 +174,9 @@ def test_hardware_fact_batch_revision_limits_and_no_silent_replug(project):
 
 
 def test_hardware_fact_batch_rolls_back_on_write_failure(project, monkeypatch):
-    from backend.engineering.goal_execution import hardware_facts
-    from backend.engineering.goal_execution.graph import ModelGraphService
-    from backend.engineering import repository
+    from backend.nis.engineering.goal_execution import hardware_facts as hardware_facts
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.infrastructure.persistence import repository as repository
     data = fixture(); goal = prepare(data); graph = ModelGraphService.load()
     facts = hardware_fact_payload(data, data['src']['id'], graph)
     def fail(*args, **kwargs): raise RuntimeError('Injected fact write failure')
@@ -182,8 +185,8 @@ def test_hardware_fact_batch_rolls_back_on_write_failure(project, monkeypatch):
     assert ModelGraphService.load().revision == graph.revision
 
 def test_revision_change_invalidates_authority(project):
-    from backend.engineering.goal_execution import service
-    from backend.engineering.repository import update_object
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.infrastructure.persistence.repository import update_object
     data = fixture(); goal = prepare(data); confirm(goal)
     update_object('HardwareNode', data['dst']['id'], {'description': 'Concurrent hardware change'})
     result = service.resume(goal['workload_id'])
@@ -191,8 +194,9 @@ def test_revision_change_invalidates_authority(project):
     assert result['authorization'] is None
 
 def test_partial_failure_rolls_back_entire_canonical_batch(project, monkeypatch):
-    from backend.engineering.goal_execution import service, commands
-    from backend.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.goal_execution import commands as commands
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
     data = fixture(); goal = prepare(data); confirm(goal); before = ModelGraphService.load().revision
     def fail(*args): raise RuntimeError('Injected route failure')
     monkeypatch.setattr(commands, 'ensure_routes', fail)
@@ -202,8 +206,8 @@ def test_partial_failure_rolls_back_entire_canonical_batch(project, monkeypatch)
     assert result['journal'][-1]['kind'] == 'CANONICAL_BATCH_ROLLED_BACK'
 
 def test_preview_is_read_only_and_capacity_blocks_before_choice(project):
-    from backend.engineering.goal_execution.graph import ModelGraphService
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.workflow.services.service import WorkflowStatusService
     data = fixture(); before = ModelGraphService.load().revision
     goal = prepare(data)
     assert ModelGraphService.load().revision == before
@@ -217,9 +221,9 @@ def test_preview_is_read_only_and_capacity_blocks_before_choice(project):
     assert 'NETWORK_CAPACITY_EXCEEDED' in {f['code'] for f in rejected['findings']}
 
 def test_concurrent_matching_port_is_reused_after_answer(project):
-    from backend.engineering.goal_execution import service
-    from backend.engineering.repository import create_object
-    from backend.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
     data = fixture(); goal = prepare(data)
     port = create_object('HardwareNetworkInterface', {'name': 'Added concurrently', 'hardware_node_id': data['dst']['id'],
         'technology': 'CAN_FD', 'controller_ref': 'controller-' + data['dst']['id'], 'channel_index': 1,
@@ -234,11 +238,11 @@ def test_concurrent_matching_port_is_reused_after_answer(project):
 
 def test_chat_affirmative_continues_same_goal_without_navigation(project):
     import asyncio
-    from backend.engineering.agent_tools import conversation
-    from backend.engineering.agent_tools.services import TOOLS
-    from backend.agent_core.api.tool_contract import ToolResult
-    from backend.agent_core.context.agent_context import AgentContext
-    from backend.agent_core.core.engineering_agent import EngineeringAgent
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.agent.tools.services import TOOLS
+    from backend.nis.agent.api.tool_contract import ToolResult
+    from backend.nis.agent.context.agent_context import AgentContext
+    from backend.nis.agent.core.engineering_agent import EngineeringAgent
     data = fixture()
     class Client:
         async def call(self, name, args=None):
@@ -262,8 +266,9 @@ def test_chat_affirmative_continues_same_goal_without_navigation(project):
     conversation.finish(continued['run_id'])
 
 def test_goal_is_not_available_in_another_project(project):
-    from backend.engineering.project_context import activate_project, reset_project
-    from backend.engineering.goal_execution.store import get_goal
+    from backend.nis.engineering.projects.project_context import activate_project
+    from backend.nis.engineering.projects.project_context import reset_project
+    from backend.nis.engineering.goal_execution.store import get_goal
     data = fixture(); goal = prepare(data)
     token = activate_project('other-goal-project-' + uuid4().hex)
     try:
@@ -272,13 +277,14 @@ def test_goal_is_not_available_in_another_project(project):
 
 def test_real_mcp_protocol_executes_authorized_plan_and_streams_progress(project):
     import asyncio
-    from backend.engineering.db import _request_unit
-    from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-    from backend.agent_core.api.tool_contract import Permission
-    from backend.agent_core.api.mcp_client import EngineeringMCPClient
-    from backend.simulator_engineering_mcp.server import create_server
-    from backend.engineering.goal_execution import service
-    from backend.engineering.project_bundle import ProjectBundleService
+    from backend.nis.infrastructure.persistence.db import _request_unit
+    from backend.nis.agent.tools.runtime import ToolAuthority
+    from backend.nis.agent.tools.runtime import execute
+    from backend.nis.agent.api.tool_contract import Permission
+    from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+    from backend.nis.interfaces.mcp.server import create_server
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.projects.project_bundle import ProjectBundleService
     data = fixture(); _request_unit.get().finish(True)
     progress = []
     authority = ToolAuthority(project, progress_callback=progress.append)
@@ -318,9 +324,9 @@ def test_real_chat_connection_stream_keeps_every_response_valid(project, tmp_pat
     import json
     import subprocess
     from pathlib import Path
-    from backend.app import create_app
-    from backend.engineering.db import _request_unit
-    from backend.agent_core.api.agent_response import AgentResponse
+    from backend.nis.app import create_app
+    from backend.nis.infrastructure.persistence.db import _request_unit
+    from backend.nis.agent.api.agent_response import AgentResponse
     fixture(); _request_unit.get().finish(True)
     _request_unit.get().close()
     client = create_app(testing=True).test_client()
@@ -346,8 +352,8 @@ def test_real_chat_connection_stream_keeps_every_response_valid(project, tmp_pat
     subprocess.run(['node', '--experimental-strip-types', '--input-type=module', '-e', code, str(payload)], cwd=root/'frontend', check=True)
 
 def test_missing_functional_requirement_is_not_reported_as_complete(project):
-    from backend.engineering.repository import update_object
-    from backend.engineering.goal_execution import service
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.engineering.goal_execution import service as service
     data = fixture()
     config = data['message']['configuration']; config['communication_contract']['transmission'].pop('functional_requirements')
     update_object('Message', data['message']['id'], {'configuration': config})
@@ -358,8 +364,9 @@ def test_missing_functional_requirement_is_not_reported_as_complete(project):
     assert result['completion']['evidence']['capacity_valid']
 
 def test_missing_frame_parameters_are_generated_without_changing_signals(project):
-    from backend.engineering.repository import update_object, get_object
-    from backend.engineering.goal_execution import service
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.infrastructure.persistence.repository import get_object
+    from backend.nis.engineering.goal_execution import service as service
     data = fixture()
     update_object('Message', data['message']['id'], {'message_id_hex': None, 'dlc': None})
     before = dict(get_object('Signal', data['signal']['id']))
@@ -371,8 +378,8 @@ def test_missing_frame_parameters_are_generated_without_changing_signals(project
     assert get_object('Signal', data['signal']['id']) == before
 
 def test_human_hardware_fact_cannot_move_controller_to_another_device(project):
-    from backend.engineering.goal_execution.graph import ModelGraphService
-    from backend.engineering.goal_execution.resources import record_hardware_fact
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.engineering.goal_execution.resources import record_hardware_fact
     data = fixture(); graph = ModelGraphService.load()
     controller = graph.find_communication_controllers(data['src']['id'])[0]
     controller['hardware_node_ref'] = data['dst']['id']
@@ -380,7 +387,7 @@ def test_human_hardware_fact_cannot_move_controller_to_another_device(project):
         record_hardware_fact('CommunicationController', controller, graph.revision)
 
 def test_pure_input_port_is_not_offered_for_a_sender(project):
-    from backend.engineering.goal_execution.store import save_resource
+    from backend.nis.engineering.goal_execution.store import save_resource
     data = fixture(); port = data['sp']
     save_resource('PhysicalPort', {'id': port['physical_port_ref'], 'hardware_node_ref': data['src']['id'],
         'controller_ref': port['controller_ref'], 'hardware_interface_ref': port['id'], 'technology': 'CAN_FD',
@@ -390,8 +397,9 @@ def test_pure_input_port_is_not_offered_for_a_sender(project):
     assert any(f['code'] == 'PORT_DIRECTION_MISMATCH' for f in goal['findings'])
 
 def test_explicit_event_contract_is_preserved_without_fallback_cycle(project):
-    from backend.engineering.repository import update_object, get_object
-    from backend.engineering.goal_execution import service
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.infrastructure.persistence.repository import get_object
+    from backend.nis.engineering.goal_execution import service as service
     data = fixture(); config = data['message']['configuration']
     config['communication_contract']['transmission'].update(mode='EVENT', trigger='explicit', minimum_interval_ms=100, release_times_ms=[0, 200])
     config['communication_contract']['transmission'].pop('period_ms')
@@ -407,10 +415,12 @@ def test_explicit_event_contract_is_preserved_without_fallback_cycle(project):
     assert message['configuration']['communication_contract']['transmission'] == config['communication_contract']['transmission']
 
 def test_import_preserves_resources_but_never_execution_authority(project):
-    from backend.engineering.project_bundle import ProjectBundleService
-    from backend.engineering.goal_execution.store import get_goal, resources
-    from backend.engineering.project_context import activate_project, reset_project
-    from backend.engineering.db import RequestUnit
+    from backend.nis.engineering.projects.project_bundle import ProjectBundleService
+    from backend.nis.engineering.goal_execution.store import get_goal
+    from backend.nis.engineering.goal_execution.store import resources
+    from backend.nis.engineering.projects.project_context import activate_project
+    from backend.nis.engineering.projects.project_context import reset_project
+    from backend.nis.infrastructure.persistence.db import RequestUnit
     data = fixture(); goal = prepare(data); confirm(goal)
     target = project + '-import'
     bundle = ProjectBundleService().export(project, target_project_id=target)
@@ -428,8 +438,8 @@ def test_import_preserves_resources_but_never_execution_authority(project):
         unit.finish(False); unit.close(); reset_project(token)
 
 def test_derived_repair_is_bounded_and_does_not_claim_completion(project, monkeypatch):
-    from backend.engineering.goal_execution import service
-    from backend.engineering.capacity.service import PreflightService
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.capacity.service import PreflightService
     data = fixture(); goal = prepare(data); confirm(goal)
     calls = []
     def unavailable(_):
@@ -444,14 +454,15 @@ def test_derived_repair_is_bounded_and_does_not_claim_completion(project, monkey
 
 @pytest.mark.parametrize('trace_status,expected', [('transmitted', 'COMPLETE'), ('corrupted', 'INCOMPLETE')])
 def test_requested_simulation_runs_after_commit_and_requires_route_evidence(project, monkeypatch, trace_status, expected):
-    from backend.engineering.goal_execution import service
-    from backend.engineering.goal_execution.store import get_goal
-    from backend.engineering.db import _request_unit
-    from backend.engineering.agent_tools import simulation_gateway
-    from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-    from backend.engineering.agent_tools.services import TOOLS
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_bundle import ProjectBundleService
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.goal_execution.store import get_goal
+    from backend.nis.infrastructure.persistence.db import _request_unit
+    from backend.nis.agent.tools import simulation_gateway as simulation_gateway
+    from backend.nis.agent.tools.runtime import ToolAuthority
+    from backend.nis.agent.tools.runtime import execute
+    from backend.nis.agent.tools.services import TOOLS
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_bundle import ProjectBundleService
     data = fixture()
     goal = service.prepare('Verbinde ParkAssist mit DriverAssistance und simuliere die Kommunikation', data['sf']['id'], data['df']['id'])
     assert 'simulieren' in goal['pending_decision']['question']
@@ -486,10 +497,10 @@ def test_requested_simulation_runs_after_commit_and_requires_route_evidence(proj
         _request_unit.get().finish(True)
 
 def test_explicit_connection_request_reuses_existing_ports_without_extra_question(project):
-    from backend.engineering.repository import create_object
-    from backend.engineering.goal_execution import service
-    from backend.engineering.agent_tools import conversation
-    from backend.agent_core.context.agent_context import AgentContext
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.agent.context.agent_context import AgentContext
     data = fixture()
     create_object('HardwareNetworkInterface', {'name': 'Existing ADAS CAN', 'hardware_node_id': data['dst']['id'],
         'technology': 'CAN_FD', 'controller_ref': 'controller-' + data['dst']['id'], 'channel_index': 1,
@@ -505,12 +516,14 @@ def test_explicit_connection_request_reuses_existing_ports_without_extra_questio
 
 def test_background_resumes_same_simulation_and_publishes_once(project, monkeypatch):
     from datetime import datetime, timedelta, timezone
-    from backend.engineering.goal_execution import service, background
-    from backend.engineering.goal_execution.store import get_goal
-    from backend.engineering.db import _request_unit
-    from backend.engineering.agent_tools import simulation_gateway, conversation
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_bundle import ProjectBundleService
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.goal_execution import background as background
+    from backend.nis.engineering.goal_execution.store import get_goal
+    from backend.nis.infrastructure.persistence.db import _request_unit
+    from backend.nis.agent.tools import simulation_gateway as simulation_gateway
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_bundle import ProjectBundleService
     data = fixture()
     goal = service.prepare('Verbinde ParkAssist mit DriverAssistance und simuliere die Kommunikation', data['sf']['id'], data['df']['id'])
     confirm(goal); goal = service.resume(goal['workload_id'])
@@ -554,8 +567,10 @@ def test_background_resumes_same_simulation_and_publishes_once(project, monkeypa
 
 
 def test_background_claim_is_bounded_and_requires_saved_authority(project):
-    from backend.engineering.goal_execution import service, background
-    from backend.engineering.goal_execution.store import get_goal, save_goal
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.goal_execution import background as background
+    from backend.nis.engineering.goal_execution.store import get_goal
+    from backend.nis.engineering.goal_execution.store import save_goal
     data = fixture(); goal = prepare(data)
     assert background.claim(goal['workload_id']) == {'claimed': False}
     goal.update(status='SIMULATION_RUNNING', followup_authorization=None)
@@ -574,18 +589,19 @@ def test_connection_to_real_simulation_engine_and_trace_artifact(project, monkey
     import importlib
     import io
     from urllib.parse import urlsplit
-    from backend.app import create_app
-    from backend.app.job_service import JobService
-    from backend.app.trace_storage import TraceStorage
-    from backend.engineering.goal_execution import service
-    from backend.engineering.goal_execution.store import get_goal
-    from backend.engineering.db import _request_unit
-    from backend.engineering.agent_tools import simulation_gateway
-    from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-    from backend.engineering.agent_tools.services import TOOLS
-    from backend.engineering.project_bundle import ProjectBundleService
+    from backend.nis.app import create_app
+    from backend.nis.simulation.job_service import JobService
+    from backend.nis.infrastructure.storage.trace_storage import TraceStorage
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.goal_execution.store import get_goal
+    from backend.nis.infrastructure.persistence.db import _request_unit
+    from backend.nis.agent.tools import simulation_gateway as simulation_gateway
+    from backend.nis.agent.tools.runtime import ToolAuthority
+    from backend.nis.agent.tools.runtime import execute
+    from backend.nis.agent.tools.services import TOOLS
+    from backend.nis.engineering.projects.project_bundle import ProjectBundleService
     jobs = JobService(synchronous=True, persist=False, storage=TraceStorage(default_root=tmp_path, settings_path=tmp_path / 'storage.json'))
-    monkeypatch.setattr(importlib.import_module('backend.app.api'), 'JOBS', jobs)
+    monkeypatch.setattr(importlib.import_module('backend.nis.interfaces.http.simulation'), 'JOBS', jobs)
     client = create_app(testing=True).test_client()
     def local_http(request, timeout=None):
         url = urlsplit(request.full_url)

@@ -1,7 +1,9 @@
 from copy import deepcopy
 import pytest
-from backend.engineering.routing.payload_scope import message_scope, scope_allows, payload_scope_issues
-from backend.engineering.models import EngineeringValidationError
+from backend.nis.engineering.routing.payload_scope import message_scope
+from backend.nis.engineering.routing.payload_scope import scope_allows
+from backend.nis.engineering.routing.payload_scope import payload_scope_issues
+from backend.nis.domain.vocabulary import EngineeringValidationError
 
 
 def local_message(role="MEASUREMENT"):
@@ -50,7 +52,8 @@ def test_routing_validator_blocks_both_message_and_signal_selection():
 
 
 def test_approved_simulation_config_rechecks_scope_before_export(monkeypatch):
-    from backend.engineering.routing import payload_scope, config_builder
+    from backend.nis.engineering.routing import payload_scope as payload_scope
+    from backend.nis.engineering.routing import config_builder as config_builder
     monkeypatch.setattr(payload_scope, "load_payload_context", lambda: ({"local": local_message()}, {}, {}))
     route = {"approval_state": "APPROVED", "payload": {"message_id": "local"}, "destinations": [{"node_id": "adas"}]}
     with pytest.raises(EngineeringValidationError, match="lokale Sensor"):
@@ -59,7 +62,7 @@ def test_approved_simulation_config_rechecks_scope_before_export(monkeypatch):
 
 def test_wizard_replanning_preserves_explicit_shared_device_scope():
     from backend.tests.test_wizard_communication import fixture
-    from backend.engineering.wizard_communication import communication_plan
+    from backend.nis.engineering.communication.wizard_communication import communication_plan
     prompt, graph = fixture()
     first = communication_plan(prompt, graph)
     first['sensor']['communication_contract']['scope'] = 'DEVICE_IO'
@@ -71,8 +74,9 @@ def test_wizard_replanning_preserves_explicit_shared_device_scope():
 
 
 def test_capacity_counts_local_frame_only_on_local_bus_and_output_on_system_bus(monkeypatch):
-    from backend.engineering.capacity import service as capacity
-    from backend.engineering.workflow.models import default_statuses, default_versions
+    from backend.nis.engineering.capacity import service as capacity
+    from backend.nis.workflow.services.models import default_statuses
+    from backend.nis.workflow.services.models import default_versions
     command = local_message("COMMAND")
     command["configuration"]["communication_contract"]["consumer_refs"] = ["actuator"]
     status = {"id": "status", "name": "Function output", "dlc": 1, "cycle_ms": 20,

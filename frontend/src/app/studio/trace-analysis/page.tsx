@@ -1,4 +1,4 @@
-import { type ProjectQueryRecord } from "@/lib/user-settings";
+import { type ProjectQueryRecord } from "@/features/settings/lib/user-settings";
 import { redirect } from "next/navigation";
 
 export default async function TraceAnalysisPage({

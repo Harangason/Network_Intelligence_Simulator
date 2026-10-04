@@ -7,11 +7,14 @@ import threading
 
 import pytest
 
-from backend.app.job_service import JobService, _run_simulation_process
-from backend.app.simulation_service import SimulationService
-from backend.app.trace_storage import TraceStorage
+from backend.nis.simulation.job_service import JobService
+from backend.nis.simulation.job_service import _run_simulation_process
+from backend.nis.simulation.service import SimulationService
+from backend.nis.infrastructure.storage.trace_storage import TraceStorage
 from backend.tests.test_model_based_simulation import simulation_config
-from simulation_cancellation import cancellation_scope, check_cancellation, request_cancellation
+from backend.nis.simulation.simulation_cancellation import cancellation_scope
+from backend.nis.simulation.simulation_cancellation import check_cancellation
+from backend.nis.simulation.simulation_cancellation import request_cancellation
 
 
 def _long_config(output):
@@ -21,7 +24,7 @@ def _long_config(output):
 
 
 def _pause_inside_generation(reached, proceed):
-    import universal_trace
+    import backend.nis.traces.universal_trace as universal_trace
     original = universal_trace.check_cancellation
     calls = 0
 
@@ -38,7 +41,7 @@ def _pause_inside_generation(reached, proceed):
 
 
 def _spawn_worker(config, output, reached, proceed, result):
-    import universal_trace
+    import backend.nis.traces.universal_trace as universal_trace
     _, universal_trace.check_cancellation = _pause_inside_generation(reached, proceed)
     try:
         _run_simulation_process('spawn-job', {'config': config}, False, output)
@@ -51,7 +54,7 @@ def _spawn_worker(config, output, reached, proceed, result):
 
 
 def _spawn_import_probe(result):
-    from backend.app.job_service import JOBS
+    from backend.nis.simulation.job_service import JOBS
     result.put({'persist': JOBS.persist, 'jobs': JOBS.list()})
 
 
@@ -74,7 +77,7 @@ def test_already_canceled_attempt_never_enters_the_worker_body(tmp_path):
 
 
 def test_cancel_stops_a_real_running_thread_generator(monkeypatch, tmp_path):
-    import universal_trace
+    import backend.nis.traces.universal_trace as universal_trace
     reached, proceed = threading.Event(), threading.Event()
     _, checkpoint = _pause_inside_generation(reached, proceed)
     monkeypatch.setattr(universal_trace, 'check_cancellation', checkpoint)

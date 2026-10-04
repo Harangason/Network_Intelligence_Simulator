@@ -1,7 +1,8 @@
 from copy import deepcopy
 import os
 import pytest
-from backend.engineering.topology_removal import _canonical_relation_ids, detached_topology
+from backend.nis.engineering.network.topology_removal import _canonical_relation_ids
+from backend.nis.engineering.network.topology_removal import detached_topology
 
 
 def test_generated_segment_ids_are_not_treated_as_relation_uuids():
@@ -29,8 +30,8 @@ def test_only_newly_disconnected_ports_leave_their_previous_bus():
 @pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_URL'),reason='Separate SQL database required')
 def test_delete_port_bus_reload_reconnect_and_rollback(monkeypatch):
     from backend.tests.test_engineering_api import _client
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.models import EngineeringValidationError
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.domain.vocabulary import EngineeringValidationError
     c=_client();nodes=[]
     for key in ['owner','a','b','spare']:
         hw=c.post('/api/engineering/hardware-nodes',json={'name':key,'domain':'robotics','device_type':'ECU' if key=='owner' else 'SensorController'}).get_json()
@@ -85,10 +86,11 @@ def test_delete_port_bus_reload_reconnect_and_rollback(monkeypatch):
 def test_last_deleted_edge_invalidates_manual_route_without_deleting_payload(reference):
     from backend.tests.test_engineering_api import _client
     from backend.tests.test_routing import route_payload
-    from backend.engineering.routing.repository import create_route, get_route
-    from backend.engineering.project_context import activate_project
-    from backend.engineering.db import get_connection
-    from backend.engineering.topology_removal import retire_removed_connections
+    from backend.nis.engineering.routing.repository import create_route
+    from backend.nis.engineering.routing.repository import get_route
+    from backend.nis.engineering.projects.project_context import activate_project
+    from backend.nis.infrastructure.persistence.db import get_connection
+    from backend.nis.engineering.network.topology_removal import retire_removed_connections
     client = _client()
     activate_project(client.environ_base['HTTP_X_PROJECT_ID'])
     payload = route_payload()
@@ -116,7 +118,7 @@ def test_last_deleted_edge_invalidates_manual_route_without_deleting_payload(ref
 
 
 def test_disconnect_membership_preserves_other_connected_drawing_aliases():
-    from backend.engineering.topology_removal import removed_endpoint_references
+    from backend.nis.engineering.network.topology_removal import removed_endpoint_references
     ports = [{'id': identifier, 'hardwareInterfaceId': 'canonical', 'physicalNetworkId': 'bus'} for identifier in ['a', 'alias']]
     before = {'nodes': [{'ports': ports}], 'edges': [{'id': 'one', 'sourcePort': 'a', 'targetPort': 'alias'}]}
     after = deepcopy(before)

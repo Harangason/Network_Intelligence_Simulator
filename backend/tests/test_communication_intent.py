@@ -1,7 +1,7 @@
 from copy import deepcopy
 
-from backend.engineering.communication_intent import FunctionalArchitecture
-from backend.engineering.communication_repair import RepairPlanner
+from backend.nis.engineering.communication.communication_intent import FunctionalArchitecture
+from backend.nis.engineering.communication.communication_repair import RepairPlanner
 from backend.tests.test_communication_repair import sample, SQL, sql_sample
 
 
@@ -89,10 +89,12 @@ def test_basic_sensor_io_is_preserved_without_inventing_a_function_object():
 
 @SQL
 def test_sql_function_migration_updates_transport_and_preserves_other_communication():
-    from backend.engineering.repository import create_object,update_object,get_object
-    from backend.engineering.routing.repository import get_route
-    from backend.engineering.db import get_connection
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.infrastructure.persistence.repository import get_object
+    from backend.nis.engineering.routing.repository import get_route
+    from backend.nis.infrastructure.persistence.db import get_connection
+    from backend.nis.engineering.projects.project_context import current_project_id
     from psycopg.types.json import Jsonb
     client,ids=sql_sample()
     base='/api/engineering/workflow/communication-repair/'
@@ -123,7 +125,8 @@ def test_sql_function_migration_updates_transport_and_preserves_other_communicat
 
 @SQL
 def test_sql_network_edit_retains_established_function_partner_until_repair():
-    from backend.engineering.routing.repository import get_route,update_route
+    from backend.nis.engineering.routing.repository import get_route
+    from backend.nis.engineering.routing.repository import update_route
     client,ids=sql_sample()
     original=get_route(ids['route'])
     assert original['route']['functional_intent']['destinations'][0]['function_id']==ids['receiver-function']
@@ -144,9 +147,10 @@ def test_sql_network_edit_retains_established_function_partner_until_repair():
 
 @SQL
 def test_sql_new_route_records_basic_sensor_endpoint_as_hardware_io():
-    from backend.engineering.db import get_connection
-    from backend.engineering.project_context import current_project_id
-    from backend.engineering.routing.repository import create_route, get_route
+    from backend.nis.infrastructure.persistence.db import get_connection
+    from backend.nis.engineering.projects.project_context import current_project_id
+    from backend.nis.engineering.routing.repository import create_route
+    from backend.nis.engineering.routing.repository import get_route
     client,ids=sql_sample()
     original=get_route(ids['route'])
     with get_connection() as connection:

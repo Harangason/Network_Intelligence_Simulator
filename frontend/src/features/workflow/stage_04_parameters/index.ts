@@ -1,1 +1,1 @@
-export { SimulationWizard } from "@/components/simulation-wizard";
+export { SimulationWizard } from "@/features/simulation/ui/simulation-wizard";

@@ -1,4 +1,4 @@
-import { backendEndpoints } from "@/lib/backend-endpoints";
+import { backendEndpoints } from "@/shared/api/backend-endpoints";
 const { simulator: BACKEND_BASE } = backendEndpoints(process.env);
 
 export function projectIdFromRequest(

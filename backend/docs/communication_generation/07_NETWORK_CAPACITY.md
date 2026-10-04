@@ -1,3 +1,5 @@
-# Network Capacity
+# Document moved
 
-Capacity is a property of the physical channel / network segment, not of message count. Two interfaces on the same network do not double capacity. A second channel only increases capacity when it represents a separate network segment.
+Canonical document: [07_NETWORK_CAPACITY.md](../../../docs/domains/engineering/07_NETWORK_CAPACITY.md).
+
+This entry preserves old links during the structure migration.

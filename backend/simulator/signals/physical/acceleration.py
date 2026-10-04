@@ -1,13 +1,4 @@
-from __future__ import annotations
-
-from typing import Any
-
-from .common import clamp, number
-
-
-def acceleration(signal: Any, _time_s: float, context: Any, _state: Any) -> float:
-    target = number(
-        getattr(context, "commands", {}).get(signal.id),
-        number(signal.parameters.get("target_acceleration"), number(getattr(context, "system_state", {}).get("acceleration_mps2"), 0.0)),
-    )
-    return clamp(target, signal.minimum, signal.maximum)
+"""Compatibility only; owner backend.nis.simulation.signals.physical.acceleration."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals.physical.acceleration')

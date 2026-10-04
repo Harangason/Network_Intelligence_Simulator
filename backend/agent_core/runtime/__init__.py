@@ -1,7 +1,4 @@
-"""Shared, entry-point independent runtime contracts for engineering requests."""
-
-from .goal_resolver import EngineeringGoal, GoalResolver, GoalType
-from .service import EngineeringAssistantService
-from .workload import EngineeringWorkload, WorkloadStatus
-
-__all__ = ["EngineeringAssistantService", "EngineeringGoal", "EngineeringWorkload", "GoalResolver", "GoalType", "WorkloadStatus"]
+"""Compatibility alias for executable agent runtime."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.runtime')

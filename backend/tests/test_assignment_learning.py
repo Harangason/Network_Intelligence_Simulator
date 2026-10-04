@@ -1,4 +1,4 @@
-from backend.engineering.assignment_learning import collect_assignment_suggestions
+from backend.nis.engineering.assignment_learning import collect_assignment_suggestions
 
 
 def test_numbered_controller_family_does_not_select_last_candidate():

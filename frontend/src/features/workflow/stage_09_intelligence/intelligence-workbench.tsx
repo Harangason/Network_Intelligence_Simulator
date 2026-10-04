@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { CommunicationSizingPanel } from "@/components/communication-sizing-panel";
+import { CommunicationSizingPanel } from "@/features/communication/ui/communication-sizing-panel";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   assessIntelligence,
@@ -16,19 +16,19 @@ import {
   type IntelligenceRecommendation,
   type IntelligenceSnapshot,
   type OptimizationProposal,
-} from "@/lib/workflow-api";
+} from "@/features/workflow/lib/workflow-api";
 import {
   ENGINEERING_AGENT_OPEN_EVENT,
   queueEngineeringAgentTask,
-} from "@/lib/agent-task-events";
+} from "@/features/agent/lib/agent-task-events";
 import {
   engineeringObjectTypeClass,
   engineeringObjectTypeLabel,
-} from "@/lib/engineering-object-style";
-import { notifyWorkflowChanged } from "@/components/workflow-header";
-import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
-import { createIntelligenceLoader } from "@/lib/intelligence-loader";
-import { readActiveProjectId, withProjectParam } from "@/lib/user-settings";
+} from "@/features/engineering/lib/engineering-object-style";
+import { notifyWorkflowChanged } from "@/features/workflow/ui/workflow-header";
+import { useWorkflowRefresh } from "@/features/workflow/lib/use-workflow-refresh";
+import { createIntelligenceLoader } from "@/features/intelligence/lib/intelligence-loader";
+import { readActiveProjectId, withProjectParam } from "@/features/settings/lib/user-settings";
 
 type View = "overview" | "analytics" | "insights" | "knowledge";
 

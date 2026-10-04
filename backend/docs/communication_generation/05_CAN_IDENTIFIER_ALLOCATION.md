@@ -1,3 +1,5 @@
-# CAN Identifier Allocation
+# Document moved
 
-CAN identifiers identify frames, not interfaces. The current wizard assigns deterministic sequential identifiers after packing. Identifier policy remains separate from interface allocation and can later be replaced by a priority/range-aware allocator without changing packing semantics.
+Canonical document: [05_CAN_IDENTIFIER_ALLOCATION.md](../../../docs/domains/engineering/05_CAN_IDENTIFIER_ALLOCATION.md).
+
+This entry preserves old links during the structure migration.

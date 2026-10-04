@@ -2,22 +2,23 @@ from copy import deepcopy
 import json
 from pathlib import Path
 
-from backend.engineering.intelligence.reports import IntelligenceReportService
-from backend.engineering.intelligence.services import (
-    AnomalyDetectionService,
-    DataQualityService,
-    GraphAnalyticsService,
-    MaturityAssessmentService,
-    RecommendationEngine,
-    SystemHealthService,
-    correlation,
-)
-from backend.engineering.project_bundle import normalize_project_id
-from backend.engineering.project_context import compact_context_project_id, normalize_context_project_id
-from backend.engineering.workflow.models import default_statuses, default_versions, transition_state
-from backend.app import create_app
-from backend.engineering.intelligence.service import IntelligenceService
-from backend.engineering.intelligence.review_learning import enrich_with_review_history
+from backend.nis.intelligence.engineering.intelligence.reports import IntelligenceReportService
+from backend.nis.intelligence.engineering.intelligence.services import AnomalyDetectionService
+from backend.nis.intelligence.engineering.intelligence.services import DataQualityService
+from backend.nis.intelligence.engineering.intelligence.services import GraphAnalyticsService
+from backend.nis.intelligence.engineering.intelligence.services import MaturityAssessmentService
+from backend.nis.intelligence.engineering.intelligence.services import RecommendationEngine
+from backend.nis.intelligence.engineering.intelligence.services import SystemHealthService
+from backend.nis.intelligence.engineering.intelligence.services import correlation
+from backend.nis.engineering.projects.project_bundle import normalize_project_id
+from backend.nis.engineering.projects.project_context import compact_context_project_id
+from backend.nis.engineering.projects.project_context import normalize_context_project_id
+from backend.nis.workflow.services.models import default_statuses
+from backend.nis.workflow.services.models import default_versions
+from backend.nis.workflow.services.models import transition_state
+from backend.nis.app import create_app
+from backend.nis.intelligence.engineering.intelligence.service import IntelligenceService
+from backend.nis.intelligence.engineering.intelligence.review_learning import enrich_with_review_history
 
 
 def _objects():
@@ -107,7 +108,7 @@ def test_empty_workspace_does_not_report_missing_evidence_as_critical_issues(mon
     })
     monkeypatch.setattr(service, "_rag_insights", lambda issues: [])
     monkeypatch.setattr(
-        "backend.engineering.intelligence.service.LogicalNodeAddressAllocator.findings",
+        "backend.nis.intelligence.engineering.intelligence.service.LogicalNodeAddressAllocator.findings",
         lambda _self: [],
     )
 
@@ -530,7 +531,7 @@ def test_intelligence_assessment_endpoint_uses_active_project(monkeypatch):
         def assess(self):
             return {"project_id": self.project_id, "status": "WARNING", "results": {"critical_issues": []}}
 
-    monkeypatch.setattr("backend.engineering.api.IntelligenceService", FakeIntelligenceService)
+    monkeypatch.setattr("backend.nis.interfaces.http.engineering.IntelligenceService", FakeIntelligenceService)
     client = create_app(testing=True).test_client()
 
     response = client.post(
@@ -551,7 +552,7 @@ def test_intelligence_assessment_endpoint_accepts_short_browser_project(monkeypa
         def assess(self):
             return {"project_id": self.project_id, "status": "WARNING", "results": {"critical_issues": []}}
 
-    monkeypatch.setattr("backend.engineering.api.IntelligenceService", FakeIntelligenceService)
+    monkeypatch.setattr("backend.nis.interfaces.http.engineering.IntelligenceService", FakeIntelligenceService)
     client = create_app(testing=True).test_client()
 
     response = client.post(
@@ -571,7 +572,7 @@ def test_intelligence_issue_approval_endpoint_uses_active_project(monkeypatch):
         def approve_issue(self, data):
             return {"project_id": self.project_id, "approved": data["object_id"]}
 
-    monkeypatch.setattr("backend.engineering.api.IntelligenceService", FakeIntelligenceService)
+    monkeypatch.setattr("backend.nis.interfaces.http.engineering.IntelligenceService", FakeIntelligenceService)
     client = create_app(testing=True).test_client()
 
     response = client.post(
@@ -589,7 +590,7 @@ def test_project_import_endpoint_never_treats_bundle_as_engineering_mutation(mon
         def import_bundle(self, bundle, *, target_project_id=None):
             return {"project_id": target_project_id or bundle["project_id"], "report": {"inserted": 0}}
 
-    monkeypatch.setattr("backend.engineering.api.ProjectBundleService", FakeProjectBundleService)
+    monkeypatch.setattr("backend.nis.interfaces.http.engineering.ProjectBundleService", FakeProjectBundleService)
     client = create_app(testing=True).test_client()
     response = client.post(
         "/api/engineering/projects/import",

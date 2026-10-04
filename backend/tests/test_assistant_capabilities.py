@@ -5,16 +5,16 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from backend.agent_core.api.tool_contract import ToolResult
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent
-from backend.agent_core.orchestration.capability_intent import capability_question
-from backend.agent_core.orchestration.tool_selection import select_tools
-from backend.engineering.agent_tools import capabilities
-from backend.engineering.agent_tools.services import TOOLS
-from backend.engineering.agent_tools.runtime import ToolAuthority
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.tool_contract import ToolResult
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
+from backend.nis.agent.orchestration.capability_intent import capability_question
+from backend.nis.agent.orchestration.tool_selection import select_tools
+from backend.nis.agent.tools import capabilities as capabilities
+from backend.nis.agent.tools.services import TOOLS
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.interfaces.mcp.server import create_server
 
 
 @pytest.fixture
@@ -185,7 +185,7 @@ def test_general_terms_do_not_invite_invented_object_ids():
 
 
 def test_service_failure_is_specific_even_inside_mcp_exception_group():
-    from backend.engineering.agent_tools.api import agent_failure_message
+    from backend.nis.agent.tools.api import agent_failure_message
     error = ExceptionGroup('MCP', [ExceptionGroup('task', [httpx.ConnectError('secret endpoint')])])
     text = agent_failure_message(error)
     assert 'Ollama' in text and 'secret endpoint' not in text

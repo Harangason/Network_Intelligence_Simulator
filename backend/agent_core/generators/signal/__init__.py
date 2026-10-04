@@ -1,7 +1,4 @@
-"""Extension point for simulator-specific signal generators."""
-
-from ..base import BaseGenerator
-
-SignalGenerator = BaseGenerator
-
-__all__ = ["SignalGenerator"]
+"""Compatibility only; owner backend.nis.agent.generators.signal."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.generators.signal')

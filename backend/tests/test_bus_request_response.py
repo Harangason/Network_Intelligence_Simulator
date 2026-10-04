@@ -3,10 +3,12 @@ from copy import deepcopy
 
 import pytest
 
-from backend.engineering.capacity.transmission import bus_request_pairs, profile, release_grid
+from backend.nis.engineering.capacity.transmission import bus_request_pairs
+from backend.nis.engineering.capacity.transmission import profile
+from backend.nis.engineering.capacity.transmission import release_grid
 from backend.tests.test_model_based_simulation import simulation_config
-from hardware_profile import normalize_hardware_config
-from universal_trace import generate_universal_events
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.traces.universal_trace import generate_universal_events
 
 
 CONTRACT = {'mode': 'ON_REQUEST', 'request_source': 'bus_message', 'request_message_ref': 'request',
@@ -94,7 +96,8 @@ def test_cross_model_pair_validation_rejects_mismatched_endpoints(patch):
 
 @pytest.mark.parametrize('deadline,expected', [(30, 'PASS'), (20, 'FAIL'), (None, 'UNVERIFIED')])
 def test_capacity_checks_complete_exchange_separately_from_frame_bounds(deadline, expected):
-    from backend.engineering.capacity.dimensioning import bus_schedule, policy_for
+    from backend.nis.engineering.capacity.dimensioning import bus_schedule
+    from backend.nis.engineering.capacity.dimensioning import policy_for
     requirements = {'confirmed': True, 'maximum_event_to_response_ms': deadline,
                     'sampling_delay_ms': 0, 'actuation_delay_ms': 0}
     request = {'stream_id': 'request-stream', 'message_id': 'request', 'producer': 'a', 'consumers': ['b'],

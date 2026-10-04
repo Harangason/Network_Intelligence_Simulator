@@ -5,7 +5,7 @@ from uuid import uuid4
 import httpx
 import pytest
 
-from backend.agent_core.runtime.recovery import RecoveryManager
+from backend.nis.agent.runtime.recovery import RecoveryManager
 
 
 @pytest.mark.parametrize('error,code', [
@@ -31,8 +31,8 @@ def test_mixed_or_unknown_groups_remain_unclassified(errors):
 
 
 def test_actual_mcp_group_keeps_persisted_failure_in_stream(monkeypatch):
-    from backend.app import create_app
-    from backend.engineering.agent_tools import api as agent_api
+    from backend.nis.app import create_app
+    from backend.nis.agent.tools import api as agent_api
 
     class UnavailableAgent:
         def __init__(self, client, reasoner=None):

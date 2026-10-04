@@ -1,5 +1,4 @@
-"""Navigable packages for the nine NIS workflow stages."""
-
-from backend.workflow.definition import WORKFLOW_STAGES
-
-__all__ = ["WORKFLOW_STAGES"]
+"""Compatibility only; owner backend.nis.workflow.stages."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.workflow.stages')

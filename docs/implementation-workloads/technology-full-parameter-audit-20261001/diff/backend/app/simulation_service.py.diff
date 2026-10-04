@@ -1,6 +1,71 @@
 --- before/backend/app/simulation_service.py
 +++ after/backend/app/simulation_service.py
-@@ -114,174 +114,8 @@
+@@ -3,10 +3,12 @@
+ from __future__ import annotations
+ 
+ import copy
++import json
+ import os
+ import re
+ import sys
+ from pathlib import Path
++from threading import RLock
+ from typing import Any
+ 
+ from .config import SIMULATOR_ROOT
+@@ -70,8 +72,36 @@
+     def __init__(self) -> None:
+         self.simulator = CommunicationSimulator()
+         self.runtime_load_monitor = RuntimeBusLoadMonitor()
++        self._catalog_lock = RLock()
++        self._catalog_snapshot = None
+ 
+     def catalog(self) -> dict[str, Any]:
++        # Callers may edit their result without editing the registry or the
++        # HTTP snapshot shared by concurrent requests.
++        return copy.deepcopy(self._catalog_entry()[2])
++
++    def catalog_json(self) -> bytes:
++        """Serve the complete registry without serializing 14k fields per read."""
++        return self._catalog_entry()[3]
++
++    def _catalog_entry(self):
++        with self._catalog_lock:
++            while True:
++                registry = COMMUNICATION_TECHNOLOGY_REGISTRY
++                revision = registry.revision
++                cached = self._catalog_snapshot
++                if cached is not None and cached[0] is registry and cached[1] == revision:
++                    return cached
++                data = self._build_catalog()
++                encoded = json.dumps(data, ensure_ascii=False, allow_nan=False,
++                                     separators=(',', ':')).encode('utf-8')
++                # Onboarding can replace a generated pack while we build.
++                # Publish only a snapshot of one unchanged registry revision.
++                if registry is COMMUNICATION_TECHNOLOGY_REGISTRY and revision == registry.revision:
++                    self._catalog_snapshot = (registry, revision, data, encoded)
++                    return self._catalog_snapshot
++
++    def _build_catalog(self) -> dict[str, Any]:
+         profiles = {profile["id"]: profile for profile in COMMUNICATION_TECHNOLOGY_REGISTRY.profiles()}
+         domains: list[dict[str, Any]] = []
+         for model_type in MODEL_TYPES:
+@@ -103,185 +133,20 @@
+                         device_field['default'] = technology['parameter_defaults_review']['values']['bitrate_bps']
+                 technologies.append(technology)
+             domains.append({**copy.deepcopy(model_type), "technologies": technologies})
++        summary = COMMUNICATION_TECHNOLOGY_REGISTRY.summary()
+         return {
+-            "technology_count": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["technology_count"],
++            "technology_count": summary["technology_count"],
+             "domains": domains,
+             "formats": sorted(SUPPORTED_STANDALONE_FORMATS),
+-            "layers": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["layers"],
+-            "implementation_status": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["implementation_status"],
++            "layers": summary["layers"],
++            "implementation_status": summary["implementation_status"],
+             "core_model_types": ["HardwareNode", "HardwareInterface", "FunctionalInterface", "TechnologyBinding", "TransportUnit", "PayloadElement"],
+         }
  
      @staticmethod
      def _parameter_schema(technology_id: str, technology: dict[str, Any]) -> list[dict[str, Any]]:
@@ -177,7 +242,7 @@
  
      def prepare_config(self, payload: dict[str, Any], output_dir: Path) -> dict[str, Any]:
          if not isinstance(payload, dict):
-@@ -308,10 +142,19 @@
+@@ -308,10 +173,19 @@
              _validate_explicit_physical_realizations(config)
              return config
  
@@ -199,7 +264,7 @@
  
          formats_value = payload.get("formats") or ["universal-jsonl", "universal-csv"]
          if isinstance(formats_value, str):
-@@ -324,6 +167,9 @@
+@@ -324,6 +198,9 @@
          if unknown_formats:
              raise ValueError(f"Unbekannte Ausgabeformate: {', '.join(unknown_formats)}")
  
@@ -209,7 +274,7 @@
          options = StandaloneSimulationOptions(
              technology=technology["id"],
              industry=str(payload.get("industry") or domain_for_technology(technology["id"])),
-@@ -334,7 +180,7 @@
+@@ -334,7 +211,7 @@
              node_count=int(payload.get("node_count", 2)),
              bitrate=payload.get("bitrate", payload.get("bitrate_bps")),
              arbitration_bitrate=payload.get("arbitration_bitrate", payload.get("nominal_bitrate_bps")),
@@ -218,7 +283,7 @@
              cycle_ms=float(payload.get("cycle_ms", 100.0)),
              payload_bytes=int(payload.get("payload_bytes", min(8, int(technology.get("max_payload_bytes") or 8)))),
              max_events=int(payload.get("max_events", 100_000)),
-@@ -345,8 +191,8 @@
+@@ -345,8 +222,8 @@
          communication_profile = COMMUNICATION_TECHNOLOGY_REGISTRY.profile(technology_id)
          rate_model = communication_profile.get("rate_model") or {}
          rate_fields = rate_model.get("fields") or []
@@ -229,7 +294,7 @@
          if options.bitrate is not None:
              field = "nominal_bitrate_bps" if "nominal_bitrate_bps" in rate_fields else "bitrate_bps"
              rate_parameters.setdefault(field, options.bitrate)
-@@ -356,10 +202,24 @@
+@@ -356,10 +233,24 @@
              rate_parameters["data_bitrate_bps"] = options.data_bitrate
          validation = COMMUNICATION_TECHNOLOGY_REGISTRY.validate_parameters(technology_id, rate_parameters)
          if validation["status"] != "VALID":
@@ -256,7 +321,7 @@
          if payload.get("physical_realizations") is not None:
              config["physical_realizations"] = copy.deepcopy(payload["physical_realizations"])
          _validate_explicit_physical_realizations(config)
-@@ -378,8 +238,8 @@
+@@ -378,8 +269,8 @@
              raise ValueError("max_events muss zwischen 1 und 10.000.000 liegen.")
          if options.bitrate is not None and options.bitrate < 1:
              raise ValueError("Die Bitrate muss mindestens 1 bit/s betragen.")

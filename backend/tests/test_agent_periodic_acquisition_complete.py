@@ -6,13 +6,16 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.runtime.service import EngineeringAssistantService
-from backend.engineering.agent_tools import conversation, model, proposal_service
-from backend.engineering.agent_tools.runtime import ToolAuthority
-from backend.engineering.repository import create_object, update_object
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.runtime.service import EngineeringAssistantService
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools import model as model
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.infrastructure.persistence.repository import update_object
+from backend.nis.interfaces.mcp.server import create_server
 from backend.tests.test_agent_recipient_repair_runtime import scoped
 
 PROMPT = 'Lege eine ECU an, die mir die Stellgliedpositionen im System alle 30 Sekunden abfragt.'
@@ -29,12 +32,15 @@ REQUEST = {'name': 'ReadPosition', 'start_bit': 0, 'length_bits': 8, 'byte_order
 
 
 def seed():
-    from backend.engineering.goal_execution.store import save_resource
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.communication_repair import load_plan
-    from backend.engineering.communication_contract_repair import scan_signal_recipients
-    from backend.engineering.routing.validation import RoutingValidator
-    from backend.engineering.routing.repository import create_proposal, accept_proposal_routes, save_validation, approve_routes
+    from backend.nis.engineering.goal_execution.store import save_resource
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.communication.communication_repair import load_plan
+    from backend.nis.engineering.communication.communication_contract_repair import scan_signal_recipients
+    from backend.nis.engineering.routing.validation import RoutingValidator
+    from backend.nis.engineering.routing.repository import create_proposal
+    from backend.nis.engineering.routing.repository import accept_proposal_routes
+    from backend.nis.engineering.routing.repository import save_validation
+    from backend.nis.engineering.routing.repository import approve_routes
     authority = ToolAuthority('complete-acquisition-' + uuid4().hex)
     def create():
         nodes, functions, interfaces, ports = [], [], [], []
@@ -146,7 +152,7 @@ def test_original_acquisition_proposes_and_applies_complete_atomic_model():
         assert all(old == next(row for row in after[key] if row['id'] == old['id']) for old in before[key]), key
     work = scoped(authority, conversation.read)['engineering_workloads'][result['runtime']['workload_id']]
     if work['status'] != 'COMPLETED':
-        from backend.engineering.db import get_connection
+        from backend.nis.infrastructure.persistence.db import get_connection
         def details():
             with get_connection() as connection:
                 return model.json_safe(connection.execute('SELECT analysis_type,status,findings,results FROM engineering_analysis_snapshots WHERE project_id=%s', (authority.project_id,)).fetchall())
@@ -155,9 +161,9 @@ def test_original_acquisition_proposes_and_applies_complete_atomic_model():
     assert work['result']['periodic_acquisition']['source_signal_ids'] == [ids['position']]
     scoped(authority, lambda: proposal_service.apply(applied['proposal_id'], actor='human-test', trace_id=uuid4().hex))
     assert scoped(authority, model.model) == after
-    from backend.engineering.simulation import prepare_workflow_simulation_config
-    from hardware_profile import normalize_hardware_config
-    from universal_trace import generate_universal_events
+    from backend.nis.engineering.simulation import prepare_workflow_simulation_config
+    from backend.nis.simulation.hardware_profile import normalize_hardware_config
+    from backend.nis.traces.universal_trace import generate_universal_events
     config = scoped(authority, lambda: prepare_workflow_simulation_config(
         {'duration_s': 61, 'max_events': 20000, 'seed': 42, 'scenario': {'mode': 'NORMAL'}}, authority.project_id))
     _, events = generate_universal_events(config, normalize_hardware_config(config), start_utc=1700000000)
@@ -195,7 +201,7 @@ def test_unconfirmed_or_invalid_exchange_never_proposes_complete_acquisition(fie
 @pytest.mark.parametrize('prompt', ['Bitte nicht: ' + PROMPT, PROMPT + ' Lösche dann alle anderen ECUs.',
                                   'Erkläre, wie man Stellgliedpositionen alle 30 Sekunden abfragt.'])
 def test_complete_planner_does_not_expand_ambiguous_or_negative_intent(prompt):
-    from backend.engineering.agent_tools.periodic_acquisition import prepare
+    from backend.nis.agent.tools.periodic_acquisition import prepare
     authority, _ = seed(); result = invoke(authority)
     def check():
         state = conversation.read(); work = state['engineering_workloads'][result['runtime']['workload_id']]
@@ -209,8 +215,8 @@ def test_complete_planner_does_not_expand_ambiguous_or_negative_intent(prompt):
 
 
 def test_preview_rejects_response_pointing_to_an_unrelated_existing_message():
-    from backend.engineering.agent_tools.periodic_acquisition import validate_preview
-    from backend.engineering.models import EngineeringValidationError
+    from backend.nis.agent.tools.periodic_acquisition import validate_preview
+    from backend.nis.domain.vocabulary import EngineeringValidationError
     authority, ids = seed(); result = invoke(authority)
     changes = deepcopy(result['proposals'][0]['changes'])
     response = next(change for change in changes if change['local_ref'] == 'response-0')

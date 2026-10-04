@@ -5,17 +5,23 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.api.tool_contract import Permission, ToolResult
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.runtime.executor import EngineeringExecutor
-from backend.agent_core.runtime.gateway_intent import gateway_outage_intent, OUTCOMES
-from backend.agent_core.runtime.goal_resolver import GoalResolver
-from backend.engineering.agent_tools import conversation, gateway_outage, model
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.repository import create_object, update_object
-from backend.engineering.routing.repository import create_route
-from backend.engineering.simulation import list_scenarios
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.api.tool_contract import ToolResult
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.runtime.executor import EngineeringExecutor
+from backend.nis.agent.runtime.gateway_intent import gateway_outage_intent
+from backend.nis.agent.runtime.gateway_intent import OUTCOMES
+from backend.nis.agent.runtime.goal_resolver import GoalResolver
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools import gateway_outage as gateway_outage
+from backend.nis.agent.tools import model as model
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.infrastructure.persistence.repository import update_object
+from backend.nis.engineering.routing.repository import create_route
+from backend.nis.engineering.simulation import list_scenarios
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 PROMPT = 'Simuliere den Ausfall dieses Gateways und zeige mir, welche Kommunikation betroffen ist.'
 
@@ -95,7 +101,7 @@ def test_saved_request_and_target_must_belong_to_current_project_and_turn(change
 
 def install_configuration_boundary(monkeypatch, authority, data):
     """Stub only transport assembly: test actual SQL transaction/snapshot guards."""
-    import backend.engineering.simulation as simulation
+    import backend.nis.engineering.simulation as simulation
     def assemble(config, project_id):
         assert project_id == authority.project_id
         assert config['duration_mode'] == 'AUTO_OBSERVATION'
@@ -185,9 +191,9 @@ def test_unrelated_simulation_request_keeps_general_executor():
 def test_completion_requires_actual_persisted_correlated_results(monkeypatch, change):
     """Real SQL scenario/snapshot/reasoning, with controlled job transport only."""
     from psycopg.types.json import Jsonb
-    from backend.engineering.db import get_connection
-    from backend.engineering.reasoning.service import ReasoningService
-    from backend.engineering.agent_tools import simulation_gateway
+    from backend.nis.infrastructure.persistence.db import get_connection
+    from backend.nis.intelligence.engineering.reasoning.service import ReasoningService
+    from backend.nis.agent.tools import simulation_gateway as simulation_gateway
     from backend.tests.test_engineering_reasoning import frame
     authority, data = seed(); install_configuration_boundary(monkeypatch, authority, data)
     revision = scoped(authority, model.model_revision)

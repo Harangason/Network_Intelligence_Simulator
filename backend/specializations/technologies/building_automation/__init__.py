@@ -1,9 +1,4 @@
-"""Building-automation transport ownership."""
-
-from ...core import TechnologySpecialization
-
-MANIFEST = TechnologySpecialization("building_automation", (
-    "bacnet_ip", "bacnet_mstp", "bacnet_sc", "knx_tp", "knx_ip", "knx_rf",
-    "lonworks", "dali", "m_bus", "wireless_m_bus",
-), ("backend.communication.technologies.catalog", "backend.communication.technologies.core"))
-__all__ = ["MANIFEST"]
+"""Compatibility only; owner backend.nis.industries.building_automation.technology_refs."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.building_automation.technology_refs')

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { chromium } from 'playwright';
-import { communicationWarnings } from '../src/lib/communication-warnings.ts';
+import { communicationWarnings } from '../src/features/communication/lib/communication-warnings.ts';
 
 const project = 'network-project-20260910042736034-d11591d0';
 const resources = ['hardware-nodes', 'hardware-interfaces', 'functions', 'interfaces', 'messages', 'signals'];

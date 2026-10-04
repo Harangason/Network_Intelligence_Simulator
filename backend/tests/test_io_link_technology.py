@@ -1,9 +1,11 @@
-from backend.engineering.models import INTERFACE_TYPES, validate_choice
-from backend.engineering.routing.config_builder import PROTOCOL_TO_TECHNOLOGY
-from backend.engineering.routing.generation import INTERFACE_TO_PROTOCOL
-from backend.engineering.routing.models import PROTOCOLS
-from backend.engineering.routing.network_sync import BUS_PROTOCOLS
-from backend.engineering.routing.validation import INTERFACE_PROTOCOLS, PROTOCOL_CAPACITY
+from backend.nis.domain.vocabulary import INTERFACE_TYPES
+from backend.nis.domain.vocabulary import validate_choice
+from backend.nis.engineering.routing.config_builder import PROTOCOL_TO_TECHNOLOGY
+from backend.nis.engineering.routing.generation import INTERFACE_TO_PROTOCOL
+from backend.nis.engineering.routing.models import PROTOCOLS
+from backend.nis.engineering.routing.network_sync import BUS_PROTOCOLS
+from backend.nis.engineering.routing.validation import INTERFACE_PROTOCOLS
+from backend.nis.engineering.routing.validation import PROTOCOL_CAPACITY
 
 
 def test_io_link_is_supported_end_to_end_by_shared_technology_vocabularies():

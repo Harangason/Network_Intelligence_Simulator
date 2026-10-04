@@ -34,6 +34,10 @@ services:
       FRONTEND_PORT: 13500
       NETWORKIS_ALLOW_NON_CANONICAL_ROOT: "1"
       SIMULATOR_SAVED_ROOT: /trace-output
+      NIS_DATA_DIR: /app/var/data
+      NIS_RUNTIME_DIR: /app/var/runtime
+      NIS_ARTIFACTS_DIR: /app/artifacts
+      NIS_LEGACY_DATA_ROOT: /app/backend/runtime
       NETWORKIS_TRACE_HOST_PATH: I:/PycharmProjects/My_first_Network_Simulator/SAVED
       NETWORKIS_TRACE_MOUNT_PATH: /trace-output
       SIMULATOR_BACKEND_API_URL: http://127.0.0.1:15050/api
@@ -64,7 +68,7 @@ services:
     volumes:
       # Windows drive shares can fail with EIO while services remain alive.
       # Existing data must be copied and verified before the first cutover.
-      - networkis-runtime-data:/app/backend/runtime
+      - networkis-runtime-data:/app/var/data
       - type: bind
         source: ./SAVED
         target: /trace-output

@@ -3,15 +3,15 @@ import importlib
 
 import pytest
 
-from backend.app import create_app
-from backend.app.job_service import JobService
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.simulation import validate_scenario
-from model_based_simulation import FaultInjectionEngine
+from backend.nis.app import create_app
+from backend.nis.simulation.job_service import JobService
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.simulation import validate_scenario
+from backend.nis.simulation.model_based_simulation import FaultInjectionEngine
 
 
 def test_cancel_alias_preserves_project_scope_and_idempotency(monkeypatch):
-    api = importlib.import_module('backend.app.api')
+    api = importlib.import_module('backend.nis.interfaces.http.simulation')
     jobs = JobService(persist=False)
     jobs._jobs['job'] = {'id': 'job', 'project_id': 'cancel-contract', 'status': 'queued'}
     monkeypatch.setattr(api, 'JOBS', jobs)

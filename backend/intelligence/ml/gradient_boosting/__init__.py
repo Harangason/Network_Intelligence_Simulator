@@ -1,1 +1,4 @@
-"""Gradient Boosting candidate implementation."""
+"""Compatibility only; owner backend.nis.intelligence.ml.gradient_boosting."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.intelligence.ml.gradient_boosting')

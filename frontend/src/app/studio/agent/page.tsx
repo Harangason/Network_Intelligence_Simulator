@@ -1,8 +1,8 @@
-import { projectIdFromSearchParams, type ProjectQueryRecord } from "@/lib/user-settings";
-import { AgentChatCore } from "@/components/agent-chat-core";
-import { StudioTopbar } from "@/components/studio-topbar";
-import { EngineeringResponseWorkspace } from '@/components/engineering-response-workspace';
-import { ProjectDraftWorkspace } from '@/components/engineering-agent-event';
+import { projectIdFromSearchParams, type ProjectQueryRecord } from "@/features/settings/lib/user-settings";
+import { AgentChatCore } from "@/features/agent/ui/agent-chat-core";
+import { StudioTopbar } from "@/features/workflow/ui/studio-topbar";
+import { EngineeringResponseWorkspace } from '@/features/agent/ui/engineering-response-workspace';
+import { ProjectDraftWorkspace } from '@/features/agent/ui/engineering-agent-event';
 
 export default async function AgentPage({
   searchParams,

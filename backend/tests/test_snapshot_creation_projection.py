@@ -6,12 +6,12 @@ from copy import deepcopy
 import pytest
 from psycopg.types.json import Jsonb
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.engineering.agent_tools.runtime import ToolAuthority
-from backend.engineering.db import get_connection
-from backend.engineering.workflow import service as workflow_module
-from backend.engineering.workflow.service import WorkflowStatusService
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.infrastructure.persistence.db import get_connection
+from backend.nis.workflow.services import service as workflow_module
+from backend.nis.workflow.services.service import WorkflowStatusService
+from backend.nis.interfaces.mcp.server import create_server
 from backend.tests.test_model_ownership import db_project
 
 METADATA = {"id", "project_id", "source_versions", "validation_snapshot_id", "status", "job_id",
@@ -83,7 +83,7 @@ def test_creation_projection_preserves_complete_snapshot_and_revision(db_project
 @pytest.mark.parametrize("metadata_only", [None, True])
 def test_mcp_snapshot_default_full_and_explicit_metadata_keep_same_detail(db_project, monkeypatch, metadata_only):
     service, _ = ready_project(db_project)
-    from backend.engineering import simulation
+    from backend.nis.engineering import simulation as simulation
     # Only bypass input construction: the actual service, transaction, MCP
     # transport and persisted detail read stay real in the isolated database.
     config = frozen_config()

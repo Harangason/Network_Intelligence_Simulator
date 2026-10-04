@@ -4,9 +4,9 @@ import json
 from pathlib import Path
 
 import pytest
-from backend.app import create_app
-from backend.app.job_service import JobService
-from backend.app.trace_service import read_trace_window
+from backend.nis.app import create_app
+from backend.nis.simulation.job_service import JobService
+from backend.nis.traces.trace_service import read_trace_window
 
 
 def test_trace_window_pages_without_gaps_and_filters_on_server(tmp_path):
@@ -23,7 +23,7 @@ def test_trace_window_pages_without_gaps_and_filters_on_server(tmp_path):
 
 
 def test_sparse_index_seeks_late_windows_and_does_not_lose_equal_timestamps(tmp_path):
-    from universal_trace import write_jsonl
+    from backend.nis.traces.universal_trace import write_jsonl
     path = tmp_path / 'indexed.jsonl'
     records = [{'time_s': i // 1200, 'sequence': i} for i in range(20000)]
     write_jsonl(path, records)
@@ -38,7 +38,7 @@ def test_sparse_index_seeks_late_windows_and_does_not_lose_equal_timestamps(tmp_
 
 
 def test_unsorted_traces_never_use_an_ordered_time_shortcut(tmp_path):
-    from universal_trace import write_jsonl
+    from backend.nis.traces.universal_trace import write_jsonl
     path = tmp_path / 'unsorted.jsonl'
     write_jsonl(path, [{'time_s': 3}, {'time_s': 1}])
     assert read_trace_window(path, start_s=1, end_s=1)['events'] == [{'time_s': 1}]
@@ -51,7 +51,7 @@ def test_trace_window_rejects_invalid_bounds(tmp_path, arguments):
 
 
 def test_readiness_reports_unavailable_storage_without_hiding_failure(monkeypatch, tmp_path):
-    api = importlib.import_module('backend.app.api')
+    api = importlib.import_module('backend.nis.interfaces.http.simulation')
     monkeypatch.setattr(api, 'RUNTIME_ROOT', tmp_path / 'missing')
     response = create_app(testing=True).test_client().get('/api/ready')
     assert response.status_code == 503
@@ -59,14 +59,14 @@ def test_readiness_reports_unavailable_storage_without_hiding_failure(monkeypatc
 
 
 def test_http_trace_window_is_project_scoped_and_reports_io_failure(monkeypatch, tmp_path):
-    api = importlib.import_module('backend.app.api')
+    api = importlib.import_module('backend.nis.interfaces.http.simulation')
     jobs = JobService(persist=False)
     path = tmp_path / 'job' / 'universal_trace.jsonl'
     path.parent.mkdir()
     path.write_text('{"time_s":0,"signals":[]}\n', encoding='utf-8')
     jobs._jobs['job'] = {'id': 'job', 'project_id': 'isolated', 'result': {'artifacts': [str(path)]}}
     monkeypatch.setattr(api, 'JOBS', jobs)
-    monkeypatch.setattr('backend.app.job_service.TRACE_ROOT', tmp_path)
+    monkeypatch.setattr('backend.nis.simulation.job_service.TRACE_ROOT', tmp_path)
     client = create_app(testing=True).test_client()
     assert client.get('/api/simulations/job/trace-window', headers={'X-Project-ID': 'other'}).status_code == 404
     assert client.get('/api/simulations/job/trace-window?limit=5000', headers={'X-Project-ID': 'isolated'}).status_code == 400
@@ -87,7 +87,7 @@ def test_http_trace_window_is_project_scoped_and_reports_io_failure(monkeypatch,
     (None, 'UNVERIFIED'),
 ])
 def test_trace_window_reports_snapshot_freshness_without_rewriting_events(monkeypatch, tmp_path, snapshot, expected):
-    api = importlib.import_module('backend.app.api')
+    api = importlib.import_module('backend.nis.interfaces.http.simulation')
     jobs = JobService(persist=False)
     path = tmp_path / 'job' / 'universal_trace.jsonl'
     path.parent.mkdir()
@@ -96,7 +96,7 @@ def test_trace_window_reports_snapshot_freshness_without_rewriting_events(monkey
     jobs._jobs['job'] = {'id': 'job', 'project_id': 'isolated', 'workflow_snapshot_id': 'snapshot',
                          'result': {'artifacts': [str(path)]}}
     monkeypatch.setattr(api, 'JOBS', jobs)
-    monkeypatch.setattr('backend.app.job_service.TRACE_ROOT', tmp_path)
+    monkeypatch.setattr('backend.nis.simulation.job_service.TRACE_ROOT', tmp_path)
 
     class Workflow:
         def __init__(self, project_id):

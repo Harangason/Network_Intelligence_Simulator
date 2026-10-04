@@ -1,6 +1,4 @@
-"""Stage 05: capacity and timing assessment."""
-
-from backend.workflow.definition import workflow_stage
-
-STAGE = workflow_stage("capacity_timing")
-__all__ = ["STAGE"]
+"""Compatibility only; owner backend.nis.workflow.stages.stage_05_capacity_timing."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.workflow.stages.stage_05_capacity_timing')

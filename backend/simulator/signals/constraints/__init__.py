@@ -1,3 +1,4 @@
-from .engine import SignalConstraintEngine
-
-__all__ = ["SignalConstraintEngine"]
+"""Compatibility only; owner backend.nis.simulation.signals.constraints."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals.constraints')

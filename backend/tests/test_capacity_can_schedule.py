@@ -5,9 +5,11 @@ from pathlib import Path
 
 import pytest
 
-from backend.engineering.capacity.dimensioning import bus_schedule, policy_for, unique_streams
-from backend.engineering.intelligence.network_planning import plan_network_distribution
-from backend.engineering.routing.validation import PROTOCOL_CAPACITY
+from backend.nis.engineering.capacity.dimensioning import bus_schedule
+from backend.nis.engineering.capacity.dimensioning import policy_for
+from backend.nis.engineering.capacity.dimensioning import unique_streams
+from backend.nis.intelligence.engineering.intelligence.network_planning import plan_network_distribution
+from backend.nis.engineering.routing.validation import PROTOCOL_CAPACITY
 
 
 def fixture():

@@ -1,7 +1,4 @@
-from __future__ import annotations
-
-from typing import Any
-
-
-def gaussian_noise(random_service: Any, sigma: float, *seed_parts: object) -> float:
-    return random_service.gaussian(0.0, sigma, *seed_parts)
+"""Compatibility only; owner backend.nis.simulation.signals.noise.gaussian."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals.noise.gaussian')

@@ -1,8 +1,4 @@
-"""Marine transport ownership."""
-
-from ...core import TechnologySpecialization
-
-MANIFEST = TechnologySpecialization("marine", ("nmea0183", "nmea2000", "iec61162"), (
-    "backend.communication.technologies.catalog", "backend.communication.technologies.core",
-))
-__all__ = ["MANIFEST"]
+"""Compatibility only; owner backend.nis.industries.marine.technology_refs."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.marine.technology_refs')

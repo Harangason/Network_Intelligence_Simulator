@@ -1,6 +1,6 @@
-import { extractEngineeringSpecification } from "../src/lib/agent/engineering-specification.ts";
-import { semanticProcessorForSensor } from "../src/lib/agent/semantic-routing.ts";
-import { normalizePhysicalTopology } from "../src/lib/topology.ts";
+import { extractEngineeringSpecification } from "../src/features/agent/lib/engineering-specification.ts";
+import { semanticProcessorForSensor } from "../src/features/agent/lib/semantic-routing.ts";
+import { normalizePhysicalTopology } from "../src/features/network/lib/topology.ts";
 
 const projectId = process.argv[2]?.trim();
 const backendBase = process.env.SIMULATOR_BACKEND_API_URL ?? "http://127.0.0.1:15050/api/engineering";

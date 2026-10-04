@@ -1,23 +1,4 @@
-"""Small, behaviour-free source manifests for specialized NIS modules."""
-
-from __future__ import annotations
-
-from dataclasses import dataclass
-
-
-@dataclass(frozen=True)
-class IndustrySpecialization:
-    """Locate industry vocabulary, templates and generation knowledge."""
-
-    id: str
-    label: str
-    source_modules: tuple[str, ...]
-
-
-@dataclass(frozen=True)
-class TechnologySpecialization:
-    """Locate technology profiles and specialized transport behaviour."""
-
-    id: str
-    technology_ids: tuple[str, ...]
-    source_modules: tuple[str, ...]
+"""Compatibility only; owner backend.nis.specializations.core.models."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.specializations.core.models')

@@ -5,18 +5,18 @@ import { useCallback, useRef, useState } from "react";
 import {
   engineeringObjectTypeClass,
   engineeringObjectTypeLabel,
-} from "@/lib/engineering-object-style";
-import { listRoutes, updateRoute } from "@/lib/routing-api";
-import type { RoutingEntry } from "@/lib/types";
-import { getPreflight, getWorkflow, runPreflight, type AnalysisFinding, type PreflightCategory, type PreflightResults, type WorkflowState, type WorkflowStatus } from "@/lib/workflow-api";
-import { notifyWorkflowChanged } from "@/components/workflow-header";
-import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
-import { withProjectParam } from "@/lib/user-settings";
-import { listAllEngineeringObjects } from "@/lib/engineering-api";
-import type { EngMessage, EngSignal } from "@/lib/types";
-import { saveSimulationScope } from "@/lib/workflow-api";
-import { simulationScopeFrom, simulationScopeValid, sameSimulationScope } from "@/lib/simulation-scope";
-import { SimulationScopeSelector } from "@/components/simulation-scope-selector";
+} from "@/features/engineering/lib/engineering-object-style";
+import { listRoutes, updateRoute } from "@/features/routing/lib/routing-api";
+import type { RoutingEntry } from "@/shared/api/types";
+import { getPreflight, getWorkflow, runPreflight, type AnalysisFinding, type PreflightCategory, type PreflightResults, type WorkflowState, type WorkflowStatus } from "@/features/workflow/lib/workflow-api";
+import { notifyWorkflowChanged } from "@/features/workflow/ui/workflow-header";
+import { useWorkflowRefresh } from "@/features/workflow/lib/use-workflow-refresh";
+import { withProjectParam } from "@/features/settings/lib/user-settings";
+import { listAllEngineeringObjects } from "@/shared/api/engineering-api";
+import type { EngMessage, EngSignal } from "@/shared/api/types";
+import { saveSimulationScope } from "@/features/workflow/lib/workflow-api";
+import { simulationScopeFrom, simulationScopeValid, sameSimulationScope } from "@/features/simulation/lib/simulation-scope";
+import { SimulationScopeSelector } from "@/features/simulation/ui/simulation-scope-selector";
 
 export function PreflightWorkbench({ initialProjectId = "" }: { initialProjectId?: string }) {
   const [workflow, setWorkflow] = useState<WorkflowState | null>(null);

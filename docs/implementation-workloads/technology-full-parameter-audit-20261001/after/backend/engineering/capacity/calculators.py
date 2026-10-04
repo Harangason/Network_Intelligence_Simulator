@@ -52,6 +52,14 @@ def confirmed_serial_evidence(protocol: str, parameters: dict[str, Any], payload
         from backend.communication.technologies.i2c import evidence_issues
         if evidence_issues(evidence,payload_bytes,require_transaction=True):
             return None
+    if technology=='SPI':
+        from backend.communication.technologies.spi import evidence_issues
+        if evidence_issues(evidence,payload_bytes) or parameters.get('spi_bus_variant','SPI_SINGLE')!='SPI_SINGLE':
+            return None
+        for key,local_key in [('bitrate_bps','bitrate_bps'),('spi_cpol','cpol'),('spi_cpha','cpha'),
+                              ('spi_word_bits','word_length_bits'),('spi_duplex','duplex_mode'),('spi_chip_select','chip_select')]:
+            if key in parameters and parameters[key]!=evidence.get(local_key):
+                return None
     if not isinstance(evidence.get('master_node_id'),str) or not evidence['master_node_id'].strip() or _positive(evidence.get("bitrate_bps"), 0) <= 0:
         return None
     transfer_bits = _positive(evidence.get("transfer_bits_bound"), 0)
@@ -231,7 +239,17 @@ def estimate_frame(protocol: str, payload_bytes: int, parameters: dict[str, Any]
                              "ETHERNET_WIRE_ESTIMATE", calculation_version='2.0',transmission_time_available=available)
 
     if normalized == "LIN":
-        # Break, sync, identifier, payload, checksum plus UART framing.
+        from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
+        values = {key: value for key, value in parameters.items() if key in registry.parameter_keys('lin')}
+        checked = registry.validate_parameters('lin', values)
+        available = available and checked['status'] == 'VALID' and (
+            parameters.get('lin_edition') == 'LIN_2_2A_2010' and
+            parameters.get('lin_physical_profile') == 'LIN_2_2A_SINGLE_WIRE' and
+            parameters.get('lin_frame_kind') not in {'WAKE_UP', 'REGISTERED_FRAME'} and 1 <= payload <= 8)
+        if parameters.get('lin_frame_kind') in {'DIAGNOSTIC_REQUEST', 'DIAGNOSTIC_RESPONSE', 'GO_TO_SLEEP'}:
+            available = available and payload == 8
+        available = available and parameters.get('lin_data_octets', payload) == payload
+        # Nominal LIN2.2A data frame; schedule and functional acceptance are separate.
         frame_bits = 34 + (payload + 1) * 10
         return FrameEstimate(normalized, payload, frame_bits, frame_bits / bitrate if available else 0.0,
                              "LIN_NOMINAL_WITH_CHECKSUM", calculation_version="2.0",

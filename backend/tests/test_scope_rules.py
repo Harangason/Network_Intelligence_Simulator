@@ -1,15 +1,13 @@
 import pytest
 
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.scope_rules import (
-    communication_system_allows_interface,
-    hardware_scope_category,
-    is_scope_placeholder_hardware,
-    normalize_engineering_scope_rules,
-    scope_count_mismatches,
-    scope_placeholder_sql,
-)
-from backend.engineering.repository import _enforce_engineering_scope_rules
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.scope_rules import communication_system_allows_interface
+from backend.nis.engineering.scope_rules import hardware_scope_category
+from backend.nis.engineering.scope_rules import is_scope_placeholder_hardware
+from backend.nis.engineering.scope_rules import normalize_engineering_scope_rules
+from backend.nis.engineering.scope_rules import scope_count_mismatches
+from backend.nis.engineering.scope_rules import scope_placeholder_sql
+from backend.nis.infrastructure.persistence.repository import _enforce_engineering_scope_rules
 
 
 class ScopeRuleConnection:

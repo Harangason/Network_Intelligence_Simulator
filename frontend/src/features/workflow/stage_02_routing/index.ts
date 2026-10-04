@@ -1,1 +1,1 @@
-export { RoutingWorkbench } from "@/components/routing-workbench";
+export { RoutingWorkbench } from "@/features/routing/ui/routing-workbench";

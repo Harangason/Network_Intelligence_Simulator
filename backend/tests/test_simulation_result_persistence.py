@@ -6,10 +6,10 @@ from uuid import uuid4
 import pytest
 from psycopg.types.json import Jsonb
 
-from backend.engineering.db import get_connection
-from backend.engineering.workflow import service as workflow_module
-from backend.engineering.workflow.models import default_versions
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.infrastructure.persistence.db import get_connection
+from backend.nis.workflow.services import service as workflow_module
+from backend.nis.workflow.services.models import default_versions
+from backend.nis.workflow.services.service import WorkflowStatusService
 from backend.tests.test_model_ownership import db_project
 
 

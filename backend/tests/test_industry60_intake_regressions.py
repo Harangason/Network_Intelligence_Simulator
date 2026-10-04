@@ -5,9 +5,11 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.orchestration.project_intake import is_project_request, project_intake_text
-from backend.engineering.agent_tools import capabilities, project_draft
-from backend.engineering.agent_tools.inventory_details import details
+from backend.nis.agent.orchestration.project_intake import is_project_request
+from backend.nis.agent.orchestration.project_intake import project_intake_text
+from backend.nis.agent.tools import capabilities as capabilities
+from backend.nis.agent.tools import project_draft as project_draft
+from backend.nis.agent.tools.inventory_details import details
 
 
 PROMPTS = json.loads((Path(__file__).resolve().parents[2] /

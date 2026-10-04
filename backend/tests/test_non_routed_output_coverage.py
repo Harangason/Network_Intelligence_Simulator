@@ -3,8 +3,9 @@ from copy import deepcopy
 
 import pytest
 
-from backend.engineering.simulation_coverage import assess_simulation, simulation_coverage
-from backend.engineering.simulation import _apply_simulation_scope
+from backend.nis.engineering.simulation_coverage import assess_simulation
+from backend.nis.engineering.simulation_coverage import simulation_coverage
+from backend.nis.engineering.simulation import _apply_simulation_scope
 from backend.tests.test_model_ownership import db_project, _chain
 
 
@@ -193,10 +194,11 @@ def test_legacy_full_inventory_has_no_new_exclusions():
 @pytest.mark.parametrize("reference", [None, "message", "signal"])
 def test_snapshot_uses_canonical_toggle_and_authored_transport_inventory(db_project, reference):
     from psycopg.types.json import Jsonb
-    from backend.engineering.db import get_connection
-    from backend.engineering.repository import create_object
-    from backend.engineering.workflow.service import WorkflowStatusService, WorkflowConflictError
-    from backend.engineering.capacity.service import PreflightService
+    from backend.nis.infrastructure.persistence.db import get_connection
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.workflow.services.service import WorkflowConflictError
+    from backend.nis.engineering.capacity.service import PreflightService
 
     _sensor, port, interface, local, hall = _chain()
     output = create_object("Message", {"name": "CanonicalCalculatedOutput", "interface_id": str(interface["id"]),
@@ -245,7 +247,8 @@ def test_snapshot_uses_canonical_toggle_and_authored_transport_inventory(db_proj
 
 
 def test_snapshot_does_not_trust_a_supplied_disabled_output_over_canonical_intent(db_project):
-    from backend.engineering.workflow.service import WorkflowStatusService, WorkflowConflictError
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.workflow.services.service import WorkflowConflictError
 
     _sensor, _port, _interface, message, signal = _chain()
     service = WorkflowStatusService(db_project)

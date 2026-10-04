@@ -1,8 +1,8 @@
-import { StudioTabs } from "@/components/studio-tabs";
-import { StudioWorkflowHero } from "@/components/studio-workflow-hero";
-import { StudioTopbar } from "@/components/studio-topbar";
-import { WorkflowHeader } from "@/components/workflow-header";
-import { projectIdFromSearchParams, projectQuerySuffixFromSearchParams, type ProjectQueryRecord } from "@/lib/user-settings";
+import { StudioTabs } from "@/features/workflow/ui/studio-tabs";
+import { StudioWorkflowHero } from "@/features/workflow/ui/studio-workflow-hero";
+import { StudioTopbar } from "@/features/workflow/ui/studio-topbar";
+import { WorkflowHeader } from "@/features/workflow/ui/workflow-header";
+import { projectIdFromSearchParams, projectQuerySuffixFromSearchParams, type ProjectQueryRecord } from "@/features/settings/lib/user-settings";
 import { redirect } from "next/navigation";
 
 type StudioSearchParams = ProjectQueryRecord & {

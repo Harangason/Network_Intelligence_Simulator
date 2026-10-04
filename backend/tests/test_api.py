@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import time
 
-from backend.app import create_app
+from backend.nis.app import create_app
 
 
 def test_health_and_catalog() -> None:
@@ -25,6 +25,7 @@ def test_health_and_catalog() -> None:
     )
     categories = {field["category"] for field in can_fd["parameter_schema"]}
     assert categories == {
+        "communication",
         "physical", "timing", "capacity", "qos", "reliability",
         "synchronization", "gateway", "simulation",
     }
@@ -60,7 +61,7 @@ def test_knowledge_search_endpoint_returns_hybrid_context(monkeypatch) -> None:
                 },
             }
 
-    monkeypatch.setattr("backend.engineering.api.CanonicalKnowledgeService", FakeKnowledgeService)
+    monkeypatch.setattr("backend.nis.interfaces.http.engineering.CanonicalKnowledgeService", FakeKnowledgeService)
     client = create_app(testing=True).test_client()
     response = client.post(
         "/api/engineering/knowledge/search",

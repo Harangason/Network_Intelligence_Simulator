@@ -1,8 +1,9 @@
 import asyncio
 
-from backend.agent_core.api.tool_contract import ToolResult
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent, simulation_preflight_block_reason
+from backend.nis.agent.api.tool_contract import ToolResult
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
+from backend.nis.agent.core.engineering_agent import simulation_preflight_block_reason
 
 
 class Client:

@@ -1,29 +1,4 @@
-"""Industry-neutral Engineering Core contracts."""
-
-from .models import (
-    Encoding,
-    EngineeringObject,
-    HardwareNode,
-    Message,
-    Network,
-    NetworkInterface,
-    ProtocolBinding,
-    Route,
-    RouteHop,
-    Signal,
-    ValueDomain,
-)
-
-__all__ = [
-    "Encoding",
-    "EngineeringObject",
-    "HardwareNode",
-    "Message",
-    "Network",
-    "NetworkInterface",
-    "ProtocolBinding",
-    "Route",
-    "RouteHop",
-    "Signal",
-    "ValueDomain",
-]
+"""Compatibility only; owner backend.nis.domain.core."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.domain.core')

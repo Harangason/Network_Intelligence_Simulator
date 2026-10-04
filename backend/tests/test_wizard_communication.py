@@ -1,7 +1,8 @@
 import json
 from copy import deepcopy
 import pytest
-from backend.engineering.wizard_communication import communication_plan, contract_findings
+from backend.nis.engineering.communication.wizard_communication import communication_plan
+from backend.nis.engineering.communication.wizard_communication import contract_findings
 
 
 def fixture():
@@ -89,7 +90,7 @@ def test_partial_frame_and_missing_signal_require_explicit_payload_resolution():
 
 @pytest.mark.parametrize('enabled', [False, True])
 def test_routing_generator_obeys_switch_even_with_a_stale_display_consumer(monkeypatch, enabled):
-    from backend.engineering.agent_tools import wizard_generation as generation
+    from backend.nis.agent.tools import wizard_generation as generation
     prompt, graph = display_fixture(enabled)
     graph['Message'] = {'ecu': {**graph['Message']['ecu'], 'configuration': {
         'transport_unit': {'consumer_refs': ['diag', 'hmi']},
@@ -249,7 +250,7 @@ def test_conflicting_ownership_is_not_silently_resolved():
 
 
 def test_resource_inventory_uses_the_server_request_in_generation_and_review():
-    from backend.engineering.intelligence.resource_policy import planning_inventory
+    from backend.nis.intelligence.engineering.intelligence.resource_policy import planning_inventory
     prompt = '- Kommunikationssystem-Sollwerte: [{"id":"can_fd","count":10}]'
     state = {'context': {'wizard_request': {'version': 1, 'prompt': prompt},
                          'agent_wizard_status': {'agent_prompt': '- Kommunikationssystem-Sollwerte: [{"id":"can_fd","count":2}]'}}}
@@ -258,7 +259,7 @@ def test_resource_inventory_uses_the_server_request_in_generation_and_review():
 
 
 def test_legacy_upgrade_reuses_pending_review_and_becomes_unchanged_after_apply(monkeypatch):
-    from backend.engineering.agent_tools import wizard_generation as generation
+    from backend.nis.agent.tools import wizard_generation as generation
     prompt, graph = fixture()
     stored = []
     monkeypatch.setattr(generation.model, 'objects', lambda kind: [

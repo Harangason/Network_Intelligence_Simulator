@@ -4,15 +4,18 @@ import re
 from pathlib import Path
 from uuid import uuid4
 
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.agent_tools import model, proposal_service, wizard_generation
-from backend.engineering.capacity.service import CapacityTimingService
-from backend.engineering.physical_ports import topology_port_findings
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.tools import model as model
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools import wizard_generation as wizard_generation
+from backend.nis.engineering.capacity.service import CapacityTimingService
+from backend.nis.engineering.network.physical_ports import topology_port_findings
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
-def test_full_captured_model_and_all_routing_validate_without_rewriting_inputs():
+def test_full_captured_model_and_all_routing_validate_without_rewriting_inputs(tmp_path):
     prompt = (Path(__file__).resolve().parents[2] / 'frontend/e2e/fixtures/wizard-large-50-250-250.txt').read_text(encoding='utf-8')
     authority = ToolAuthority('pytest-wizard-full-routing-' + str(uuid4()))
 
@@ -20,6 +23,19 @@ def test_full_captured_model_and_all_routing_validate_without_rewriting_inputs()
         result = execute(authority, name, Permission.GENERATE_PROPOSAL, {}, lambda _: function())
         assert result.success, result.model_dump()
         return result.data
+
+    # The captured graph and encodings remain unchanged. The test operator
+    # separately reviews its virtual serializer through canonical parameters.
+    groups = {}
+    for technology in ('lin', 'ethernet'):
+        fixture = json.loads((Path(__file__).resolve().parents[2] /
+            f'frontend/e2e/fixtures/virtual-{technology}-profile.json').read_text(encoding='utf-8'))
+        values = fixture['values']
+        groups[technology] = {'values': values, 'provenance': {
+            key: {'source': 'USER_CONFIRMED', 'status': 'CONFIRMED', 'value': value}
+            for key, value in values.items()}}
+    call('review_virtual_serializer', lambda: WorkflowStatusService(authority.project_id).save_parameters({
+        'technology_parameters': groups}))
 
     call('persist_confirmed_wizard_request', lambda: WorkflowStatusService(authority.project_id).set_context({
         'agent_wizard_status': {'agent_prompt': prompt},
@@ -101,9 +117,16 @@ def test_full_captured_model_and_all_routing_validate_without_rewriting_inputs()
         assert {item['id']: {key: item.get(key) for key in ('dlc', 'cycle_ms', 'message_id_hex', 'direction')}
                 for item in model.objects('Message')} == message_frames
         result = CapacityTimingService(authority.project_id).calculate(persist=False)
+        # Preserve the real result so qualification failures remain diagnosable
+        # after the disposable SQL container has been removed.
+        diagnostic = Path(__file__).resolve().parents[1] / 'test-output' / 'large-native-capacity.json'
+        diagnostic.parent.mkdir(parents=True, exist_ok=True)
+        diagnostic.write_text(json.dumps(result, default=str), encoding='utf-8')
         errors = [item for item in result['findings'] if item.get('severity') == 'ERROR']
         assert result['status'] != 'ERROR', json.dumps(errors, default=str)
-        assert result['results']['overview']['capacity_verified'] is True
+        assert result['results']['overview']['capacity_verified'] is True, json.dumps({
+            'unverified': [row for row in result['results']['networks'] if not row['capacity_verified']],
+            'findings': result['findings']}, default=str)
         assert not any(item['code'] == 'CAPACITY_RATE_UNVERIFIED' for item in result['findings'])
         assert any(item['code'] == 'LIN_SCHEDULE_RESERVE_UNMET' and item['severity'] == 'WARNING' for item in result['findings'])
         return result

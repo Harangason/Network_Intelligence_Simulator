@@ -1,9 +1,9 @@
 """RTU source-specific framing/CRC/gap boundaries; isolated SQL protects confirmations."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import modbus_rtu as MR
-from backend.communication.technologies.core.physical import validate_physical_realization
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.modbus_rtu import rules as MR
+from backend.nis.communication.core.physical import validate_physical_realization
 
 def actual():
     x={'mr_'+k:'synthetic-actual-'+k for k in MR.REQUIRED}
@@ -103,8 +103,8 @@ def test_rtu_physical_path_does_not_inherit_two_wire_rs485(phy,wires,pairs,topol
     assert validate_physical_realization(unknown)['status']=='REVIEW_REQUIRED'
 
 def test_rtu_confirmed_sql_values_survive_rejected_foreign_gap_change():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x={**actual(),'bitrate':9600,'mr_parity':'NONE','mr_stop_bits':2,'mr_gap_policy':'CHARACTER',
        'mr_interchar_timeout_us':16500000/9600,'mr_interframe_min_us':38500000/9600,'mr_exchange':'UNICAST',
        'mr_destination_address':17}

@@ -1,8 +1,8 @@
 """F-parameters remain distinct from black-channel physical data and certification."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import profisafe as P
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.profisafe import rules as P
 def actual():
  x={'ps_'+k:'synthetic-'+k for k in P.REQUIRED}
  x.update(ps_profile='DRIVER_2_2_3',ps_mode='V2_XP',ps_bearer='PROFIBUS_DP',ps_role='F_DEVICE',ps_direction='F_OUTPUT')

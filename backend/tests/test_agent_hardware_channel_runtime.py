@@ -5,18 +5,24 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.api.tool_contract import Permission
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.runtime.goal_resolver import GoalResolver, GoalType
-from backend.agent_core.runtime.hardware_intent import hardware_channel_intent
-from backend.agent_core.runtime.service import EngineeringAssistantService
-from backend.engineering.agent_tools import conversation, model, proposal_service, hardware_channel
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.repository import create_object, update_object
-from backend.engineering.goal_execution.graph import ModelGraphService
-from backend.engineering.goal_execution.store import resources
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.runtime.goal_resolver import GoalResolver
+from backend.nis.agent.runtime.goal_resolver import GoalType
+from backend.nis.agent.runtime.hardware_intent import hardware_channel_intent
+from backend.nis.agent.runtime.service import EngineeringAssistantService
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools import model as model
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools import hardware_channel as hardware_channel
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.infrastructure.persistence.repository import update_object
+from backend.nis.engineering.goal_execution.graph import ModelGraphService
+from backend.nis.engineering.goal_execution.store import resources
+from backend.nis.interfaces.mcp.server import create_server
 
 PROMPT = 'Füge dem Controller einen zweiten CAN-FD-Kanal hinzu.'
 

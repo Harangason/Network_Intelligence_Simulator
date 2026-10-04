@@ -1,6 +1,4 @@
-"""Stage 04: technology and timing parameters."""
-
-from backend.workflow.definition import workflow_stage
-
-STAGE = workflow_stage("parameters")
-__all__ = ["STAGE"]
+"""Compatibility only; owner backend.nis.workflow.stages.stage_04_parameters."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.workflow.stages.stage_04_parameters')

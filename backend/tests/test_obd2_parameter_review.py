@@ -1,8 +1,8 @@
 """Native OBD vehicle transports, adapter settings and preservation."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import obd2 as O
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.obd2 import rules as O
 def actual(transport='CAN_11_250',impl='ELM327_V2_2'):
  x={'o_'+k:'synthetic-actual-'+k for k in O.REQUIRED}
  x.update(o_application='LEGACY_J1979',o_implementation=impl,o_transport=transport,o_host='UART')
@@ -95,8 +95,8 @@ def test_obd2_obdonuds_doip_has_no_classic_can_rate_ids_legacy_pids_or_4095_maxi
  for patch in({'bitrate_bps':100000000},{'o_request_id':0x7df},{'o_application':'LEGACY_J1979'},{'o_packet_type':'FF'}):assert status({**x,**patch})=='INVALID'
  x.pop('o_registered_source');assert status(x)=='UNVERIFIED'
 def test_obd2_confirmed_kline_timeout_adapter_settings_and_byte_identity_preserved():
- from backend.engineering.workflow.service import WorkflowStatusService
- from backend.engineering.project_context import current_project_id
+ from backend.nis.workflow.services.service import WorkflowStatusService
+ from backend.nis.engineering.projects.project_context import current_project_id
  x={**actual('KWP_FAST'),'o_st_count':0,'o_pp_st_count':60,'o_effective_st_count':60,'o_timer_multiplier':1,
   'o_timeout_ms':245.76,'o_request_hex':'010C','o_request_bytes':2,'o_host_baud':115200,'o_host_baud_pin':'CONFIGURED'}
  g={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}

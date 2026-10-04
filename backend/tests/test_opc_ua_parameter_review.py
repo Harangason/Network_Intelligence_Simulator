@@ -1,8 +1,8 @@
 """Source-qualified OPC UA semantics; no PHY/capacity certification claim."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import opc_ua as U
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.opc_ua import rules as U
 
 def actual(binding='UA_TCP',family='RSA'):
  x={'ua_'+k:'synthetic-'+k for k in U.REQUIRED}

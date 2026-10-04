@@ -1,10 +1,14 @@
 from uuid import uuid4
 
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools import capabilities, generation, proposal_service
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.repository import create_object
-from backend.engineering.simulation import propose_faults, list_scenarios
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools import capabilities as capabilities
+from backend.nis.agent.tools import generation as generation
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.engineering.simulation import propose_faults
+from backend.nis.engineering.simulation import list_scenarios
 
 
 def test_fault_scenario_needs_review_and_uses_actual_project_target():

@@ -1,5 +1,4 @@
-"""Workflow orchestration for the engineering-to-analysis lifecycle."""
-
-from .service import WorkflowStatusService
-
-__all__ = ["WorkflowStatusService"]
+"""Compatibility only; owner backend.nis.workflow.services."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.workflow.services')

@@ -1,8 +1,8 @@
 """1-Wire slot/identity/power isolation and preservation regression cases."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import one_wire as O
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.one_wire import rules as O
 
 def actual(device='DS18B20_REV6',master='REGISTERED',role='MASTER'):
  x={'ow_'+k:'synthetic-actual-'+k for k in O.REQUIRED}

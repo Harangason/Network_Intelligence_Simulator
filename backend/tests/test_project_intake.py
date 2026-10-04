@@ -3,13 +3,15 @@ import asyncio
 import pytest
 from uuid import uuid4
 
-from backend.agent_core.api.tool_contract import ToolResult
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent
-from backend.agent_core.orchestration.project_intake import is_project_request, project_intake_text
-from backend.engineering.agent_tools import capabilities
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.agent_core.api.tool_contract import Permission
+from backend.nis.agent.api.tool_contract import ToolResult
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
+from backend.nis.agent.orchestration.project_intake import is_project_request
+from backend.nis.agent.orchestration.project_intake import project_intake_text
+from backend.nis.agent.tools import capabilities as capabilities
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.api.tool_contract import Permission
 
 
 REQUEST = ('ich möchte ein kleines Projekt: ich habe drei sensoren die temperatur messen '

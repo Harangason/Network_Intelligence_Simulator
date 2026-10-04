@@ -5,8 +5,8 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 import pytest
 
-from backend.engineering.importer import preview_import
-from backend.engineering.models import EngineeringValidationError
+from backend.nis.engineering.importer import preview_import
+from backend.nis.domain.vocabulary import EngineeringValidationError
 
 
 def test_dbc_preview_builds_complete_hierarchy() -> None:

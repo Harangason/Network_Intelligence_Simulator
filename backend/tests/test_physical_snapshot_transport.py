@@ -2,10 +2,11 @@ from copy import deepcopy
 from contextlib import contextmanager
 import pytest
 
-from backend.engineering import simulation
-from backend.engineering.routing import config_builder
-from hardware_profile import normalize_hardware_config, validate_hardware_profile
-from universal_trace import generate_universal_events
+from backend.nis.engineering import simulation as simulation
+from backend.nis.engineering.routing import config_builder as config_builder
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.simulation.hardware_profile import validate_hardware_profile
+from backend.nis.traces.universal_trace import generate_universal_events
 
 
 def test_reviewed_split_reaches_snapshot_and_reduces_real_queue(monkeypatch):
@@ -28,7 +29,7 @@ def test_reviewed_split_reaches_snapshot_and_reduces_real_queue(monkeypatch):
     monkeypatch.setattr(simulation, 'load_engineering_simulation_model', lambda _: deepcopy(model))
     topology = {'nodes': [{'id': n, 'engineeringId': n, 'ports': [{'id': n+str(i), 'hardwareInterfaceId': n+'-hw', 'bus': 'can_fd', 'physicalNetworkId': 'shared'} for i in range(2)]} for n in ('a','b','c')],
         'edges': [{'id': f'e{i}', 'routingEntryId': f'r{i}', 'source': source, 'target': target, 'sourcePort': source+str(i), 'targetPort': target+str(i), 'bus': 'can_fd', 'physicalNetworkId': 'shared'} for i,(source,target) in enumerate([('a','b'),('c','a')])]}
-    monkeypatch.setattr('backend.engineering.workflow.service.WorkflowStatusService.get', lambda _: {
+    monkeypatch.setattr('backend.nis.workflow.services.service.WorkflowStatusService.get', lambda _: {
         'topology': deepcopy(topology),
         'parameters': {'technology': 'can_fd', 'bitrate': 100000, 'data_bitrate': 2000000},
     })
@@ -53,7 +54,7 @@ def test_reviewed_split_reaches_snapshot_and_reduces_real_queue(monkeypatch):
 
 
 def test_hardware_validation_failure_is_not_a_completed_simulation(monkeypatch, tmp_path):
-    from backend.app.simulation_service import SimulationService
+    from backend.nis.simulation.service import SimulationService
     service = SimulationService()
     monkeypatch.setattr(service, 'prepare_config', lambda *_: {})
     monkeypatch.setattr(service.simulator, 'run', lambda *_, **__: {'status': 'validation_failed', 'hardware_validation': {'valid': False, 'findings': [{'severity': 'error', 'message': 'unknown network'}]}})

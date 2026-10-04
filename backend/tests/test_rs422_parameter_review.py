@@ -1,8 +1,8 @@
 """Individually reviewed RS422 electrical/termination/codec conditions."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import rs422 as R
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.rs422 import rules as R
 
 def actual():
  x={'rs422_'+k:'synthetic-'+k for k in R.REQUIRED}

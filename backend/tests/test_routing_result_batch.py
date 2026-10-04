@@ -5,8 +5,8 @@ from uuid import uuid4
 import pytest
 from psycopg.types.json import Jsonb
 
-from backend.engineering.db import get_connection
-from backend.engineering.routing import repository as routes
+from backend.nis.infrastructure.persistence.db import get_connection
+from backend.nis.engineering.routing import repository as routes
 from backend.tests.test_model_ownership import db_project
 
 

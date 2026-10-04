@@ -1,35 +1,4 @@
-from __future__ import annotations
-
-from enum import StrEnum
-
-
-class WorkloadStatus(StrEnum):
-    RECEIVED = "RECEIVED"
-    PLANNING = "PLANNING"
-    IN_PROGRESS = "IN_PROGRESS"
-    VALIDATING = "VALIDATING"
-    REPAIRING = "REPAIRING"
-    INCOMPLETE = "INCOMPLETE"
-    READY_FOR_REVIEW = "READY_FOR_REVIEW"
-    COMPLETED = "COMPLETED"
-    FAILED = "FAILED"
-    BLOCKED = "BLOCKED"
-    NEEDS_REVIEW = "NEEDS_REVIEW"
-    PAUSED = "PAUSED"
-    CANCELED = "CANCELED"
-
-
-class DependencyState(StrEnum):
-    READY = "READY"
-    WAITING = "WAITING"
-    BLOCKED = "BLOCKED"
-
-
-TERMINAL_STATUSES = frozenset(
-    {
-        WorkloadStatus.COMPLETED,
-        WorkloadStatus.FAILED,
-        WorkloadStatus.BLOCKED,
-        WorkloadStatus.CANCELED,
-    }
-)
+"""Compatibility only; owner backend.nis.agent.core.workload_state."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.core.workload_state')

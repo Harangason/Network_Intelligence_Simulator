@@ -6,11 +6,12 @@ from pathlib import Path
 import pytest
 
 from backend.tests.test_model_based_simulation import simulation_config
-from communication_simulator import run_simulation
-from hardware_profile import normalize_hardware_config
-from universal_trace import generate_universal_events
-from backend.engineering.agent_tools.analysis import root_cause, compare
-from backend.engineering.capacity.calculators import estimate_frame
+from backend.nis.simulation.communication_simulator import run_simulation
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.traces.universal_trace import generate_universal_events
+from backend.nis.agent.tools.analysis import root_cause
+from backend.nis.agent.tools.analysis import compare
+from backend.nis.engineering.capacity.calculators import estimate_frame
 
 
 def case_config(path, technologies):
@@ -75,7 +76,7 @@ def test_cross_industry_trace_and_root_cause_or_explicit_model_gap(tmp_path, cas
         network = next(n for n in normal['networks'] if n['id'] == item['network'])
         expected = estimate_frame(item['technology'], item['payload_bytes'], network)
         if item.get('ethernet'):
-            from ethernet_transport import wire_bytes
+            from backend.nis.communication.technologies.ethernet.transport import wire_bytes
             assert item['transmission_latency_ms'] == pytest.approx(wire_bytes(item['ethernet'], item['payload_bytes']) * 8 / network['bitrate'] * 2000)
         else:
             assert item['transmission_latency_ms'] == pytest.approx(expected.transmission_time_s * 1000)

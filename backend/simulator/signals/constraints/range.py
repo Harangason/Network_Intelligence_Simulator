@@ -1,5 +1,4 @@
-from __future__ import annotations
-
-
-def apply_range(value: float, minimum: float, maximum: float) -> float:
-    return max(minimum, min(maximum, value))
+"""Compatibility only; owner backend.nis.simulation.signals.constraints.range."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals.constraints.range')

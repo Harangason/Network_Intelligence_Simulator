@@ -3,14 +3,14 @@ import asyncio
 
 import pytest
 
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.simulation_scope import normalize_simulation_scope
-from backend.engineering.simulation import _apply_simulation_scope
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.simulation_scope import normalize_simulation_scope
+from backend.nis.engineering.simulation import _apply_simulation_scope
 from backend.tests.test_model_ownership import db_project, _chain
 
 
 def test_auto_observation_covers_slow_routes_and_preserves_explicit_duration():
-    from backend.engineering.simulation import _apply_observation_duration
+    from backend.nis.engineering.simulation import _apply_observation_duration
     config = {"duration_mode": "AUTO_OBSERVATION", "communications": [
         {"cycle_ms": 10, "jitter_limit_ms": 5, "maximum_latency_ms": 20},
         {"cycle_ms": 1000, "phase_ms": 50, "jitter_limit_ms": 5, "maximum_latency_ms": 20}]}
@@ -25,7 +25,7 @@ def test_auto_observation_covers_slow_routes_and_preserves_explicit_duration():
 
 
 def test_auto_observation_event_budget_covers_physical_routes():
-    from backend.engineering.simulation import _apply_observation_duration
+    from backend.nis.engineering.simulation import _apply_observation_duration
     config = {"duration_mode": "AUTO_OBSERVATION", "max_events": 1000, "communications": [
         *[{"cycle_ms": 10, "jitter_limit_ms": 5, "maximum_latency_ms": 20, "segments": [{}, {}]} for _ in range(150)],
         {"cycle_ms": 1000, "phase_ms": 50, "jitter_limit_ms": 5, "maximum_latency_ms": 20}]}
@@ -37,7 +37,7 @@ def test_auto_observation_event_budget_covers_physical_routes():
 
 @pytest.mark.parametrize("cycle", [0, -1, float("nan"), float("inf"), 4_000_000])
 def test_auto_observation_rejects_invalid_or_excessive_horizons(cycle):
-    from backend.engineering.simulation import _apply_observation_duration
+    from backend.nis.engineering.simulation import _apply_observation_duration
     config = {"duration_mode": "AUTO_OBSERVATION", "communications": [
         {"cycle_ms": cycle, "jitter_limit_ms": 5, "maximum_latency_ms": 20}]}
     if cycle == 4_000_000:
@@ -82,7 +82,7 @@ def test_unknown_selected_id_is_not_silently_dropped():
         {"pressure": ["s1"], "temperature": ["s2"], "whole-message": ["s1", "s2"]}),
 ])
 def test_signal_selection_does_not_activate_an_excluded_partial_route(scope, expected):
-    from backend.simulator.model_based_simulation import ModelBasedSimulationEngine
+    from backend.nis.simulation.model_based_simulation import ModelBasedSimulationEngine
 
     config = {"simulation_scope": {**scope, "reason": "Subsystem selection"}, "engineering_model": {
         "messages": [{"id": "m1"}],
@@ -102,7 +102,7 @@ def test_signal_selection_does_not_activate_an_excluded_partial_route(scope, exp
 
 
 def test_excluded_partial_route_cannot_fill_missing_selected_signal_coverage():
-    from backend.engineering.simulation_coverage import simulation_coverage
+    from backend.nis.engineering.simulation_coverage import simulation_coverage
 
     scope = {"mode": "SIGNAL", "signal_ids": ["s1"], "reason": "Pressure only"}
     config = {"simulation_scope": scope, "engineering_model": {
@@ -117,9 +117,9 @@ def test_excluded_partial_route_cannot_fill_missing_selected_signal_coverage():
 
 
 def test_scope_api_preserves_parameters_invalidates_preflight_and_is_idempotent(db_project, monkeypatch):
-    from backend.app import create_app
-    from backend.engineering.workflow.service import WorkflowStatusService
-    import backend.engineering.api as api
+    from backend.nis.app import create_app
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    import backend.nis.interfaces.http.engineering as api
 
     _sensor, _port, _interface, message, _signal = _chain()
     service = WorkflowStatusService(db_project)
@@ -150,8 +150,9 @@ def test_scope_api_preserves_parameters_invalidates_preflight_and_is_idempotent(
 
 
 def test_snapshot_scope_uses_persisted_selection_and_full_canonical_inventory(db_project):
-    from backend.engineering.repository import create_object
-    from backend.engineering.workflow.service import WorkflowStatusService, WorkflowConflictError
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.workflow.services.service import WorkflowConflictError
 
     _sensor, port, interface, message, signal = _chain()
     create_object("Message", {"name": "OutsideSubsystem", "interface_id": str(interface["id"]),
@@ -175,8 +176,8 @@ def test_snapshot_scope_uses_persisted_selection_and_full_canonical_inventory(db
 
 def test_generic_parameter_scope_requires_reason_only_for_explicit_new_or_changed_selection(db_project):
     from psycopg.types.json import Jsonb
-    from backend.engineering.db import get_connection
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.infrastructure.persistence.db import get_connection
+    from backend.nis.workflow.services.service import WorkflowStatusService
 
     _sensor, _port, _interface, message, signal = _chain()
     service = WorkflowStatusService(db_project)
@@ -207,9 +208,9 @@ def test_generic_parameter_scope_requires_reason_only_for_explicit_new_or_change
 
 @pytest.mark.parametrize('approved_counts', [False, True])
 def test_applied_routing_with_missing_consumers_does_not_offer_repeat_approval(approved_counts):
-    from backend.agent_core.api.tool_contract import ToolResult
-    from backend.agent_core.context.agent_context import AgentContext
-    from backend.agent_core.core.engineering_agent import EngineeringAgent
+    from backend.nis.agent.api.tool_contract import ToolResult
+    from backend.nis.agent.context.agent_context import AgentContext
+    from backend.nis.agent.core.engineering_agent import EngineeringAgent
 
     calls = []
     class Client:

@@ -1,1 +1,2 @@
-export { PreflightWorkbench } from "@/features/workflow/stage_06_validation";
+/** Compatibility export; canonical implementation: frontend/src/features/capacity/ui/preflight-workbench.tsx. */
+export * from "../features/capacity/ui/preflight-workbench.tsx";

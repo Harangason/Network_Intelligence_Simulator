@@ -1,12 +1,14 @@
 """Regression checks for the navigable NIS source structure."""
 
-from backend.communication.technologies.catalog import MODEL_TYPES, technology_definitions
-from backend.engineering.workflow.models import WORKFLOW_LABELS as LEGACY_LABELS
-from backend.engineering.workflow.models import WORKFLOW_STEPS as LEGACY_STEPS
+from backend.nis.communication.catalog import MODEL_TYPES, technology_definitions
+from backend.nis.workflow.services.models import WORKFLOW_LABELS as LEGACY_LABELS
+from backend.nis.workflow.services.models import WORKFLOW_STEPS as LEGACY_STEPS
 from backend.nis import architecture_catalog
-from backend.specializations.industries import ALL as INDUSTRIES
-from backend.specializations.technologies import ALL as TECHNOLOGIES
-from backend.workflow.definition import WORKFLOW_LABELS, WORKFLOW_STAGES, WORKFLOW_STEPS
+from backend.nis.industries.catalog import ALL as INDUSTRIES
+from backend.nis.communication.ownership import ALL as TECHNOLOGIES
+from backend.nis.workflow.definition import WORKFLOW_LABELS
+from backend.nis.workflow.definition import WORKFLOW_STAGES
+from backend.nis.workflow.definition import WORKFLOW_STEPS
 
 
 def test_workflow_structure_is_the_legacy_runtime_source() -> None:

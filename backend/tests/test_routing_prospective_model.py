@@ -4,17 +4,17 @@ from uuid import uuid4
 
 import pytest
 
-from backend.engineering.routing import validation
-from backend.engineering.routing.validation import RoutingValidator
+from backend.nis.engineering.routing import validation as validation
+from backend.nis.engineering.routing.validation import RoutingValidator
 from backend.tests.test_agent_recipient_repair_runtime import sql_seed, scoped
 
 
 @pytest.fixture
 def candidate():
-    from backend.engineering.communication_repair import load_plan
-    from backend.engineering.communication_contract_repair import scan_signal_recipients
-    from backend.engineering.repository import ENTITY_SPECS
-    from backend.engineering.agent_tools.model import json_safe
+    from backend.nis.engineering.communication.communication_repair import load_plan
+    from backend.nis.engineering.communication.communication_contract_repair import scan_signal_recipients
+    from backend.nis.infrastructure.persistence.repository import ENTITY_SPECS
+    from backend.nis.agent.tools.model import json_safe
     authority, _ = sql_seed()
     def capture():
         planner, state = load_plan()

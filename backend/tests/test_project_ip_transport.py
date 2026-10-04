@@ -5,11 +5,12 @@ import json
 import struct
 
 import pytest
-from ethernet_transport import packet_bytes, checksum
-from communication_simulator import run_simulation
-from hardware_profile import normalize_hardware_config
-from universal_trace import generate_universal_events
-from model_based_simulation import build_model_trace
+from backend.nis.communication.technologies.ethernet.transport import packet_bytes
+from backend.nis.communication.technologies.ethernet.transport import checksum
+from backend.nis.simulation.communication_simulator import run_simulation
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.traces.universal_trace import generate_universal_events
+from backend.nis.simulation.model_based_simulation import build_model_trace
 
 
 def ip_config(tmp_path, version=4):
@@ -23,6 +24,22 @@ def ip_config(tmp_path, version=4):
 
 def events(config):
     return generate_universal_events(config, normalize_hardware_config(config), start_utc=1700000000)[1]
+
+
+def test_qualified_ip_serializer_fixture_has_exact_headers_and_rejects_mac_client_claim(tmp_path):
+    from pathlib import Path
+    fixture = json.loads((Path(__file__).resolve().parents[2] /
+        'frontend/e2e/fixtures/virtual-ethernet-profile.json').read_text(encoding='utf-8'))
+    config = ip_config(tmp_path)
+    config['networks'][0].update(fixture['values'])
+    assert fixture['values']['eth_payload_layer'] == 'UPPER_LAYER'
+    assert fixture['values']['eth_upper_header_bytes'] == 28
+    first = events(config)[0]
+    assert first['ethernet']['ip_version'] == 4
+    assert first['ethernet']['transport_protocol'] == 'udp'
+    config['networks'][0].update(eth_payload_layer='MAC_CLIENT',eth_upper_header_bytes=0)
+    with pytest.raises(ValueError, match='serializer geometry contradicts'):
+        events(config)
 
 
 @pytest.mark.parametrize("version", [4, 6])
@@ -166,7 +183,7 @@ def test_tcp_restbus_control_frames_have_real_handshake_flags(tmp_path):
 
 
 def test_runtime_load_is_busiest_physical_direction_not_sum_of_ports(tmp_path):
-    from backend.app.runtime_analysis import analyze_runtime_trace
+    from backend.nis.simulation.runtime_analysis import analyze_runtime_trace
     config = ip_config(tmp_path)
     route = config['communications'][0]
     config['communications'].append({**route, 'id': 'reverse', 'sender_interface': 'b-eth', 'receiver_interfaces': ['a-eth']})

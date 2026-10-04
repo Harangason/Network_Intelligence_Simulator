@@ -1,9 +1,11 @@
 from uuid import uuid4
 
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools import project_draft
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.agent_tools.wizard_commands import WizardCommand, resolve_request
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools import project_draft as project_draft
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.tools.wizard_commands import WizardCommand
+from backend.nis.agent.tools.wizard_commands import resolve_request
 
 
 def test_updated_shared_draft_preserves_run_and_scope_with_a_new_review_revision():

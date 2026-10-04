@@ -1,5 +1,6 @@
 """A free chat rate change must persist and recalculate the same project."""
 from __future__ import annotations
+from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
 
 import asyncio
 import json
@@ -7,14 +8,16 @@ import pytest
 from copy import deepcopy
 from uuid import uuid4
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.api.tool_contract import Permission
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.runtime.service import EngineeringAssistantService
-from backend.engineering.agent_tools import conversation, proposal_service
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.workflow.service import WorkflowStatusService
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.runtime.service import EngineeringAssistantService
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.workflow.services.service import WorkflowStatusService
+from backend.nis.interfaces.mcp.server import create_server
 
 
 PROMPT = 'Ändere das LIN-Netz auf 19,2 kbit/s und berechne alles neu.'
@@ -32,12 +35,12 @@ def scoped(authority, operation):
 ])
 def test_reviewed_lin_rate_change_recalculates_capacity_timing_and_preflight(prompt):
     authority = ToolAuthority('lin-rate-' + uuid4().hex)
-    parameters = {'industry': 'custom', 'technology': 'LIN', 'bitrate': 9600,
-                  'cycle_ms': 100, 'payload_bytes': 1, 'queue_size': 10,
+    parameters = {'industry': 'custom', 'technology': 'LIN', **lin_design(9600), 'bitrate': 9600,
+                  'cycle_ms': 100, 'payload_bytes': 1,
                   'formats': ['LIN'], 'warning_threshold': 60,
                   'critical_threshold': 75, 'overload_threshold': 90,
                   'networks': [{'id': 'lin-main', 'name': 'LIN_Main',
-                                'technology': 'LIN', 'bitrate': 9600}]}
+                                'technology': 'LIN', **lin_design(9600), 'bitrate': 9600}]}
     scoped(authority, lambda: WorkflowStatusService(authority.project_id).save_parameters(parameters))
     saved = []
 
@@ -80,8 +83,8 @@ def test_reviewed_lin_rate_change_recalculates_capacity_timing_and_preflight(pro
 
 
 def test_http_chat_review_and_apply_expose_recalculation_to_frontend(monkeypatch):
-    from backend.app import create_app
-    from backend.engineering.agent_tools import api as api_module
+    from backend.nis.app import create_app
+    from backend.nis.agent.tools import api as api_module
 
     class OfflineReasoner:
         async def next(self, *args):
@@ -93,11 +96,11 @@ def test_http_chat_review_and_apply_expose_recalculation_to_frontend(monkeypatch
     monkeypatch.setattr(api_module, 'LocalEngineeringReasoner', OfflineReasoner)
     authority = ToolAuthority('http-lin-rate-' + uuid4().hex)
     scoped(authority, lambda: WorkflowStatusService(authority.project_id).save_parameters({
-        'industry': 'custom', 'technology': 'LIN', 'bitrate': 9600,
-        'cycle_ms': 100, 'payload_bytes': 1, 'queue_size': 10,
+        'industry': 'custom', 'technology': 'LIN', **lin_design(9600), 'bitrate': 9600,
+        'cycle_ms': 100, 'payload_bytes': 1,
         'formats': ['LIN'], 'warning_threshold': 60,
         'critical_threshold': 75, 'overload_threshold': 90,
-        'networks': [{'id': 'lin-main', 'name': 'LIN_Main', 'technology': 'LIN', 'bitrate': 9600}]}))
+        'networks': [{'id': 'lin-main', 'name': 'LIN_Main', 'technology': 'LIN', **lin_design(9600), 'bitrate': 9600}]}))
     client = create_app(testing=True).test_client()
     headers = {'X-Project-ID': authority.project_id}
     response = client.post('/api/engineering/agent/chat', headers=headers,
@@ -152,8 +155,8 @@ def assert_incomplete_calculations(workload):
 ])
 def test_configuration_completion_requires_calculation_evidence(case, missing):
     """Component decision matrix; these snapshots are not E2E evidence."""
-    from backend.agent_core.runtime.completion import CompletionEvaluator
-    from backend.agent_core.runtime.goal_resolver import GoalResolver
+    from backend.nis.agent.runtime.completion import CompletionEvaluator
+    from backend.nis.agent.runtime.goal_resolver import GoalResolver
 
     goal = GoalResolver().resolve(PROMPT).model_dump(mode='json')
     capacity = {'snapshot_id': 'capacity-new', 'status': 'APPROVED', 'findings': [],

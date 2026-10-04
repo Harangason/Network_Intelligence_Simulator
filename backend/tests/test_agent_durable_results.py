@@ -1,10 +1,11 @@
 from uuid import uuid4
 
-from backend.agent_core.api.agent_response import AgentResponse
-from backend.agent_core.api.tool_contract import Permission
-from backend.agent_core.context.agent_context import AgentContext
-from backend.engineering.agent_tools import conversation
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
+from backend.nis.agent.api.agent_response import AgentResponse
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
 
 
 def test_disconnected_result_reloads_once_and_stays_project_scoped():

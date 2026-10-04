@@ -1,8 +1,4 @@
-"""Explicit custom-project vocabulary and templates."""
-
-from ...core import IndustrySpecialization
-
-MANIFEST = IndustrySpecialization("custom", "Custom / Proprietary", (
-    "backend.communication.technologies.catalog",
-))
-__all__ = ["MANIFEST"]
+"""Compatibility only; owner backend.nis.industries.custom.manifest."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.custom.manifest')

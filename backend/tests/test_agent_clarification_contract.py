@@ -4,13 +4,13 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.orchestration.local_reasoner import _tool_parameters
-from backend.agent_core.orchestration.tool_arguments import prepare_arguments
-from backend.agent_core.orchestration.tool_selection import select_tools
-from backend.engineering.agent_tools.runtime import ToolAuthority
-from backend.engineering.agent_tools.services import TOOLS
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.orchestration.local_reasoner import _tool_parameters
+from backend.nis.agent.orchestration.tool_arguments import prepare_arguments
+from backend.nis.agent.orchestration.tool_selection import select_tools
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.services import TOOLS
+from backend.nis.interfaces.mcp.server import create_server
 
 
 def schema():

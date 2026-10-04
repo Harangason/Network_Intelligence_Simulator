@@ -1,8 +1,8 @@
 """NB-IoT native grants, RF scope and negotiated NAS edges; synthetic evidence."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import nb_iot as NB
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.nb_iot import rules as NB
 
 def actual():
     x={'nbi_'+k:'synthetic-actual-'+k for k in NB.REQUIRED}
@@ -223,8 +223,8 @@ def test_nbiot_standard_proposals_are_conditional_and_actual_upper_message_may_s
     assert registry.profile('nb_iot')['capacity_evidence']['status']=='MODEL_MISSING'
 
 def test_nbiot_confirmed_custom_nas_duration_zero_active_timer_and_large_encoded_message_are_preserved():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x={**actual(),'nbi_timer_receiver':'UE','nbi_t3412_integrity':True,'nbi_t3412_unit':6,
         'nbi_t3412_value':31,'nbi_t3412_raw':223,'nbi_t3412_seconds':35712000,'nbi_t3412_present':True,
         'nbi_t3324_unit':0,'nbi_t3324_value':0,'nbi_t3324_raw':0,'nbi_t3324_seconds':0,

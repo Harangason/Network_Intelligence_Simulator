@@ -1,6 +1,6 @@
 import os
 import pytest
-from backend.engineering import project_refresh as service
+from backend.nis.engineering.projects import project_refresh as service
 
 
 def test_refresh_checks_all_current_routes_and_passes_fresh_findings(monkeypatch):

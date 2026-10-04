@@ -1,9 +1,10 @@
 import json
 from uuid import uuid4
 import pytest
-from backend.app import create_app
-from backend.app.saved_storage import project_folder, save_bundle
-from backend.app.trace_storage import TraceStorage
+from backend.nis.app import create_app
+from backend.nis.infrastructure.storage.saved_storage import project_folder
+from backend.nis.infrastructure.storage.saved_storage import save_bundle
+from backend.nis.infrastructure.storage.trace_storage import TraceStorage
 
 def test_saved_folders_are_project_scoped_and_reject_escape(tmp_path, monkeypatch):
     monkeypatch.setenv('SIMULATOR_SAVED_ROOT', str(tmp_path))
@@ -37,7 +38,7 @@ def test_project_save_delete_and_stale_tab_cannot_recreate(tmp_path, monkeypatch
     assert project not in [p['project_id'] for p in client.get('/api/engineering/projects').json['items']]
 
 def test_active_agent_prevents_project_deletion(tmp_path, monkeypatch):
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.workflow.services.service import WorkflowStatusService
     monkeypatch.setenv('SIMULATOR_SAVED_ROOT', str(tmp_path))
     project='lifecycle-active-'+uuid4().hex
     client=create_app().test_client()
@@ -50,7 +51,7 @@ def test_active_agent_prevents_project_deletion(tmp_path, monkeypatch):
 
 @pytest.mark.parametrize('status,allowed', [('queued',False),('running',False),('completed',True),('failed',True),('canceled',True)])
 def test_project_deletion_obeys_simulation_lifecycle(tmp_path, monkeypatch, status, allowed):
-    from backend.app.job_service import JOBS
+    from backend.nis.simulation.job_service import JOBS
     monkeypatch.setenv('SIMULATOR_SAVED_ROOT',str(tmp_path))
     client=create_app().test_client()
     project='lifecycle-simulation-'+uuid4().hex

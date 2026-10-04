@@ -1,13 +1,10 @@
-#!/usr/bin/env python3
+"""Compatibility entrypoint; owner backend.nis.communication.technologies.ethernet.formats.generate_eth_pcapng."""
+import importlib
+import sys
 from pathlib import Path
-
-from eth_cli import run_eth_writer
-from eth_format_writers import write_pcapng
-
-
-def writer(path: Path, frames, args) -> None:
-    write_pcapng(path, frames)
-
-
+sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if p.name == "backend").parent))
 if __name__ == "__main__":
-    run_eth_writer("generated_someip_trace.pcapng", "Generate Ethernet/IP/UDP/SOME-IP PCAPNG", writer)
+    import runpy
+    runpy.run_module('backend.nis.communication.technologies.ethernet.formats.generate_eth_pcapng', run_name="__main__")
+else:
+    sys.modules[__name__] = importlib.import_module('backend.nis.communication.technologies.ethernet.formats.generate_eth_pcapng')

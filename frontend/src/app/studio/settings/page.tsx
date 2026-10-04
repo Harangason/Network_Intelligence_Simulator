@@ -1,7 +1,7 @@
-import { SettingsPanel } from "@/components/settings-panel";
-import { SettingsProjectReturnLink } from "@/components/settings-project-return-link";
-import { StudioTopbar } from "@/components/studio-topbar";
-import { projectIdFromSearchParams, type ProjectQueryRecord } from "@/lib/user-settings";
+import { SettingsPanel } from "@/features/settings/ui/settings-panel";
+import { SettingsProjectReturnLink } from "@/features/settings/ui/settings-project-return-link";
+import { StudioTopbar } from "@/features/workflow/ui/studio-topbar";
+import { projectIdFromSearchParams, type ProjectQueryRecord } from "@/features/settings/lib/user-settings";
 
 export default async function SettingsPage({
   searchParams,

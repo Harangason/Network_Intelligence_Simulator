@@ -3,9 +3,9 @@ from concurrent.futures import Future, ThreadPoolExecutor
 from types import SimpleNamespace
 from uuid import uuid4
 
-from backend.app.job_service import JobService
-from backend.app.trace_storage import TraceStorage
-from backend.engineering.project_context import current_project_id
+from backend.nis.simulation.job_service import JobService
+from backend.nis.infrastructure.storage.trace_storage import TraceStorage
+from backend.nis.engineering.projects.project_context import current_project_id
 from backend.tests.test_model_ownership import db_project
 from backend.tests.test_routing_result_batch import seed, result, stored
 
@@ -59,7 +59,7 @@ def test_process_completion_callback_uses_job_owner_from_fresh_thread(db_project
 
 
 def test_optional_observation_failure_restores_callback_project_scope(db_project, monkeypatch):
-    from backend.engineering.routing import repository
+    from backend.nis.engineering.routing import repository as repository
     def fail(*args):
         assert current_project_id() == db_project
         raise RuntimeError('injected observation persistence failure')

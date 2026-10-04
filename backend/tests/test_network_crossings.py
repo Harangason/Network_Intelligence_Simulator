@@ -1,7 +1,9 @@
 from copy import deepcopy
 
-from backend.engineering.network_crossings import with_wire_crossings
-from backend.engineering.network_scene import build_network_scene, model_signature, _spread_coordinates
+from backend.nis.engineering.network.network_crossings import with_wire_crossings
+from backend.nis.engineering.network.network_scene import build_network_scene
+from backend.nis.engineering.network.network_scene import model_signature
+from backend.nis.engineering.network.network_scene import _spread_coordinates
 
 
 def wire(bus, *pairs):

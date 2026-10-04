@@ -6,12 +6,14 @@ from uuid import uuid4
 
 import pytest
 from psycopg.types.json import Jsonb
-from backend.engineering.db import get_connection
-from backend.engineering.project_context import activate_project, reset_project, current_project_id
-from backend.engineering.repository import NotFoundError
-from backend.engineering.workflow.service import WorkflowStatusService
-from backend.engineering.reasoning.service import ReasoningService
-from backend.engineering.reasoning import service as services
+from backend.nis.infrastructure.persistence.db import get_connection
+from backend.nis.engineering.projects.project_context import activate_project
+from backend.nis.engineering.projects.project_context import reset_project
+from backend.nis.engineering.projects.project_context import current_project_id
+from backend.nis.infrastructure.persistence.repository import NotFoundError
+from backend.nis.workflow.services.service import WorkflowStatusService
+from backend.nis.intelligence.engineering.reasoning.service import ReasoningService
+from backend.nis.intelligence.engineering.reasoning import service as services
 from backend.tests.test_engineering_reasoning import frame
 
 
@@ -48,7 +50,7 @@ def setup(monkeypatch):
         return deepcopy(job["metadata"])
 
     monkeypatch.setattr(services.gateway, "request_json", request)
-    from backend.app import create_app
+    from backend.nis.app import create_app
     client = create_app(testing=True).test_client()
     try:
         yield project, jobs, add_job, client, workflow
@@ -101,11 +103,11 @@ def test_mcp_and_agent_cannot_treat_partial_tool_success_as_completion(setup):
     project, jobs, add, _, _ = setup
     job = add()
     jobs[job]["metadata"].pop("workflow_snapshot_id")
-    from backend.agent_core.api.mcp_client import EngineeringMCPClient
-    from backend.engineering.agent_tools.runtime import ToolAuthority
-    from backend.simulator_engineering_mcp.server import create_server
-    from backend.agent_core.core.engineering_agent import EngineeringAgent
-    from backend.agent_core.context.agent_context import AgentContext
+    from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+    from backend.nis.agent.tools.runtime import ToolAuthority
+    from backend.nis.interfaces.mcp.server import create_server
+    from backend.nis.agent.core.engineering_agent import EngineeringAgent
+    from backend.nis.agent.context.agent_context import AgentContext
     async def run():
         async with EngineeringMCPClient(create_server(ToolAuthority(project))) as client:
             result = await client.call("analyze_trace_root_cause", {"job_id": job})
@@ -136,7 +138,8 @@ def test_run_comparison_demands_equal_fault_scenario_and_coverage(setup):
 
 def test_proposal_reuses_governed_planner_without_apply(setup, monkeypatch):
     _, _, add, _, _ = setup
-    from backend.engineering.agent_tools import wizard_generation, proposal_service
+    from backend.nis.agent.tools import wizard_generation as wizard_generation
+    from backend.nis.agent.tools import proposal_service as proposal_service
     invoked = []
     monkeypatch.setattr(wizard_generation, "generate_capacity_network_repair", lambda args: invoked.append(args) or {"proposal_id": "proposal", "status": "PROPOSED", "changes": []})
     validated = []

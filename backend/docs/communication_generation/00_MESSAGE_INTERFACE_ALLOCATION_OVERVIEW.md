@@ -1,12 +1,5 @@
-# Message / Interface Allocation Overview
+# Document moved
 
-As-built rule:
+Canonical document: [00_MESSAGE_INTERFACE_ALLOCATION_OVERVIEW.md](../../../docs/domains/engineering/00_MESSAGE_INTERFACE_ALLOCATION_OVERVIEW.md).
 
-```text
-Signals fill Messages.
-Messages consume bus time.
-Interfaces connect Hardware to Networks.
-Networks provide communication capacity.
-```
-
-Compatible signals are packed into messages by producer, sender hardware, technology, timing, receiver set and priority. Packed messages are allocated to sender interfaces with a reuse-first policy until the configured projected load threshold is reached.
+This entry preserves old links during the structure migration.

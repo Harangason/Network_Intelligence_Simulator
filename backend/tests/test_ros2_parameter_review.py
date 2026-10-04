@@ -1,8 +1,8 @@
 """Endpoint policy, transport isolation and real processing acceptance boundaries."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import ros2 as R
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.ros2 import rules as R
 def actual():
  x={'ros_'+k:'synthetic-'+k for k in R.REQUIRED}
  x.update(ros_profile='RMW_ROLLING_20261002',ros_middleware='DDS',ros_rmw='rmw_cyclonedds_cpp',ros_transport='DDS_UDP',ros_interface='TOPIC',ros_role='PUBLISHER')

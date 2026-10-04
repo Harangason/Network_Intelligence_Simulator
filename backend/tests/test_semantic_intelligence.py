@@ -1,5 +1,6 @@
-from backend.app import create_app
-from backend.engineering.semantic_intelligence import ConceptOntology, SemanticClassificationService
+from backend.nis.app import create_app
+from backend.nis.intelligence.engineering.semantic_intelligence import ConceptOntology
+from backend.nis.intelligence.engineering.semantic_intelligence import SemanticClassificationService
 
 
 def test_ontology_resolves_aliases_and_common_ancestor():

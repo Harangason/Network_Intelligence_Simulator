@@ -1,10 +1,10 @@
 """S37: changes to signals/states/routes must count as real deviations."""
 import pytest
-from backend.engineering.agent_tools.analysis import compare
+from backend.nis.agent.tools.analysis import compare
 
 
 def test_gateway_segments_match_independently_of_arrival_order():
-    from backend.engineering.reasoning.correlation import FirstDivergenceAnalyzer
+    from backend.nis.intelligence.engineering.reasoning.correlation import FirstDivergenceAnalyzer
     golden = [{'route_id': 'route', 'message_id': 'message', 'sequence': 600, 'segment_index': hop,
                'time_s': time, 'network': network, 'signals': {'temperature': 34}}
               for hop, time, network in [(0, 12.0, 'CAN_FD'), (1, 12.002, 'Ethernet')]]
@@ -24,7 +24,7 @@ def test_gateway_segments_match_independently_of_arrival_order():
     {'network_id': 'other-network'}, {'route_ref': 'other-route'}, {'route_refs': ['other-route']},
 ])
 def test_reasoning_first_divergence_preserves_physical_and_route_changes(change):
-    from backend.engineering.reasoning.correlation import FirstDivergenceAnalyzer
+    from backend.nis.intelligence.engineering.reasoning.correlation import FirstDivergenceAnalyzer
     event = {'time_s': 12, 'sequence': 1, 'message_id': 'temperature-message',
              'signals': {'temperature': {'value': 100, 'physical_value': 10}},
              'network_id': 'network', 'route_ref': 'route', 'route_refs': ['route']}
@@ -81,7 +81,8 @@ def test_additional_missing_and_delayed_events_remain_distinct():
 
 
 def test_delayed_window_boundary_is_not_an_additional_or_missing_event():
-    from backend.engineering.reasoning.correlation import complete_window_counterparts, FirstDivergenceAnalyzer
+    from backend.nis.intelligence.engineering.reasoning.correlation import complete_window_counterparts
+    from backend.nis.intelligence.engineering.reasoning.correlation import FirstDivergenceAnalyzer
     golden = [{'route_id': 'r', 'sequence': i, 'time_s': time} for i, time in [(1, 11.95), (2, 12.4)]]
     actual = [{**event, 'time_s': event['time_s'] + .1} for event in golden]
     # Arrival-time window [12, 12.45] contains opposite halves of the same transmissions.
@@ -93,7 +94,7 @@ def test_delayed_window_boundary_is_not_an_additional_or_missing_event():
 
 
 def test_counterpart_search_budget_never_proves_missing_events():
-    from backend.engineering.reasoning.correlation import complete_window_counterparts
+    from backend.nis.intelligence.engineering.reasoning.correlation import complete_window_counterparts
     event = {'route_id': 'r', 'sequence': 1, 'time_s': 1}
     with pytest.raises(ValueError, match='GOLDEN_ALIGNMENT_INCOMPLETE'):
         complete_window_counterparts([event], [], lambda: iter([]), lambda: iter([event, event]), max_scan=1)

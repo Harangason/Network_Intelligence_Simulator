@@ -5,13 +5,15 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.api.tool_contract import Permission, ToolResult
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.repository import create_object
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.api.tool_contract import ToolResult
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.interfaces.mcp.server import create_server
 
 PROMPT = 'Lege eine Diagnoseabfrage für alle Stellglieder an.'
 

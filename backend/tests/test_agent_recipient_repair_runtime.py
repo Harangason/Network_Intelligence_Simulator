@@ -5,9 +5,12 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.runtime.goal_resolver import GoalResolver, recipient_repair_intent, RECIPIENT_REPAIR_OUTCOMES
-from backend.engineering.communication_repair import RepairPlanner, KINDS
-from backend.engineering.communication_contract_repair import scan_signal_recipients
+from backend.nis.agent.runtime.goal_resolver import GoalResolver
+from backend.nis.agent.runtime.goal_resolver import recipient_repair_intent
+from backend.nis.agent.runtime.goal_resolver import RECIPIENT_REPAIR_OUTCOMES
+from backend.nis.engineering.communication.communication_repair import RepairPlanner
+from backend.nis.engineering.communication.communication_repair import KINDS
+from backend.nis.engineering.communication.communication_contract_repair import scan_signal_recipients
 from backend.tests.test_communication_repair import sample
 
 PROMPT = 'Finde alle Signale ohne Empfänger und korrigiere die eindeutigen Fälle.'
@@ -93,7 +96,7 @@ def test_existing_receiver_route_does_not_cover_another_declared_consumer():
 
 
 def test_longer_alternative_path_is_not_hidden_by_shortest_path_selection():
-    from backend.engineering.communication_contract_repair import _unique_path
+    from backend.nis.engineering.communication.communication_contract_repair import _unique_path
     planner = RepairPlanner(*fixture())
     path = planner.paths('producer-port', 'receiver-port')[0]
     assert _unique_path(planner, path)
@@ -103,8 +106,8 @@ def test_longer_alternative_path_is_not_hidden_by_shortest_path_selection():
 
 
 def scoped(authority, operation, *, success=True):
-    from backend.engineering.agent_tools.runtime import execute
-    from backend.agent_core.api.tool_contract import Permission
+    from backend.nis.agent.tools.runtime import execute
+    from backend.nis.agent.api.tool_contract import Permission
     def invoke(_):
         try:
             return operation()
@@ -119,10 +122,10 @@ def scoped(authority, operation, *, success=True):
 
 
 def sql_seed():
-    from backend.engineering.agent_tools.runtime import ToolAuthority
-    from backend.engineering.repository import create_object
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.db import get_connection
+    from backend.nis.agent.tools.runtime import ToolAuthority
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.infrastructure.persistence.db import get_connection
     from psycopg.types.json import Jsonb
     authority = ToolAuthority('recipient-' + uuid4().hex)
     def seed():
@@ -145,11 +148,11 @@ def sql_seed():
 
 
 def invoke(authority):
-    from backend.agent_core.api.mcp_client import EngineeringMCPClient
-    from backend.agent_core.context.agent_context import AgentContext
-    from backend.agent_core.runtime.service import EngineeringAssistantService
-    from backend.engineering.agent_tools import conversation
-    from backend.simulator_engineering_mcp.server import create_server
+    from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+    from backend.nis.agent.context.agent_context import AgentContext
+    from backend.nis.agent.runtime.service import EngineeringAssistantService
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.interfaces.mcp.server import create_server
     run_id = uuid4().hex
     def initialize():
         state = conversation.read(); state['run_id'] = run_id; conversation.write(state)
@@ -167,7 +170,9 @@ def invoke(authority):
 
 
 def test_sql_original_request_real_scan_and_reviewed_route_persistence():
-    from backend.engineering.agent_tools import conversation, model, proposal_service
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.agent.tools import model as model
+    from backend.nis.agent.tools import proposal_service as proposal_service
     authority, ids = sql_seed()
     before = scoped(authority, model.model)
     result = invoke(authority)
@@ -199,8 +204,10 @@ def test_sql_original_request_real_scan_and_reviewed_route_persistence():
 
 @pytest.mark.parametrize('change', ['foreign-project', 'stale-revision', 'negated-goal', 'wrong-owner'])
 def test_sql_recipient_tools_reject_wrong_scope_or_changed_request(change):
-    from backend.engineering.agent_tools import conversation, repair_execution, model
-    from backend.engineering.agent_tools.runtime import ToolAuthority
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.agent.tools import repair_execution as repair_execution
+    from backend.nis.agent.tools import model as model
+    from backend.nis.agent.tools.runtime import ToolAuthority
     authority, _ = sql_seed()
     result = invoke(authority)
     goal_id = result['runtime']['workload_id']
@@ -216,7 +223,8 @@ def test_sql_recipient_tools_reject_wrong_scope_or_changed_request(change):
 
 
 def test_sql_repeat_prepare_reuses_proposal_and_keeps_canonical_model_untouched():
-    from backend.engineering.agent_tools import model, repair_execution
+    from backend.nis.agent.tools import model as model
+    from backend.nis.agent.tools import repair_execution as repair_execution
     authority, _ = sql_seed(); result = invoke(authority)
     before = scoped(authority, model.model)
     prepared = scoped(authority, lambda: repair_execution.prepare_recipients({
@@ -226,8 +234,10 @@ def test_sql_repeat_prepare_reuses_proposal_and_keeps_canonical_model_untouched(
 
 
 def test_sql_changed_recipient_after_review_rejects_apply_without_canonical_mutation():
-    from backend.engineering.agent_tools import model, proposal_service
-    from backend.engineering.repository import get_object, update_object
+    from backend.nis.agent.tools import model as model
+    from backend.nis.agent.tools import proposal_service as proposal_service
+    from backend.nis.infrastructure.persistence.repository import get_object
+    from backend.nis.infrastructure.persistence.repository import update_object
     authority, ids = sql_seed(); proposal = invoke(authority)['proposals'][0]
     scoped(authority, lambda: proposal_service.review(proposal['proposal_id'], revision=proposal['revision'], decision='approve', actor='human-test', trace_id=uuid4().hex))
     def change():
@@ -242,15 +252,17 @@ def test_sql_changed_recipient_after_review_rejects_apply_without_canonical_muta
 
 
 def test_sql_forged_recipient_change_rejected_by_current_scan():
-    from backend.engineering.agent_tools import repair_execution
+    from backend.nis.agent.tools import repair_execution as repair_execution
     authority, _ = sql_seed(); proposal = invoke(authority)['proposals'][0]
     forged = deepcopy(proposal['changes']); forged[0]['data']['timing']['cycle_time_ms'] = 999
     scoped(authority, lambda: repair_execution.validate_recipient_changes(forged), success=False)
 
 
 def test_sql_failed_dependent_check_rolls_back_reviewed_route_apply(monkeypatch):
-    from backend.engineering.agent_tools import conversation, model, proposal_service
-    from backend.engineering.capacity.service import PreflightService
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.agent.tools import model as model
+    from backend.nis.agent.tools import proposal_service as proposal_service
+    from backend.nis.engineering.capacity.service import PreflightService
     authority, _ = sql_seed(); proposal = invoke(authority)['proposals'][0]
     scoped(authority, lambda: proposal_service.review(proposal['proposal_id'], revision=proposal['revision'], decision='approve', actor='human-test', trace_id=uuid4().hex))
     before = scoped(authority, model.model)
@@ -265,8 +277,10 @@ def test_sql_failed_dependent_check_rolls_back_reviewed_route_apply(monkeypatch)
 
 
 def test_sql_all_unknown_receivers_complete_the_scan_with_open_findings_and_no_repair():
-    from backend.engineering.agent_tools import conversation, model
-    from backend.engineering.repository import get_object, update_object
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.agent.tools import model as model
+    from backend.nis.infrastructure.persistence.repository import get_object
+    from backend.nis.infrastructure.persistence.repository import update_object
     authority, ids = sql_seed()
     def change():
         message = get_object('Message', ids['message'])

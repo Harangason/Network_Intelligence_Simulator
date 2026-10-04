@@ -1,4 +1,4 @@
-import { backendEndpoints } from '@/lib/backend-endpoints';
+import { backendEndpoints } from '@/shared/api/backend-endpoints';
 import { projectHeaders, projectIdFromRequest } from '../../_backend';
 
 export async function GET(request: Request, context: { params: Promise<{ sessionId: string }> }) {

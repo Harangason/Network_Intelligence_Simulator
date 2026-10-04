@@ -1,6 +1,6 @@
 from contextlib import nullcontext
 
-from backend.engineering import project_bundle
+from backend.nis.engineering.projects import project_bundle as project_bundle
 
 
 class FakeConnection:

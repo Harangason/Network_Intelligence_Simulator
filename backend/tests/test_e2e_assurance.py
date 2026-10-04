@@ -2,7 +2,7 @@
 
 import pytest
 
-from backend.app.e2e_assurance import build_e2e_transactions
+from backend.nis.simulation.e2e_assurance import build_e2e_transactions
 
 
 def frame(index=0, count=1, **changes):

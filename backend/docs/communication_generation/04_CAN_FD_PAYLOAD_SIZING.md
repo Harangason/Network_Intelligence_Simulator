@@ -1,9 +1,5 @@
-# CAN-FD Payload Sizing
+# Document moved
 
-Supported CAN-FD payload classes:
+Canonical document: [04_CAN_FD_PAYLOAD_SIZING.md](../../../docs/domains/engineering/04_CAN_FD_PAYLOAD_SIZING.md).
 
-```text
-0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 16, 20, 24, 32, 48, 64 Byte
-```
-
-The default policy is `MINIMUM_VALID_SIZE`: choose the smallest legal class that can contain the packed signal bits.
+This entry preserves old links during the structure migration.

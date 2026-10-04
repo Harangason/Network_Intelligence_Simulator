@@ -1,9 +1,4 @@
-"""FlexRay profile and timing ownership."""
-
-from ...core import TechnologySpecialization
-
-MANIFEST = TechnologySpecialization("flexray", ("flexray",), (
-    "backend.communication.technologies.catalog",
-    "backend.engineering.capacity.calculators",
-))
-__all__ = ["MANIFEST"]
+"""Compatibility only; owner backend.nis.communication.technologies.flexray.ownership."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.communication.technologies.flexray.ownership')

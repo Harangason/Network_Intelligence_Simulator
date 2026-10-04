@@ -1,12 +1,12 @@
 """Unavailable wire-time evidence must not turn into free capacity or a trace."""
 import pytest
 
-from backend.engineering.agent_tools import services
-from backend.engineering.intelligence.network_planning import plan_network_distribution
+from backend.nis.agent.tools import services as services
+from backend.nis.intelligence.engineering.intelligence.network_planning import plan_network_distribution
 from backend.tests.test_network_distribution import capacity, hardware
 from backend.tests.test_model_based_simulation import simulation_config
-from hardware_profile import normalize_hardware_config
-from universal_trace import generate_universal_events
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.traces.universal_trace import generate_universal_events
 
 
 @pytest.mark.parametrize('rates', [{}, {'bitrate': 500000}, {'data_bitrate': 2000000}])
@@ -56,13 +56,13 @@ def test_migration_cannot_recommend_target_technology_without_explicit_rates():
 
 @pytest.mark.parametrize('parameters', [{}, {'bitrate': 500000}, {'data_bitrate': 2000000}])
 def test_standalone_api_requires_explicit_phase_rates(tmp_path, parameters):
-    from backend.app.simulation_service import SimulationService
+    from backend.nis.simulation.service import SimulationService
     with pytest.raises(ValueError, match='Technology-Validierung'):
         SimulationService().prepare_config({'technology': 'can_fd', **parameters}, tmp_path)
 
 
 def test_standalone_options_keep_absent_rates_and_preserve_explicit_phases(tmp_path):
-    from standalone_cli import StandaloneSimulationOptions
+    from backend.nis.interfaces.cli.standalone import StandaloneSimulationOptions
     base = dict(technology='can_fd', industry='automotive', output_dir=tmp_path)
     missing = StandaloneSimulationOptions(**base).to_config()['networks'][0]
     assert 'bitrate' not in missing and 'data_bitrate' not in missing

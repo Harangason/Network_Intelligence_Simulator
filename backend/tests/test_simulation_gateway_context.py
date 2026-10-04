@@ -1,4 +1,4 @@
-from backend.engineering.agent_tools.simulation_gateway import job_api_base
+from backend.nis.agent.tools.simulation_gateway import job_api_base
 
 
 def test_job_dispatch_follows_this_backend_port(monkeypatch):

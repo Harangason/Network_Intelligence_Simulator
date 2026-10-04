@@ -4310,5 +4310,63 @@
       "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\technology-full-parameter-audit-20261001\\individual\\pwm-tests.xml",
       "sha256": "9dd9feda11ae7258cab406efb6facfb8c4e734df28d762cf3d74a951e4884783"
     }
-  }
+  },
+  "consumer_followup": {
+    "first_failing_layer": "Catalog local_timing_schema still published three loose PWM bounds while the native waveform profile rejects local_timing_evidence.",
+    "decision": "Remove those obsolete editor fields. Native source-qualified PWM driver/waveform fields remain intact and existing port capabilities are preserved.",
+    "retired_local_fields": [
+      "local_timing_evidence.pwm_frequency_hz",
+      "local_timing_evidence.update_bound_ms",
+      "local_timing_evidence.capture_bound_ms"
+    ],
+    "after_local_timing_schema": [],
+    "source_revisions": [
+      "Linux6.18 PWM overview: platform-specific arguments, requested versus hardware state, disabled output not guaranteed inactive, apply/capture interfaces.",
+      "Linux v6.18 include/linux/pwm.h: UInt64 nanosecond state/waveform, polarity, init duty0/usage_powerFalse, hardware-state getter and driver capabilities.",
+      "Linux v6.18 drivers/pwm/core.c: enabled-only state validity, waveform S64_MAX/duty/offset bounds, exact versus integer-ns rounding, standard DT translation.",
+      "Linux v6.18 standard PWM DT binding flags: bit0 inverted, not a universal hardware polarity.",
+      "ST AN4013 Rev14 February2026 pp10-17/19/24/32-34: actual timer width/clock, prescaler/ARR, center versus edge cycle, PWM1/2/pin polarity, preload/UEV/capture and device-qualified deadtime/break. Public PDF read through browser; original local download unavailable.",
+      "NIS_SCENARIO_POLICY_V1"
+    ],
+    "evidence": [
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\pwm-local-schema-backend.txt",
+        "sha256": "8ba5745097537ca6af0425ded78d9e4c65cf210247474c316ec58f163e4f98f7"
+      },
+      {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\pwm-local-schema-browser.txt",
+        "sha256": "6abe2e3c5f2f9c3c40b10d4ddf9ffe53b5c519eeee5c7e4716a2f06599db68b8"
+      }
+    ],
+    "production_delivered": true,
+    "dimensioning_followup": {
+      "decision": "PWM has no loose local hardware review proposal; actual native waveform/driver evidence remains required. Even confirmed legacy frequency/update/capture values cannot release timing.",
+      "evidence": {
+        "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\pwm-dimensioning-consumer-check.txt",
+        "sha256": "f43838bd9d800e564e6cf7d8922dde380cd048921de939d1887c22950d41e03f"
+      },
+      "passed": 185
+    },
+    "release": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-e121e31e1908\\34d0edc85798\\receipt.json",
+      "sha256": "c0f85cdc4994751e4cff5e4e10560e6664c0c910b1347f7dee1374acd13c16e8"
+    }
+  },
+  "delivery": {
+    "status": "VERIFIED",
+    "tested_image": "sha256:4772553bf330ad2f8b4f74a67e1a35517a6d6dacb7ada9969a25fdc5f430874b",
+    "running_image": "sha256:4772553bf330ad2f8b4f74a67e1a35517a6d6dacb7ada9969a25fdc5f430874b",
+    "release": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-e121e31e1908\\34d0edc85798\\receipt.json",
+      "sha256": "c0f85cdc4994751e4cff5e4e10560e6664c0c910b1347f7dee1374acd13c16e8"
+    },
+    "live_verification": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\parameter-production-verification.json",
+      "sha256": "a54c11d1c7d6e12ccb653f1cffead3038a2ba7ec76eb130b89999fbad77e0207"
+    }
+  },
+  "remaining_not_certified": [
+    "Actualdriver/peripheralPWMexecutor, voltage/load/safe-state/hardwaretiming and fullconsumerE2Eacceptance remainactualevidence/runtimework; directpacketcapacityNOT_APPLICABLE isnotanexecutioncertificate.",
+    "Remainingprofiles/cumulativeconsumerconsistency/README/releasegate/exacttestedimageproduction remainpending."
+  ]
 }

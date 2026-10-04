@@ -1,6 +1,7 @@
 import pytest
-from backend.engineering.agent_tools.proposal_service import order_change_dependencies, _resolve
-from backend.engineering.models import EngineeringValidationError
+from backend.nis.agent.tools.proposal_service import order_change_dependencies
+from backend.nis.agent.tools.proposal_service import _resolve
+from backend.nis.domain.vocabulary import EngineeringValidationError
 
 
 def test_nested_transmit_bindings_are_available_before_message_apply():

@@ -1,4 +1,5 @@
-from backend.engineering.naming import concise_name, concise_bus_names
+from backend.nis.engineering.naming import concise_name
+from backend.nis.engineering.naming import concise_bus_names
 
 
 def test_concise_generated_names_keep_real_purpose():
@@ -19,7 +20,7 @@ def test_bus_names_are_unique_stable_and_preserve_custom_labels():
 
 
 def test_ethernet_names_use_context_reserve_custom_labels_and_are_stable():
-    from backend.engineering.naming import ethernet_names
+    from backend.nis.engineering.naming import ethernet_names
     rows = [{'id': 'Fahrerassistenz_05-IO-kameraverarbeitung-automotive-ethernet-S01', 'technology': 'ETHERNET'},
             {'id': 'Fahrerassistenz_05-S01', 'technology': 'ETHERNET'},
             {'id': 'custom', 'name': 'ETH_Fahrerassistenz_01', 'name_source': 'user', 'technology': 'Ethernet'},
@@ -36,7 +37,8 @@ def test_ethernet_names_use_context_reserve_custom_labels_and_are_stable():
 
 
 def test_ethernet_uses_explicit_frame_owner_not_first_sensor_or_hash():
-    from backend.engineering.naming import ethernet_names, new_bus_name
+    from backend.nis.engineering.naming import ethernet_names
+    from backend.nis.engineering.naming import new_bus_name
     topology = {'nodes': [
         {'id': 'sensor', 'name': 'Rotor 4', 'kind': 'sensor', 'systemOwnerId': 'owner', 'ports': [{'physicalNetworkId': 'hash'}]},
         {'id': 'control', 'engineeringId': 'owner', 'name': 'Flugregler', 'kind': 'ecu', 'ports': [{'physicalNetworkId': 'hash'}]},
@@ -47,7 +49,8 @@ def test_ethernet_uses_explicit_frame_owner_not_first_sensor_or_hash():
 
 
 def test_agent_network_generator_uses_same_allocator(monkeypatch):
-    from backend.engineering.agent_tools import generation, model
+    from backend.nis.agent.tools import generation as generation
+    from backend.nis.agent.tools import model as model
     monkeypatch.setattr(model, 'networks', lambda: [{'name': 'ETH_Kamera_01'}])
     monkeypatch.setattr(generation.proposals, 'create', lambda kind, changes, prompt: changes)
     changes = generation.network({'name': 'Kamera', 'technology': 'ETHERNET'})

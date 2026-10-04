@@ -1,5 +1,6 @@
-from backend.engineering.agent_tools import generation
-from backend.engineering.device_communication import ECU_STATES, communication_findings
+from backend.nis.agent.tools import generation as generation
+from backend.nis.engineering.communication.device_communication import ECU_STATES
+from backend.nis.engineering.communication.device_communication import communication_findings
 
 
 def test_explicit_new_acquisition_ecu_uses_reviewable_project_evidence(monkeypatch):

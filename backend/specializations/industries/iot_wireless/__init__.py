@@ -1,8 +1,4 @@
-"""IoT and wireless vocabulary and template ownership."""
-
-from ...core import IndustrySpecialization
-
-MANIFEST = IndustrySpecialization("iot_wireless", "IoT / Edge / Wireless", (
-    "backend.communication.technologies.catalog",
-))
-__all__ = ["MANIFEST"]
+"""Compatibility only; owner backend.nis.industries.iot_wireless.manifest."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.iot_wireless.manifest')

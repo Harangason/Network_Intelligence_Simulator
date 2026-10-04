@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from backend.agent_core.orchestration.project_intake import is_project_request
+from backend.nis.agent.orchestration.project_intake import is_project_request
 
 
 CASES = json.loads((Path(__file__).resolve().parents[2] / 'tests/fixtures/industry40.json').read_text(encoding='utf8'))['cases']
@@ -17,7 +17,7 @@ def test_full_inventory_is_not_a_single_function_request(case):
 
 @pytest.mark.parametrize('case', CASES, ids=lambda case: case['id'])
 def test_chat_draft_preserves_full_scope_without_inventing_connections(case):
-    from backend.engineering.agent_tools.project_draft import parse_requirement
+    from backend.nis.agent.tools.project_draft import parse_requirement
     draft = parse_requirement(case['input'], 'custom')
     for key, role in [('sensors', 'SENSOR'), ('actuators', 'ACTUATOR'), ('ecus', 'CONTROLLER'), ('gateways', 'GATEWAY')]:
         expected = case['counts'][key]
@@ -52,6 +52,6 @@ def test_queries_and_single_object_operations_are_not_project_intake(prompt):
 
 
 def test_industry_neutral_is_not_an_industry_selection():
-    from backend.engineering.agent_tools.project_draft import industry_candidates
+    from backend.nis.agent.tools.project_draft import industry_candidates
     assert industry_candidates('Ein industrieneutrales Kommunikationssystem mit CAN-FD und Ethernet') == set()
     assert industry_candidates('Industrial Automation mit Sensoren') == {'industrial_automation'}

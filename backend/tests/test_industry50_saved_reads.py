@@ -6,15 +6,16 @@ import pytest
 
 
 def test_saved_signal_and_finding_read_paths():
-    from backend.agent_core.api.agent_response import AgentResponse
-    from backend.agent_core.api.mcp_client import EngineeringMCPClient
-    from backend.agent_core.api.tool_contract import Permission
-    from backend.agent_core.context.agent_context import AgentContext
-    from backend.agent_core.core.engineering_agent import EngineeringAgent
-    from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-    from backend.engineering.agent_tools import conversation
-    from backend.engineering.repository import create_object
-    from backend.simulator_engineering_mcp.server import create_server
+    from backend.nis.agent.api.agent_response import AgentResponse
+    from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+    from backend.nis.agent.api.tool_contract import Permission
+    from backend.nis.agent.context.agent_context import AgentContext
+    from backend.nis.agent.core.engineering_agent import EngineeringAgent
+    from backend.nis.agent.tools.runtime import ToolAuthority
+    from backend.nis.agent.tools.runtime import execute
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.interfaces.mcp.server import create_server
     authority = ToolAuthority('nis-test-fixed-read-' + uuid4().hex)
     def call(fn):
         result = execute(authority, 'test-fixture', Permission.READ_MODEL, {}, lambda _: fn())
@@ -33,7 +34,7 @@ def test_saved_signal_and_finding_read_paths():
         severity='WARNING', context_refs=[{'id': str(gateway['id']), 'type': 'HardwareNode'}]).model_dump(mode='json', exclude_none=True)
     call(lambda: conversation.record_event(turn['run_id'], finding))
     call(lambda: conversation.finish(turn['run_id']))
-    from backend.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
     assert str(call(lambda: ModelGraphService.load().find_object('CentralGateway'))['id']) == str(gateway['id'])
     async def run():
         async with EngineeringMCPClient(create_server(authority)) as client:

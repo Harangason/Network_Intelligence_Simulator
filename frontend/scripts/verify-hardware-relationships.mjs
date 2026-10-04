@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import { chromium } from 'playwright';
-import { buildHardwareGraph } from '../src/lib/hardware-graph.ts';
+import { buildHardwareGraph } from '../src/features/network/lib/hardware-graph.ts';
 const project = 'network-project-20260910042736034-d11591d0';
 const api = async path => { const r = await fetch(`http://127.0.0.1:15050/api/engineering${path}`, { headers: { 'X-Project-ID': project } }); assert.ok(r.ok); return r.json(); };
 const all = async path => { const out = []; for (let offset=0;;offset+=500) { const p = await api(`${path}?limit=500&offset=${offset}`); out.push(...p.items); if(p.items.length<500) return out; } };

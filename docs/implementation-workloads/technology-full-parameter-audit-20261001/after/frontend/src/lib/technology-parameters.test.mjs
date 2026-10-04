@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { localEvidenceFieldRequired, booleanParameterValue, conditionalParameterDefault, technologyParameterValues, technologyParameterUnverified, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings } from './technology-parameters.ts';
+import { localEvidenceFieldRequired, booleanParameterValue, numericParameterValue, conditionalParameterDefault, technologyParameterValues, technologyParameterUnverified, confirmTechnologyParameters, confirmNetworkParameters, groupPreflightFindings } from './technology-parameters.ts';
 const lin = { id: 'lin', parameter_schema: [{ key: 'bitrate', type: 'number', scope: 'network', unit: 'bit/s', default: 19200 }, { key: 'payload_bytes', default: 8 }] };
 const can = { id: 'can_fd', parameter_schema: [{ key: 'arbitration_bitrate', default: 500000 }, { key: 'data_bitrate', default: 2000000 }] };
 const parameters = { technology: 'can_fd', bitrate: 2000000, arbitration_bitrate: 500000, data_bitrate: 2000000,
@@ -203,4 +203,31 @@ test('pending scoped evidence remains unverified and partial rate confirmation p
   const original = { ...parameters, networks: [{id:'lin-1',technology:'LIN',termination:'existing'}] };
   const updated = confirmNetworkParameters(original, profile, ['lin-1'], {bitrate:19200});
   assert.equal(updated.networks[0].termination, 'existing');
+});
+
+
+test('wide protocol integers use exact decimal bounds and identical confirmation proof', () => {
+  const field = {key:'spb_alias',label:'Alias',type:'number',integer:true,numeric_encoding:'DECIMAL_STRING',decimal_min:'0',decimal_max:'18446744073709551615'};
+  const value = numericParameterValue(field,'18446744073709551615');
+  assert.equal(value,'18446744073709551615');
+  assert.throws(() => numericParameterValue(field,'18446744073709551616'));
+  assert.throws(() => numericParameterValue(field,'1.2'));
+  assert.throws(() => numericParameterValue(field,'1e18'));
+  const profile = {id:'sparkplug_b',parameter_schema:[field]};
+  const saved = confirmTechnologyParameters({},profile,{spb_alias:value});
+  const loaded = JSON.parse(JSON.stringify(saved));
+  assert.equal(technologyParameterValues(loaded,profile).spb_alias,value);
+  assert.equal(technologyParameterUnverified(loaded,'spb_alias','sparkplug_b'),false);
+  assert.throws(() => numericParameterValue({label:'Address',integer:true,min:0,max:255},'1.5'));
+});
+
+test('conditional proposals resolve dependency order and retain confirmed actual peer configuration', () => {
+  const timeout = {key:'timeout',conditional_defaults:[{when:{mode:'STANDARD',version:'A'},value:100},{when:{mode:'STANDARD',version:'A'},value:100}]};
+  const profile = {id:'actual',parameter_schema:[timeout,{key:'version',conditional_defaults:[{when:{mode:'STANDARD'},value:'A'}]},{key:'mode',default:'STANDARD'}]};
+  assert.equal(technologyParameterValues({},profile).timeout,100);
+  assert.equal(conditionalParameterDefault(timeout,{mode:'STANDARD',version:'A'}),100);
+  const previous = {technology:'actual',technology_parameters:{actual:{values:{mode:'STANDARD',version:'A',timeout:200},provenance:{timeout:{value:200,source:'TECHNOLOGY_DEFAULT_PROPOSAL',status:'REVIEW_REQUIRED'}}}}};
+  assert.equal(technologyParameterValues(previous,profile).timeout,100);
+  const confirmed = confirmTechnologyParameters({},profile,{mode:'STANDARD',version:'A',timeout:200});
+  assert.equal(technologyParameterValues(confirmed,profile).timeout,200);
 });

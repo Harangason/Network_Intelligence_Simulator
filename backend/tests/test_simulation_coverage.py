@@ -1,4 +1,5 @@
-from backend.engineering.simulation_coverage import simulation_coverage, assess_simulation
+from backend.nis.engineering.simulation_coverage import simulation_coverage
+from backend.nis.engineering.simulation_coverage import assess_simulation
 
 
 def model():
@@ -107,7 +108,7 @@ def test_warning_text_alone_does_not_prove_successful_simulation():
 
 
 def test_selected_scope_requires_only_its_participating_networks():
-    from backend.engineering.simulation import _apply_simulation_scope
+    from backend.nis.engineering.simulation import _apply_simulation_scope
 
     config = configuration()
     config["networks"] = [{"id": "selected-bus"}, {"id": "excluded-bus"}]

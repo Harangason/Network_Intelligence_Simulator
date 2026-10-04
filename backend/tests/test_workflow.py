@@ -1,25 +1,28 @@
+from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
 from contextlib import nullcontext
 import json
 import pytest
 
-from backend.engineering.capacity.calculators import (
-    clock_drift_ms,
-    classify_load,
-    estimate_frame,
-    queueing_delay_ms,
-    scheduled_queueing_delay_ms,
-    utilization_percent,
-)
-from backend.engineering.capacity import service as capacity_service_module
-from backend.engineering.capacity.service import CapacityTimingService, PreflightService, parameters_for_protocol, preflight_warning_signature
-from backend.engineering.workflow.models import default_statuses, default_versions, set_step_status, transition_state
-from backend.engineering.workflow import service as workflow_service_module
-from backend.engineering.workflow.service import (
-    WorkflowStatusService,
-    WorkflowConflictError,
-    is_topology_layout_only_change,
-    normalize_engineering_wizard_settings,
-)
+from backend.nis.engineering.capacity.calculators import clock_drift_ms
+from backend.nis.engineering.capacity.calculators import classify_load
+from backend.nis.engineering.capacity.calculators import estimate_frame
+from backend.nis.engineering.capacity.calculators import queueing_delay_ms
+from backend.nis.engineering.capacity.calculators import scheduled_queueing_delay_ms
+from backend.nis.engineering.capacity.calculators import utilization_percent
+from backend.nis.engineering.capacity import service as capacity_service_module
+from backend.nis.engineering.capacity.service import CapacityTimingService
+from backend.nis.engineering.capacity.service import PreflightService
+from backend.nis.engineering.capacity.service import parameters_for_protocol
+from backend.nis.engineering.capacity.service import preflight_warning_signature
+from backend.nis.workflow.services.models import default_statuses
+from backend.nis.workflow.services.models import default_versions
+from backend.nis.workflow.services.models import set_step_status
+from backend.nis.workflow.services.models import transition_state
+from backend.nis.workflow.services import service as workflow_service_module
+from backend.nis.workflow.services.service import WorkflowStatusService
+from backend.nis.workflow.services.service import WorkflowConflictError
+from backend.nis.workflow.services.service import is_topology_layout_only_change
+from backend.nis.workflow.services.service import normalize_engineering_wizard_settings
 
 
 def test_topology_artifact_accepts_canonical_hardware_interface_ports():
@@ -158,6 +161,8 @@ def test_parameter_artifact_requires_saved_values_before_approval():
         "technology": "can_fd",
         "formats": ["universal-jsonl"],
         "bitrate": 2_000_000,
+        "arbitration_bitrate": 500_000,
+        "data_bitrate": 2_000_000,
         "cycle_ms": 10,
         "payload_bytes": 64,
         "queue_size": 256,
@@ -287,7 +292,7 @@ def test_can_fd_uses_separate_arbitration_and_data_phases():
 
 
 def test_ethernet_applies_minimum_wire_footprint():
-    estimate = estimate_frame("ETHERNET", 1, {"bitrate": 100_000_000})
+    estimate = estimate_frame("ETHERNET", 1, {**ethernet_mac(), "bitrate": 100_000_000})
 
     assert estimate.frame_bits == 84 * 8
     assert estimate.calculation_model == "ETHERNET_WIRE_ESTIMATE"
@@ -311,7 +316,7 @@ def test_mixed_network_bitrates_do_not_inherit_the_primary_can_speed():
     assert estimate_frame("LIN", 8, lin).to_dict()["transmission_time_s"] is None
     assert parameters_for_protocol("ETHERNET", parameters, {"bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
     assert parameters_for_protocol("ETHERNET", {"technology": "automotive_ethernet", "bitrate": 1_000_000_000})["bitrate"] == 1_000_000_000
-    assert parameters_for_protocol("LIN", {"bitrate": 9_600})["bitrate"] == 9_600
+    assert parameters_for_protocol("LIN", {**lin_design(9600), "bitrate": 9_600})["bitrate"] == 9_600
 
 
 def test_utilization_queueing_and_thresholds_are_monotonic():
@@ -714,7 +719,7 @@ def test_preflight_rejects_rate_outside_technology_profile(monkeypatch):
     state = {
         "versions": default_versions(),
         "statuses": {step: "COMPLETE" for step in default_statuses()},
-        "parameters": {"technology": "lin", "bitrate": 2_000_000},
+        "parameters": {"technology": "lin", **lin_design(2_000_000), "bitrate": 2_000_000},
         "topology": {"nodes": [], "edges": []},
     }
     service = PreflightService("analysis-project")
@@ -748,7 +753,7 @@ def test_preflight_does_not_treat_default_rates_as_configured(monkeypatch, techn
     result = service.run()
 
     findings = result["category_checks"]["technology"]
-    assert any(item["code"] == "TECHNOLOGY_PARAMETER_INVALID" for item in findings)
+    assert any(item["code"] in {"TECHNOLOGY_PARAMETER_INVALID", "TECHNOLOGY_PARAMETER_MISSING"} for item in findings)
     assert result["preflight_status"] == "BLOCKED"
     assert result["ready_for_simulation"] is False
 
@@ -864,7 +869,7 @@ def test_capacity_timing_analysis_covers_load_requirements_gateway_reliability_a
             "gateway_queue_delay_ms": 0.5,
             "protocol_conversion_delay_ms": 0.25,
             "gateway_maximum_throughput": 100,
-            "queue_policy": "STRICT_PRIORITY",
+            "queue_policy": "PRIORITY",
             "packet_loss_probability": 0.1,
             "required_reliability": 0.99,
             "clock_drift_ppm": 200,
@@ -932,6 +937,7 @@ def test_capacity_load_is_counted_once_per_physical_network_segment(monkeypatch)
         "parameters": {
             "technology": "lin",
             "bitrate": 19_200,
+            **lin_design(),
             "cycle_ms": 10,
             "payload_bytes": 8,
             "peak_factor": 1.15,

@@ -6,12 +6,14 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.api.agent_response import validate_response
-from backend.agent_core.api.tool_contract import Permission, ToolResult
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent
-from backend.engineering.agent_tools import conversation
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
+from backend.nis.agent.api.agent_response import validate_response
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.api.tool_contract import ToolResult
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
 
 
 def scoped(authority, operation):
@@ -77,8 +79,8 @@ def test_read_question_still_returns_answer_and_change_proposal_gets_evidence_te
 
 
 def test_heartbeat_actual_thread_keeps_project_lease_beyond_six_minutes(monkeypatch):
-    from backend.engineering.agent_tools.api import renew_conversation_lease
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.agent.tools.api import renew_conversation_lease
+    from backend.nis.engineering.projects.project_context import current_project_id
 
     offset = [0]
     real_now = datetime.now(timezone.utc)
@@ -119,15 +121,15 @@ def test_heartbeat_actual_thread_keeps_project_lease_beyond_six_minutes(monkeypa
 
 
 def test_missing_heartbeat_ownership_is_checked():
-    from backend.engineering.agent_tools.api import renew_conversation_lease
-    from backend.engineering.db import ConcurrentUpdateError
+    from backend.nis.agent.tools.api import renew_conversation_lease
+    from backend.nis.infrastructure.persistence.db import ConcurrentUpdateError
     with pytest.raises(ConcurrentUpdateError):
         renew_conversation_lease(ToolAuthority(f'audit-missing-run-{uuid4()}'), str(uuid4()))
 
 
 def test_heartbeat_renews_while_model_transaction_holds_project_lock():
-    from backend.engineering.agent_tools.api import renew_conversation_lease
-    from backend.engineering.db import RequestUnit
+    from backend.nis.agent.tools.api import renew_conversation_lease
+    from backend.nis.infrastructure.persistence.db import RequestUnit
     authority = ToolAuthority(f'audit-busy-heartbeat-{uuid4()}')
     started = scoped(authority, lambda: conversation.begin('Prüfen', AgentContext(active_project_id=authority.project_id)))
     unit = RequestUnit(authority.project_id)
@@ -151,8 +153,8 @@ def test_heartbeat_renews_while_model_transaction_holds_project_lock():
 
 
 def test_real_chat_worker_stops_if_lease_renewal_fails(monkeypatch):
-    from backend.app import create_app
-    from backend.engineering.agent_tools import api as module
+    from backend.nis.app import create_app
+    from backend.nis.agent.tools import api as module
 
     class WaitingAgent:
         def __init__(self, *args, **kwargs):

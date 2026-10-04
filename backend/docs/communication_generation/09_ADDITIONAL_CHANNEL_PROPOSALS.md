@@ -1,3 +1,5 @@
-# Additional Channel Proposals
+# Document moved
 
-New physical channels are architecture decisions. The current generator can select a second channel when projected load exceeds the threshold; production-grade automatic creation must be guarded by hardware capability checks and user approval.
+Canonical document: [09_ADDITIONAL_CHANNEL_PROPOSALS.md](../../../docs/domains/engineering/09_ADDITIONAL_CHANNEL_PROPOSALS.md).
+
+This entry preserves old links during the structure migration.

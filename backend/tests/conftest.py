@@ -69,7 +69,8 @@ def pytest_configure(config):
 @pytest.fixture(autouse=True)
 def isolated_project_context():
     """Unscoped test helpers must never read/write the shared default project."""
-    from backend.engineering.project_context import activate_project, reset_project
+    from backend.nis.engineering.projects.project_context import activate_project
+    from backend.nis.engineering.projects.project_context import reset_project
     token = activate_project("pytest-isolated-" + uuid4().hex)
     try:
         yield

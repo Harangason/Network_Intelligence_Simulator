@@ -1,9 +1,7 @@
-from backend.engineering.generation_rule_manager import (
-    industry_candidates,
-    resolve_generation_policy,
-    technology_ids_from_task,
-)
-from backend.engineering.requirement_expansion_modules.engine import expand_requirement
+from backend.nis.engineering.requirements.generation_rule_manager import industry_candidates
+from backend.nis.engineering.requirements.generation_rule_manager import resolve_generation_policy
+from backend.nis.engineering.requirements.generation_rule_manager import technology_ids_from_task
+from backend.nis.engineering.requirement_expansion_modules.engine import expand_requirement
 
 
 def test_explicit_industry_controls_only_the_template_path():
@@ -43,7 +41,7 @@ def test_mixed_bus_task_gets_independent_transport_paths():
     assert all(item["generator"] == "TechnologyTransportGenerator" for item in decision["bus_types"])
     assert decision["industry"]["source_modules"]
     assert all(item["source"]["source_modules"] for item in decision["bus_types"])
-    assert decision["provenance"]["policy_source"] == "backend.engineering.generation_rule_manager"
+    assert decision["provenance"]["policy_source"] == "backend.nis.engineering.requirements.generation_rule_manager"
     assert decision["guardrails"]["reviewed_history_is_advisory_only"] is True
 
 

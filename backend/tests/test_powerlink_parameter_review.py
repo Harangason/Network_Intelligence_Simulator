@@ -1,8 +1,8 @@
 """Classic POWERLINK cycle/grants and device-specific limits are not generic Ethernet."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import powerlink as P
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.powerlink import rules as P
 def actual():
  x={'epl_'+k:'synthetic-'+k for k in P.REQUIRED}
  x.update(bitrate_bps=100000000,epl_edition=P.EDITION,epl_extension='NONE',epl_mode='POWERLINK',epl_role='CN',

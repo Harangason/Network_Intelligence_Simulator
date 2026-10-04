@@ -7,8 +7,10 @@ import pytest
 from backend.tests.test_agent_periodic_acquisition_complete import seed
 from backend.tests.test_agent_periodic_acquisition_followup import add_actuator, followup, apply
 from backend.tests.test_agent_recipient_repair_runtime import scoped
-from backend.engineering.agent_tools import conversation, model, proposal_service
-from backend.engineering.repository import update_object
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools import model as model
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.infrastructure.persistence.repository import update_object
 
 PROMPT = 'Lege eine Diagnoseabfrage für alle Stellglieder an.'
 
@@ -17,7 +19,7 @@ PROMPT = 'Lege eine Diagnoseabfrage für alle Stellglieder an.'
     ('receiver-interface', True), ('foreign', False), ('producer-function', False),
     ('dangling-function-interface', False), ('contradictory-interface', False)])
 def test_function_contract_recipient_must_resolve_to_actual_transport_owner(recipient, valid):
-    from backend.engineering.wizard_communication import contract_findings
+    from backend.nis.engineering.communication.wizard_communication import contract_findings
     graph = {'HardwareNode': {'producer': {}, 'receiver': {}},
         'Function': {'receiver-function': {'hardware_node_id': 'receiver'}, 'producer-function': {'hardware_node_id': 'producer'}},
         'Interface': {'receiver-interface': {'function_id': 'receiver-function', 'hardware_node_id': 'receiver'},
@@ -69,9 +71,9 @@ def test_explicit_diagnostic_query_uses_existing_requester_and_real_exchange_ass
     assert query['hardware_node_id'] == ids['controller']
     assert query['configuration']['diagnostic_service_id'] == 'read_actual_position'
     assert query['configuration']['diagnostic_definition_ref'] == ids['definition_function']
-    from backend.engineering.simulation import prepare_workflow_simulation_config
-    from hardware_profile import normalize_hardware_config
-    from universal_trace import generate_universal_events
+    from backend.nis.engineering.simulation import prepare_workflow_simulation_config
+    from backend.nis.simulation.hardware_profile import normalize_hardware_config
+    from backend.nis.traces.universal_trace import generate_universal_events
     config = scoped(authority, lambda: prepare_workflow_simulation_config(
         {'duration_s': 61, 'max_events': 20000, 'seed': 42, 'scenario': {'mode': 'NORMAL'}}, authority.project_id))
     _, events = generate_universal_events(config, normalize_hardware_config(config), start_utc=1700000000)
@@ -150,7 +152,7 @@ def test_changed_diagnostic_definition_invalidates_reviewed_proposal():
 @pytest.mark.parametrize('prompt', ['Lege keine Diagnoseabfrage für alle Stellglieder an.',
     'Lege eine Diagnoseabfrage für alle Stellglieder an und lösche die vorhandene ECU.'])
 def test_canonical_diagnostic_planner_does_not_consume_negated_or_mixed_intent(prompt):
-    from backend.engineering.agent_tools.periodic_acquisition import prepare_diagnostic
+    from backend.nis.agent.tools.periodic_acquisition import prepare_diagnostic
     authority, _ = fixture(); original = followup(authority, PROMPT); before = scoped(authority, model.model)
     def inspect():
         state = conversation.read(); work = state['engineering_workloads'][original['runtime']['workload_id']]

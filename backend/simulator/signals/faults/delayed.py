@@ -1,7 +1,4 @@
-from __future__ import annotations
-
-from typing import Any
-
-
-def delayed(behavior: Any, signal_id: str, time_s: float, delay_s: float, fallback: float) -> float:
-    return behavior.delayed(signal_id, time_s, max(0.0, delay_s), fallback)
+"""Compatibility only; owner backend.nis.simulation.signals.faults.delayed."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals.faults.delayed')

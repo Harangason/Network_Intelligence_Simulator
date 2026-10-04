@@ -1,14 +1,14 @@
 """Independent per-technology checks for the approved complete parameter audit."""
-from backend.app.simulation_service import SimulationService
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies.catalog import PARAMETER_UI_ALIASES, DDS_POLICY_ENTITIES
-from backend.engineering.agent_tools.wizard_generation import _parameter_defaults
-from backend.engineering.capacity.service import parameters_for_protocol
-from backend.engineering.workflow.service import WorkflowStatusService
-from backend.communication.technologies.core.registry import TechnologyRegistry
+from backend.nis.simulation.service import SimulationService
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.catalog import PARAMETER_UI_ALIASES, DDS_POLICY_ENTITIES
+from backend.nis.agent.tools.wizard_generation import _parameter_defaults
+from backend.nis.engineering.capacity.service import parameters_for_protocol
+from backend.nis.workflow.services.service import WorkflowStatusService
+from backend.nis.communication.registry import TechnologyRegistry
 import pytest
 
-from backend.communication.technologies import mipi_csi2 as CS
+from backend.nis.communication.technologies.mipi_csi2 import rules as CS
 
 
 def csi_actual(device='TI960',direction='TX'):
@@ -193,7 +193,7 @@ def test_csi_ti_instantaneous_ui_eot_prepare_zero_and_electrical_limits_are_not_
 
 
 def test_csi_confirmed_native_nondefault_rate_and_vc_survive_rejected_packet_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     x=csi_long(1620);x.update(cs_lane_bitrate_bps=1200000000,cs_vc=2,cs_data_id=171,
         cs_cci_rate_bps=330000,cs_format='RAW12',cs_packing='PACKED_RAW12',cs_line_pixels=1080,cs_packing_remainder=0)
@@ -207,7 +207,7 @@ def test_csi_confirmed_native_nondefault_rate_and_vc_survive_rejected_packet_edi
     assert service.get()['parameters']==parameters
     assert registry.profile('mipi_csi2')['capacity_evidence']['status']=='MODEL_MISSING'
 
-from backend.communication.technologies import mil_std_1553 as MS
+from backend.nis.communication.technologies.mil_std_1553 import rules as MS
 
 MIL1553_ACTUAL={'ms_'+k:'synthetic-actual-'+k for k in MS.REQUIRED}
 MIL1553_ACTUAL.update(ms_edition=MS.EDITION,ms_application='BASE_C',ms_role='BC',ms_message='BC_RT',
@@ -405,7 +405,7 @@ def test_mil1553_cable_termination_fault_load_and_strict_transformer_bounds():
 
 
 def test_mil1553_confirmed_nondefault_addresses_and_observed_clock_survive_rejected_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     x=mil1553_packet('RT_RT',11)
     x.update(ms_command_address=27,ms_source_rt_address=13,ms_observed_bitrate_bps=999750,
@@ -426,7 +426,7 @@ def test_mil1553_every_native_scalar_rejects_coerced_text(key,kind):
     assert registry.validate_parameters('mil_std_1553',{**mil1553_packet(),key:'1'})['status']=='INVALID'
 
 
-from backend.communication.technologies import matter as MT
+from backend.nis.communication.technologies.matter import rules as MT
 
 MATTER_ACTUAL={'mt_'+k:'synthetic-actual-'+k for k in MT.REQUIRED}
 MATTER_ACTUAL.update(mt_edition=MT.EDITION,mt_implementation=MT.SDK,mt_phase='OPERATIONAL',
@@ -650,7 +650,7 @@ def test_matter_invoke_multiple_paths_match_peer_capacity_and_exclude_group_or_w
 
 
 def test_matter_confirmed_peer_interval_and_uint64_identity_survive_rejected_foreign_transport_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     x={**MATTER_ACTUAL,'mt_peer_parameter_origin':'SESSION_ESTABLISHMENT','mt_parameter_source':'synthetic-peer-session',
        'mt_peer_idle_ms':5300,'mt_peer_active_ms':1250,'mt_peer_threshold_ms':5000,
@@ -665,7 +665,7 @@ def test_matter_confirmed_peer_interval_and_uint64_identity_survive_rejected_for
     assert service.get()['parameters']==parameters
     assert registry.profile('matter')['capacity_evidence']['status']=='MODEL_MISSING'
 
-from backend.communication.technologies import m_bus as MB
+from backend.nis.communication.technologies.m_bus import rules as MB
 
 MBUS_ACTUAL={**{'mb_'+k:'synthetic-actual-'+k for k in MB.REQUIRED if k not in ('edition','role','direction','hardware')},
     'mb_edition':MB.EDITION,'mb_role':'MASTER','mb_direction':'DOWN','mb_hardware':'REGISTERED_HARDWARE',
@@ -901,7 +901,7 @@ def test_m_bus_actual_baud_requires_both_endpoint_capabilities_and_transaction_c
 
 
 def test_m_bus_confirmed_native_addresses_and_rate_survive_rejected_wireless_ci_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     x={**m_bus_rate(2400),'mb_ci':0x72,'mb_ci_direction':'UP','mb_direction':'UP','mb_tpl_header':'LONG',
       'mb_primary_address':17,'mb_reply_address':17,'mb_reply_address_source':'synthetic-actual-peer'}
@@ -916,7 +916,7 @@ def test_m_bus_confirmed_native_addresses_and_rate_survive_rejected_wireless_ci_
     assert registry.profile('m_bus')['capacity_evidence']['status']=='MODEL_MISSING'
 
 
-from backend.communication.technologies import lvds as LV
+from backend.nis.communication.technologies.lvds import rules as LV
 
 LVDS_ACTUAL={**{'lv_'+key:'synthetic-actual-'+key for key in LV.REQUIRED
     if key not in ('edition','electrical','hardware','topology','purpose')},
@@ -1116,7 +1116,7 @@ def test_lvds_conditional_proposals_are_design_references_not_operating_clock_me
 
 
 def test_lvds_confirmed_storage_survives_rejected_foreign_clock_or_wrong_ui():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     x=lvds_chip();group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}
     p={'technology':'lvds','technology_parameters':{'lvds':group}}
@@ -1129,12 +1129,12 @@ def test_lvds_confirmed_storage_survives_rejected_foreign_clock_or_wrong_ui():
     assert registry.profile('lvds')['capacity_evidence']['status']=='MODEL_MISSING'
 
 
-from backend.communication.technologies.knx_rf import LEGACY as KNX_RF_EDITION
-from backend.communication.technologies.lin import OLD as LIN_EDITION, protected_id
-from backend.communication.technologies.lonworks import OLD as LON_EDITION, G as LON_GUIDE, X as LON_XCVR, R as LON_ROUTER
+from backend.nis.communication.technologies.knx_rf.rules import LEGACY as KNX_RF_EDITION
+from backend.nis.communication.technologies.lin.rules import OLD as LIN_EDITION, protected_id
+from backend.nis.communication.technologies.lonworks.rules import OLD as LON_EDITION, G as LON_GUIDE, X as LON_XCVR, R as LON_ROUTER
 
-from backend.communication.technologies.lorawan import OLD as LORA_L2, REGIONAL as LORA_RP
-from backend.communication.technologies.lte_m import EDITION as LTE_M_EDITION, BANDS as LTE_M_BANDS, TDD as LTE_M_TDD, CARRIER_PRBS as LTE_M_PRBS
+from backend.nis.communication.technologies.lorawan.rules import OLD as LORA_L2, REGIONAL as LORA_RP
+from backend.nis.communication.technologies.lte_m.rules import EDITION as LTE_M_EDITION, BANDS as LTE_M_BANDS, TDD as LTE_M_TDD, CARRIER_PRBS as LTE_M_PRBS
 
 LTE_M_ACTUAL={**{'ltm_'+key:'synthetic-actual-'+key for key in
     ('revision','device_source','binding_source','network_source','regulatory_source','physical_source','scheduler_source',
@@ -1329,7 +1329,7 @@ def test_lte_m_wideband_uses_available_regular_narrowbands_not_always24_prbs(bw,
 
 
 def test_lte_m_confirmed_storage_survives_rejected_foreign_bandwidth_or_grant_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     x={**lte_m_actual(band=106,category='M2',bw=3),'ltm_ue_max_bandwidth_mhz':3,'ltm_allocated_prbs':13,
       'ltm_grant_profile':'WIDE_PUSCH_5_C_RNTI','ltm_rrc_state':'CONNECTED','ltm_service':'UNICAST','ltm_wideband_r14':True}
@@ -1623,7 +1623,7 @@ def test_lorawan_regulatory_profile_actual_output_is_not_commissioned_max_or_con
 
 
 def test_lorawan_confirmed_storage_roundtrip_rejected_edit_does_not_overwrite_saved_radio_values():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     x=lora_data('US915',dr=0,sf=10);x.update(lr_fcnt=65536,lr_fcnt_wire=0)
     group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}
@@ -1828,7 +1828,7 @@ def test_lonworks_ip852_authentication_and_registered_variants_cannot_borrow_for
 
 def test_lonworks_confirmed_values_survive_foreign_rate_edit_in_isolated_sql():
     from copy import deepcopy
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     service=WorkflowStatusService(current_project_id())
     saved={'technology':'lonworks','technology_parameters':{'lonworks':{'values':LON_ACTUAL,'provenance':{
         key:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':value}for key,value in LON_ACTUAL.items()}}}}
@@ -1976,7 +1976,7 @@ def test_lin_transport_nad_sf_ff_cf_and_current_registered_editions_are_separate
 
 
 def test_lin_isolated_sql_preserves_confirmed_ldf_and_rate_after_foreign_can_bitrate():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     saved={'technology':'lin','technology_parameters':{'lin':{'values':LIN_ACTUAL,'provenance':{
@@ -2093,7 +2093,7 @@ def test_knx_tp_ncn5120_qualified_uart_spi_crc_marker_and_retry_scopes():
 
 
 def test_knx_tp_isolated_sql_preserves_confirmed_addresses_after_wrong_host_clock():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     saved={'technology':'knx_tp','technology_parameters':{'knx_tp':{'values':KNX_TP_ACTUAL,'provenance':{
@@ -2252,7 +2252,7 @@ def test_knx_rf_current_registered_profile_and_secure_commissioning_need_separat
 
 
 def test_knx_rf_confirmed_radio_domain_and_edition_survive_rejected_isolated_sql_wrong_channel_rate():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     saved={'technology':'knx_rf','technology_parameters':{'knx_rf':{'values':KNX_RF_ACTUAL,'provenance':{
@@ -2414,7 +2414,7 @@ def test_knx_ip_busy_flow_transmit_receive_ranges_and_address_encoding_are_indep
 
 
 def test_knx_ip_actual_hpai_udp_tcp_and_qualified_factory_timers_do_not_cross_modes():
-    from backend.communication.technologies.knx_ip import SHA
+    from backend.nis.communication.technologies.knx_ip.rules import SHA
     f={v['key']:v for v in registry.parameter_fields('knx_ip')}
     assert f['kip_ack_ms']['conditional_defaults'][0]['value']==1000
     assert f['kip_ip_multicast_ttl']['conditional_defaults'][0]['value']==64
@@ -2441,7 +2441,7 @@ def test_knx_ip_actual_hpai_udp_tcp_and_qualified_factory_timers_do_not_cross_mo
 
 
 def test_knx_ip_confirmed_endpoint_and_commissioning_survive_rejected_isolated_sql_foreign_phy():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**KNX_IP_ACTUAL,'kip_hpai_address':'192.0.2.15','kip_hpai_kind':'EXPLICIT_IPV4','kip_hpai_port':51234}
@@ -2587,7 +2587,7 @@ def test_j1939_multi_pg_counts_service_headers_and_minimal_representable_fd_dlc_
 
 
 def test_j1939_linux_and_python_defaults_are_version_qualified_and_privileges_assurance_not_inferred():
-    from backend.communication.technologies.j1939 import SHA
+    from backend.nis.communication.technologies.j1939.rules import SHA
     f={v['key']:v for v in registry.parameter_fields('j1939')}
     assert f['j39_cts_packets']['conditional_defaults'][0]['value']==1
     assert f['j39_linux_tx_queue_retries']['conditional_defaults'][0]['value']==100
@@ -2618,7 +2618,7 @@ def test_j1939_linux_and_python_defaults_are_version_qualified_and_privileges_as
 
 
 def test_j1939_confirmed_phy_address_and_dictionary_survive_rejected_isolated_sql_foreign_rate():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     saved={'technology':'j1939','technology_parameters':{'j1939':{'values':J1939_ACTUAL,'provenance':{
@@ -2724,7 +2724,7 @@ def test_isobus_etp_large_payload_and_gnss_fastpacket32frames_do_not_inherit_tp1
 
 
 def test_isobus_library_defaults_and_address_arbitration_are_commit_and_name_group_qualified():
-    from backend.communication.technologies.isobus import SHA
+    from backend.nis.communication.technologies.isobus.rules import SHA
     f={v['key']:v for v in registry.parameter_fields('isobus')}
     for key,value in [('max_sessions',4),('frames_per_update',255),('cts_packets',16),('dpo_packets',16),('bam_interval_ms',50),('t1_ms',750)]:
         p=f['iso_'+key]['conditional_defaults'][0]
@@ -2742,7 +2742,7 @@ def test_isobus_library_defaults_and_address_arbitration_are_commit_and_name_gro
 
 
 def test_isobus_confirmed_address_and_transport_choices_survive_rejected_isolated_sql_clock_change():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id());values={**ISOBUS_ACTUAL,'iso_source_address':22,'iso_claim_state':'CLAIMED'}
     saved={'technology':'isobus','technology_parameters':{'isobus':{'values':values,'provenance':{
@@ -2852,7 +2852,7 @@ def test_ipv6_jumbogram32bit_length_requires_actual_peer_link_support_and_exclud
 
 
 def test_ipv4_confirmed_datagram_parameters_survive_rejected_isolated_sql_family_switch():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id());values={**IP_ACTUAL,'ip_ttl':128}
     saved={'technology':'ip','technology_parameters':{'ip':{'values':values,'provenance':{
@@ -2867,11 +2867,11 @@ def test_ip_layer_parameter_scope_does_not_claim_an_unconfigured_conventional_st
     upper={'bitrate':100000000,'duplex':'FULL','payload_bytes':17,'afdx_lmax_frame_bytes':64}
     result=registry.validate_parameters('afdx',upper)
     assert result['status']=='VALID'and result['validation_scope']=='DECLARED_PROFILE_PARAMETERS'
-    assert result['unverified_stack_layers']==['ip']
+    assert result['unverified_stack_layers']==['ip','udp']
     assert result['stack_parameter_completeness']=='UNVERIFIED'
     configured={**upper,**IP_ACTUAL,'ip_ttl':64}
     result=registry.validate_parameters('afdx',configured)
-    assert result['status']=='VALID'and result['unverified_stack_layers']==[]
+    assert result['status']=='VALID'and result['unverified_stack_layers']==['udp']
     assert registry.validate_parameters('afdx',{**configured,'ip_hop_limit':64})['status']=='INVALID'
     assert registry.validate_parameters('afdx',{**upper,'ip_version':'IPv4'})['status']=='UNVERIFIED'
 
@@ -2970,7 +2970,7 @@ def test_wireless_service_radio_channels_crc_and_pairing_roles_do_not_inherit_cy
 
 
 def test_wireless_confirmed_radio_values_survive_rejected_isolated_sql_clock_change():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id());values={**IOLW_ACTUAL,'iolw_max_retry':4}
     saved={'technology':'io_link_wireless','technology_parameters':{'io_link_wireless':{'values':values,'provenance':{
@@ -3084,7 +3084,7 @@ def test_io_link_class_b_isolation_and_utf8_serial_octets_require_own_evidence()
 
 
 def test_io_link_sio_mode_does_not_accept_serial_telegram_clock_and_confirmed_sql_values_survive_rejection():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**IOL_ACTUAL,'iol_com_mode':'COM3','iol_bitrate_bps':230400}
@@ -3183,7 +3183,7 @@ def test_interbus_qualified_cycle_uses_bytes_and_is_not_a_full_functional_capaci
 
 
 def test_interbus_confirmed_actual_clock_survives_rejected_isolated_sql_foreign_switch():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**INTERBUS_ACTUAL,'ib_bitrate_bps':2000000}
@@ -3204,7 +3204,7 @@ IEC61850_ACTUAL={**{'iec61850_'+key:'synthetic-actual-'+key for key in
 
 
 def test_iec61850_has_no_industry_selected_service_or_universal_ethernet_defaults():
-    from backend.communication.technologies.core.models import TransportUnitType
+    from backend.nis.communication.core.models import TransportUnitType
     for family in ('iec61850','iec61162'):
         assert TransportUnitType(registry.profile(family)['transport_unit'])==TransportUnitType.MESSAGE
     f={v['key']:v for v in registry.parameter_fields('iec61850')}
@@ -3295,7 +3295,7 @@ def test_iec61850_control_selection_and_termination_depend_on_actual_control_mod
 
 
 def test_iec61850_confirmed_report_buffer_and_mapping_survive_rejected_isolated_sql_service_switch():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**IEC61850_ACTUAL,'iec61850_buf_tm_ms':27,'iec61850_intg_pd_ms':2000,'iec61850_conf_rev':42,
@@ -3418,7 +3418,7 @@ def test_iec61162_device_multicast_ranges_datagram_sizes_and_binary_paths_remain
 
 
 def test_iec61162_confirmed_serial_clock_and_part_survive_rejected_isolated_sql_switch():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**IEC61162_ACTUAL,'iec61162_data_bits':8,'iec61162_parity':'NONE','iec61162_stop_bits':1,
@@ -3465,7 +3465,7 @@ def test_each_iec104_field_rejects_wrong_scalar_type(field):
 
 
 def test_iec104_default_timer_profiles_and_secure_ports_do_not_hide_implementation_differences():
-    from backend.communication.technologies import iec104
+    from backend.nis.communication.technologies.iec104 import rules as iec104
     f={v['key']:v for v in registry.parameter_fields('iec60870_5_104')}
     t0=f['iec104_t0_ms']['conditional_defaults']
     assert t0[0]['value']==30000 and t0[0]['when']=={'iec104_parameter_profile':'INTEROPERABILITY_BASELINE'}
@@ -3542,7 +3542,7 @@ def test_iec104_redundancy_and_vendor_message_scope_require_actual_mapping():
 
 
 def test_iec104_confirmed_actual_timers_addresses_and_transport_survive_bad_isolated_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**IEC104_ACTUAL,'iec104_t1_ms':30000,'iec104_t2_ms':10000,'iec104_common_address':1234,'iec104_ca_bytes':2,
@@ -3591,7 +3591,7 @@ def test_each_iec101_field_rejects_wrong_scalar_type(field):
 
 
 def test_iec101_constructor_and_vendor_defaults_are_independently_qualified_and_sourced():
-    from backend.communication.technologies import iec101
+    from backend.nis.communication.technologies.iec101 import rules as iec101
     f={v['key']:v for v in registry.parameter_fields('iec60870_5_101')}
     assert 'default'not in f['iec101_baud_bps']
     defaults=f['iec101_baud_bps']['conditional_defaults']
@@ -3653,7 +3653,7 @@ def test_iec101_sequence_and_address_width_boundaries_are_not_shared():
 
 
 def test_iec101_confirmed_device_serial_and_address_values_survive_rejected_isolated_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**IEC101_ACTUAL,'iec101_link_address':42,'iec101_address_purpose':'STATION','iec101_common_address':1234,'iec101_first_ioa':456789}
@@ -3691,7 +3691,7 @@ def test_i3c_is_not_a_generic_bitrate_or_fixed_packet_profile():
     assert registry.validate_parameters('i3c',{'bitrate_bps':12500000})['status']=='INVALID'
     for key in ('i3c_dynamic_address','i3c_bcr','i3c_dcr','i3c_tsco_ns','i3c_bus_cap_pf','i3c_static_address'):
         assert 'default' not in fields[key]
-    from backend.engineering.capacity.calculators import estimate_frame
+    from backend.nis.engineering.capacity.calculators import estimate_frame
     assert not estimate_frame('I3C',8,I3C_ACTUAL).transmission_time_available
 
 
@@ -3797,7 +3797,7 @@ def test_i3c_version_qualified_ccc_and_accepted_lengths_do_not_inherit_new_or_ca
 
 
 def test_i3c_confirmed_actual_clocks_and_address_survive_rejected_isolated_sql_change():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**I3C_ACTUAL,'i3c_role':'TARGET','i3c_dynamic_address':32,'i3c_address_purpose':'ORDINARY',
@@ -3869,7 +3869,8 @@ def test_i2c_role_electrical_and_mode_constraints_reject_wrong_assumptions(patch
 
 
 def test_i2c_high_speed_interpolates_timing_and_includes_separate_entry_clock():
-    from backend.engineering.capacity.calculators import confirmed_serial_evidence,estimate_frame
+    from backend.nis.engineering.capacity.calculators import confirmed_serial_evidence
+    from backend.nis.engineering.capacity.calculators import estimate_frame
     p={**I2C_ACTUAL,'i2c_mode':'HIGH_SPEED','bitrate_bps':2000000,'i2c_bus_cap_pf':250,
        'i2c_hs_entry_rate_bps':400000,'i2c_hs_controller_code':9,'i2c_hs_diagnostic':False,
        'i2c_low_ns':240,'i2c_high_ns':90,'i2c_rise_ns':60,'i2c_fall_ns':60}
@@ -3887,7 +3888,8 @@ def test_i2c_high_speed_interpolates_timing_and_includes_separate_entry_clock():
 
 
 def test_i2c_controller_port_and_target_port_do_not_certify_a_transaction():
-    from backend.engineering.capacity.calculators import confirmed_serial_evidence,serial_evidence_missing_fields
+    from backend.nis.engineering.capacity.calculators import confirmed_serial_evidence
+    from backend.nis.engineering.capacity.calculators import serial_evidence_missing_fields
     controller={'evidence_scope':'CONTROLLER_PORT','confirmed':True,'source':'actual-controller-datasheet',
        'master_node_id':'controller-A','i2c_mode':'STANDARD','bitrate_bps':100000}
     assert registry.validate_parameters('i2c',{**I2C_ACTUAL,'local_timing_evidence':controller})['status']=='VALID'
@@ -3898,7 +3900,7 @@ def test_i2c_controller_port_and_target_port_do_not_certify_a_transaction():
     target={**controller,'evidence_scope':'TARGET_PORT','slave_address':'0x20','address_bits':7}
     assert registry.validate_parameters('i2c',{**I2C_ACTUAL,'local_timing_evidence':target})['status']=='VALID'
     assert confirmed_serial_evidence('i2c',{'local_timing_evidence':target},8)is None
-    from backend.engineering.capacity.dimensioning import local_evidence_proposal
+    from backend.nis.engineering.capacity.dimensioning import local_evidence_proposal
     proposal=local_evidence_proposal('I2C',[{'stream_id':'controller-port','local_timing_evidence':controller}])
     assert not any(f['key'].endswith(':slave_address') or f['key'].endswith(':transfer_bits_bound') for f in proposal['fields'])
     assert proposal['release_gate']=='TIMING_BLOCKED_UNTIL_DEVICE_EVIDENCE_CONFIRMED'
@@ -3915,7 +3917,7 @@ def test_i2c_controller_port_and_target_port_do_not_certify_a_transaction():
     {'transfer_direction':'BIDIRECTIONAL','transfer_bits_bound':81},
     {'multi_master':True,'arbitration_bound_us':None}])
 def test_i2c_transaction_bounds_are_typed_and_include_address_ninth_pulses_and_competition(patch):
-    from backend.engineering.capacity.calculators import confirmed_serial_evidence
+    from backend.nis.engineering.capacity.calculators import confirmed_serial_evidence
     assert confirmed_serial_evidence('i2c',{'local_timing_evidence':{**I2C_TRANSFER,**patch}},8)is None
 
 
@@ -3928,8 +3930,9 @@ def test_every_i2c_local_device_field_has_typed_validation(field):
 
 @pytest.mark.parametrize('scope',[None,''])
 def test_i2c_blank_optional_role_preserves_legacy_transaction_requirements(scope):
-    from backend.engineering.capacity.calculators import confirmed_serial_evidence,serial_evidence_missing_fields
-    from backend.engineering.capacity.dimensioning import local_evidence_proposal
+    from backend.nis.engineering.capacity.calculators import confirmed_serial_evidence
+    from backend.nis.engineering.capacity.calculators import serial_evidence_missing_fields
+    from backend.nis.engineering.capacity.dimensioning import local_evidence_proposal
     e={**I2C_TRANSFER,'evidence_scope':scope,'slave_address':32}
     assert registry.validate_parameters('i2c',{**I2C_ACTUAL,'local_timing_evidence':e})['status']=='VALID'
     assert confirmed_serial_evidence('i2c',{'local_timing_evidence':e},8)==e
@@ -3944,7 +3947,7 @@ def test_i2c_blank_optional_role_preserves_legacy_transaction_requirements(scope
 
 @pytest.mark.parametrize('address',[32,32.0,'32','0x20','0X20'])
 def test_i2c_existing_valid_integer_and_text_addresses_remain_accepted(address):
-    from backend.engineering.capacity.calculators import confirmed_serial_evidence
+    from backend.nis.engineering.capacity.calculators import confirmed_serial_evidence
     e={**I2C_TRANSFER,'slave_address':address}
     assert registry.validate_parameters('i2c',{**I2C_ACTUAL,'local_timing_evidence':e})['status']=='VALID'
     assert confirmed_serial_evidence('i2c',{'local_timing_evidence':e},8)==e
@@ -3952,14 +3955,14 @@ def test_i2c_existing_valid_integer_and_text_addresses_remain_accepted(address):
 
 @pytest.mark.parametrize('address',[True,False,-1,32.5,128,'nonsense','32.5','-1'])
 def test_i2c_invalid_target_addresses_fail_both_form_and_capacity(address):
-    from backend.engineering.capacity.calculators import confirmed_serial_evidence
+    from backend.nis.engineering.capacity.calculators import confirmed_serial_evidence
     e={**I2C_TRANSFER,'slave_address':address}
     assert registry.validate_parameters('i2c',{**I2C_ACTUAL,'local_timing_evidence':e})['status']=='INVALID'
     assert confirmed_serial_evidence('i2c',{'local_timing_evidence':e},8)is None
 
 
 def test_i2c_explicit_ufm_and_unrestricted_data_count_are_separate_from_bidirectional_i2c():
-    from backend.engineering.capacity.calculators import confirmed_serial_evidence
+    from backend.nis.engineering.capacity.calculators import confirmed_serial_evidence
     e={**I2C_TRANSFER,'i2c_mode':'ULTRA_FAST','bitrate_bps':5000000,'transfer_direction':'WRITE',
        'clock_stretch_limit_us':0,'transfer_bits_bound':9*301}
     assert confirmed_serial_evidence('i2c',{'local_timing_evidence':e},300)==e
@@ -3969,7 +3972,7 @@ def test_i2c_explicit_ufm_and_unrestricted_data_count_are_separate_from_bidirect
 
 
 def test_i2c_confirmed_custom_target_and_rate_survive_rejected_isolated_sql_change():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**I2C_ACTUAL,'bitrate_bps':50000,'i2c_endpoint_role':'TARGET','i2c_address_bits':10,
@@ -4250,7 +4253,7 @@ def test_http_semantics_do_not_accept_representation_lengths_for_normal_response
 
 
 def test_http_confirmed_explicit_port_and_actual_peer_http2_settings_survive_rejected_sql_change():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**HTTP2_DATA,'http2_settings_phase':'PEER_ADVERTISED','http2_header_table_size':8192,
@@ -4348,7 +4351,7 @@ def test_hart_qualified_character_timers_distinguish_hosts_and_actual_response_s
 
 
 def test_hart_confirmed_long_address_frame_and_peer_preamble_survive_rejected_sql_change():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     parameters={'technology':'hart',**HART_REQUEST,'technology_parameters':{'hart':{'values':HART_REQUEST.copy(),
@@ -4443,7 +4446,7 @@ def test_gpio_timing_completeness_depends_on_input_poll_interrupt_debounce_or_ou
 
 
 def test_gpio_confirmed_operating_pin_and_input_evidence_survive_rejected_sql_change():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     pin_values={key:value for key,value in GPIO_INPUT.items() if key!='local_timing_evidence'}
@@ -4533,7 +4536,7 @@ def test_goose_data_revision_test_and_device_variant_are_not_automatically_certi
 
 
 def test_goose_confirmed_scl_and_vlan_parameters_survive_rejected_sql_change():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     parameters={'technology':'goose',**GOOSE_PACKET,'technology_parameters':{'goose':{'values':GOOSE_PACKET.copy(),
@@ -4615,7 +4618,7 @@ def test_generic_serial_uart_frame_formats_and_non_uart_modes_remain_separate():
 
 
 def test_generic_serial_confirmed_peer_framing_and_clock_survive_rejected_sql_change():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     parameters={'technology':'generic_serial',**GS_PACKET,'technology_parameters':{'generic_serial':{'values':GS_PACKET.copy(),
@@ -4681,7 +4684,7 @@ def test_generic_can_cc_fd_xl_payload_and_remote_formats_are_independent():
 
 
 def test_generic_can_confirmed_family_link_and_identifier_survive_rejected_sql_change():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     parameters={'technology':'generic_can',**GC_PACKET,'technology_parameters':{'generic_can':{'values':GC_PACKET.copy(),
@@ -4765,7 +4768,7 @@ def test_fsoe_one_byte_exception_is_six_wire_bytes_and_watchdog_is_unknown_until
 
 
 def test_fsoe_confirmed_directional_mapping_and_watchdogs_survive_rejected_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     parameters={'technology':'fsoe',**FS_PACKET,'technology_parameters':{'fsoe':{'values':FS_PACKET.copy(),
@@ -4840,7 +4843,7 @@ def test_foundation_h1_priority_uses_dl_sdu_not_encoded_data_and_pt_is_unschedul
 
 
 def test_foundation_h1_confirmed_las_and_power_data_survive_rejected_sql_edits():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     parameters={'technology':'foundation_fieldbus_h1',**FF_PACKET,
@@ -4922,7 +4925,7 @@ def test_flexray_dynamic_payload_is_bounded_by_local_not_static_length():
 
 
 def test_flexray_confirmed_slot_and_cluster_config_survive_invalid_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values=FR_PACKET.copy()
@@ -5018,7 +5021,7 @@ def test_ethernet_ip_watchdog_uses_accepted_directional_interval_and_declared_re
 
 
 def test_ethernet_ip_confirmed_connection_sizes_survive_rejected_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**EIP_PACKET,'eip_established':True}
@@ -5047,7 +5050,7 @@ ETH_ACTUAL={'bitrate_bps':10000000,'eth_phy':'10BASE_T','duplex':'FULL','mtu_byt
 
 
 def test_ethernet_timing_and_load_adapters_require_explicit_frame_layout():
-    from backend.engineering.capacity.calculators import estimate_frame
+    from backend.nis.engineering.capacity.calculators import estimate_frame
     adapter=registry.resolve_stack('ethernet')['timing_model']
     load=registry.resolve_stack('ethernet')['load_calculator']
     with pytest.raises(ValueError,match='Frame-Modell'):
@@ -5098,7 +5101,7 @@ def test_generic_ethernet_phy_scope_and_actual_features_are_not_foreign_defaults
 
 
 def test_generic_ethernet_confirmed_gigabit_and_jumbo_parameters_survive_rejected_sql_change():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**ETH_ACTUAL,'bitrate_bps':1000000000,'eth_phy':'1000BASE_T','eth_frame_profile':'JUMBO_DEVICE',
@@ -5140,7 +5143,7 @@ def test_ethernet_baseline_separates_mac_client_from_tcp_can_and_link_confirmati
 @pytest.mark.parametrize('tags,data,pad,mac',[(0,0,46,64),(1,0,42,64),(2,0,38,64),
                                            (0,1500,0,1518),(1,1500,0,1522),(2,1500,0,1526)])
 def test_ethernet_mac_boundaries_do_not_invent_tcp_headers(tags,data,pad,mac):
-    from backend.engineering.capacity.calculators import estimate_frame
+    from backend.nis.engineering.capacity.calculators import estimate_frame
     values={**ETH_ACTUAL,'eth_vlan_tags':tags,'eth_client_bytes':data,'payload_bytes':data,
             'eth_pad_bytes':pad,'eth_mac_frame_bytes':mac,'eth_wire_slot_bytes':mac+20}
     assert registry.validate_parameters('ethernet',values)['status']=='VALID'
@@ -5151,7 +5154,7 @@ def test_ethernet_mac_boundaries_do_not_invent_tcp_headers(tags,data,pad,mac):
 
 
 def test_ethernet_missing_layout_half_duplex_and_explicit_upper_headers_have_distinct_results():
-    from backend.engineering.capacity.calculators import estimate_frame
+    from backend.nis.engineering.capacity.calculators import estimate_frame
     assert not estimate_frame('ETHERNET',100,{'bitrate':10000000}).transmission_time_available
     half=estimate_frame('ETHERNET',100,{**ETH_ACTUAL,'bitrate':10000000,'duplex':'HALF'})
     assert not half.transmission_time_available and half.calculation_model=='ETHERNET_ACCESS_UNVERIFIED'
@@ -5229,7 +5232,7 @@ def _assert_ethernet_scalar_bounds(technology,field,context=None,value_overrides
 
 
 def test_ethernet_confirmed_tag_and_link_settings_survive_rejected_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**ETH_ACTUAL,'eth_tag_mode':'VLAN','eth_vlan_tags':1,'vlan_id':19,'qos_priority':6,
@@ -5370,7 +5373,7 @@ def test_every_ethercat_parameter_checks_own_types_bounds_and_encapsulation(fiel
 
 
 def test_ethercat_confirmed_dc_configuration_survives_rejected_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**ECAT_ACTUAL,'ecat_sync_mode':'DC','ecat_dc_supported':True,'distributed_clock_cycle_ms':1,
@@ -5471,7 +5474,7 @@ def test_every_etb_parameter_checks_own_type_bounds_and_phy_conditions(field):
 
 
 def test_etb_confirmed_gbit_topology_parameters_survive_rejected_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**ETB_ACTUAL,'etb_phy':'1000BASE_T','bitrate_bps':1000000000,
@@ -5590,7 +5593,7 @@ def test_every_doip_field_has_separate_type_range_and_transport_applicability(fi
 
 
 def test_doip_confirmed_peer_limits_survive_rejected_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**DOIP_ACTUAL,'doip_peer_size_definition':'DOIP_PAYLOAD','doip_peer_size_limit_bytes':8196,
@@ -5704,7 +5707,7 @@ def test_every_dnp3_parameter_has_its_own_type_and_bounds(field):
 
 
 def test_dnp3_saved_peer_buffer_and_addresses_survive_rejected_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={**DNP_ACTUAL,'dnp_master_address':0,'dnp_outstation_address':65519,
@@ -5815,7 +5818,7 @@ def test_devicenet_complete_message_can_exceed_frame_only_with_explicit_fragment
 
 
 def test_devicenet_saved_power_and_connection_settings_survive_rejected_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate': 125000, 'dn_supply_voltage_v': 24, 'dn_worst_node_voltage_v': 21,
@@ -5917,7 +5920,7 @@ def test_every_dds_field_checks_entity_type_and_range(field):
 
 
 def test_dds_confirmed_reader_qos_survives_rejected_sql_edit():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {**DDS_ACTUAL, 'dds_entity': 'DATAREADER', 'reliability_mode': 'BEST_EFFORT',
@@ -6012,7 +6015,7 @@ def test_every_dali_parameter_has_type_and_boundary_checks(field):
 
 
 def test_dali_confirmed_frame_and_power_survive_failed_sql_edits():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate': 1200, 'dali_revision': 'DALI_2', 'dali_frame': 'EVENT_24',
@@ -6071,7 +6074,9 @@ def test_dac_confirmed_update_and_settling_bounds_require_actual_numeric_and_sou
 
 
 def test_dac_actual_device_timing_persists_and_failed_edits_leave_it_intact():
-    from backend.engineering.repository import create_object, update_object, get_object
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.infrastructure.persistence.repository import get_object
     node = create_object('HardwareNode', {'name': 'AnalogueOutputController', 'device_type': 'EmbeddedController'})
     local = {'technology': 'dac', 'update_bound_ms': 0.002, 'settling_bound_ms': 0.004,
              'confirmed': True, 'source': 'Actual DAC datasheet, load/step/tolerance timing table'}
@@ -6179,7 +6184,7 @@ def test_every_custom_udp_parameter_has_independent_type_and_boundary_checks(fie
 
 
 def test_custom_udp_actual_ipv6_jumbo_fields_and_large_body_persist_in_sql():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {**CUSTOM_UDP_ACTUAL, 'cudp_ip_version': 'IPV6', 'cudp_size_mode': 'JUMBO', 'payload_bytes': 70000,
@@ -6260,7 +6265,7 @@ def test_every_custom_text_parameter_has_independent_type_and_boundary_checks(fi
 
 
 def test_custom_text_actual_utf8_and_peer_limits_persist_in_sql():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {**CUSTOM_TEXT_ACTUAL, 'ctxt_text_value': 'A\u00e4\U0001f600', 'ctxt_code_points': 3, 'payload_bytes': 7,
@@ -6322,7 +6327,7 @@ def test_every_custom_tcp_parameter_has_independent_type_and_boundary_checks(fie
 
 
 def test_custom_tcp_large_application_messages_and_actual_transport_reference_persist_in_sql():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {**CUSTOM_TCP_ACTUAL, 'payload_bytes': 100000, 'ctcp_header_bytes': 4, 'ctcp_trailer_bytes': 0,
@@ -6381,7 +6386,7 @@ def test_every_custom_protocol_parameter_has_independent_type_and_boundary_check
 
 
 def test_custom_protocol_independent_ack_and_large_pdu_persist_in_sql():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {**CUSTOM_PROTOCOL_ACTUAL, 'payload_bytes': 100000, 'cp_overhead_bytes': 16, 'cp_pdu_bytes': 100016,
@@ -6450,7 +6455,7 @@ def test_every_custom_binary_parameter_has_independent_type_and_boundary_checks(
 
 
 def test_custom_binary_actual_large_messages_and_unknown_checksum_persist_in_sql():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {**CUSTOM_BINARY_ACTUAL, 'payload_bytes': 70000, 'cb_message_bytes': 70008,
@@ -6541,7 +6546,7 @@ def test_every_coap_parameter_has_independent_type_and_boundary_checks(field):
 
 
 def test_coap_actual_reliable_parameters_and_capabilities_persist_in_sql():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={'coap_transport':'TLS','coap_port':5684,'coap_uri':'coaps+tcp://example.org/sensor',
@@ -6614,7 +6619,7 @@ def test_every_cip_safety_field_has_individual_type_and_range_validation(field):
 
 
 def test_cip_safety_confirmed_parameters_persist_without_fabricating_safe_state():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={'cips_transport':'DEVICENET','cips_devicenet_node':63,'cips_snn':'491904739A84','cips_baseline':'MODERN_EXTENDED',
@@ -6682,7 +6687,7 @@ def test_every_ccp_parameter_has_independent_types_and_boundaries(field):
 
 
 def test_ccp_actual_calibration_configuration_survives_sql_without_session_confirmation():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={'bitrate':125000,'ccp_station_address':257,'ccp_cro_id':1513,'ccp_dto_id':1514,'ccp_byte_order':'BIG_ENDIAN',
@@ -6750,7 +6755,7 @@ def test_cclink_ie_variant_native_dependencies_and_device_limits():
 
 
 def test_cclink_ie_physical_realization_cannot_treat_fiber_as_copper_or_basic_as_token():
-    from backend.communication.technologies.core.physical import validate_physical_realization
+    from backend.nis.communication.core.physical import validate_physical_realization
     actual={'technology':'cc_link_ie','ccie_variant':'CONTROLLER','phy_variant':'1000BASE_SX','topology':'RING','length_m':550}
     result=validate_physical_realization(actual)
     assert result['status']=='VALID' and result['resolved_medium_access_model']=='TOKEN_PASSING'
@@ -6780,7 +6785,7 @@ def test_every_cclink_ie_parameter_has_individual_type_and_range_checks(field):
 
 
 def test_cclink_ie_confirmed_variant_and_device_values_persist_in_sql():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={'bitrate':100000000,'ccie_variant':'FIELD_BASIC','ccie_phy':'100BASE_TX','ccie_basic_cyclic_udp_port':61450,
@@ -6859,7 +6864,7 @@ def test_cclink_cable_versions_rate_length_and_tbranch_are_independent():
     for patch in ({'bitrate':2500000},{'ccl_main_length_m':100.1},{'ccl_branch_length_m':8.1}, {'ccl_branch_total_m':50.1}, {'ccl_branch_devices':7},
                   {'ccl_remote_spacing_m':.3},{'ccl_special_nodes_present':True,'ccl_special_spacing_m':2}):
         assert registry.validate_parameters('cc_link',{**branches,**patch})['status']=='INVALID',patch
-    from backend.communication.technologies.core.physical import validate_physical_realization
+    from backend.nis.communication.core.physical import validate_physical_realization
     assert validate_physical_realization({'technology':'cc_link','topology':'STAR','conductors':['CAN_H','CAN_L']})['status']=='INVALID'
 
 
@@ -6877,7 +6882,7 @@ def test_every_cclink_parameter_has_individual_type_and_range_checks(field):
 
 
 def test_cclink_confirmed_configuration_is_preserved_and_bad_slot_edits_rejected_in_sql():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service=WorkflowStatusService(current_project_id())
     values={'bitrate':625000,'ccl_protocol_version':'2.00','ccl_station_role':'REMOTE_DEVICE','ccl_station_number':61,'ccl_occupied_stations':4,
@@ -6965,7 +6970,7 @@ def test_every_canopen_parameter_is_individually_typed_and_constrained(field):
 
 
 def test_canopen_confirmed_fields_survive_sql_and_conflicting_pdo_mapping_is_rejected():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate':125000,'co_node_id':12,'co_service':'PDO','payload_bytes':8,'can_dlc':8,
@@ -7051,7 +7056,7 @@ def test_every_can_xl_parameter_has_separate_type_options_and_bounds(field):
 
 
 def test_can_xl_sql_preserves_confirmed_native_fields_and_bad_edits_do_not_replace_them():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'arbitration_bitrate':500000,'data_bitrate':10000000,'can_xl_priority_id':14,
@@ -7089,7 +7094,7 @@ def test_can_fd_defaults_keep_optional_brs_and_actual_hardware_rates_separate():
 
 
 def test_can_fd_dlc_padding_crc_and_actual_esi_dependencies():
-    from backend.communication.technologies.catalog import CAN_FD_DATA_LENGTHS
+    from backend.nis.communication.catalog import CAN_FD_DATA_LENGTHS
     base = {'arbitration_bitrate':500000,'data_bitrate':2000000,'can_fd_brs':True}
     for dlc,length in enumerate(CAN_FD_DATA_LENGTHS):
         values = {**base,'can_fd_dlc':dlc,'can_fd_wire_data_bytes':length,'payload_bytes':length,
@@ -7142,7 +7147,8 @@ def test_every_can_fd_parameter_has_its_own_type_options_and_bounds(field):
 
 
 def test_can_fd_capacity_brs_and_padding_do_not_use_faster_unconfirmed_phases():
-    from backend.engineering.capacity.calculators import estimate_frame,can_frame_time_bound_ms
+    from backend.nis.engineering.capacity.calculators import estimate_frame
+    from backend.nis.engineering.capacity.calculators import can_frame_time_bound_ms
     base = {'arbitration_bitrate':500000,'data_bitrate':2000000}
     slow = estimate_frame('CAN_FD',9,{**base,'can_fd_brs':False})
     switched = estimate_frame('CAN_FD',9,{**base,'can_fd_brs':True})
@@ -7162,7 +7168,7 @@ def test_can_fd_capacity_brs_and_padding_do_not_use_faster_unconfirmed_phases():
 
 
 def test_can_fd_brs_and_wire_length_storage_preserve_actual_values(tmp_path):
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'arbitration_bitrate':500000,'can_fd_brs':False,'can_fd_dlc':9,'can_fd_wire_data_bytes':12,'payload_bytes':9}
@@ -7267,7 +7273,7 @@ def test_every_can_aerospace_parameter_has_its_individual_type_options_and_bound
 
 
 def test_can_aerospace_review_storage_preserves_header_and_source_identity():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate':125000,'canas_node_id':1,'canas_data_type':9,'payload_bytes':1,'can_dlc':5,
@@ -7341,7 +7347,7 @@ def test_every_can_cc_field_uses_its_own_types_and_bounds(field):
 
 
 def test_can_cc_frame_bound_accounts_for_ide_and_remote_requests():
-    from backend.engineering.capacity.calculators import estimate_frame
+    from backend.nis.engineering.capacity.calculators import estimate_frame
     base = {'bitrate': 500000, 'can_frame_format': 'BASE_11'}
     assert estimate_frame('CAN', 8, base).frame_bits == 135
     extended = estimate_frame('CAN', 8, {**base, 'can_frame_format': 'EXTENDED_29'})
@@ -7356,7 +7362,7 @@ def test_can_cc_frame_bound_accounts_for_ide_and_remote_requests():
 
 
 def test_can_cc_confirmed_device_values_survive_rejected_parameter_edits():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate': 500000, 'can_frame_format': 'EXTENDED_29', 'can_frame_type': 'DATA',
@@ -7379,6 +7385,15 @@ def test_http_schema_is_registered_profile_schema_for_every_technology():
     for profile in registry.profiles():
         expected = [{**spec, 'key': PARAMETER_UI_ALIASES.get(key, key)}
                     for key, spec in profile['parameter_schema'].items() if spec.get('label')]
+        for field in expected:
+            if (field.get('integer') or field.get('type') == 'integer') and any(
+                isinstance(field.get(key), int) and abs(field[key]) > 2**53 - 1 for key in ('min', 'max', 'minimum', 'maximum')):
+                field['numeric_encoding'] = 'DECIMAL_STRING'
+                for target, keys in (('min', ('min', 'minimum')), ('max', ('max', 'maximum'))):
+                    value = next((field[key] for key in keys if field.get(key) is not None), None)
+                    if value is not None:
+                        field['decimal_' + target] = str(value)
+                        field.pop(target, None)
         assert SimulationService._parameter_schema(profile['id'], profile) == expected
         assert all(field.get('parameter_origin') and field.get('source') for field in expected)
 
@@ -7439,7 +7454,9 @@ def test_adc_device_bounds_require_source_and_actual_numeric_values():
 
 
 def test_adc_device_evidence_storage_rejects_invalid_update_and_preserves_previous_bounds():
-    from backend.engineering.repository import create_object, update_object, get_object
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.infrastructure.persistence.repository import get_object
     node = create_object('HardwareNode', {'name': 'MeasurementController', 'device_type': 'EmbeddedController'})
     local = {'technology': 'adc', 'sample_bound_ms': 0.01, 'conversion_bound_ms': 0.005,
              'confirmed': True, 'source': 'Selected device datasheet'}
@@ -7495,7 +7512,7 @@ def test_every_afdx_form_field_validates_its_own_options_types_and_bounds(field)
 
 
 def test_afdx_reviewed_virtual_link_storage_does_not_turn_into_capacity_evidence():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate': 100_000_000, 'afdx_bag_ms': '8', 'afdx_lmax_frame_bytes': 1518,
@@ -7561,7 +7578,7 @@ def test_standalone_requires_explicit_technology_and_distinguishes_missing_execu
 
 
 def test_amqp_exact_limits_and_settlement_roundtrip_without_confirming_capacity():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate': 10_000_000, 'payload_bytes': 100_000, 'amqp_max_frame_size_bytes': 512,
@@ -7626,7 +7643,7 @@ def test_every_arinc429_parameter_validates_its_type_options_and_bounds(field):
 
 
 def test_arinc429_low_speed_configuration_roundtrips_without_overwriting_other_profiles():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate': 12500, 'arinc429_speed_mode': 'LOW', 'payload_bytes': 4,
@@ -7667,7 +7684,7 @@ def test_mstp_default_and_medium_are_distinct_from_ip_and_generic_serial():
     profile = registry.profile('bacnet_mstp')
     assert profile['physical_layer_profile_id'] == 'BACNET_MSTP_EIA485'
     assert profile['medium_access_model'] == 'TOKEN_PASSING'
-    from backend.communication.technologies.core.physical import physical_profile, validate_physical_realization
+    from backend.nis.communication.core.physical import physical_profile, validate_physical_realization
     assert physical_profile('bacnet_mstp').duplex_mode == 'HALF_DUPLEX'
     invalid_physical = validate_physical_realization({'technology':'bacnet_mstp', 'topology':'STAR',
                                                      'conductors':['A','B'], 'pair_count':1, 'termination_count':2})
@@ -7710,7 +7727,7 @@ def test_every_mstp_field_validates_its_native_type_options_and_bounds(field):
 
 
 def test_mstp_confirmed_values_roundtrip_and_foreign_ip_settings_are_rejected():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate':9600,'mstp_node_role':'SLAVE','mstp_mac_address':254,'mstp_frame_format':'CLASSIC',
@@ -7729,7 +7746,7 @@ def test_mstp_confirmed_values_roundtrip_and_foreign_ip_settings_are_rejected():
 
 
 def test_bluetooth_le_mandatory_phy_default_and_radio_profile_remain_industry_independent():
-    from backend.communication.technologies.core.physical import physical_profile, validate_physical_realization
+    from backend.nis.communication.core.physical import physical_profile, validate_physical_realization
     fields = {field['key']:field for field in registry.parameter_fields('bluetooth_le')}
     assert registry.parameter_defaults_review('BLE')['values'] == {'bitrate_bps':1000000}
     assert registry.parameter_defaults_review('BLE')['basis'] == 'LOWEST_MANDATORY_PHY'
@@ -7798,7 +7815,7 @@ def test_every_bluetooth_le_field_validates_type_bounds_and_options(field):
 
 
 def test_ble_actual_values_roundtrip_and_invalid_can_or_supervision_changes_preserve_them():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate':1000000,'ble_interval_set':'BASELINE','ble_connection_interval_us':50000,
@@ -7889,7 +7906,7 @@ def test_every_bacnet_sc_parameter_validates_type_bounds_and_native_options(fiel
 
 
 def test_sc_confirmed_installation_facts_survive_rejected_ip_and_security_edits():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate':10000000,'sc_device_uuid':'12345678-1234-4123-8123-123456789abc',
@@ -7955,7 +7972,7 @@ def test_every_bacnet_ip_parameter_validates_type_bounds_and_options(field):
 
 
 def test_bacnet_ip_parameter_storage_preserves_actual_device_facts_and_rejects_bad_edits():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate': 10000000, 'bacnet_device_instance': 42, 'bacnet_max_apdu_bytes': 256,
@@ -8021,7 +8038,7 @@ def test_every_avb_field_uses_native_type_options_and_bounds(field):
 
 
 def test_avb_stream_review_storage_does_not_certify_srp_or_cbs_execution():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate': 100_000_000, 'avb_sr_class': 'B', 'avb_measurement_interval_us': 250,
@@ -8141,7 +8158,7 @@ def test_every_5g_form_field_validates_its_own_type_options_and_bounds(field):
 
 
 def test_reviewed_radio_parameters_roundtrip_and_rejected_edits_preserve_saved_values():
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.engineering.projects.project_context import current_project_id
     from copy import deepcopy
     service = WorkflowStatusService(current_project_id())
     values = {'bitrate': 1_000_000, 'nr_direction': 'UL', 'nr_frequency_range': 'FR1',

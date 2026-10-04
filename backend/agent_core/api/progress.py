@@ -1,13 +1,4 @@
-"""Progress response fields shared by HTTP adapters."""
-
-PROGRESS_FIELDS = (
-    "status",
-    "requested",
-    "generated",
-    "valid",
-    "warnings",
-    "errors",
-    "missing",
-    "work_packages",
-    "dependencies",
-)
+"""Compatibility only; owner backend.nis.agent.api.progress."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.api.progress')

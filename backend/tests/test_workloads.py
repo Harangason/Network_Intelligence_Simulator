@@ -2,18 +2,17 @@ from __future__ import annotations
 
 import pytest
 
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.workloads.handlers import (
-    MOTION_SIGNAL_CATALOG,
-    SignalGenerationWorkloadHandler,
-    THERMAL_SIGNAL_CATALOG,
-    semantic_alias_key,
-    suggest_candidate_repair,
-    validate_signal_definition,
-)
-from backend.engineering.workloads.models import evaluate_workload_completion, parse_workload_request
-from backend.engineering.workloads.service import EngineeringWorkloadOrchestrator
-from backend.engineering.routing.generation import is_gateway_fanout_interface
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.workloads.handlers import MOTION_SIGNAL_CATALOG
+from backend.nis.engineering.workloads.handlers import SignalGenerationWorkloadHandler
+from backend.nis.engineering.workloads.handlers import THERMAL_SIGNAL_CATALOG
+from backend.nis.engineering.workloads.handlers import semantic_alias_key
+from backend.nis.engineering.workloads.handlers import suggest_candidate_repair
+from backend.nis.engineering.workloads.handlers import validate_signal_definition
+from backend.nis.engineering.workloads.models import evaluate_workload_completion
+from backend.nis.engineering.workloads.models import parse_workload_request
+from backend.nis.engineering.workloads.service import EngineeringWorkloadOrchestrator
+from backend.nis.engineering.routing.generation import is_gateway_fanout_interface
 
 
 SOURCE = "00000000-0000-0000-0000-000000000001"

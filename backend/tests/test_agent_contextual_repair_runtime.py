@@ -5,9 +5,9 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.runtime.goal_resolver import (
-    RECIPIENT_REPAIR_OUTCOMES, contextual_repair_intent, recipient_repair_followup,
-)
+from backend.nis.agent.runtime.goal_resolver import RECIPIENT_REPAIR_OUTCOMES
+from backend.nis.agent.runtime.goal_resolver import contextual_repair_intent
+from backend.nis.agent.runtime.goal_resolver import recipient_repair_followup
 from backend.tests.test_agent_recipient_repair_runtime import PROMPT, sql_seed, scoped, invoke
 
 FOLLOWUP = 'Dann weißt du ja, was du zu tun hast, Fehleranalyse und Korrektur.'
@@ -66,8 +66,8 @@ def test_ambiguous_or_inconsistent_context_is_not_resumed(case):
 
 
 def unique_seed():
-    from backend.engineering.repository import delete_object
-    from backend.engineering.agent_tools import conversation
+    from backend.nis.infrastructure.persistence.repository import delete_object
+    from backend.nis.agent.tools import conversation as conversation
     authority, ids = sql_seed()
     def remove_unknown():
         delete_object('Signal', ids['unknown-signal'])
@@ -85,11 +85,11 @@ def unique_seed():
 
 
 def followup(authority, *, saved=None):
-    from backend.agent_core.api.mcp_client import EngineeringMCPClient
-    from backend.agent_core.context.agent_context import AgentContext
-    from backend.agent_core.runtime.service import EngineeringAssistantService
-    from backend.engineering.agent_tools import conversation
-    from backend.simulator_engineering_mcp.server import create_server
+    from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+    from backend.nis.agent.context.agent_context import AgentContext
+    from backend.nis.agent.runtime.service import EngineeringAssistantService
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.interfaces.mcp.server import create_server
     started = scoped(authority, lambda: conversation.begin(FOLLOWUP, AgentContext(active_project_id=authority.project_id)))
     state = scoped(authority, conversation.read) if saved is None else saved
     run_id = started['run_id']
@@ -107,7 +107,9 @@ def followup(authority, *, saved=None):
 
 
 def test_sql_original_followup_reuses_workload_proposal_and_revalidates_actual_apply():
-    from backend.engineering.agent_tools import conversation, model, proposal_service
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.agent.tools import model as model
+    from backend.nis.agent.tools import proposal_service as proposal_service
     authority, ids, first = unique_seed()
     before = scoped(authority, model.model)
     result = followup(authority)
@@ -141,8 +143,9 @@ def test_sql_original_followup_reuses_workload_proposal_and_revalidates_actual_a
 
 @pytest.mark.parametrize('case', ['stale-model', 'review-candidate-withdrawn', 'ambiguous-context', 'foreign-context'])
 def test_sql_followup_never_executes_changed_or_foreign_scope(case):
-    from backend.engineering.agent_tools import conversation, model
-    from backend.engineering.repository import update_object
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.agent.tools import model as model
+    from backend.nis.infrastructure.persistence.repository import update_object
     authority, ids, _ = unique_seed()
     saved = scoped(authority, conversation.read)
     work = saved['engineering_workloads'][saved['active_engineering_workload_id']]

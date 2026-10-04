@@ -4,10 +4,11 @@ from copy import deepcopy
 
 import pytest
 
-from backend.engineering.capacity.dimensioning import bus_schedule
-from backend.engineering.capacity import service as capacity_service_module
-from backend.engineering.capacity.service import CapacityTimingService
-from backend.engineering.workflow.models import default_statuses, default_versions
+from backend.nis.engineering.capacity.dimensioning import bus_schedule
+from backend.nis.engineering.capacity import service as capacity_service_module
+from backend.nis.engineering.capacity.service import CapacityTimingService
+from backend.nis.workflow.services.models import default_statuses
+from backend.nis.workflow.services.models import default_versions
 
 
 def stream(stream_id, *, port="port-a", node="ecu-a", period=10, duration=0.1, **extra):
@@ -25,6 +26,8 @@ def stream(stream_id, *, port="port-a", node="ecu-a", period=10, duration=0.1, *
         "physical_path_resolved": True,
         "physical_source": {"node_id": node, "physical_port_ref": port},
         "queue_policy": "FIFO",
+        "duplex": "FULL", "eth_link_up": True,
+        "eth_pause_rx": False, "eth_pause_tx": False, "eth_eee_enabled": False,
         **extra,
     }
 
@@ -104,7 +107,10 @@ def test_capacity_service_exposes_the_verified_ethernet_bound_to_preflight(monke
         "statuses": {**default_statuses(), "engineering_model": "COMPLETE", "routing": "APPROVED",
                      "network_editor": "COMPLETE", "parameters": "APPROVED"},
         "parameters": {"technology": "ethernet", "bitrate": 1_000_000_000, "cycle_ms": 20,
-                        "payload_bytes": 64, "queue_policy": "FIFO"},
+                        "payload_bytes": 64, "queue_policy": "FIFO",
+                        "duplex": "FULL", "eth_link_up": True, "eth_pause_rx": False, "eth_pause_tx": False, "eth_eee_enabled": False,
+                        "eth_payload_layer": "MAC_CLIENT", "eth_upper_header_bytes": 0, "eth_vlan_tags": 0,
+                        "mtu_bytes": 1500, "eth_ifg_bits": 96, "eth_frame_profile": "BASIC_MAC"},
         "topology": {
             "nodes": [
                 {"id": "graph-source", "engineeringId": "source-node",

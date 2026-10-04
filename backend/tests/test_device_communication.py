@@ -1,8 +1,11 @@
-from backend.engineering.device_communication import communication_findings, actuator_command_template, EXECUTION_STATES
+from backend.nis.engineering.communication.device_communication import communication_findings
+from backend.nis.engineering.communication.device_communication import actuator_command_template
+from backend.nis.engineering.communication.device_communication import EXECUTION_STATES
 
 
 def test_class_two_generation_adds_status_without_function_or_replacing_measurement():
-    from backend.engineering.device_communication import complete_new_actuator_messages, ECU_STATES
+    from backend.nis.engineering.communication.device_communication import complete_new_actuator_messages
+    from backend.nis.engineering.communication.device_communication import ECU_STATES
     changes = [
         {'object_type': 'HardwareNode', 'local_ref': 'node', 'data': {'name': 'Smart', 'device_type': 'SensorController', 'device_class': 2}},
         {'object_type': 'Message', 'local_ref': 'msg', 'data': {'name': 'Measurement', 'dlc': 2, 'configuration': {'transport_unit': {'producer_ref': '$node'}}}},
@@ -16,7 +19,7 @@ def test_class_two_generation_adds_status_without_function_or_replacing_measurem
 
 
 def test_function_output_keeps_controller_status_in_separate_frame():
-    from backend.engineering.device_communication import complete_new_actuator_messages
+    from backend.nis.engineering.communication.device_communication import complete_new_actuator_messages
     changes = [
         {'object_type': 'HardwareNode', 'local_ref': 'node', 'data':
             {'name': 'Elektromotorsteuerung', 'device_type': 'ECU', 'device_class': 3}},
@@ -70,7 +73,7 @@ def test_empty_command_is_reported_at_model_review():
 
 
 def test_explicit_generated_actuator_encoding_survives_model_boundary():
-    from backend.engineering.device_communication import complete_new_actuator_messages
+    from backend.nis.engineering.communication.device_communication import complete_new_actuator_messages
     definition = {'source': 'wizard-generic-actuator-v1', 'length_bits': 10, 'data_type': 'unsigned', 'unit': '%', 'factor': 0.1, 'min_value': 0, 'max_value': 100}
     changes = [
         {'object_type': 'HardwareNode', 'local_ref': 'act', 'data': {'name': 'DrivePrimaryCommand', 'device_type': 'ActuatorController', 'identity': {'actuator_command_template': definition}}},
@@ -84,7 +87,7 @@ def test_explicit_generated_actuator_encoding_survives_model_boundary():
 
 
 def test_explicit_safety_actuator_encoding_generates_command_and_feedback():
-    from backend.engineering.device_communication import complete_new_actuator_messages
+    from backend.nis.engineering.communication.device_communication import complete_new_actuator_messages
     definition = {
         'source': 'wizard-safety-actuator-v1', 'length_bits': 1, 'data_type': 'unsigned',
         'unit': 'code', 'factor': 1, 'min_value': 0, 'max_value': 1,

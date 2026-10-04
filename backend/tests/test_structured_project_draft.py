@@ -3,11 +3,13 @@ import json
 from copy import deepcopy
 from uuid import uuid4
 
-from backend.agent_core.api.tool_contract import Permission
-from backend.agent_core.context.agent_context import AgentContext
-from backend.engineering.agent_tools import conversation, project_draft
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools import project_draft as project_draft
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
 def test_native_wizard_draft_preserves_complete_source_and_adopts_chat_revision():

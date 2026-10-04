@@ -1,3 +1,4 @@
-from ..base import BaseGenerator
-
-MotionSignalGenerator = BaseGenerator
+"""Compatibility only; owner backend.nis.agent.generators.signal.motion."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.generators.signal.motion')

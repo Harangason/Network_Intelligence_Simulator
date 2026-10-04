@@ -2,9 +2,11 @@ from copy import deepcopy
 import json
 import pytest
 
-from backend.engineering.network_assignment import plan_assignment, confirmed_context
-from backend.engineering.network_scene import build_network_scene, confirmed_groups
-from backend.engineering.models import EngineeringValidationError
+from backend.nis.engineering.network.network_assignment import plan_assignment
+from backend.nis.engineering.network.network_assignment import confirmed_context
+from backend.nis.engineering.network.network_scene import build_network_scene
+from backend.nis.engineering.network.network_scene import confirmed_groups
+from backend.nis.domain.vocabulary import EngineeringValidationError
 
 
 def fixture():

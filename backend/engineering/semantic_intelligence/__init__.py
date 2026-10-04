@@ -1,6 +1,4 @@
-"""Industry-neutral semantic intelligence primitives for engineering objects."""
-
-from .ontology import ConceptOntology
-from .service import SemanticClassificationService
-
-__all__ = ["ConceptOntology", "SemanticClassificationService"]
+"""Compatibility only; owner backend.nis.intelligence.engineering.semantic_intelligence."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.intelligence.engineering.semantic_intelligence')

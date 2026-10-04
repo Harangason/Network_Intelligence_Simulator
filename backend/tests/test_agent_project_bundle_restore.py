@@ -1,11 +1,15 @@
 from copy import deepcopy
 from uuid import uuid4
 
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools import model_import, project_bundle_restore, proposal_service
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.repository import create_object, list_objects
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools import model_import as model_import
+from backend.nis.agent.tools import project_bundle_restore as project_bundle_restore
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.infrastructure.persistence.repository import list_objects
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
 def test_reviewed_bundle_restore_creates_new_project_and_cannot_restore_execution_authority():

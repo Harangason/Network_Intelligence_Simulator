@@ -1,13 +1,13 @@
 """Database, repositories, jobs, storage and runtime configuration."""
 
-from ..models import Capability
+from backend.nis.models import Capability
 
 CAPABILITY = Capability(
     "infrastructure", "Infrastructure",
     (
-        "backend.engineering.db", "backend.engineering.repository",
-        "backend.app.job_service", "backend.app.trace_storage",
-        "backend.app.runtime_config", "backend.app.config",
+        "backend.nis.infrastructure.persistence.db", "backend.nis.infrastructure.persistence.repository",
+        "backend.nis.simulation.job_service", "backend.nis.infrastructure.storage.trace_storage",
+        "backend.nis.app.runtime_config", "backend.nis.infrastructure.paths",
     ),
     "Persistence and operating-system concerns kept outside domain decisions.",
 )

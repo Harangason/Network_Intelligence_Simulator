@@ -9,12 +9,17 @@ pytestmark = pytest.mark.skipif(not os.environ.get("ENGINEERING_TEST_DATABASE_UR
 
 
 def test_dimensioning_persists_canonical_periods_and_rolls_back_failed_adoption(monkeypatch):
-    from backend.engineering.project_context import activate_project, reset_project
-    from backend.engineering.repository import create_object, get_object
-    from backend.engineering.routing.repository import create_route, get_route, save_validation, approve_routes
-    from backend.engineering.routing.validation import RoutingValidator
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.capacity import sizing_service
+    from backend.nis.engineering.projects.project_context import activate_project
+    from backend.nis.engineering.projects.project_context import reset_project
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import get_object
+    from backend.nis.engineering.routing.repository import create_route
+    from backend.nis.engineering.routing.repository import get_route
+    from backend.nis.engineering.routing.repository import save_validation
+    from backend.nis.engineering.routing.repository import approve_routes
+    from backend.nis.engineering.routing.validation import RoutingValidator
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.capacity import sizing_service as sizing_service
 
     client = _client()
     project = client.environ_base["HTTP_X_PROJECT_ID"]

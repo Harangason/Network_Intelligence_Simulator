@@ -1,8 +1,8 @@
 """SPI clock/mode/electrical/transaction evidence without fabricated hardware."""
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import spi as R
-from backend.engineering.capacity.calculators import estimate_frame
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.spi import rules as R
+from backend.nis.engineering.capacity.calculators import estimate_frame
 def actual():
  x={'spi_'+k:'synthetic-'+k for k in R.REQUIRED}
  x.update(spi_controller_profile='REGISTERED_DEVICE',spi_bus_variant='SPI_SINGLE',spi_role='CONTROLLER',bitrate_bps=1000000)

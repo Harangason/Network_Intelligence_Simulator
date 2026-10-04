@@ -2,14 +2,16 @@
 import os
 from uuid import uuid4
 import pytest
-from backend.engineering.project_context import activate_project, reset_project
-from backend.engineering.routing.config_builder import CommunicationConfigBuilder
-from backend.engineering.addressing import create_technology_address_binding, LogicalNodeAddressAllocator
-from backend.engineering.repository import create_object
-from backend.engineering.workflow.service import WorkflowStatusService
-from hardware_profile import normalize_hardware_config
-from universal_trace import generate_universal_events
-from backend.engineering.models import EngineeringValidationError
+from backend.nis.engineering.projects.project_context import activate_project
+from backend.nis.engineering.projects.project_context import reset_project
+from backend.nis.engineering.routing.config_builder import CommunicationConfigBuilder
+from backend.nis.domain.addressing import create_technology_address_binding
+from backend.nis.domain.addressing import LogicalNodeAddressAllocator
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.workflow.services.service import WorkflowStatusService
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.traces.universal_trace import generate_universal_events
+from backend.nis.domain.vocabulary import EngineeringValidationError
 
 
 @pytest.mark.parametrize('version', [4, 6])

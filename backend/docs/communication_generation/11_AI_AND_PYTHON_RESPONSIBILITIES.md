@@ -1,5 +1,5 @@
-# AI And Python Responsibilities
+# Document moved
 
-AI may propose functions, signals, timing classes, receiver sets, message names, priority and technology candidates.
+Canonical document: [11_AI_AND_PYTHON_RESPONSIBILITIES.md](../../../docs/domains/knowledge/11_AI_AND_PYTHON_RESPONSIBILITIES.md).
 
-Deterministic code calculates required bits, payload packing, CAN-FD DLC, frame load, projected interface load and allocation threshold behavior.
+This entry preserves old links during the structure migration.

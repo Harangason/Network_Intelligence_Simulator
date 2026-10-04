@@ -5,7 +5,7 @@ import pytest
 
 def test_disconnected_dense_bus_has_bounded_path_search(monkeypatch):
     from contextlib import contextmanager
-    from backend.engineering.routing import generation
+    from backend.nis.engineering.routing import generation as generation
     size = 80
     names = [f'node-{i}' for i in range(size)]
     class Graph(dict):
@@ -29,12 +29,14 @@ def test_disconnected_dense_bus_has_bounded_path_search(monkeypatch):
     assert len(paths) == 1  # Explicit unresolved fallback still requires validation.
     assert graph.visits <= size * 5
 
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.routing.generation import RoutingGenerationService
-from backend.engineering.routing.models import normalize_route
-from backend.engineering.routing.network_sync import build_network_route_candidates, enrich_route_from_linked_topology
-from backend.engineering.routing import repository as routing_repository
-from backend.engineering.routing.validation import RoutingValidator, detect_routing_loop
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.routing.generation import RoutingGenerationService
+from backend.nis.engineering.routing.models import normalize_route
+from backend.nis.engineering.routing.network_sync import build_network_route_candidates
+from backend.nis.engineering.routing.network_sync import enrich_route_from_linked_topology
+from backend.nis.engineering.routing import repository as routing_repository
+from backend.nis.engineering.routing.validation import RoutingValidator
+from backend.nis.engineering.routing.validation import detect_routing_loop
 
 
 SOURCE = "00000000-0000-0000-0000-000000000001"
@@ -172,7 +174,7 @@ def test_routing_entry_model_normalizes_governance_and_signal_selection():
 
 
 def test_generated_timeout_defaults_allow_slow_cycles_and_preserve_explicit_requirements():
-    from backend.engineering.routing.timing import generated_timing
+    from backend.nis.engineering.routing.timing import generated_timing
     timing = generated_timing(500)
     assert timing["timeout_ms"] == timing["freshness_ms"] == 1500
     assert timing["provenance"]["timeout_ms"]["source"] == "generated-default"
@@ -290,7 +292,7 @@ def test_route_generation_selects_reviewed_additional_channel_for_destination_ne
         'configuration': {'physical_transmit_bindings': [{'hardware_interface_id': OTHER_SOURCE_PORT, 'network_id': 'network-two'}]}})
     monkeypatch.setattr(service, 'find_candidate_paths', lambda *_: [{'nodes': [{'node_id': SOURCE}, {'node_id': TARGET}],
         'connections': [], 'gateways': [], 'protocol': 'CAN_FD', 'score': 1}])
-    monkeypatch.setattr('backend.engineering.routing.generation.RoutingValidator.validate', lambda *_: {'valid': True, 'errors': [], 'warnings': []})
+    monkeypatch.setattr('backend.nis.engineering.routing.generation.RoutingValidator.validate', lambda *_: {'valid': True, 'errors': [], 'warnings': []})
     route = service.generate_route(source_node_id=SOURCE, destination_node_id=TARGET, message_id=MESSAGE)
     assert route['source']['port_id'] == OTHER_SOURCE_PORT
     assert route['source']['network_id'] == route['destinations'][0]['network_id'] == 'network-two'
@@ -901,7 +903,7 @@ def test_generation_reuses_canonical_interfaces_protocol_and_message_cycle(monke
         ],
     )
     monkeypatch.setattr(
-        "backend.engineering.routing.generation.RoutingValidator.validate",
+        "backend.nis.engineering.routing.generation.RoutingValidator.validate",
         lambda validator, route: {"valid": True, "errors": [], "warnings": []},
     )
 

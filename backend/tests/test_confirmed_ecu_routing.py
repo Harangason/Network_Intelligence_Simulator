@@ -5,10 +5,11 @@ from uuid import uuid4
 
 import pytest
 
-from backend.engineering.db import get_connection
-from backend.engineering.project_context import current_project_id
-from backend.engineering.routing.generation import RoutingGenerationService, routing_candidate_batch
-from backend.engineering.routing.validation import RoutingValidator
+from backend.nis.infrastructure.persistence.db import get_connection
+from backend.nis.engineering.projects.project_context import current_project_id
+from backend.nis.engineering.routing.generation import RoutingGenerationService
+from backend.nis.engineering.routing.generation import routing_candidate_batch
+from backend.nis.engineering.routing.validation import RoutingValidator
 
 
 @pytest.fixture
@@ -150,7 +151,7 @@ def test_another_project_cannot_supply_the_ecu_forwarding_confirmation(subnet):
 
 
 def test_proposal_batch_builds_one_physical_graph_and_rechecks_after_batch(subnet, monkeypatch):
-    from backend.engineering.communication_repair import RepairPlanner
+    from backend.nis.engineering.communication.communication_repair import RepairPlanner
     ids, rule, _ = subnet
     builds = []
     original = RepairPlanner.__init__

@@ -1,10 +1,13 @@
 from uuid import uuid4
 
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools import model_import, proposal_service
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.importer import preview_import, commit_import
-from backend.engineering.repository import list_objects
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools import model_import as model_import
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.engineering.importer import preview_import
+from backend.nis.engineering.importer import commit_import
+from backend.nis.infrastructure.persistence.repository import list_objects
 
 
 CONTENT = ('Hardware,Device_Type,Function,Interface,Bus,Message,Cycle_ms,DLC,Signal,Start_Bit,Length_Bits,Byte_Order,Data_Type,Factor,Offset,Unit,Min,Max\n'

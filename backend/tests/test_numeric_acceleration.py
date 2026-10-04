@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from backend.simulator import numeric_acceleration
+from backend.nis.simulation import numeric_acceleration as numeric_acceleration
 
 
 def test_trace_statistics_cpu_fallback_is_exact_and_reproducible(monkeypatch) -> None:

@@ -2867,11 +2867,11 @@ def test_ip_layer_parameter_scope_does_not_claim_an_unconfigured_conventional_st
     upper={'bitrate':100000000,'duplex':'FULL','payload_bytes':17,'afdx_lmax_frame_bytes':64}
     result=registry.validate_parameters('afdx',upper)
     assert result['status']=='VALID'and result['validation_scope']=='DECLARED_PROFILE_PARAMETERS'
-    assert result['unverified_stack_layers']==['ip']
+    assert result['unverified_stack_layers']==['ip','udp']
     assert result['stack_parameter_completeness']=='UNVERIFIED'
     configured={**upper,**IP_ACTUAL,'ip_ttl':64}
     result=registry.validate_parameters('afdx',configured)
-    assert result['status']=='VALID'and result['unverified_stack_layers']==[]
+    assert result['status']=='VALID'and result['unverified_stack_layers']==['udp']
     assert registry.validate_parameters('afdx',{**configured,'ip_hop_limit':64})['status']=='INVALID'
     assert registry.validate_parameters('afdx',{**upper,'ip_version':'IPv4'})['status']=='UNVERIFIED'
 
@@ -7379,6 +7379,15 @@ def test_http_schema_is_registered_profile_schema_for_every_technology():
     for profile in registry.profiles():
         expected = [{**spec, 'key': PARAMETER_UI_ALIASES.get(key, key)}
                     for key, spec in profile['parameter_schema'].items() if spec.get('label')]
+        for field in expected:
+            if (field.get('integer') or field.get('type') == 'integer') and any(
+                isinstance(field.get(key), int) and abs(field[key]) > 2**53 - 1 for key in ('min', 'max', 'minimum', 'maximum')):
+                field['numeric_encoding'] = 'DECIMAL_STRING'
+                for target, keys in (('min', ('min', 'minimum')), ('max', ('max', 'maximum'))):
+                    value = next((field[key] for key in keys if field.get(key) is not None), None)
+                    if value is not None:
+                        field['decimal_' + target] = str(value)
+                        field.pop(target, None)
         assert SimulationService._parameter_schema(profile['id'], profile) == expected
         assert all(field.get('parameter_origin') and field.get('source') for field in expected)
 

@@ -1,2 +1,4 @@
-"""Modular implementation package for deterministic requirement expansion."""
-
+"""Compatibility only; owner backend.nis.engineering.requirement_expansion_modules."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.engineering.requirement_expansion_modules')

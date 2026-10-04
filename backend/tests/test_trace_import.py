@@ -10,7 +10,9 @@ import pytest
 from asammdf import MDF, Signal
 from flask import Flask
 
-from backend.app.trace_import import import_trace, trace_import_api, MAX_BYTES
+from backend.nis.interfaces.http.trace_import import import_trace
+from backend.nis.interfaces.http.trace_import import trace_import_api
+from backend.nis.interfaces.http.trace_import import MAX_BYTES
 
 
 def test_text_formats_and_validation():

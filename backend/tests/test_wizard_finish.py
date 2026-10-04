@@ -3,9 +3,9 @@ from copy import deepcopy
 
 import pytest
 
-from backend.app import create_app
-from backend.engineering.agent_tools import conversation
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.app import create_app
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
 @pytest.mark.parametrize('case', ['question', 'approval', 'new_revision', 'blocked', 'ready'])

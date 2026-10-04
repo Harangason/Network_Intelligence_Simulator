@@ -4,10 +4,10 @@ import asyncio
 import json
 import os
 from pathlib import Path
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.engineering.agent_tools.runtime import ToolAuthority
-from backend.simulator_engineering_mcp.server import create_server
-from backend.engineering.db import close_pool
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.interfaces.mcp.server import create_server
+from backend.nis.infrastructure.persistence.db import close_pool
 
 ROOT=Path(__file__).resolve().parents[2]/"test-output"
 

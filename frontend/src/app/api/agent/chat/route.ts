@@ -1,12 +1,12 @@
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
-import type { EngineeringAgentUIMessage, EngineeringAgentEvent } from "@/lib/agent/engineering-agent";
-import { uniqueMessagesById } from "@/lib/agent-message-history";
-import { transportMessages } from '@/lib/agent-chat-history';
-import { parseAgentResponse, type AgentInput } from "@/lib/agent/agent-response";
-import { backendEndpoints } from "@/lib/backend-endpoints";
-import { chatDocumentContext, validateChatAttachment } from "@/lib/agent/chat-attachments";
-import { expandBrowserProjectId } from '@/lib/user-settings';
-import { parseWizardCommand, type WizardCommand } from '@/lib/agent/wizard-protocol';
+import type { EngineeringAgentUIMessage, EngineeringAgentEvent } from "@/features/agent/lib/engineering-agent";
+import { uniqueMessagesById } from "@/features/agent/lib/agent-message-history";
+import { transportMessages } from '@/features/agent/lib/agent-chat-history';
+import { parseAgentResponse, type AgentInput } from "@/features/agent/lib/agent-response";
+import { backendEndpoints } from "@/shared/api/backend-endpoints";
+import { chatDocumentContext, validateChatAttachment } from "@/features/agent/lib/chat-attachments";
+import { expandBrowserProjectId } from '@/features/settings/lib/user-settings';
+import { parseWizardCommand, type WizardCommand } from '@/features/agent/lib/wizard-protocol';
 
 export const maxDuration = 300;
 const { engineering: backend } = backendEndpoints(process.env);

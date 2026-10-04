@@ -1,5 +1,4 @@
-from __future__ import annotations
-
-
-def drift(value: float, magnitude: float, elapsed_s: float) -> float:
-    return value + magnitude * max(0.0, elapsed_s)
+"""Compatibility only; owner backend.nis.simulation.signals.faults.drift."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals.faults.drift')

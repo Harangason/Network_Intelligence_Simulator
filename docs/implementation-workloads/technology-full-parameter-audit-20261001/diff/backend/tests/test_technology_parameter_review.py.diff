@@ -1,6 +1,31 @@
 --- before/backend/tests/test_technology_parameter_review.py
 +++ after/backend/tests/test_technology_parameter_review.py
-@@ -3,6 +3,13 @@
+@@ -1,8 +1,38 @@
+ from copy import deepcopy
+ import pytest
++
++
++def test_capacity_parameter_validation_does_not_traverse_unrelated_project_graph():
++    from backend.engineering.capacity.service import parameters_for_protocol
++    from backend.tests.native_transport_fixtures import lin_design
++
++    class UnrelatedProjectGraph(dict):
++        def __deepcopy__(self, memo):
++            raise AssertionError('A native bus check must not copy the unrelated project graph.')
++
++    values = lin_design()
++    parameters = {'technology': 'lin', 'spatial_zoning': UnrelatedProjectGraph(nodes=[]),
++        'technology_parameters': {'lin': {'values': values, 'provenance': {
++            key: {'source': 'USER_CONFIRMED', 'status': 'CONFIRMED', 'value': value}
++            for key, value in values.items()}}}}
++    result = parameters_for_protocol('LIN', parameters, confirmed_parameters=parameters)
++    assert result['_rate_evidenced'] is True
++    assert result['spatial_zoning'] is parameters['spatial_zoning']
++    # Undeclared native input still reaches the strict schema check.
++    invalid = parameters_for_protocol('LIN', {**parameters, 'lin_unknown_native_field': 1},
++                                      confirmed_parameters=parameters)
++    assert invalid['_rate_evidenced'] is False
++    assert any(row['code'] == 'TECHNOLOGY_PARAMETER_NOT_APPLICABLE' for row in invalid['_rate_findings'])
  from backend.engineering.capacity.service import parameters_for_protocol
  from backend.engineering.workflow.service import WorkflowStatusService
  from backend.engineering.project_context import current_project_id
@@ -14,7 +39,7 @@
  
  
  def reviewed(values):
-@@ -25,7 +32,7 @@
+@@ -25,7 +55,7 @@
  
  
  def test_confirmed_lin_group_does_not_change_can_fd_or_ethernet():
@@ -23,7 +48,7 @@
      lin = parameters_for_protocol('LIN', p, network_id='lin-1', confirmed_parameters=p)
      assert lin['bitrate'] == 19200 and lin['cycle_ms'] == 50 and lin['_rate_evidenced']
      assert parameters_for_protocol('CAN_FD', p, confirmed_parameters=p)['bitrate'] == 2_000_000
-@@ -33,16 +40,16 @@
+@@ -33,16 +63,16 @@
  
  
  def test_modified_or_proposed_group_cannot_reuse_old_confirmation():
@@ -45,7 +70,7 @@
      assert parameters_for_protocol('LIN', p, network_id='lin-1', confirmed_parameters=p)['bitrate'] == 9600
  
  
-@@ -55,16 +62,16 @@
+@@ -55,17 +85,42 @@
  def test_valid_group_roundtrip_preserves_inventory_and_invalidates_dependents():
      service = WorkflowStatusService(current_project_id()); base = mixed(); service.save_parameters(base)
      service.mark_changed('capacity_timing', 'Testberechnung vorhanden', status='COMPLETE')
@@ -63,5 +88,122 @@
 -    p = mixed(); p['technology_parameters'] = {'lin': {'values': {'bitrate': 19200}, 'provenance': {}}}
 +    p = mixed(); p['technology_parameters'] = {'lin': {'values': dict(LIN_CONTEXT), 'provenance': {}}}
      with pytest.raises(ValueError, match='bestätigt'): WorkflowStatusService._validate_parameter_reviews(p, mixed())
++
++
++def test_individually_confirmed_partial_group_is_preserved_without_capacity_approval():
++    service = WorkflowStatusService(current_project_id())
++    base = mixed()
++    service.save_parameters(base)
++    partial = {**base, 'technology_parameters': {'lin': reviewed({'lin_bitrate_bps': 19200})}}
++    saved = service.save_parameters(partial)['parameters']
++    assert saved['technology_parameters']['lin']['values'] == {'lin_bitrate_bps': 19200}
++    assert saved['networks'] == base['networks']
++    resolved = parameters_for_protocol('LIN', saved, network_id='lin-1', confirmed_parameters=saved)
++    assert resolved['lin_bitrate_bps'] == 19200
++    assert not resolved['_rate_evidenced']
++    assert any(item['code'] == 'TECHNOLOGY_PARAMETER_MISSING' for item in resolved['_rate_findings'])
++
++
++def test_parameter_artifact_reads_confirmed_primary_group_and_allows_signed_profile_values():
++    parameters = {**mixed(), 'technology': 'lin', 'technology_parameters': {'lin': reviewed(dict(LIN_CONTEXT))}}
++    for key in ('bitrate', 'arbitration_bitrate', 'data_bitrate'):
++        parameters.pop(key)
++    check = WorkflowStatusService._parameter_artifact_check(parameters)
++    assert check['complete'], check
++    parameters = {**mixed(), 'clock_offset_ms': -2}
++    check = WorkflowStatusService._parameter_artifact_check(parameters)
++    assert check['complete'], check
  
  
+ def test_invalid_network_edit_rejected_without_mutation():
+@@ -80,3 +135,90 @@
+     WorkflowStatusService._validate_parameter_reviews(p, mixed())
+     result = parameters_for_protocol('CAN_FD', p, confirmed_parameters=p)
+     assert result['_rate_evidenced'] and result['arbitration_bitrate'] == 500_000 and result['data_bitrate'] == 2_000_000
++
++
++def test_parameter_artifact_accepts_valid_historical_can_fd_nominal_alias():
++    parameters = mixed()
++    parameters.pop('arbitration_bitrate')
++    parameters.pop('defaults_source')
++    parameters['bitrate'] = 500_000
++    assert WorkflowStatusService._parameter_artifact_check(parameters)['complete']
++    parameters['bitrate'] = 2_000_000
++    assert not WorkflowStatusService._parameter_artifact_check(parameters)['complete']
++
++
++@pytest.mark.parametrize('scoped', [False, True])
++@pytest.mark.parametrize('technology,values,aliases', [
++    ('can', {'bitrate_bps': 500_000}, {'bitrate': 500_000}),
++    ('can_fd', {'nominal_bitrate_bps': 500_000, 'data_bitrate_bps': 2_000_000},
++     {'arbitration_bitrate': 500_000, 'data_bitrate': 2_000_000}),
++])
++def test_owned_canonical_rates_reach_consumers_with_their_confirmation(scoped, technology, values, aliases):
++    parameters = {key: value for key, value in mixed().items()
++                  if key not in {'bitrate', 'arbitration_bitrate', 'data_bitrate'}}
++    parameters['technology'] = technology
++    group = reviewed(values)
++    if scoped:
++        parameters['technology_parameters'] = {technology: group}
++    else:
++        parameters.update(values, parameter_provenance=group['provenance'])
++    before = deepcopy(parameters)
++    result = parameters_for_protocol(technology, parameters, confirmed_parameters=parameters)
++    assert result['_rate_evidenced'] is True
++    assert all(result[key] == value for key, value in aliases.items())
++    assert WorkflowStatusService._parameter_artifact_check(parameters)['complete']
++    assert parameters == before
++    proof = group['provenance'][next(iter(values))]
++    proof['technology'] = 'ethernet'
++    assert not parameters_for_protocol(technology, parameters, confirmed_parameters=parameters)['_rate_evidenced']
++
++
++def test_rate_alias_conflict_remains_visible_and_blocks_computation():
++    parameters = {'technology': 'can', 'bitrate_bps': 500_000, 'bitrate': 250_000}
++    result = parameters_for_protocol('CAN', parameters, confirmed_parameters=parameters)
++    assert result['bitrate'] == 250_000 and result['bitrate_bps'] == 500_000
++    assert not result['_rate_evidenced']
++    assert any(item['code'] == 'TECHNOLOGY_PARAMETER_CONFLICT' for item in result['_rate_findings'])
++
++
++def test_parameter_artifact_needs_data_phase_until_brs_is_explicitly_disabled():
++    parameters = {**mixed(), 'bitrate': 500_000}
++    parameters.pop('data_bitrate')
++    parameters.pop('defaults_source')
++    assert not WorkflowStatusService._parameter_artifact_check(parameters)['complete']
++    parameters['can_fd_brs'] = False
++    assert WorkflowStatusService._parameter_artifact_check(parameters)['complete']
++
++
++@pytest.mark.parametrize('values,code', [
++    ({'bitrate': 2_000_000}, 'TECHNOLOGY_PARAMETER_OUT_OF_RANGE'),
++    ({'bitrate': 19200, 'data_bitrate': 2_000_000}, 'TECHNOLOGY_RATE_MODEL_MISMATCH'),
++    ({'bitrate': 19200, 'lin_bitrate_bps': 9600}, 'TECHNOLOGY_PARAMETER_CONFLICT'),
++])
++def test_http_invalid_native_parameter_review_returns_400_without_modifying_project(values, code):
++    from backend.app import create_app
++    client = create_app(testing=True).test_client()
++    client.environ_base['HTTP_X_PROJECT_ID'] = current_project_id()
++    service = WorkflowStatusService(current_project_id())
++    service.save_parameters(mixed())
++    before = client.get('/api/engineering/workflow/parameters').get_json()
++    changed = {**before['parameters'], 'technology_parameters': {'lin': reviewed(values)}}
++    response = client.patch('/api/engineering/workflow/parameters', json={
++        'expected_token': before['edit_token'], 'parameters': changed})
++    assert response.status_code == 400, response.get_data(as_text=True)
++    assert code in response.get_json()['error']
++    after = client.get('/api/engineering/workflow/parameters').get_json()
++    assert after == before
++
++
++@pytest.mark.parametrize('technology,source_field', [('i2c','i2c_device_source'),('modbus_rtu','mr_device_source')])
++def test_unresolved_parameter_artifact_exports_its_native_actionable_findings(technology, source_field):
++    parameters = {**mixed(), 'technology': technology}
++    parameters.pop('data_bitrate')
++    parameters.pop('arbitration_bitrate')
++    parameters['bitrate'] = 100000 if technology == 'i2c' else 9600
++    check = WorkflowStatusService._parameter_artifact_check(parameters)
++    assert not check['complete']
++    assert check['required'][source_field] is False
++    assert any(f['code'] == 'TECHNOLOGY_PARAMETER_MISSING' and f.get('parameter') == source_field
++               for f in check['profile_findings'])

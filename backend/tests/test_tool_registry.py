@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from backend.app import create_app
+from backend.nis.app import create_app
 from engineering.tool_registry import get_engineering_tool, list_engineering_tools
 
 

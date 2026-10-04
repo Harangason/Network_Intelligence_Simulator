@@ -5,8 +5,10 @@ from copy import deepcopy
 import pytest
 from psycopg.types.json import Jsonb
 
-from backend.app.e2e_assurance import build_e2e_transactions, build_sequence_model
-from backend.engineering.agent_tools.communication_evidence import SOURCE_STEPS, select_simulation_sequence
+from backend.nis.simulation.e2e_assurance import build_e2e_transactions
+from backend.nis.simulation.e2e_assurance import build_sequence_model
+from backend.nis.agent.tools.communication_evidence import SOURCE_STEPS
+from backend.nis.agent.tools.communication_evidence import select_simulation_sequence
 from backend.tests.test_e2e_assurance import frame
 from backend.tests.test_agent_communication_path import connected_model, PROMPT
 from backend.tests.test_goal_execution_sql import project
@@ -77,10 +79,10 @@ def test_explicit_receiver_acceptance_is_preserved_with_simulation_provenance():
 
 
 def test_actual_project_analysis_is_read_only_and_excludes_other_routes(project):
-    from backend.engineering.agent_tools.communication_path import inspect_communication_path
-    from backend.engineering.goal_execution.graph import ModelGraphService
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.db import get_connection
+    from backend.nis.agent.tools.communication_path import inspect_communication_path
+    from backend.nis.engineering.goal_execution.graph import ModelGraphService
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.infrastructure.persistence.db import get_connection
     connected_model()
     arguments = {'source_ref': 'ParkAssist', 'target_ref': 'DriverAssistance'}
     path = inspect_communication_path(arguments)
@@ -100,9 +102,9 @@ def test_actual_project_analysis_is_read_only_and_excludes_other_routes(project)
 
 
 def test_assistant_explains_simulated_transport_without_claiming_receiver_acceptance():
-    from backend.agent_core.api.tool_contract import ToolResult
-    from backend.agent_core.context.agent_context import AgentContext
-    from backend.agent_core.runtime.service import EngineeringAssistantService
+    from backend.nis.agent.api.tool_contract import ToolResult
+    from backend.nis.agent.context.agent_context import AgentContext
+    from backend.nis.agent.runtime.service import EngineeringAssistantService
     class Client:
         async def tools(self): return [{'name': 'inspect_communication_path'}]
         async def call(self, name, arguments):

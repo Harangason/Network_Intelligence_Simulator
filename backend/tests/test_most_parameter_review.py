@@ -1,8 +1,8 @@
 """MOST native clocks, actual INIC resources and host versus carrier separation."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import most as MO
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.most import rules as MO
 
 def actual(device='OS81050'):
     x={'mo_'+k:'synthetic-actual-'+k for k in MO.REQUIRED}
@@ -114,8 +114,8 @@ def test_most_selected_phy_variant_and_device_revision_have_no_ethernet_or_can_f
     x.pop('mo_companion_source');assert status(x)=='UNVERIFIED'
 
 def test_most_confirmed_clock_and_device_values_survive_invalid_foreign_edits():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x={**actual('OS81092'),'mo_node_address':0x1234,'mo_cable_impedance_ohm':120}
     group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}
     parameters={'technology':'most','technology_parameters':{'most':group}}

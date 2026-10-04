@@ -1,3 +1,4 @@
-from .base import BaseGenerator, GeneratorResult
-
-__all__ = ["BaseGenerator", "GeneratorResult"]
+"""Compatibility only; owner backend.nis.agent.generators."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.generators')

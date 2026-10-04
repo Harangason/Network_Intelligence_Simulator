@@ -1,5 +1,5 @@
-import { MarketingShell } from "@/components/marketing-shell";
-import { ProjectGallery } from "@/components/project-gallery";
+import { MarketingShell } from "@/features/marketing/ui/marketing-shell";
+import { ProjectGallery } from "@/features/projects/ui/project-gallery";
 
 export default function ProjectsPage() {
   return <MarketingShell><ProjectGallery /></MarketingShell>;

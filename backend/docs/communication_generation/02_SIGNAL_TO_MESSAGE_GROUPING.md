@@ -1,12 +1,5 @@
-# Signal To Message Grouping
+# Document moved
 
-Grouping keys:
+Canonical document: [02_SIGNAL_TO_MESSAGE_GROUPING.md](../../../docs/domains/engineering/02_SIGNAL_TO_MESSAGE_GROUPING.md).
 
-- Producer function
-- Sender hardware
-- Communication technology
-- Timing / cycle class
-- Receiver set
-- Priority
-
-Different producers, different timing classes or different receiver sets are intentionally not merged.
+This entry preserves old links during the structure migration.

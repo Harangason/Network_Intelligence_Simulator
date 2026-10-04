@@ -1,10 +1,11 @@
+from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
 """Forwarding switches preserve local wire traffic and complete physical frames."""
 from copy import deepcopy
 
 import pytest
 
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.routing.payload_scope import payload_scope_issues
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.routing.payload_scope import payload_scope_issues
 
 
 def message(*, enabled=True, local=False):
@@ -64,7 +65,8 @@ def test_off_does_not_reinterpret_existing_global_consumers_as_local():
 
 @pytest.mark.parametrize('local', [False, True])
 def test_payload_suggestion_scope_exposes_effective_frame_switch_and_keeps_local_receivers(local):
-    from backend.engineering.routing.payload_scope import message_scope, scope_allows
+    from backend.nis.engineering.routing.payload_scope import message_scope
+    from backend.nis.engineering.routing.payload_scope import scope_allows
     scope = message_scope(message(local=local), {'hall': signal('hall', False), 'status': signal('status', True)})
     assert scope['routing_enabled'] is True  # The message's own editable switch.
     assert scope['forwarding_enabled'] is False and scope['restricted'] is True
@@ -74,7 +76,8 @@ def test_payload_suggestion_scope_exposes_effective_frame_switch_and_keeps_local
 
 
 def test_approved_simulation_rechecks_hidden_disabled_fields(monkeypatch):
-    from backend.engineering.routing import payload_scope, config_builder
+    from backend.nis.engineering.routing import payload_scope as payload_scope
+    from backend.nis.engineering.routing import config_builder as config_builder
     monkeypatch.setattr(payload_scope, 'load_payload_context', lambda: (
         {'frame': message()}, {'hall': signal('hall', False), 'status': signal('status', True)}, {}))
     approved = {**route(payload={'message_id': 'frame', 'signal_ids': ['status']}), 'approval_state': 'APPROVED'}
@@ -85,14 +88,14 @@ def test_approved_simulation_rechecks_hidden_disabled_fields(monkeypatch):
 @pytest.mark.parametrize('kind', ['Message', 'Signal'])
 @pytest.mark.parametrize('value', ['false', 0, 1, None, [], {}])
 def test_routing_switch_accepts_only_actual_boolean_values(kind, value):
-    from backend.engineering.repository import get_spec
+    from backend.nis.infrastructure.persistence.repository import get_spec
     with pytest.raises(EngineeringValidationError, match='true oder false'):
         get_spec(kind).validate({'interface_id': 'i', 'message_id': 'm', 'configuration': {'routing': {'enabled': value}}})
 
 
 def test_wizard_replanning_keeps_saved_forwarding_choice():
     from backend.tests.test_wizard_communication import fixture
-    from backend.engineering.wizard_communication import communication_plan
+    from backend.nis.engineering.communication.wizard_communication import communication_plan
     prompt, graph = fixture()
     first = communication_plan(prompt, graph)
     first['sensor']['routing'] = {'enabled': False}
@@ -104,8 +107,8 @@ def test_wizard_replanning_keeps_saved_forwarding_choice():
 @pytest.mark.parametrize('switch_kind', ['Message', 'Signal'])
 def test_wizard_generation_keeps_local_routes_and_omits_switched_off_global_consumers(monkeypatch, switch_kind):
     from backend.tests.test_wizard_communication import fixture
-    from backend.engineering.wizard_communication import communication_plan
-    from backend.engineering.agent_tools import wizard_generation as generation
+    from backend.nis.engineering.communication.wizard_communication import communication_plan
+    from backend.nis.agent.tools import wizard_generation as generation
     prompt, graph = fixture()
     for key, config in communication_plan(prompt, graph).items():
         graph['Message'][key]['configuration'] = config
@@ -144,7 +147,8 @@ def test_wizard_generation_keeps_local_routes_and_omits_switched_off_global_cons
 
 def test_repair_does_not_restore_forwarding_of_a_disabled_field():
     from backend.tests.test_communication_repair import sample
-    from backend.engineering.communication_repair import RepairPlanner, complete_plan
+    from backend.nis.engineering.communication.communication_repair import RepairPlanner
+    from backend.nis.engineering.communication.communication_repair import complete_plan
     state, objects, routes, history = sample()
     objects['Signal'][0]['configuration'] = {'routing': {'enabled': False}}
     before = deepcopy((objects, routes))
@@ -156,8 +160,9 @@ def test_repair_does_not_restore_forwarding_of_a_disabled_field():
 
 
 def test_off_keeps_local_bus_load_and_timing_but_removes_external_frame_load(monkeypatch):
-    from backend.engineering.capacity import service as capacity
-    from backend.engineering.workflow.models import default_statuses, default_versions
+    from backend.nis.engineering.capacity import service as capacity
+    from backend.nis.workflow.services.models import default_statuses
+    from backend.nis.workflow.services.models import default_versions
     local = message(enabled=False, local=True)
     output = {**message(), 'id': 'output', 'dlc': 1}
     def capacity_route(identifier, mid, target, network, protocol):
@@ -173,7 +178,7 @@ def test_off_keeps_local_bus_load_and_timing_but_removes_external_frame_load(mon
     monkeypatch.setattr(capacity, 'list_routes', lambda **kwargs: deepcopy(rows))
     service = capacity.CapacityTimingService('routing-off-test')
     monkeypatch.setattr(service.workflow, 'get', lambda: {'project_id': 'routing-off-test', 'versions': default_versions(),
-        'statuses': {key: 'COMPLETE' for key in default_statuses()}, 'parameters': {'technology': 'can_fd', 'bitrate': 500_000, 'data_bitrate': 2_000_000, 'networks': [{'id': 'motor-lin', 'technology': 'LIN', 'bitrate': 19_200}, {'id': 'system-can', 'technology': 'CAN_FD', 'bitrate': 500_000, 'data_bitrate': 2_000_000}]}, 'topology': {}})
+        'statuses': {key: 'COMPLETE' for key in default_statuses()}, 'parameters': {'technology': 'can_fd', 'bitrate': 500_000, 'data_bitrate': 2_000_000, 'networks': [{'id': 'motor-lin', 'technology': 'LIN', **lin_design(), 'bitrate': 19_200}, {'id': 'system-can', 'technology': 'CAN_FD', 'bitrate': 500_000, 'data_bitrate': 2_000_000}]}, 'topology': {}})
     monkeypatch.setattr(service, 'latest', lambda: None)
     before = service.calculate(persist=False)
     rows.append(capacity_route('forbidden', 'frame', 'display', 'system-can', 'CAN_FD'))
@@ -189,8 +194,8 @@ def test_off_keeps_local_bus_load_and_timing_but_removes_external_frame_load(mon
 
 @pytest.fixture
 def request_unit():
-    from backend.engineering.db import RequestUnit
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.infrastructure.persistence.db import RequestUnit
+    from backend.nis.engineering.projects.project_context import current_project_id
     unit = RequestUnit(current_project_id())
     try:
         yield unit
@@ -199,12 +204,14 @@ def request_unit():
 
 
 def test_canonical_sql_message_only_route_cannot_hide_off_signal_and_revision_is_checked(request_unit):
-    from backend.engineering.repository import create_object, update_object, get_object
-    from backend.engineering.routing.validation import RoutingValidator
-    from backend.engineering.project_context import current_project_id
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.db import flush_model_changes
-    from backend.engineering.db import ConcurrentUpdateError
+    from backend.nis.infrastructure.persistence.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.infrastructure.persistence.repository import get_object
+    from backend.nis.engineering.routing.validation import RoutingValidator
+    from backend.nis.engineering.projects.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.infrastructure.persistence.db import flush_model_changes
+    from backend.nis.infrastructure.persistence.db import ConcurrentUpdateError
     src = create_object('HardwareNode', {'name': 'DriveUnit', 'device_type': 'ECU'})
     dst = create_object('HardwareNode', {'name': 'DisplayUnit', 'device_type': 'ECU'})
     interfaces = [create_object('Interface', {'name': node['name'] + 'Output', 'hardware_node_id': str(node['id']),
@@ -267,7 +274,7 @@ def test_http_edit_scope_roundtrip_and_project_isolation():
 @pytest.mark.parametrize('kind', ['Message', 'Signal'])
 def test_goal_planner_does_not_offer_an_externally_disabled_payload(request_unit, kind):
     from backend.tests.test_goal_execution_sql import fixture, prepare
-    from backend.engineering.repository import update_object
+    from backend.nis.infrastructure.persistence.repository import update_object
     data = fixture()
     row = data['message' if kind == 'Message' else 'signal']
     update_object(kind, str(row['id']), {'expected_version': row['version'],

@@ -8,14 +8,16 @@ from uuid import uuid4
 from psycopg.types.json import Jsonb
 import pytest
 
-from backend.app import create_app
-from backend.agent_core.api.tool_contract import Permission
-from backend.agent_core.context.agent_context import AgentContext
-from backend.engineering.agent_tools import conversation
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.db import RequestUnit, get_connection
-from backend.engineering.project_context import current_project_id
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.app import create_app
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.infrastructure.persistence.db import RequestUnit
+from backend.nis.infrastructure.persistence.db import get_connection
+from backend.nis.engineering.projects.project_context import current_project_id
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
 pytestmark = pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_URL'),

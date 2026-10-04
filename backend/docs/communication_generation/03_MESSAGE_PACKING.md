@@ -1,5 +1,5 @@
-# Message Packing
+# Document moved
 
-Packing is deterministic and atomically places each signal into exactly one payload region. A message is filled while another compatible signal fits within the technology-specific maximum payload. When it does not fit, a new message is created for the same group.
+Canonical document: [03_MESSAGE_PACKING.md](../../../docs/domains/engineering/03_MESSAGE_PACKING.md).
 
-Persisted metadata includes used bits, capacity bits, free bits, utilization and projected load.
+This entry preserves old links during the structure migration.

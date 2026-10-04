@@ -2,8 +2,8 @@
 from copy import deepcopy
 import math
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import mms as MM
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.mms import rules as MM
 
 def actual(profile='LIBIEC61850_1_6',phase='DATA'):
     x={'mm_'+k:'synthetic-actual-'+k for k in MM.REQUIRED}
@@ -154,8 +154,8 @@ def test_mms_factory_compilation_does_not_grant_rename_service_or_actual_dataset
     x['mm_resource_source']='synthetic-modified-resource-limit';assert status(x)=='VALID'
 
 def test_mms_confirmed_nondefault_negotiation_and_pdu_survive_rejected_isolated_sql_edit():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x={**actual(),'mm_peer_port':1102,'payload_bytes':58000,'mm_mms_overhead_bytes':100,'mm_pdu_bytes':58100,
       'mm_calling_negotiated':2,'mm_request_timeout_ms':7200}
     group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}

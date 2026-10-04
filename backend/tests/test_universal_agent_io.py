@@ -1,11 +1,12 @@
 """Input identity, inert outputs and real connection output recovery."""
 import pytest
 from pydantic import ValidationError
-from backend.agent_core.api.input_output import AgentInputEnvelope, VisualizationRequest
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.context.input_adapter import adapt_input
-from backend.engineering.goal_execution.graph import ModelGraphService
-from backend.engineering.goal_execution.typing import type_reference
+from backend.nis.agent.api.input_output import AgentInputEnvelope
+from backend.nis.agent.api.input_output import VisualizationRequest
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.context.input_adapter import adapt_input
+from backend.nis.engineering.goal_execution.graph import ModelGraphService
+from backend.nis.engineering.goal_execution.typing import type_reference
 
 
 def test_input_keeps_source_material_separate_and_never_accepts_authority():
@@ -32,7 +33,7 @@ def test_s51_direct_goals_have_distinct_intents(prompt, expected):
 
 
 def test_s51_signal_reference_is_not_taken_from_a_meta_prompt():
-    from backend.agent_core.orchestration.capability_intent import signal_inspection
+    from backend.nis.agent.orchestration.capability_intent import signal_inspection
     assert signal_inspection('Prüfe MotorRPM.') == 'MotorRPM'
     assert signal_inspection('Klassifiziere die Eingaben: Prüfe MotorRPM.') is None
 
@@ -60,7 +61,7 @@ def test_visualization_rejects_code_and_dangling_edges():
 
 def test_capability_availability_respects_authority():
     from types import SimpleNamespace
-    from backend.agent_core.registry.skill_registry import SkillRegistry
+    from backend.nis.agent.registry.skill_registry import SkillRegistry
     registry = SkillRegistry([{'id': 'test', 'description': 'test', 'tools': ['write']}],
                             {'write': SimpleNamespace(permission='WRITE')})
     assert registry.contracts({'READ'})[0]['available'] is False
@@ -68,7 +69,8 @@ def test_capability_availability_respects_authority():
 
 
 def test_completion_requires_requested_outputs_and_domain_evidence():
-    from backend.engineering.goal_execution.models import DesiredEngineeringState, GoalCompletionEvaluator
+    from backend.nis.engineering.goal_execution.models import DesiredEngineeringState
+    from backend.nis.engineering.goal_execution.models import GoalCompletionEvaluator
     desired = DesiredEngineeringState(goal='connect', goal_type='CONNECT_FUNCTIONS', target_objects=['a', 'b'], completion_criteria=['timing_valid'])
     evaluator = GoalCompletionEvaluator()
     assert evaluator.evaluate(desired, {'timing_valid': True}, required_outputs=['VISUALIZATION'])['status'] == 'INCOMPLETE'
@@ -76,7 +78,7 @@ def test_completion_requires_requested_outputs_and_domain_evidence():
 
 
 def test_unsupported_input_does_not_start_an_agent():
-    from backend.app import create_app
+    from backend.nis.app import create_app
     client = create_app(testing=True).test_client()
     response = client.post('/api/engineering/agent/chat', json={'prompt': 'Erstelle Hardware', 'input_type': 'IMAGE'})
     assert response.status_code == 422
@@ -88,7 +90,8 @@ from backend.tests.test_goal_execution_sql import project, fixture, confirm
 
 
 def test_real_connection_generates_current_outputs_and_reuses_them(project):
-    from backend.engineering.goal_execution import service, tools
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.goal_execution import tools as tools
     data = fixture()
     goal = service.prepare('Verbinde ParkAssist mit DriverAssistance und zeige die Architektur.', data['sf']['id'], data['df']['id'])
     confirm(goal)
@@ -105,7 +108,8 @@ def test_real_connection_generates_current_outputs_and_reuses_them(project):
 
 
 def test_output_failure_resumes_without_repeating_mutations(project, monkeypatch):
-    from backend.engineering.goal_execution import service, outputs
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.goal_execution import outputs as outputs
     data = fixture()
     goal = service.prepare('Verbinde ParkAssist mit DriverAssistance', data['sf']['id'], data['df']['id'])
     confirm(goal)
@@ -126,8 +130,9 @@ def test_output_failure_resumes_without_repeating_mutations(project, monkeypatch
 
 
 def test_outputs_on_changed_model_are_marked_stale(project):
-    from backend.engineering.goal_execution import service, tools
-    from backend.engineering.repository import create_object
+    from backend.nis.engineering.goal_execution import service as service
+    from backend.nis.engineering.goal_execution import tools as tools
+    from backend.nis.infrastructure.persistence.repository import create_object
     data = fixture()
     goal = service.prepare('Verbinde ParkAssist mit DriverAssistance', data['sf']['id'], data['df']['id'])
     confirm(goal)

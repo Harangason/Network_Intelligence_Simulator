@@ -1,13 +1,20 @@
 # Communication Simulator
 
+Die kanonischen Modulverantwortungen, Technologiepakete, Speicherpfade und
+Kompatibilitätsregeln sind in der [Projektstruktur](docs/architecture/project-structure.md)
+beschrieben. Auslieferungen erfolgen über `python scripts/release-and-deploy.py`
+mit vollständigem Release-Gate und Überprüfung des laufenden Images.
+
 Der Communication Simulator ist eine eigenständige, technologieoffene
 Kommunikationssimulation. Er modelliert Hardware, physische Ports, logische
 Netzwerk-Schnittstellen, Netzwerke, Nachrichten, Timing und Fehler unabhängig
 von einer bestimmten Branche oder einem bestimmten Engineering-Werkzeug.
 
-Der universelle Simulationskern unterstützt jede integrierte oder
-benutzerdefinierte Bus-Technologie. Für CAN und Ethernet stehen zusätzlich
-native Writer zur Verfügung.
+Die zentrale TechnologyProfile-Registry beschreibt integrierte und
+benutzerdefinierte Verbindungstypen. Parameterprüfung, ausführbares
+Kapazitätsmodell und native Dateiausgabe sind getrennte Fähigkeiten; ein
+registriertes Profil allein belegt keine vollständige Simulation. Für CAN
+und Ethernet stehen technologieabhängige native Writer zur Verfügung.
 
 ## Lizenz und Nutzung
 
@@ -26,6 +33,31 @@ Lizenzbedingungen unterliegen; diese werden durch die Projektlizenz nicht
 erweitert.
 
 SPDX-Kennung für dieses Projekt: `LicenseRef-NIS-Proprietary-1.0`
+
+### Quellenverzeichnis und Technikrechte
+
+Die Hauptnavigation enthält **Quellen** (`/sources`): ein aus den registrierten
+Technologieprofilen abgeleitetes Verzeichnis mit Fuzzy-Suche, deduplizierten
+Quellen, alphabetischer Bustypreihenfolge und sortierbaren Spalten. Es zeigt
+Kürzel, vollständigen Bustypnamen, Quellenname, kurze Links, belegtes Abrufdatum,
+Veröffentlichungshinweise und projektbezogenen Freigabestatus. Unbekannte
+Abrufdaten bleiben ausdrücklich nicht dokumentiert.
+
+Das Verzeichnis veröffentlicht keine Originaldokumente. Öffentlich abrufbar
+bedeutet nicht frei weiterveröffentlichbar. Das Stoppsymbol erklärt ungeklärte
+oder eingeschränkte Rechte und führt zur Quelle beziehungsweise zu ihren
+Bedingungen. Dokument-, Code-, Implementierungs- und Zertifizierungsrechte
+werden getrennt; ungeklärte Punkte werden nicht als rechtlich geklärt ausgegeben.
+
+Für NMEA 0183/2000 und MIPI CSI-2/DSI verlangt die vorsorgliche NIS-Policy eine
+geprüfte projektbezogene Freigabe für den tatsächlichen Nutzungsumfang. Die
+Techniken bleiben auswählbar, Ausführung ohne passenden Nachweis ist gesperrt.
+Ein eingereichter Nachweis bleibt **PENDING** bis zur Betreiberprüfung;
+Frontend-Bestätigungen schalten nichts frei. Nachweise haben Scope,
+Policy-Revision, optionales Ablaufdatum und ein Änderungsprotokoll.
+I3C Basic wird nicht pauschal mit vollem MIPI-Mitgliedschaftsrecht gleichgesetzt.
+
+Details und Betreiberverfahren: [Quellen- und Lizenzvertrag](docs/SOURCE_LICENSING_CONTRACT.md).
 
 ## Weboberfläche
 
@@ -328,10 +360,11 @@ Der App-Container heißt `NetworkIS`; die Engineering-Datenbank läuft als
 .\start-networkis.bat
 ```
 
-Alternativ direkt mit Docker Compose:
+Geänderten Quellcode vollständig prüfen und das exakt geprüfte Image produktiv
+übernehmen:
 
 ```powershell
-docker compose -f docker-compose.networkis.yml up -d --build
+backend\.venv\Scripts\python.exe scripts/release-and-deploy.py
 ```
 
 Wenn `docker` nicht im `PATH` liegt, verwendet `start-networkis.bat` die in
@@ -342,13 +375,10 @@ GPU- und VRAM-Auslastung des Rechners statt der Ressourcen des Docker-Containers
 Ist die Hosttelemetrie nicht erreichbar, kennzeichnet die Oberfläche die
 Ersatzmessung ausdrücklich als `Container`.
 
-Der
-direkte Aufruf des hinterlegten Compose-Plugins ist ebenfalls möglich:
-
-```powershell
-& "C:\Users\marti\.docker\cli-plugins\docker-compose.exe" `
-  -f .\docker-compose.networkis.yml up -d --build
-```
+Der normale Start verwendet das bereits installierte Image. Die Lieferung
+verwendet ein vollständiges PASS-Protokoll mit passender Quellcode-, Test- und
+Git-Identität, führt andernfalls das Release-Gate aus und kontrolliert nach dem
+Deployment das laufende Image. Historische Images werden dabei nicht gelöscht.
 
 - Oberfläche: `http://127.0.0.1:13500`
 - Backend/API: `http://127.0.0.1:15050/api`
@@ -427,37 +457,98 @@ Aktuelle Generatorbereiche:
 Ein neuer Fachgenerator erbt von `BaseTechnologyGenerator`, implementiert
 `generate()` und wird in `TechnologyRegistry.DEFAULT_GENERATORS` registriert.
 
-## Unterstützte Technologien
+## Unterstützte Verbindungstypen und Technologien
 
-Die eingebaute Registry enthält mehr als 50 Bus- und Protokollprofile:
+Die zentrale Registry enthält **125 einzeln geprüfte Technologieprofile**.
+Die folgende Liste wird nach Protokollschicht gegliedert. Branchen beeinflussen
+Empfehlungen und Vorlagen, begrenzen aber nicht die Technologieauswahl.
+Ein gemischtes Projekt führt Parameter und Nachweise je Technologie, Netz und
+Geräteanschluss getrennt. Ethernet wird beispielsweise nicht als NMEA-2000-
+oder I²C-Verbindung bewertet.
 
-- Automotive: Classic CAN, CAN FD, CAN XL, LIN, FlexRay, MOST, Automotive
-  Ethernet, CANopen, J1939, SOME/IP und DoIP
-- Industrial: PROFIBUS, PROFINET, EtherCAT, EtherNet/IP, Modbus RTU/TCP,
-  DeviceNet, Sercos, IO-Link und OPC UA
-- Embedded: I²C, SPI, UART, RS-232, RS-422, RS-485, 1-Wire, USB und PCIe
-- Aerospace/Defense: ARINC 429, ARINC 664/AFDX, ARINC 825,
-  MIL-STD-1553 und SpaceWire
-- Rail: MVB, WTB, ETB und TRDP
-- Marine: NMEA 0183, NMEA 2000 und IEC 61162
-- Building/Energy: KNX, BACnet MS/TP/IP, IEC 61850 und DNP3
-- Robotics: DDS/RTPS und ROS 2
-- Allgemein: Ethernet, IPv4, IPv6, UDP und TCP
+- **Physikalische Verbindungen:** ADC, DAC, GPIO, LVDS, PWM, RS-232, RS-422, RS-485.
+- **Bus- und Sicherungsschichten:** 5G, ARINC 429, Bluetooth LE, CAN 2.0A/B, CAN-FD, CAN XL, Ethernet, FlexRay, Generic CAN, Generic Ethernet, Generic Serial, I2C, I3C, LIN, LTE-M, MIL-STD-1553, MIPI CSI-2, MIPI DSI, MOST, MVB, NB-IoT, NFC, 1-Wire, PCIe, POWERLINK, PROFIBUS DP, PROFIBUS PA, PROFINET RT/IRT, Sercos III, SpaceWire, SPI / separately qualified QSPI, UART / USART, USB, UWB, Wi-Fi, WTB.
+- **Netzwerkschichten:** Internet Protocol, Thread.
+- **Transportschichten:** TCP, UDP.
+- **Anwendungsprotokolle:** AMQP, BACnet/IP, BACnet MS/TP, BACnet/SC, CANopen, CCP, CoAP, Custom Binary, Custom Protocol, Custom TCP, Custom Text, Custom UDP, DALI, DDS, DNP3, DoIP, EtherNet/IP, FOUNDATION Fieldbus H1, FSoE, GOOSE, HTTP, IEC 60870-5-101, IEC 60870-5-104, IEC 61162, IEC 61850, SAE J1939, M-Bus, Matter, MMS, Modbus ASCII, Modbus RTU, Modbus TCP, MQTT, MQTT-SN, NMEA 0183, OCPP, OPC UA Client/Server, OPC UA PubSub, IEC 61850 Sampled Values, SOME/IP, SOME/IP-SD, TRDP, UDS, WebSocket, Wireless M-Bus, WirelessHART, XCP, Zigbee.
+- **Anwendungsprofile:** ARINC 664 / AFDX, AVB, CAN Aerospace, CC-Link, CC-Link IE, CIP Safety, DeviceNet, Ethernet Train Backbone, EtherCAT, HART (wired), INTERBUS, IO-Link, IO-Link Wireless, ISO 11783 / ISOBUS, KNX IP, KNX RF, KNX TP, LonWorks, LoRaWAN, NMEA 2000, OBD-II, openSAFETY, PROFIsafe, RFID, ROS 2, Sparkplug B, SunSpec Modbus, Time-Sensitive Networking, Time-Triggered Ethernet.
 
-Proprietäre Technologien werden über `technology_profiles` beschrieben und
-dann wie integrierte Technologien simuliert. Der Kern besitzt deshalb keine
-geschlossene Liste erlaubter Busse.
+### Parameter, Standardvorschläge und Nachweise
 
-Alle Technologien unterstützen den neutralen JSONL-/CSV-Trace. Native
-Dateiformate sind technologieabhängig:
+- Wizard, Parametereditor und API verwenden das profilgebundene Schema. Die
+  Technologieauswahl bietet eine Suche über den vollständigen Katalog.
+- Literaturwerte werden als überprüfbare Vorschläge angeboten. Bedingte Werte
+  gelten nur bei passender Betriebsart, Version und Gerätekonfiguration; bei
+  I²C ist Standard-mode mit 100 kbit/s der bekannte Basismodus. Es werden
+  weder fremde CAN-Werte noch eine erfundene Gerätefrequenz eingesetzt.
+- Ein vorhandener bestätigter Wert bleibt erhalten. Geräteadresse, tatsächliche
+  Verkabelung, Clock-Stretching, Arbitration, Transaktionsumfang, Security und
+  gemessene Verzögerungen brauchen eigene Quellen und Bestätigung.
+- Der Geräteeditor bewahrt unveränderte Bestätigungen und zeigt Standardvorschläge
+  als unbestätigt. Eine Änderung der Gerätewerte oder Frequenz erfordert eine neue
+  Bestätigung. Bei fehlenden Wizard-Nachweisen werden die konkreten Profilfelder
+  und der Weg zu ihrer Bearbeitung angezeigt.
+- Der vollständige Technologiekatalog wird pro Registry-Revision bereitgestellt.
+  Bei einem Dienstausfall erscheint eine Fehlermeldung mit erneutem Ladeversuch;
+  ein kleinerer Entwicklungskatalog ersetzt ihn nicht.
+- Einzelne geprüfte Werte können gespeichert werden, während andere Angaben
+  offen bleiben. Der Simulator-Export erhält alle zum gewählten Profil gehörenden
+  Felder, ihren Prüfstatus und ihre Herkunft; ein Teilnachweis gibt keine Kapazität
+  oder Simulation frei.
+- Große ganzzahlige Protokollwerte werden im Browser als Dezimaltext verlustfrei
+  gespeichert; die Python-Prüfung berechnet sie als exakte Ganzzahlen.
+- Bestätigung einer Busfrequenz ist kein Kapazitätsnachweis. Kapazität und
+  Schedule werden getrennt von funktionaler Deadline, Datenalter und
+  Fehlerreaktion geprüft. I²C unterscheidet Controller-Port, Target-Port und
+  Transaktion; ein Controller-Port benötigt keine erfundene Slave-Adresse.
+
+### Ausführbarer Umfang
+
+| Fähigkeit | Bedeutung |
+|---|---|
+| Profil und Parameterprüfung | Literatur- und implementierungsbezogene Felder, Grenzen und Abhängigkeiten; keine Hardwarezertifizierung. |
+| `MODEL_AVAILABLE` | Ein registriertes Kapazitätsmodell existiert; Berechnung setzt den tatsächlichen, vollständigen und bestätigten Projekt-Nachweis voraus. |
+| `MODEL_MISSING` | Profil kann ausgewählt und geprüft werden; Kapazität oder vollständige Protokollausführung wird als fehlend gemeldet. Es gibt keinen Ersatz durch CAN oder Ethernet. |
+| `NOT_APPLICABLE` | Direkte I/O-Verbindung; kein Buslastmodell. Geräte-, Prozess- und Funktionsnachweise bleiben erforderlich. |
+| `PARTIAL` / `EXPERIMENTAL` | Umfang des integrierten Modells; keine Aussage über Reife oder Normkonformität der Bus-Technologie selbst. |
+
+Kapazitätsmodelle sind registriert für: CAN 2.0A/B, CAN-FD, Ethernet, I2C, LIN, SPI / separately qualified QSPI.
+Direkte I/O-Verbindungen ohne Buslastmodell: ADC, DAC, GPIO, PWM.
+Alle anderen hier aufgeführten Profile bleiben ohne ausführbaren
+Kapazitätsnachweis `MODEL_MISSING`. Beispiele sind Matter, M-Bus, Wireless
+M-Bus, WirelessHART, MIL-STD-1553, WTB, XCP und Zigbee. Ihre überprüften
+Parameter und Mechanismen installieren keinen PHY-, Security- oder Schedule-
+Executor und ersetzen keine Geräte- oder Systemzertifizierung.
+
+Benutzerdefinierte Technologiepakete ergänzen die Registry mit geprüften
+Beschreibungen und Parameterschemata. Sie installieren keinen ausführbaren
+Kapazitätscode; ihr Kapazitätsstatus bleibt `MODEL_MISSING`.
+
+Quellen, einzelne Parameterentscheidungen und Tests:
+[Prüfprotokoll aller Technologieprofile](docs/implementation-workloads/technology-full-parameter-audit-20261001/progress.json).
+Die Einzelprüfungen beziehen sich auf die dort dokumentierten Quellen,
+Editionen und Implementierungen; sie behaupten keine vollständige Zertifizierung
+aller optionalen Normteile.
+
+Native Dateiformate sind technologieabhängig. Ein neutraler JSONL-/CSV-Trace
+ist eine gemeinsame Darstellung und beweist keine native Bus-Ausführung.
 
 | Bereich | Native Formate |
 |---|---|
 | CAN/CAN FD | BLF, DBC, ASC, TRC, CSV, JSON, XML, YAML, ARXML, FIBEX |
-| CAN XL | universeller Trace; BLF bei Bedarf CAN-FD-kompatibel |
-| Ethernet/IP-basierte Technologien | PCAP und PCAPNG |
+| CAN XL | universeller Trace; CAN-FD-kompatible BLF-Ausgabe bildet keine native CAN-XL-Datei |
+| Ethernet/IP-basierte Technologien | PCAP und PCAPNG im jeweils implementierten Writer-Umfang |
 | Messdaten | optional MDF und MF4 |
-| alle anderen Technologien | universeller JSONL-/CSV-Trace |
+| andere Technologien | neutraler JSONL-/CSV-Trace im ausführbaren Modellumfang |
+
+### Verifizierte Produktivübernahme
+
+`python scripts/release-and-deploy.py` prüft den vollständigen Release-Gate
+mit isolierter SQL-Datenbank und temporärer Laufzeit. Es übernimmt ausschließlich
+das exakt getestete Image aus einem vollständigen PASS-Nachweis und prüft
+danach Image-Identität und Betriebsbereitschaft. Ein Neustart eines alten Images
+ist keine Übernahme von Codeänderungen. Historische Images werden ohne
+dokumentierten Aufbewahrungsnachweis nicht gelöscht.
 
 ## Installation
 
@@ -502,7 +593,7 @@ python generate_realistic_communication_tool.py cli
 Ohne Parameter führt sie interaktiv durch:
 
 1. technologieoffene Standalone-Simulation oder native CAN/Ethernet-Ausgabe
-2. Branche und eine der 54 registrierten Technologien
+2. Branche und eine der 54 Technologien des älteren CLI-Katalogs
 3. Bitrate und Anzahl der Hardware-Knoten
 4. Dauer, Zyklus und Payload-Größe
 5. Seed und maximales Eventlimit
@@ -511,11 +602,19 @@ Ohne Parameter führt sie interaktiv durch:
 
 Alle Technologien anzeigen:
 
+Die Weboberfläche und die Engineering-API verwenden die zentrale Registry mit
+125 Profilen. Der ältere Standalone-CLI-Katalog enthält 54 Einträge; diese
+Kataloggröße beschreibt keine zusätzliche Simulations- oder Kapazitätsfreigabe.
+
 ```powershell
 python generate_realistic_communication_tool.py cli --list-technologies
 ```
 
-Nicht-interaktives Aerospace-Beispiel:
+Nicht-interaktive Aerospace-Konfiguration prüfen:
+
+Die folgenden ARINC-429- und Modbus-TCP-Beispiele prüfen die Topologie mit
+`--validate-only`. Ihr Kapazitätsmodell ist `MODEL_MISSING`; sie erzeugen damit
+keinen Simulationstrace.
 
 ```powershell
 python generate_realistic_communication_tool.py cli `
@@ -530,10 +629,11 @@ python generate_realistic_communication_tool.py cli `
   --dropout-probability 0.01 `
   --corruption-probability 0.001 `
   --formats universal-jsonl,universal-csv `
-  --out-dir aerospace_demo
+  --out-dir aerospace_demo `
+  --validate-only
 ```
 
-Industrial-Automation-Beispiel:
+Industrial-Automation-Konfiguration prüfen:
 
 ```powershell
 python generate_realistic_communication_tool.py cli `
@@ -542,7 +642,8 @@ python generate_realistic_communication_tool.py cli `
   --cycle-ms 50 `
   --payload-bytes 64 `
   --duration 10 `
-  --out-dir modbus_demo
+  --out-dir modbus_demo `
+  --validate-only
 ```
 
 Der bisherige native CAN/Ethernet-Pfad bleibt erreichbar:
@@ -588,6 +689,11 @@ werden respektiert.
 
 ## Standalone-Konfiguration
 
+Diese gemischte Konfiguration veranschaulicht die Objektstruktur. Für eine
+Simulation müssen die nativen Parameter und Geräte-/Transaktionsnachweise
+jedes verwendeten Busses vollständig vorliegen. Insbesondere reicht der unten
+angegebene I²C-Takt allein dafür nicht aus.
+
 ```json
 {
   "schema": "communication-simulator.simulation-config.v1",
@@ -606,7 +712,7 @@ werden respektiert.
     {
       "id": "control_can",
       "technology": "can_fd",
-      "nominal_bitrate": 500000,
+      "arbitration_bitrate": 500000,
       "data_bitrate": 2000000
     },
     {
@@ -690,9 +796,10 @@ zwei Schnittstellen reproduzierbare Standardrouten.
 }
 ```
 
-Ein unbekannter Technologiename wird nicht abgewiesen. Ohne Profil verwendet
-der Simulator generische Annahmen und meldet eine Warnung. Mit einem eigenen
-Profil werden Payload-Grenzen und Technologiemetadaten berücksichtigt.
+Ein eigener Katalogeintrag beschreibt Payload-Grenzen und Technologiemetadaten.
+Er installiert keinen Timing-Executor. Ohne registrierte Technologie und
+ausführbares Modell bleibt die Übertragungszeit unbestätigt; eine produktive
+Simulation ersetzt sie nicht durch generische CAN- oder Ethernet-Annahmen.
 
 ## Python-API
 
@@ -810,7 +917,7 @@ Backend, Frontend-Spezifikationen und TypeScript können unabhängig geprüft
 werden:
 
 ```powershell
-uv run --project backend pytest -q backend/tests
+backend\.venv\Scripts\python.exe scripts/run-isolated-tests.py -- backend/tests -q
 
 Set-Location frontend
 npm run test:specification
@@ -820,12 +927,12 @@ npx tsc --noEmit
 Set-Location ..
 ```
 
-Für den vollständigen lokalen Ablauf sollte anschließend der Doctor und danach
-der Launcher verwendet werden:
+SQL-Prüfungen verwenden ausschließlich die vom Launcher erzeugte temporäre
+Datenbank. Für die vollständige Abnahme einschließlich echter Wizard-, HTTP-,
+Neustart- und Simulationstests mit anschließender produktiver Lieferung:
 
 ```powershell
-backend\.venv\Scripts\python.exe generate_realistic_communication_tool.py doctor
-.\start-networkis-local-ai.bat
+backend\.venv\Scripts\python.exe scripts/release-and-deploy.py
 ```
 
 Weiterführend:
@@ -839,8 +946,10 @@ Weiterführend:
 
 ## Grenzen
 
-- Ein universeller Trace kann jede registrierte Technologie darstellen. Ein
-  binäres natives Herstellerformat benötigt trotzdem einen eigenen Writer.
+- Das universelle Traceformat kann verschiedene Technologieidentitäten führen.
+  Das Erzeugen zeitbewerteter Ereignisse benötigt trotzdem ein ausführbares
+  Modell und die passenden Nachweise; ein binäres natives Herstellerformat
+  benötigt zusätzlich einen eigenen Writer.
 - CAN XL wird vom vorhandenen BLF-Writer noch nicht als natives
   CAN-XL-Frameobjekt unterstützt.
 - Das Zeit- und Fehlermodell ist synthetisch und reproduzierbar, aber kein

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import pytest
 
-from backend.app.simulation_service import SimulationService
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY, MODEL_TYPES
-from backend.communication.technologies.core.models import (
+from backend.nis.simulation.service import SimulationService
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY, MODEL_TYPES
+from backend.nis.communication.core.models import (
     HardwareInterface,
     HardwareNode,
     PayloadElement,
@@ -12,7 +12,7 @@ from backend.communication.technologies.core.models import (
     TechnologyStack,
     TransportRequirement,
 )
-from backend.communication.technologies.core.registry import BindingResolver
+from backend.nis.communication.registry import BindingResolver
 
 
 def test_complete_registry_exposes_layers_status_and_required_technologies() -> None:
@@ -125,5 +125,6 @@ def test_catalog_exposes_new_project_model_types_and_registry_metadata() -> None
     plc = next(item for item in catalog["domains"] if item["id"] == "industrial_automation")
     plc_technologies = {item["id"]: item for item in plc["technologies"]}
     assert plc["device_types"][0] == "PLC"
-    assert plc_technologies["profinet"]["default_stack"] == ["ethernet", "profinet"]
+    assert ["ethernet", "profinet"] in plc_technologies["profinet"]["stack_variants"]
+    assert plc_technologies["profinet"]["default_stack"] == ["profinet"]
     assert plc_technologies["profinet"]["implementation_status"] == "IMPLEMENTED"

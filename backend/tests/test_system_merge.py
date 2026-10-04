@@ -1,6 +1,6 @@
 from contextlib import contextmanager
 
-from backend.engineering import system_merge
+from backend.nis.engineering.structure import system_merge as system_merge
 
 
 CANONICAL_ID = "00000000-0000-0000-0000-000000000001"

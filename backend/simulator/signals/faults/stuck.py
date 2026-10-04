@@ -1,5 +1,4 @@
-from __future__ import annotations
-
-
-def stuck(cache: dict[str, float], signal_id: str, baseline: float) -> float:
-    return cache.setdefault(signal_id, baseline)
+"""Compatibility only; owner backend.nis.simulation.signals.faults.stuck."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals.faults.stuck')

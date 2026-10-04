@@ -1,11 +1,12 @@
-from backend.engineering.agent_tools import proposal_service
+from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
+from backend.nis.agent.tools import proposal_service as proposal_service
 import pytest
 
 
 @pytest.mark.parametrize('technology', ['I2C', 'ModbusRTU', 'ModbusTCP', 'SPI', 'GPIO', 'CAN_FD'])
 def test_named_network_preserves_registered_technology(technology):
-    from backend.engineering.agent_tools.wizard_generation import _network_protocol
-    from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
+    from backend.nis.agent.tools.wizard_generation import _network_protocol
+    from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
     protocol = _network_protocol(technology)
     assert DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(protocol) == DEFAULT_TECHNOLOGY_REGISTRY.normalize_id(technology)
     result = proposal_service._validate_changes([{
@@ -52,16 +53,16 @@ def test_wizard_scale_proposal_exceeds_the_old_2000_change_ceiling(monkeypatch):
     ('LIN', {'technology': 'CAN', 'networks': [{'id': 'bus', 'technology': 'LIN', 'protocol': 'CAN', 'bitrate': 500000}]}, {}, True),
     ('LIN', {'technology': 'CAN', 'networks': [{'id': 'bus', 'technology': 'CAN', 'bitrate': 500000}]}, {}, True),
     ('LIN', {'technology': 'CAN', 'networks': [{'id': 'bus', 'technology': 'unknown', 'bitrate': 500000}]}, {}, True),
-    ('LIN', {'technology': 'CAN', 'networks': [{'id': 'bus', 'technology': 'LIN', 'bitrate': 19200}]}, {}, False),
+    ('LIN', {'technology': 'CAN', 'networks': [{'id': 'bus', 'technology': 'LIN', **lin_design(), 'bitrate': 19200}]}, {}, False),
     ('LIN', {}, {'technology': 'CAN', 'bitrate': 500000}, True),
-    ('LIN', {}, {'technology': 'LIN', 'bitrate': 19200}, False),
+    ('LIN', {}, {'technology': 'LIN', **lin_design(), 'bitrate': 19200}, False),
     ('CAN_FD', {'technology': 'CAN_FD', 'arbitration_bitrate': 500000}, {}, True),
     ('CAN_FD', {'technology': 'CAN_FD', 'arbitration_bitrate': 500000, 'data_bitrate': 2000000}, {}, False),
-    ('Ethernet', {'technology': 'Ethernet', 'bitrate': 100000000}, {}, False),
+    ('Ethernet', {'technology': 'Ethernet', **ethernet_mac(), 'bitrate': 100000000}, {}, False),
 ])
 def test_proposal_capacity_resolves_only_matching_confirmed_rates(monkeypatch, technology, confirmed, network, expected):
-    from backend.engineering.agent_tools import validation
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.agent.tools import validation as validation
+    from backend.nis.workflow.services.service import WorkflowStatusService
     node = {'id': 'ecu', 'name': 'Motor', 'device_type': 'ECU'}
     port = {'id': 'port', 'name': 'MotorPort', 'hardware_node_id': 'ecu', 'technology': technology, 'network_ref': 'bus', 'bitrate': None}
     message = {'id': 'message', 'name': 'Moment', 'interface_id': 'logical', 'hardware_interface_id': 'port', 'dlc': 1, 'cycle_ms': 100}

@@ -12,7 +12,7 @@
  from dataclasses import dataclass
  from typing import Any, Callable, Iterable
  
-@@ -81,6 +86,90 @@
+@@ -81,6 +86,140 @@
          )
  
  
@@ -24,6 +24,56 @@
 +                              for key,value in conditions.items()):
 +            fields.discard(field)
 +    return fields
++
++
++# Supported rule vocabulary is explicit; unknown rules must never silently pass.
++_PARAMETER_RULE_KEYS = frozenset(['allow_empty_text', 'allowed', 'bounded_product_parameters', 'delimited_ascii_sentence_fields', 'difference_parameters', 'encoded_bytes_parameter', 'equal_decimal_parameter', 'equal_expression', 'equal_parameter', 'equal_parameter_offset', 'equal_ratio', 'equal_sum', 'equal_sum_offset', 'equals_parameters_boolean', 'exact_decimal_bounds', 'exact_decimal_equality', 'exclusive_maximum', 'exclusive_maximum_expression', 'exclusive_maximum_ratio', 'exclusive_minimum', 'exclusive_minimum_expression', 'exclusive_minimum_product', 'forbidden', 'forbidden_bit_mask', 'hex_bytes_parameter', 'hex_crc16_modbus_parameter', 'hex_crc32_ieee_parameter', 'hex_crc32_prefix_bytes', 'hex_crc8_maxim_parameter', 'hex_crc8_prefix_bytes', 'hex_octets', 'integer', 'integer_bitfields', 'integer_text_base', 'integer_text_maximum', 'ip_address_max', 'ip_address_maximum', 'ip_address_min', 'ip_address_minimum', 'ip_address_version', 'json_array_envelope', 'json_gate_schedule', 'json_number_array', 'maximum', 'maximum_expression', 'maximum_factor', 'maximum_offset', 'maximum_parameter', 'maximum_product', 'maximum_ratio', 'maximum_subtract_parameters', 'minimum', 'minimum_expression', 'minimum_parameter', 'minimum_product', 'minimum_product_factor', 'minimum_product_parameters', 'multiple_of', 'not_equal_parameter', 'parameter', 'pattern', 'required', 'source', 'source_revision', 'text_codepoints_parameter', 'text_encoding', 'text_join', 'text_utf16_units_parameter', 'when', 'when_greater_than', 'when_half_open_ranges', 'when_not', 'when_positive', 'when_present', 'when_ranges'])
++
++def validate_parameter_rule_syntax(profile: dict[str, Any]) -> None:
++    """Reject unsupported rule DSL before a profile can be registered."""
++    arities = {'sum': None, 'product': None, 'subtract': 2, 'integer_remainder': 2,
++               'power': 2, 'maximum': None, 'minimum': None, 'ceiling': 1, 'floor': 1}
++    def expression(value, depth=0):
++        if depth > 64:
++            raise ValueError('Technology parameter expression is too deep')
++        if isinstance(value, str) or isinstance(value, (int, float)) and not isinstance(value, bool) and _safe_finite(value):
++            return
++        if not isinstance(value, dict) or len(value) != 1:
++            raise ValueError('Invalid technology parameter expression')
++        operation, terms = next(iter(value.items()))
++        if operation not in arities or not isinstance(terms, list) or not terms or arities[operation] is not None and len(terms) != arities[operation]:
++            raise ValueError(f'Unsupported technology parameter expression: {operation}')
++        for term in terms:
++            expression(term, depth + 1)
++    for rule in profile.get('parameter_constraints') or ():
++        if not isinstance(rule, dict) or not isinstance(rule.get('parameter'), str):
++            raise ValueError('Technology parameter rule requires a parameter')
++        unknown = set(rule) - _PARAMETER_RULE_KEYS
++        if unknown:
++            raise ValueError(f'Unsupported technology parameter rule keys: {sorted(unknown)}')
++        for condition in ('when', 'when_not'):
++            if not isinstance(rule.get(condition, {}), dict) or any(not isinstance(value, (str, int, float, bool)) for value in rule.get(condition, {}).values()):
++                raise ValueError(f'Technology parameter {condition} requires explicit scalar conditions')
++        for key in ('equal_expression', 'minimum_expression', 'maximum_expression', 'exclusive_minimum_expression', 'exclusive_maximum_expression'):
++            if key in rule:
++                expression(rule[key])
++
++
++def _normalize_wide_integers(parameters: dict[str, Any], schema: dict[str, Any]) -> dict[str, Any]:
++    """Decimal wire text is allowed only for declared wide integer fields.
++
++    Python calculations retain exact integers; canonical JSON/UI can keep the
++    decimal text and its identical provenance without an IEEE754 round trip.
++    """
++    result = dict(parameters)
++    for name, spec in schema.items():
++        wide = (spec.get('integer') or spec.get('type') == 'integer') and any(
++            isinstance(spec.get(key), int) and abs(spec[key]) > 2**53 - 1
++            for key in ('min', 'max', 'minimum', 'maximum'))
++        value = result.get(name)
++        if wide and isinstance(value, str) and len(value) <= 40 and re.fullmatch(r'-?(?:0|[1-9][0-9]*)', value):
++            result[name] = int(value)
++    return result
 +
 +
 +def _safe_finite(value: Any) -> bool:
@@ -103,7 +153,17 @@
  class TechnologyValidator:
      def __init__(self, technology_id: str, profile: dict[str, Any]) -> None:
          self.technology_id = technology_id
-@@ -102,16 +191,23 @@
+@@ -94,24 +233,31 @@
+             findings.append(ValidationFinding("PAYLOAD", "payload_too_large", f"{payload_size} B exceeds {maximum} B"))
+         interface_capabilities = {str(item).lower() for item in context.get("hardware_capabilities") or ()}
+         required = str(self.profile.get("hardware_interface") or "").lower()
+-        if interface_capabilities and required and required not in interface_capabilities:
++        if interface_capabilities and required and not interface_capabilities.intersection({required, self.technology_id, *self.profile.get('hardware_capability_aliases', [])}):
+             findings.append(ValidationFinding("HARDWARE_INTERFACE", "incompatible_interface", f"{required} is not provided by the selected hardware interface"))
+-        parameters = dict(context.get("parameters") or {})
++        parameters = _normalize_wide_integers(dict(context.get("parameters") or {}), self.profile.get("parameter_schema", {}))
+         for field in ("bitrate_bps", "nominal_bitrate_bps", "data_bitrate_bps"):
+             if field in context:
                  parameters[field] = context[field]
          rate_model = self.profile.get("rate_model") or {}
          rate_type = rate_model.get("type")
@@ -130,7 +190,7 @@
                  findings.append(ValidationFinding("TECHNOLOGY_PARAMETERS", "TECHNOLOGY_UNIT_MISMATCH", f"{field} must be a positive numeric bit/s value", "BLOCKER"))
                  continue
              maximum = rate_model.get("maximum_bps")
-@@ -123,8 +219,413 @@
+@@ -123,8 +269,476 @@
              fixed = rate_model.get("fixed_bps")
              minimum = rate_model.get("minimum_bps")
              invalid = (minimum is not None and value < minimum) or (maximum is not None and value > maximum) or (allowed and value not in allowed) or (fixed is not None and value != fixed)
@@ -151,7 +211,7 @@
 +                          not isinstance(value, bool) and _safe_finite(value) or
 +                          kind == 'boolean' and type(value) is bool or
 +                          kind in {'select', 'text'} and isinstance(value, str))
-+            if not valid_type or (spec.get('integer') or kind == 'integer') and isinstance(value, (int, float)) and value != int(value):
++            if not valid_type or (spec.get('integer') or kind == 'integer') and isinstance(value, (int, float)) and (value != int(value) or isinstance(value, float) and abs(value) > 2**53 - 1):
 +                findings.append(ValidationFinding('TECHNOLOGY_PARAMETERS', 'TECHNOLOGY_PARAMETER_TYPE_MISMATCH',
 +                    f'{name} has the wrong type for {self.technology_id}', 'BLOCKER'))
 +                continue
@@ -197,6 +257,18 @@
 +                try:
 +                    ip_address(value)
 +                except ValueError:
++                    outside = True
++            if kind == 'text' and spec.get('format') == 'IP_NETWORK':
++                from ipaddress import ip_network
++                try:
++                    network = ip_network(value, strict=True)
++                    outside |= ('/' not in value or '%' in value
++                                or spec.get('ip_version') is not None and network.version != spec['ip_version']
++                                or spec.get('prefix_length') is not None and network.prefixlen != spec['prefix_length'])
++                    if spec.get('within_network'):
++                        parent = ip_network(spec['within_network'], strict=True)
++                        outside |= network.version != parent.version or not network.subnet_of(parent)
++                except (ValueError, TypeError):
 +                    outside = True
 +            if outside or kind == 'select' and value not in spec.get('options', ()):
 +                findings.append(ValidationFinding('TECHNOLOGY_PARAMETERS', 'TECHNOLOGY_PARAMETER_OUT_OF_RANGE',
@@ -286,6 +358,9 @@
 +            if value is None or value == '' and not constraint.get('text_encoding'):
 +                continue
 +            outside = 'allowed' in constraint and value not in constraint['allowed']
++            if constraint.get('integer'):
++                outside |= (not isinstance(value, (int, float)) or isinstance(value, bool)
++                            or not _safe_finite(value) or value != int(value))
 +            outside |= value in constraint.get('forbidden', [])
 +            different = parameters.get(constraint.get('not_equal_parameter'))
 +            if different is not None and different != '':
@@ -356,7 +431,7 @@
 +                            outside |= actual != expected
 +                except ValueError:
 +                    outside=True
-+            if isinstance(value,str) and any(key in constraint for key in ('hex_bytes_parameter','hex_crc16_modbus_parameter','hex_crc8_maxim_parameter','hex_octets')):
++            if isinstance(value,str) and any(key in constraint for key in ('hex_bytes_parameter','hex_crc16_modbus_parameter','hex_crc8_maxim_parameter','hex_crc32_ieee_parameter','hex_octets')):
 +                try:
 +                    if re.fullmatch(r'(?:[0-9A-Fa-f]{2})*',value) is None:raise ValueError('hex octets required')
 +                    octets=bytes.fromhex(value)
@@ -368,7 +443,25 @@
 +                            byte_order=part.get('byte_order','big')
 +                            outside |= byte_order not in ('big','little') or len(octets)<offset+width
 +                            if byte_order in ('big','little'):
-+                                outside |= actual!=int.from_bytes(octets[offset:offset+width],byte_order)
++                                signed=part.get('signed',False)
++                                if type(signed)is not bool:
++                                    outside=True
++                                else:
++                                    outside |= type(actual)is not int or actual!=int.from_bytes(octets[offset:offset+width],byte_order,signed=signed)
++                    actual_crc32=parameters.get(constraint.get('hex_crc32_ieee_parameter'))
++                    if actual_crc32 is not None:
++                        count=constraint.get('hex_crc32_prefix_bytes',len(octets))
++                        if type(count)is not int or count<0 or count>len(octets):
++                            outside=True
++                        else:
++                            # Reflected IEEE CRC32, initial FFFFFFFF, final XOR.
++                            # TRDP's header FCS is this value in little endian;
++                            # a header CRC does not cover the application data.
++                            crc32=0xffffffff
++                            for octet in octets[:count]:
++                                crc32 ^= octet
++                                for _ in range(8):crc32=(crc32>>1)^0xedb88320 if crc32&1 else crc32>>1
++                            outside |= type(actual_crc32)is not int or actual_crc32!=(crc32^0xffffffff)
 +                    actual_crc=parameters.get(constraint.get('hex_crc16_modbus_parameter'))
 +                    if actual_crc is not None:
 +                        crc=0xFFFF
@@ -392,6 +485,34 @@
 +                            outside |= type(actual_crc8)is not int or actual_crc8!=crc8
 +                except ValueError:
 +                    outside=True
++            if isinstance(value,str) and constraint.get('json_gate_schedule'):
++                # Normalized scheduling evidence, not a wire/YANG executor.
++                schedule_spec=constraint['json_gate_schedule']
++                try:
++                    def schedule_members(pairs):
++                        result={}
++                        for key,member in pairs:
++                            if key in result:raise ValueError('duplicate schedule member')
++                            result[key]=member
++                        return result
++                    entries=json.loads(value,object_pairs_hook=schedule_members)
++                    if not isinstance(entries,list) or not entries:raise ValueError('nonempty gate list required')
++                    indexes=set();total=0
++                    limit=parameters.get(schedule_spec.get('max_entries_parameter'))
++                    if limit is not None:outside |= type(limit)is not int or len(entries)>limit
++                    interval_limit=parameters.get(schedule_spec.get('max_interval_parameter'))
++                    for entry in entries:
++                        if not isinstance(entry,dict) or set(entry)!={'index','operation','mask','interval_ns'}:raise ValueError('gate entry members')
++                        index,mask,interval=entry['index'],entry['mask'],entry['interval_ns']
++                        if any(type(v)is not int for v in (index,mask,interval)):raise ValueError('integer gate values required')
++                        outside |= index<0 or index>0xffffffff or index in indexes
++                        outside |= mask<0 or mask>schedule_spec['mask_max']
++                        outside |= interval<0 or interval>0xffffffff or entry['operation']not in schedule_spec['commands']
++                        if interval_limit is not None:outside |= type(interval_limit)is not int or interval>interval_limit
++                        indexes.add(index);total+=interval
++                    declared_total=parameters.get(schedule_spec.get('sum_parameter'))
++                    if declared_total is not None:outside |= type(declared_total)is not int or declared_total!=total
++                except (ValueError,TypeError,KeyError,OverflowError):outside=True
 +            if isinstance(value,str) and constraint.get('json_array_envelope'):
 +                # Explicit envelope declarations only; this does not substitute
 +                # for an action schema or execute a protocol state machine.
@@ -469,8 +590,9 @@
 +                for kind in ('equal_expression','minimum_expression','maximum_expression','exclusive_minimum_expression','exclusive_maximum_expression'):
 +                    if kind not in constraint:
 +                        continue
-+                    exact_equality=kind=='equal_expression' and constraint.get('exact_decimal_equality',False)
-+                    exact_decimal=exact_equality or kind in ('exclusive_minimum_expression','exclusive_maximum_expression') or constraint.get('exact_decimal_bounds',False)
++                    integer_output = bool(self.profile.get('parameter_schema', {}).get(name, {}).get('integer') or self.profile.get('parameter_schema', {}).get(name, {}).get('type') == 'integer')
++                    exact_equality=kind=='equal_expression' and (integer_output or constraint.get('exact_decimal_equality',False))
++                    exact_decimal=integer_output or exact_equality or kind in ('exclusive_minimum_expression','exclusive_maximum_expression') or constraint.get('exact_decimal_bounds',False)
 +                    bound=_parameter_expression(constraint[kind],parameters,exact=exact_decimal)
 +                    if bound is not None:
 +                        decimal_value=Fraction(str(value)) if exact_decimal and _safe_finite(value) else value
@@ -482,7 +604,7 @@
 +                if terms and all(isinstance(parameters.get(term['parameter']), (int, float)) and not isinstance(parameters[term['parameter']], bool)
 +                                 and _safe_finite(parameters[term['parameter']]) for term in terms):
 +                    expected = sum(parameters[term['parameter']] * term.get('factor', 1) for term in terms) + constraint.get('equal_sum_offset', 0)
-+                    outside |= not math.isclose(value, expected, rel_tol=0, abs_tol=1e-6)
++                    outside |= (value != expected if self.profile.get('parameter_schema', {}).get(name, {}).get('integer') else not math.isclose(value, expected, rel_tol=0, abs_tol=1e-6))
 +                for ratio_kind in ('equal_ratio','maximum_ratio'):
 +                    ratio = constraint.get(ratio_kind)
 +                    if not ratio:
@@ -500,9 +622,10 @@
 +                            if not _safe_finite(denominator) or denominator <= 0 or not _safe_finite(total):
 +                                outside = True
 +                            else:
-+                                bound = total / denominator
++                                integer_output = bool(self.profile.get('parameter_schema', {}).get(name, {}).get('integer'))
++                                bound = Fraction(str(total)) / Fraction(str(denominator)) if integer_output else total / denominator
 +                                if ratio_kind=='equal_ratio':
-+                                    outside |= not _safe_finite(bound) or not math.isclose(value, bound, rel_tol=1e-9, abs_tol=1e-6)
++                                    outside |= not _safe_finite(bound) or (value != bound if integer_output else not math.isclose(value, bound, rel_tol=1e-9, abs_tol=1e-6))
 +                                else:
 +                                    outside |= not _safe_finite(bound) or (value >= bound if constraint.get('exclusive_maximum_ratio') else value > bound)
 +                        except (OverflowError, ZeroDivisionError):
@@ -544,7 +667,7 @@
          return findings
  
  
-@@ -137,6 +638,9 @@
+@@ -137,6 +751,9 @@
          self, payload_bytes: int, bitrate: int | None = None, *,
          arbitration_bitrate: int | None = None, data_bitrate: int | None = None,
          local_timing_evidence: dict[str, Any] | None = None,
@@ -554,7 +677,7 @@
      ) -> float:
          """Use the registered frame branch with explicit rates; never profile defaults as evidence."""
          if self.technology_id in {"i2c", "spi"}:
-@@ -150,18 +654,61 @@
+@@ -150,18 +767,61 @@
              rate_parameters = {"bitrate_bps": bitrate}
              frame_parameters = {"local_timing_evidence": evidence}
          elif self.technology_id == "can_fd":
@@ -621,7 +744,7 @@
          findings = TechnologyValidator(self.technology_id, self.profile).validate(
              {"parameters": rate_parameters})
          if findings:
-@@ -180,12 +727,18 @@
+@@ -180,12 +840,18 @@
  
      def calculate(self, *, payload_bytes: int, cycle_ms: float, bitrate: int | None = None,
                    arbitration_bitrate: int | None = None, data_bitrate: int | None = None,

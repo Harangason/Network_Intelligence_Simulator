@@ -1,3 +1,5 @@
-# Busload Calculation
+# Document moved
 
-Busload uses deterministic frame estimates from `backend/engineering/capacity/calculators.py`. CAN-FD separates arbitration and data phase estimates and includes overhead/stuffing factors. The LLM may propose inputs, but deterministic helpers compute the engineering values.
+Canonical document: [08_BUSLOAD_CALCULATION.md](../../../docs/domains/engineering/08_BUSLOAD_CALCULATION.md).
+
+This entry preserves old links during the structure migration.

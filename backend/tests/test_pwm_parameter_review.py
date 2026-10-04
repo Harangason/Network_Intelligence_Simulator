@@ -1,18 +1,26 @@
 """PWM driver semantics and hardware evidence stay separate from framed buses."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import pwm as P
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.pwm import rules as P
 def actual(profile='LINUX_STATE_6_18'):
  return {**{'pwm_'+k:'synthetic-'+k for k in P.REQUIRED},'pwm_profile':profile}
 def status(x):return registry.validate_parameters('pwm',x)['status']
 def test_pwm_no_rate_payload_ceiling_can_queue_or_capacity_claim():
  p=registry.profile('pwm');assert p['max_payload_bytes']is None and p['rate_model']['fields']==[]
+ assert p['local_timing_schema']==[]  # Retired loose bounds are not the native driver/waveform model.
  assert p['capacity_evidence']['status']=='NOT_APPLICABLE'and status(actual())=='VALID'
  f=registry.parameter_fields('pwm');assert len(f)==len({v['key']for v in f})and not set(P.REMOVED)&{v['key']for v in f}
  assert status({})=='UNVERIFIED'
  for bad in({'bitrate_bps':500000},{'nominal_bitrate_bps':500000},{'mtu_bytes':1500},{'local_timing_evidence':{'confirmed':True}}):assert status({**actual(),**bad})=='INVALID'
  assert status({**actual(),'payload_bytes':2000})=='VALID'
+
+def test_disabled_legacy_evidence_groups_are_not_offered_by_any_device_schema():
+ for profile in registry.profiles():
+  rejects_local=any(rule.get('parameter')=='local_timing_evidence'and rule.get('allowed')==[]
+   and not rule.get('when')and not rule.get('when_present')and not rule.get('when_positive')
+   for rule in profile.get('parameter_constraints',[]))
+  if rejects_local:assert profile['local_timing_schema']==[],profile['id']
 @pytest.mark.parametrize('field',registry.parameter_fields('pwm'),ids=lambda f:f['key'])
 def test_pwm_each_exported_field_type_and_outer_bounds(field):
  k=field['key'];assert status({**actual(),k:'wrong'if field['type']=='number'else 1})=='INVALID'

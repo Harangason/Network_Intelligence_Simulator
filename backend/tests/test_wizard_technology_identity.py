@@ -1,10 +1,12 @@
 import pytest
 from uuid import uuid4
 
-from backend.engineering.agent_tools import proposal_service
-from backend.engineering.agent_tools.wizard_generation import _topology_bus, generate
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.agent_core.api.tool_contract import Permission
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools.wizard_generation import _topology_bus
+from backend.nis.agent.tools.wizard_generation import generate
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.api.tool_contract import Permission
 
 
 @pytest.mark.parametrize('source, expected', [

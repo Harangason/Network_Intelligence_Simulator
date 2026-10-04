@@ -1,13 +1,4 @@
-from .completion_validator import CompletionValidator
-from .dependency_validator import DependencyValidator
-from .duplicate_validator import DuplicateValidator
-from .quality_validator import QualityValidator
-from .workload_validator import WorkloadValidator
-
-__all__ = [
-    "CompletionValidator",
-    "DependencyValidator",
-    "DuplicateValidator",
-    "QualityValidator",
-    "WorkloadValidator",
-]
+"""Compatibility only; owner backend.nis.agent.validation."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.validation')

@@ -1,5 +1,5 @@
-import { ProjectAwareLink } from "@/components/marketing-shell";
-import { SimulationResult } from "@/components/simulation-result";
+import { ProjectAwareLink } from "@/features/marketing/ui/marketing-shell";
+import { SimulationResult } from "@/features/simulation/ui/simulation-result";
 
 export default async function SimulationPage({
   params,

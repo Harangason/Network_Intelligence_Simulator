@@ -1,4 +1,4 @@
-import { Arrow, MarketingShell, PageHero, ProjectAwareLink } from "@/components/marketing-shell";
+import { Arrow, MarketingShell, PageHero, ProjectAwareLink } from "@/features/marketing/ui/marketing-shell";
 
 const steps = [
   { index: "01", label: "Configure", title: "Choose the system boundary.", text: "Wähle Anwendungsbereich und Protokoll. Lege Knoten, Timing, Payload, Bitrate und Fehlerwahrscheinlichkeiten fest.", command: "domain: automotive\nprotocol: can_fd\nnodes: 12" },

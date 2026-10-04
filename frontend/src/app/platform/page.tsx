@@ -1,4 +1,4 @@
-import { Arrow, MarketingShell, PageHero, ProjectAwareLink } from "@/components/marketing-shell";
+import { Arrow, MarketingShell, PageHero, ProjectAwareLink } from "@/features/marketing/ui/marketing-shell";
 
 const capabilities = [
   ["01", "Model", "Definiere Knoten, Bitraten, Payloads, Zyklen und Fehlerraten für reproduzierbare Szenarien."],

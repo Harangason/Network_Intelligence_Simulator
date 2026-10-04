@@ -1,8 +1,8 @@
 """PA synchronous framing/power/device profile must not borrow DP/CAN/FF models."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import profibus_pa as P
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.profibus_pa import rules as P
 def actual():
  x={'pa_'+k:'synthetic-'+k for k in P.REQUIRED}
  x.update(bitrate_bps=31250,pa_phy='MBP',pa_layout='PNO1997_PART9',pa_device_profile='EH_O200_3_02',pa_coupling='NATIVE_MASTER',pa_role='SLAVE')

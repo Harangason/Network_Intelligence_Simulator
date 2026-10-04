@@ -1,9 +1,12 @@
 """Draft integrity and persistence, using the isolated test database only."""
 from uuid import uuid4
 
-from backend.engineering.agent_tools.project_draft import parse_requirement, command, inspect
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.agent_core.api.tool_contract import Permission
+from backend.nis.agent.tools.project_draft import parse_requirement
+from backend.nis.agent.tools.project_draft import command
+from backend.nis.agent.tools.project_draft import inspect
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.api.tool_contract import Permission
 
 
 def test_explicit_gateway_lin_and_ethernet_ports_are_kept_as_two_connections():
@@ -21,8 +24,10 @@ def test_explicit_gateway_lin_and_ethernet_ports_are_kept_as_two_connections():
 
 
 def test_no_delta_model_confirmation_is_explicit_revision_bound_and_idempotent(monkeypatch):
-    from backend.engineering.agent_tools import project_draft, wizard_generation, model
-    from backend.engineering.workflow.service import WorkflowStatusService
+    from backend.nis.agent.tools import project_draft as project_draft
+    from backend.nis.agent.tools import wizard_generation as wizard_generation
+    from backend.nis.agent.tools import model as model
+    from backend.nis.workflow.services.service import WorkflowStatusService
 
     authority = ToolAuthority('confirm-' + uuid4().hex)
     created = execute(authority, 'draft_create', Permission.GENERATE_PROPOSAL,
@@ -143,7 +148,7 @@ def test_confirmed_connections_survive_amendment_and_invalid_edit_is_atomic():
 
 
 def test_project_creation_is_explicit_idempotent_and_preserves_origin():
-    from backend.engineering.agent_tools import project_creation
+    from backend.nis.agent.tools import project_creation as project_creation
     authority = ToolAuthority('origin-' + uuid4().hex)
     created = execute(authority, 'draft', Permission.GENERATE_PROPOSAL,
                       {'action': 'CREATE', 'operation_id': uuid4().hex, 'requirement': 'Raspberry Pi und drei Temperatursensoren'}, command)
@@ -163,16 +168,16 @@ def test_project_creation_is_explicit_idempotent_and_preserves_origin():
     assert target.data['origin']['project_id'] == authority.project_id
     assert target.data['devices'] == draft['devices']
     assert target.data['draft_id'] != draft['draft_id']
-    from backend.engineering.agent_tools.capabilities import catalog
+    from backend.nis.agent.tools.capabilities import catalog
     target_catalog = execute(ToolAuthority(result.data['project_id']), 'catalog', Permission.READ_MODEL, {}, catalog)
     assert target_catalog.success, target_catalog.findings
     assert target_catalog.data['project_name'] == request['name']
 
 
 def test_model_proposal_has_real_apply_and_stale_draft_cannot_be_approved():
-    from backend.engineering.agent_tools.project_draft import plan_model
-    from backend.engineering.agent_tools import proposal_service
-    from backend.engineering.repository import list_objects
+    from backend.nis.agent.tools.project_draft import plan_model
+    from backend.nis.agent.tools import proposal_service as proposal_service
+    from backend.nis.infrastructure.persistence.repository import list_objects
     authority = ToolAuthority('model-' + uuid4().hex)
     def call(name, arguments, handler):
         return execute(authority, name, Permission.GENERATE_PROPOSAL, arguments, handler)

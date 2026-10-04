@@ -1,1 +1,1 @@
-export { EngineeringWorkbench } from "@/components/engineering-workbench";
+export { EngineeringWorkbench } from "@/features/engineering/ui/engineering-workbench";

@@ -7,10 +7,14 @@ import pytest
 
 from backend.tests.test_agent_periodic_acquisition_complete import seed, invoke
 from backend.tests.test_agent_recipient_repair_runtime import scoped
-from backend.engineering.agent_tools import conversation, model, proposal_service
-from backend.engineering.repository import create_object, update_object
-from backend.engineering.goal_execution.store import resources, save_resource
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools import model as model
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.infrastructure.persistence.repository import update_object
+from backend.nis.engineering.goal_execution.store import resources
+from backend.nis.engineering.goal_execution.store import save_resource
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 FOLLOWUP = 'Mach das auch für die anderen Aktoren.'
 
@@ -67,10 +71,12 @@ def add_actuator(authority, ids):
         edge = {'id': 'additional-wire', 'source': 'additional', 'target': 'node-1', 'sourcePort': 'additional-port', 'targetPort': 'drawing-1',
                 'bus': 'CAN_FD', 'physicalNetworkId': 'acquisition-can', 'engineeringSegmentId': 'additional-wire', 'origin': 'CANONICAL_BUS_BINDING'}
         topology['edges'].append(edge); workflow.save_topology(topology, actor='SCRIPTED_TEST_FIXTURE')
-        from backend.engineering.communication_repair import load_plan
-        from backend.engineering.communication_contract_repair import scan_signal_recipients
-        from backend.engineering.routing.validation import RoutingValidator
-        from backend.engineering.routing.repository import create_route, save_validation, approve_routes
+        from backend.nis.engineering.communication.communication_repair import load_plan
+        from backend.nis.engineering.communication.communication_contract_repair import scan_signal_recipients
+        from backend.nis.engineering.routing.validation import RoutingValidator
+        from backend.nis.engineering.routing.repository import create_route
+        from backend.nis.engineering.routing.repository import save_validation
+        from backend.nis.engineering.routing.repository import approve_routes
         planner, _ = load_plan()
         changes = [c for c in scan_signal_recipients(planner, RoutingValidator().validate)['changes'] if str(newmsg['id']) in c['data']['payload']['message_ids']]
         assert len(changes) == 1
@@ -83,10 +89,10 @@ def add_actuator(authority, ids):
 
 
 def followup(authority, prompt=FOLLOWUP):
-    from backend.agent_core.context.agent_context import AgentContext
-    from backend.agent_core.api.mcp_client import EngineeringMCPClient
-    from backend.agent_core.runtime.service import EngineeringAssistantService
-    from backend.simulator_engineering_mcp.server import create_server
+    from backend.nis.agent.context.agent_context import AgentContext
+    from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+    from backend.nis.agent.runtime.service import EngineeringAssistantService
+    from backend.nis.interfaces.mcp.server import create_server
     started = scoped(authority, lambda: conversation.begin(prompt, AgentContext(active_project_id=authority.project_id)))
     run_id = started['run_id']
     class NoReasoner:
@@ -127,9 +133,9 @@ def test_original_followup_reuses_acquisition_and_only_adds_remaining_actor():
     for key in ('hardware', 'interfaces', 'hardware-interfaces', 'messages', 'signals', 'communication_resources'):
         if key == 'communication_resources': assert after[key] == before[key]
         else: assert all(row == next(x for x in after[key] if x['id'] == row['id']) for row in before[key]), key
-    from backend.engineering.simulation import prepare_workflow_simulation_config
-    from hardware_profile import normalize_hardware_config
-    from universal_trace import generate_universal_events
+    from backend.nis.engineering.simulation import prepare_workflow_simulation_config
+    from backend.nis.simulation.hardware_profile import normalize_hardware_config
+    from backend.nis.traces.universal_trace import generate_universal_events
     config = scoped(authority, lambda: prepare_workflow_simulation_config(
         {'duration_s': 61, 'max_events': 25000, 'seed': 42, 'scenario': {'mode': 'NORMAL'}}, authority.project_id))
     _, events = generate_universal_events(config, normalize_hardware_config(config), start_utc=1700000000)
@@ -180,7 +186,7 @@ def test_changed_or_invalid_prior_acquisition_blocks_without_model_writes(change
 @pytest.mark.parametrize('prompt', ['Mach das auch für die anderen Aktoren und lösche die alte ECU.',
                                   'Mach das nicht auch für die anderen Aktoren.'])
 def test_canonical_planner_rejects_mixed_or_negative_extension_intent(prompt):
-    from backend.engineering.agent_tools.periodic_acquisition import prepare
+    from backend.nis.agent.tools.periodic_acquisition import prepare
     authority, _, _, _ = setup(); planned = followup(authority); before = scoped(authority, model.model)
     def check():
         state = conversation.read(); work = state['engineering_workloads'][planned['runtime']['workload_id']]
@@ -193,8 +199,8 @@ def test_canonical_planner_rejects_mixed_or_negative_extension_intent(prompt):
 
 @pytest.mark.parametrize('mutation', ['period', 'unrelated_field', 'duplicate', 'foreign_source', 'wrong_owner', 'delete'])
 def test_preview_rejects_changes_outside_append_only_source_pairs(mutation):
-    from backend.engineering.agent_tools.periodic_acquisition import proposed_model
-    from backend.engineering.models import EngineeringValidationError
+    from backend.nis.agent.tools.periodic_acquisition import proposed_model
+    from backend.nis.domain.vocabulary import EngineeringValidationError
     authority, _, prior, _ = setup(); result = followup(authority)
     assert result['proposals'][0]['status'] == 'VALIDATED'
     changes = deepcopy(result['proposals'][0]['changes'])

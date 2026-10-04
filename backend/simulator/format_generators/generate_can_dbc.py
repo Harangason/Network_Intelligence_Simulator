@@ -1,13 +1,10 @@
-#!/usr/bin/env python3
+"""Compatibility entrypoint; owner backend.nis.communication.technologies.can.formats.generate_can_dbc."""
+import importlib
+import sys
 from pathlib import Path
-
-from can_cli import run_can_writer
-from can_format_writers import write_dbc
-
-
-def writer(path: Path, messages, frames, args) -> None:
-    write_dbc(path, messages, nominal_bitrate=args.nominal_bitrate, data_bitrate=args.data_bitrate)
-
-
+sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if p.name == "backend").parent))
 if __name__ == "__main__":
-    run_can_writer("generated_can_network.dbc", "Generate a DBC database for the CAN trace model", writer)
+    import runpy
+    runpy.run_module('backend.nis.communication.technologies.can.formats.generate_can_dbc', run_name="__main__")
+else:
+    sys.modules[__name__] = importlib.import_module('backend.nis.communication.technologies.can.formats.generate_can_dbc')

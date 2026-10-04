@@ -19,6 +19,7 @@ COPY --from=node-runtime /usr/local/lib/node_modules /usr/local/lib/node_modules
 
 COPY backend/requirements.txt backend/requirements.lock /app/backend/
 COPY scripts/verify-runtime-lock.py /app/scripts/verify-runtime-lock.py
+COPY scripts/build/verify-runtime-lock.py /app/scripts/build/verify-runtime-lock.py
 RUN python -m pip install --no-cache-dir -r /app/backend/requirements.txt -c /app/backend/requirements.lock \
     && python -m pip check \
     && python /app/scripts/verify-runtime-lock.py
@@ -29,6 +30,7 @@ RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js ci -
 COPY . /app
 
 ARG NIS_BUILD_COMMIT_ID
+RUN python /app/scripts/build/project-vocabulary.py
 RUN NIS_BUILD_COMMIT_ID="$NIS_BUILD_COMMIT_ID" python /app/scripts/write-build-info.py
 
 RUN cd /app/frontend && node /usr/local/lib/node_modules/npm/bin/npm-cli.js run build

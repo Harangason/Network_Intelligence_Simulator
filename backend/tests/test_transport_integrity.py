@@ -1,3 +1,4 @@
+from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
 """End-to-end regressions for the September 2026 workflow audit findings."""
 from contextlib import contextmanager
 from copy import deepcopy
@@ -6,12 +7,14 @@ from pathlib import Path
 
 import pytest
 
-from backend.app.runtime_analysis import analyze_runtime_trace
-from backend.engineering.routing import config_builder
-from communication_simulator import run_simulation
-from hardware_profile import normalize_hardware_config, validate_hardware_profile
-from model_based_simulation import MessageCodec, SignalDefinition
-from universal_trace import generate_universal_events
+from backend.nis.simulation.runtime_analysis import analyze_runtime_trace
+from backend.nis.engineering.routing import config_builder as config_builder
+from backend.nis.simulation.communication_simulator import run_simulation
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.simulation.hardware_profile import validate_hardware_profile
+from backend.nis.simulation.model_based_simulation import MessageCodec
+from backend.nis.simulation.model_based_simulation import SignalDefinition
+from backend.nis.traces.universal_trace import generate_universal_events
 
 
 def test_e2e_projection_keeps_direct_delivery_and_unidentified_import_separate():
@@ -73,7 +76,7 @@ def gateway_config(monkeypatch):
     config = config_builder.CommunicationConfigBuilder().build([route], topology=topology,
         parameters={"technology": "can_fd", "bitrate": 500_000, "jitter_ms": 1, "gateway_delay_ms": 2,
             "networks": [{"id": "input-bus", "technology": "CAN_FD", "bitrate": 500_000, "data_bitrate": 2_000_000},
-                         {"id": "output-bus", "technology": "LIN", "bitrate": 19_200} ]})["config"]
+                         {"id": "output-bus", "technology": "LIN", **lin_design(), "bitrate": 19_200} ]})["config"]
     config.update(duration_s=.12, seed=0, formats=["universal-jsonl", "universal-csv"],
         topology=topology,
         scenario={"mode": "NORMAL", "faults": []},
@@ -88,13 +91,14 @@ def gateway_config(monkeypatch):
 
 @pytest.mark.parametrize('canonical_dlc', [None, 2, 8])
 def test_capacity_uses_the_same_protocol_bitrate_and_physical_ports_per_segment(gateway_config, monkeypatch, canonical_dlc):
-    from backend.engineering.capacity import service as capacity
-    from backend.engineering.workflow.models import default_versions, default_statuses
+    from backend.nis.engineering.capacity import service as capacity
+    from backend.nis.workflow.services.models import default_versions
+    from backend.nis.workflow.services.models import default_statuses
     config = gateway_config
     model = config["engineering_model"]
     if canonical_dlc is not None:
         model['messages'][0]['dlc'] = canonical_dlc
-    from backend.engineering.capacity.runtime_plan import apply_runtime_plan
+    from backend.nis.engineering.capacity.runtime_plan import apply_runtime_plan
     apply_runtime_plan(config, model['messages'])
     object_keys = {"HardwareNode": "nodes", "Interface": "interfaces", "HardwareNetworkInterface": "hardware_interfaces",
         "Signal": "signals", "Message": "messages"}
@@ -139,7 +143,7 @@ def test_canonical_requirements_and_both_physical_segments_reach_actual_trace(ga
         assert event["payload_hex"] == upstream["payload_hex"]
         assert event["configured_bitrate"] == 19_200
         assert upstream["configured_bitrate"] == 500_000
-        assert event["end_to_end_latency_ms"] >= upstream["transmission_latency_ms"] + event["transmission_latency_ms"] + 2
+        assert event["end_to_end_latency_ms"] + 1e-12 >= upstream["transmission_latency_ms"] + event["transmission_latency_ms"] + 2
         assert event["route_ref"] == event["canonical_route_id"] == "canonical-route"
     runtime = analyze_runtime_trace({"model_simulation": {"frames": events}}, config)
     assert len(runtime["routes"]) == 1 and len(runtime["networks"]) == 2

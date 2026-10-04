@@ -5,8 +5,10 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.runtime.recovery import recipient_resume, recovery_request
-from backend.agent_core.runtime.goal_resolver import RECIPIENT_REPAIR_OUTCOMES, GoalResolver
+from backend.nis.agent.runtime.recovery import recipient_resume
+from backend.nis.agent.runtime.recovery import recovery_request
+from backend.nis.agent.runtime.goal_resolver import RECIPIENT_REPAIR_OUTCOMES
+from backend.nis.agent.runtime.goal_resolver import GoalResolver
 from backend.tests.test_agent_recipient_repair_runtime import PROMPT, sql_seed, scoped
 
 RESUME = 'Setze den Auftrag nach einem kontrolliert transienten MCP/Core-Fehler fort.'
@@ -72,7 +74,7 @@ def test_exhausted_recovery_retains_identity_without_increasing_limit():
 
 
 def seed():
-    from backend.engineering.repository import delete_object
+    from backend.nis.infrastructure.persistence.repository import delete_object
     authority, ids = sql_seed()
     def unique():
         delete_object('Signal', ids['unknown-signal'])
@@ -82,11 +84,11 @@ def seed():
 
 
 def run(authority, request, fault=None):
-    from backend.agent_core.api.mcp_client import EngineeringMCPClient
-    from backend.agent_core.context.agent_context import AgentContext
-    from backend.agent_core.runtime.service import EngineeringAssistantService
-    from backend.engineering.agent_tools import conversation
-    from backend.simulator_engineering_mcp.server import create_server
+    from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+    from backend.nis.agent.context.agent_context import AgentContext
+    from backend.nis.agent.runtime.service import EngineeringAssistantService
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.interfaces.mcp.server import create_server
     started = scoped(authority, lambda: conversation.begin(request, AgentContext(active_project_id=authority.project_id)))
     saved = scoped(authority, conversation.read); run_id = started['run_id']; calls = []
     def persist(row): scoped(authority, lambda: conversation.save_runtime_workload(run_id, row))
@@ -130,20 +132,22 @@ def run(authority, request, fault=None):
 
 
 def workload(authority):
-    from backend.engineering.agent_tools import conversation
+    from backend.nis.agent.tools import conversation as conversation
     state = scoped(authority, conversation.read)
     return state['engineering_workloads'][state['active_engineering_workload_id']]
 
 
 def audit_counts(authority):
     from collections import Counter
-    from backend.engineering.agent_tools import audit
+    from backend.nis.agent.tools import audit as audit
     return Counter((r['tool_name'], r['status']) for r in scoped(authority, lambda: audit.events(500)) if r['event_type'] == 'TOOL_CALL')
 
 
 @pytest.mark.parametrize('fault', ['lost-validation-response', 'lost-prepare-response', 'precondition'])
 def test_sql_recovery_uses_real_completed_steps_and_applies_same_workload_once(fault):
-    from backend.engineering.agent_tools import model, proposal_service, conversation
+    from backend.nis.agent.tools import model as model
+    from backend.nis.agent.tools import proposal_service as proposal_service
+    from backend.nis.agent.tools import conversation as conversation
     authority, ids = seed(); before = scoped(authority, model.model)
     run(authority, PROMPT, fault)
     failed = workload(authority)
@@ -184,7 +188,7 @@ def test_sql_recovery_uses_real_completed_steps_and_applies_same_workload_once(f
 
 
 def test_sql_retry_limit_persists_and_never_repeats_completed_mutation():
-    from backend.engineering.agent_tools import model
+    from backend.nis.agent.tools import model as model
     authority, _ = seed(); run(authority, PROMPT, 'lost-validation-response')
     identifier = workload(authority)['workload_id']
     for count in [1, 2]:
@@ -203,8 +207,10 @@ def test_sql_retry_limit_persists_and_never_repeats_completed_mutation():
 
 @pytest.mark.parametrize('change', ['model-revision', 'proposal-rejected', 'unknown-failure'])
 def test_sql_recovery_rejects_stale_or_unsupported_saved_execution(change):
-    from backend.engineering.agent_tools import model, proposal_service, conversation
-    from backend.engineering.repository import update_object
+    from backend.nis.agent.tools import model as model
+    from backend.nis.agent.tools import proposal_service as proposal_service
+    from backend.nis.agent.tools import conversation as conversation
+    from backend.nis.infrastructure.persistence.repository import update_object
     authority, ids = seed(); run(authority, PROMPT, 'lost-validation-response')
     old = workload(authority)
     def alter():

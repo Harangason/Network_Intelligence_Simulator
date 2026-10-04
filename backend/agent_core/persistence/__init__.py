@@ -1,11 +1,4 @@
-from .audit_repository import AuditEvent, AuditRepository, InMemoryAuditRepository
-from .progress_repository import ProgressRepository
-from .workload_repository import WorkloadRepository
-
-__all__ = [
-    "AuditEvent",
-    "AuditRepository",
-    "InMemoryAuditRepository",
-    "ProgressRepository",
-    "WorkloadRepository",
-]
+"""Compatibility only; owner backend.nis.agent.persistence."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.persistence')

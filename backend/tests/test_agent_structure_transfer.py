@@ -1,11 +1,14 @@
 from uuid import uuid4
 
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools import proposal_service
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.agent_tools.services import TOOLS
-from backend.engineering.repository import create_object, get_object, list_objects
-from backend.engineering.structure_transfer import analyze_ecu_transfer
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.tools.services import TOOLS
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.infrastructure.persistence.repository import get_object
+from backend.nis.infrastructure.persistence.repository import list_objects
+from backend.nis.engineering.structure.structure_transfer import analyze_ecu_transfer
 
 
 def test_transfer_uses_real_hierarchy_proposal_review_and_apply():

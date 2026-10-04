@@ -4,14 +4,16 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.api.tool_contract import Permission
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.runtime.service import EngineeringAssistantService
-from backend.agent_core.runtime.hardware_intent import simple_hardware_intent
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.agent_tools import proposal_service, model
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.runtime.service import EngineeringAssistantService
+from backend.nis.agent.runtime.hardware_intent import simple_hardware_intent
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools import model as model
+from backend.nis.interfaces.mcp.server import create_server
 
 
 class UnavailableReasoner:
@@ -110,14 +112,14 @@ def test_planner_timeout_is_classified_and_persisted_without_success():
 
 
 def test_read_only_classification_is_not_a_hardware_creation_capability():
-    from backend.agent_core.runtime.capability_registry import CapabilityRegistry
-    from backend.agent_core.runtime.goal_resolver import GoalType
+    from backend.nis.agent.runtime.capability_registry import CapabilityRegistry
+    from backend.nis.agent.runtime.goal_resolver import GoalType
     result = CapabilityRegistry().resolve(GoalType.CREATE_HARDWARE, {'classify_device', 'get_device_capabilities'})
     assert not result['available']
 
 
 def test_followup_cannot_reuse_another_projects_request():
-    from backend.agent_core.runtime.hardware_intent import resume_hardware_request
+    from backend.nis.agent.runtime.hardware_intent import resume_hardware_request
     reply = 'Statusanschluss I2C, Statuszyklus 100 ms'
     assert resume_hardware_request(reply, {'active_project_id': 'other', 'active_workload': {
         'project_id': 'original', 'status': 'WAITING_FOR_ENGINEERING_DECISION', 'workload_id': 'old',
@@ -127,8 +129,9 @@ def test_followup_cannot_reuse_another_projects_request():
 
 def test_real_chat_endpoint_preserves_hardware_followup_and_review(monkeypatch):
     import json
-    from backend.app import create_app
-    from backend.engineering.agent_tools import api as api_module, conversation
+    from backend.nis.app import create_app
+    from backend.nis.agent.tools import api as api_module
+    from backend.nis.agent.tools import conversation as conversation
 
     class OfflineReasoner(UnavailableReasoner):
         async def close(self):

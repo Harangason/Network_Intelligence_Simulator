@@ -1,8 +1,8 @@
 """DSI packet, direction, pixel, bridge and RX regressions in isolated SQL."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import mipi_dsi as DS
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.mipi_dsi import rules as DS
 
 def actual(device='TI83'):
     x={'ds_'+k:'synthetic-actual-'+k for k in DS.REQUIRED}
@@ -144,8 +144,8 @@ def test_dsi_lattice_soft_source_prepare_zero_and_idle_require_own_clock_evidenc
     assert status({**y,'ds_idle_ns':369.99})=='INVALID'
 
 def test_dsi_confirmed_nondefault_address_and_pixel_packing_survive_rejected_isolated_sql_edit():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x=long(2430);x.update(ds_format='RGB666_PACKED',ds_line_pixels=1080,ds_packing_remainder=0,
       ds_data_type=30,ds_data_id=30,ds_control_address=45,ds_control_rate_bps=330000,ds_lane_bitrate_bps=640000000)
     group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}

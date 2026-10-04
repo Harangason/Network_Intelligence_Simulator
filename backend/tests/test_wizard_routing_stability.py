@@ -5,9 +5,9 @@ import json
 
 import pytest
 
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.routing.generation import RoutingGenerationService
-from backend.engineering.agent_tools import wizard_generation
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.routing.generation import RoutingGenerationService
+from backend.nis.agent.tools import wizard_generation as wizard_generation
 from backend.tests.test_routing import (
     FakeValidator, route_payload, MESSAGE, SIGNAL, SOURCE, TARGET,
     SOURCE_INTERFACE, TARGET_INTERFACE, OTHER_SOURCE_INTERFACE, GATEWAY,
@@ -34,7 +34,7 @@ def endpoint_generator(monkeypatch):
     monkeypatch.setattr(service, 'find_candidate_paths', lambda *_: [deepcopy(candidate)])
     monkeypatch.setattr(service, '_message_context', lambda _: {'id': MESSAGE, 'hardware_node_id': SOURCE,
         'interface_id': SOURCE_INTERFACE, 'hardware_interface_id': 'source-can', 'cycle_ms': 10})
-    monkeypatch.setattr('backend.engineering.routing.generation.RoutingValidator.validate',
+    monkeypatch.setattr('backend.nis.engineering.routing.generation.RoutingValidator.validate',
                         lambda *_: {'valid': True, 'errors': []})
     return service, interfaces, ports, candidate
 
@@ -176,7 +176,7 @@ def test_canonical_multigateway_segments_are_resolved_from_actual_port_membershi
     @contextmanager
     def connection():
         yield Connection()
-    monkeypatch.setattr('backend.engineering.routing.validation.get_connection', connection)
+    monkeypatch.setattr('backend.nis.engineering.routing.validation.get_connection', connection)
     validator = FakeValidator()
     validator.project_id = 'isolated-memory-project'
     segments = validator._canonical_transport_segments({'network_id': 'a'},
@@ -287,7 +287,7 @@ def test_amended_request_is_a_new_fingerprint_in_the_same_run_replacement_family
 
 
 def test_routing_findings_remain_structured_and_count_invalid_routes_not_messages(monkeypatch):
-    from backend.engineering.agent_tools import proposal_service
+    from backend.nis.agent.tools import proposal_service as proposal_service
     monkeypatch.setattr(proposal_service.RoutingValidator, 'validate', lambda *_: {'valid': False, 'errors': [
         {'code': 'DESTINATION_LOGICAL_PROTOCOL_MISMATCH', 'message': 'Kombiinstrument: CAN-FD passt nicht zu Ethernet.'},
         {'code': 'PAYLOAD_TOO_LARGE', 'message': 'Nachricht überschreitet den Zielbus.'}]})

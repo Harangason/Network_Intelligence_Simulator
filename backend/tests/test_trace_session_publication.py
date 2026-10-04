@@ -4,8 +4,8 @@ import errno
 import pytest
 from flask import Flask
 
-from backend.app import trace_sessions
-from backend.app.trace_import import trace_import_api
+from backend.nis.traces import trace_sessions as trace_sessions
+from backend.nis.interfaces.http.trace_import import trace_import_api
 
 
 @pytest.fixture

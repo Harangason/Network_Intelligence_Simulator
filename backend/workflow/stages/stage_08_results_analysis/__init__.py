@@ -1,6 +1,4 @@
-"""Stage 08: simulation results and analysis."""
-
-from backend.workflow.definition import workflow_stage
-
-STAGE = workflow_stage("results_analysis")
-__all__ = ["STAGE"]
+"""Compatibility only; owner backend.nis.workflow.stages.stage_08_results_analysis."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.workflow.stages.stage_08_results_analysis')

@@ -1,9 +1,5 @@
-# Interface Allocation
+# Document moved
 
-Allocation policy:
+Canonical document: [06_INTERFACE_ALLOCATION.md](../../../docs/domains/engineering/06_INTERFACE_ALLOCATION.md).
 
-```text
-REUSE_EXISTING_CAPACITY_FIRST
-```
-
-Messages are allocated to a sender hardware / technology channel. The projected message load is added to the current channel load. A new channel is selected only when the configured target load would be exceeded.
+This entry preserves old links during the structure migration.

@@ -4,13 +4,14 @@ from __future__ import annotations
 import asyncio
 from uuid import uuid4
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.runtime.service import EngineeringAssistantService
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.repository import create_object
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.runtime.service import EngineeringAssistantService
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.interfaces.mcp.server import create_server
 
 
 def test_named_message_without_route_reports_precise_gap(monkeypatch):
@@ -49,7 +50,7 @@ def test_named_message_without_route_reports_precise_gap(monkeypatch):
 
 
 def test_calculated_deadline_failure_is_explicitly_not_observed(monkeypatch):
-    from backend.engineering.agent_tools import timing_diagnosis
+    from backend.nis.agent.tools import timing_diagnosis as timing_diagnosis
 
     monkeypatch.setattr(timing_diagnosis.model, 'objects', lambda _kind: [
         {'id': 'message-1', 'name': 'PressureCommand'}])

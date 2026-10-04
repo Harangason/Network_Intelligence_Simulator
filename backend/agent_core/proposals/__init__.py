@@ -1,5 +1,4 @@
-from .approval_boundary import ApprovalBoundary
-from .proposal import Proposal, ProposalStatus
-from .proposal_store import InMemoryProposalStore, ProposalStore
-
-__all__ = ["ApprovalBoundary", "InMemoryProposalStore", "Proposal", "ProposalStatus", "ProposalStore"]
+"""Compatibility only; owner backend.nis.agent.proposals."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.proposals')

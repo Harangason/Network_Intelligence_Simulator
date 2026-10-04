@@ -1,8 +1,8 @@
 """PubSub transport/keyframe/metadata/sequence isolation, not hardware evidence."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import opc_ua_pubsub as P
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.opc_ua_pubsub import rules as P
 def actual(binding='UDP',encoding='UADP',role='PUBLISHER'):
  x={'ps_'+k:'synthetic-'+k for k in P.REQUIRED}
  x.update(ps_edition=P.EDITION,ps_binding=binding,ps_encoding=encoding,ps_role=role,

@@ -1,13 +1,10 @@
-#!/usr/bin/env python3
+"""Compatibility entrypoint; owner backend.nis.communication.technologies.can.formats.generate_can_arxml."""
+import importlib
+import sys
 from pathlib import Path
-
-from can_cli import run_can_writer
-from can_format_writers import write_arxml
-
-
-def writer(path: Path, messages, frames, args) -> None:
-    write_arxml(path, messages)
-
-
+sys.path.insert(0, str(next(p for p in Path(__file__).resolve().parents if p.name == "backend").parent))
 if __name__ == "__main__":
-    run_can_writer("generated_can_system.arxml", "Generate an AUTOSAR ARXML-style CAN system description", writer)
+    import runpy
+    runpy.run_module('backend.nis.communication.technologies.can.formats.generate_can_arxml', run_name="__main__")
+else:
+    sys.modules[__name__] = importlib.import_module('backend.nis.communication.technologies.can.formats.generate_can_arxml')

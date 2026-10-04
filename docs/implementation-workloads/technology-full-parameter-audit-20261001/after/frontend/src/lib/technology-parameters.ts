@@ -30,7 +30,29 @@ export function booleanParameterValue(field: {default?: unknown}, raw: FormDataE
 export function conditionalParameterDefault(field: Pick<TechnologyParameterField, 'conditional_defaults'>, values: Parameters): unknown {
   const matches = (field.conditional_defaults ?? []).filter(proposal =>
     Object.entries(proposal.when).every(([key, expected]) => values[key] === expected));
-  return matches.length === 1 ? matches[0].value : undefined;
+  return matches.length && matches.every(item => item.value === matches[0].value) ? matches[0].value : undefined;
+}
+
+/** Parse a profile field without rounding protocol counters or durations. */
+export function numericParameterValue(field: TechnologyParameterField, entered: string): number | string | null {
+  const text = entered.trim();
+  if (!text) {
+    if (field.required) throw new Error(`${field.label}: Bitte einen bestätigten Wert eingeben.`);
+    return null;
+  }
+  if (field.numeric_encoding === 'DECIMAL_STRING') {
+    if (!/^-?[0-9]+$/.test(text) || text.length > 40) throw new Error(`${field.label}: Bitte eine ganze Dezimalzahl eingeben.`);
+    const integer = BigInt(text);
+    if (field.decimal_min !== undefined && integer < BigInt(field.decimal_min)
+      || field.decimal_max !== undefined && integer > BigInt(field.decimal_max)) throw new Error(`${field.label}: Der Wert liegt außerhalb des gültigen Bereichs.`);
+    return integer.toString();
+  }
+  const numeric = Number(text);
+  if (!Number.isFinite(numeric) || field.integer && !Number.isSafeInteger(numeric)
+    || field.min !== undefined && numeric < field.min || field.max !== undefined && numeric > field.max) {
+    throw new Error(`${field.label}: Der Wert liegt außerhalb des gültigen Bereichs.`);
+  }
+  return numeric;
 }
 
 /** Catalog defaults remain proposals; only matching saved values may override them. */
@@ -49,10 +71,23 @@ export function technologyParameterValues(parameters: Parameters, technology: Te
     const oldProposal = rate && (proof.status === 'REVIEW_REQUIRED' || proof.source === 'TECHNOLOGY_DEFAULT');
     return [field.key, !matching ? field.default : confirmed ? value : invalidRate || oldProposal ? field.default : value ?? field.default ?? proposed[field.key]];
   }));
-  for (const field of technology.parameter_schema ?? []) {
-    if (values[field.key] === undefined || values[field.key] === null || values[field.key] === '') {
-      values[field.key] = conditionalParameterDefault(field, values);
+  // Dependencies may appear later in the schema. Iterate only proposed fields;
+  // confirmed/explicit values always retain their original actual setting.
+  const schema = technology.parameter_schema ?? [];
+  for (let pass = 0; pass < schema.length; pass++) {
+    let changed = false;
+    for (const field of schema) {
+      if (!field.conditional_defaults?.length) continue;
+      const proof = record(record(scoped.provenance)[field.key] ?? record(parameters.parameter_provenance)[field.key]);
+      const explicit = matchingProof(proof, technology.id) && proof.value === values[field.key]
+        && (proof.source === 'EXPLICIT_USER_SPECIFICATION' || proof.source === 'USER_CONFIRMED' && proof.status === 'CONFIRMED');
+      const oldSuggestion = proof.status === 'REVIEW_REQUIRED' && /DEFAULT|PROPOSAL/.test(String(proof.source || ''));
+      if (!explicit && (oldSuggestion || values[field.key] === undefined || values[field.key] === null || values[field.key] === '')) {
+        const suggestion = conditionalParameterDefault(field, values);
+        if (values[field.key] !== suggestion) { values[field.key] = suggestion; changed = true; }
+      }
     }
+    if (!changed) break;
   }
   return values;
 }

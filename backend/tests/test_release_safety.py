@@ -114,14 +114,20 @@ def test_source_change_during_units_refuses_candidate_build(tmp_path, monkeypatc
     """A green old-source unit run cannot authorize a newer-source image."""
     scripts = tmp_path / 'scripts'
     scripts.mkdir()
-    for name in ('run-isolated-tests.py', 'write-build-info.py'):
-        shutil.copyfile(ROOT / 'scripts' / name, scripts / name)
+    for name in ('run-isolated-tests.py', 'write-build-info.py',
+                 'verification/run-isolated-tests.py', 'build/write-build-info.py'):
+        target = scripts / name
+        target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copyfile(ROOT / 'scripts' / name, target)
     source = tmp_path / 'backend' / 'app.py'
     source.parent.mkdir()
     source.write_text('version = 1\n')
     test_source = tmp_path / 'backend' / 'tests' / 'test_example.py'
     test_source.parent.mkdir()
     test_source.write_text('assert True\n')
+    frontend_test = tmp_path / 'frontend/src/features/example/lib/example.test.mjs'
+    frontend_test.parent.mkdir(parents=True)
+    frontend_test.write_text('import test from "node:test"; test("fixture", () => {});\n')
     # exec_module does not add the entry point's directory as a CLI launch does.
     # Supply that sibling-import context temporarily for release_storage.
     monkeypatch.syspath_prepend(str(ROOT / 'scripts'))

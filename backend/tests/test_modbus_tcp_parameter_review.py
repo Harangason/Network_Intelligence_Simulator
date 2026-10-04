@@ -1,9 +1,9 @@
 """MBAP framing/correlation/resources and separately scoped Security requirements."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import modbus_tcp as MT
-from backend.communication.technologies.core.physical import physical_profile
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.modbus_tcp import rules as MT
+from backend.nis.communication.core.physical import physical_profile
 
 def actual():
     x={'mt_'+k:'synthetic-actual-'+k for k in MT.REQUIRED}
@@ -133,8 +133,8 @@ def test_tcp_security_roles_are_one_utf8_extension_and_vendor_configurable_rules
     assert status({**x,'mt_certificate_role':'Operator'})=='INVALID'
 
 def test_tcp_confirmed_sql_values_survive_rejected_serial_and_mbap_edits():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x={**actual(),'mt_port':502,'mt_unit_id':0,'mt_transaction_id':65535,
        'mt_response_timeout_ms':4200,'mt_response_bound_ms':4100,'mt_timer_source':'synthetic-actual-timer'}
     group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}

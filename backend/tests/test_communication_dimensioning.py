@@ -1,11 +1,16 @@
 import pytest
 
-from backend.engineering.capacity.calculators import estimate_frame
-from backend.engineering.capacity.dimensioning import bus_schedule, dimension_communications, policy_for, unique_streams
+from backend.nis.engineering.capacity.calculators import estimate_frame
+from backend.nis.engineering.capacity.dimensioning import bus_schedule
+from backend.nis.engineering.capacity.dimensioning import dimension_communications
+from backend.nis.engineering.capacity.dimensioning import policy_for
+from backend.nis.engineering.capacity.dimensioning import unique_streams
+from backend.tests.native_transport_fixtures import lin_design
 
 
 def stream(index, period=20, protocol="LIN", **extra):
-    frame = estimate_frame(protocol, 2, {"bitrate": 19200 if protocol == "LIN" else 500000})
+    frame = estimate_frame(protocol, 2, {"bitrate": 19200 if protocol == "LIN" else 500000,
+                                        **(lin_design() if protocol == 'LIN' else {})})
     return {"stream_id": str(index), "route_id": f"r{index}", "message_id": f"m{index}", "name": f"Messung {index}",
             "network_id": "bus", "producer": f"p{index}", "cycle_ms": period, "protocol": protocol,
             "payload_bytes": 2, "bitrate": 19200 if protocol == "LIN" else 500000,
@@ -97,7 +102,7 @@ def test_local_interfaces_report_actionable_evidence_gaps_instead_of_generic_war
 
 
 def test_local_interface_review_proposals_use_profiles_without_approving_timing():
-    for protocol in ("I2C", "SPI", "GPIO", "PWM"):
+    for protocol in ("I2C", "SPI", "GPIO"):
         row = stream(0, protocol=protocol, physical_source={"node_id": "controller"},
                      physical_target={"node_id": "device"})
         result = bus_schedule([row], policy_for(PARAMETERS))
@@ -114,6 +119,24 @@ def test_local_interface_review_proposals_use_profiles_without_approving_timing(
         assert sized_review["source"] == review["source"]
         assert [field["label"] for field in sized_review["fields"]] == [field["label"] for field in review["fields"]]
         assert all(field["value"] is None for field in sized_review["fields"])
+
+
+def test_pwm_native_waveform_profile_never_offers_retired_generic_timing_proof():
+    row = stream(0, protocol="PWM", physical_source={"node_id": "controller"},
+                 physical_target={"node_id": "device"})
+    result = bus_schedule([row], policy_for(PARAMETERS))
+    assert result["status"] == "UNVERIFIED"
+    assert result["nominal_load_percent"] is None
+    assert "hardware_review_proposal" not in result
+    assert "direkte Signalleitung" in result["reasons"][0]
+    # A declared update/capture bound and frequency in the retired evidence
+    # object cannot qualify actual native driver/waveform settings.
+    legacy = {**row, "local_timing_evidence": {"pwm_frequency_hz": 500,
+        "update_bound_ms": 1, "capture_bound_ms": 1, "source": "synthetic-legacy", "confirmed": True}}
+    assert bus_schedule([legacy], policy_for(PARAMETERS))["status"] == "UNVERIFIED"
+    sized = dimension_communications([row], PARAMETERS)["networks"][0]["schedule"]
+    assert sized["status"] == "UNVERIFIED"
+    assert "hardware_review_proposal" not in sized
 
 
 def test_local_review_keeps_device_addresses_separate_and_does_not_release_timing():

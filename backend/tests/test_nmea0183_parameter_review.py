@@ -1,8 +1,8 @@
 """NMEA0183 sentences/serial/port qualifiers, never NMEA2000/CAN shortcuts."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import nmea0183 as NT
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.nmea0183 import rules as NT
 
 def actual(binding='STANDARD_SERIAL',body='GPZDA,141644.00,22,03,2002,00,00'):
     x={'nt_'+k:'synthetic-actual-'+k for k in NT.REQUIRED}
@@ -145,8 +145,8 @@ def test_nmea0183_mux_electrical_testload_transient_duration_and_operating_not_s
     x.update(nt_port='SERIAL',nt_output_isolation_v=1500);assert status(x)=='VALID'
 
 def test_nmea0183_confirmed_uart_rate_long_highprecision_sentence_and_invalid_data_flag_preserved():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x=actual('DEVICE_UART',body='GPTXT,'+'a'*90);x.update(bitrate_bps=9600,nt_rx_baud_bps=9600,
       nt_limit82=False,nt_high_precision=True,nt_compatibility=False,nt_freshness_status='INVALID',nt_invalid_fix_output=True)
     group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}

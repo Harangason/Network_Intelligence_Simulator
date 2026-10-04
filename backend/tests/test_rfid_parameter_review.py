@@ -1,8 +1,8 @@
 """LF/HF/UHF identity, directional modulation and actual evidence isolation."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import rfid as P
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.rfid import rules as P
 def actual(profile=P.UHF):
  return {**{'rfid_'+k:'synthetic-'+k for k in P.REQUIRED},'rfid_profile':profile,'rfid_role':'READER'}
 def status(x):return registry.validate_parameters('rfid',x)['status']

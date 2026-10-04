@@ -1,9 +1,10 @@
 """Invalid serial timing evidence must not become a deterministic numeric bound."""
 import pytest
 
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
-from backend.engineering.capacity.calculators import estimate_frame
-from backend.engineering.capacity.dimensioning import DEFAULT_POLICY, bus_schedule
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+from backend.nis.engineering.capacity.calculators import estimate_frame
+from backend.nis.engineering.capacity.dimensioning import DEFAULT_POLICY
+from backend.nis.engineering.capacity.dimensioning import bus_schedule
 
 
 def evidence(technology):

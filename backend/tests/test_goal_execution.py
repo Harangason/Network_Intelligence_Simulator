@@ -1,8 +1,10 @@
 """Goal and resource contracts: physical capacity must never be invented."""
 import pytest
-from backend.engineering.goal_execution.graph import ModelGraphService
-from backend.engineering.goal_execution.ports import inspect_port_decision
-from backend.engineering.goal_execution.models import GoalCompletionEvaluator, DesiredEngineeringState, GoalType
+from backend.nis.engineering.goal_execution.graph import ModelGraphService
+from backend.nis.engineering.goal_execution.ports import inspect_port_decision
+from backend.nis.engineering.goal_execution.models import GoalCompletionEvaluator
+from backend.nis.engineering.goal_execution.models import DesiredEngineeringState
+from backend.nis.engineering.goal_execution.models import GoalType
 
 def graph_fixture():
     model = {'project_id': 'test', 'hardware': [{'id': 'adas', 'name': 'ADAS', 'device_type': 'ECU'}],
@@ -136,7 +138,8 @@ def test_nonexistent_network_and_stale_resource_projection_are_blocked():
     assert result['findings'][0]['code'] == 'NETWORK_NOT_FOUND'
 
 def test_simulation_followup_preserves_explicit_scope_and_does_not_replace_fault_request():
-    from backend.engineering.goal_execution.followups import simulation_configuration, requested_followups
+    from backend.nis.engineering.goal_execution.followups import simulation_configuration
+    from backend.nis.engineering.goal_execution.followups import requested_followups
     assert requested_followups('Verbinde A mit B ohne Simulation') == []
     config = simulation_configuration('Verbinde A mit B und simuliere für 250 ms, Seed 17', {})
     assert config['duration_s'] == 0.25 and config['seed'] == 17

@@ -3,9 +3,9 @@ import os
 
 import pytest
 
-from backend.engineering.frame_device import plan_frame_device
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.network_scene import build_network_scene
+from backend.nis.engineering.network.frame_device import plan_frame_device
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.network.network_scene import build_network_scene
 from backend.tests.test_network_scene import fixture_topology
 
 
@@ -63,8 +63,8 @@ def test_growing_frame_moves_following_frames_out_of_the_way():
 @pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_URL'), reason='Requires separate test SQL database')
 def test_api_creation_reload_conflict_and_rollback(monkeypatch):
     from backend.tests.test_engineering_api import _client
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.models import EngineeringValidationError
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.domain.vocabulary import EngineeringValidationError
 
     client = _client()
     owner = client.post('/api/engineering/hardware-nodes', json={'name': 'Flugregelung', 'domain': 'aerospace', 'device_type': 'ECU'}).get_json()

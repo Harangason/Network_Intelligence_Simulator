@@ -1,8 +1,8 @@
 """Individual SercosIII cycle/phase/RTC-UCC/device conditions."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import sercos_iii as R
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.sercos_iii import rules as R
 def actual():
  x={'sercos_'+k:'synthetic-'+k for k in R.REQUIRED}
  x.update(sercos_profile='PUBLIC_SERIII_REFERENCE',sercos_proposal_mode='ACTUAL_CONFIG',sercos_phase='CP4',sercos_topology='LINE',sercos_role='MASTER',sercos_channel='REAL_TIME',sercos_mechanism='M_S',sercos_telegram='MDT')

@@ -5,9 +5,13 @@ from pathlib import Path
 
 import pytest
 
-from backend.engineering.capacity.dimensioning import unique_streams, bus_schedule, policy_for
-from backend.engineering.capacity.calculators import estimate_frame, utilization_percent
-from backend.engineering.intelligence.network_planning import plan_network_distribution
+from backend.nis.engineering.capacity.dimensioning import unique_streams
+from backend.nis.engineering.capacity.dimensioning import bus_schedule
+from backend.nis.engineering.capacity.dimensioning import policy_for
+from backend.nis.engineering.capacity.calculators import estimate_frame
+from backend.nis.engineering.capacity.calculators import utilization_percent
+from backend.nis.intelligence.engineering.intelligence.network_planning import plan_network_distribution
+from backend.tests.native_transport_fixtures import lin_design
 
 
 def fixture():
@@ -71,7 +75,7 @@ def test_explicit_hardware_channel_load_limit_is_not_replaced_by_a_reserve_warni
 def test_slot_reserve_is_distinct_from_a_met_stress_target(requirement):
     data = fixture()
     data['parameters']['communication_sizing']['reserve_requirement'] = requirement
-    frame = estimate_frame('LIN', 3, {'bitrate': 19200})
+    frame = estimate_frame('LIN', 3, {'bitrate': 19200, **lin_design()})
     nominal = utilization_percent(frame.transmission_time_s, 10)
     rows = []
     for index in range(2):

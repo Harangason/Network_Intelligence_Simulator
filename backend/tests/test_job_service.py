@@ -1,7 +1,7 @@
 from pathlib import Path
 import errno
 
-from backend.app.job_service import JobService
+from backend.nis.simulation.job_service import JobService
 
 
 def test_unavailable_runtime_mount_does_not_crash_application_import(monkeypatch, tmp_path, caplog):
@@ -119,7 +119,7 @@ def test_job_registry_falls_back_when_primary_registry_is_locked(monkeypatch, tm
             raise PermissionError("locked")
         return original_write_text(self, *args, **kwargs)
 
-    monkeypatch.setattr("backend.app.job_service._fallback_registry_path", lambda: fallback)
+    monkeypatch.setattr("backend.nis.simulation.job_service._fallback_registry_path", lambda: fallback)
     monkeypatch.setattr(Path, "write_text", write_text_with_locked_primary)
     service = JobService(synchronous=True, registry_path=primary, persist=True)
     service._jobs["job"] = {
@@ -278,7 +278,7 @@ def test_canceled_job_is_not_overwritten_by_late_thread_result(monkeypatch, tmp_
         "error": None,
     }
     events: list[tuple[str, str]] = []
-    monkeypatch.setattr("backend.app.job_service.TRACE_ROOT", tmp_path)
+    monkeypatch.setattr("backend.nis.simulation.job_service.TRACE_ROOT", tmp_path)
     monkeypatch.setattr(
         service,
         "_update_workflow_snapshot",
@@ -314,7 +314,7 @@ def test_terminal_job_status_is_published_after_workflow_snapshot(monkeypatch, t
     events: list[tuple[str, str]] = []
     original_update = service._update
 
-    monkeypatch.setattr("backend.app.job_service.TRACE_ROOT", tmp_path)
+    monkeypatch.setattr("backend.nis.simulation.job_service.TRACE_ROOT", tmp_path)
     monkeypatch.setattr(service, "_record_routing_results", lambda *_args, **_kwargs: None)
     monkeypatch.setattr(
         service,

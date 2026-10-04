@@ -37,7 +37,7 @@
      port = {'technology': 'I2C', 'capabilities': {'local_timing_evidence': device_evidence()}}
      resolved = parameters_for_protocol('I2C', p, port, confirmed_parameters=p)
      assert resolved['_rate_evidenced'] and resolved['bitrate'] == 100_000
-@@ -110,7 +120,7 @@
+@@ -110,22 +120,42 @@
      assert confirmed_serial_evidence('I2C', {'local_timing_evidence': evidence}, 8) == evidence
  
  
@@ -46,11 +46,30 @@
  def test_matching_identity_cannot_authorize_out_of_profile_rate(technology, value):
      p = {'technology': technology, 'bitrate': value}
      assert registry.validate_parameters(technology, {'bitrate_bps': value})['status'] == 'INVALID'
-@@ -123,9 +133,17 @@
+     resolved = parameters_for_protocol(technology, p, confirmed_parameters=p)
+-    assert not resolved['_rate_evidenced'] and 'bitrate' not in resolved
++    assert not resolved['_rate_evidenced']
++    assert resolved['bitrate'] == value  # Retain the supplied fact for review.
++    assert resolved['_rate_findings']
++    from backend.engineering.capacity.calculators import estimate_frame
++    assert not estimate_frame(technology, 8, resolved).transmission_time_available
+ 
+ 
+ def test_layered_can_form_has_no_ethernet_label_or_phy_parameters():
+-    for technology in ['uds', 'xcp', 'obd2', 'nmea2000']:
++    for technology in ['obd2', 'nmea2000']:
          fields = SimulationService._parameter_schema(technology, registry.profile(technology))
          assert 'Ethernet' not in next(f for f in fields if f['key'] == 'bitrate')['label']
          assert not {'duplex', 'mtu_bytes', 'vlan_id'}.intersection(f['key'] for f in fields)
 -    for technology in ['modbus_tcp', 'dds', 'ros2', 'profinet']:
++    xcp_fields = SimulationService._parameter_schema('xcp', registry.profile('xcp'))
++    xcp_keys = {f['key'] for f in xcp_fields}
++    assert {'xc_transport', 'xc_transport_source', 'xc_max_cto', 'xc_max_dto'} <= xcp_keys
++    assert not {'bitrate', 'duplex', 'mtu_bytes', 'vlan_id'}.intersection(xcp_keys)
++    uds_fields = SimulationService._parameter_schema('uds', registry.profile('uds'))
++    uds_keys = {f['key'] for f in uds_fields}
++    assert {'us_transport', 'us_transport_source', 'us_p2_server_s', 'us_p2_star_server_s'} <= uds_keys
++    assert not {'bitrate', 'duplex', 'mtu_bytes', 'vlan_id'}.intersection(uds_keys)
 +    for technology in ['ros2']:
          fields = SimulationService._parameter_schema(technology, registry.profile(technology))
 -        assert {'duplex', 'mtu_bytes', 'vlan_id'} <= {f['key'] for f in fields}

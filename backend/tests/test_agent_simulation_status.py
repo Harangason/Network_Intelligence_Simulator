@@ -6,18 +6,19 @@ import threading
 import pytest
 from werkzeug.serving import make_server
 
-from backend.app import create_app
-from backend.app.job_service import JobService
-from backend.engineering.agent_tools import services
-from backend.engineering.project_context import activate_project, reset_project
-from backend.engineering.repository import NotFoundError
+from backend.nis.app import create_app
+from backend.nis.simulation.job_service import JobService
+from backend.nis.agent.tools import services as services
+from backend.nis.engineering.projects.project_context import activate_project
+from backend.nis.engineering.projects.project_context import reset_project
+from backend.nis.infrastructure.persistence.repository import NotFoundError
 
 
 @pytest.fixture
 def simulation_http(monkeypatch):
     app = create_app(testing=True)
     jobs = JobService(persist=False)
-    monkeypatch.setattr(importlib.import_module('backend.app.api'), 'JOBS', jobs)
+    monkeypatch.setattr(importlib.import_module('backend.nis.interfaces.http.simulation'), 'JOBS', jobs)
     server = make_server('127.0.0.1', 0, app)
     monkeypatch.setenv('SIMULATOR_JOB_API_URL', f'http://127.0.0.1:{server.server_port}/api')
     worker = threading.Thread(target=server.serve_forever, daemon=True)

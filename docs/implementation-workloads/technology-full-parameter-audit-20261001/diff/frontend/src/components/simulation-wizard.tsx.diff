@@ -1,23 +1,53 @@
 --- before/frontend/src/components/simulation-wizard.tsx
 +++ after/frontend/src/components/simulation-wizard.tsx
-@@ -1,6 +1,6 @@
+@@ -1,6 +1,8 @@
  "use client";
  
 -import { confirmTechnologyParameters, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues } from "@/lib/technology-parameters";
-+import { booleanParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues } from "@/lib/technology-parameters";
++import { parseLosslessJson } from "../lib/lossless-json.ts";
++
++import { booleanParameterValue, numericParameterValue, conditionalParameterDefault, confirmTechnologyParameters, technologyParameterUnverified as parameterIsUnverified, technologyParameterValues } from "@/lib/technology-parameters";
  
  import Link from "next/link";
  import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
-@@ -986,7 +986,7 @@
-               }
-               return [field.key, numeric];
+@@ -45,6 +47,8 @@
+   "overload_threshold",
+ ]);
+ const parameterCategoryLabels: Record<TechnologyParameterField["category"], string> = {
++  technology: "Technologiespezifische Parameter",
++  communication: "Bus und Protokoll",
+   physical: "Netzwerk & Physik",
+   timing: "Timing",
+   capacity: "Capacity",
+@@ -964,7 +968,7 @@
+         editTokensRef.current = saved.edit_tokens ?? {};
+         setSavedMessage("Netzwerktopologie gespeichert. Capacity & Timing ist jetzt gegebenenfalls veraltet.");
+       } else if (advanced) {
+-        const parsed = JSON.parse(advancedConfig) as Record<string, unknown>;
++        const parsed = parseLosslessJson(advancedConfig) as Record<string, unknown>;
+         const saved = await saveWorkflowParameters(parsed, editTokensRef.current.parameters, initialProjectId);
+         editTokensRef.current = saved.edit_tokens ?? {};
+         setStoredParameters(parsed);
+@@ -977,16 +981,9 @@
+             const raw = form.get(field.key);
+             if (field.type === "number") {
+               const entered = typeof raw === "string" ? raw.trim() : "";
+-              if (!entered && field.required) throw new Error(`${field.label}: Bitte einen bestätigten Wert eingeben.`);
+-              if (!entered) return [field.key, null];
+-              const numeric = Number(entered);
+-              if (!Number.isFinite(numeric) || (field.min !== undefined && numeric < field.min)
+-                || (field.max !== undefined && numeric > field.max)) {
+-                throw new Error(`${field.label}: Der Wert liegt außerhalb des gültigen Bereichs.`);
+-              }
+-              return [field.key, numeric];
++              return [field.key, numericParameterValue(field, entered)];
              }
 -            if (field.type === "boolean") return [field.key, raw !== null];
 +            if (field.type === "boolean") return [field.key, booleanParameterValue(field, raw)];
              return [field.key, String(raw ?? "")];
            }),
          );
-@@ -1403,23 +1403,66 @@
+@@ -1403,23 +1400,67 @@
    unverified?: boolean;
    proposal?: Technology["parameter_proposals"];
  }) {
@@ -36,7 +66,8 @@
 +      for (const proposal of field.conditional_defaults ?? []) {
 +        for (const [key, expected] of Object.entries(proposal.when)) {
 +          const entered = raw.get(key);
-+          values[key] = typeof expected === 'boolean' ? booleanParameterValue({}, entered)
++          const control = form.elements.namedItem(key);
++          values[key] = typeof expected === 'boolean' ? control instanceof HTMLInputElement && control.type === 'checkbox' ? control.checked : booleanParameterValue({}, entered)
 +            : typeof expected === 'number' ? entered === null || entered === '' ? undefined : Number(entered) : entered;
 +        }
 +      }
@@ -85,15 +116,29 @@
      return (
        <label className="parameter-toggle" title={field.description}>
          <input defaultChecked={Boolean(value)} name={field.key} type="checkbox" />
-@@ -1434,6 +1477,7 @@
+@@ -1434,8 +1475,16 @@
          <label htmlFor={field.key}>{label}</label>
          {gap}
          <input defaultValue={String(value ?? "")} id={field.key} name={field.key} type="text" />
 +        {conditionalProposal}
        </div>
      );
++  }
++  if (field.numeric_encoding === 'DECIMAL_STRING') {
++    return <div className="field" title={field.description}>
++      <label htmlFor={field.key}>{label}</label>{gap}
++      <input defaultValue={String(value ?? '')} id={field.key} name={field.key} type="text" inputMode="numeric" required={field.required} />
++      {conditionalProposal}
++    </div>;
    }
-@@ -1449,6 +1493,7 @@
+   return (
+     <div title={field.description}>
+@@ -1445,10 +1494,11 @@
+         name={field.key}
+         min={field.min === undefined ? undefined : String(field.min)}
+         max={field.max === undefined ? undefined : String(field.max)}
+-        step="any"
++        step={field.integer ? "1" : "any"}
          required={field.required}
          value={missing ? "" : String(value)}
        />
@@ -101,7 +146,7 @@
        {proposal?.options?.length ? (
          <p className="muted">
            Referenz-Obergrenzen, keine bestätigte Busfrequenz: {proposal.options.map(option =>
-@@ -1600,7 +1645,8 @@
+@@ -1600,7 +1650,8 @@
          </span>
        </div>
        <span className="tag">

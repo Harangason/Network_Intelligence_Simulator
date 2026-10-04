@@ -4,7 +4,7 @@ import json
 import pytest
 from flask import Flask
 
-from backend.app import trace_sessions
+from backend.nis.traces import trace_sessions as trace_sessions
 
 
 def persist(tmp_path, monkeypatch, records):

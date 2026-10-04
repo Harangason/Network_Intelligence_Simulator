@@ -1,20 +1,18 @@
 from __future__ import annotations
 
-from backend.knowledge import (
-    AIModelGateway,
-    EngineeringChunker,
-    EngineeringContextBuilder,
-    EngineeringSemanticVocabulary,
-    EntityResolutionService,
-    HybridRetrievalService,
-    KnowledgeDocument,
-    KnowledgeIngestionPipeline,
-    LocalAIProvider,
-    LocalGraphStore,
-    LocalTransformerService,
-    LocalVectorStore,
-)
-from backend.knowledge.transformers import cosine
+from backend.nis.knowledge import AIModelGateway
+from backend.nis.knowledge import EngineeringChunker
+from backend.nis.knowledge import EngineeringContextBuilder
+from backend.nis.knowledge import EngineeringSemanticVocabulary
+from backend.nis.knowledge import EntityResolutionService
+from backend.nis.knowledge import HybridRetrievalService
+from backend.nis.knowledge import KnowledgeDocument
+from backend.nis.knowledge import KnowledgeIngestionPipeline
+from backend.nis.knowledge import LocalAIProvider
+from backend.nis.knowledge import LocalGraphStore
+from backend.nis.knowledge import LocalTransformerService
+from backend.nis.knowledge import LocalVectorStore
+from backend.nis.knowledge.transformers import cosine
 
 
 def test_local_graph_store_supports_traversal_paths_and_subgraphs():

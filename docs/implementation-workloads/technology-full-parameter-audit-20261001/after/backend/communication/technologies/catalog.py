@@ -72,6 +72,25 @@ from . import someip as someip_rules
 from . import someip_sd as someip_sd_rules
 from . import spacewire as spacewire_rules
 from . import sparkplug_b as sparkplug_b_rules
+from . import spi as spi_rules
+from . import sunspec_modbus as sunspec_rules
+from . import tcp as tcp_rules
+from . import thread as thread_rules
+from . import trdp as trdp_rules
+from . import tsn as tsn_rules
+from . import tte as tte_rules
+from . import uart as uart_rules
+from . import udp as udp_rules
+from . import uds as uds_rules
+from . import usb as usb_rules
+from . import uwb as uwb_rules
+from . import websocket as websocket_rules
+from . import wifi as wifi_rules
+from . import wireless_m_bus as wireless_m_bus_rules
+from . import wirelesshart as wirelesshart_rules
+from . import wtb as wtb_rules
+from . import xcp as xcp_rules
+from . import zigbee as zigbee_rules
 
 COAP_TRANSMIT_SPAN={'product':['coap_ack_timeout_s',{'subtract':[{'power':[2,'coap_max_retransmit']},1]},'coap_ack_random_factor']}
 COAP_TRANSMIT_WAIT={'product':['coap_ack_timeout_s',{'subtract':[{'power':[2,{'sum':['coap_max_retransmit',1]}]},1]},'coap_ack_random_factor']}
@@ -958,11 +977,25 @@ TECHNOLOGY_SEMANTICS: dict[str, dict[str, Any]] = {
     'io_link_wireless': {**io_link_wireless_rules.semantics()},
     'ip': {**ip_rules.semantics()},
     'isobus': {**isobus_rules.semantics()},
-    "spi": {
-        "rate_model": {"type": "DEVICE_DEPENDENT_CLOCK", "fields": ["bitrate_bps"],
-                       "minimum_bps": 1},
-        "mechanisms": {"addressing": ["CHIP_SELECT"], "clocking": ["CPOL", "CPHA"]},
-    },
+    "spi": {**spi_rules.semantics()},
+    "sunspec_modbus": {**sunspec_rules.semantics()},
+    "tcp": {**tcp_rules.semantics()},
+    "thread": {**thread_rules.semantics()},
+    "trdp": {**trdp_rules.semantics()},
+    "tsn": {**tsn_rules.semantics()},
+    "tte": {**tte_rules.semantics()},
+    "uart": {**uart_rules.semantics()},
+    "udp": {**udp_rules.semantics()},
+    "uds": {**uds_rules.semantics()},
+    "usb": {**usb_rules.semantics()},
+    "uwb": {**uwb_rules.semantics()},
+    "websocket": {**websocket_rules.semantics()},
+    "wifi": {**wifi_rules.semantics()},
+    "wireless_m_bus": {**wireless_m_bus_rules.semantics()},
+    "wirelesshart": {**wirelesshart_rules.semantics()},
+    "wtb": {**wtb_rules.semantics()},
+    "xcp": {**xcp_rules.semantics()},
+    "zigbee": {**zigbee_rules.semantics()},
     'j1939': {**j1939_rules.semantics()},
     'knx_ip': {**knx_ip_rules.semantics()},
     'knx_rf': {**knx_rf_rules.semantics()},
@@ -3006,6 +3039,10 @@ DIRECT_IO_TECHNOLOGIES = frozenset({"gpio", "pwm", "adc", "dac"})
 # Source-backed proposals are deliberately distinct from confirmed port/device
 # parameters and from executable capacity models. No proposal is a fallback rate.
 REVIEW_RATE_PROPOSALS: dict[str, dict[str, Any]] = {
+    'thread': {'kind':'FIXED_PHY_CONDITIONAL','status':'REVIEW_REQUIRED',
+        'source':thread_rules.RADIO,'source_revision':thread_rules.SOURCES[thread_rules.RADIO],
+        'conditional_defaults':[{'when':{'th_review_profile':'PUBLIC_BASELINE_2026','th_phy':'IEEE_802154_24GHZ_OQPSK'},'value':250000}],
+        'minimum_standard_bitrate_bps':None,'note':'250kbps applies only to reviewed2.4GHz OQPSK; actual CSMA/poll/retry/path/fragment evidence remains independent.'},
     'profinet': {'kind':'STANDARD_BASELINE','default_bps':100000000,'status':'REVIEW_REQUIRED',
         'source':profinet_rules.PI,'source_revision':profinet_rules.SOURCES[profinet_rules.PI],
         'reason':'Conventional PROFINET100Mbps proposal; actual PHY/IOCR/RTclass/device interval/domain plan remain explicit.'},
@@ -3265,8 +3302,6 @@ LOCAL_EVIDENCE_FIELDS = {
             ("inter_transfer_gap_us", "Transferabstandsgrenze (µs)"),
             ("transfer_bits_bound", "Transfergrenze in Taktbits"),
             ("bitrate_bps", "Bestätigter SPI-Takt (bit/s)")),
-    "PWM": (("pwm_frequency_hz", "PWM-Frequenz (Hz)"), ("update_bound_ms", "Aktualisierungsgrenze (ms)"),
-            ("capture_bound_ms", "Erfassungsgrenze (ms)")),
     "GPIO": (("sample_bound_ms", "Abtastgrenze (ms)"), ("debounce_bound_ms", "Entprellgrenze (ms)"),
              ("edge_detection_bound_ms", "Flankenerkennungsgrenze (ms)")),
     "ADC": (("sample_bound_ms", "ADC-Abtastgrenze (ms)"),
@@ -3279,6 +3314,8 @@ LOCAL_EVIDENCE_FIELDS = {
 def _local_timing_schema(technology_id):
     if technology_id == 'i2c':
         return i2c_rules.local_fields()
+    if technology_id == 'spi':
+        return spi_rules.local_fields()
     numeric = {'address_bits', 'start_stop_bound_us', 'clock_stretch_limit_us',
                'transfer_bits_bound', 'arbitration_bound_us', 'bitrate_bps', 'word_length_bits',
                'cpol', 'cpha', 'cs_setup_bound_us', 'inter_transfer_gap_us', 'pwm_frequency_hz',
@@ -3424,9 +3461,13 @@ def _spec(
         "transport_unit": transport_unit,
         "payload_element_types": list(payload_types),
         "hardware_interface": hardware_interface,
+        "hardware_capability_aliases": HARDWARE_CAPABILITY_ALIASES.get(technology_id, []),
         "default_stack": list(stack or (technology_id,)),
-        "stack_variants": ([["ip", "udp", "someip"], ["ip", "tcp", "someip"]]
-                           if technology_id == "someip" else [list(stack or (technology_id,))]),
+        "stack_variants": list({tuple(v): v for v in [
+            *([["ip", "udp", "someip"], ["ip", "tcp", "someip"],
+               ["ethernet", "ip", "udp", "someip"], ["ethernet", "ip", "tcp", "someip"]]
+              if technology_id == "someip" else [list(stack or (technology_id,))]),
+            *EXPLICIT_STACK_VARIANTS.get(technology_id, [])]}.values()),
         "default_bitrate": bitrate,
         "rate_model": rate_model,
         "local_timing_schema": _local_timing_schema(technology_id),
@@ -3502,6 +3543,8 @@ def _spec(
         "physical_layer_profile_id": physical.id if physical else None,
         "medium_access_model": physical.access_model.value if physical else None,
         "native_parameter_prefixes": list(semantics.get('native_parameter_prefixes',[])),
+        "parameter_aliases": deepcopy(semantics.get("parameter_aliases", {})),
+        "parameter_alias_limits": deepcopy(semantics.get("parameter_alias_limits", {})),
         "parameter_evidence_scope": semantics.get('parameter_evidence_scope'),
         "rate_source_profile_id": semantics.get('rate_source_profile_id'),
         "arbitration_model_id": physical.arbitration.id if physical and physical.arbitration else None,
@@ -3545,8 +3588,8 @@ ROWS: tuple[tuple[Any, ...], ...] = (
     # Generic layered foundations
     ("ethernet", "Ethernet", "generic_networking", "DATA_LINK", "FRAME", ("FIELD", "RAW_DATA"), "ethernet_port", (), 1_000_000_000, 1500, ("objects", "streams", "multicast", "redundancy", "time_sync", "qos"), False),
     ("ip", "Internet Protocol", "generic_networking", "NETWORK", "PACKET", ("FIELD", "RAW_DATA"), "explicit_registered_link", (), None, None, ("objects", "streams", "multicast", "fragmentation", "qos"), False),
-    ("udp", "UDP", "generic_networking", "TRANSPORT", "DATAGRAM", ("FIELD", "RAW_DATA"), "ethernet_port", ("ethernet", "ip", "udp"), None, 65507, ("objects", "streams", "multicast", "segmentation"), False),
-    ("tcp", "TCP", "generic_networking", "TRANSPORT", "STREAM_CHUNK", ("FIELD", "RAW_DATA"), "ethernet_port", ("ethernet", "ip", "tcp"), None, 65535, ("objects", "streams", "request_response", "segmentation", "fragmentation", "qos"), False),
+    ("udp", "UDP", "generic_networking", "TRANSPORT", "DATAGRAM", ("FIELD", "RAW_DATA"), "explicit_udp_ip_and_phy_path", (), None, None, ("objects", "multicast", "fragmentation"), False),
+    ("tcp", "TCP", "generic_networking", "TRANSPORT", "STREAM_CHUNK", ("FIELD", "RAW_DATA"), "explicit_ip_path", (), None, None, ("objects", "streams", "request_response", "segmentation", "fragmentation", "qos"), False),
     # Automotive / vehicle
     ("can", "CAN 2.0A/B", "generic_networking", "DATA_LINK", "FRAME", ("SIGNAL", "STATUS"), "can_controller", (), None, 8, ("multicast",), False),
     ("can_fd", "CAN-FD", "generic_networking", "DATA_LINK", "FRAME", ("SIGNAL", "STATUS"), "can_fd_controller", (), None, 64, ("multicast",), False),
@@ -3557,15 +3600,15 @@ ROWS: tuple[tuple[Any, ...], ...] = (
     ("canopen", "CANopen", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "SIGNAL"), "can_controller", ("can", "canopen"), 10_000, 8, ("objects", "pubsub", "request_response"), False),
     ("j1939", "SAE J1939", "generic_networking", "APPLICATION", "MESSAGE", ("FIELD", "SIGNAL"), "j1939_qualified_classic_or_fd_port", (), None, None, ("multicast", "segmentation"), False),
     ("isobus", "ISO 11783 / ISOBUS", "generic_networking", "INDUSTRY_PROFILE", "MESSAGE", ("FIELD", "SIGNAL"), "isobus_qualified_can_port", (), None, None, ("objects", "multicast", "segmentation"), False),
-    ("uds", "UDS", "automotive", "APPLICATION", "SERVICE_REQUEST", ("COMMAND", "STATUS", "RAW_DATA"), "can_or_ethernet_interface", ("can", "uds"), None, 4095, ("request_response", "segmentation"), False),
-    ("xcp", "XCP", "automotive", "APPLICATION", "SERVICE_REQUEST", ("COMMAND", "DATA_OBJECT"), "can_or_ethernet_interface", ("can", "xcp"), None, 65535, ("objects", "request_response", "segmentation"), False),
+    ("uds", "UDS", "generic_networking", "APPLICATION", "SERVICE_REQUEST", ("COMMAND", "STATUS", "RAW_DATA"), "explicit_uds_selected_transport", (), None, None, ("request_response",), False),
+    ("xcp", "XCP", "generic_networking", "APPLICATION", "SERVICE_REQUEST", ("COMMAND", "DATA_OBJECT"), "xcp_actual_lower_transport", (), None, None, ("objects", "request_response", "segmentation"), False),
     ("ccp", "CCP", "generic_networking", "APPLICATION", "SERVICE_REQUEST", ("COMMAND", "DATA_OBJECT"), "can_controller", ("can", "ccp"), None, 8, ("objects", "request_response"), False),
     ("someip", "SOME/IP", "generic_networking", "APPLICATION", "SERVICE_EVENT", ("FIELD", "DATA_OBJECT"), "actual_someip_transport_binding", ("someip",), None, None, ("objects", "pubsub", "request_response", "segmentation", "qos"), False),
     ("someip_sd", "SOME/IP-SD", "generic_networking", "APPLICATION", "SERVICE_EVENT", ("FIELD", "STATUS"), "actual_someip_sd_udp_ip_binding", ("someip_sd",), None, None, ("objects", "multicast", "pubsub"), False),
     ("doip", "DoIP", "automotive", "APPLICATION", "PDU", ("COMMAND", "STATUS", "RAW_DATA"), "explicit_ip_transport_binding", (), None, 4_294_967_295, ("request_response", "stream_framing"), False),
     ("obd2", "OBD-II", "generic_networking", "INDUSTRY_PROFILE", "SERVICE_REQUEST", ("COMMAND", "STATUS"), "obd_actual_vehicle_binding_and_adapter_host", (), None, None, ("request_response",), False),
     ("avb", "AVB", "generic_networking", "INDUSTRY_PROFILE", "STREAM_CHUNK", ("AUDIO", "RAW_DATA"), "ethernet_port", ("ethernet", "avb"), 100_000_000, 1500, ("streams", "multicast", "time_sync", "qos"), True),
-    ("tsn", "Time-Sensitive Networking", "generic_networking", "INDUSTRY_PROFILE", "FRAME", ("FIELD", "RAW_DATA"), "ethernet_port", ("ethernet", "tsn"), 1_000_000_000, 1500, ("objects", "streams", "multicast", "redundancy", "time_sync", "safety", "qos"), True),
+    ("tsn", "Time-Sensitive Networking", "generic_networking", "INDUSTRY_PROFILE", "FRAME", ("FIELD", "RAW_DATA"), "explicit_tsn_tools_and_qualified_phy", (), None, None, ("objects", "streams", "multicast", "redundancy", "time_sync", "qos"), False),
     # Industrial / PLC
     ("profinet", "PROFINET RT/IRT", "industrial_automation", "DATA_LINK", "PROCESS_DATA", ("FIELD", "STATUS", "QUALITY"), "explicit_profinet_io", (), None, None, ("objects", "pubsub", "cyclic", "time_sync", "safety", "qos"), False),
     ("ethercat", "EtherCAT", "industrial_automation", "INDUSTRY_PROFILE", "DATAGRAM", ("FIELD", "REGISTER", "STATUS"), "ethercat_port", ("ethernet", "ethercat"), 100_000_000, 1486, ("objects", "pubsub", "time_sync", "safety", "qos"), True),
@@ -3596,12 +3639,12 @@ ROWS: tuple[tuple[Any, ...], ...] = (
     ("mil_std_1553", "MIL-STD-1553", "aerospace", "DATA_LINK", "WORD", ("COMMAND", "FIELD", "STATUS"), "mil1553_interface", (), 1_000_000, 64, ("multicast", "redundancy"), True),
     ("can_aerospace", "CAN Aerospace", "aerospace", "INDUSTRY_PROFILE", "MESSAGE", ("SIGNAL", "STATUS"), "can_controller", ("can", "can_aerospace"), None, 4, ("multicast", "objects", "request_response"), False, 4),
     ("spacewire", "SpaceWire", "generic_networking", "DATA_LINK", "PACKET", ("FIELD", "RAW_DATA"), "actual_spacewire_point_to_point_ds", ("spacewire",), None, None, ("objects", "streams", "time_sync", "fragmentation"), False),
-    ("tte", "Time-Triggered Ethernet", "aerospace", "INDUSTRY_PROFILE", "FRAME", ("FIELD", "RAW_DATA"), "ethernet_port", ("ethernet", "tte"), 1_000_000_000, 1500, ("multicast", "redundancy", "time_sync", "safety", "qos"), True),
+    ("tte", "Time-Triggered Ethernet", "generic_networking", "INDUSTRY_PROFILE", "FRAME", ("FIELD", "RAW_DATA"), "explicit_tte_tt_rc_be_sync_and_phy", (), None, None, ("multicast", "redundancy", "time_sync", "qos"), False),
     # Rail / marine / heavy vehicle
     ("mvb", "MVB", "generic_networking", "DATA_LINK", "PROCESS_DATA", ("SIGNAL", "STATUS"), "mvb_interface", (), 1_500_000, 32, ("multicast", "time_sync"), True),
-    ("wtb", "WTB", "rail", "DATA_LINK", "PROCESS_DATA", ("SIGNAL", "STATUS"), "wtb_interface", (), 1_000_000, 128, ("multicast", "redundancy", "time_sync"), True),
+    ("wtb", "WTB", "generic_networking", "DATA_LINK", "PROCESS_DATA", ("SIGNAL", "STATUS"), "wtb_actual_master_segment", (), None, None, ("multicast", "redundancy", "time_sync"), True),
     ("etb", "Ethernet Train Backbone", "rail", "INDUSTRY_PROFILE", "FRAME", ("FIELD", "RAW_DATA"), "ethernet_port", ("ethernet", "etb"), 100_000_000, 1500, ("objects", "streams", "multicast", "redundancy", "qos"), True),
-    ("trdp", "TRDP", "rail", "APPLICATION", "PROCESS_DATA", ("FIELD", "STATUS"), "ethernet_port", ("ethernet", "ip", "udp", "trdp"), 100_000_000, 65507, ("objects", "multicast", "pubsub", "request_response", "qos"), True),
+    ("trdp", "TRDP", "generic_networking", "APPLICATION", "PROCESS_DATA", ("FIELD", "STATUS"), "explicit_pd_udp_or_md_udp_tcp_path", (), None, None, ("objects", "multicast", "pubsub", "request_response", "qos"), False),
     ("nmea0183", "NMEA 0183", "generic_networking", "APPLICATION", "TELEGRAM", ("FIELD", "STATUS"), "nmea0183_actual_serial_or_registered_host", (), None, None, ("ascii_sentences", "one_way_serial_or_registered_host"), False),
     ("nmea2000", "NMEA 2000", "generic_networking", "INDUSTRY_PROFILE", "MESSAGE", ("FIELD", "SIGNAL"), "nmea2000_can_cc_250k_qualified_topology", (), 250_000, None, ("multicast", "segmentation"), True),
     ("iec61162", "IEC 61162", "generic_networking", "APPLICATION", "MESSAGE", ("FIELD", "STATUS"), "explicit_iec61162_part_binding", (), None, None, ("objects", "part_specific_transport"), False),
@@ -3615,7 +3658,7 @@ ROWS: tuple[tuple[Any, ...], ...] = (
     ("lonworks", "LonWorks", "generic_networking", "INDUSTRY_PROFILE", "MESSAGE", ("DATA_OBJECT", "FIELD"), "lonworks_qualified_channel", (), None, None, ("objects", "pubsub", "multicast", "request_response"), False),
     ("dali", "DALI", "building_automation", "APPLICATION", "TELEGRAM", ("COMMAND", "STATUS", "EVENT"), "dali_interface", (), 1_200, 3, ("request_response",), True),
     ("m_bus", "M-Bus", "generic_networking", "APPLICATION", "TELEGRAM", ("FIELD", "STATUS"), "wired_mbus_actual_voltage_current_segment", (), None, None, ("request_response", "half_duplex_poll"), False),
-    ("wireless_m_bus", "Wireless M-Bus", "building_automation", "APPLICATION", "TELEGRAM", ("FIELD", "STATUS"), "wireless_interface", (), 100_000, 255, ("no_cyclic",), False),
+    ("wireless_m_bus", "Wireless M-Bus", "generic_networking", "APPLICATION", "TELEGRAM", ("FIELD", "STATUS"), "wireless_mbus_actual_mode_direction", (), None, None, ("no_cyclic",), False),
     # Energy and process
     ("iec61850", "IEC 61850", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "STRUCT", "STATUS", "QUALITY"), "explicit_iec61850_service_binding", (), None, None, ("objects", "service_specific_transport"), False),
     ("mms", "MMS", "generic_networking", "APPLICATION", "SERVICE_RESPONSE", ("DATA_OBJECT", "STRUCT"), "explicit_mms_transport_binding", (), None, None, ("objects", "request_response", "segmentation"), False),
@@ -3624,21 +3667,21 @@ ROWS: tuple[tuple[Any, ...], ...] = (
     ("dnp3", "DNP3", "generic_networking", "APPLICATION", "PDU", ("DATA_OBJECT", "STATUS", "QUALITY"), "explicit_transport_binding", (), None, None, ("objects", "request_response", "segmentation"), False),
     ("iec60870_5_101", "IEC 60870-5-101", "generic_networking", "APPLICATION", "TELEGRAM", ("DATA_OBJECT", "STATUS", "QUALITY"), "explicit_iec101_serial_binding", (), None, None, ("objects", "request_response"), False),
     ("iec60870_5_104", "IEC 60870-5-104", "generic_networking", "APPLICATION", "PDU", ("DATA_OBJECT", "STATUS", "QUALITY"), "explicit_iec104_tcp_path", ("iec60870_5_104",), None, None, ("objects", "request_response", "stream_reassembly"), False),
-    ("sunspec_modbus", "SunSpec Modbus", "energy", "INDUSTRY_PROFILE", "REGISTER_BLOCK", ("REGISTER", "STATUS"), "ethernet_or_rs485_interface", ("modbus_tcp", "sunspec_modbus"), None, 253, ("objects", "request_response"), False),
+    ("sunspec_modbus", "SunSpec Modbus", "generic_networking", "INDUSTRY_PROFILE", "REGISTER_BLOCK", ("REGISTER", "STATUS"), "explicit_modbus_serial_or_tcp_binding", (), None, None, ("objects", "request_response"), False),
     ("ocpp", "OCPP", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "COMMAND", "STATUS"), "explicit_ocpp_application_transport_and_peer", (), None, None, ("objects", "request_response"), False),
     ("hart", "HART (wired)", "generic_networking", "INDUSTRY_PROFILE", "TELEGRAM", ("FIELD", "STATUS", "QUALITY"), "explicit_hart_modem_loop", (), None, 255, ("request_response",), False),
-    ("wirelesshart", "WirelessHART", "process_industry", "INDUSTRY_PROFILE", "MESSAGE", ("FIELD", "STATUS", "QUALITY"), "wireless_interface", (), 250_000, 127, ("multicast", "time_sync", "qos"), True),
+    ("wirelesshart", "WirelessHART", "generic_networking", "APPLICATION", "MESSAGE", ("FIELD", "STATUS", "QUALITY"), "wirelesshart_actual_radio_mesh", (), None, None, ("multicast", "time_sync", "qos"), True),
     ("foundation_fieldbus_h1", "FOUNDATION Fieldbus H1", "generic_networking", "APPLICATION", "PDU", ("FIELD", "STATUS", "QUALITY"), "h1_fieldbus_interface", (), 31_250, 251, ("objects", "pubsub", "time_sync", "request_response"), True),
     # Embedded interfaces
     ("i2c", "I2C", "generic_networking", "DATA_LINK", "MESSAGE", ("REGISTER", "RAW_DATA"), "explicit_i2c_port", (), None, None, ("request_response",), False),
     ("i3c", "I3C", "generic_networking", "DATA_LINK", "MESSAGE", ("REGISTER", "RAW_DATA"), "explicit_i3c_port", (), None, None, ("request_response", "event"), False),
-    ("spi", "SPI / QSPI", "embedded_systems", "DATA_LINK", "STREAM_CHUNK", ("REGISTER", "RAW_DATA"), "spi_controller", (), 50_000_000, 65535, ("streams",), True),
-    ("uart", "UART / USART", "embedded_systems", "DATA_LINK", "STREAM_CHUNK", ("RAW_DATA",), "serial_port", (), 115_200, 65535, ("streams",), False),
+    ("spi", "SPI / separately qualified QSPI", "generic_networking", "DATA_LINK", "STREAM_CHUNK", ("REGISTER", "RAW_DATA"), "actual_spi_voltage_pins_and_layout", (), None, None, ("streams",), False),
+    ("uart", "UART / USART", "generic_networking", "DATA_LINK", "STREAM_CHUNK", ("RAW_DATA",), "explicit_uart_clock_framing_and_phy", (), None, None, ("streams",), False),
     ("rs232", "RS-232", "generic_networking", "PHYSICAL", "STREAM_CHUNK", ("RAW_DATA",), "rs232_actual_single_ended_interchange", (), None, None, ("streams",), False),
     ("rs422", "RS-422", "generic_networking", "PHYSICAL", "STREAM_CHUNK", ("RAW_DATA",), "rs422_actual_single_driver_pair", (), None, None, ("streams",), False),
     ("rs485", "RS-485", "generic_networking", "PHYSICAL", "STREAM_CHUNK", ("RAW_DATA",), "rs485_actual_electrical_multipoint", (), None, None, ("streams",), False),
     ("one_wire", "1-Wire", "embedded_systems", "DATA_LINK", "MESSAGE", ("REGISTER", "RAW_DATA"), "source_qualified_1wire_slot_and_load", (), None, None, ("request_response",), True),
-    ("usb", "USB", "embedded_systems", "DATA_LINK", "PACKET", ("RAW_DATA", "STREAM_CHUNK"), "usb_controller", (), 480_000_000, 1024, ("objects", "streams", "segmentation", "qos"), True),
+    ("usb", "USB", "generic_networking", "DATA_LINK", "PACKET", ("RAW_DATA", "STREAM_CHUNK"), "usb_actual_host_endpoint_and_tunnel", (), None, None, ("objects", "streams", "segmentation", "qos"), False),
     ("pcie", "PCIe", "generic_networking", "DATA_LINK", "PACKET", ("RAW_DATA", "DATA_OBJECT"), "explicit_pcie_trained_channel", (), None, None, ("objects", "streams", "qos"), False),
     ("mipi_csi2", "MIPI CSI-2", "embedded_systems", "DATA_LINK", "STREAM_CHUNK", ("IMAGE", "RAW_DATA"), "mipi_csi2_interface", (), 0, 65535, ("streams",), True),
     ("mipi_dsi", "MIPI DSI", "embedded_systems", "DATA_LINK", "STREAM_CHUNK", ("IMAGE", "RAW_DATA"), "mipi_dsi_interface", (), 0, 65535, ("streams",), True),
@@ -3651,18 +3694,18 @@ ROWS: tuple[tuple[Any, ...], ...] = (
     ("mqtt_sn", "MQTT-SN", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "explicit_datagram_gateway_binding", (), None, None, ("objects", "pubsub", "qos"), False),
     ("coap", "CoAP", "generic_networking", "APPLICATION", "PDU", ("DATA_OBJECT", "RAW_DATA"), "explicit_ip_link_interface", (), None, None, ("objects", "multicast", "request_response", "segmentation"), False),
     ("http", "HTTP", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "explicit_http_transport_binding", (), None, None, ("objects", "streams", "request_response", "segmentation"), False),
-    ("websocket", "WebSocket", "iot_wireless", "APPLICATION", "STREAM_CHUNK", ("DATA_OBJECT", "RAW_DATA"), "ethernet_or_wireless_interface", ("ethernet", "ip", "tcp", "websocket"), None, 65535, ("objects", "streams", "pubsub", "segmentation"), False),
+    ("websocket", "WebSocket", "generic_networking", "APPLICATION", "STREAM_CHUNK", ("DATA_OBJECT", "RAW_DATA"), "websocket_actual_negotiated_stream", (), None, None, ("objects", "streams", "pubsub", "segmentation"), False),
     ("amqp", "AMQP", "iot_wireless", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "ethernet_or_wireless_interface", ("ethernet", "ip", "tcp", "amqp"), None, None, ("objects", "pubsub", "request_response", "qos"), False),
-    ("wifi", "Wi-Fi", "iot_wireless", "DATA_LINK", "FRAME", ("FIELD", "RAW_DATA"), "wireless_interface", (), 1_000_000_000, 2304, ("objects", "streams", "multicast", "qos"), False),
+    ("wifi", "Wi-Fi", "generic_networking", "DATA_LINK", "FRAME", ("FIELD", "RAW_DATA"), "wifi_actual_generation_peer_radio", (), None, None, ("objects", "streams", "multicast", "qos"), False),
     ("bluetooth_le", "Bluetooth LE", "iot_wireless", "DATA_LINK", "PDU", ("FIELD", "DATA_OBJECT"), "wireless_interface", (), 1_000_000, 251, ("objects", "pubsub", "request_response"), False),
-    ("zigbee", "Zigbee", "iot_wireless", "INDUSTRY_PROFILE", "PACKET", ("DATA_OBJECT", "FIELD"), "wireless_interface", (), 250_000, 127, ("objects", "multicast", "pubsub"), False),
-    ("thread", "Thread", "iot_wireless", "INDUSTRY_PROFILE", "PACKET", ("DATA_OBJECT", "FIELD"), "wireless_interface", (), 250_000, 127, ("objects", "multicast", "pubsub"), False),
+    ("zigbee", "Zigbee", "generic_networking", "APPLICATION", "PACKET", ("DATA_OBJECT", "FIELD"), "zigbee_actual_phy_mesh", (), None, None, ("objects", "multicast", "pubsub"), False),
+    ("thread", "Thread", "generic_networking", "NETWORK", "PACKET", ("DATA_OBJECT", "FIELD"), "explicit_thread_radio_and_ipv6_path", (), None, None, ("objects", "multicast", "fragmentation"), False),
     ("matter", "Matter", "generic_networking", "APPLICATION", "MESSAGE", ("DATA_OBJECT", "COMMAND", "STATUS"), "matter_actual_ipv6_or_commissioning_path", (), None, None, ("objects", "multicast", "pubsub", "request_response"), False),
     ("lorawan", "LoRaWAN", "generic_networking", "INDUSTRY_PROFILE", "PACKET", ("FIELD", "DATA_OBJECT"), "lorawan_actual_regional_radio", (), None, None, ("objects", "confirmed_unconfirmed", "class_a_b_c"), False),
     ("lte_m", "LTE-M", "generic_networking", "DATA_LINK", "PACKET", ("FIELD", "RAW_DATA"), "lte_m_actual_eutra_radio", (), None, None, ("objects", "scheduled_radio", "category_ce_repetition"), False),
     ("nb_iot", "NB-IoT", "generic_networking", "DATA_LINK", "PACKET", ("FIELD", "RAW_DATA"), "nb_iot_actual_radio_band_and_deployment", (), None, None, ("objects", "scheduled_radio", "category_repetition_and_negotiated_nas"), False),
     ("5g", "5G", "iot_wireless", "DATA_LINK", "PACKET", ("FIELD", "RAW_DATA"), "wireless_interface", (), None, None, ("objects", "streams", "multicast", "qos"), False),
-    ("uwb", "UWB", "iot_wireless", "DATA_LINK", "FRAME", ("FIELD", "RAW_DATA"), "wireless_interface", (), 27_000_000, 1023, ("objects", "time_sync"), False),
+    ("uwb", "UWB", "generic_networking", "DATA_LINK", "FRAME", ("FIELD", "RAW_DATA"), "uwb_actual_radio_mac_host", (), None, None, ("objects", "time_sync"), False),
     ("nfc", "NFC", "generic_networking", "DATA_LINK", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "nfc_actual_rf_protocol_and_controller", (), None, None, ("objects", "request_response", "mode_role_and_firmware_qualified"), False),
     ("rfid", "RFID", "generic_networking", "INDUSTRY_PROFILE", "MESSAGE", ("DATA_OBJECT", "RAW_DATA"), "explicit_rfid_lf_hf_uhf_air_and_host", (), None, None, ("objects", "request_response", "protocol_qualified_inventory"), False),
     # Safety profiles and custom
@@ -3684,6 +3727,17 @@ ROWS: tuple[tuple[Any, ...], ...] = (
 PARAMETER_UI_ALIASES = {'bitrate_bps': 'bitrate', 'nominal_bitrate_bps': 'arbitration_bitrate',
                         'data_bitrate_bps': 'data_bitrate'}
 PARAMETER_CORE_ALIASES = {alias: key for key, alias in PARAMETER_UI_ALIASES.items()}
+
+
+# Historical parameter names remain reserved after the last profile retires them.
+# Otherwise a foreign CAN queue/retry field would become arbitrary project metadata.
+RESERVED_PARAMETER_NAMES = frozenset(['arbitration_bitrate', 'bit_error_rate', 'bitrate', 'burst_factor', 'burst_window_ms', 'clock_drift_ppm', 'clock_offset_ms', 'corruption_probability', 'critical_threshold', 'cycle_ms', 'data_bitrate', 'deadline_ms', 'distributed_clock_cycle_ms', 'dropout_probability', 'duplex', 'duplicate_probability', 'durability', 'duration_s', 'frame_loss_probability', 'freshness_ms', 'gateway_delay_ms', 'gateway_input_buffer', 'gateway_maximum_messages_s', 'gateway_maximum_routes', 'gateway_maximum_throughput', 'gateway_output_buffer', 'gateway_queue_delay_ms', 'history_depth', 'history_kind', 'jitter_ms', 'lifespan_ms', 'liveliness', 'max_events', 'maximum_latency_ms', 'maximum_sync_error_ms', 'minimum_cycle_time_ms', 'mtu_bytes', 'overload_threshold', 'packet_loss_probability', 'payload_bytes', 'peak_factor', 'propagation_delay_ms', 'protocol_conversion_delay_ms', 'qos_priority', 'queue_policy', 'queue_size', 'rate_limit_bit_s', 'reliability_mode', 'reordering_probability', 'required_reliability', 'reserved_bandwidth_percent', 'retransmission_delay_ms', 'retransmission_enabled', 'retransmission_rate', 'retry_limit', 'sample_point_percent', 'seed', 'source_processing_delay_ms', 'sync_interval_ms', 'sync_method', 'sync_precision_ms', 'target_bus_load_percent', 'target_processing_delay_ms', 'timeout_ms', 'traffic_class', 'vlan_id', 'warning_threshold'])
+
+# Physical capability names identify review candidates, not qualified PHY facts.
+HARDWARE_CAPABILITY_ALIASES = {'ethernet': ['ethernet_port'], 'ip': ['ethernet_port'], 'udp': ['ethernet_port'], 'tcp': ['ethernet_port'], 'can': ['can_controller'], 'can_fd': ['can_fd_controller'], 'can_xl': ['can_xl_controller'], 'lin': ['lin_channel'], 'flexray': ['flexray_controller'], 'most': ['most_interface'], 'canopen': ['can_controller'], 'j1939': ['can_controller'], 'isobus': ['can_controller'], 'uds': ['can_or_ethernet_interface'], 'xcp': ['can_or_ethernet_interface'], 'ccp': ['can_controller'], 'someip': ['ethernet_port'], 'someip_sd': ['ethernet_port'], 'doip': ['ethernet_port'], 'obd2': ['can_or_ethernet_interface'], 'avb': ['ethernet_port'], 'tsn': ['ethernet_port'], 'profinet': ['ethernet_port'], 'ethercat': ['ethercat_port'], 'ethernet_ip': ['ethernet_port'], 'modbus_tcp': ['ethernet_port'], 'modbus_rtu': ['rs485_port'], 'modbus_ascii': ['rs485_port'], 'profibus_dp': ['profibus_interface'], 'profibus_pa': ['profibus_interface'], 'devicenet': ['can_controller'], 'interbus': ['interbus_interface'], 'cc_link': ['cc_link_interface'], 'cc_link_ie': ['ethernet_port'], 'sercos_iii': ['ethernet_port'], 'powerlink': ['ethernet_port'], 'io_link': ['io_link_master_port'], 'io_link_wireless': ['wireless_interface'], 'opc_ua': ['ethernet_port'], 'opc_ua_pubsub': ['ethernet_port'], 'mqtt': ['ethernet_or_wireless_interface'], 'sparkplug_b': ['ethernet_port'], 'dds': ['ethernet_port'], 'ros2': ['ethernet_port'], 'arinc429': ['arinc429_interface'], 'afdx': ['afdx_ethernet_port'], 'mil_std_1553': ['mil1553_interface'], 'can_aerospace': ['can_controller'], 'spacewire': ['spacewire_interface'], 'tte': ['ethernet_port'], 'mvb': ['mvb_interface'], 'wtb': ['wtb_interface'], 'etb': ['ethernet_port'], 'trdp': ['ethernet_port'], 'nmea0183': ['rs422_port'], 'nmea2000': ['can_controller'], 'iec61162': ['serial_or_ethernet_interface'], 'bacnet_ip': ['ethernet_port'], 'bacnet_mstp': ['rs485_port'], 'bacnet_sc': ['ethernet_port'], 'knx_tp': ['knx_tp_interface'], 'knx_ip': ['ethernet_port'], 'knx_rf': ['wireless_interface'], 'lonworks': ['lonworks_interface'], 'dali': ['dali_interface'], 'm_bus': ['m_bus_interface'], 'wireless_m_bus': ['wireless_interface'], 'iec61850': ['ethernet_port'], 'mms': ['ethernet_port'], 'goose': ['ethernet_port'], 'sampled_values': ['ethernet_port'], 'dnp3': ['serial_or_ethernet_interface'], 'iec60870_5_101': ['serial_port'], 'iec60870_5_104': ['ethernet_port'], 'sunspec_modbus': ['ethernet_or_rs485_interface'], 'ocpp': ['ethernet_or_wireless_interface'], 'hart': ['hart_interface'], 'wirelesshart': ['wireless_interface'], 'foundation_fieldbus_h1': ['fieldbus_interface'], 'i2c': ['i2c_controller'], 'i3c': ['i3c_controller'], 'spi': ['spi_controller'], 'uart': ['serial_port'], 'rs232': ['rs232_port'], 'rs422': ['rs422_port'], 'rs485': ['rs485_port'], 'one_wire': ['one_wire_interface'], 'usb': ['usb_controller'], 'pcie': ['pcie_interface'], 'mipi_csi2': ['mipi_csi2_interface'], 'mipi_dsi': ['mipi_dsi_interface'], 'lvds': ['lvds_interface'], 'gpio': ['gpio_port'], 'pwm': ['pwm_output'], 'adc': ['analog_input'], 'dac': ['analog_output'], 'mqtt_sn': ['wireless_interface'], 'coap': ['ethernet_or_wireless_interface'], 'http': ['ethernet_or_wireless_interface'], 'websocket': ['ethernet_or_wireless_interface'], 'amqp': ['ethernet_or_wireless_interface'], 'wifi': ['wireless_interface'], 'bluetooth_le': ['wireless_interface'], 'zigbee': ['wireless_interface'], 'thread': ['wireless_interface'], 'matter': ['ethernet_or_wireless_interface'], 'lorawan': ['wireless_interface'], 'lte_m': ['wireless_interface'], 'nb_iot': ['wireless_interface'], '5g': ['wireless_interface'], 'uwb': ['wireless_interface'], 'nfc': ['wireless_interface'], 'rfid': ['wireless_interface'], 'profisafe': ['ethernet_or_profibus_interface'], 'cip_safety': ['ethernet_or_can_interface'], 'fsoe': ['ethercat_port'], 'opensafety': ['generic_network_interface'], 'generic_serial': ['serial_port'], 'generic_can': ['can_controller'], 'generic_ethernet': ['ethernet_port'], 'custom_udp': ['ethernet_or_wireless_interface'], 'custom_tcp': ['ethernet_or_wireless_interface'], 'custom_binary': ['generic_network_interface'], 'custom_text': ['generic_network_interface'], 'custom_protocol': ['generic_network_interface']}
+
+# Source-supported explicit legacy bindings; defaults remain industry neutral.
+EXPLICIT_STACK_VARIANTS = {'ip': [['ethernet', 'ip']], 'udp': [['ethernet', 'ip', 'udp']], 'tcp': [['ethernet', 'ip', 'tcp']], 'canopen': [['can', 'canopen']], 'j1939': [['can', 'j1939']], 'isobus': [['can', 'j1939', 'isobus']], 'uds': [['can', 'uds']], 'xcp': [['can', 'xcp']], 'ccp': [['can', 'ccp']], 'someip': [['ethernet', 'ip', 'udp', 'someip']], 'someip_sd': [['ethernet', 'ip', 'udp', 'someip_sd']], 'doip': [['ethernet', 'ip', 'tcp', 'doip']], 'obd2': [['can', 'uds', 'obd2']], 'avb': [['ethernet', 'avb']], 'tsn': [['ethernet', 'tsn']], 'profinet': [['ethernet', 'profinet']], 'ethercat': [['ethernet', 'ethercat']], 'ethernet_ip': [['ethernet', 'ip', 'udp', 'ethernet_ip']], 'modbus_tcp': [['ethernet', 'ip', 'tcp', 'modbus_tcp']], 'modbus_rtu': [['modbus_rtu']], 'modbus_ascii': [['modbus_ascii']], 'devicenet': [['can', 'devicenet']], 'cc_link_ie': [['ethernet', 'cc_link_ie']], 'sercos_iii': [['ethernet', 'sercos_iii']], 'powerlink': [['ethernet', 'powerlink']], 'opc_ua': [['ethernet', 'ip', 'tcp', 'opc_ua']], 'opc_ua_pubsub': [['ethernet', 'ip', 'udp', 'opc_ua_pubsub']], 'mqtt': [['ethernet', 'ip', 'tcp', 'mqtt']], 'sparkplug_b': [['ethernet', 'ip', 'tcp', 'mqtt', 'sparkplug_b']], 'dds': [['ethernet', 'ip', 'udp', 'dds']], 'ros2': [['ethernet', 'ip', 'udp', 'dds', 'ros2']], 'afdx': [['ethernet', 'ip', 'udp', 'afdx']], 'can_aerospace': [['can', 'can_aerospace']], 'tte': [['ethernet', 'tte']], 'etb': [['ethernet', 'etb']], 'trdp': [['ethernet', 'ip', 'udp', 'trdp']], 'nmea2000': [['can', 'nmea2000']], 'bacnet_ip': [['ethernet', 'ip', 'udp', 'bacnet_ip']], 'bacnet_sc': [['ethernet', 'ip', 'tcp', 'bacnet_sc']], 'knx_ip': [['ethernet', 'ip', 'udp', 'knx_ip']], 'iec61850': [['ethernet', 'iec61850']], 'mms': [['ethernet', 'ip', 'tcp', 'mms']], 'goose': [['ethernet', 'goose']], 'sampled_values': [['ethernet', 'sampled_values']], 'iec60870_5_104': [['ethernet', 'ip', 'tcp', 'iec60870_5_104']], 'sunspec_modbus': [['modbus_tcp', 'sunspec_modbus']], 'ocpp': [['ethernet', 'ip', 'tcp', 'ocpp']], 'coap': [['ethernet', 'ip', 'udp', 'coap']], 'http': [['ethernet', 'ip', 'tcp', 'http']], 'websocket': [['ethernet', 'ip', 'tcp', 'websocket']], 'amqp': [['ethernet', 'ip', 'tcp', 'amqp']], 'fsoe': [['ethernet', 'ethercat', 'fsoe']], 'custom_udp': [['ethernet', 'ip', 'udp', 'custom_udp']], 'custom_tcp': [['ethernet', 'ip', 'tcp', 'custom_tcp']]}
 
 
 def technology_definitions() -> list[dict[str, Any]]:
@@ -4394,6 +4448,158 @@ def _parameter_form_schema(technology_id: str, technology: dict[str, Any], rate_
                     source=sampled_values_rules.UCA,source_revision=sampled_values_rules.SOURCES[sampled_values_rules.UCA],
                     description='Actual serialized dataset sample bytes, separate BERASDU/APDU length and physical Ethernet MTU/linkoccupation. No universal1500byte applicationcap or8byte frame.')
         fields.extend(sampled_values_rules.fields())
+    if technology_id == 'zigbee':
+        fields=[item for item in fields if item['key']not in zigbee_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                for key in ('default','max'):item.pop(key,None)
+                item.update(min=0,integer=True,default_status='UNKNOWN',source=zigbee_rules.API,source_revision=zigbee_rules.SOURCES[zigbee_rules.API],description='Actual Zigbee applicationbytes; APSfragmentation/security/nodecapability separate127byte MACPSDU.')
+        fields.extend(zigbee_rules.fields())
+    if technology_id == 'xcp':
+        fields=[item for item in fields if item['key']not in xcp_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                for key in ('default','max'):item.pop(key,None)
+                item.update(min=0,integer=True,default_status='UNKNOWN',source=xcp_rules.AUTO,source_revision=xcp_rules.SOURCES[xcp_rules.AUTO],description='Actual XCP payload within negotiated CTO/DTO and qualifiedlowertransportbudget; not CAN/Ethernetdefault65535.')
+        fields.extend(xcp_rules.fields())
+    if technology_id == 'wtb':
+        fields=[item for item in fields if item['key']not in wtb_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                for key in ('default','max'):item.pop(key,None)
+                item.update(min=0,max=128,integer=True,default_status='UNKNOWN',source=wtb_rules.PAPER,source_revision=wtb_rules.SOURCES[wtb_rules.PAPER],description='Actual WTB usefulframebytes, separateDD/LC/SD/SZ/FCS/flags/stuffing; noEthernet payload.')
+        fields.extend(wtb_rules.fields())
+    if technology_id == 'wirelesshart':
+        fields=[item for item in fields if item['key']not in wirelesshart_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                for key in ('default','max'):item.pop(key,None)
+                item.update(min=0,default_status='UNKNOWN',source=wirelesshart_rules.DATA,source_revision=wirelesshart_rules.SOURCES[wirelesshart_rules.DATA],description='Actual WirelessHART applicationbytes, separate radio/frame/security/graph/hostpath; no127byte application default.')
+        fields.extend(wirelesshart_rules.fields())
+    if technology_id == 'wireless_m_bus':
+        fields=[item for item in fields if item['key']not in wireless_m_bus_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=wireless_m_bus_rules.OMS,source_revision=wireless_m_bus_rules.SOURCES[wireless_m_bus_rules.OMS],description='Actual wirelessM-Bus application data, separate DLL/ELL/TPL/security/CRC/linecoding/mode and direction. No universal100k/255 applicationframe.')
+        fields.extend(wireless_m_bus_rules.fields())
+    if technology_id == 'wifi':
+        fields=[item for item in fields if item['key']not in wifi_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=wifi_rules.KERNEL,source_revision=wifi_rules.SOURCES[wifi_rules.KERNEL],description='Actual application bytes, separate MSDU/MPDU/crypto/FCS/aggregation/peerlimits and selected radio generation. No1G/2304 universalframecap.')
+        fields.extend(wifi_rules.fields())
+    if technology_id == 'websocket':
+        fields=[item for item in fields if item['key']not in websocket_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=websocket_rules.BASE,source_revision=websocket_rules.SOURCES[websocket_rules.BASE],description='Actual decoded application message, independent WSframe extension/mask/reassembly/transport and operationalmemorylimit. No65535byte universalcap.')
+        fields.extend(websocket_rules.fields())
+    if technology_id == 'uwb':
+        fields=[item for item in fields if item['key']not in uwb_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=uwb_rules.DATA,source_revision=uwb_rules.SOURCES[uwb_rules.DATA],description='Actual application MAC data, separate complete PSDU/FCS/security/header/FEC/STS. No universal27M or1023 applicationcap.')
+        fields.extend(uwb_rules.fields())
+    if technology_id == 'usb':
+        fields=[item for item in fields if item['key']not in usb_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=usb_rules.USB2,source_revision=usb_rules.SOURCES[usb_rules.USB2],description='Actual applicationtransfer bytes, separate negotiated endpoint/packet/companion/hostschedule and USB4tunnel allocation. No480M/1024 universal rate/payload cap.')
+        fields.extend(usb_rules.fields())
+    if technology_id == 'uds':
+        fields=[item for item in fields if item['key']not in uds_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=uds_rules.DCM,source_revision=uds_rules.SOURCES[uds_rules.DCM],description='Actual diagnostic service data, separate request/subfunction/negative headers and selected CAN/DoIP/FlexRay/LIN transport N-SDU. No universal4095 byte UDS or CAN rate.')
+        fields.extend(uds_rules.fields())
+    if technology_id == 'udp':
+        fields=[item for item in fields if item['key']not in udp_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=udp_rules.USAGE,source_revision=udp_rules.SOURCES[udp_rules.USAGE],description='Actual UDP datagram data, not API buffers. IPv4 options, IPv6 extensions/jumbograms, actual path MTU and encapsulation determine limits; no Ethernet rate or universal65507 cap.')
+        fields.extend(udp_rules.fields())
+    if technology_id == 'uart':
+        fields=[item for item in fields if item['key']not in uart_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=uart_rules.PIC,source_revision=uart_rules.SOURCES[uart_rules.PIC],description='Actual application octets; distinct encoded characters, UART start/parity/stop periods, electrical bridge and host read chunks. No universal baud or message limit.')
+        fields.extend(uart_rules.fields())
+    if technology_id == 'tte':
+        fields=[item for item in fields if item['key']not in tte_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=tte_rules.SAE,source_revision=tte_rules.SOURCES[tte_rules.SAE],description='Actual serializeddataset/applicationbytes, separate actualEthernetframe/PHY/IFG andTT/RC/BE path. No globalTTE1Gbit/s or1500byte limit.')
+        fields.extend(tte_rules.fields())
+    if technology_id == 'tsn':
+        fields=[item for item in fields if item['key']not in tsn_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=tsn_rules.SCHED,source_revision=tsn_rules.SOURCES[tsn_rules.SCHED],description='Actual selectedstreamL2/application bytes, no universalTSN1500bytecap; ownqueueMaxSDU0inheritsactualMACmax, port/class/framing/guard independent.')
+        fields.extend(tsn_rules.fields())
+    if technology_id == 'trdp':
+        fields=[item for item in fields if item['key']not in trdp_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(min=0,integer=True,required=False,default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',simulation_relevant=False,
+                    source=trdp_rules.CODE,source_revision=trdp_rules.SOURCES[trdp_rules.CODE],description='Actual applicationencoded bytes. PD1432/MD65388 are selectedTCNOpen3.0 dataset limits; headers40/116,padding and IP/PHY constraints separate.')
+        fields.extend(trdp_rules.fields())
+    if technology_id == 'thread':
+        fields=[item for item in fields if item['key']not in thread_rules.REMOVED]
+        for item in fields:
+            if item['key']in('bitrate','payload_bytes'):
+                item.pop('default',None);item.pop('max',None)
+                item.update(default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',source=thread_rules.RADIO if item['key']=='bitrate'else thread_rules.OV,
+                    source_revision=thread_rules.SOURCES[thread_rules.RADIO if item['key']=='bitrate'else thread_rules.OV],description='Actual selected Thread PHY rate or serialized application bytes, separate whole127bytePSDU and1280byteIPv6/6LoWPAN fragmentation envelope.')
+            if item['key']=='bitrate':
+                item.update(default_status='PROPOSED_CONDITIONAL',conditional_defaults=[dict(when={'th_review_profile':'PUBLIC_BASELINE_2026','th_proposal_mode':'SOURCE_BASELINE','th_phy':'IEEE_802154_24GHZ_OQPSK'},value=250000,source=thread_rules.RADIO,source_revision=thread_rules.SOURCES[thread_rules.RADIO])])
+            if item['key']=='payload_bytes':item.update(min=0,integer=True,required=False,simulation_relevant=False)
+        fields.extend(thread_rules.fields())
+    if technology_id == 'tcp':
+        fields=[item for item in fields if item['key']not in tcp_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',source=tcp_rules.BASE,
+                    source_revision=tcp_rules.SOURCES[tcp_rules.BASE],description='Actual applicationstream bytes, no65535byte stream limit; independent segmentMSS/IP/reassembly and messageframing.')
+        fields.extend(tcp_rules.fields())
+    if technology_id == 'sunspec_modbus':
+        fields=[item for item in fields if item['key']not in sunspec_rules.REMOVED]
+        for item in fields:
+            if item['key']=='payload_bytes':
+                item.pop('default',None);item.pop('max',None)
+                item.update(default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',source=sunspec_rules.MODEL,
+                    source_revision=sunspec_rules.SOURCES[sunspec_rules.MODEL],description='Actual encoded application/model bytes, separate per-function register quantity and253-byte ModbusPDU.')
+        fields.extend(sunspec_rules.fields())
+    if technology_id == 'spi':
+        fields=[item for item in fields if item['key']not in spi_rules.REMOVED]
+        for item in fields:
+            if item['key']in('bitrate','payload_bytes'):
+                item.pop('default',None);item.pop('max',None)
+                item.update(default_status='UNKNOWN',parameter_origin='DEVICE_CONFIGURATION',source=spi_rules.NXP,source_revision=spi_rules.SOURCES[spi_rules.NXP],
+                    description='Actual selected SPI device clock or data bytes, separate whole transaction command/address/dummy/CS/ready envelope; no universal50MHz/65535-byte default.')
+            if item['key']=='payload_bytes':item.update(min=0,integer=True,required=False,simulation_relevant=False)
+        fields.extend(spi_rules.fields())
     if technology_id == 'sparkplug_b':
         fields=[item for item in fields if item['key']not in sparkplug_b_rules.REMOVED]
         for item in fields:

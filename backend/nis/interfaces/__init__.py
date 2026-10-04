@@ -1,10 +1,10 @@
 """HTTP, MCP and command-line entry points."""
 
-from ..models import Capability
+from backend.nis.models import Capability
 
 CAPABILITY = Capability(
     "interfaces", "External interfaces",
-    ("backend.app.api", "backend.engineering.api", "backend.simulator_engineering_mcp", "backend.simulator.standalone_cli"),
+    ("backend.nis.interfaces.http.simulation", "backend.nis.interfaces.http.engineering", "backend.nis.interfaces.mcp", "backend.nis.interfaces.cli.standalone"),
     "Stable HTTP, MCP and CLI boundaries around application services.",
 )
 __all__ = ["CAPABILITY"]

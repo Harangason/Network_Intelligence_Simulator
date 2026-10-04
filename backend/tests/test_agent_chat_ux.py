@@ -6,21 +6,33 @@ import time
 from uuid import uuid4
 import httpx
 import pytest
-from backend.agent_core.api.agent_response import AgentResponse, InteractiveQuestion, validate_response
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent, reasoning_workload_progress
-from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner, _context_for_reasoning, _is_semantic_fast_request, _is_structured_wizard_request, _no_think_messages
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.api.tool_contract import ToolResult
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools import conversation, proposal_service
-from backend.engineering.agent_tools.run_status import WizardExecutionTracker, extract_wizard_run_id, recover_interrupted_wizard_runs, restore_wizard_continuation_prompt
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.agent.api.agent_response import AgentResponse
+from backend.nis.agent.api.agent_response import InteractiveQuestion
+from backend.nis.agent.api.agent_response import validate_response
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
+from backend.nis.agent.core.engineering_agent import reasoning_workload_progress
+from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+from backend.nis.agent.orchestration.local_reasoner import _context_for_reasoning
+from backend.nis.agent.orchestration.local_reasoner import _is_semantic_fast_request
+from backend.nis.agent.orchestration.local_reasoner import _is_structured_wizard_request
+from backend.nis.agent.orchestration.local_reasoner import _no_think_messages
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.api.tool_contract import ToolResult
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools.run_status import WizardExecutionTracker
+from backend.nis.agent.tools.run_status import extract_wizard_run_id
+from backend.nis.agent.tools.run_status import recover_interrupted_wizard_runs
+from backend.nis.agent.tools.run_status import restore_wizard_continuation_prompt
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
 def test_large_tool_output_cannot_evict_the_user_query():
-    from backend.agent_core.orchestration.local_reasoner import _reasoning_messages
+    from backend.nis.agent.orchestration.local_reasoner import _reasoning_messages
     content = json.dumps({'success': True, 'data': {'signals': [{'id': str(i), 'name': 'Signal' * 100} for i in range(500)]}})
     original = [{'role': 'user', 'content': 'Routing fortsetzen.'},
                 {'role': 'tool', 'tool_call_id': 'call-1', 'content': content}]
@@ -32,7 +44,7 @@ def test_large_tool_output_cannot_evict_the_user_query():
 
 
 def test_problem_inventory_reads_facts_before_optional_ai_explanation():
-    from backend.agent_core.orchestration.capability_intent import problem_report_question
+    from backend.nis.agent.orchestration.capability_intent import problem_report_question
 
     assert problem_report_question('Zeige mir die Probleme') == 'LIST'
     assert problem_report_question('Warum?', 'Zeige mir die Probleme') == 'EXPLAIN'
@@ -113,7 +125,7 @@ def test_local_finding_explanation_uses_bounded_facts_without_tool_planning(monk
     assert 'tools' not in captured
     assert captured['options']['num_predict'] <= 420
     assert 'Clock-Stretching-Grenze fehlt.' in captured['messages'][1]['content']
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.interfaces.mcp.server import create_server
 
 
 def run(authority, operation):
@@ -246,7 +258,7 @@ def test_local_reasoner_keeps_user_query_and_native_tool_result_on_second_turn(m
 
 
 def test_native_schema_unwraps_mcp_request_and_malformed_model_arguments_are_repairable():
-    from backend.agent_core.orchestration.local_reasoner import _tool_parameters
+    from backend.nis.agent.orchestration.local_reasoner import _tool_parameters
     schema = {'type': 'object', 'properties': {'request': {'$ref': '#/$defs/Input'}}, 'required': ['request'],
         '$defs': {'Input': {'type': 'object', 'properties': {'hardware_id': {'type': 'string'}}, 'required': ['hardware_id']}}}
     assert _tool_parameters(schema) == {'type': 'object', 'properties': {'hardware_id': {'type': 'string'}}, 'required': ['hardware_id']}
@@ -353,9 +365,9 @@ def test_backend_restart_marks_only_the_old_process_wizard_as_recoverable(monkey
     assert recover_interrupted_wizard_runs(authority.project_id) == 0
 
     if same_pid:
-        monkeypatch.setattr('backend.engineering.agent_tools.run_status.SERVER_INSTANCE_ID', 'new-container-instance')
+        monkeypatch.setattr('backend.nis.agent.tools.run_status.SERVER_INSTANCE_ID', 'new-container-instance')
     else:
-        monkeypatch.setattr('backend.engineering.agent_tools.run_status.os.getpid', lambda: before['server_pid'] + 1)
+        monkeypatch.setattr('backend.nis.agent.tools.run_status.os.getpid', lambda: before['server_pid'] + 1)
     assert recover_interrupted_wizard_runs(authority.project_id) == 1
 
     recovered = WorkflowStatusService(authority.project_id).get(summary=True)['context']['agent_execution']
@@ -442,8 +454,8 @@ def test_conversation_heartbeat_only_renews_matching_run():
 
 
 def test_chat_worker_survives_disconnected_stream(monkeypatch):
-    from backend.app import create_app
-    from backend.engineering.agent_tools import api as agent_api_module
+    from backend.nis.app import create_app
+    from backend.nis.agent.tools import api as agent_api_module
 
     authority = ToolAuthority(f'chat-disconnect-{uuid4()}')
     wizard_run_id = str(uuid4())
@@ -582,7 +594,7 @@ def test_expiry_model_change_and_risk_review():
     run(authority, lambda: conversation.finish(start['run_id']))
     assert not run(authority, lambda: conversation.decide(finding['id'], 'ACCEPTED_RISK', '', True)).success
     assert run(authority, lambda: conversation.decide(finding['id'], 'ACCEPTED_RISK', 'Für den Strukturentwurf bewusst zurückgestellt.', True)).success
-    from backend.engineering.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import create_object
     assert run(authority, lambda: create_object('HardwareNode', {'name':'Review change', 'device_type':'ECU'})).success
     state = run(authority, conversation.inspect).data
     assert state['decisions'][finding['id']]['status'] == 'NEEDS_REVIEW'
@@ -643,8 +655,8 @@ def test_answer_preserves_workload_and_finding_action_is_structured():
 
 
 def test_human_edit_creates_new_validated_revision_and_survives_reload():
-    from backend.app import create_app
-    from backend.engineering.agent_tools.services import TOOLS
+    from backend.nis.app import create_app
+    from backend.nis.agent.tools.services import TOOLS
     authority = ToolAuthority(f'chat-edit-{uuid4()}')
     made = execute(authority,'generate_functions',Permission.GENERATE_PROPOSAL,{'prompt':'Erzeuge eine Funktion zur Temperaturüberwachung.',
         'new_hardware': {'name': 'ThermalController', 'device_type': 'EmbeddedController'},
@@ -670,7 +682,7 @@ def test_human_edit_creates_new_validated_revision_and_survives_reload():
 
 
 def test_explicit_single_function_keeps_quantity_and_generator_workflow():
-    from backend.engineering.repository import create_object
+    from backend.nis.infrastructure.persistence.repository import create_object
     authority = ToolAuthority(f'chat-function-count-{uuid4()}')
     hardware = run(authority, lambda: create_object('HardwareNode', {
         'name': 'VisionController', 'device_type': 'EmbeddedController'})).data
@@ -702,7 +714,7 @@ def test_function_without_controller_exposes_concrete_missing_assignment():
 
 
 def test_optional_mcp_question_can_be_skipped_and_resumed():
-    from backend.engineering.agent_tools.services import TOOLS
+    from backend.nis.agent.tools.services import TOOLS
     authority = ToolAuthority(f'optional-question-{uuid4()}')
     context = AgentContext(active_project_id=authority.project_id)
     started = run(authority, lambda: conversation.begin('Optionale Darstellung',context)).data

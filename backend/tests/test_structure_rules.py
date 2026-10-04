@@ -1,14 +1,12 @@
-from backend.engineering.structure_rules import (
-    adapt_structure_name,
-    equivalent_system_names,
-    infer_device_type,
-    is_placeholder_system_name,
-    normalize_hardware_name,
-    recommend_structure_name,
-    score_structure_parent,
-    semantic_name_signature,
-    semantic_name_similarity,
-)
+from backend.nis.engineering.structure.structure_rules import adapt_structure_name
+from backend.nis.engineering.structure.structure_rules import equivalent_system_names
+from backend.nis.engineering.structure.structure_rules import infer_device_type
+from backend.nis.engineering.structure.structure_rules import is_placeholder_system_name
+from backend.nis.engineering.structure.structure_rules import normalize_hardware_name
+from backend.nis.engineering.structure.structure_rules import recommend_structure_name
+from backend.nis.engineering.structure.structure_rules import score_structure_parent
+from backend.nis.engineering.structure.structure_rules import semantic_name_signature
+from backend.nis.engineering.structure.structure_rules import semantic_name_similarity
 
 
 def test_hardware_name_keeps_type_in_separate_field():

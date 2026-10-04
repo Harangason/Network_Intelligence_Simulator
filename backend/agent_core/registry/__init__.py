@@ -1,14 +1,4 @@
-from .generator_registry import GeneratorRegistry
-from .handler_registry import HandlerRegistry
-from .tool_registry import ToolRegistry
-from .validator_registry import ValidatorRegistry
-from .workload_registry import WorkloadTypeDefinition, WorkloadTypeRegistry
-
-__all__ = [
-    "GeneratorRegistry",
-    "HandlerRegistry",
-    "ToolRegistry",
-    "ValidatorRegistry",
-    "WorkloadTypeDefinition",
-    "WorkloadTypeRegistry",
-]
+"""Compatibility only; owner backend.nis.agent.registry."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.registry')

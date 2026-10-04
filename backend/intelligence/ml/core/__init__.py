@@ -1,1 +1,4 @@
-"""Core ML model, registry and schema primitives."""
+"""Compatibility only; owner backend.nis.intelligence.ml.core."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.intelligence.ml.core')

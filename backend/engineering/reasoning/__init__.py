@@ -1,1 +1,4 @@
-"""Deterministic engineering reasoning over the existing simulation and trace core."""
+"""Compatibility only; owner backend.nis.intelligence.engineering.reasoning."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.intelligence.engineering.reasoning')

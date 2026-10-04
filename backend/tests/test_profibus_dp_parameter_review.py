@@ -1,8 +1,8 @@
 """DP source-qualified timing and device evidence remain separate from PA/CAN."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import profibus_dp as P
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.profibus_dp import rules as P
 def actual():
  x={'dp_'+k:'synthetic-'+k for k in P.REQUIRED}
  x.update(bitrate_bps=9600,dp_version='V0',dp_parameter_set='ABB_CM592_AB281',dp_phy='RS485_TYPE_A',dp_role='SLAVE',dp_rate_agreed=True)

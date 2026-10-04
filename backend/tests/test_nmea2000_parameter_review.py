@@ -1,8 +1,8 @@
 """NMEA2000 native PGN/packet and explicitly qualified installation regressions."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import nmea2000 as N
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.nmea2000 import rules as N
 def actual(packet='FAST_PACKET',impl='TIMO_PINNED'):
  x={'n2_'+k:'synthetic-actual-'+k for k in N.REQUIRED}
  x.update(bitrate_bps=250000,n2_implementation=impl,n2_edition='3.000',n2_packet_class=packet,n2_role='ACTIVE',
@@ -87,8 +87,8 @@ def test_nmea2000_simma_settings_are_qualified_not_all_stacks_or_application_dea
  assert f['conditional_defaults'][0]['when']=={'n2_implementation':'SIMMA_1_3'}
  assert status({**actual(),'n2_sample_point_percent':90})=='VALID'
 def test_nmea2000_confirmed_iso_payload_custom_retry_and_claim_identity_preserved():
- from backend.engineering.workflow.service import WorkflowStatusService
- from backend.engineering.project_context import current_project_id
+ from backend.nis.workflow.services.service import WorkflowStatusService
+ from backend.nis.engineering.projects.project_context import current_project_id
  x={**actual('ISO_TP_BAM','SIMMA_1_3'),'payload_bytes':1785,'n2_data_bytes':1785,'n2_packet_frames':255,
   'n2_destination':255,'n2_retry_bound_ms':42.5,'n2_name_hex':'FEDCBA9876543210'}
  g={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}

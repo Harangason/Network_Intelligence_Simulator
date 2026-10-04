@@ -1,8 +1,8 @@
 """Negotiated PCIe values, source-qualified packet/credits and application isolation."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import pcie as P
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.pcie import rules as P
 
 def actual():
  x={'pcie_'+k:'synthetic-'+k for k in P.REQUIRED}
@@ -135,7 +135,7 @@ def test_pcie_foreign_rate_rejection_preserves_confirmed_negotiated_values():
 
 def test_pcie_invalid_large_tag_width_cannot_allocate_unbounded_exact_power():
  assert status({**actual(),'pcie_tag_bits':1000000000,'pcie_tag':1})=='INVALID'
- from backend.communication.technologies.core.components import _parameter_expression
+ from backend.nis.communication.core.components import _parameter_expression
  import math
  assert math.isnan(_parameter_expression({'ceiling':{'product':[17,1/16]}},{},exact=True))
  assert math.isnan(_parameter_expression({'power':[2,'width']},{'width':1000000000},exact=True))

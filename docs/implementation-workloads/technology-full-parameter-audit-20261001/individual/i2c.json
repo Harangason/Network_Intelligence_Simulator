@@ -2646,7 +2646,48 @@
       "meaning_and_applicability_review": "Actual standard/fast/fastplus/HS/UFm mode, no confirmation by baseline proposal.",
       "decision": "NATIVE_OR_DECLARED_CONFIGURATION",
       "parameter_source_verified": true,
-      "runtime_capacity_verified": false
+      "runtime_capacity_verified": false,
+      "consumer_after": {
+        "key": "i2c_mode",
+        "label": "i2c mode",
+        "type": "select",
+        "numeric": false,
+        "boolean": false,
+        "optional": false,
+        "parameter_origin": "STANDARD_PROFILE_PROPOSAL",
+        "default_status": "PROPOSED",
+        "source": "https://www.nxp.com/docs/en/user-guide/UM10204.pdf",
+        "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+        "description": "Standard-mode is a review proposal from UM10204, not confirmed device configuration.",
+        "scope": "device",
+        "options": [
+          "STANDARD",
+          "FAST",
+          "FAST_PLUS",
+          "HIGH_SPEED",
+          "ULTRA_FAST"
+        ],
+        "default": "STANDARD"
+      },
+      "consumer_followup": {
+        "scope": "Actual device editor now displays sourced STANDARD proposal, preserves unchanged confirmed FAST facts, and invalidates confirmation on change. STANDARD with 400k is rejected; explicit FAST with 400k is persisted. Device addresses, controller identity and timing bounds remain unconfirmed without installation evidence.",
+        "source_revision": "NXP UM10204 Rev7.0 2021-10-01 sections3/5/6/7 Tables10-15",
+        "evidence": [
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\browser-repair-backend-check.txt",
+            "sha256": "c1abd14fcc29835a0d11df8a1e580869affb278b4694753def5f5c4cbc3eaedb"
+          },
+          {
+            "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\browser-repair-corrected.txt",
+            "sha256": "c4a9cfed34ab7dff20c15f325509ee6cb9e02f06a62bb0cee5e616a3fb9839d3"
+          }
+        ],
+        "production_delivered": true,
+        "release": {
+          "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-e121e31e1908\\34d0edc85798\\receipt.json",
+          "sha256": "c0f85cdc4994751e4cff5e4e10560e6664c0c910b1347f7dee1374acd13c16e8"
+        }
+      }
     },
     {
       "key": "local_timing_evidence.master_node_id",
@@ -3952,5 +3993,23 @@
       "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\docs\\implementation-workloads\\technology-full-parameter-audit-20261001\\individual\\i2c-tests.xml",
       "sha256": "73c1cf1362972dd97ecd0c212493ef1a0acf00e8c8f880c1f04bbbc15b255601"
     }
-  }
+  },
+  "delivery": {
+    "status": "VERIFIED",
+    "tested_image": "sha256:4772553bf330ad2f8b4f74a67e1a35517a6d6dacb7ada9969a25fdc5f430874b",
+    "running_image": "sha256:4772553bf330ad2f8b4f74a67e1a35517a6d6dacb7ada9969a25fdc5f430874b",
+    "release": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\backend\\test-output\\release-gates\\delivery-e121e31e1908\\34d0edc85798\\receipt.json",
+      "sha256": "c0f85cdc4994751e4cff5e4e10560e6664c0c910b1347f7dee1374acd13c16e8"
+    },
+    "live_verification": {
+      "path": "I:\\PycharmProjects\\My_first_Network_Simulator\\work\\parameter-production-verification.json",
+      "sha256": "a54c11d1c7d6e12ccb653f1cffead3038a2ba7ec76eb130b89999fbad77e0207"
+    }
+  },
+  "remaining_not_certified": [
+    "Actual datasheets/pins/voltage/load/pullup/unique addresses, HS mixed-mode/load timing, reserved services and switch/buffer topology require installation evidence",
+    "Local bound validation sizes declared transaction clocks and HS entry only; not a byte-level ACK/address/arbitration/recovery state-machine simulator or electrical proof",
+    "Complete device/register/combined layouts, actual retry/stretch/competing-controller schedules, correlated E2E timing and safety acceptance are not inferred from default frequency"
+  ]
 }

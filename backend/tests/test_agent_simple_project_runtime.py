@@ -6,14 +6,17 @@ import json
 from copy import deepcopy
 from uuid import uuid4
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.api.tool_contract import Permission
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.runtime.service import EngineeringAssistantService
-from backend.engineering.agent_tools import conversation, model, proposal_service
-from backend.engineering.agent_tools.project_draft import parse_requirement
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.simulator_engineering_mcp.server import create_server
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.runtime.service import EngineeringAssistantService
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools import model as model
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools.project_draft import parse_requirement
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.interfaces.mcp.server import create_server
 
 
 PROMPT = 'Erstelle ein einfaches Projekt mit einem Controller, einem Druck Sensor und einem Ventil Aktor.'
@@ -82,8 +85,8 @@ def test_free_chat_project_proposal_and_reviewed_apply_are_real():
 
 
 def test_chat_http_review_and_apply_complete_the_persisted_goal(monkeypatch):
-    from backend.app import create_app
-    from backend.engineering.agent_tools import api as api_module
+    from backend.nis.app import create_app
+    from backend.nis.agent.tools import api as api_module
 
     class OfflineReasoner:
         async def next(self, *args):

@@ -1,12 +1,12 @@
 import "server-only";
 
-import type { SimulationJob } from "@/lib/types";
+import type { SimulationJob } from "@/shared/api/types";
 import {
   deleteProgramCache,
   pruneProgramCache,
   readProgramCache,
   writeProgramCache,
-} from "@/lib/server/program-cache";
+} from "@/shared/lib/program-cache";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

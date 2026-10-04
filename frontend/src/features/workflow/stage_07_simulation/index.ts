@@ -1,1 +1,1 @@
-export { ModelSimulationRunner } from "@/components/model-simulation-runner";
+export { ModelSimulationRunner } from "@/features/simulation/ui/model-simulation-runner";

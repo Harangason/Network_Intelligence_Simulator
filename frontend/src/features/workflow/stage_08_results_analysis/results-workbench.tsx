@@ -2,18 +2,18 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { getSimulation, listSimulations } from "@/lib/api";
-import { mergeSimulationResult } from "@/lib/simulation-result";
-import type { RuntimeMetrics, SimulationJob } from "@/lib/types";
+import { getSimulation, listSimulations } from "@/shared/api/api";
+import { mergeSimulationResult } from "@/features/simulation/lib/simulation-result";
+import type { RuntimeMetrics, SimulationJob } from "@/shared/api/types";
 import {
   getWorkflowSimulationSnapshot,
   getWorkflowSnapshots,
   setWorkflowContext,
   type AnalysisSnapshot,
   type SimulationSnapshot,
-} from "@/lib/workflow-api";
-import { useWorkflowRefresh } from "@/lib/use-workflow-refresh";
-import { withProjectParam } from "@/lib/user-settings";
+} from "@/features/workflow/lib/workflow-api";
+import { useWorkflowRefresh } from "@/features/workflow/lib/use-workflow-refresh";
+import { withProjectParam } from "@/features/settings/lib/user-settings";
 
 export function ResultsWorkbench({ initialProjectId = "" }: { initialProjectId?: string }) {
   const [snapshots, setSnapshots] = useState<SimulationSnapshot[]>([]);

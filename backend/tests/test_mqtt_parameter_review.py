@@ -1,8 +1,8 @@
 """MQTT revision, stream binding, framing, sessions and directional QoS regressions."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import mqtt as MQ
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.mqtt import rules as MQ
 
 def actual(version='V5_0'):
     x={'mq_'+k:'synthetic-actual-'+k for k in MQ.REQUIRED}
@@ -207,8 +207,8 @@ def test_mqtt5_redelivery_requires_reconnect_existing_session_original_id_and_du
     assert status({**actual('V3_1_1'),'mq_packet_kind':'AUTH'})=='INVALID'
 
 def test_mqtt_confirmed_topics_sessions_and_zero_keepalive_survive_foreign_defaults():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x={**publish(topic='\ufeffPrüfer/🌡'),'mq_keepalive_s':0,'mq_effective_keepalive_s':0,
         'mq_session_expiry_s':4294967295,'mq_packet_id':65535}
     group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}

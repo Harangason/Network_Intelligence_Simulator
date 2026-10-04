@@ -1,10 +1,10 @@
 import asyncio
 import pytest
-from backend.engineering.reasoning.engine import EngineeringReasoningEngine
-from backend.engineering.agent_tools.analysis import window
-from backend.agent_core.api.tool_contract import ToolResult
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent
+from backend.nis.intelligence.engineering.reasoning.engine import EngineeringReasoningEngine
+from backend.nis.agent.tools.analysis import window
+from backend.nis.agent.api.tool_contract import ToolResult
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
 
 
 def test_gateway_segments_do_not_count_as_route_changes():
@@ -40,7 +40,7 @@ def test_explicit_connection_overrides_create_entry_mode():
 def test_import_session_keeps_all_records_and_is_project_scoped(tmp_path, monkeypatch):
     import json
     from flask import Flask
-    from backend.app.trace_import import trace_import_api
+    from backend.nis.interfaces.http.trace_import import trace_import_api
     monkeypatch.setenv('SIMULATOR_SAVED_ROOT', str(tmp_path))
     app = Flask(__name__)
     app.register_blueprint(trace_import_api)
@@ -72,9 +72,9 @@ def test_trace_analysis_stops_at_complete_page_without_continuation_loop():
 
 
 def test_mcp_invalid_input_has_field_and_schema():
-    from backend.agent_core.api.mcp_client import EngineeringMCPClient
-    from backend.engineering.agent_tools.runtime import ToolAuthority
-    from backend.simulator_engineering_mcp.server import create_server
+    from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+    from backend.nis.agent.tools.runtime import ToolAuthority
+    from backend.nis.interfaces.mcp.server import create_server
     async def check():
         async with EngineeringMCPClient(create_server(ToolAuthority('industry60-test'))) as client:
             result = await client.call('calculate_message_size', {'technology':'CAN_FD','payload_bytes':-2})
@@ -84,8 +84,8 @@ def test_mcp_invalid_input_has_field_and_schema():
 
 def test_raw_mcp_input_errors_are_structured():
     from mcp import Client
-    from backend.engineering.agent_tools.runtime import ToolAuthority
-    from backend.simulator_engineering_mcp.server import create_server
+    from backend.nis.agent.tools.runtime import ToolAuthority
+    from backend.nis.interfaces.mcp.server import create_server
     async def check():
         async with Client(create_server(ToolAuthority('industry60-test'))) as client:
             response = await client.call_tool('calculate_message_size', {'request':{'technology':'CAN_FD','payload_bytes':-2}})
@@ -99,7 +99,7 @@ def test_mdf_session_does_not_truncate_supported_channels(tmp_path, monkeypatch)
     import numpy as np
     from asammdf import MDF, Signal
     from flask import Flask
-    from backend.app.trace_import import trace_import_api
+    from backend.nis.interfaces.http.trace_import import trace_import_api
     monkeypatch.setenv('SIMULATOR_SAVED_ROOT', str(tmp_path / 'saved'))
     path = tmp_path / 'long.mf4'
     with MDF(version='4.10') as mdf:

@@ -1,11 +1,9 @@
 from pathlib import Path
 
-from backend.app.config import (
-    BACKEND_ROOT,
-    SIMULATOR_ROOT,
-    backend_root_for,
-    runtime_root_for,
-)
+from backend.nis.infrastructure.paths import BACKEND_ROOT
+from backend.nis.infrastructure.paths import SIMULATOR_ROOT
+from backend.nis.infrastructure.paths import backend_root_for
+from backend.nis.infrastructure.paths import runtime_root_for, storage_paths_for
 
 
 def test_backend_paths_are_relative_to_the_app_package() -> None:
@@ -30,3 +28,9 @@ def test_runtime_directory_can_be_overridden() -> None:
         BACKEND_ROOT,
         {"SIMULATOR_RUNTIME_ROOT": str(configured_path)},
     ) == configured_path.resolve()
+
+
+def test_vercel_all_storage_classes_use_writable_tmp_directory() -> None:
+    paths = storage_paths_for(Path("/var/task"), {"VERCEL": "1"})
+    assert paths.data == Path("/tmp/communication-simulator/data")
+    assert paths.artifacts == Path("/tmp/communication-simulator/artifacts")

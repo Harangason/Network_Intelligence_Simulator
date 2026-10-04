@@ -5,14 +5,13 @@ import unittest
 from dataclasses import replace
 from pathlib import Path
 
-from bus_technologies import BUILTIN_TECHNOLOGIES
-from standalone_cli import (
-    InteractiveStandaloneCli,
-    StandaloneCliRunner,
-    StandaloneSimulationOptions,
-    TechnologyCatalogMenu,
-    domain_for_technology,
-)
+from backend.nis.simulation.bus_technologies import BUILTIN_TECHNOLOGIES
+from backend.tests.native_transport_fixtures import lin_design
+from backend.nis.interfaces.cli.standalone import InteractiveStandaloneCli
+from backend.nis.interfaces.cli.standalone import StandaloneCliRunner
+from backend.nis.interfaces.cli.standalone import StandaloneSimulationOptions
+from backend.nis.interfaces.cli.standalone import TechnologyCatalogMenu
+from backend.nis.interfaces.cli.standalone import domain_for_technology
 
 
 class TechnologyCatalogMenuTests(unittest.TestCase):
@@ -35,6 +34,17 @@ class TechnologyCatalogMenuTests(unittest.TestCase):
 
 
 class StandaloneSimulationOptionsTests(unittest.TestCase):
+    def test_native_options_reject_foreign_fields_and_conflicting_clock(self) -> None:
+        options = StandaloneSimulationOptions(technology='lin', industry='generic_networking',
+            output_dir=Path('test'), bitrate=19200, technology_parameters=lin_design())
+        before = dict(options.technology_parameters)
+        self.assertEqual(options.to_config()['networks'][0]['lin_bitrate_bps'], 19200)
+        self.assertEqual(options.technology_parameters, before)
+        with self.assertRaisesRegex(ValueError, 'TECHNOLOGY_PARAMETER_NOT_APPLICABLE'):
+            replace(options, technology_parameters={**before, 'eth_vlan_tags': 0}).to_config()
+        with self.assertRaisesRegex(ValueError, 'TECHNOLOGY_PARAMETERS_INVALID'):
+            replace(options, technology_parameters={**before, 'lin_bitrate_bps': 9600}).to_config()
+
     def test_options_create_hardware_port_interface_and_fault_model(self) -> None:
         options = StandaloneSimulationOptions(
             technology="arinc429",
@@ -126,6 +136,9 @@ class StandaloneSimulationOptionsTests(unittest.TestCase):
             self.assertFalse((Path(temp_dir) / "traces" / "universal_trace.jsonl").exists())
 
             options = replace(options, technology="lin", industry="automotive")
+            with self.assertRaisesRegex(ValueError, "TIMING_UNVERIFIED"):
+                StandaloneCliRunner().run(options)
+            options = replace(options, technology_parameters=lin_design())
             result = StandaloneCliRunner().run(options)
 
             self.assertEqual(result["status"], "completed")

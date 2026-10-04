@@ -1,3 +1,4 @@
-from .engine import SignalNoiseEngine
-
-__all__ = ["SignalNoiseEngine"]
+"""Compatibility only; owner backend.nis.simulation.signals.noise."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals.noise')

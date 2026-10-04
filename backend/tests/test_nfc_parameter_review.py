@@ -1,8 +1,8 @@
 """NFC role/firmware/RF/host isolation and transaction-boundary regressions."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import nfc as NF
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.nfc import rules as NF
 
 def actual(protocol='NFC_A',operation='READER_WRITER',patch=0x11):
     x={'nf_'+k:'synthetic-actual-'+k for k in NF.REQUIRED}
@@ -187,8 +187,8 @@ def test_nfc_role_supply_disjoint_io_rail_and_actual_field_qualification():
     x['nf_mode']='ACTIVE';x['nf_field_a_m']=8;assert status(x)=='INVALID'
 
 def test_nfc_confirmed_custom_application_distance_host_and_firmware_survive_rejected_foreign_rate():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x={**nci(),'payload_bytes':6000,'nf_operating_distance_mm':12.5}
     group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}
     parameters={'technology':'nfc','technology_parameters':{'nfc':group}}

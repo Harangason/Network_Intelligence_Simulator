@@ -8,9 +8,12 @@ import pytest
 from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 
-from backend.engineering.agent_tools.documents import extract_document, MAX_TEXT_CHARS, MAX_FILE_BYTES
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.orchestration.local_reasoner import LocalEngineeringReasoner, _context_for_reasoning
+from backend.nis.agent.tools.documents import extract_document
+from backend.nis.agent.tools.documents import MAX_TEXT_CHARS
+from backend.nis.agent.tools.documents import MAX_FILE_BYTES
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.orchestration.local_reasoner import LocalEngineeringReasoner
+from backend.nis.agent.orchestration.local_reasoner import _context_for_reasoning
 
 
 def pdf_document(text='LIN Zyklus: 50 ms'):
@@ -67,7 +70,7 @@ def test_truncation_is_explicit():
 
 def test_preview_endpoint_does_not_start_a_conversation_or_agent(monkeypatch):
     from flask import Flask
-    from backend.engineering.agent_tools import api
+    from backend.nis.agent.tools import api as api
     def forbidden(*args, **kwargs):
         pytest.fail('Preview must not run inference or modify conversation/model')
     monkeypatch.setattr(api.conversation, 'begin', forbidden)

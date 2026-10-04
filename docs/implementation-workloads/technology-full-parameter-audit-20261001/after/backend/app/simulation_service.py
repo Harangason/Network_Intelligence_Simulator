@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 import copy
+import json
 import os
 import re
 import sys
 from pathlib import Path
+from threading import RLock
 from typing import Any
 
 from .config import SIMULATOR_ROOT
@@ -70,8 +72,36 @@ class SimulationService:
     def __init__(self) -> None:
         self.simulator = CommunicationSimulator()
         self.runtime_load_monitor = RuntimeBusLoadMonitor()
+        self._catalog_lock = RLock()
+        self._catalog_snapshot = None
 
     def catalog(self) -> dict[str, Any]:
+        # Callers may edit their result without editing the registry or the
+        # HTTP snapshot shared by concurrent requests.
+        return copy.deepcopy(self._catalog_entry()[2])
+
+    def catalog_json(self) -> bytes:
+        """Serve the complete registry without serializing 14k fields per read."""
+        return self._catalog_entry()[3]
+
+    def _catalog_entry(self):
+        with self._catalog_lock:
+            while True:
+                registry = COMMUNICATION_TECHNOLOGY_REGISTRY
+                revision = registry.revision
+                cached = self._catalog_snapshot
+                if cached is not None and cached[0] is registry and cached[1] == revision:
+                    return cached
+                data = self._build_catalog()
+                encoded = json.dumps(data, ensure_ascii=False, allow_nan=False,
+                                     separators=(',', ':')).encode('utf-8')
+                # Onboarding can replace a generated pack while we build.
+                # Publish only a snapshot of one unchanged registry revision.
+                if registry is COMMUNICATION_TECHNOLOGY_REGISTRY and revision == registry.revision:
+                    self._catalog_snapshot = (registry, revision, data, encoded)
+                    return self._catalog_snapshot
+
+    def _build_catalog(self) -> dict[str, Any]:
         profiles = {profile["id"]: profile for profile in COMMUNICATION_TECHNOLOGY_REGISTRY.profiles()}
         domains: list[dict[str, Any]] = []
         for model_type in MODEL_TYPES:
@@ -103,12 +133,13 @@ class SimulationService:
                         device_field['default'] = technology['parameter_defaults_review']['values']['bitrate_bps']
                 technologies.append(technology)
             domains.append({**copy.deepcopy(model_type), "technologies": technologies})
+        summary = COMMUNICATION_TECHNOLOGY_REGISTRY.summary()
         return {
-            "technology_count": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["technology_count"],
+            "technology_count": summary["technology_count"],
             "domains": domains,
             "formats": sorted(SUPPORTED_STANDALONE_FORMATS),
-            "layers": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["layers"],
-            "implementation_status": COMMUNICATION_TECHNOLOGY_REGISTRY.summary()["implementation_status"],
+            "layers": summary["layers"],
+            "implementation_status": summary["implementation_status"],
             "core_model_types": ["HardwareNode", "HardwareInterface", "FunctionalInterface", "TechnologyBinding", "TransportUnit", "PayloadElement"],
         }
 

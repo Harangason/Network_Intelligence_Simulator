@@ -1,9 +1,9 @@
 """Industry identity must come from the requirement or an explicit selection."""
 import pytest
 
-from backend.engineering.requirement_expansion_modules.resolution import choose_domain
-from backend.engineering.agent_tools.generation import expand
-from backend.engineering.agent_tools.generation import functions
+from backend.nis.engineering.requirement_expansion_modules.resolution import choose_domain
+from backend.nis.agent.tools.generation import expand
+from backend.nis.agent.tools.generation import functions
 
 
 @pytest.mark.parametrize('requirement', [

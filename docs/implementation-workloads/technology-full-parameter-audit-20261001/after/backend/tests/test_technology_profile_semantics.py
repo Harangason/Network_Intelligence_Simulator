@@ -15,6 +15,26 @@ LIN_CONTEXT = {**{'lin_'+key: 'synthetic-project-'+key for key in
     'lin_node_role':'COMMANDER','lin_frame_kind':'UNCONDITIONAL','lin_bitrate_bps':19200}
 
 
+@pytest.mark.parametrize('technology', [item['id'] for item in REGISTRY.profiles()])
+def test_validation_reads_definitions_without_mutating_registry_or_inputs(technology):
+    from copy import deepcopy
+    before = REGISTRY.profile(technology)
+    values = {'unrelated_project_control': {'nested': ['retained']}}
+    original = deepcopy(values)
+    first = REGISTRY.validate_parameters(technology, values)
+    second = REGISTRY.validate_parameters(technology, values)
+    assert first == second
+    assert values == original
+    assert REGISTRY.profile(technology) == before
+    # Public schemas and resolved transport profiles must remain independent.
+    exported = REGISTRY.profile(technology)
+    exported['parameter_schema'].clear()
+    rate = REGISTRY.rate_profile(technology)
+    rate['parameter_schema'].clear()
+    assert REGISTRY.profile(technology) == before
+    assert REGISTRY.rate_profile(technology)['parameter_schema']
+
+
 
 def codes(result: dict) -> set[str]:
     return {item["code"] for item in result["findings"]}
@@ -104,7 +124,7 @@ def test_audit_reports_legacy_invalid_lin_binding() -> None:
         "binding_id": "lin-legacy", "technology_id": "LIN", "parameters": {"bitrate_bps": 2_000_000},
     }])
     assert findings[0]["binding_id"] == "lin-legacy"
-    assert findings[0]["code"] == "TECHNOLOGY_RATE_MODEL_MISMATCH"
+    assert findings[0]["code"] == "TECHNOLOGY_PARAMETER_OUT_OF_RANGE"
 
 
 @pytest.mark.parametrize(("technology", "category", "mechanism"), [
@@ -183,7 +203,7 @@ def test_parameter_validation_and_audit_api() -> None:
         "technology": "LIN", "parameters": {"bitrate_bps": 2_000_000},
     })
     assert invalid.status_code == 422
-    assert invalid.get_json()["findings"][0]["code"] == "TECHNOLOGY_RATE_MODEL_MISMATCH"
+    assert invalid.get_json()["findings"][0]["code"] == "TECHNOLOGY_PARAMETER_OUT_OF_RANGE"
     audit = client.post("/api/technologies/audit", json={"bindings": [{
         "id": "legacy-lin", "technology": "LIN", "parameters": {"bitrate_bps": 2_000_000},
     }]})

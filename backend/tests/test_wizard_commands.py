@@ -6,16 +6,21 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.api.agent_response import AgentResponse, InteractiveQuestion
-from backend.agent_core.api.tool_contract import Permission, ToolResult
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent
-from backend.engineering.agent_tools import conversation
-from backend.engineering.agent_tools.run_status import WizardExecutionTracker, recover_interrupted_wizard_runs
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.agent_tools.wizard_commands import WizardCommand, resolve_request
-from backend.engineering.workflow.models import WORKFLOW_STEPS
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.agent.api.agent_response import AgentResponse
+from backend.nis.agent.api.agent_response import InteractiveQuestion
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.api.tool_contract import ToolResult
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools.run_status import WizardExecutionTracker
+from backend.nis.agent.tools.run_status import recover_interrupted_wizard_runs
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.tools.wizard_commands import WizardCommand
+from backend.nis.agent.tools.wizard_commands import resolve_request
+from backend.nis.workflow.services.models import WORKFLOW_STEPS
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
 def invoke(authority, fn):
@@ -129,7 +134,7 @@ def test_structured_question_answer_survives_wizard_navigation(request_case):
 def test_restart_recovers_execution_and_unexpired_conversation_lease(request_case, monkeypatch):
     accepted = start(request_case)
     authority, context, _, _ = request_case
-    monkeypatch.setattr('backend.engineering.agent_tools.run_status.SERVER_INSTANCE_ID', 'new-test-worker')
+    monkeypatch.setattr('backend.nis.agent.tools.run_status.SERVER_INSTANCE_ID', 'new-test-worker')
     assert recover_interrupted_wizard_runs(authority.project_id) == 1
     state = invoke(authority, conversation.read).data
     assert state['run_id'] is None
@@ -153,7 +158,7 @@ def test_restart_releases_lease_after_ready_checkpoint(request_case, monkeypatch
     before = invoke(authority, conversation.read).data
     assert before['run_id'] == accepted['run_id']
 
-    monkeypatch.setattr('backend.engineering.agent_tools.run_status.SERVER_INSTANCE_ID', 'new-ready-worker')
+    monkeypatch.setattr('backend.nis.agent.tools.run_status.SERVER_INSTANCE_ID', 'new-ready-worker')
     assert recover_interrupted_wizard_runs(authority.project_id) == 0
     ready = invoke(authority, lambda: WorkflowStatusService(authority.project_id).get(summary=True)).data
     assert ready['context']['agent_execution']['state'] == 'READY_TO_CONTINUE'
@@ -273,7 +278,7 @@ def test_amendment_creates_revision_and_preserves_base_request(request_case):
 
 
 def test_amendment_replaces_device_connections_and_specifications_in_effective_header():
-    from backend.engineering.agent_tools.wizard_commands import effective_wizard_prompt
+    from backend.nis.agent.tools.wizard_commands import effective_wizard_prompt
     old = {'Geräteanschlüsse': {'RaspberryPi': 'SPI'},
            'Bestätigte-Geräteanschlüsse': {'RaspberryPi': ['SPI']},
            'Geräte-Spezifikationen': {'Sensor1': {'resolution': 1}}}
@@ -426,8 +431,8 @@ def test_refinement_decision_does_not_regenerate_or_implicitly_confirm_on_resume
 
 
 def test_superseded_approved_proposal_cannot_be_applied_or_reviewed(monkeypatch):
-    from backend.engineering.agent_tools import proposal_service
-    from backend.engineering.db import ConcurrentUpdateError
+    from backend.nis.agent.tools import proposal_service as proposal_service
+    from backend.nis.infrastructure.persistence.db import ConcurrentUpdateError
     contract = {'status': 'APPROVED', 'replacement_proposal_id': 'new-proposal', 'revision': 'approved-revision'}
     monkeypatch.setattr(proposal_service.legacy, 'get_proposal', lambda _: {'engineering_contract': deepcopy(contract)})
     monkeypatch.setattr(proposal_service, 'envelope', lambda row: row['engineering_contract'])
@@ -438,8 +443,8 @@ def test_superseded_approved_proposal_cannot_be_applied_or_reviewed(monkeypatch)
 
 
 def test_chat_command_receipt_is_persisted_and_duplicate_does_not_start_worker(request_case, monkeypatch):
-    from backend.app import create_app
-    from backend.engineering.agent_tools import api
+    from backend.nis.app import create_app
+    from backend.nis.agent.tools import api as api
     calls = []
     class Agent:
         def __init__(self, *args, **kwargs):
@@ -482,7 +487,7 @@ def test_migrated_legacy_request_preserves_applied_model(request_case, monkeypat
 
 
 def test_cancel_requires_current_typed_request_revision(request_case):
-    from backend.app import create_app
+    from backend.nis.app import create_app
     accepted = start(request_case)
     authority, _, command, _ = request_case
     client = create_app(testing=True).test_client()

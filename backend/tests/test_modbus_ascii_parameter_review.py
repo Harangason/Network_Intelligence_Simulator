@@ -1,8 +1,8 @@
 """Source-specific ASCII framing, serial timing, function limits and SQL values."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import modbus_ascii as MA
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.modbus_ascii import rules as MA
 
 def actual():
     x={'ma_'+k:'synthetic-actual-'+k for k in MA.REQUIRED}
@@ -165,8 +165,8 @@ def test_ascii_cable_rate_wiring_and_tap_bounds_do_not_apply_global1000m():
     assert status({**x,'ma_cable':'CAT5','ma_trunk_m':601})=='INVALID'
 
 def test_ascii_confirmed_nondefault_baud_parity_timer_survive_rejected_isolated_sql_edit():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x={**actual(),'bitrate':9600,'ma_parity':'NONE','ma_stop_bits':2,'ma_interchar_timeout_ms':4200,
       'ma_timer_source':'synthetic-WAN-timer','ma_exchange':'UNICAST','ma_destination_address':17}
     group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}

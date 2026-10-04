@@ -3,7 +3,8 @@ import os
 
 import pytest
 
-from backend.engineering.physical_ports import _free_port_rebindings, materialize_physical_ports
+from backend.nis.engineering.network.physical_ports import _free_port_rebindings
+from backend.nis.engineering.network.physical_ports import materialize_physical_ports
 
 
 def test_spare_channel_rebind_preserves_physical_identity_and_rejects_aliases():
@@ -29,8 +30,8 @@ def test_spare_channel_rebind_preserves_physical_identity_and_rejects_aliases():
 @pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_URL'), reason='Requires separate test SQL database')
 def test_api_attachment_retains_channel_reload_and_rolls_back_failure(monkeypatch):
     from backend.tests.test_engineering_api import _client
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.models import EngineeringValidationError
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.domain.vocabulary import EngineeringValidationError
 
     client = _client()
     nodes = []

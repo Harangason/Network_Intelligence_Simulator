@@ -5,8 +5,9 @@ import uuid
 
 import pytest
 
-from backend.app import create_app
-from backend.engineering.db import close_pool, get_connection
+from backend.nis.app import create_app
+from backend.nis.infrastructure.persistence.db import close_pool
+from backend.nis.infrastructure.persistence.db import get_connection
 
 
 pytestmark = pytest.mark.skipif(

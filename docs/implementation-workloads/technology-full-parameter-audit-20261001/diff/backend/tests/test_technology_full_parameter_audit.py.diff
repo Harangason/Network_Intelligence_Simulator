@@ -2871,11 +2871,11 @@
 +    upper={'bitrate':100000000,'duplex':'FULL','payload_bytes':17,'afdx_lmax_frame_bytes':64}
 +    result=registry.validate_parameters('afdx',upper)
 +    assert result['status']=='VALID'and result['validation_scope']=='DECLARED_PROFILE_PARAMETERS'
-+    assert result['unverified_stack_layers']==['ip']
++    assert result['unverified_stack_layers']==['ip','udp']
 +    assert result['stack_parameter_completeness']=='UNVERIFIED'
 +    configured={**upper,**IP_ACTUAL,'ip_ttl':64}
 +    result=registry.validate_parameters('afdx',configured)
-+    assert result['status']=='VALID'and result['unverified_stack_layers']==[]
++    assert result['status']=='VALID'and result['unverified_stack_layers']==['udp']
 +    assert registry.validate_parameters('afdx',{**configured,'ip_hop_limit':64})['status']=='INVALID'
 +    assert registry.validate_parameters('afdx',{**upper,'ip_version':'IPv4'})['status']=='UNVERIFIED'
 +
@@ -7379,7 +7379,23 @@
  
  
  def test_http_schema_is_registered_profile_schema_for_every_technology():
-@@ -25,6 +7394,9 @@
+@@ -10,6 +7379,15 @@
+     for profile in registry.profiles():
+         expected = [{**spec, 'key': PARAMETER_UI_ALIASES.get(key, key)}
+                     for key, spec in profile['parameter_schema'].items() if spec.get('label')]
++        for field in expected:
++            if (field.get('integer') or field.get('type') == 'integer') and any(
++                isinstance(field.get(key), int) and abs(field[key]) > 2**53 - 1 for key in ('min', 'max', 'minimum', 'maximum')):
++                field['numeric_encoding'] = 'DECIMAL_STRING'
++                for target, keys in (('min', ('min', 'minimum')), ('max', ('max', 'maximum'))):
++                    value = next((field[key] for key in keys if field.get(key) is not None), None)
++                    if value is not None:
++                        field['decimal_' + target] = str(value)
++                        field.pop(target, None)
+         assert SimulationService._parameter_schema(profile['id'], profile) == expected
+         assert all(field.get('parameter_origin') and field.get('source') for field in expected)
+ 
+@@ -25,6 +7403,9 @@
      assert len(device) == 9
      assert all(field['parameter_origin'] == 'DEVICE_CONFIGURATION' and 'default' not in field for field in device)
      assert registry.profile('5g')['capacity_evidence']['status'] == 'MODEL_MISSING'
@@ -7389,7 +7405,7 @@
      assert not {'arbitration_bitrate', 'data_bitrate', 'sample_point_percent', 'duplex', 'mtu_bytes', 'vlan_id'} & {field['key'] for field in fields}
  
  
-@@ -35,6 +7407,650 @@
+@@ -35,6 +7416,650 @@
              assert field['source_revision'] == 'NIS_SCENARIO_POLICY_V1'
              assert not field['required']
              assert field['default_status'] in {'PROPOSED', 'UNKNOWN'}
@@ -8040,7 +8056,7 @@
  
  
  def test_5g_radio_settings_validate_types_modes_and_counts_without_guessing():
-@@ -50,3 +8066,95 @@
+@@ -50,3 +8075,95 @@
      changed = registry.change_parameters('5g', 'can', {'nr_direction': 'UL', 'note': 'preserve'})
      assert changed['parameters'] == {'note': 'preserve'}
      assert changed['invalidated_fields'] == ['nr_direction']

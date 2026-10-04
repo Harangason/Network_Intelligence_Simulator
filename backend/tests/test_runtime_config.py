@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from backend.app.runtime_config import runtime_settings
+from backend.nis.app.runtime_config import runtime_settings
 
 
 def test_runtime_defaults_scale_for_workstation(monkeypatch) -> None:
-    monkeypatch.setattr("backend.app.runtime_config.os.cpu_count", lambda: 32)
+    monkeypatch.setattr("backend.nis.app.runtime_config.os.cpu_count", lambda: 32)
     for name in ("WAITRESS_THREADS", "SIMULATION_WORKERS", "SIMULATION_EXECUTOR"):
         monkeypatch.delenv(name, raising=False)
 
@@ -16,7 +16,7 @@ def test_runtime_defaults_scale_for_workstation(monkeypatch) -> None:
 
 
 def test_runtime_settings_are_bounded(monkeypatch) -> None:
-    monkeypatch.setattr("backend.app.runtime_config.os.cpu_count", lambda: 8)
+    monkeypatch.setattr("backend.nis.app.runtime_config.os.cpu_count", lambda: 8)
     monkeypatch.setenv("WAITRESS_THREADS", "999")
     monkeypatch.setenv("SIMULATION_WORKERS", "999")
     monkeypatch.setenv("SIMULATION_EXECUTOR", "invalid")

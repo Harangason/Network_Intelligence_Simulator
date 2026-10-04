@@ -6,14 +6,18 @@ import uuid
 
 import pytest
 
-from backend.app import create_app
-from backend.engineering import api as api_module
-from backend.engineering.db import close_pool, get_connection
-from backend.engineering.project_context import (
-    activate_project, reset_project, current_project_id,
-    compact_context_project_id, normalize_context_project_id,
-)
-from backend.engineering.workflow.service import edit_token, check_edit_token, WorkflowConflictError
+from backend.nis.app import create_app
+from backend.nis.interfaces.http import engineering as api_module
+from backend.nis.infrastructure.persistence.db import close_pool
+from backend.nis.infrastructure.persistence.db import get_connection
+from backend.nis.engineering.projects.project_context import activate_project
+from backend.nis.engineering.projects.project_context import reset_project
+from backend.nis.engineering.projects.project_context import current_project_id
+from backend.nis.engineering.projects.project_context import compact_context_project_id
+from backend.nis.engineering.projects.project_context import normalize_context_project_id
+from backend.nis.workflow.services.service import edit_token
+from backend.nis.workflow.services.service import check_edit_token
+from backend.nis.workflow.services.service import WorkflowConflictError
 
 
 def test_project_links_round_trip_without_changing_identity():
@@ -218,7 +222,7 @@ def test_manual_network_save_creates_physical_channels_and_preserves_unused_port
 
 def test_parallel_simulation_start_uses_one_frozen_snapshot(workspace, monkeypatch):
     from importlib import import_module
-    simulation_api = import_module("backend.app.api")
+    simulation_api = import_module("backend.nis.interfaces.http.simulation")
     from psycopg.types.json import Jsonb
     project, _ = workspace
     with get_connection() as connection:
@@ -264,13 +268,13 @@ def test_parallel_route_edits_reject_stale_revisions(workspace):
 
 def test_snapshot_transport_uses_canonical_values_and_frozen_model(monkeypatch):
     import json
-    from backend.engineering import simulation
+    from backend.nis.engineering import simulation as simulation
     model = {"nodes": [], "functions": [], "interfaces": [{"id": "port", "configuration": {"bitrate": 500000, "data_bitrate": 2000000}}],
              "messages": [{"id": "msg", "cycle_ms": 20, "dlc": 8}], "signals": [], "behaviors": [],
              "routes": [{"id": "route", "approval_state": "APPROVED", "source": {"interface_id": "port", "protocol": "CAN_FD"}, "payload": {"message_id": "msg"}}]}
     monkeypatch.setattr(simulation, "load_engineering_simulation_model", lambda _: model)
     model["nodes"] = [{"id": uuid.uuid4()}]
-    monkeypatch.setattr("backend.engineering.workflow.service.WorkflowStatusService.get", lambda _: {"topology": {"nodes": []}, "parameters": {"technology": "can_fd", "bitrate": 1000000}})
+    monkeypatch.setattr("backend.nis.workflow.services.service.WorkflowStatusService.get", lambda _: {"topology": {"nodes": []}, "parameters": {"technology": "can_fd", "bitrate": 1000000}})
     def transport(_, routes):
         assert routes[0]["timing"]["cycle_time_ms"] == 20
         assert routes[0]["validation"]["metrics"]["payload_bytes"] == 8
@@ -287,8 +291,8 @@ def test_snapshot_transport_uses_canonical_values_and_frozen_model(monkeypatch):
 
 
 def test_canonical_transport_has_executable_ports_and_produces_frames(workspace, tmp_path):
-    from backend.engineering.simulation import prepare_workflow_simulation_config
-    from communication_simulator import run_simulation
+    from backend.nis.engineering.simulation import prepare_workflow_simulation_config
+    from backend.nis.simulation.communication_simulator import run_simulation
     project, call = workspace
     assert call("PUT", "/workflow/topology", {"topology": topology()}).status_code == 200
     assert call("PATCH", "/workflow/parameters", {"parameters": {

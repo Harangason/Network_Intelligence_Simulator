@@ -1,5 +1,14 @@
 # Aufgabenbezogenes Regelregister
 
+## Dateiinventar — 02.10.2026
+
+Quellenbezogene Verzeichnisstruktur und Inhaltsbeschreibungen:
+[Simulator-Dateikatalog](project-scanner/directory-structure/README.md).
+Erfassungsumfang, statische Belege und Ausnahmen stehen im Katalog;
+[Scanner-Befunde](project-scanner/directory-structure/scan/audit.md) sind eine
+separate Bestandsaufnahme. Dieser Verweis ergänzt keine Fachregel und stellt
+keine Funktions- oder Releasefreigabe dar.
+
 ## Engineering-Agent — 15.09.2026
 
 Aktueller Befund und ausführbarer Ausbauplan: [Engineering-Agent-Audit](engineering-agent-audit-2026-09-15.md).

@@ -1,8 +1,4 @@
-"""Aerospace and avionics transport ownership."""
-
-from ...core import TechnologySpecialization
-
-MANIFEST = TechnologySpecialization("aerospace", (
-    "arinc429", "afdx", "arinc825", "can_aerospace", "mil_std_1553", "spacewire", "tte",
-), ("backend.communication.technologies.catalog", "backend.communication.technologies.core"))
-__all__ = ["MANIFEST"]
+"""Compatibility only; owner backend.nis.industries.aerospace.technology_refs."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.aerospace.technology_refs')

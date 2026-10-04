@@ -1,8 +1,8 @@
-import { StudioWorkflowHero } from "@/components/studio-workflow-hero";
-import { StudioTopbar } from "@/components/studio-topbar";
-import { TraceAnalysisWorkbench } from "@/components/trace-analysis-workbench";
-import { WorkflowHeader } from "@/components/workflow-header";
-import { projectIdFromSearchParams, type ProjectQueryRecord } from "@/lib/user-settings";
+import { StudioWorkflowHero } from "@/features/workflow/ui/studio-workflow-hero";
+import { StudioTopbar } from "@/features/workflow/ui/studio-topbar";
+import { TraceAnalysisWorkbench } from "@/features/traces/ui/trace-analysis-workbench";
+import { WorkflowHeader } from "@/features/workflow/ui/workflow-header";
+import { projectIdFromSearchParams, type ProjectQueryRecord } from "@/features/settings/lib/user-settings";
 
 export default async function TraceAnalysisPage({
   searchParams,

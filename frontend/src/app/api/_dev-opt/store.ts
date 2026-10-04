@@ -1,6 +1,6 @@
-import type { Catalog, SimulationJob } from "@/lib/types";
-import { BoundedMemoryCache } from "@/lib/bounded-memory-cache";
-import { simulationFormatDefinitions, simulationFormatExtension } from "@/lib/simulation-formats";
+import type { Catalog, SimulationJob } from "@/shared/api/types";
+import { BoundedMemoryCache } from "@/shared/lib/bounded-memory-cache";
+import { simulationFormatDefinitions, simulationFormatExtension } from "@/features/simulation/lib/simulation-formats";
 
 // DEV-OPT: These Next.js-only fixtures keep the isolated v0 frontend preview
 // editable when the Python service is not started. Vercel Services routes /api

@@ -243,8 +243,8 @@ class RetentionTests(unittest.TestCase):
             self.assertNotEqual(before, info.build_manifest(model)['source_sha256'])
         for folder in ('backend', 'frontend', 'config', 'scripts', 'docs'):
             self.assertNotIn(folder, rules)
-        self.assertIn('".dockerignore"', (ROOT / 'scripts/write-build-info.py').read_text())
-        self.assertIn('"scripts/release_storage.py"', (ROOT / 'scripts/write-build-info.py').read_text())
+        self.assertIn('".dockerignore"', (ROOT / 'scripts/build/write-build-info.py').read_text())
+        self.assertIn('"scripts/release_storage.py"', (ROOT / 'scripts/build/write-build-info.py').read_text())
 
 
 if __name__ == '__main__':

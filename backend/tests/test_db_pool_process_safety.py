@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import nullcontext
 import threading
 
-from backend.engineering import db
+from backend.nis.infrastructure.persistence import db as db
 
 
 class _FakePool:

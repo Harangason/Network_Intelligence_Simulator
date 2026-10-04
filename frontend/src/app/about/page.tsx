@@ -1,4 +1,4 @@
-import { Arrow, MarketingShell, PageHero, ProjectAwareLink } from "@/components/marketing-shell";
+import { Arrow, MarketingShell, PageHero, ProjectAwareLink } from "@/features/marketing/ui/marketing-shell";
 
 const principles = [
   ["Observable", "Ein System ist erst verständlich, wenn seine Kommunikation sichtbar und untersuchbar wird."],

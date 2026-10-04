@@ -1,1 +1,1 @@
-export { NetworkEditor } from "@/components/network-editor";
+export { NetworkEditor } from "@/features/network/ui/network-editor";

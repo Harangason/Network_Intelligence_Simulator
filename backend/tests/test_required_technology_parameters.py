@@ -3,9 +3,9 @@ from copy import deepcopy
 
 import pytest
 
-from backend.app import create_app
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as REGISTRY
-from backend.communication.technologies.core.registry import TechnologyRegistry
+from backend.nis.app import create_app
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as REGISTRY
+from backend.nis.communication.registry import TechnologyRegistry
 
 
 def profile(identifier="test_bus", **extra):

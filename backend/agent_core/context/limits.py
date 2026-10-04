@@ -1,2 +1,4 @@
-"""Shared bounded size for complete structured engineering requests."""
-MAX_REQUIREMENT_LENGTH = 120_000
+"""Compatibility only; owner backend.nis.agent.context.limits."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.agent.context.limits')

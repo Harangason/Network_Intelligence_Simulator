@@ -2,9 +2,9 @@ from copy import deepcopy
 import pytest
 
 from backend.tests.test_acceptance_scenarios import case_config, assert_timing_model_unavailable
-from hardware_profile import normalize_hardware_config
-from universal_trace import generate_universal_events
-from backend.engineering.reasoning.engine import EngineeringReasoningEngine
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.traces.universal_trace import generate_universal_events
+from backend.nis.intelligence.engineering.reasoning.engine import EngineeringReasoningEngine
 
 
 def cascade_config(path, technology):
@@ -64,7 +64,7 @@ def test_forged_dependency_claims_or_missing_source_cannot_prove_causality(tmp_p
 
 
 def test_malformed_dependency_evidence_cannot_crash_or_confirm(tmp_path):
-    from backend.engineering.reasoning.dependencies import validate_dependency_effect
+    from backend.nis.intelligence.engineering.reasoning.dependencies import validate_dependency_effect
     config = cascade_config(tmp_path, 'can_fd')
     events, _ = run(config)
     target = next(e for e in events if e['route_id'] == 'route-1')

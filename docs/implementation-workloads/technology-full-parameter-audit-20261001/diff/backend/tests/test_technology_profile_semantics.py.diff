@@ -1,6 +1,6 @@
 --- before/backend/tests/test_technology_profile_semantics.py
 +++ after/backend/tests/test_technology_profile_semantics.py
-@@ -8,6 +8,12 @@
+@@ -8,6 +8,32 @@
  
  
  REGISTRY = DEFAULT_TECHNOLOGY_REGISTRY
@@ -10,10 +10,30 @@
 +    'lin_edition':'LIN_2_2A_2010', 'lin_physical_profile':'LIN_2_2A_SINGLE_WIRE',
 +    'lin_node_role':'COMMANDER','lin_frame_kind':'UNCONDITIONAL','lin_bitrate_bps':19200}
 +
++
++@pytest.mark.parametrize('technology', [item['id'] for item in REGISTRY.profiles()])
++def test_validation_reads_definitions_without_mutating_registry_or_inputs(technology):
++    from copy import deepcopy
++    before = REGISTRY.profile(technology)
++    values = {'unrelated_project_control': {'nested': ['retained']}}
++    original = deepcopy(values)
++    first = REGISTRY.validate_parameters(technology, values)
++    second = REGISTRY.validate_parameters(technology, values)
++    assert first == second
++    assert values == original
++    assert REGISTRY.profile(technology) == before
++    # Public schemas and resolved transport profiles must remain independent.
++    exported = REGISTRY.profile(technology)
++    exported['parameter_schema'].clear()
++    rate = REGISTRY.rate_profile(technology)
++    rate['parameter_schema'].clear()
++    assert REGISTRY.profile(technology) == before
++    assert REGISTRY.rate_profile(technology)['parameter_schema']
++
  
  
  def codes(result: dict) -> set[str]:
-@@ -15,10 +21,11 @@
+@@ -15,10 +41,11 @@
  
  
  def test_lin_rate_profile_accepts_real_rate_and_blocks_can_fd_rate() -> None:
@@ -28,7 +48,7 @@
      assert invalid["findings"][0]["severity"] == "BLOCKER"
  
  
-@@ -37,11 +44,13 @@
+@@ -37,11 +64,13 @@
      assert format_rate_bps(1_000_000_000) == "1 Gbit/s"
  
  
@@ -47,7 +67,7 @@
  
  
  def test_unknown_profile_blocks_instead_of_using_foreign_default() -> None:
-@@ -66,7 +75,8 @@
+@@ -66,7 +95,8 @@
      })
      assert response.status_code == 200
      assert response.get_json()['status'] == 'UNVERIFIED'
@@ -57,14 +77,7 @@
  
  
  def test_registered_profile_with_missing_stack_layer_is_not_silently_valid() -> None:
-@@ -94,14 +104,14 @@
-         "binding_id": "lin-legacy", "technology_id": "LIN", "parameters": {"bitrate_bps": 2_000_000},
-     }])
-     assert findings[0]["binding_id"] == "lin-legacy"
--    assert findings[0]["code"] == "TECHNOLOGY_PARAMETER_OUT_OF_RANGE"
-+    assert findings[0]["code"] == "TECHNOLOGY_RATE_MODEL_MISMATCH"
- 
- 
+@@ -100,8 +130,8 @@
  @pytest.mark.parametrize(("technology", "category", "mechanism"), [
      ("CAN_FD", "integrity", "CAN_FD_CRC"),
      ("LIN", "integrity", "LIN_CHECKSUM"),
@@ -75,7 +88,7 @@
      ("j1939", "address_resolution", "J1939_ADDRESS_CLAIM"),
      ("profinet", "discovery", "PROFINET_DCP"),
      ("dds", "discovery", "DDS_PARTICIPANT_DISCOVERY"),
-@@ -115,8 +125,11 @@
+@@ -115,8 +145,11 @@
  
  def test_lin_calculation_refuses_invalid_rate() -> None:
      model = REGISTRY.resolve_stack(("lin",))["timing_model"]
@@ -89,7 +102,7 @@
  
  
  def test_simulation_preflight_blocks_invalid_lin_rate(tmp_path) -> None:
-@@ -129,20 +142,20 @@
+@@ -129,20 +162,20 @@
      technologies = {item["id"]: item for domain in domains for item in domain["technologies"]}
      lin_fields = {item["key"] for item in technologies["lin"]["parameter_schema"]}
      can_fd_fields = {item["key"] for item in technologies["can_fd"]["parameter_schema"]}
@@ -117,12 +130,3 @@
      assert "ethernet" in technologies
  
  
-@@ -170,7 +183,7 @@
-         "technology": "LIN", "parameters": {"bitrate_bps": 2_000_000},
-     })
-     assert invalid.status_code == 422
--    assert invalid.get_json()["findings"][0]["code"] == "TECHNOLOGY_PARAMETER_OUT_OF_RANGE"
-+    assert invalid.get_json()["findings"][0]["code"] == "TECHNOLOGY_RATE_MODEL_MISMATCH"
-     audit = client.post("/api/technologies/audit", json={"bindings": [{
-         "id": "legacy-lin", "technology": "LIN", "parameters": {"bitrate_bps": 2_000_000},
-     }]})

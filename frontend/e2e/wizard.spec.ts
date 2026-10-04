@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
 import { execFileSync } from 'node:child_process';
 import { WizardProgressWatchdog, WIZARD_STEPS, WIZARD_DONE } from './support/wizard-progress-watchdog';
+import { reviewVirtualTransports } from './support/native-transport-fixtures';
 
 const steps = WIZARD_STEPS;
 const done = WIZARD_DONE;
@@ -358,6 +359,25 @@ async function completeThroughWizard(page: Page, project: string, restart: boole
   throw new Error('Wizard exceeded 16 review/continuation checkpoints.');
 }
 
+test('wizard refuses an unavailable catalog and recovers using the real registry @catalog-recovery', async ({page}) => {
+  const project = 'nis-e2e-catalog-recovery-' + randomUUID();
+  await page.route('**/api/technologies', route => route.fulfill({status:503,
+    contentType:'application/json',body:JSON.stringify({error:'Der vollständige Technologiekatalog ist derzeit nicht erreichbar.'})}));
+  const dialog = await openWizard(page, project);
+  await expect(dialog.getByRole('alert')).toContainText('Technologiekatalog');
+  await dialog.getByTitle('Projektname', {exact:true}).click();
+  await dialog.locator('#engineering-project-name').fill('Catalog retry');
+  await dialog.getByLabel('Projektbeschreibung', {exact:true}).fill('ein Aktor zum proportional schließen eines Ventil');
+  await expect(dialog.locator('.eng-agent-questionnaire-head').getByRole('button')).toBeDisabled();
+  expect((await readProject(page, project, '/api/simulations')).jobs).toHaveLength(0);
+  await page.unroute('**/api/technologies');
+  await dialog.getByRole('button',{name:'Technologiekatalog erneut laden'}).click();
+  await expect(dialog.getByRole('alert')).toHaveCount(0);
+  await expect(dialog.locator('.eng-agent-questionnaire-head').getByRole('button')).toBeEnabled();
+  const catalog = await (await page.request.get('/api/technologies')).json();
+  expect(catalog.technology_count).toBe(125);
+});
+
 test('new small wizard traverses all nine stages and survives reload/restart @small', async ({ page }, testInfo) => {
   const errors: string[] = []; page.on('pageerror', error => errors.push(error.message));
   const project = 'nis-e2e-small-' + randomUUID();
@@ -428,10 +448,19 @@ for (const technology of ['I2C', 'Modbus RTU']) {
     await dialog.getByLabel('Ventilaktor2: Stellbefehl', { exact: true }).selectOption('OPEN_CLOSE');
     await dialog.getByRole('button', { name: 'Übernehmen', exact: true }).click();
     await expect(completeThroughWizard(page, project, true, ['RaspberryPi', 'Temperatursensor1', 'Temperatursensor2', 'Temperatursensor3', 'Temperatursensor4', 'Ventilaktor1', 'Ventilaktor2'], false, undefined, undefined, true))
-      .rejects.toThrow(/Wizard BLOCKED at validation/);
+      .rejects.toThrow(/Wizard BLOCKED at parameters:.*bestätigte Angaben/);
     const workflow = await readProject(page, project, '/api/engineering/workflow');
     const findings = workflow.context.agent_execution.blocking_findings as { code: string }[];
-    expect(findings.map(item => item.code)).toContain(technology === 'I2C' ? 'COMMUNICATION_UNVERIFIED' : 'GENERIC_ESTIMATE');
+    expect(findings.map(item => item.code)).toContain('TECHNOLOGY_PARAMETER_MISSING');
+    expect(workflow.statuses.parameters).toBe('IN_PROGRESS');
+    expect(workflow.artifact_checks.parameters.complete).toBe(false);
+    const required = workflow.artifact_checks.parameters.required;
+    expect(required[technology === 'I2C' ? 'i2c_device_source' : 'mr_device_source']).toBe(false);
+    const evidenceReview = dialog.getByRole('region', {name: 'Blockierende Preflight-Befunde'});
+    await expect(evidenceReview).toContainText(technology === 'I2C' ? 'i2c_device_source' : 'mr_device_source');
+    await expect(evidenceReview.getByRole('link', {name: 'Betroffene Angaben bearbeiten'}).first())
+      .toHaveAttribute('href', new RegExp(`mode=parameters.*project=${project}`));
+    expect(workflow.statuses.simulation).toBe('EMPTY');
     if (technology === 'I2C') {
       expect(workflow.parameters.rate_review_proposals.i2c.status).toBe('REVIEW_REQUIRED');
       expect(workflow.parameters.parameter_provenance.bitrate.source).toBe('TECHNOLOGY_PROFILE_REVIEW_PROPOSAL');
@@ -458,6 +487,7 @@ test('exact confirmed 50/250/250 request completes through real wizard review @l
   const metadata = JSON.parse(await readFile(new URL('./fixtures/wizard-large-50-250-250.json', import.meta.url), 'utf8'));
   const baseline = JSON.parse(await readFile(new URL('./fixtures/wizard-large-signal-contracts.json', import.meta.url), 'utf8'));
   const prompt = original.replace(/^- Lauf-ID:.*$/m, '- Lauf-ID: ' + runId);
+  await reviewVirtualTransports(page, project);
   // Replay the captured, already confirmed input through the normal START API.
   // All proposal inspection, approval, continuation and reloads below use UI.
   const started = await page.request.post('/api/engineering/agent/chat', {
@@ -486,6 +516,7 @@ test('exact confirmed 50/250/250 request completes through real wizard review @l
 
 test('a real AMEND after model approval adds the requested sensor and reuses its networks @amend', async ({ page }, testInfo) => {
   const project = 'nis-e2e-amend-' + randomUUID();
+  await reviewVirtualTransports(page, project);
   const runId = randomUUID();
   const graph = [
     { cluster_id: 'drive', network_id: 'can_fd', network_label: 'CAN-FD', bus_name: 'Drive',

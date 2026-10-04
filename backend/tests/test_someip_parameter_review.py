@@ -1,8 +1,8 @@
 """SOME/IP own serializer/transaction/UDP-TCP-TP regression boundaries."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import someip as R
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.someip import rules as R
 
 def actual():
  x={'someip_'+k:'synthetic-'+k for k in R.REQUIRED}

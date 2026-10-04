@@ -11,7 +11,7 @@
      "cycle_ms": 100.0,
      "payload_bytes": 8,
      "queue_size": 256,
-@@ -78,6 +75,20 @@
+@@ -78,6 +75,40 @@
  
      resolved = dict(parameters)
      target = canonical(protocol)
@@ -24,6 +24,26 @@
 +            allowed_fields.add('bitrate')  # Existing workflow data-phase alias.
 +    except KeyError:
 +        profile, allowed_fields = {}, set()
++    # Profile-owned ingress aliases preserve historical confirmed clocks.
++    # They never select a mode, edition, address, device or schedule.
++    def native_aliases(scope):
++        from backend.communication.technologies.catalog import PARAMETER_UI_ALIASES
++        scope = dict(scope or {})
++        for alias, field in profile.get('parameter_aliases', {}).items():
++            if alias in scope and field not in scope:
++                scope[field] = scope[alias]
++                if alias in (scope.get('parameter_provenance') or {}):
++                    scope['parameter_provenance'] = {**scope['parameter_provenance'], field: scope['parameter_provenance'][alias]}
++        for field, alias in PARAMETER_UI_ALIASES.items():
++            if field in allowed_fields and field in scope and alias not in scope:
++                scope[alias] = scope[field]
++                if field in (scope.get('parameter_provenance') or {}):
++                    scope['parameter_provenance'] = {**scope['parameter_provenance'], alias: scope['parameter_provenance'][field]}
++        return scope
++    parameters = native_aliases(parameters)
++    confirmed_parameters = native_aliases(confirmed_parameters) if confirmed_parameters is not None else None
++    configuration = native_aliases(configuration)
++    resolved = native_aliases(resolved)
 +    # Shared NIS analysis controls may be retained. Bus and hardware fields
 +    # belong to the selected profile, not the project's primary bus.
 +    foreign_fields = known_fields - allowed_fields
@@ -32,7 +52,7 @@
      def matching_identity(scope: dict[str, Any], *, required: bool = False) -> bool:
          identities = [canonical(scope.get(key)) for key in ("technology", "protocol") if scope.get(key)]
          return (bool(identities) or not required) and all(value == target for value in identities)
-@@ -89,6 +100,8 @@
+@@ -89,6 +120,8 @@
                  isinstance(value, dict) and matching_identity(value))
  
      transport_fields = {"bitrate", "bitrate_bps", "nominal_bitrate_bps", "data_bitrate_bps", "arbitration_bitrate", "data_bitrate", "local_timing_evidence"}
@@ -41,7 +61,16 @@
      if not matching_identity(parameters):
          for key in transport_fields:
              resolved.pop(key, None)
-@@ -136,11 +149,13 @@
+@@ -130,17 +163,20 @@
+     # parameter document; catalog proposals never enter this path.
+     scoped = next((value for key, value in (confirmed.get("technology_parameters") or {}).items()
+                    if canonical(key) == target), {})
+-    scoped_values = scoped.get("values") or {}
+-    scoped_provenance = scoped.get("provenance") or {}
++    scoped_values = native_aliases({**(scoped.get("values") or {}),
++                                   'parameter_provenance': scoped.get("provenance") or {}})
++    scoped_provenance = scoped_values.get('parameter_provenance') or {}
+     if not matching_identity(scoped) or not matching_identity(scoped_values):
          scoped_values = {}
      for key, value in scoped_values.items():
          proof = scoped_provenance.get(key) or {}
@@ -56,9 +85,11 @@
              if key in phase_evidenced and _number(value, 0) > 0:
                  phase_evidenced[key] = True
      if explicitly_specified:
-@@ -162,10 +177,13 @@
+@@ -161,11 +197,15 @@
+                             if key not in transport_fields}
      # Filter each source before merging: a rejected network declaration must
      # neither override matching physical evidence nor hide its provenance.
++    declared = native_aliases(declared)
      declared = {key: value for key, value in declared.items()
 -                if key not in transport_fields or matching_field(declared, key)}
 +                if key not in foreign_fields and (key not in transport_fields or matching_field(declared, key))}
@@ -72,7 +103,7 @@
      for key in ("bitrate", "arbitration_bitrate", "data_bitrate"):
          value = effective_configuration.get(key)
          if _number(value, 0) > 0:
-@@ -176,7 +194,19 @@
+@@ -176,7 +216,19 @@
              if key == "bitrate" and target == "CAN_FD":
                  phase_evidenced["arbitration_bitrate"] = True
      if target == "CAN_FD":
@@ -93,7 +124,7 @@
      if confirmed_parameters is not None:
          resolved["_rate_evidenced"] = rate_evidenced
      if isinstance(effective_configuration.get("local_timing_evidence"), dict):
-@@ -201,18 +231,10 @@
+@@ -201,23 +253,18 @@
          else:
              resolved.pop("bitrate", None)
          resolved["_rate_evidenced"] = rate_evidenced
@@ -110,13 +141,23 @@
 -            rates.pop('bitrate_bps', None)
 -        validation = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(protocol, rates)
 +    if rate_evidenced or target=='LIN' or any(key in resolved for key in ('bitrate','bitrate_bps','arbitration_bitrate','data_bitrate')):
++        native_prefixes = profile.get('native_parameter_prefixes') or ()
 +        validation_values = {key:value for key,value in resolved.items()
-+                             if not (target=='LIN' and key=='bitrate')}
++                             if (key in known_fields or key in allowed_fields
++                                 or any(key.startswith(prefix) for prefix in native_prefixes))
++                             and not (target=='LIN' and key in {'bitrate','bitrate_bps'})}
 +        validation = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(protocol, validation_values)
          if validation['status'] != 'VALID':
              resolved['_rate_evidenced'] = False
              resolved['_rate_findings'] = validation['findings']
-@@ -408,7 +430,7 @@
+-            for key in transport_fields - {'local_timing_evidence'}:
+-                resolved.pop(key, None)
++            # Preserve supplied facts for review. Consumers use _rate_evidenced
++            # to block computation; missing data must not erase an existing clock.
+     return resolved
+ 
+ 
+@@ -408,7 +455,7 @@
          network_groups: dict[str, list[dict[str, Any]]] = defaultdict(list)
          generic_models: set[str] = set()
  
@@ -125,7 +166,7 @@
          default_payload = int(_number(parameters.get("payload_bytes"), 8))
          default_cycle = _number(parameters.get("cycle_ms"), 100.0)
          peak_factor = max(1.0, _number(parameters.get("peak_factor"), 1.15))
-@@ -652,6 +674,8 @@
+@@ -652,6 +699,8 @@
                      "capacity_applicable": segment_frame.protocol.upper() not in DIRECT_SIGNAL_PROTOCOLS,
                      "capacity_verified": bool(segment_data["parameters"].get("_rate_evidenced")) and segment_frame.transmission_time_available and not segment_frame.is_generic_estimate and segment_frame.protocol.upper() in SUPPORTED_CAPACITY_PROTOCOLS,
                      "bitrate": (_number(segment_data["parameters"].get("bitrate"), 0) or None) if segment_data["parameters"].get("_rate_evidenced") else None,
@@ -134,7 +175,7 @@
                      "local_timing_evidence": {key: value for key, value in (segment_data["parameters"].get("local_timing_evidence") or {}).items()},
                      "frame_bits": segment_frame.frame_bits,
                      "calculation_model": segment_frame.calculation_model,
-@@ -1632,16 +1656,7 @@
+@@ -1632,16 +1681,7 @@
              # defaults: defaults are not evidence that this binding is configured.
              technology_profile = DEFAULT_TECHNOLOGY_REGISTRY.validate_parameters(
                  technology_id,
@@ -152,7 +193,7 @@
              )
              for issue in technology_profile["findings"]:
                  add("technology", str(issue.get("severity") or "ERROR"),
-@@ -1664,8 +1679,8 @@
+@@ -1664,8 +1704,8 @@
                          add("technology", "BLOCKER", "TECHNOLOGY_PARAMETER_INVALID",
                              f"{field} fehlt; das Technologieprofil {technology_id} benoetigt diesen Wert in bit/s.",
                              technology_id=technology_profile["technology_id"])

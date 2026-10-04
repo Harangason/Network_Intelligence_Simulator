@@ -1,8 +1,8 @@
 """Versioned reference bounds and safety/black-channel isolation regressions."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import opensafety as S
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.opensafety import rules as S
 
 def actual(service='SPDO', direction='TRANSMIT'):
     x = {'os_'+key:'synthetic-'+key for key in S.REQUIRED}

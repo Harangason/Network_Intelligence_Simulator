@@ -1,12 +1,5 @@
-# AI Audit Proposals
+# Document moved
 
-The engineering workload runner now turns detected model issues into reviewable proposals instead of stopping at a warning.
+Canonical document: [AI_AUDIT_PROPOSALS.md](../../../docs/domains/agent/AI_AUDIT_PROPOSALS.md).
 
-Supported proposal actions:
-
-- `CREATE`: missing object or signal should be added.
-- `UPDATE`: existing/proposed object should be corrected with suggested parameters.
-- `DELETE`: duplicate or surplus canonical object should be removed when it is still `draft`.
-- `DEPRECATE`: applied automatically instead of destructive deletion when the canonical object is already versioned beyond draft.
-
-This keeps the workflow AI-supported but review-gated. The user still decides when a proposal is accepted.
+This entry preserves old links during the structure migration.

@@ -1,5 +1,4 @@
-from __future__ import annotations
-
-from ..core.registry import SafeFormula
-
-__all__ = ["SafeFormula"]
+"""Compatibility only; owner backend.nis.simulation.signals.derived.formula."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.simulation.signals.derived.formula')

@@ -3,10 +3,11 @@ from __future__ import annotations
 import asyncio
 from pathlib import Path
 
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.runtime.context_resolver import ContextResolver
-from backend.agent_core.runtime.goal_resolver import GoalResolver, GoalType
-from backend.agent_core.runtime.service import EngineeringAssistantService
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.runtime.context_resolver import ContextResolver
+from backend.nis.agent.runtime.goal_resolver import GoalResolver
+from backend.nis.agent.runtime.goal_resolver import GoalType
+from backend.nis.agent.runtime.service import EngineeringAssistantService
 
 
 def test_goal_resolver_identifies_project_inventory_without_guessing_transport():
@@ -172,7 +173,7 @@ def test_runtime_persists_goal_and_completes_only_with_structured_evidence():
 
 
 def test_completion_evaluator_rejects_success_without_model_evidence():
-    from backend.agent_core.runtime.completion import CompletionEvaluator
+    from backend.nis.agent.runtime.completion import CompletionEvaluator
 
     goal = GoalResolver().resolve('Erstelle ein Signal.', {'active_project_id': 'project-a'}).model_dump(mode='json')
     completion = CompletionEvaluator().evaluate(goal, [
@@ -184,7 +185,7 @@ def test_completion_evaluator_rejects_success_without_model_evidence():
 
 
 def test_read_only_tools_do_not_advertise_mutating_or_simulation_execution():
-    from backend.agent_core.runtime.capability_registry import CapabilityRegistry
+    from backend.nis.agent.runtime.capability_registry import CapabilityRegistry
 
     registry = CapabilityRegistry()
     assert not registry.resolve(GoalType.CREATE_PROJECT, {'prepare_project_request'})['available']
@@ -194,7 +195,7 @@ def test_read_only_tools_do_not_advertise_mutating_or_simulation_execution():
 
 
 def test_periodic_acquisition_free_chat_exposes_reviewed_partial_model_without_false_completion():
-    from backend.agent_core.api.tool_contract import ToolResult
+    from backend.nis.agent.api.tool_contract import ToolResult
 
     proposal = {'proposal_id': 'proposal-30s', 'proposal_type': 'FUNCTION_STRUCTURE',
                 'revision': 'revision-1', 'status': 'VALIDATED', 'rationale': 'ECU anlegen',

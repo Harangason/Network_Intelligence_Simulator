@@ -5,33 +5,33 @@ from pathlib import Path
 
 import pytest
 
-from backend.app.runtime_analysis import analyze_runtime_trace
-from backend.engineering import simulation as engineering_simulation
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.simulation import validate_scenario
-from communication_simulator import run_simulation
-from hardware_profile import normalize_hardware_config
-from model_based_simulation import (
-    BEHAVIOR_TYPES,
-    MESSAGE_FAULTS,
-    NETWORK_FAULTS,
-    SIGNAL_FAULTS,
-    FaultInjectionEngine,
-    FaultCatalog,
-    MessageCodec,
-    ModelBasedSimulationEngine,
-    SignalBehaviorEngine,
-    SignalDefinition,
-    build_model_trace,
-    demo_scenarios,
-)
-from universal_trace import generate_universal_events
-from backend.simulator.signals.core.validation import validate_signal_emulation_model
-from backend.simulator.signals.derived import DerivedSignalEngine
-from backend.simulator.signals.derived import SignalDependencyCycleError, SignalDependencyGraph
-from backend.simulator.signals.discrete import SignalStateMachineEngine
-from backend.simulator.signals.states import StateMachineEngine, gateway_profile
-from backend.simulator.signals.quality import SignalQualityEngine
+from backend.nis.simulation.runtime_analysis import analyze_runtime_trace
+from backend.nis.engineering import simulation as engineering_simulation
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.simulation import validate_scenario
+from backend.nis.simulation.communication_simulator import run_simulation
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.simulation.model_based_simulation import BEHAVIOR_TYPES
+from backend.nis.simulation.model_based_simulation import MESSAGE_FAULTS
+from backend.nis.simulation.model_based_simulation import NETWORK_FAULTS
+from backend.nis.simulation.model_based_simulation import SIGNAL_FAULTS
+from backend.nis.simulation.model_based_simulation import FaultInjectionEngine
+from backend.nis.simulation.model_based_simulation import FaultCatalog
+from backend.nis.simulation.model_based_simulation import MessageCodec
+from backend.nis.simulation.model_based_simulation import ModelBasedSimulationEngine
+from backend.nis.simulation.model_based_simulation import SignalBehaviorEngine
+from backend.nis.simulation.model_based_simulation import SignalDefinition
+from backend.nis.simulation.model_based_simulation import build_model_trace
+from backend.nis.simulation.model_based_simulation import demo_scenarios
+from backend.nis.traces.universal_trace import generate_universal_events
+from backend.nis.simulation.signals.core.validation import validate_signal_emulation_model
+from backend.nis.simulation.signals.derived import DerivedSignalEngine
+from backend.nis.simulation.signals.derived import SignalDependencyCycleError
+from backend.nis.simulation.signals.derived import SignalDependencyGraph
+from backend.nis.simulation.signals.discrete import SignalStateMachineEngine
+from backend.nis.simulation.signals.states import StateMachineEngine
+from backend.nis.simulation.signals.states import gateway_profile
+from backend.nis.simulation.signals.quality import SignalQualityEngine
 
 
 def signal_record(**overrides):
@@ -362,7 +362,7 @@ def test_project_enrichment_reconstructs_transport_config_server_side(monkeypatc
         },
     )
     monkeypatch.setattr(
-        "backend.engineering.workflow.service.WorkflowStatusService.get",
+        "backend.nis.workflow.services.service.WorkflowStatusService.get",
         lambda _self: {"topology": {"nodes": []}, "parameters": {"industry": "automotive"}},
     )
 

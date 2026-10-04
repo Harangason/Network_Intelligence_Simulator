@@ -1,8 +1,4 @@
-"""Energy and smart-grid vocabulary and template ownership."""
-
-from ...core import IndustrySpecialization
-
-MANIFEST = IndustrySpecialization("energy", "Energy / Smart Grid", (
-    "backend.simulator.physic_lib.Industries.Energy",
-))
-__all__ = ["MANIFEST"]
+"""Compatibility only; owner backend.nis.industries.energy.manifest."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.industries.energy.manifest')

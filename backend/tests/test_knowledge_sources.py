@@ -4,17 +4,15 @@ import sqlite3
 
 import pytest
 
-from backend.knowledge import (
-    HybridRetrievalService,
-    IndustryRAGOrchestrator,
-    KnowledgeIngestionPipeline,
-    LocalTransformerService,
-    PostgresSourceAdapter,
-    SourceAdapterRegistry,
-    SourceIngestionService,
-    SourceRequest,
-)
-from backend.knowledge import sources
+from backend.nis.knowledge import HybridRetrievalService
+from backend.nis.knowledge import IndustryRAGOrchestrator
+from backend.nis.knowledge import KnowledgeIngestionPipeline
+from backend.nis.knowledge import LocalTransformerService
+from backend.nis.knowledge import PostgresSourceAdapter
+from backend.nis.knowledge import SourceAdapterRegistry
+from backend.nis.knowledge import SourceIngestionService
+from backend.nis.knowledge import SourceRequest
+from backend.nis.knowledge import sources as sources
 
 
 @pytest.mark.parametrize(

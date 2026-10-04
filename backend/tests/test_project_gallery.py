@@ -1,6 +1,6 @@
 from uuid import uuid4
 
-from backend.app import create_app
+from backend.nis.app import create_app
 
 
 def test_project_gallery_lists_saved_names_and_new_empty_projects():

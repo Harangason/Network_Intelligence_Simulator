@@ -3,19 +3,42 @@
 from copy import deepcopy
 import json
 from pathlib import Path
+from math import ceil
 
 import pytest
 
-from event_scheduler import EventScheduler
-from hardware_profile import normalize_hardware_config
-from universal_trace import generate_universal_events
+from backend.nis.simulation.runtime.event_scheduler import EventScheduler
+from backend.nis.simulation.hardware_profile import normalize_hardware_config
+from backend.nis.traces.universal_trace import generate_universal_events
 
 
 REFERENCE = json.loads((Path(__file__).parent / "fixtures/can_scheduler_reference.json").read_text(encoding="utf-8"))
 
 
 @pytest.mark.parametrize("case", REFERENCE["cases"], ids=lambda case: case["name"])
-def test_trace_matches_seeded_reference_captured_before_dispatcher_change(case):
+def test_trace_matches_seeded_reference_captured_before_dispatcher_change(case, monkeypatch):
+    # This captured oracle checks the dispatcher, including every event and its
+    # causal time, against its original serializer dependency. Native wire bounds
+    # are independently checked by the technology parameter/conformance suites.
+    import backend.nis.traces.universal_trace as universal_trace
+    from backend.nis.engineering.capacity.calculators import FrameEstimate
+    current_estimate = universal_trace.estimate_frame
+    def captured_serializer(protocol, payload, parameters):
+        rate = parameters.get('bitrate')
+        if protocol == 'can':
+            bits = ceil((47 + 8 * payload) * 1.2)
+            return FrameEstimate('CAN', payload, bits, bits / rate, 'CAN_ESTIMATED_STUFFING')
+        if protocol == 'can_fd':
+            nominal = parameters.get('arbitration_bitrate', rate)
+            arb, data = ceil(55 * 1.2), ceil((8 * payload + 28) * 1.15)
+            return FrameEstimate('CAN_FD', payload, arb + data,
+                                 arb / nominal + data / parameters['data_bitrate'], 'CAN_FD_PHASE_ESTIMATE')
+        if protocol == 'lin':
+            bits = 34 + (payload + 1) * 10
+            return FrameEstimate('LIN', payload, bits, bits / rate,
+                                 'LIN_NOMINAL_WITH_CHECKSUM', calculation_version='2.0')
+        return current_estimate(protocol, payload, parameters)
+    monkeypatch.setattr(universal_trace, 'estimate_frame', captured_serializer)
     config = deepcopy(case["config"])
     _, events = generate_universal_events(config, normalize_hardware_config(config), start_utc=REFERENCE["seeded_start_utc"])
     actual = [{key: event[key] for key in REFERENCE["event_fields"] if key in event} for event in events]
@@ -172,7 +195,7 @@ def test_gateway_upstream_drop_and_max_events_are_preserved():
 
 @pytest.mark.parametrize("busy", [False, True], ids=["future-releases", "busy-backlog"])
 def test_queue_work_grows_linearly_instead_of_scanning_all_waiters(monkeypatch, busy):
-    import event_scheduler
+    import backend.nis.simulation.runtime.event_scheduler as event_scheduler
 
     operations = 0
     inspections = 0

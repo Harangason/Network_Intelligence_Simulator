@@ -22,8 +22,10 @@ manifest, and starts that image with a disposable database and runtime. It runs:
 
 - A new small request entered into the real six-page browser wizard, with real
   proposal approval, nine workflow stages, reload and application restart.
-- Two non-automotive Raspberry Pi temperature/valve requests through all nine
-  stages, using I2C and Modbus RTU. The unqualified request must first require
+- Two non-automotive Raspberry Pi temperature/valve requests using I2C and
+  Modbus RTU: real model/routing/topology review and preservation, followed by
+  an actionable native parameter-evidence block. This is not nine-stage
+  simulation proof for unqualified devices. The unqualified request must first require
   explicit device connections; selecting one device must not silently assign
   that connection to the rest. Local controller outputs remain explicit
   non-routed FUNCTION_OUTPUT messages. ALL-scope evidence may exclude only those
@@ -47,6 +49,15 @@ manifest, and starts that image with a disposable database and runtime. It runs:
 
 Browser and HTTP acceptance insert no generated model rows directly, and no
 successful write response is mocked.
+The large and amendment positive fixtures separately supply explicitly reviewed
+virtual LIN and IPv4/UDP Ethernet serializer profiles through the normal parameter API.
+Ethernet declares the actual upper-layer payload and 28 header bytes (IPv4 20 + UDP 8);
+a conflicting MAC-client/zero-header declaration remains rejected. The large fixture's original request,
+generated graph and 1404 signal encodings remain unchanged. The fixture is recorded
+in `frontend/e2e/fixtures/virtual-lin-profile.json` and
+`frontend/e2e/fixtures/virtual-ethernet-profile.json`; their software channel assumptions
+are not evidence of real transceivers, wiring, LDF deployment, physical conformance
+or a SOME/IP application codec. Clock-only and unqualified device inputs are tested as blocked paths.
 Warnings are not automatically functional success: simulation acceptance requires
 PASS conformance, zero failed routes and no missing scope evidence. Failure
 preserves logs, Playwright trace/screenshot/video and a FAIL receipt. A source
@@ -78,7 +89,7 @@ The candidate's receipt and reports supply execution evidence.
 | Failure or contract | Verification level |
 | --- | --- |
 | Real new small request, all nine stages, finish | Browser, real backend/MCP/PostgreSQL |
-| Non-automotive I2C and Modbus RTU control projects | Browser, real review/apply, nine persisted stages and ALL-scope simulation |
+| Non-automotive I2C and Modbus RTU control projects | Browser, real review/apply and canonical model preservation; native parameter-evidence gate identifies missing fields and their editor while actual device evidence is absent; no simulation claim |
 | Exact confirmed large specification and all original signal encodings | API start, browser review/apply, canonical semantic manifest |
 | Reload after model commit, restart after routing commit | Browser with persistent isolated runtime |
 | Crash during a running simulation, same job identity and full traces | Browser plus real isolated container kill/restart |

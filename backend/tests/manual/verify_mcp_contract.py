@@ -5,8 +5,8 @@ import os
 import re
 from pathlib import Path
 from mcp import Client
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.engineering.agent_tools.services import TOOLS
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.tools.services import TOOLS
 
 
 async def main():

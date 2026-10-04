@@ -4,28 +4,34 @@ import json
 from collections import Counter
 from uuid import uuid4
 
-from backend.agent_core.api.mcp_client import EngineeringMCPClient
-from backend.agent_core.context.agent_context import AgentContext
-from backend.agent_core.core.engineering_agent import EngineeringAgent
-from backend.engineering.agent_tools.runtime import ToolAuthority
-from backend.engineering.agent_tools.runtime import execute
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools import wizard_generation, model, proposal_service
-from backend.simulator_engineering_mcp.server import create_server
-from backend.engineering.workflow.service import WorkflowStatusService
-from backend.engineering.repository import create_object, update_object, get_object
-from backend.engineering.agent_tools import conversation
-from backend.engineering.agent_tools.run_status import reconcile_model_apply
-from backend.engineering.agent_tools import run_status
+from backend.nis.agent.api.mcp_client import EngineeringMCPClient
+from backend.nis.agent.context.agent_context import AgentContext
+from backend.nis.agent.core.engineering_agent import EngineeringAgent
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools import wizard_generation as wizard_generation
+from backend.nis.agent.tools import model as model
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.interfaces.mcp.server import create_server
+from backend.nis.workflow.services.service import WorkflowStatusService
+from backend.nis.infrastructure.persistence.repository import create_object
+from backend.nis.infrastructure.persistence.repository import update_object
+from backend.nis.infrastructure.persistence.repository import get_object
+from backend.nis.agent.tools import conversation as conversation
+from backend.nis.agent.tools.run_status import reconcile_model_apply
+from backend.nis.agent.tools import run_status as run_status
 import pytest
 
 
 def test_canopen_retains_application_capability_over_physical_can():
-    from backend.engineering.models import INTERFACE_TYPES, validate_choice
-    from backend.engineering.agent_tools.validation import _network_supports_interface
-    from backend.engineering.routing.generation import INTERFACE_TO_PROTOCOL
-    from backend.engineering.routing.validation import INTERFACE_PROTOCOLS, physical_route_technology
-    from backend.engineering.physical_ports import technology_id
+    from backend.nis.domain.vocabulary import INTERFACE_TYPES
+    from backend.nis.domain.vocabulary import validate_choice
+    from backend.nis.agent.tools.validation import _network_supports_interface
+    from backend.nis.engineering.routing.generation import INTERFACE_TO_PROTOCOL
+    from backend.nis.engineering.routing.validation import INTERFACE_PROTOCOLS
+    from backend.nis.engineering.routing.validation import physical_route_technology
+    from backend.nis.engineering.network.physical_ports import technology_id
     assert validate_choice('CANopen', INTERFACE_TYPES, 'technology') == 'CANopen'
     contract = wizard_generation._technology_contract('CANopen')
     assert contract['technology_id'] == 'canopen'
@@ -662,6 +668,9 @@ def test_combined_wizard_creates_validated_model_without_reasoner(monkeypatch, t
 - Lauf-ID: test-wizard-12345678
 - Industrie: Automotive
 - Netzwerktechnologien: CAN-FD (can_fd); LIN (lin)
+CAN-FD: 500 kbit/s arbitration, 2 Mbit/s data
+LIN: 19,2 kbit/s
+Ethernet: 100 Mbit/s
 - Hardware-Sollwerte: {"gateways":1,"ecus":50,"sensors":100,"actuators":100}
 Konkrete Aufgabe des Nutzers, per Wizard-Uebernehmen bestaetigt:
 Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gateway.
@@ -741,15 +750,17 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     # and the gateway hop. Strict deadline failures are covered separately; a
     # random catalog sensor with timeout == cycle is not a valid success fixture.
     def define_fixture_timing():
-        from backend.engineering.repository import update_object
+        from backend.nis.infrastructure.persistence.repository import update_object
         define_fixture_command_signals()
         # This fixture explicitly connects the selected participants to one
         # test bus; protocol equality alone must no longer fabricate a path.
         selected_nodes = {str(item['id']) for item in (ecu, sensor, actuator, hmi)}
         confirmed_rates = {'CAN_FD': 500_000, 'LIN': 19_200, 'Ethernet': 100_000_000}
         def confirmed_bus_rates(technology):
+            from backend.tests.native_transport_fixtures import lin_design, ethernet_mac
             return {'bitrate': confirmed_rates[technology], **({'arbitration_bitrate': 500_000,
-                'data_bitrate': 2_000_000} if technology == 'CAN_FD' else {})}
+                'data_bitrate': 2_000_000} if technology == 'CAN_FD' else
+                lin_design() if technology == 'LIN' else ethernet_mac())}
         for port in model.objects('HardwareNetworkInterface'):
             network = 'fixture-confirmed-shared-bus' if port['technology'] == ecu_type else 'fixture-' + port['technology'].lower()
             # This positive simulation fixture explicitly confirms the bus rate.
@@ -779,7 +790,7 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
             left, right = fixture_canvas_port(node, endpoint), fixture_canvas_port(gateway, gateway_port)
             edges.append({'id': 'fixture-edge-' + str(index), 'source': str(node['id']), 'target': str(gateway['id']), 'sourcePort': left['id'], 'targetPort': right['id'], 'bus': left['bus'], 'physicalNetworkId': endpoint['network_ref'], 'engineeringRelationId': 'fixture-' + str(index), 'routingEntryIds': [], 'origin': 'TEST_SPECIFICATION'})
         # Physical canonical bus membership is sufficient before the editor is generated.
-        from backend.engineering.repository import update_object
+        from backend.nis.infrastructure.persistence.repository import update_object
         source_ids = {str(item['id']) for item in (sensor, actuator, ecu)}
         selected_interfaces = {str(item['id']) for item in interfaces if str(item.get('hardware_node_id')) in source_ids}
         configured = {}
@@ -936,12 +947,12 @@ Erzeuge ein Fahrzeugnetzwerk mit 100 Sensoren, 100 Aktuatoren, 50 ECUs und 1 Gat
     assert capacity_snapshot['results']['overview']['route_count'] == 4
     assert capacity_snapshot['results']['overview']['network_count'] >= 1
 
-    from backend.engineering.agent_tools import simulation_gateway
-    from backend.app import create_app
+    from backend.nis.agent.tools import simulation_gateway as simulation_gateway
+    from backend.nis.app import create_app
     import importlib
-    application_api = importlib.import_module('backend.app.api')
-    from backend.app import job_service
-    from backend.engineering.project_context import current_project_id
+    application_api = importlib.import_module('backend.nis.interfaces.http.simulation')
+    from backend.nis.simulation import job_service as job_service
+    from backend.nis.engineering.projects.project_context import current_project_id
     monkeypatch.setenv('SIMULATOR_SAVED_ROOT', str(tmp_path / 'saved'))
     jobs = job_service.JobService(synchronous=True, persist=False)
     monkeypatch.setattr(application_api, 'JOBS', jobs)

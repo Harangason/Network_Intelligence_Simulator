@@ -1,6 +1,4 @@
-"""Stage 06: validation and preflight."""
-
-from backend.workflow.definition import workflow_stage
-
-STAGE = workflow_stage("validation")
-__all__ = ["STAGE"]
+"""Compatibility only; owner backend.nis.workflow.stages.stage_06_validation."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.workflow.stages.stage_06_validation')

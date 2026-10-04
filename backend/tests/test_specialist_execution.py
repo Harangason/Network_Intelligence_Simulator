@@ -6,7 +6,7 @@ from copy import deepcopy
 import pytest
 import httpx
 
-from backend.engineering.agent_tools import specialist
+from backend.nis.agent.tools import specialist as specialist
 
 
 @pytest.fixture
@@ -61,7 +61,8 @@ SQL = pytest.mark.skipif(not os.environ.get('ENGINEERING_TEST_DATABASE_URL'), re
 
 def test_contract_repair_uses_declared_consumers_without_previous_route():
     from backend.tests.test_communication_repair import sample
-    from backend.engineering.communication_repair import RepairPlanner, complete_plan
+    from backend.nis.engineering.communication.communication_repair import RepairPlanner
+    from backend.nis.engineering.communication.communication_repair import complete_plan
     state, objects, _, history = sample()
     message = objects['Message'][0]
     message['configuration'] = {'communication_contract': {'scope': 'FUNCTION_OUTPUT', 'consumer_refs': ['receiver-function']}}
@@ -79,9 +80,9 @@ def test_contract_repair_uses_declared_consumers_without_previous_route():
 @SQL
 def test_contract_repair_creates_validated_route_with_original_payload(monkeypatch):
     from backend.tests.test_communication_repair import sql_sample
-    from backend.engineering.repository import update_object
-    from backend.engineering.routing.repository import delete_route
-    from backend.engineering.project_context import activate_project
+    from backend.nis.infrastructure.persistence.repository import update_object
+    from backend.nis.engineering.routing.repository import delete_route
+    from backend.nis.engineering.projects.project_context import activate_project
     client, ids = sql_sample()
     activate_project(client.environ_base['HTTP_X_PROJECT_ID'])
     delete_route(ids['route'])
@@ -96,7 +97,7 @@ def test_contract_repair_creates_validated_route_with_original_payload(monkeypat
     assert response.get_json()['applied'][0]['routes'] == 1
     assert response.get_json()['followup']['scope'] == 'INCLUDING_DRAFT_ROUTES'
     assert response.get_json()['followup']['provenance']['inputs']['routing_entries'] == 1
-    from backend.engineering.routing.repository import list_routes
+    from backend.nis.engineering.routing.repository import list_routes
     active = [row for row in list_routes(limit=100) if row['status'] not in {'DEPRECATED', 'REJECTED', 'SUPERSEDED'}]
     assert len(active) == 1 and active[0]['validation']['valid']
     assert active[0]['payload']['message_ids'] == [ids['message']]
@@ -106,12 +107,13 @@ def test_contract_repair_creates_validated_route_with_original_payload(monkeypat
 @SQL
 def test_repair_requires_human_choice_executes_and_is_idempotent(monkeypatch):
     from backend.tests.test_communication_repair import sql_sample
-    from backend.engineering.agent_tools import repair_execution
-    from backend.engineering.agent_tools.runtime import ToolAuthority
-    from backend.engineering.agent_tools.services import TOOLS
-    from backend.engineering.agent_tools.runtime import execute
-    from backend.engineering.goal_execution.store import get_goal
-    from backend.engineering.project_context import activate_project, reset_project
+    from backend.nis.agent.tools import repair_execution as repair_execution
+    from backend.nis.agent.tools.runtime import ToolAuthority
+    from backend.nis.agent.tools.services import TOOLS
+    from backend.nis.agent.tools.runtime import execute
+    from backend.nis.engineering.goal_execution.store import get_goal
+    from backend.nis.engineering.projects.project_context import activate_project
+    from backend.nis.engineering.projects.project_context import reset_project
     monkeypatch.setattr(repair_execution, 'review_or_report', lambda *a: {'status': 'REVIEWED', 'model': 'test', 'decisions': [], 'gaps': []})
     client, ids = sql_sample()
     base = '/api/engineering/workflow/communication-repair/'
@@ -141,8 +143,8 @@ def test_repair_requires_human_choice_executes_and_is_idempotent(monkeypatch):
 @SQL
 def test_repair_validation_failure_rolls_back_authority_and_writes(monkeypatch):
     from backend.tests.test_communication_repair import sql_sample
-    from backend.engineering.agent_tools import repair_execution
-    from backend.engineering.routing.validation import RoutingValidator
+    from backend.nis.agent.tools import repair_execution as repair_execution
+    from backend.nis.engineering.routing.validation import RoutingValidator
     monkeypatch.setattr(repair_execution, 'review_or_report', lambda *a: {'status': 'REVIEWED', 'model': 'test', 'decisions': [], 'gaps': []})
     client, ids = sql_sample()
     base = '/api/engineering/workflow/communication-repair/'
@@ -160,8 +162,8 @@ def test_repair_validation_failure_rolls_back_authority_and_writes(monkeypatch):
 @SQL
 def test_large_repair_review_resumes_saved_batches_without_repeating_model(monkeypatch):
     from backend.tests.test_communication_repair import sql_sample
-    from backend.engineering.agent_tools import repair_execution as repair
-    from backend.engineering.project_context import activate_project
+    from backend.nis.agent.tools import repair_execution as repair
+    from backend.nis.engineering.projects.project_context import activate_project
     client, _ = sql_sample()
     activate_project(client.environ_base['HTTP_X_PROJECT_ID'])
     plan = repair.prepare({'defer_review': True})

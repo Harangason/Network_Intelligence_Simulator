@@ -1,7 +1,7 @@
 """Independent SpaceWire physical/symbol/credit/route boundaries."""
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import spacewire as R
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.spacewire import rules as R
 
 def actual():
  x={'spw_'+k:'synthetic-'+k for k in R.REQUIRED}

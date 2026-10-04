@@ -5,10 +5,13 @@ from uuid import uuid4
 
 import pytest
 
-from backend.agent_core.api.tool_contract import Permission
-from backend.engineering.agent_tools import model, proposal_service, wizard_generation
-from backend.engineering.agent_tools.runtime import ToolAuthority, execute
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.agent.api.tool_contract import Permission
+from backend.nis.agent.tools import model as model
+from backend.nis.agent.tools import proposal_service as proposal_service
+from backend.nis.agent.tools import wizard_generation as wizard_generation
+from backend.nis.agent.tools.runtime import ToolAuthority
+from backend.nis.agent.tools.runtime import execute
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
 GRAPH = [

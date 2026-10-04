@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { GlobalAgentWidget } from "@/components/global-agent-widget";
+import { GlobalAgentWidget } from "@/features/agent/ui/global-agent-widget";
 import "./globals.css";
 
 const geistSans = Geist({

@@ -1,9 +1,10 @@
 from copy import deepcopy
 import pytest
 
-from backend.engineering.network_assignment import plan_assignment, confirmed_context
-from backend.engineering.network_scene import build_network_scene
-from backend.engineering.models import EngineeringValidationError
+from backend.nis.engineering.network.network_assignment import plan_assignment
+from backend.nis.engineering.network.network_assignment import confirmed_context
+from backend.nis.engineering.network.network_scene import build_network_scene
+from backend.nis.domain.vocabulary import EngineeringValidationError
 from backend.tests.test_network_assignment import fixture
 
 

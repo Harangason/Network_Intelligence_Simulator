@@ -1,9 +1,9 @@
 """Exercise the real frontend specification adapter and backend HMI contract."""
 import json
 
-from backend.engineering.agent_tools.wizard_generation import extract_specification
-from backend.engineering.wizard_communication import communication_plan
-from backend.engineering.device_communication import actuator_command_template
+from backend.nis.agent.tools.wizard_generation import extract_specification
+from backend.nis.engineering.communication.wizard_communication import communication_plan
+from backend.nis.engineering.communication.device_communication import actuator_command_template
 
 
 def test_named_actuator_command_defaults_preserve_explicit_custom_encoding():

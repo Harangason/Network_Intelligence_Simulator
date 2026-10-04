@@ -5,12 +5,12 @@ import importlib
 
 import pytest
 
-from backend.app import create_app
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY
-from backend.communication.technologies.core.models import PayloadElement, PayloadElementType, TechnologyStack
-from backend.communication.technologies.core.registry import TechnologyRegistry
-from backend.communication.technologies.onboarding import PACK_FILES, TechnologyOnboardingService
-from backend.engineering.generation_rule_manager import resolve_generation_policy
+from backend.nis.app import create_app
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY
+from backend.nis.communication.core.models import PayloadElement, PayloadElementType, TechnologyStack
+from backend.nis.communication.registry import TechnologyRegistry
+from backend.nis.communication.services.onboarding import PACK_FILES, TechnologyOnboardingService
+from backend.nis.engineering.requirements.generation_rule_manager import resolve_generation_policy
 
 
 def _profile() -> dict:
@@ -253,7 +253,7 @@ def test_generated_pack_cannot_replace_builtin_technology(tmp_path) -> None:
 
 def test_api_requires_explicit_core_registration(monkeypatch, tmp_path) -> None:
     service = TechnologyOnboardingService(TechnologyRegistry(), tmp_path)
-    api_module = importlib.import_module("backend.app.api")
+    api_module = importlib.import_module("backend.nis.interfaces.http.simulation")
     monkeypatch.setattr(api_module, "DEFAULT_TECHNOLOGY_ONBOARDING", service)
     client = create_app(testing=True).test_client()
 
@@ -269,8 +269,8 @@ def test_api_requires_explicit_core_registration(monkeypatch, tmp_path) -> None:
 
 
 def test_agent_exposes_internal_technology_knowledge_capabilities() -> None:
-    from backend.engineering.agent_tools import services  # noqa: F401
-    from backend.engineering.agent_tools.catalog import TOOLS
+    from backend.nis.agent.tools import services as services  # noqa: F401
+    from backend.nis.agent.tools.catalog import TOOLS
 
     assert {
         "resolve_network_technology",

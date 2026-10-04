@@ -1,7 +1,8 @@
 from uuid import uuid4
-from backend.engineering.db import get_connection
-from backend.engineering.schema import ensure_schema, SCHEMA_VERSION
-from backend.engineering.workflow.service import WorkflowStatusService
+from backend.nis.infrastructure.persistence.db import get_connection
+from backend.nis.infrastructure.persistence.schema import ensure_schema
+from backend.nis.infrastructure.persistence.schema import SCHEMA_VERSION
+from backend.nis.workflow.services.service import WorkflowStatusService
 
 
 def test_existing_v26_database_receives_project_deletion_table():

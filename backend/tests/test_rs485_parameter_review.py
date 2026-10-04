@@ -1,8 +1,8 @@
 """RS485 actual unit loads, driver control and distinct electrical fixtures."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import rs485 as R
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.rs485 import rules as R
 def actual():
  x={'rs485_'+k:'synthetic-'+k for k in R.REQUIRED}
  x.update(rs485_profile='TIA_485_TI2010',rs485_topology='BUS_DAISY_CHAIN',rs485_direction='HALF_DUPLEX_ONE_PAIR',rs485_wire_protocol='REGISTERED_ACTUAL')

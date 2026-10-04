@@ -1,6 +1,6 @@
-import { backendEndpoints } from '@/lib/backend-endpoints';
+import { backendEndpoints } from '@/shared/api/backend-endpoints';
 import { projectHeaders, projectIdFromRequest } from '../_backend';
-import { MAX_IMPORT_BYTES } from '@/lib/trace-records';
+import { MAX_IMPORT_BYTES } from '@/features/traces/lib/trace-records';
 
 export async function POST(request: Request) {
   if (!request.body) return Response.json({ error: 'Die Trace-Datei ist leer.' }, { status: 400 });

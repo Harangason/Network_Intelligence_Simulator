@@ -2,9 +2,10 @@ from copy import deepcopy
 
 import pytest
 
-from backend.engineering.bus_migration import plan_bus_change
-from backend.engineering.models import EngineeringValidationError
-from backend.engineering.network_scene import short_bus_name, _path
+from backend.nis.engineering.network.bus_migration import plan_bus_change
+from backend.nis.domain.vocabulary import EngineeringValidationError
+from backend.nis.engineering.network.network_scene import short_bus_name
+from backend.nis.engineering.network.network_scene import _path
 
 
 def fixture():

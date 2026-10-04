@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
+from math import isfinite
 from typing import Any, Iterable
 
 from .components import (
@@ -14,6 +15,8 @@ from .components import (
     TechnologyTransportGenerator,
     TechnologyValidator,
     required_rate_fields,
+    _normalize_wide_integers,
+    validate_parameter_rule_syntax,
 )
 from .models import ImplementationStatus, Layer, TechnologyCapability, TechnologyProfile, TechnologyStack, TransportRequirement
 from .physical import physical_profile, validate_physical_realization
@@ -67,12 +70,19 @@ class TechnologyRegistry:
         self._decoders: dict[str, Any] = {}
         self._load_calculators: dict[str, Any] = {}
         self._timing_models: dict[str, Any] = {}
+        self._revision = 0
+
+    @property
+    def revision(self) -> int:
+        """Invalidate consumer snapshots after any successful registry change."""
+        return self._revision
 
     def normalize_id(self, value: Any) -> str:
         token = _identity_token(value)
         return self._aliases.get(token, BUILTIN_INGRESS_ALIASES.get(token, token))
 
     def register_profile(self, technology_id: str, profile: dict[str, Any]) -> None:
+        validate_parameter_rule_syntax(profile)
         key = self.normalize_id(technology_id)
         if key in self._profiles:
             raise ValueError(f"technology already registered: {key}")
@@ -103,6 +113,7 @@ class TechnologyRegistry:
             "verification_status": "UNVERIFIED", "verification_scope": "REGISTRY_TEMPLATE",
         })
         self._aliases.update(pending_aliases)
+        self._revision += 1
 
     def register_generated_profile(self, profile: dict[str, Any]) -> None:
         """Register or update a validated generated pack without touching built-ins."""
@@ -137,28 +148,36 @@ class TechnologyRegistry:
             # profile, its aliases and all executable components usable.
             for name, values in before.items():
                 setattr(self, name, values)
+            self._revision += 1
             raise
 
     def register_binding(self, technology_id: str, binding: Any) -> None:
         self._bindings[self.normalize_id(technology_id)] = binding
+        self._revision += 1
 
     def register_generator(self, technology_id: str, generator: Any) -> None:
         self._generators[self.normalize_id(technology_id)] = generator
+        self._revision += 1
 
     def register_validator(self, technology_id: str, validator: Any) -> None:
         self._validators.setdefault(self.normalize_id(technology_id), []).append(validator)
+        self._revision += 1
 
     def register_encoder(self, technology_id: str, encoder: Any) -> None:
         self._encoders[self.normalize_id(technology_id)] = encoder
+        self._revision += 1
 
     def register_decoder(self, technology_id: str, decoder: Any) -> None:
         self._decoders[self.normalize_id(technology_id)] = decoder
+        self._revision += 1
 
     def register_load_calculator(self, technology_id: str, calculator: Any) -> None:
         self._load_calculators[self.normalize_id(technology_id)] = calculator
+        self._revision += 1
 
     def register_timing_model(self, technology_id: str, timing_model: Any) -> None:
         self._timing_models[self.normalize_id(technology_id)] = timing_model
+        self._revision += 1
 
     def register_defaults(self, definitions: Iterable[dict[str, Any]]) -> None:
         for raw in definitions:
@@ -195,17 +214,21 @@ class TechnologyRegistry:
         return [self._profiles[key].to_dict() for key in sorted(self._profiles)]
 
     def rate_profile(self, technology_id: str) -> dict[str, Any]:
+        # Public results remain detached from registered definitions.
+        return deepcopy(self._rate_profile_definition(technology_id))
+
+    def _rate_profile_definition(self, technology_id: str) -> dict[str, Any]:
         """Resolve only the explicitly declared transport, never an industry fallback."""
-        profile = self.profile(technology_id)
+        profile = self._profiles[self.normalize_id(technology_id)].definition
         if profile.get('rate_source_profile_id'):
             rate_id=self.normalize_id(profile['rate_source_profile_id'])
             if rate_id not in profile.get('default_stack',()) or rate_id not in self._profiles:
                 raise ValueError(f"{profile['id']}: rate source must be an explicitly registered stack layer")
-            return self.profile(rate_id)
+            return self._profiles[rate_id].definition
         if (profile.get("rate_model") or {}).get("fields"):
             return profile
         for layer in profile.get("default_stack") or ():
-            candidate = self.profile(layer)
+            candidate = self._profiles[self.normalize_id(layer)].definition
             if (candidate.get("rate_model") or {}).get("fields"):
                 return candidate
         return profile
@@ -217,12 +240,21 @@ class TechnologyRegistry:
     def parameter_fields(self, technology_id: str) -> list[dict[str, Any]]:
         """One profile-owned schema for UI, wizard and API consumers."""
         from ..catalog import PARAMETER_UI_ALIASES
-        profile = self.profile(technology_id)
+        profile = self._profiles[self.normalize_id(technology_id)].definition
         result = []
         for name, spec in profile.get('parameter_schema', {}).items():
             if not spec.get('label'):
                 continue
-            result.append({**deepcopy(spec), 'key': PARAMETER_UI_ALIASES.get(name, name)})
+            field = {**deepcopy(spec), 'key': PARAMETER_UI_ALIASES.get(name, name)}
+            if (spec.get('integer') or spec.get('type') == 'integer') and any(
+                isinstance(spec.get(bound), int) and abs(spec[bound]) > 2**53 - 1 for bound in ('min', 'max', 'minimum', 'maximum')):
+                field['numeric_encoding'] = 'DECIMAL_STRING'
+                for bound, aliases in (('min', ('min', 'minimum')), ('max', ('max', 'maximum'))):
+                    actual = next((spec[key] for key in aliases if spec.get(key) is not None), None)
+                    if actual is not None:
+                        field['decimal_' + bound] = str(actual)
+                        field.pop(bound, None)
+            result.append(field)
         return result
 
     def list_all(self) -> list[dict[str, Any]]:
@@ -308,11 +340,19 @@ class TechnologyRegistry:
         """Normalize existing UI aliases without borrowing another rate model."""
         from ..catalog import PARAMETER_CORE_ALIASES
         result = deepcopy(parameters)
-        fields = set(self.rate_profile(technology_id).get('rate_model', {}).get('fields') or ())
-        for alias, canonical in PARAMETER_CORE_ALIASES.items():
+        # Validation only reads definitions. Copy caller-owned values, not the
+        # complete schema on every frame/network check of a large project.
+        profile = self._profiles[self.normalize_id(technology_id)].definition
+        fields = set(self._rate_profile_definition(technology_id).get('rate_model', {}).get('fields') or ())
+        for alias, canonical in {**PARAMETER_CORE_ALIASES, **profile.get("parameter_aliases", {})}.items():
             if alias not in result:
                 continue
             value = result.pop(alias)
+            limits = profile.get('parameter_alias_limits', {}).get(alias)
+            if limits and (not isinstance(value, (int, float)) or isinstance(value, bool) or not isfinite(value)
+                           or limits.get('minimum') is not None and value < limits['minimum']
+                           or limits.get('maximum') is not None and value > limits['maximum']):
+                raise ValueError(f'TECHNOLOGY_PARAMETER_OUT_OF_RANGE: {alias} violates its declared legacy clock range')
             if alias == 'bitrate' and 'nominal_bitrate_bps' in fields:
                 # Legacy workflow bitrate duplicated the data phase when both
                 # explicitly named phases were supplied. Named phases own it.
@@ -322,14 +362,17 @@ class TechnologyRegistry:
             if canonical in result and result[canonical] != value:
                 raise ValueError(f'TECHNOLOGY_PARAMETER_CONFLICT: {alias} contradicts {canonical}')
             result[canonical] = value
-        return result
+        schema = {field: spec for layer in profile.get('default_stack') or (technology_id,)
+                  for field, spec in self._profiles[self.normalize_id(layer)].definition.get('parameter_schema', {}).items()}
+        return _normalize_wide_integers(result, schema)
 
     def parameter_keys(self, technology_id: str | None = None) -> set[str]:
         """Known field names, including UI aliases, for consumer isolation."""
-        from ..catalog import PARAMETER_UI_ALIASES
+        from ..catalog import PARAMETER_UI_ALIASES, RESERVED_PARAMETER_NAMES
         profiles = self._profiles.values() if technology_id is None else [self._profiles[self.normalize_id(technology_id)]]
         names = {field for profile in profiles for field in profile.definition.get('parameter_schema', {})}
-        return names | {PARAMETER_UI_ALIASES[name] for name in names if name in PARAMETER_UI_ALIASES}
+        names |= {alias for profile in profiles for alias in profile.definition.get("parameter_aliases", {})}
+        return names | {PARAMETER_UI_ALIASES[name] for name in names if name in PARAMETER_UI_ALIASES} | (RESERVED_PARAMETER_NAMES if technology_id is None else set())
 
     def validate_parameters(self, technology_id: str, parameters: dict[str, Any]) -> dict[str, Any]:
         key = self.normalize_id(technology_id)
@@ -338,7 +381,7 @@ class TechnologyRegistry:
                 "stage": "TECHNOLOGY_PROFILE", "code": "TECHNOLOGY_PROFILE_MISSING",
                 "message": f"No technology profile is registered for {key}", "severity": "BLOCKER",
             }]}
-        profile = self._profiles[key].to_dict()
+        profile = self._profiles[key].definition
         stack = tuple(self.normalize_id(item) for item in (profile.get("default_stack") or (key,)))
         missing_stack = sorted(set(stack) - self._profiles.keys())
         if missing_stack:
@@ -350,7 +393,8 @@ class TechnologyRegistry:
             parameters = self.normalize_parameters(key, parameters)
         except ValueError as exc:
             return {'technology_id': key, 'status': 'INVALID', 'findings': [{
-                'stage': 'TECHNOLOGY_PARAMETERS', 'code': 'TECHNOLOGY_PARAMETER_CONFLICT',
+                'stage': 'TECHNOLOGY_PARAMETERS', 'code': 'TECHNOLOGY_PARAMETER_OUT_OF_RANGE'
+                    if str(exc).startswith('TECHNOLOGY_PARAMETER_OUT_OF_RANGE:') else 'TECHNOLOGY_PARAMETER_CONFLICT',
                 'message': str(exc), 'severity': 'BLOCKER',
             }]}
         rate_fields = {"bitrate_bps", "nominal_bitrate_bps", "data_bitrate_bps"}
@@ -381,8 +425,7 @@ class TechnologyRegistry:
             if self._profiles[stack_id].definition.get('parameter_evidence_scope') == 'EXPLICIT_LAYER'
             for field in self._profiles[stack_id].definition.get('parameter_schema', {})
             if any(field.startswith(prefix) for prefix in self._profiles[stack_id].definition.get('native_parameter_prefixes', ())))
-        registered_fields = {field for item in self._profiles.values()
-                             for field in item.definition.get('parameter_schema', {})}
+        registered_fields = self.parameter_keys()
         native_prefixes = {prefix for stack_id in stack
                            for prefix in self._profiles[stack_id].definition.get('native_parameter_prefixes', [])}
         undeclared_native_fields = {field for field in parameters
@@ -410,7 +453,7 @@ class TechnologyRegistry:
                 findings.extend(vars(item) for item in validator.validate({"parameters": layer_parameters}))
         # Validation of an empty/partial request must not certify a complete
         # physical transport. Catalog defaults are proposals, not supplied data.
-        required_rates = {field for stack_id in stack for field in
+        required_rates = {field for stack_id in validation_stack for field in
                           required_rate_fields(self._profiles[stack_id].rate_model, parameters)}
         missing = sorted(required_rates - supplied_rate_fields)
         if missing and not any(item["code"] == "TECHNOLOGY_RATE_MODEL_MISMATCH" for item in findings):
@@ -510,7 +553,7 @@ class BindingResolver:
             if requirement.redundancy and not capabilities["supports_redundancy"]:
                 continue
             required_interface = str(profile.get("hardware_interface") or "").lower()
-            if hardware and required_interface not in hardware:
+            if hardware and not hardware.intersection({required_interface, profile['id'], *profile.get('hardware_capability_aliases', [])}):
                 continue
             bitrate = int(profile.get("default_bitrate") or 0)
             if requirement.bandwidth_bps and bitrate and bitrate < requirement.bandwidth_bps:

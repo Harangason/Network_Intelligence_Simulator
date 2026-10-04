@@ -1,8 +1,8 @@
 """MQTT-SN1.2 own datagram framing, gateway/topic scope, QoSminus1 and sleep regressions."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import mqtt_sn as SN
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.mqtt_sn import rules as SN
 
 def actual(kind='CONNECT',variable=5,length_bytes=1):
     x={'sn_'+k:'synthetic-actual-'+k for k in SN.REQUIRED}
@@ -226,8 +226,8 @@ def test_mqtt_sn_missing_actual_evidence_stays_unverified_and_literature_does_no
     assert registry.profile('mqtt_sn')['capacity_evidence']['status']=='MODEL_MISSING'
 
 def test_mqtt_sn_confirmed_high_gateway_id_unicode_client_zero_publish_id_and_timer_survive_rejected_foreign_defaults():
-    from backend.engineering.workflow.service import WorkflowStatusService
-    from backend.engineering.project_context import current_project_id
+    from backend.nis.workflow.services.service import WorkflowStatusService
+    from backend.nis.engineering.projects.project_context import current_project_id
     x=publish(qos=-1,topic='SHORT');x.update(sn_gateway_id=255,sn_client_id='é',sn_client_id_bytes=2,sn_client_characters=1,
         sn_timer_profile='REGISTERED',sn_timer_source='synthetic-timer-policy',sn_retry_s=22)
     group={'values':x,'provenance':{k:{'source':'USER_CONFIRMED','status':'CONFIRMED','value':v}for k,v in x.items()}}

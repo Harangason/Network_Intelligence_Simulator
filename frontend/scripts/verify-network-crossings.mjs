@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {chromium} from 'playwright';
-import {withWireCrossings} from '../src/lib/network-crossings.ts';
+import {withWireCrossings} from '../src/features/network/lib/network-crossings.ts';
 
 const {project}=JSON.parse(await fs.readFile('../backend/runtime/crossing-test.json','utf8'));
 assert.ok(project.startsWith('network-project-crossing-test-'));

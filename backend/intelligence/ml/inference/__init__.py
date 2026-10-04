@@ -1,1 +1,4 @@
-"""Inference services for simulator ML."""
+"""Compatibility only; owner backend.nis.intelligence.ml.inference."""
+import importlib
+import sys
+sys.modules[__name__] = importlib.import_module('backend.nis.intelligence.ml.inference')

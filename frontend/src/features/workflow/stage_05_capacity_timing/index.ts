@@ -1,1 +1,1 @@
-export { CapacityWorkbench } from "@/components/capacity-workbench";
+export { CapacityWorkbench } from "@/features/capacity/ui/capacity-workbench";

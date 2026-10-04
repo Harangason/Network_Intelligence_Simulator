@@ -1,8 +1,8 @@
 """Independent SD lifetime/option/reboot/state boundaries for every exported field."""
 from copy import deepcopy
 import pytest
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies import someip_sd as R
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.technologies.someip_sd import rules as R
 
 def actual():
  x={'sd_'+k:'synthetic-'+k for k in R.REQUIRED}

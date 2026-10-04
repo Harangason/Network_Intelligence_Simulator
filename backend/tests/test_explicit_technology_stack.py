@@ -3,8 +3,8 @@ from copy import deepcopy
 
 import pytest
 
-from backend.communication.technologies import DEFAULT_TECHNOLOGY_REGISTRY as registry
-from backend.communication.technologies.core.models import TechnologyProfile, TechnologyStack
+from backend.nis.communication import DEFAULT_TECHNOLOGY_REGISTRY as registry
+from backend.nis.communication.core.models import TechnologyProfile, TechnologyStack
 
 
 def bind(stack, model=None):
@@ -61,5 +61,6 @@ def test_malformed_stack_metadata_is_rejected(invalid):
 
 def test_profile_variants_are_defensive_copies():
     value = registry.profile('someip')
+    original = deepcopy(value['stack_variants'])
     value['stack_variants'][0].clear()
-    assert registry.profile('someip')['stack_variants'][0] == ['ethernet', 'ip', 'udp', 'someip']
+    assert registry.profile('someip')['stack_variants'] == original

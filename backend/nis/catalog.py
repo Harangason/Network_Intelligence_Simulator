@@ -1,14 +1,14 @@
 """One discoverable source map for the complete NIS backend."""
 
-from backend.specializations.catalog import source_catalog
-from backend.workflow.definition import WORKFLOW_STAGES
+from backend.nis.specializations.catalog import source_catalog
+from backend.nis.workflow.definition import WORKFLOW_STAGES
 
-from .automation import CAPABILITY as AUTOMATION
-from .domain import CAPABILITY as DOMAIN
-from .infrastructure import CAPABILITY as INFRASTRUCTURE
-from .intelligence import CAPABILITY as INTELLIGENCE
-from .interfaces import CAPABILITY as INTERFACES
-from .simulation import CAPABILITY as SIMULATION
+from backend.nis.automation import CAPABILITY as AUTOMATION
+from backend.nis.domain import CAPABILITY as DOMAIN
+from backend.nis.infrastructure import CAPABILITY as INFRASTRUCTURE
+from backend.nis.intelligence import CAPABILITY as INTELLIGENCE
+from backend.nis.interfaces import CAPABILITY as INTERFACES
+from backend.nis.simulation import CAPABILITY as SIMULATION
 
 CAPABILITIES = (DOMAIN, AUTOMATION, SIMULATION, INTELLIGENCE, INTERFACES, INFRASTRUCTURE)
 

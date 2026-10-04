@@ -8,8 +8,8 @@ import sys
 def test_application_cold_start_registers_executable_agent_tools():
     assert os.environ.get('ENGINEERING_TEST_DATABASE_URL') == os.environ.get('DATABASE_URL')
     result = subprocess.run([sys.executable, '-c', '''
-from backend.app import create_app
-from backend.engineering.agent_tools.services import TOOLS
+from backend.nis.app import create_app
+from backend.nis.agent.tools.services import TOOLS
 app = create_app()
 required = {'plan_model_import', 'export_project_bundle', 'plan_project_bundle_restore', 'plan_fault_activation',
             'plan_structure_transfer', 'update_project_draft', 'plan_project_model',
